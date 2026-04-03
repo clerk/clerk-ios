@@ -323,19 +323,157 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    configureDependencies(
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
       signInService: signInService,
-      sessionService: sessionService,
-      keychain: keychain
+      sessionService: sessionService
     )
-    try MagicLinkStore.save(codeVerifier: "verifier_123")
+    clerk.environment = .mock
+    try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
 
-    let signIn = try await Clerk.shared.auth.handleMagicLinkCallback(callbackUrl)
+    let signIn = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
 
     #expect(signIn.createdSessionId == "sess_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(try (Clerk.shared.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func handleMagicLinkCallbackDeduplicatesConcurrentCallbacks() async throws {
+    let keychain = InMemoryKeychain()
+    let signInCreateCount = LockIsolated(0)
+    let activatedSessionId = LockIsolated<String?>(nil)
+    let completionRequestCount = LockIsolated(0)
+
+    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
+    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+        ),
+      ]
+    )
+    completionMock.onRequestHandler = OnRequestHandler { request in
+      completionRequestCount.withValue { $0 += 1 }
+      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_123")
+    }
+    completionMock.register()
+
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+
+    let signInService = MockSignInService(create: { params in
+      signInCreateCount.withValue { $0 += 1 }
+      #expect(params.ticket == "ticket_123")
+      try await Task.sleep(for: .milliseconds(50))
+      return completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signInService: signInService,
+      sessionService: sessionService
+    )
+    clerk.environment = .mock
+    try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
+
+    async let firstSignIn = clerk.auth.handleMagicLinkCallback(callbackUrl)
+    async let secondSignIn = clerk.auth.handleMagicLinkCallback(callbackUrl)
+
+    let (first, second) = try await (firstSignIn, secondSignIn)
+
+    #expect(first.createdSessionId == "sess_123")
+    #expect(second.createdSessionId == "sess_123")
+    #expect(signInCreateCount.value == 1)
+    #expect(completionRequestCount.value == 1)
+    #expect(activatedSessionId.value == "sess_123")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func handleMagicLinkCallbackPreservesPendingFlowAfterStalePkceFailure() async throws {
+    let keychain = InMemoryKeychain()
+    let signInCalled = LockIsolated(false)
+    let activatedSessionId = LockIsolated<String?>(nil)
+
+    let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_old&approval_token=approval_old"))
+    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 400,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "pkce_verification_failed",
+                message: "PKCE verification failed.",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+    completionMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.urlEncodedFormBody?["flow_id"] == "flow_old")
+      #expect(request.urlEncodedFormBody?["approval_token"] == "approval_old")
+      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_new")
+    }
+    completionMock.register()
+
+    let signInService = MockSignInService(create: { _ in
+      signInCalled.setValue(true)
+      return .mock
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signInService: signInService,
+      sessionService: sessionService
+    )
+    clerk.environment = .mock
+    try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_new")
+
+    do {
+      _ = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
+      #expect(Bool(false), "Expected stale callback to fail")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "pkce_verification_failed")
+    }
+
+    #expect(signInCalled.value == false)
+    #expect(activatedSessionId.value == nil)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == true)
+    #expect(clerk.dependencies.magicLinkStore.load()?.codeVerifier == "verifier_new")
   }
 
   @Test

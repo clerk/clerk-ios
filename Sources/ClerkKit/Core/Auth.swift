@@ -14,21 +14,30 @@ import Foundation
 /// This is a lightweight facade that namespaces auth-related methods - it holds no state itself.
 @MainActor
 public struct Auth {
+  private let apiClient: APIClient
+  private let magicLinkStore: MagicLinkStore
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
   private let eventEmitter: EventEmitter<AuthEvent>
+  private let urlHandlingCoordinator: URLHandlingCoordinator
 
   init(
+    apiClient: APIClient,
+    magicLinkStore: MagicLinkStore,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
-    eventEmitter: EventEmitter<AuthEvent>
+    eventEmitter: EventEmitter<AuthEvent>,
+    urlHandlingCoordinator: URLHandlingCoordinator
   ) {
+    self.apiClient = apiClient
+    self.magicLinkStore = magicLinkStore
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
     self.eventEmitter = eventEmitter
+    self.urlHandlingCoordinator = urlHandlingCoordinator
   }
 
   /// The current sign-in attempt, if any.
@@ -318,7 +327,7 @@ public struct Auth {
   @discardableResult
   public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
     let callback = try MagicLinkCallback(url: url)
-    return try await completeMagicLink(flowId: callback.flowId, approvalToken: callback.approvalToken)
+    return try await handle(.magicLink(flowId: callback.flowId, approvalToken: callback.approvalToken))
   }
 
   /// Completes a pending native magic-link sign-in flow using callback values from the deep link.
@@ -341,7 +350,7 @@ public struct Auth {
       throw ClerkClientError(message: "Magic link callback is missing approval_token.")
     }
 
-    guard let pendingFlow = MagicLinkStore.load() else {
+    guard let pendingFlow = magicLinkStore.load() else {
       throw ClerkClientError(message: "No pending magic link flow was found.")
     }
 
@@ -357,11 +366,11 @@ public struct Auth {
 
     let completionResponse: MagicLinkCompleteResponse
     do {
-      completionResponse = try await Clerk.shared.dependencies.apiClient.send(request).value
-      MagicLinkStore.clear()
+      completionResponse = try await apiClient.send(request).value
+      magicLinkStore.clear()
     } catch let error as ClerkAPIError {
-      if magicLinkTerminalErrorCodes.contains(error.code) {
-        MagicLinkStore.clear()
+      if magicLinkTerminalErrorCodes.contains(error.code), error.code != "pkce_verification_failed" {
+        magicLinkStore.clear()
       }
       throw error
     }
@@ -380,6 +389,18 @@ public struct Auth {
     }
 
     return signIn
+  }
+
+  func handle(_ route: ClerkURLRoute) async throws -> SignIn {
+    try await urlHandlingCoordinator.handle(route) {
+      switch route {
+      case .magicLink(let flowId, let approvalToken):
+        try await completeMagicLink(
+          flowId: flowId,
+          approvalToken: approvalToken
+        )
+      }
+    }
   }
 
   // MARK: - Sign Up Entry Points

@@ -12,12 +12,12 @@ import Foundation
 /// auth operation only runs once.
 @MainActor
 final class URLHandlingCoordinator {
-  private var inFlightTasks: [ClerkURLRoute: Task<Void, Error>] = [:]
+  private var inFlightTasks: [ClerkURLRoute: Task<SignIn, Error>] = [:]
 
   func handle(
     _ route: ClerkURLRoute,
-    operation: @escaping @MainActor @Sendable () async throws -> Void
-  ) async throws {
+    operation: @escaping @MainActor @Sendable () async throws -> SignIn
+  ) async throws -> SignIn {
     if let task = inFlightTasks[route] {
       return try await task.value
     }
@@ -28,7 +28,7 @@ final class URLHandlingCoordinator {
 
     inFlightTasks[route] = task
     defer { inFlightTasks[route] = nil }
-    try await task.value
+    return try await task.value
   }
 
   func cancelAll() {

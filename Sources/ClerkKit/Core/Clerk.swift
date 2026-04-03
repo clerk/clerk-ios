@@ -164,10 +164,13 @@ public final class Clerk {
   /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
     Auth(
+      apiClient: dependencies.apiClient,
+      magicLinkStore: dependencies.magicLinkStore,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
-      eventEmitter: authEventEmitter
+      eventEmitter: authEventEmitter,
+      urlHandlingCoordinator: urlHandlingCoordinator
     )
   }
 
@@ -344,17 +347,14 @@ extension Clerk {
   public func handle(_ url: URL) async throws -> Bool {
     guard let route = try ClerkURLRoute(url: url) else { return false }
 
-    try await urlHandlingCoordinator.handle(route) { [auth] in
-      switch route {
-      case .magicLink(let flowId, let approvalToken):
-        try await auth.completeMagicLink(
-          flowId: flowId,
-          approvalToken: approvalToken
-        )
-      }
-    }
+    try await handle(route, using: auth)
 
     return true
+  }
+
+  @discardableResult
+  func handle(_ route: ClerkURLRoute, using auth: Auth) async throws -> SignIn {
+    try await auth.handle(route)
   }
 }
 

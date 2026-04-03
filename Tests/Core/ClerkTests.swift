@@ -266,14 +266,17 @@ struct ClerkTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    configureDependencies(
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
       signInService: signInService,
-      sessionService: sessionService,
-      keychain: keychain
+      sessionService: sessionService
     )
-    try MagicLinkStore.save(codeVerifier: "verifier_123")
+    clerk.environment = .mock
+    try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
 
-    let handled = try await Clerk.shared.handle(callbackUrl)
+    let handled = try await clerk.handle(callbackUrl)
 
     #expect(handled == true)
     #expect(signInParams.value?.ticket == "ticket_123")
@@ -318,15 +321,18 @@ struct ClerkTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    configureDependencies(
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
       signInService: signInService,
-      sessionService: sessionService,
-      keychain: keychain
+      sessionService: sessionService
     )
-    try MagicLinkStore.save(codeVerifier: "verifier_123")
+    clerk.environment = .mock
+    try clerk.dependencies.magicLinkStore.save(codeVerifier: "verifier_123")
 
-    async let firstHandled = Clerk.shared.handle(callbackUrl)
-    async let secondHandled = Clerk.shared.handle(callbackUrl)
+    async let firstHandled = clerk.handle(callbackUrl)
+    async let secondHandled = clerk.handle(callbackUrl)
 
     let (first, second) = try await (firstHandled, secondHandled)
 

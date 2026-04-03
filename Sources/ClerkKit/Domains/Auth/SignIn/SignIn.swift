@@ -85,6 +85,11 @@ extension SignIn {
     Clerk.shared.dependencies.signInService
   }
 
+  @MainActor
+  private var magicLinkStore: MagicLinkStore {
+    Clerk.shared.dependencies.magicLinkStore
+  }
+
   // MARK: - First Factor Verification
 
   /// Sends a verification code to the specified email address.
@@ -135,7 +140,7 @@ extension SignIn {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
-    try MagicLinkStore.save(codeVerifier: pkcePair.verifier)
+    try magicLinkStore.save(codeVerifier: pkcePair.verifier)
 
     return try await signInService.prepareFirstFactor(
       signInId: id,

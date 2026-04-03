@@ -113,6 +113,11 @@ extension SignUp {
     Clerk.shared.dependencies.signUpService
   }
 
+  @MainActor
+  private var magicLinkStore: MagicLinkStore {
+    Clerk.shared.dependencies.magicLinkStore
+  }
+
   /// This method is used to update the current sign-up.
   ///
   /// This method is used to modify the details of an ongoing sign-up process.
@@ -169,7 +174,7 @@ extension SignUp {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
-    try MagicLinkStore.save(codeVerifier: pkcePair.verifier)
+    try magicLinkStore.save(codeVerifier: pkcePair.verifier)
 
     return try await signUpService.prepareVerification(
       signUpId: id,
