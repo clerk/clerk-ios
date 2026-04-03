@@ -323,9 +323,6 @@ public struct Auth {
 
   /// Completes a pending native magic-link flow using callback values from the deep link.
   ///
-  /// Determines whether to complete as sign-in or sign-up by checking if
-  /// `currentSignUp` has an active email-link verification in progress.
-  ///
   /// - Parameters:
   ///   - flowId: The `flow_id` value from the callback.
   ///   - approvalToken: The `approval_token` value from the callback.
