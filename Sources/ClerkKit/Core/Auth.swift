@@ -367,13 +367,8 @@ public struct Auth {
       )
     )
 
-    let completionResponse: MagicLinkCompleteResponse
-    do {
-      completionResponse = try await apiClient.send(request).value
-      magicLinkStore.clear()
-    } catch let error as ClerkAPIError {
-      throw error
-    }
+    let completionResponse = try await apiClient.send(request).value
+    magicLinkStore.clear()
 
     let signIn = try await signInWithTicket(completionResponse.ticket)
 

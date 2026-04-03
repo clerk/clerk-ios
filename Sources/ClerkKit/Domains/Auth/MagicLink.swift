@@ -129,11 +129,3 @@ final class MagicLinkStore {
     try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 }
-
-let magicLinkTerminalErrorCodes: Set<String> = [
-  "approval_token_consumed",
-  "approval_token_expired",
-  "approval_token_invalid",
-  "pkce_verification_failed",
-  "flow_not_approved",
-]
