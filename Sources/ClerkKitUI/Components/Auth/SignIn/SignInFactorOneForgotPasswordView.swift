@@ -31,23 +31,31 @@ struct SignInFactorOneForgotPasswordView: View {
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
     switch factor.strategy {
+    case .phoneCode, .emailCode, .emailLink:
+      identifierActionText(factor: factor)
+    case .passkey:
+      "Sign in with your passkey"
+    case .password:
+      "Sign in with your password"
+    case .totp:
+      "Use your authenticator app"
+    case .backupCode:
+      "Use a backup code"
+    default:
+      nil
+    }
+  }
+
+  func identifierActionText(factor: Factor) -> LocalizedStringKey? {
+    guard let safeIdentifier = factor.safeIdentifier else { return nil }
+
+    switch factor.strategy {
     case .phoneCode:
-      guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
     case .emailCode:
-      guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email code to \(safeIdentifier)"
     case .emailLink:
-      guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email link to \(safeIdentifier)"
-    case .passkey:
-      return "Sign in with your passkey"
-    case .password:
-      return "Sign in with your password"
-    case .totp:
-      return "Use your authenticator app"
-    case .backupCode:
-      return "Use a backup code"
     default:
       return nil
     }
