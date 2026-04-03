@@ -42,7 +42,7 @@ struct MagicLinkCallback: Equatable {
     self.approvalToken = approvalToken
   }
 
-  static func canHandle(_ url: URL) -> Bool {
+  static func hasRequiredQueryParams(_ url: URL) -> Bool {
     queryParam(named: "flow_id", in: url) != nil
       && queryParam(named: "approval_token", in: url) != nil
   }

@@ -11,14 +11,14 @@ struct MagicLinkTests {
 
     #expect(callback.flowId == "flow_123")
     #expect(callback.approvalToken == "approval_123")
-    #expect(MagicLinkCallback.canHandle(url))
+    #expect(MagicLinkCallback.hasRequiredQueryParams(url))
   }
 
   @Test
   func fragmentOnlyCallbackIsNotHandled() throws {
     let url = try #require(URL(string: "com.clerk.Quickstart://callback#flow_id=flow_123&approval_token=approval_123"))
 
-    #expect(MagicLinkCallback.canHandle(url) == false)
+    #expect(MagicLinkCallback.hasRequiredQueryParams(url) == false)
   }
 
   @Test
