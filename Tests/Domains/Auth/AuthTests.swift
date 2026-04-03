@@ -285,9 +285,10 @@ struct AuthTests {
     let keychain = InMemoryKeychain()
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-success.clerk.accounts.dev"))
 
     let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
-    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
       url: completionUrl,
@@ -325,7 +326,7 @@ struct AuthTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+      apiClient: createMockAPIClient(baseURL: testBaseUrl),
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService
@@ -347,9 +348,10 @@ struct AuthTests {
     let signInCreateCount = LockIsolated(0)
     let activatedSessionId = LockIsolated<String?>(nil)
     let completionRequestCount = LockIsolated(0)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-dedupe.clerk.accounts.dev"))
 
     let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
-    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
       url: completionUrl,
@@ -386,7 +388,7 @@ struct AuthTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+      apiClient: createMockAPIClient(baseURL: testBaseUrl),
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService
@@ -412,9 +414,10 @@ struct AuthTests {
     let keychain = InMemoryKeychain()
     let signInCalled = LockIsolated(false)
     let activatedSessionId = LockIsolated<String?>(nil)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-stale.clerk.accounts.dev"))
 
     let callbackUrl = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_old&approval_token=approval_old"))
-    let completionUrl = URL(string: mockBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
     var completionMock = try Mock(
       url: completionUrl,
@@ -455,7 +458,7 @@ struct AuthTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+      apiClient: createMockAPIClient(baseURL: testBaseUrl),
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService

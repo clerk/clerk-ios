@@ -50,8 +50,8 @@ func setupMockAPIClient() {
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
 @MainActor
-func createMockAPIClient() -> APIClient {
-  APIClient(baseURL: mockBaseUrl) { @Sendable configuration in
+func createMockAPIClient(baseURL: URL = mockBaseUrl) -> APIClient {
+  APIClient(baseURL: baseURL) { @Sendable configuration in
     configuration.pipeline = .clerkDefault
     configuration.decoder = .clerkDecoder
     configuration.encoder = .clerkEncoder
