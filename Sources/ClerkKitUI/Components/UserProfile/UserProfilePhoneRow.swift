@@ -24,15 +24,31 @@ struct UserProfilePhoneRow: View {
 
   let phoneNumber: PhoneNumber
 
+  private var isPrimary: Bool {
+    user?.primaryPhoneNumber == phoneNumber
+  }
+
+  private var isVerified: Bool {
+    phoneNumber.verification?.status == .verified
+  }
+
+  private var canRemove: Bool {
+    clerk.environment?.phoneNumberIsImmutable != true
+  }
+
+  private var shouldShowMenu: Bool {
+    canRemove || !isPrimary || !isVerified
+  }
+
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
         WrappingHStack(alignment: .leading) {
-          if user?.primaryPhoneNumber == phoneNumber {
+          if isPrimary {
             Badge(key: "Primary", style: .secondary)
           }
 
-          if phoneNumber.verification?.status != .verified {
+          if !isVerified {
             Badge(key: "Unverified", style: .warning)
           }
 
@@ -49,39 +65,42 @@ struct UserProfilePhoneRow: View {
 
       Spacer()
 
-      Menu {
-        if user?.primaryPhoneNumber != phoneNumber, phoneNumber.verification?.status == .verified {
-          AsyncButton {
-            await setPhoneAsPrimary(phoneNumber)
-          } label: { _ in
-            Text("Set as primary", bundle: .module)
+      if shouldShowMenu {
+        Menu {
+          if !isPrimary, isVerified {
+            AsyncButton {
+              await setPhoneAsPrimary(phoneNumber)
+            } label: { _ in
+              Text("Set as primary", bundle: .module)
+            }
+            .onIsRunningChanged { isLoading = $0 }
+            .onDisappear { isLoading = false }
           }
-          .onIsRunningChanged { isLoading = $0 }
-          .onDisappear { isLoading = false }
-        }
 
-        if phoneNumber.verification?.status != .verified {
-          Button {
-            addPhoneNumberDestination = .verify(phoneNumber)
-          } label: {
-            Text("Verify", bundle: .module)
+          if !isVerified {
+            Button {
+              addPhoneNumberDestination = .verify(phoneNumber)
+            } label: {
+              Text("Verify", bundle: .module)
+            }
           }
-        }
 
-        Button(role: .destructive) {
-          removeResource = .phoneNumber(phoneNumber)
+          if canRemove {
+            Button(role: .destructive) {
+              removeResource = .phoneNumber(phoneNumber)
+            } label: {
+              Text("Remove phone", bundle: .module)
+            }
+          }
         } label: {
-          Text("Remove phone", bundle: .module)
+          Image("icon-three-dots-vertical", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(theme.colors.mutedForeground)
+            .frame(width: 20, height: 20)
         }
-
-      } label: {
-        Image("icon-three-dots-vertical", bundle: .module)
-          .resizable()
-          .scaledToFit()
-          .foregroundColor(theme.colors.mutedForeground)
-          .frame(width: 20, height: 20)
+        .frame(width: 30, height: 30)
       }
-      .frame(width: 30, height: 30)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)

@@ -24,15 +24,31 @@ struct UserProfileEmailRow: View {
 
   let emailAddress: EmailAddress
 
+  private var isPrimary: Bool {
+    user?.primaryEmailAddress == emailAddress
+  }
+
+  private var isVerified: Bool {
+    emailAddress.verification?.status == .verified
+  }
+
+  private var canRemove: Bool {
+    clerk.environment?.emailIsImmutable != true
+  }
+
+  private var shouldShowMenu: Bool {
+    canRemove || !isPrimary || !isVerified
+  }
+
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
         WrappingHStack(alignment: .leading) {
-          if user?.primaryEmailAddress == emailAddress {
+          if isPrimary {
             Badge(key: "Primary", style: .secondary)
           }
 
-          if emailAddress.verification?.status != .verified {
+          if !isVerified {
             Badge(key: "Unverified", style: .warning)
           }
 
@@ -49,39 +65,42 @@ struct UserProfileEmailRow: View {
 
       Spacer(minLength: 0)
 
-      Menu {
-        if user?.primaryEmailAddress != emailAddress, emailAddress.verification?.status == .verified {
-          AsyncButton {
-            await setEmailAsPrimary(emailAddress)
-          } label: { _ in
-            Text("Set as primary", bundle: .module)
+      if shouldShowMenu {
+        Menu {
+          if !isPrimary, isVerified {
+            AsyncButton {
+              await setEmailAsPrimary(emailAddress)
+            } label: { _ in
+              Text("Set as primary", bundle: .module)
+            }
+            .onIsRunningChanged { isLoading = $0 }
+            .onDisappear { isLoading = false }
           }
-          .onIsRunningChanged { isLoading = $0 }
-          .onDisappear { isLoading = false }
-        }
 
-        if emailAddress.verification?.status != .verified {
-          Button {
-            addEmailAddressDestination = .verify(emailAddress)
-          } label: {
-            Text("Verify", bundle: .module)
+          if !isVerified {
+            Button {
+              addEmailAddressDestination = .verify(emailAddress)
+            } label: {
+              Text("Verify", bundle: .module)
+            }
           }
-        }
 
-        Button(role: .destructive) {
-          removeResource = .email(emailAddress)
+          if canRemove {
+            Button(role: .destructive) {
+              removeResource = .email(emailAddress)
+            } label: {
+              Text("Remove email", bundle: .module)
+            }
+          }
         } label: {
-          Text("Remove email", bundle: .module)
+          Image("icon-three-dots-vertical", bundle: .module)
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(theme.colors.mutedForeground)
+            .frame(width: 20, height: 20)
         }
-
-      } label: {
-        Image("icon-three-dots-vertical", bundle: .module)
-          .resizable()
-          .scaledToFit()
-          .foregroundColor(theme.colors.mutedForeground)
-          .frame(width: 20, height: 20)
+        .frame(width: 30, height: 30)
       }
-      .frame(width: 30, height: 30)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)
