@@ -24,6 +24,8 @@ struct SessionTaskStartView: View {
             UserButton(presentationContext: .sessionTaskToolbar)
           }
         }
+    case .chooseOrganization:
+      SessionTaskChooseOrganizationView()
     case .unknown:
       GetHelpView(context: .sessionTask)
         .navigationBarBackButtonHidden()
@@ -49,6 +51,11 @@ struct SessionTaskStartView: View {
 
 #Preview("Reset Password") {
   SessionTaskStartView(task: .resetPassword)
+    .clerkPreview()
+}
+
+#Preview("Choose Organization") {
+  SessionTaskStartView(task: .chooseOrganization)
     .clerkPreview()
 }
 
