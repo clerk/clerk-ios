@@ -243,27 +243,32 @@ public struct Auth {
   }
   #endif
 
-  // Signs in with Enterprise SSO using an email address.
-  //
-  // - Parameters:
-  //   - emailAddress: The user's enterprise email address.
-  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
+  /// Creates an Enterprise SSO sign-in attempt without starting the browser flow.
+  ///
+  /// Use this when your app needs to control how the external verification URL is opened,
+  /// such as launching the user's default browser before completing the flow with
+  /// ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)``.
+  ///
+  /// - Parameter emailAddress: The user's enterprise email address.
+  /// - Returns: A `SignIn` object configured for Enterprise SSO.
+  /// - Throws: An error if creating the Enterprise SSO sign-in fails.
+  @discardableResult
+  public func createEnterpriseSSOSignIn(emailAddress: String) async throws -> SignIn {
+    try await signInService.create(params: .init(
+      identifier: emailAddress,
+      strategy: .enterpriseSSO,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
+  }
+
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
+    let signIn = try await createEnterpriseSSOSignIn(emailAddress: emailAddress)
     return try await signIn.authenticateWithEnterpriseSSO(
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable

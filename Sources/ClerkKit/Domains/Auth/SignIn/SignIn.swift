@@ -157,6 +157,50 @@ extension SignIn {
     )
   }
 
+  #if !os(tvOS) && !os(watchOS)
+  /// Prepares enterprise SSO and returns the updated sign-in state.
+  ///
+  /// Use this when you need to control how the external verification URL is opened, such as
+  /// launching the user's default browser instead of using the SDK's built-in web authentication flow.
+  ///
+  /// After preparation, read ``Verification/externalVerificationRedirectUrl`` from
+  /// ``SignIn/firstFactorVerification`` to obtain the URL to open.
+  ///
+  /// - Parameter redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
+  /// - Returns: An updated `SignIn` object containing the prepared external verification state.
+  /// - Throws: An error if preparing enterprise SSO fails.
+  @discardableResult
+  @MainActor
+  public func prepareEnterpriseSSO(redirectUrl: String? = nil) async throws -> SignIn {
+    try await signInService.prepareFirstFactor(
+      signInId: id,
+      params: .init(
+        strategy: .enterpriseSSO,
+        redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
+      )
+    )
+  }
+
+  /// Completes enterprise SSO after your app receives the callback URL.
+  ///
+  /// This pairs with ``prepareEnterpriseSSO(redirectUrl:)`` when your app handles browser presentation itself.
+  ///
+  /// - Parameters:
+  ///   - callbackURL: The callback URL your app received after the user completed enterprise SSO.
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if completing enterprise SSO fails.
+  @discardableResult
+  @MainActor
+  public func completeEnterpriseSSO(
+    callbackURL: URL,
+    transferable: Bool = true
+  ) async throws -> TransferFlowResult {
+    try await handleRedirectCallbackUrl(callbackURL, transferable: transferable)
+  }
+  #endif
+
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   /// Authenticates with an ID token from a provider (e.g., Sign in with Apple).
   ///

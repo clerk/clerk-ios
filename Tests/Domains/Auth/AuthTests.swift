@@ -126,6 +126,24 @@ struct AuthTests {
   }
 
   @Test
+  func createEnterpriseSSOSignInUsesSignInServiceCreate() async throws {
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signInService: signInService)
+
+    _ = try await Clerk.shared.auth.createEnterpriseSSOSignIn(emailAddress: "user@enterprise.com")
+
+    let params = try #require(signInParams.value)
+    #expect(params.identifier == "user@enterprise.com")
+    #expect(params.strategy == .enterpriseSSO)
+    #expect(params.redirectUrl == Clerk.shared.options.redirectConfig.redirectUrl)
+  }
+
+  @Test
   func signInWithIdTokenUsesSignInServiceCreate() async throws {
     let signUpCalled = LockIsolated(false)
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
