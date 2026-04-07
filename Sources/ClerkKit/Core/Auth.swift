@@ -247,8 +247,10 @@ public struct Auth {
   /// Creates an Enterprise SSO sign-in attempt without starting the browser flow.
   ///
   /// Use this when your app needs to control how the external verification URL is opened,
-  /// such as launching the user's default browser before completing the flow with
-  /// ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)``.
+  /// such as launching the user's default browser. For the manual Enterprise SSO sequence,
+  /// call ``SignIn/prepareEnterpriseSSO(redirectUrl:)`` on the returned sign-in to obtain
+  /// the external verification URL, open that URL in the user's browser, then complete the
+  /// flow with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)``.
   ///
   /// - Parameter emailAddress: The user's enterprise email address.
   /// - Returns: A `SignIn` object configured for Enterprise SSO.

@@ -504,6 +504,45 @@ struct SignInTests {
     }
   }
 
+  @Test
+  func completeEnterpriseSSODoesNotTransferWhenNotTransferable() async throws {
+    let signIn = SignIn.mock
+    var reloadedSignIn = SignIn.mock
+    reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
+
+    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let signInService = MockSignInService(get: { id, params in
+      getCaptured.setValue((id, params))
+      return reloadedSignIn
+    })
+
+    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      createCaptured.setValue(params)
+      return .mock
+    })
+
+    configureServices(signInService: signInService, signUpService: signUpService)
+
+    let callbackURL = try #require(URL(string: "myapp://callback"))
+    let result = try await signIn.completeEnterpriseSSO(
+      callbackURL: callbackURL,
+      transferable: false
+    )
+
+    let getParams = try #require(getCaptured.value)
+    #expect(getParams.0 == signIn.id)
+    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(createCaptured.value == nil)
+
+    switch result {
+    case .signIn(let updatedSignIn):
+      #expect(updatedSignIn == reloadedSignIn)
+    case .signUp:
+      Issue.record("Expected sign-in result.")
+    }
+  }
+
   struct ReloadScenario: Codable, Equatable {
     let rotatingTokenNonce: String?
   }
