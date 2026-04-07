@@ -69,16 +69,18 @@ struct UserProfileUpdateProfileView: View {
                 .textContentType(.familyName)
             }
 
-            AsyncButton {
-              await save()
-            } label: { isRunning in
-              Text("Save", bundle: .module)
-                .frame(maxWidth: .infinity)
-                .overlayProgressView(isActive: isRunning) {
-                  SpinnerView(color: theme.colors.primaryForeground)
-                }
+            if showSaveButton {
+              AsyncButton {
+                await save()
+              } label: { isRunning in
+                Text("Save", bundle: .module)
+                  .frame(maxWidth: .infinity)
+                  .overlayProgressView(isActive: isRunning) {
+                    SpinnerView(color: theme.colors.primaryForeground)
+                  }
+              }
+              .buttonStyle(.primary())
             }
-            .buttonStyle(.primary())
           }
         }
         .padding(.horizontal, 24)
