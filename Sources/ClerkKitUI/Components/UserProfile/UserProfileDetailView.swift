@@ -22,6 +22,22 @@ struct UserProfileDetailView: View {
     clerk.user
   }
 
+  private var canAddEmailAddress: Bool {
+    clerk.environment?.emailIsImmutable != true
+  }
+
+  private var canAddPhoneNumber: Bool {
+    clerk.environment?.phoneNumberIsImmutable != true
+  }
+
+  private var showEmailSection: Bool {
+    clerk.environment?.emailIsEnabled == true && (canAddEmailAddress || !sortedEmails.isEmpty)
+  }
+
+  private var showPhoneNumberSection: Bool {
+    clerk.environment?.phoneNumberIsEnabled == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
+  }
+
   var sortedEmails: [EmailAddress] {
     (user?.emailAddresses ?? [])
       .sorted { lhs, rhs in
@@ -63,15 +79,17 @@ struct UserProfileDetailView: View {
         VStack(spacing: 0) {
           ScrollView {
             LazyVStack(spacing: 0) {
-              if clerk.environment?.emailIsEnabled == true {
+              if showEmailSection {
                 Section {
                   Group {
                     ForEach(sortedEmails) { emailAddress in
                       UserProfileEmailRow(emailAddress: emailAddress)
                     }
 
-                    UserProfileButtonRow(text: "Add email address") {
-                      addEmailAddressDestination = .add
+                    if canAddEmailAddress {
+                      UserProfileButtonRow(text: "Add email address") {
+                        addEmailAddressDestination = .add
+                      }
                     }
                   }
                   .background(theme.colors.background)
@@ -81,15 +99,17 @@ struct UserProfileDetailView: View {
                 }
               }
 
-              if clerk.environment?.phoneNumberIsEnabled == true {
+              if showPhoneNumberSection {
                 Section {
                   Group {
                     ForEach(sortedPhoneNumbers) { phoneNumber in
                       UserProfilePhoneRow(phoneNumber: phoneNumber)
                     }
 
-                    UserProfileButtonRow(text: "Add phone number") {
-                      addPhoneNumberDestination = .add
+                    if canAddPhoneNumber {
+                      UserProfileButtonRow(text: "Add phone number") {
+                        addPhoneNumberDestination = .add
+                      }
                     }
                   }
                   .background(theme.colors.background)

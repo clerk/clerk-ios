@@ -24,15 +24,19 @@ struct UserProfileUpdateProfileView: View {
   @State private var username: String
   @State private var error: Error?
 
-  var environment: Clerk.Environment? {
+  private var environment: Clerk.Environment? {
     clerk.environment
   }
 
-  var showSaveButton: Bool {
-    (environment?.usernameIsEnabled ?? false) || (environment?.firstNameIsEnabled ?? false) || (environment?.lastNameIsEnabled ?? false)
+  private var usernameIsEditable: Bool {
+    environment?.usernameIsEnabled == true && environment?.usernameIsImmutable != true
   }
 
-  let user: User
+  private var showSaveButton: Bool {
+    usernameIsEditable || (environment?.firstNameIsEnabled ?? false) || (environment?.lastNameIsEnabled ?? false)
+  }
+
+  private let user: User
 
   init(user: User) {
     self.user = user
@@ -48,7 +52,7 @@ struct UserProfileUpdateProfileView: View {
           menu
 
           VStack(spacing: 24) {
-            if environment?.usernameIsEnabled == true {
+            if usernameIsEditable {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
@@ -65,16 +69,18 @@ struct UserProfileUpdateProfileView: View {
                 .textContentType(.familyName)
             }
 
-            AsyncButton {
-              await save()
-            } label: { isRunning in
-              Text("Save", bundle: .module)
-                .frame(maxWidth: .infinity)
-                .overlayProgressView(isActive: isRunning) {
-                  SpinnerView(color: theme.colors.primaryForeground)
-                }
+            if showSaveButton {
+              AsyncButton {
+                await save()
+              } label: { isRunning in
+                Text("Save", bundle: .module)
+                  .frame(maxWidth: .infinity)
+                  .overlayProgressView(isActive: isRunning) {
+                    SpinnerView(color: theme.colors.primaryForeground)
+                  }
+              }
+              .buttonStyle(.primary())
             }
-            .buttonStyle(.primary())
           }
         }
         .padding(.horizontal, 24)
@@ -223,7 +229,7 @@ extension UserProfileUpdateProfileView {
     do {
       try await user.update(
         .init(
-          username: environment?.usernameIsEnabled == true ? username : nil,
+          username: usernameIsEditable ? username : nil,
           firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
           lastName: environment?.lastNameIsEnabled == true ? lastName : nil
         )

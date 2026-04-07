@@ -132,6 +132,18 @@ extension Clerk.Environment {
     }
   }
 
+  var emailIsImmutable: Bool {
+    userSettings.attributes["email_address"]?.immutable == true
+  }
+
+  var phoneNumberIsImmutable: Bool {
+    userSettings.attributes["phone_number"]?.immutable == true
+  }
+
+  var usernameIsImmutable: Bool {
+    userSettings.attributes["username"]?.immutable == true
+  }
+
   var signUpIsPublic: Bool {
     userSettings.signUp.mode == "public"
   }

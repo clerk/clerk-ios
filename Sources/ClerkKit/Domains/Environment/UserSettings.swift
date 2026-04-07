@@ -16,6 +16,7 @@ extension Clerk.Environment {
     public struct AttributesConfig: Codable, Equatable, Sendable {
       public var enabled: Bool
       public var required: Bool
+      public var immutable: Bool?
       public var usedForFirstFactor: Bool
       public var firstFactors: [String]?
       public var usedForSecondFactor: Bool
