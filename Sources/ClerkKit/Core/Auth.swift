@@ -262,6 +262,18 @@ public struct Auth {
     ))
   }
 
+  /// Signs in with Enterprise SSO using an email address.
+  ///
+  /// This method creates an Enterprise SSO sign-in attempt and then completes the browser-based
+  /// authentication flow using the SDK-managed web authentication session.
+  ///
+  /// - Parameters:
+  ///   - emailAddress: The user's enterprise email address.
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
