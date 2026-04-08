@@ -50,13 +50,13 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `disableTotp()` method.
   package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
 
-  /// Custom handler for the `getOrganizationInvitations(initialPage:pageSize:)` method.
+  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
-  /// Custom handler for the `getOrganizationMemberships(initialPage:pageSize:)` method.
+  /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
-  /// Custom handler for the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
+  /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
   package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
   /// Custom handler for the `getOrganizationCreationDefaults()` method.
@@ -92,9 +92,9 @@ package final class MockUserService: UserServiceProtocol {
   ///   - createTotp: Optional implementation of the `createTotp()` method.
   ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
   ///   - disableTotp: Optional implementation of the `disableTotp()` method.
-  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(initialPage:pageSize:)` method.
-  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(initialPage:pageSize:)` method.
-  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
+  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:)` method.
+  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
+  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method.
   ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
   ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
   ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.
@@ -261,25 +261,25 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  package func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
-      return try await handler(initialPage, pageSize)
+      return try await handler(offset, pageSize)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  package func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     if let handler = getOrganizationMembershipsHandler {
-      return try await handler(initialPage, pageSize)
+      return try await handler(offset, pageSize)
     }
     return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     if let handler = getOrganizationSuggestionsHandler {
-      return try await handler(initialPage, pageSize, status)
+      return try await handler(offset, pageSize, status)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }

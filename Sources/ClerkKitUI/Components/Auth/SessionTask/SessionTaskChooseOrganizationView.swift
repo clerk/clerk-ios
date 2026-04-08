@@ -15,11 +15,20 @@ struct SessionTaskChooseOrganizationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
+  private let pageSize = 10
+
   @State private var memberships: [OrganizationMembership] = []
+  @State private var membershipsTotalCount = 0
+  @State private var membershipsOffset = 0
   @State private var invitations: [UserOrganizationInvitation] = []
+  @State private var invitationsTotalCount = 0
+  @State private var invitationsOffset = 0
   @State private var suggestions: [OrganizationSuggestion] = []
+  @State private var suggestionsTotalCount = 0
+  @State private var suggestionsOffset = 0
   @State private var acceptedInvitationOrgIds: Set<String> = []
   @State private var isLoading = true
+  @State private var isLoadingMore = false
   @State private var creationDefaults: OrganizationCreationDefaults?
   @State private var error: Error?
 
@@ -29,6 +38,22 @@ struct SessionTaskChooseOrganizationView: View {
 
   private var hasExistingResources: Bool {
     !memberships.isEmpty || !invitations.isEmpty || !suggestions.isEmpty
+  }
+
+  private var membershipsHasNextPage: Bool {
+    membershipsOffset < membershipsTotalCount
+  }
+
+  private var invitationsHasNextPage: Bool {
+    invitationsOffset < invitationsTotalCount
+  }
+
+  private var suggestionsHasNextPage: Bool {
+    suggestionsOffset < suggestionsTotalCount
+  }
+
+  private var hasNextPage: Bool {
+    membershipsHasNextPage || invitationsHasNextPage || suggestionsHasNextPage
   }
 
   var body: some View {
@@ -67,7 +92,7 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     .clerkErrorPresenting($error)
-    .task {
+    .taskOnce {
       await fetchOrganizationResources()
     }
   }
@@ -101,61 +126,91 @@ struct SessionTaskChooseOrganizationView: View {
               )
             }
             .buttonStyle(.plain)
-            Divider()
-          }
-
-          ForEach(invitations) { invitation in
-            if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
-              AsyncButton {
-                await selectOrganization(id: invitation.publicOrganizationData.id)
-              } label: { _ in
-                OrganizationRow(
-                  name: invitation.publicOrganizationData.name,
-                  imageUrl: invitation.publicOrganizationData.imageUrl,
-                  subtitle: displayRoleName(for: invitation.role)
-                )
+            .onAppear {
+              if membership.id == memberships.last?.id {
+                Task { await loadMore(.memberships) }
               }
-              .buttonStyle(.plain)
-            } else {
-              AsyncButton {
-                await acceptInvitation(invitation)
-              } label: { isRunning in
-                OrganizationRow(
-                  name: invitation.publicOrganizationData.name,
-                  imageUrl: invitation.publicOrganizationData.imageUrl
-                ) {
-                  ActionLabel("Join", isLoading: isRunning)
-                }
-              }
-              .buttonStyle(.plain)
             }
             Divider()
           }
 
-          ForEach(suggestions) { suggestion in
-            if suggestion.status == "accepted" {
-              OrganizationRow(
-                name: suggestion.publicOrganizationData.name,
-                imageUrl: suggestion.publicOrganizationData.imageUrl,
-                subtitle: String(localized: "Pending approval", bundle: .module)
-              )
-            } else {
-              AsyncButton {
-                await acceptSuggestion(suggestion)
-              } label: { isRunning in
-                OrganizationRow(
-                  name: suggestion.publicOrganizationData.name,
-                  imageUrl: suggestion.publicOrganizationData.imageUrl
-                ) {
-                  ActionLabel("Request to join", isLoading: isRunning)
+          if !membershipsHasNextPage {
+            ForEach(invitations) { invitation in
+              Group {
+                if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
+                  AsyncButton {
+                    await selectOrganization(id: invitation.publicOrganizationData.id)
+                  } label: { _ in
+                    OrganizationRow(
+                      name: invitation.publicOrganizationData.name,
+                      imageUrl: invitation.publicOrganizationData.imageUrl,
+                      subtitle: displayRoleName(for: invitation.role)
+                    )
+                  }
+                  .buttonStyle(.plain)
+                } else {
+                  AsyncButton {
+                    await acceptInvitation(invitation)
+                  } label: { isRunning in
+                    OrganizationRow(
+                      name: invitation.publicOrganizationData.name,
+                      imageUrl: invitation.publicOrganizationData.imageUrl
+                    ) {
+                      ActionLabel("Join", isLoading: isRunning)
+                    }
+                  }
+                  .buttonStyle(.plain)
                 }
               }
-              .buttonStyle(.plain)
+              .onAppear {
+                if invitation.id == invitations.last?.id {
+                  Task { await loadMore(.invitations) }
+                }
+              }
+              Divider()
             }
-            Divider()
           }
 
-          if user?.createOrganizationEnabled == true {
+          if !membershipsHasNextPage, !invitationsHasNextPage {
+            ForEach(suggestions) { suggestion in
+              Group {
+                if suggestion.status == "accepted" {
+                  OrganizationRow(
+                    name: suggestion.publicOrganizationData.name,
+                    imageUrl: suggestion.publicOrganizationData.imageUrl,
+                    subtitle: String(localized: "Pending approval", bundle: .module)
+                  )
+                } else {
+                  AsyncButton {
+                    await acceptSuggestion(suggestion)
+                  } label: { isRunning in
+                    OrganizationRow(
+                      name: suggestion.publicOrganizationData.name,
+                      imageUrl: suggestion.publicOrganizationData.imageUrl
+                    ) {
+                      ActionLabel("Request to join", isLoading: isRunning)
+                    }
+                  }
+                  .buttonStyle(.plain)
+                }
+              }
+              .onAppear {
+                if suggestion.id == suggestions.last?.id {
+                  Task { await loadMore(.suggestions) }
+                }
+              }
+              Divider()
+            }
+          }
+
+          if isLoadingMore {
+            SpinnerView()
+              .frame(width: 24, height: 24)
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, 16)
+          }
+
+          if !hasNextPage, user?.createOrganizationEnabled == true {
             Button {
               navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: creationDefaults))
             } label: {
@@ -198,20 +253,69 @@ struct SessionTaskChooseOrganizationView: View {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
 
     do {
-      async let fetchedMemberships = user.getOrganizationMemberships()
-      async let fetchedInvitations = user.getOrganizationInvitations()
-      async let fetchedSuggestions = user.getOrganizationSuggestions(status: "pending")
+      async let fetchedMemberships = user.getOrganizationMemberships(pageSize: pageSize)
+      async let fetchedInvitations = user.getOrganizationInvitations(pageSize: pageSize)
+      async let fetchedSuggestions = user.getOrganizationSuggestions(pageSize: pageSize, status: "pending")
       async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
 
-      memberships = try await fetchedMemberships.data
-      invitations = try await fetchedInvitations.data.filter { $0.status == "pending" }
-      suggestions = try await fetchedSuggestions.data
+      let membershipsResult = try await fetchedMemberships
+      let invitationsResult = try await fetchedInvitations
+      let suggestionsResult = try await fetchedSuggestions
+
+      memberships = membershipsResult.data
+      membershipsTotalCount = membershipsResult.totalCount
+      membershipsOffset = membershipsResult.data.count
+      invitations = invitationsResult.data.filter { $0.status == "pending" }
+      invitationsTotalCount = invitationsResult.totalCount
+      invitationsOffset = invitationsResult.data.count
+      suggestions = suggestionsResult.data
+      suggestionsTotalCount = suggestionsResult.totalCount
+      suggestionsOffset = suggestionsResult.data.count
       creationDefaults = try await fetchedDefaults
     } catch {
       self.error = error
     }
 
     isLoading = false
+  }
+
+  private enum OrganizationSection {
+    case memberships, invitations, suggestions
+  }
+
+  private func loadMore(_ section: OrganizationSection) async {
+    guard let user, !isLoadingMore else { return }
+
+    switch section {
+    case .memberships: guard membershipsHasNextPage else { return }
+    case .invitations: guard invitationsHasNextPage else { return }
+    case .suggestions: guard suggestionsHasNextPage else { return }
+    }
+
+    isLoadingMore = true
+    defer { isLoadingMore = false }
+
+    do {
+      switch section {
+      case .memberships:
+        let result = try await user.getOrganizationMemberships(offset: membershipsOffset, pageSize: pageSize)
+        memberships.append(contentsOf: result.data)
+        membershipsTotalCount = result.totalCount
+        membershipsOffset += result.data.count
+      case .invitations:
+        let result = try await user.getOrganizationInvitations(offset: invitationsOffset, pageSize: pageSize)
+        invitations.append(contentsOf: result.data.filter { $0.status == "pending" })
+        invitationsTotalCount = result.totalCount
+        invitationsOffset += result.data.count
+      case .suggestions:
+        let result = try await user.getOrganizationSuggestions(offset: suggestionsOffset, pageSize: pageSize, status: "pending")
+        suggestions.append(contentsOf: result.data)
+        suggestionsTotalCount = result.totalCount
+        suggestionsOffset += result.data.count
+      }
+    } catch {
+      self.error = error
+    }
   }
 
   private func selectOrganization(id: String) async {

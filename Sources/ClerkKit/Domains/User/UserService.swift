@@ -20,9 +20,9 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func createTotp() async throws -> TOTPResource
   @MainActor func verifyTotp(code: String) async throws -> TOTPResource
   @MainActor func disableTotp() async throws -> DeletedObject
-  @MainActor func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
-  @MainActor func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-  @MainActor func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+  @MainActor func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
   @MainActor func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults
   @MainActor func getSessions(user: User) async throws -> [Session]
   @MainActor func updatePassword(params: User.UpdatePasswordParams) async throws -> User
@@ -225,13 +225,13 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
       path: "/v1/me/organization_invitations",
       method: .get,
       query: [
         ("_clerk_session_id", value: Clerk.shared.session?.id),
-        ("offset", value: String(initialPage)),
+        ("offset", value: String(offset)),
         ("limit", value: String(pageSize)),
       ]
     )
@@ -240,13 +240,13 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
       path: "/v1/me/organization_memberships",
       method: .get,
       query: [
         ("_clerk_session_id", value: Clerk.shared.session?.id),
-        ("offset", value: String(initialPage)),
+        ("offset", value: String(offset)),
         ("limit", value: String(pageSize)),
         ("paginated", value: "true"),
       ]
@@ -256,10 +256,10 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
-      ("offset", value: String(initialPage)),
+      ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
 
