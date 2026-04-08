@@ -126,21 +126,33 @@ struct AuthTests {
   }
 
   @Test
-  func createEnterpriseSSOSignInUsesSignInServiceCreate() async throws {
+  func startEnterpriseSSOUsesSignInServiceCreateAndPrepareFirstFactor() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let prepareParams = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
+      return .mock
+    }, prepareFirstFactor: { id, params in
+      prepareParams.setValue((id, params))
       return .mock
     })
 
     configureDependencies(signInService: signInService)
 
-    _ = try await Clerk.shared.auth.createEnterpriseSSOSignIn(emailAddress: "user@enterprise.com")
+    _ = try await Clerk.shared.auth.startEnterpriseSSO(
+      emailAddress: "user@enterprise.com",
+      redirectUrl: "myapp://callback"
+    )
 
     let params = try #require(signInParams.value)
     #expect(params.identifier == "user@enterprise.com")
     #expect(params.strategy == .enterpriseSSO)
-    #expect(params.redirectUrl == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.redirectUrl == "myapp://callback")
+
+    let prepared = try #require(prepareParams.value)
+    #expect(prepared.0 == SignIn.mock.id)
+    #expect(prepared.1.strategy == .enterpriseSSO)
+    #expect(prepared.1.redirectUrl == "myapp://callback")
   }
 
   @Test

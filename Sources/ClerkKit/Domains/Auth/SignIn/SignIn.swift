@@ -158,32 +158,9 @@ extension SignIn {
   }
 
   #if !os(tvOS) && !os(watchOS)
-  /// Prepares enterprise SSO and returns the updated sign-in state.
-  ///
-  /// Use this when you need to control how the external verification URL is opened, such as
-  /// launching the user's default browser instead of using the SDK's built-in web authentication flow.
-  ///
-  /// After preparation, read ``Verification/externalVerificationRedirectUrl`` from
-  /// ``SignIn/firstFactorVerification`` to obtain the URL to open.
-  ///
-  /// - Parameter redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
-  /// - Returns: An updated `SignIn` object containing the prepared external verification state.
-  /// - Throws: An error if preparing enterprise SSO fails.
-  @discardableResult
-  @MainActor
-  public func prepareEnterpriseSSO(redirectUrl: String? = nil) async throws -> SignIn {
-    try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .enterpriseSSO,
-        redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
-      )
-    )
-  }
-
   /// Completes enterprise SSO after your app receives the callback URL.
   ///
-  /// This pairs with ``prepareEnterpriseSSO(redirectUrl:)`` when your app handles browser presentation itself.
+  /// This pairs with ``Auth/startEnterpriseSSO(emailAddress:redirectUrl:)`` when your app handles browser presentation itself.
   ///
   /// - Parameters:
   ///   - callbackURL: The callback URL your app received after the user completed enterprise SSO.

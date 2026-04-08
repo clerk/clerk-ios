@@ -195,25 +195,6 @@ struct SignInTests {
     #expect(params.1.password == "password123")
   }
 
-  @Test
-  func prepareEnterpriseSSOUsesSignInServicePrepareFirstFactor() async throws {
-    let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signIn.prepareEnterpriseSSO(redirectUrl: "myapp://callback")
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .enterpriseSSO)
-    #expect(params.1.redirectUrl == "myapp://callback")
-  }
-
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
   func authenticateWithIdTokenUsesSignInServiceAttemptFirstFactor() async throws {

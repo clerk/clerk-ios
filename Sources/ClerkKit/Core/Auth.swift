@@ -244,24 +244,38 @@ public struct Auth {
   #endif
 
   #if !os(tvOS) && !os(watchOS)
-  /// Creates an Enterprise SSO sign-in attempt without starting the browser flow.
+  /// Starts Enterprise SSO and returns the prepared sign-in state.
   ///
   /// Use this when your app needs to control how the external verification URL is opened,
-  /// such as launching the user's default browser. For the manual Enterprise SSO sequence,
-  /// call ``SignIn/prepareEnterpriseSSO(redirectUrl:)`` on the returned sign-in to obtain
-  /// the external verification URL, open that URL in the user's browser, then complete the
-  /// flow with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)``.
+  /// such as launching the user's default browser. After this returns, read
+  /// ``Verification/externalVerificationRedirectUrl`` from
+  /// ``SignIn/firstFactorVerification`` to obtain the URL to open, then complete the flow
+  /// with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)`` after your app
+  /// receives the callback URL.
   ///
-  /// - Parameter emailAddress: The user's enterprise email address.
-  /// - Returns: A `SignIn` object configured for Enterprise SSO.
-  /// - Throws: An error if creating the Enterprise SSO sign-in fails.
+  /// - Parameters:
+  ///   - emailAddress: The user's enterprise email address.
+  ///   - redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
+  /// - Returns: A prepared `SignIn` object configured for Enterprise SSO.
+  /// - Throws: An error if creating or preparing the Enterprise SSO sign-in fails.
   @discardableResult
-  public func createEnterpriseSSOSignIn(emailAddress: String) async throws -> SignIn {
-    try await signInService.create(params: .init(
+  public func startEnterpriseSSO(
+    emailAddress: String,
+    redirectUrl: String? = nil
+  ) async throws -> SignIn {
+    let resolvedRedirectUrl = redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
+    let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+      redirectUrl: resolvedRedirectUrl
     ))
+    return try await signInService.prepareFirstFactor(
+      signInId: signIn.id,
+      params: .init(
+        strategy: .enterpriseSSO,
+        redirectUrl: resolvedRedirectUrl
+      )
+    )
   }
 
   /// Signs in with Enterprise SSO using an email address.
@@ -282,7 +296,11 @@ public struct Auth {
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    let signIn = try await createEnterpriseSSOSignIn(emailAddress: emailAddress)
+    let signIn = try await signInService.create(params: .init(
+      identifier: emailAddress,
+      strategy: .enterpriseSSO,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+    ))
     return try await signIn.authenticateWithEnterpriseSSO(
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable
