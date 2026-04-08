@@ -59,6 +59,9 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
   package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
+  /// Custom handler for the `getOrganizationCreationDefaults()` method.
+  package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: (() async throws -> OrganizationCreationDefaults)?
+
   /// Custom handler for the `updatePassword(params:)` method.
   package nonisolated(unsafe) var updatePasswordHandler: ((User.UpdatePasswordParams) async throws -> User)?
 
@@ -92,6 +95,7 @@ package final class MockUserService: UserServiceProtocol {
   ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(initialPage:pageSize:)` method.
   ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(initialPage:pageSize:)` method.
   ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
+  ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
   ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
   ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.
   ///   - deleteProfileImage: Optional implementation of the `deleteProfileImage()` method.
@@ -125,6 +129,7 @@ package final class MockUserService: UserServiceProtocol {
     getOrganizationInvitations: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
     getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
     getOrganizationSuggestions: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
+    getOrganizationCreationDefaults: (() async throws -> OrganizationCreationDefaults)? = nil,
     updatePassword: ((User.UpdatePasswordParams) async throws -> User)? = nil,
     setProfileImage: ((Data) async throws -> ImageResource)? = nil,
     deleteProfileImage: (() async throws -> DeletedObject)? = nil,
@@ -144,6 +149,7 @@ package final class MockUserService: UserServiceProtocol {
     getOrganizationInvitationsHandler = getOrganizationInvitations
     getOrganizationMembershipsHandler = getOrganizationMemberships
     getOrganizationSuggestionsHandler = getOrganizationSuggestions
+    getOrganizationCreationDefaultsHandler = getOrganizationCreationDefaults
     updatePasswordHandler = updatePassword
     setProfileImageHandler = setProfileImage
     deleteProfileImageHandler = deleteProfileImage
@@ -276,6 +282,17 @@ package final class MockUserService: UserServiceProtocol {
       return try await handler(initialPage, pageSize, status)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+  }
+
+  @MainActor
+  package func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+    if let handler = getOrganizationCreationDefaultsHandler {
+      return try await handler()
+    }
+    return OrganizationCreationDefaults(
+      advisory: nil,
+      form: .init(name: "My organization", slug: "my-organization", logo: nil, blurHash: nil)
+    )
   }
 
   @MainActor

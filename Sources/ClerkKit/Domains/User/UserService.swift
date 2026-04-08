@@ -23,6 +23,7 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
   @MainActor func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
   @MainActor func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  @MainActor func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults
   @MainActor func getSessions(user: User) async throws -> [Session]
   @MainActor func updatePassword(params: User.UpdatePasswordParams) async throws -> User
   @MainActor func setProfileImage(imageData: Data) async throws -> ImageResource
@@ -270,6 +271,17 @@ final class UserService: UserServiceProtocol {
       path: "/v1/me/organization_suggestions",
       method: .get,
       query: queryParams
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+    let request = Request<ClientResponse<OrganizationCreationDefaults>>(
+      path: "/v1/me/organization_creation_defaults",
+      method: .get,
+      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
     )
 
     return try await apiClient.send(request).value.response

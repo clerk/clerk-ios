@@ -788,7 +788,24 @@ extension Clerk.Environment {
     .init(
       authConfig: .mock,
       userSettings: .mock,
-      displayConfig: .mock
+      displayConfig: .mock,
+      organizationSettings: .mock
+    )
+  }
+}
+
+// MARK: OrganizationSettings
+
+extension Clerk.Environment.OrganizationSettings {
+  public static var mock: Self {
+    .init(
+      enabled: true,
+      maxAllowedMemberships: 0,
+      forceOrganizationSelection: false,
+      actions: .init(adminDelete: true),
+      domains: .init(enabled: false, enrollmentModes: [], defaultRole: nil),
+      slug: .init(disabled: false),
+      organizationCreationDefaults: .init(enabled: false)
     )
   }
 }

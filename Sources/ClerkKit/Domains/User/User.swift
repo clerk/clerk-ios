@@ -382,6 +382,15 @@ extension User {
     try await userService.getOrganizationSuggestions(initialPage: initialPage, pageSize: pageSize, status: status)
   }
 
+  /// Retrieves the organization creation defaults for this user.
+  ///
+  /// Returns pre-filled form values (name, slug, logo) based on the instance's default naming rules.
+  /// - Returns: An ``OrganizationCreationDefaults`` object.
+  @discardableResult @MainActor
+  public func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+    try await userService.getOrganizationCreationDefaults()
+  }
+
   /// Retrieves all active sessions for this user.
   ///
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.

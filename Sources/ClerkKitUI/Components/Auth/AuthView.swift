@@ -269,6 +269,7 @@ extension AuthView {
     case taskVerifySms(phoneNumber: PhoneNumber)
     case taskMfaTotp(totpResource: TOTPResource)
     case taskVerifyTotp
+    case sessionTaskCreateOrganization
     case backupCodes(
       backupCodes: [String],
       mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
@@ -313,6 +314,8 @@ extension AuthView {
         SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
       case .taskMfaTotp(let totpResource):
         SessionTaskMfaTotpView(totp: totpResource)
+      case .sessionTaskCreateOrganization:
+        SessionTaskCreateOrganizationView()
       case .taskVerifyTotp:
         SessionTaskMfaVerifyTotpView()
       case .backupCodes(let backupCodes, let mfaType):

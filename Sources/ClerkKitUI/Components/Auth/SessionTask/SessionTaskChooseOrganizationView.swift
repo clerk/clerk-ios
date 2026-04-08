@@ -19,7 +19,6 @@ struct SessionTaskChooseOrganizationView: View {
   @State private var invitations: [UserOrganizationInvitation] = []
   @State private var suggestions: [OrganizationSuggestion] = []
   @State private var isLoading = true
-  @State private var showCreateOrganization = false
   @State private var error: Error?
 
   private var user: User? {
@@ -32,22 +31,26 @@ struct SessionTaskChooseOrganizationView: View {
 
   var body: some View {
     Group {
-      if isLoading {
-        ProgressView()
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-      } else if showCreateOrganization || !hasExistingResources {
-        createOrganizationContent
+      if !isLoading, !hasExistingResources {
+        SessionTaskCreateOrganizationView()
       } else {
-        chooseOrganizationContent
-      }
-    }
-    .background(theme.colors.background)
-    .navigationBarBackButtonHidden()
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
+        Group {
+          if isLoading {
+            ProgressView()
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+          } else {
+            chooseOrganizationContent
+          }
+        }
+        .background(theme.colors.background)
+        .navigationBarBackButtonHidden()
+        .navigationBarTitleDisplayMode(.inline)
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            UserButton(presentationContext: .sessionTaskToolbar)
+          }
+        }
       }
     }
     .clerkErrorPresenting($error)
@@ -109,54 +112,13 @@ struct SessionTaskChooseOrganizationView: View {
         .padding(.bottom, 24)
 
         Button {
-          showCreateOrganization = true
+          navigation.path.append(.sessionTaskCreateOrganization)
         } label: {
           Text("Create a new organization", bundle: .module)
         }
         .buttonStyle(.secondary())
         .padding(.bottom, 32)
 
-        SecuredByClerkView()
-      }
-      .padding(16)
-    }
-  }
-
-  // MARK: - Create Organization
-
-  @State private var organizationName = ""
-
-  private var createOrganizationContent: some View {
-    ScrollView {
-      VStack(spacing: 0) {
-        VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Create an organization")
-          HeaderView(style: .subtitle, text: "to continue")
-        }
-        .padding(.bottom, 32)
-
-        ClerkTextField("Organization name", text: $organizationName)
-          .padding(.bottom, 24)
-
-        AsyncButton {
-          await createOrganization()
-        } label: { isRunning in
-          ContinueButtonLabelView(isActive: isRunning)
-        }
-        .buttonStyle(.primary())
-        .disabled(organizationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-        if hasExistingResources {
-          Button {
-            showCreateOrganization = false
-          } label: {
-            Text("Cancel", bundle: .module)
-          }
-          .buttonStyle(.secondary())
-          .padding(.top, 12)
-        }
-
-        Spacer().frame(height: 32)
         SecuredByClerkView()
       }
       .padding(16)
@@ -173,9 +135,9 @@ struct SessionTaskChooseOrganizationView: View {
       async let fetchedInvitations = user.getOrganizationInvitations()
       async let fetchedSuggestions = user.getOrganizationSuggestions(status: "pending")
 
-      memberships = try await membershipResult.data
-      invitations = try await invitationResult.data.filter { $0.status == "pending" }
-      suggestions = try await suggestionResult.data
+      memberships = try await fetchedMemberships.data
+      invitations = try await fetchedInvitations.data.filter { $0.status == "pending" }
+      suggestions = try await fetchedSuggestions.data
     } catch {
       self.error = error
     }
@@ -207,18 +169,6 @@ struct SessionTaskChooseOrganizationView: View {
     do {
       let accepted = try await suggestion.accept()
       await selectOrganization(id: accepted.publicOrganizationData.id)
-    } catch {
-      self.error = error
-    }
-  }
-
-  private func createOrganization() async {
-    let name = organizationName.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !name.isEmpty else { return }
-
-    do {
-      let organization = try await clerk.organizations.create(name: name)
-      await selectOrganization(id: organization.id)
     } catch {
       self.error = error
     }
