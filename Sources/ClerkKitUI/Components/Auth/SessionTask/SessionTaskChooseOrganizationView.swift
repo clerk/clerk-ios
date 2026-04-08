@@ -18,6 +18,7 @@ struct SessionTaskChooseOrganizationView: View {
   @State private var memberships: [OrganizationMembership] = []
   @State private var invitations: [UserOrganizationInvitation] = []
   @State private var suggestions: [OrganizationSuggestion] = []
+  @State private var acceptedInvitationOrgIds: Set<String> = []
   @State private var isLoading = true
   @State private var creationDefaults: OrganizationCreationDefaults?
   @State private var error: Error?
@@ -32,7 +33,17 @@ struct SessionTaskChooseOrganizationView: View {
 
   var body: some View {
     Group {
-      if !isLoading, !hasExistingResources {
+      if !isLoading, !hasExistingResources, user?.createOrganizationEnabled == false {
+        GetHelpView(context: .sessionTask)
+          .navigationBarBackButtonHidden()
+          .navigationBarTitleDisplayMode(.inline)
+          .preGlassSolidNavBar()
+          .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+              UserButton(presentationContext: .sessionTaskToolbar)
+            }
+          }
+      } else if !isLoading, !hasExistingResources {
         SessionTaskCreateOrganizationView(creationDefaults: creationDefaults)
       } else {
         Group {
@@ -68,7 +79,11 @@ struct SessionTaskChooseOrganizationView: View {
       VStack(spacing: 32) {
         VStack(spacing: 8) {
           HeaderView(style: .title, text: "Choose an Organization")
-          HeaderView(style: .subtitle, text: "Join an existing organization or create a new one")
+          if user?.createOrganizationEnabled == true {
+            HeaderView(style: .subtitle, text: "Join an existing organization or create a new one")
+          } else {
+            HeaderView(style: .subtitle, text: "Join an existing organization")
+          }
         }
         .padding(.horizontal, 16)
 
@@ -78,12 +93,11 @@ struct SessionTaskChooseOrganizationView: View {
           ForEach(memberships) { membership in
             AsyncButton {
               await selectOrganization(id: membership.organization.id)
-            } label: { isRunning in
+            } label: { _ in
               OrganizationRow(
                 name: membership.organization.name,
                 imageUrl: membership.organization.imageUrl,
-                subtitle: membership.roleName,
-                isLoading: isRunning
+                subtitle: membership.roleName
               )
             }
             .buttonStyle(.plain)
@@ -91,17 +105,30 @@ struct SessionTaskChooseOrganizationView: View {
           }
 
           ForEach(invitations) { invitation in
-            AsyncButton {
-              await acceptInvitation(invitation)
-            } label: { isRunning in
-              OrganizationRow(
-                name: invitation.publicOrganizationData.name,
-                imageUrl: invitation.publicOrganizationData.imageUrl,
-                subtitle: String(localized: "Join", bundle: .module),
-                isLoading: isRunning
-              )
+            if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
+              AsyncButton {
+                await selectOrganization(id: invitation.publicOrganizationData.id)
+              } label: { _ in
+                OrganizationRow(
+                  name: invitation.publicOrganizationData.name,
+                  imageUrl: invitation.publicOrganizationData.imageUrl,
+                  subtitle: displayRoleName(for: invitation.role)
+                )
+              }
+              .buttonStyle(.plain)
+            } else {
+              AsyncButton {
+                await acceptInvitation(invitation)
+              } label: { isRunning in
+                OrganizationRow(
+                  name: invitation.publicOrganizationData.name,
+                  imageUrl: invitation.publicOrganizationData.imageUrl
+                ) {
+                  ActionLabel("Join", isLoading: isRunning)
+                }
+              }
+              .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
             Divider()
           }
 
@@ -118,10 +145,10 @@ struct SessionTaskChooseOrganizationView: View {
               } label: { isRunning in
                 OrganizationRow(
                   name: suggestion.publicOrganizationData.name,
-                  imageUrl: suggestion.publicOrganizationData.imageUrl,
-                  subtitle: String(localized: "Request to join", bundle: .module),
-                  isLoading: isRunning
-                )
+                  imageUrl: suggestion.publicOrganizationData.imageUrl
+                ) {
+                  ActionLabel("Request to join", isLoading: isRunning)
+                }
               }
               .buttonStyle(.plain)
             }
@@ -168,20 +195,20 @@ struct SessionTaskChooseOrganizationView: View {
   private func fetchOrganizationResources() async {
     guard let user else { return }
 
+    let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
+
     do {
       async let fetchedMemberships = user.getOrganizationMemberships()
       async let fetchedInvitations = user.getOrganizationInvitations()
       async let fetchedSuggestions = user.getOrganizationSuggestions(status: "pending")
+      async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
 
       memberships = try await fetchedMemberships.data
       invitations = try await fetchedInvitations.data.filter { $0.status == "pending" }
       suggestions = try await fetchedSuggestions.data
+      creationDefaults = try await fetchedDefaults
     } catch {
       self.error = error
-    }
-
-    if clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true {
-      creationDefaults = try? await user.getOrganizationCreationDefaults()
     }
 
     isLoading = false
@@ -194,14 +221,14 @@ struct SessionTaskChooseOrganizationView: View {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
       navigation.handleSessionTaskCompletion(session: clerk.session)
     } catch {
-      self.error = error
+      self.error = organizationError(from: error)
     }
   }
 
   private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
     do {
-      let accepted = try await invitation.accept()
-      await selectOrganization(id: accepted.publicOrganizationData.id)
+      try await invitation.accept()
+      acceptedInvitationOrgIds.insert(invitation.publicOrganizationData.id)
     } catch {
       self.error = error
     }
@@ -217,17 +244,60 @@ struct SessionTaskChooseOrganizationView: View {
       self.error = error
     }
   }
+
+  private func displayRoleName(for role: String) -> String {
+    switch role {
+    case "org:admin": String(localized: "Admin", bundle: .module)
+    case "org:member": String(localized: "Member", bundle: .module)
+    default: role.replacingOccurrences(of: "org:", with: "").capitalized
+    }
+  }
+
+  private func organizationError(from error: Error) -> Error {
+    if let clerkError = error as? ClerkAPIError,
+       ["organization_not_found_or_unauthorized", "not_a_member_in_organization"].contains(clerkError.code)
+    {
+      if user?.createOrganizationEnabled == true {
+        return ClerkClientError(message: "You are no longer a member of this organization. Please choose or create another one.")
+      } else {
+        return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.")
+      }
+    }
+    return error
+  }
 }
 
 // MARK: - Organization Row
 
-private struct OrganizationRow: View {
+private struct OrganizationRow<Action: View>: View {
   let name: String
   let imageUrl: String
-  let subtitle: String
-  var isLoading: Bool = false
+  var subtitle: String?
+  let action: Action
 
   @Environment(\.clerkTheme) private var theme
+
+  init(
+    name: String,
+    imageUrl: String,
+    subtitle: String
+  ) where Action == EmptyView {
+    self.name = name
+    self.imageUrl = imageUrl
+    self.subtitle = subtitle
+    action = EmptyView()
+  }
+
+  init(
+    name: String,
+    imageUrl: String,
+    @ViewBuilder action: () -> Action
+  ) {
+    self.name = name
+    self.imageUrl = imageUrl
+    subtitle = nil
+    self.action = action()
+  }
 
   private var initials: String {
     String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)).uppercased()
@@ -251,11 +321,9 @@ private struct OrganizationRow: View {
         Text(verbatim: name)
           .font(.body)
           .foregroundStyle(theme.colors.foreground)
+          .lineLimit(1)
 
-        if isLoading {
-          SpinnerView()
-            .frame(width: 16, height: 16)
-        } else {
+        if let subtitle {
           Text(verbatim: subtitle)
             .font(.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
@@ -263,6 +331,8 @@ private struct OrganizationRow: View {
       }
 
       Spacer()
+
+      action
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 16)
@@ -276,6 +346,39 @@ private struct OrganizationRow: View {
         .font(.system(size: 18, weight: .semibold))
         .foregroundStyle(theme.colors.primaryForeground)
     }
+  }
+}
+
+// MARK: - Action Label
+
+private struct ActionLabel: View {
+  let text: LocalizedStringKey
+  var isLoading: Bool = false
+
+  @Environment(\.clerkTheme) private var theme
+
+  init(_ text: LocalizedStringKey, isLoading: Bool = false) {
+    self.text = text
+    self.isLoading = isLoading
+  }
+
+  var body: some View {
+    Text(text, bundle: .module)
+      .font(.subheadline)
+      .foregroundStyle(theme.colors.foreground)
+      .overlayProgressView(isActive: isLoading) {
+        SpinnerView()
+          .frame(width: 14, height: 14)
+      }
+      .padding(.horizontal, 14)
+      .frame(height: 32)
+      .background(theme.colors.background)
+      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.design.borderRadius)
+          .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
+      }
+      .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
   }
 }
 
