@@ -19,10 +19,12 @@ public struct Organizations {
 
   /// Creates an organization and makes the current user its administrator.
   ///
-  /// - Parameter name: The organization name.
+  /// - Parameters:
+  ///   - name: The organization name.
+  ///   - slug: The optional organization slug.
   /// - Returns: The newly created ``Organization``.
   @discardableResult
-  public func create(name: String) async throws -> Organization {
-    try await organizationService.createOrganization(name: name)
+  public func create(name: String, slug: String? = nil) async throws -> Organization {
+    try await organizationService.createOrganization(name: name, slug: slug)
   }
 }

@@ -19,6 +19,7 @@ struct SessionTaskChooseOrganizationView: View {
   @State private var invitations: [UserOrganizationInvitation] = []
   @State private var suggestions: [OrganizationSuggestion] = []
   @State private var isLoading = true
+  @State private var creationDefaults: OrganizationCreationDefaults?
   @State private var error: Error?
 
   private var user: User? {
@@ -32,11 +33,12 @@ struct SessionTaskChooseOrganizationView: View {
   var body: some View {
     Group {
       if !isLoading, !hasExistingResources {
-        SessionTaskCreateOrganizationView()
+        SessionTaskCreateOrganizationView(creationDefaults: creationDefaults)
       } else {
         Group {
           if isLoading {
-            ProgressView()
+            SpinnerView()
+              .frame(width: 32, height: 32)
               .frame(maxWidth: .infinity, maxHeight: .infinity)
           } else {
             chooseOrganizationContent
@@ -63,66 +65,102 @@ struct SessionTaskChooseOrganizationView: View {
 
   private var chooseOrganizationContent: some View {
     ScrollView {
-      VStack(spacing: 0) {
+      VStack(spacing: 32) {
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Choose an organization")
-          HeaderView(style: .subtitle, text: "to continue")
+          HeaderView(style: .title, text: "Choose an Organization")
+          HeaderView(style: .subtitle, text: "Join an existing organization or create a new one")
         }
-        .padding(.bottom, 32)
+        .padding(.horizontal, 16)
 
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
+          Divider()
+
           ForEach(memberships) { membership in
             AsyncButton {
               await selectOrganization(id: membership.organization.id)
-            } label: { _ in
+            } label: { isRunning in
               OrganizationRow(
                 name: membership.organization.name,
-                imageUrl: membership.organization.imageUrl
+                imageUrl: membership.organization.imageUrl,
+                subtitle: membership.roleName,
+                isLoading: isRunning
               )
             }
             .buttonStyle(.plain)
+            Divider()
           }
 
           ForEach(invitations) { invitation in
             AsyncButton {
               await acceptInvitation(invitation)
-            } label: { _ in
+            } label: { isRunning in
               OrganizationRow(
                 name: invitation.publicOrganizationData.name,
                 imageUrl: invitation.publicOrganizationData.imageUrl,
-                badge: "Invitation"
+                subtitle: String(localized: "Join", bundle: .module),
+                isLoading: isRunning
               )
             }
             .buttonStyle(.plain)
+            Divider()
           }
 
           ForEach(suggestions) { suggestion in
-            AsyncButton {
-              await acceptSuggestion(suggestion)
-            } label: { _ in
+            if suggestion.status == "accepted" {
               OrganizationRow(
                 name: suggestion.publicOrganizationData.name,
                 imageUrl: suggestion.publicOrganizationData.imageUrl,
-                badge: "Suggestion"
+                subtitle: String(localized: "Pending approval", bundle: .module)
               )
+            } else {
+              AsyncButton {
+                await acceptSuggestion(suggestion)
+              } label: { isRunning in
+                OrganizationRow(
+                  name: suggestion.publicOrganizationData.name,
+                  imageUrl: suggestion.publicOrganizationData.imageUrl,
+                  subtitle: String(localized: "Request to join", bundle: .module),
+                  isLoading: isRunning
+                )
+              }
+              .buttonStyle(.plain)
+            }
+            Divider()
+          }
+
+          if user?.createOrganizationEnabled == true {
+            Button {
+              navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: creationDefaults))
+            } label: {
+              createOrganizationRow
             }
             .buttonStyle(.plain)
+            Divider()
           }
         }
-        .padding(.bottom, 24)
-
-        Button {
-          navigation.path.append(.sessionTaskCreateOrganization)
-        } label: {
-          Text("Create a new organization", bundle: .module)
-        }
-        .buttonStyle(.secondary())
-        .padding(.bottom, 32)
 
         SecuredByClerkView()
+          .padding(.horizontal, 16)
       }
-      .padding(16)
+      .padding(.vertical, 16)
     }
+  }
+
+  private var createOrganizationRow: some View {
+    HStack(spacing: 16) {
+      Image(systemName: "plus")
+        .font(.system(size: 16, weight: .medium))
+        .foregroundStyle(theme.colors.foreground)
+        .frame(width: 48)
+
+      Text("Create organization", bundle: .module)
+        .font(.body.weight(.semibold))
+        .foregroundStyle(theme.colors.foreground)
+
+      Spacer()
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 16)
   }
 
   // MARK: - Actions
@@ -140,6 +178,10 @@ struct SessionTaskChooseOrganizationView: View {
       suggestions = try await fetchedSuggestions.data
     } catch {
       self.error = error
+    }
+
+    if clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true {
+      creationDefaults = try? await user.getOrganizationCreationDefaults()
     }
 
     isLoading = false
@@ -168,7 +210,9 @@ struct SessionTaskChooseOrganizationView: View {
   private func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
     do {
       let accepted = try await suggestion.accept()
-      await selectOrganization(id: accepted.publicOrganizationData.id)
+      if let index = suggestions.firstIndex(where: { $0.id == suggestion.id }) {
+        suggestions[index] = accepted
+      }
     } catch {
       self.error = error
     }
@@ -180,49 +224,58 @@ struct SessionTaskChooseOrganizationView: View {
 private struct OrganizationRow: View {
   let name: String
   let imageUrl: String
-  var badge: LocalizedStringKey?
+  let subtitle: String
+  var isLoading: Bool = false
 
   @Environment(\.clerkTheme) private var theme
 
+  private var initials: String {
+    String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)).uppercased()
+  }
+
   var body: some View {
-    HStack(spacing: 12) {
+    HStack(spacing: 16) {
       LazyImage(url: URL(string: imageUrl)) { state in
         if let image = state.image {
           image
             .resizable()
             .scaledToFill()
         } else {
-          Color(theme.colors.muted)
+          initialsView
         }
       }
-      .frame(width: 36, height: 36)
-      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .frame(width: 48, height: 48)
+      .clipShape(RoundedRectangle(cornerRadius: theme.design.borderRadius))
 
-      VStack(alignment: .leading, spacing: 2) {
+      VStack(alignment: .leading, spacing: 4) {
         Text(verbatim: name)
-          .font(.footnote.weight(.medium))
+          .font(.body)
           .foregroundStyle(theme.colors.foreground)
 
-        if let badge {
-          Text(badge, bundle: .module)
-            .font(.caption2)
+        if isLoading {
+          SpinnerView()
+            .frame(width: 16, height: 16)
+        } else {
+          Text(verbatim: subtitle)
+            .font(.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
         }
       }
 
       Spacer()
-
-      Image(systemName: "chevron.right")
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(theme.colors.mutedForeground)
     }
-    .padding(12)
-    .background(theme.colors.muted.opacity(0.3))
-    .clipShape(RoundedRectangle(cornerRadius: 12))
-    .overlay(
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(theme.colors.border, lineWidth: 1)
-    )
+    .padding(.horizontal, 16)
+    .padding(.vertical, 16)
+  }
+
+  private var initialsView: some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
+        .fill(theme.colors.primary.gradient)
+      Text(verbatim: initials)
+        .font(.system(size: 18, weight: .semibold))
+        .foregroundStyle(theme.colors.primaryForeground)
+    }
   }
 }
 

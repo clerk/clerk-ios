@@ -14,14 +14,29 @@ struct SessionTaskCreateOrganizationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  @State private var organizationName = ""
-  @State private var slug = ""
+  let creationDefaults: OrganizationCreationDefaults?
+  var showBackButton: Bool = false
+
+  @State private var organizationName: String
+  @State private var slug: String
+
+  init(creationDefaults: OrganizationCreationDefaults?, showBackButton: Bool = false) {
+    self.creationDefaults = creationDefaults
+    self.showBackButton = showBackButton
+    _organizationName = State(initialValue: creationDefaults?.form.name ?? "")
+    _slug = State(initialValue: creationDefaults?.form.slug ?? "")
+  }
+
   @State private var error: Error?
 
   @State private var photosPickerIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var selectedImageData: Data?
   @State private var imageIsLoading = false
+
+  private var slugEnabled: Bool {
+    clerk.environment?.organizationSettings.slug.disabled == false
+  }
 
   var body: some View {
     ScrollView {
@@ -32,13 +47,18 @@ struct SessionTaskCreateOrganizationView: View {
         }
         .padding(.bottom, 32)
 
+        if let advisory = creationDefaults?.advisory {
+          advisoryView(advisory)
+            .padding(.bottom, 16)
+        }
+
         logoSection
           .padding(.bottom, 24)
 
         VStack(spacing: 16) {
           ClerkTextField("Organization name", text: $organizationName)
 
-          if clerk.environment?.organizationSettings.slug.disabled == false {
+          if slugEnabled {
             ClerkTextField("Slug", text: $slug)
               .textInputAutocapitalization(.never)
               .autocorrectionDisabled()
@@ -60,7 +80,7 @@ struct SessionTaskCreateOrganizationView: View {
       .padding(16)
     }
     .background(theme.colors.background)
-    .navigationBarBackButtonHidden()
+    .navigationBarBackButtonHidden(!showBackButton)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
     .toolbar {
@@ -82,10 +102,7 @@ struct SessionTaskCreateOrganizationView: View {
         do {
           guard
             let data = try await item.loadTransferable(type: Data.self),
-            let uiImage = UIImage(data: data),
-            let resizedData = uiImage
-            .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
-            .jpegData(compressionQuality: 0.8)
+            let resizedData = processImageData(data)
           else {
             throw ClerkClientError(message: "There was an error loading the image from the photos library.")
           }
@@ -97,6 +114,48 @@ struct SessionTaskCreateOrganizationView: View {
     }
     .onChange(of: organizationName) { _, newValue in
       slug = createSlug(from: newValue)
+    }
+    .task {
+      guard let logoUrl = creationDefaults?.form.logo, let url = URL(string: logoUrl) else { return }
+      imageIsLoading = true
+      defer { imageIsLoading = false }
+      do {
+        let (data, _) = try await URLSession.shared.data(from: url)
+        selectedImageData = processImageData(data)
+      } catch {
+        // Logo fetch failure is non-critical — proceed without logo
+      }
+    }
+  }
+
+  // MARK: - Advisory
+
+  private func advisoryView(_ advisory: OrganizationCreationDefaults.Advisory) -> some View {
+    HStack(spacing: 8) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .foregroundStyle(theme.colors.warning)
+      Text(advisoryMessage(for: advisory))
+        .font(.caption)
+        .foregroundStyle(theme.colors.foreground)
+    }
+    .padding(12)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(theme.colors.backgroundWarning)
+    .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+    .overlay {
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
+        .strokeBorder(theme.colors.borderWarning, lineWidth: 1)
+    }
+  }
+
+  private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String {
+    switch advisory.code {
+    case "organization_already_exists":
+      let orgName = advisory.meta["organization_name"] ?? ""
+      let orgDomain = advisory.meta["organization_domain"] ?? ""
+      return "An organization already exists for the detected company name (\(orgName)) and \(orgDomain). Join by invitation."
+    default:
+      return advisory.code
     }
   }
 
@@ -199,7 +258,8 @@ struct SessionTaskCreateOrganizationView: View {
     guard !name.isEmpty else { return }
 
     do {
-      let organization = try await clerk.organizations.create(name: name)
+      let slugValue = slugEnabled ? slug.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+      let organization = try await clerk.organizations.create(name: name, slug: slugValue)
 
       if let selectedImageData {
         try await organization.setLogo(imageData: selectedImageData)
@@ -212,6 +272,12 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   // MARK: - Helpers
+
+  private func processImageData(_ data: Data) -> Data? {
+    UIImage(data: data)?
+      .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+      .jpegData(compressionQuality: 0.8)
+  }
 
   private func createSlug(from name: String) -> String {
     name
@@ -226,7 +292,7 @@ struct SessionTaskCreateOrganizationView: View {
 }
 
 #Preview("Create Organization") {
-  SessionTaskCreateOrganizationView()
+  SessionTaskCreateOrganizationView(creationDefaults: nil)
     .clerkPreview()
 }
 
