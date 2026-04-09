@@ -449,6 +449,7 @@ private struct OrganizationRow<Action: View>: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 16)
+    .contentShape(Rectangle())
   }
 
   private var initialsView: some View {

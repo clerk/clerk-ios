@@ -62,6 +62,7 @@ struct SessionTaskCreateOrganizationView: View {
         }
 
         logoSection
+          .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.bottom, 24)
 
         VStack(spacing: 16) {
@@ -185,42 +186,14 @@ struct SessionTaskCreateOrganizationView: View {
 
   // MARK: - Logo Section
 
-  @ViewBuilder
   private var logoSection: some View {
-    if let selectedImageData, let uiImage = UIImage(data: selectedImageData) {
-      Image(uiImage: uiImage)
-        .resizable()
-        .scaledToFill()
-        .frame(width: 96, height: 96)
-        .clipShape(.circle)
-        .overlay(alignment: .bottomTrailing) {
-          Menu {
-            Button("Choose from photo library") {
-              photosPickerIsPresented = true
-            }
-            Button("Remove photo", role: .destructive) {
-              self.selectedImageData = nil
-              photosPickerItem = nil
-            }
-          } label: {
-            Image("icon-edit", bundle: .module)
-              .resizable()
-              .scaledToFit()
-              .frame(width: 16, height: 16)
-              .padding(8)
-              .foregroundStyle(theme.colors.mutedForeground)
-              .background(theme.colors.background)
-              .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-              .overlay {
-                RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                  .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
-              }
-              .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
-          }
-        }
-    } else {
-      HStack(spacing: 16) {
-        ZStack {
+    HStack(spacing: 16) {
+      ZStack {
+        if let selectedImageData, let uiImage = UIImage(data: selectedImageData) {
+          Image(uiImage: uiImage)
+            .resizable()
+            .scaledToFill()
+        } else {
           Circle()
             .fill(theme.colors.muted)
           Circle()
@@ -228,38 +201,39 @@ struct SessionTaskCreateOrganizationView: View {
           Image(systemName: "building.2")
             .font(.title2)
             .foregroundStyle(theme.colors.mutedForeground)
-
-          if imageIsLoading {
-            theme.colors.inputBorderFocused
-            SpinnerView(color: theme.colors.primaryForeground)
-              .frame(width: 24, height: 24)
-          }
         }
-        .frame(width: 96, height: 96)
 
-        VStack(alignment: .leading, spacing: 12) {
-          Button {
-            photosPickerIsPresented = true
-          } label: {
-            Text("Upload logo", bundle: .module)
-              .font(.subheadline)
-              .foregroundStyle(theme.colors.foreground)
-              .padding(.horizontal, 14)
-              .frame(height: 32)
-              .background(theme.colors.background)
-              .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-              .overlay {
-                RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                  .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
-              }
-              .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
-          }
-          .buttonStyle(.plain)
-
-          Text("Recommended size 1:1, up to 10MB.", bundle: .module)
-            .font(.caption)
-            .foregroundStyle(theme.colors.mutedForeground)
+        if imageIsLoading {
+          theme.colors.inputBorderFocused
+          SpinnerView(color: theme.colors.primaryForeground)
+            .frame(width: 24, height: 24)
         }
+      }
+      .frame(width: 96, height: 96)
+      .clipShape(.circle)
+
+      VStack(alignment: .leading, spacing: 12) {
+        Button {
+          photosPickerIsPresented = true
+        } label: {
+          Text("Upload logo", bundle: .module)
+            .font(.subheadline)
+            .foregroundStyle(theme.colors.foreground)
+            .padding(.horizontal, 14)
+            .frame(height: 32)
+            .background(theme.colors.background)
+            .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+            .overlay {
+              RoundedRectangle(cornerRadius: theme.design.borderRadius)
+                .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
+            }
+            .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
+        }
+        .buttonStyle(.plain)
+
+        Text("Recommended size 1:1, up to 10MB.", bundle: .module)
+          .font(.caption)
+          .foregroundStyle(theme.colors.mutedForeground)
       }
     }
   }
