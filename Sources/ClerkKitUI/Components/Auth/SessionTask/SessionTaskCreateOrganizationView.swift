@@ -28,6 +28,7 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   @State private var error: Error?
+  @State private var slugValidationError: ClerkClientError?
 
   @State private var photosPickerIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
@@ -36,6 +37,14 @@ struct SessionTaskCreateOrganizationView: View {
 
   private var slugEnabled: Bool {
     clerk.environment?.organizationSettings.slug.disabled == false
+  }
+
+  private var trimmedOrganizationName: String {
+    organizationName.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  private var trimmedSlug: String {
+    slug.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
   var body: some View {
@@ -47,8 +56,8 @@ struct SessionTaskCreateOrganizationView: View {
         }
         .padding(.bottom, 32)
 
-        if let advisory = creationDefaults?.advisory {
-          advisoryView(advisory)
+        if let advisory = creationDefaults?.advisory, let advisoryMessage = advisoryMessage(for: advisory) {
+          advisoryView(advisoryMessage)
             .padding(.bottom, 16)
         }
 
@@ -59,9 +68,19 @@ struct SessionTaskCreateOrganizationView: View {
           ClerkTextField("Organization name", text: $organizationName)
 
           if slugEnabled {
-            ClerkTextField("Slug", text: $slug)
+            VStack(alignment: .leading, spacing: 8) {
+              ClerkTextField(
+                "Slug",
+                text: $slug,
+                fieldState: slugValidationError == nil ? .default : .error
+              )
               .textInputAutocapitalization(.never)
               .autocorrectionDisabled()
+
+              if let slugValidationError {
+                ErrorText(error: slugValidationError, alignment: .leading)
+              }
+            }
           }
         }
         .padding(.bottom, 24)
@@ -72,7 +91,7 @@ struct SessionTaskCreateOrganizationView: View {
           ContinueButtonLabelView(isActive: isRunning)
         }
         .buttonStyle(.primary())
-        .disabled(organizationName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .disabled(trimmedOrganizationName.isEmpty)
 
         Spacer().frame(height: 32)
         SecuredByClerkView()
@@ -114,6 +133,10 @@ struct SessionTaskCreateOrganizationView: View {
     }
     .onChange(of: organizationName) { _, newValue in
       slug = createSlug(from: newValue)
+      slugValidationError = nil
+    }
+    .onChange(of: slug) { _, _ in
+      slugValidationError = nil
     }
     .taskOnce {
       guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
@@ -131,11 +154,11 @@ struct SessionTaskCreateOrganizationView: View {
 
   // MARK: - Advisory
 
-  private func advisoryView(_ advisory: OrganizationCreationDefaults.Advisory) -> some View {
+  private func advisoryView(_ message: String) -> some View {
     HStack(spacing: 8) {
       Image(systemName: "exclamationmark.triangle.fill")
         .foregroundStyle(theme.colors.warning)
-      Text(advisoryMessage(for: advisory))
+      Text(message)
         .font(.caption)
         .foregroundStyle(theme.colors.foreground)
     }
@@ -149,14 +172,14 @@ struct SessionTaskCreateOrganizationView: View {
     }
   }
 
-  private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String {
+  private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
     switch advisory.code {
     case "organization_already_exists":
       let orgName = advisory.meta["organization_name"] ?? ""
       let orgDomain = advisory.meta["organization_domain"] ?? ""
       return "An organization already exists for the detected company name (\(orgName)) and \(orgDomain). Join by invitation."
     default:
-      return advisory.code
+      return nil
     }
   }
 
@@ -255,11 +278,18 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   private func createOrganization() async {
-    let name = organizationName.trimmingCharacters(in: .whitespacesAndNewlines)
+    let name = trimmedOrganizationName
     guard !name.isEmpty else { return }
 
+    guard !slugEnabled || isValidSlug(trimmedSlug) else {
+      slugValidationError = ClerkClientError(
+        message: "Enter a slug using lowercase letters, numbers, and hyphens."
+      )
+      return
+    }
+
     do {
-      let slugValue = slugEnabled ? slug.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+      let slugValue = slugEnabled ? trimmedSlug : nil
       let organization = try await clerk.organizations.create(name: name, slug: slugValue)
 
       if let selectedImageData {
@@ -293,6 +323,10 @@ struct SessionTaskCreateOrganizationView: View {
         with: "-",
         options: .regularExpression
       )
+  }
+
+  private func isValidSlug(_ slug: String) -> Bool {
+    slug.range(of: "^(?=.*[a-z0-9])[a-z0-9\\-]+$", options: .regularExpression) != nil
   }
 }
 
