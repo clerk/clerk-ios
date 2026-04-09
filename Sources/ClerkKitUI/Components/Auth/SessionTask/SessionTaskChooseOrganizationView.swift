@@ -17,18 +17,11 @@ struct SessionTaskChooseOrganizationView: View {
 
   private let pageSize = 10
 
-  @State private var memberships: [OrganizationMembership] = []
-  @State private var membershipsTotalCount = 0
-  @State private var membershipsOffset = 0
-  @State private var invitations: [UserOrganizationInvitation] = []
-  @State private var invitationsTotalCount = 0
-  @State private var invitationsOffset = 0
-  @State private var suggestions: [OrganizationSuggestion] = []
-  @State private var suggestionsTotalCount = 0
-  @State private var suggestionsOffset = 0
+  @State private var membershipsPager = PagerState<OrganizationMembership>()
+  @State private var invitationsPager = PagerState<UserOrganizationInvitation>()
+  @State private var suggestionsPager = PagerState<OrganizationSuggestion>()
   @State private var acceptedInvitationOrgIds: Set<String> = []
   @State private var isLoading = true
-  @State private var isLoadingMore = false
   @State private var creationDefaults: OrganizationCreationDefaults?
   @State private var error: Error?
 
@@ -37,23 +30,15 @@ struct SessionTaskChooseOrganizationView: View {
   }
 
   private var hasExistingResources: Bool {
-    !memberships.isEmpty || !invitations.isEmpty || !suggestions.isEmpty
+    !membershipsPager.items.isEmpty || !invitationsPager.items.isEmpty || !suggestionsPager.items.isEmpty
   }
 
-  private var membershipsHasNextPage: Bool {
-    membershipsOffset < membershipsTotalCount
-  }
-
-  private var invitationsHasNextPage: Bool {
-    invitationsOffset < invitationsTotalCount
-  }
-
-  private var suggestionsHasNextPage: Bool {
-    suggestionsOffset < suggestionsTotalCount
+  private var isLoadingMore: Bool {
+    membershipsPager.isLoadingMore || invitationsPager.isLoadingMore || suggestionsPager.isLoadingMore
   }
 
   private var hasNextPage: Bool {
-    membershipsHasNextPage || invitationsHasNextPage || suggestionsHasNextPage
+    membershipsPager.hasNextPage || invitationsPager.hasNextPage || suggestionsPager.hasNextPage
   }
 
   var body: some View {
@@ -112,10 +97,10 @@ struct SessionTaskChooseOrganizationView: View {
         }
         .padding(.horizontal, 16)
 
-        VStack(spacing: 0) {
+        LazyVStack(spacing: 0) {
           Divider()
 
-          ForEach(memberships) { membership in
+          ForEach(membershipsPager.items) { membership in
             AsyncButton {
               await selectOrganization(id: membership.organization.id)
             } label: { _ in
@@ -127,15 +112,15 @@ struct SessionTaskChooseOrganizationView: View {
             }
             .buttonStyle(.plain)
             .onAppear {
-              if membership.id == memberships.last?.id {
-                Task { await loadMore(.memberships) }
+              if membership.id == membershipsPager.items.last?.id {
+                Task { await loadMoreMemberships() }
               }
             }
             Divider()
           }
 
-          if !membershipsHasNextPage {
-            ForEach(invitations) { invitation in
+          if !membershipsPager.hasNextPage {
+            ForEach(invitationsPager.items) { invitation in
               Group {
                 if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
                   AsyncButton {
@@ -163,16 +148,16 @@ struct SessionTaskChooseOrganizationView: View {
                 }
               }
               .onAppear {
-                if invitation.id == invitations.last?.id {
-                  Task { await loadMore(.invitations) }
+                if invitation.id == invitationsPager.items.last?.id {
+                  Task { await loadMoreInvitations() }
                 }
               }
               Divider()
             }
           }
 
-          if !membershipsHasNextPage, !invitationsHasNextPage {
-            ForEach(suggestions) { suggestion in
+          if !membershipsPager.hasNextPage, !invitationsPager.hasNextPage {
+            ForEach(suggestionsPager.items) { suggestion in
               Group {
                 if suggestion.status == "accepted" {
                   OrganizationRow(
@@ -195,8 +180,8 @@ struct SessionTaskChooseOrganizationView: View {
                 }
               }
               .onAppear {
-                if suggestion.id == suggestions.last?.id {
-                  Task { await loadMore(.suggestions) }
+                if suggestion.id == suggestionsPager.items.last?.id {
+                  Task { await loadMoreSuggestions() }
                 }
               }
               Divider()
@@ -262,15 +247,9 @@ struct SessionTaskChooseOrganizationView: View {
       let invitationsResult = try await fetchedInvitations
       let suggestionsResult = try await fetchedSuggestions
 
-      memberships = membershipsResult.data
-      membershipsTotalCount = membershipsResult.totalCount
-      membershipsOffset = membershipsResult.data.count
-      invitations = invitationsResult.data
-      invitationsTotalCount = invitationsResult.totalCount
-      invitationsOffset = invitationsResult.data.count
-      suggestions = suggestionsResult.data
-      suggestionsTotalCount = suggestionsResult.totalCount
-      suggestionsOffset = suggestionsResult.data.count
+      membershipsPager.replace(with: membershipsResult)
+      invitationsPager.replace(with: invitationsResult)
+      suggestionsPager.replace(with: suggestionsResult)
       creationDefaults = try await fetchedDefaults
     } catch {
       self.error = error
@@ -279,40 +258,43 @@ struct SessionTaskChooseOrganizationView: View {
     isLoading = false
   }
 
-  private enum OrganizationSection {
-    case memberships, invitations, suggestions
-  }
+  private func loadMoreMemberships() async {
+    guard let user, !isLoadingMore, membershipsPager.hasNextPage else { return }
 
-  private func loadMore(_ section: OrganizationSection) async {
-    guard let user, !isLoadingMore else { return }
-
-    switch section {
-    case .memberships: guard membershipsHasNextPage else { return }
-    case .invitations: guard invitationsHasNextPage else { return }
-    case .suggestions: guard suggestionsHasNextPage else { return }
-    }
-
-    isLoadingMore = true
-    defer { isLoadingMore = false }
+    membershipsPager.isLoadingMore = true
+    defer { membershipsPager.isLoadingMore = false }
 
     do {
-      switch section {
-      case .memberships:
-        let result = try await user.getOrganizationMemberships(offset: membershipsOffset, pageSize: pageSize)
-        memberships.append(contentsOf: result.data)
-        membershipsTotalCount = result.totalCount
-        membershipsOffset += result.data.count
-      case .invitations:
-        let result = try await user.getOrganizationInvitations(offset: invitationsOffset, pageSize: pageSize, status: "pending")
-        invitations.append(contentsOf: result.data)
-        invitationsTotalCount = result.totalCount
-        invitationsOffset += result.data.count
-      case .suggestions:
-        let result = try await user.getOrganizationSuggestions(offset: suggestionsOffset, pageSize: pageSize, status: ["pending", "accepted"])
-        suggestions.append(contentsOf: result.data)
-        suggestionsTotalCount = result.totalCount
-        suggestionsOffset += result.data.count
-      }
+      let result = try await user.getOrganizationMemberships(offset: membershipsPager.offset, pageSize: pageSize)
+      membershipsPager.append(result)
+    } catch {
+      self.error = error
+    }
+  }
+
+  private func loadMoreInvitations() async {
+    guard let user, !isLoadingMore, invitationsPager.hasNextPage else { return }
+
+    invitationsPager.isLoadingMore = true
+    defer { invitationsPager.isLoadingMore = false }
+
+    do {
+      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: "pending")
+      invitationsPager.append(result)
+    } catch {
+      self.error = error
+    }
+  }
+
+  private func loadMoreSuggestions() async {
+    guard let user, !isLoadingMore, suggestionsPager.hasNextPage else { return }
+
+    suggestionsPager.isLoadingMore = true
+    defer { suggestionsPager.isLoadingMore = false }
+
+    do {
+      let result = try await user.getOrganizationSuggestions(offset: suggestionsPager.offset, pageSize: pageSize, status: ["pending", "accepted"])
+      suggestionsPager.append(result)
     } catch {
       self.error = error
     }
@@ -341,8 +323,8 @@ struct SessionTaskChooseOrganizationView: View {
   private func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
     do {
       let accepted = try await suggestion.accept()
-      if let index = suggestions.firstIndex(where: { $0.id == suggestion.id }) {
-        suggestions[index] = accepted
+      if let index = suggestionsPager.items.firstIndex(where: { $0.id == suggestion.id }) {
+        suggestionsPager.items[index] = accepted
       }
     } catch {
       self.error = error
@@ -368,6 +350,33 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     return error
+  }
+}
+
+extension SessionTaskChooseOrganizationView {
+  fileprivate struct PagerState<Item> {
+    var items: [Item] = []
+    var totalCount = 0
+    var offset = 0
+    var isLoadingMore = false
+
+    var hasNextPage: Bool {
+      offset < totalCount
+    }
+  }
+}
+
+extension SessionTaskChooseOrganizationView.PagerState where Item: Codable & Sendable {
+  mutating func replace(with page: ClerkPaginatedResponse<Item>) {
+    items = page.data
+    totalCount = page.totalCount
+    offset = page.data.count
+  }
+
+  mutating func append(_ page: ClerkPaginatedResponse<Item>) {
+    items.append(contentsOf: page.data)
+    totalCount = page.totalCount
+    offset += page.data.count
   }
 }
 
@@ -450,39 +459,6 @@ private struct OrganizationRow<Action: View>: View {
         .font(.system(size: 18, weight: .semibold))
         .foregroundStyle(theme.colors.primaryForeground)
     }
-  }
-}
-
-// MARK: - Action Label
-
-private struct ActionLabel: View {
-  let text: LocalizedStringKey
-  var isLoading: Bool = false
-
-  @Environment(\.clerkTheme) private var theme
-
-  init(_ text: LocalizedStringKey, isLoading: Bool = false) {
-    self.text = text
-    self.isLoading = isLoading
-  }
-
-  var body: some View {
-    Text(text, bundle: .module)
-      .font(.subheadline)
-      .foregroundStyle(theme.colors.foreground)
-      .overlayProgressView(isActive: isLoading) {
-        SpinnerView()
-          .frame(width: 14, height: 14)
-      }
-      .padding(.horizontal, 14)
-      .frame(height: 32)
-      .background(theme.colors.background)
-      .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: theme.design.borderRadius)
-          .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
-      }
-      .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
   }
 }
 
