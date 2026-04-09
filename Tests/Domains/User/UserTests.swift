@@ -200,32 +200,33 @@ struct UserTests {
 
   @Test
   func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
-    let captured = LockIsolated<(Int, Int)?>(nil)
-    let service = MockUserService(getOrganizationInvitations: { initialPage, pageSize in
-      captured.setValue((initialPage, pageSize))
+    let captured = LockIsolated<(Int, Int, String?)?>(nil)
+    let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
+      captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationInvitations(initialPage: 0, pageSize: 10)
+    _ = try await User.mock.getOrganizationInvitations(offset: 0, pageSize: 10, status: "pending")
 
     let params = try #require(captured.value)
     #expect(params.0 == 0)
     #expect(params.1 == 10)
+    #expect(params.2 == "pending")
   }
 
   @Test
   func getOrganizationMembershipsUsesUserServiceGetOrganizationMemberships() async throws {
     let captured = LockIsolated<(Int, Int)?>(nil)
-    let service = MockUserService(getOrganizationMemberships: { initialPage, pageSize in
-      captured.setValue((initialPage, pageSize))
+    let service = MockUserService(getOrganizationMemberships: { offset, pageSize in
+      captured.setValue((offset, pageSize))
       return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
     })
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationMemberships(initialPage: 0, pageSize: 10)
+    _ = try await User.mock.getOrganizationMemberships(offset: 0, pageSize: 10)
 
     let params = try #require(captured.value)
     #expect(params.0 == 0)
@@ -233,28 +234,28 @@ struct UserTests {
   }
 
   struct OrganizationSuggestionsScenario: Codable, Equatable {
-    let status: String?
+    let status: [String]
   }
 
   @Test(
     arguments: [
-      OrganizationSuggestionsScenario(status: nil),
-      OrganizationSuggestionsScenario(status: "active"),
+      OrganizationSuggestionsScenario(status: []),
+      OrganizationSuggestionsScenario(status: ["pending", "accepted"]),
     ]
   )
   func getOrganizationSuggestionsUsesUserServiceGetOrganizationSuggestions(
     scenario: OrganizationSuggestionsScenario
   ) async throws {
-    let captured = LockIsolated<(Int, Int, String?)?>(nil)
-    let service = MockUserService(getOrganizationSuggestions: { initialPage, pageSize, status in
-      captured.setValue((initialPage, pageSize, status))
+    let captured = LockIsolated<(Int, Int, [String])?>(nil)
+    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status in
+      captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
 
     configureService(service)
 
     _ = try await User.mock.getOrganizationSuggestions(
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: scenario.status
     )

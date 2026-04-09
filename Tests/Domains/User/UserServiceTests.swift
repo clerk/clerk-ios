@@ -458,11 +458,12 @@ struct UserServiceTests {
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
+      #expect(request.url?.query?.contains("status=pending") == true)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(initialPage: 0, pageSize: 10)
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(offset: 0, pageSize: 10, status: "pending")
     #expect(requestHandled.value)
   }
 
@@ -492,7 +493,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationMemberships(initialPage: 0, pageSize: 10)
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationMemberships(offset: 0, pageSize: 10)
     #expect(requestHandled.value)
   }
 
@@ -521,12 +522,12 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: nil)
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(offset: 0, pageSize: 10, status: [])
     #expect(requestHandled.value)
   }
 
   @Test
-  func getOrganizationSuggestionsWithStatus() async throws {
+  func getOrganizationSuggestionsWithStatuses() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_suggestions")!
 
@@ -546,12 +547,20 @@ struct UserServiceTests {
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("status=active") == true)
+      let queryItems = request.url.flatMap {
+        URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
+      }
+      let statuses = queryItems?.filter { $0.name == "status" }.compactMap(\.value) ?? []
+      #expect(statuses == ["pending", "accepted"])
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(initialPage: 0, pageSize: 10, status: "active")
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(
+      offset: 0,
+      pageSize: 10,
+      status: ["pending", "accepted"]
+    )
     #expect(requestHandled.value)
   }
 
