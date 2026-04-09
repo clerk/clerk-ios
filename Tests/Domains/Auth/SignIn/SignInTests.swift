@@ -25,6 +25,23 @@ struct SignInTests {
       apiClient: createMockAPIClient(),
       signUpService: signUpService
     )
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: .init())
+  }
+
+  private func configureServices(
+    signInService: MockSignInService,
+    signUpService: MockSignUpService
+  ) {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      signInService: signInService,
+      signUpService: signUpService
+    )
+    try! (Clerk.shared.dependencies as! MockDependencyContainer)
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: .init())
   }
 
   @Test
@@ -399,6 +416,112 @@ struct SignInTests {
     #expect(params.0 == signIn.id)
     #expect(params.1.password == "newPassword123")
     #expect(params.1.signOutOfOtherSessions == true)
+  }
+
+  @Test
+  func completeEnterpriseSSOReloadsWithNonce() async throws {
+    let signIn = SignIn.mock
+    var reloadedSignIn = SignIn.mock
+    reloadedSignIn.firstFactorVerification = Verification(status: .verified)
+
+    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let service = MockSignInService(get: { id, params in
+      captured.setValue((id, params))
+      return reloadedSignIn
+    })
+
+    configureService(service)
+
+    let callbackURL = try #require(URL(string: "myapp://callback?rotating_token_nonce=test_nonce"))
+    let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1.rotatingTokenNonce == "test_nonce")
+
+    switch result {
+    case .signIn(let updatedSignIn):
+      #expect(updatedSignIn == reloadedSignIn)
+    case .signUp:
+      Issue.record("Expected sign-in result.")
+    }
+  }
+
+  @Test
+  func completeEnterpriseSSOTransfersToSignUpWithoutNonce() async throws {
+    let signIn = SignIn.mock
+    var reloadedSignIn = SignIn.mock
+    reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
+
+    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let signInService = MockSignInService(get: { id, params in
+      getCaptured.setValue((id, params))
+      return reloadedSignIn
+    })
+
+    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      createCaptured.setValue(params)
+      return .mock
+    })
+
+    configureServices(signInService: signInService, signUpService: signUpService)
+
+    let callbackURL = try #require(URL(string: "myapp://callback"))
+    let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
+
+    let getParams = try #require(getCaptured.value)
+    #expect(getParams.0 == signIn.id)
+    #expect(getParams.1.rotatingTokenNonce == nil)
+
+    let createParams = try #require(createCaptured.value)
+    #expect(createParams.transfer == true)
+
+    switch result {
+    case .signUp(let signUp):
+      #expect(signUp == .mock)
+    case .signIn:
+      Issue.record("Expected sign-up result.")
+    }
+  }
+
+  @Test
+  func completeEnterpriseSSODoesNotTransferWhenNotTransferable() async throws {
+    let signIn = SignIn.mock
+    var reloadedSignIn = SignIn.mock
+    reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
+
+    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let signInService = MockSignInService(get: { id, params in
+      getCaptured.setValue((id, params))
+      return reloadedSignIn
+    })
+
+    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      createCaptured.setValue(params)
+      return .mock
+    })
+
+    configureServices(signInService: signInService, signUpService: signUpService)
+
+    let callbackURL = try #require(URL(string: "myapp://callback"))
+    let result = try await signIn.completeEnterpriseSSO(
+      callbackURL: callbackURL,
+      transferable: false
+    )
+
+    let getParams = try #require(getCaptured.value)
+    #expect(getParams.0 == signIn.id)
+    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(createCaptured.value == nil)
+
+    switch result {
+    case .signIn(let updatedSignIn):
+      #expect(updatedSignIn == reloadedSignIn)
+    case .signUp:
+      Issue.record("Expected sign-in result.")
+    }
   }
 
   struct ReloadScenario: Codable, Equatable {
