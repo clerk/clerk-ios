@@ -6,7 +6,7 @@ import Foundation
 
 public struct OrganizationCreationDefaults: Codable, Hashable, Sendable {
   public var advisory: Advisory?
-  public var form: Form
+  public var form: Form?
 
   public struct Advisory: Codable, Hashable, Sendable {
     public var code: String

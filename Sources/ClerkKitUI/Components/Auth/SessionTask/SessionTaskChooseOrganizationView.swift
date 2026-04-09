@@ -59,7 +59,7 @@ struct SessionTaskChooseOrganizationView: View {
   var body: some View {
     Group {
       if !isLoading, !hasExistingResources, user?.createOrganizationEnabled == false {
-        GetHelpView(context: .sessionTask)
+        GetHelpView(context: .sessionTask(.organizationRequired))
           .navigationBarBackButtonHidden()
           .navigationBarTitleDisplayMode(.inline)
           .preGlassSolidNavBar()
@@ -254,8 +254,8 @@ struct SessionTaskChooseOrganizationView: View {
 
     do {
       async let fetchedMemberships = user.getOrganizationMemberships(pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(pageSize: pageSize)
-      async let fetchedSuggestions = user.getOrganizationSuggestions(pageSize: pageSize, status: "pending")
+      async let fetchedInvitations = user.getOrganizationInvitations(pageSize: pageSize, status: "pending")
+      async let fetchedSuggestions = user.getOrganizationSuggestions(pageSize: pageSize, status: ["pending", "accepted"])
       async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
 
       let membershipsResult = try await fetchedMemberships
@@ -265,7 +265,7 @@ struct SessionTaskChooseOrganizationView: View {
       memberships = membershipsResult.data
       membershipsTotalCount = membershipsResult.totalCount
       membershipsOffset = membershipsResult.data.count
-      invitations = invitationsResult.data.filter { $0.status == "pending" }
+      invitations = invitationsResult.data
       invitationsTotalCount = invitationsResult.totalCount
       invitationsOffset = invitationsResult.data.count
       suggestions = suggestionsResult.data
@@ -303,12 +303,12 @@ struct SessionTaskChooseOrganizationView: View {
         membershipsTotalCount = result.totalCount
         membershipsOffset += result.data.count
       case .invitations:
-        let result = try await user.getOrganizationInvitations(offset: invitationsOffset, pageSize: pageSize)
-        invitations.append(contentsOf: result.data.filter { $0.status == "pending" })
+        let result = try await user.getOrganizationInvitations(offset: invitationsOffset, pageSize: pageSize, status: "pending")
+        invitations.append(contentsOf: result.data)
         invitationsTotalCount = result.totalCount
         invitationsOffset += result.data.count
       case .suggestions:
-        let result = try await user.getOrganizationSuggestions(offset: suggestionsOffset, pageSize: pageSize, status: "pending")
+        let result = try await user.getOrganizationSuggestions(offset: suggestionsOffset, pageSize: pageSize, status: ["pending", "accepted"])
         suggestions.append(contentsOf: result.data)
         suggestionsTotalCount = result.totalCount
         suggestionsOffset += result.data.count

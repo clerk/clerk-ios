@@ -51,13 +51,13 @@ package final class MockUserService: UserServiceProtocol {
   package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
 
   /// Custom handler for the `getOrganizationInvitations(offset:pageSize:)` method.
-  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
+  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
   /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
   /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
-  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
+  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
   /// Custom handler for the `getOrganizationCreationDefaults()` method.
   package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: (() async throws -> OrganizationCreationDefaults)?
@@ -126,9 +126,9 @@ package final class MockUserService: UserServiceProtocol {
     createTotp: (() async throws -> TOTPResource)? = nil,
     verifyTotp: ((String) async throws -> TOTPResource)? = nil,
     disableTotp: (() async throws -> DeletedObject)? = nil,
-    getOrganizationInvitations: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
+    getOrganizationInvitations: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
     getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
-    getOrganizationSuggestions: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
+    getOrganizationSuggestions: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
     getOrganizationCreationDefaults: (() async throws -> OrganizationCreationDefaults)? = nil,
     updatePassword: ((User.UpdatePasswordParams) async throws -> User)? = nil,
     setProfileImage: ((Data) async throws -> ImageResource)? = nil,
@@ -261,9 +261,9 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
-      return try await handler(offset, pageSize)
+      return try await handler(offset, pageSize, status)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
@@ -277,7 +277,7 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     if let handler = getOrganizationSuggestionsHandler {
       return try await handler(offset, pageSize, status)
     }

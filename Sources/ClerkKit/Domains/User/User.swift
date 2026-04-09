@@ -349,9 +349,10 @@ extension User {
   @discardableResult @MainActor
   public func getOrganizationInvitations(
     offset: Int = 0,
-    pageSize: Int = 10
+    pageSize: Int = 10,
+    status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize)
+    try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -377,7 +378,7 @@ extension User {
   public func getOrganizationSuggestions(
     offset: Int = 0,
     pageSize: Int = 10,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await userService.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)
   }

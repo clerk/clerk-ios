@@ -20,9 +20,9 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func createTotp() async throws -> TOTPResource
   @MainActor func verifyTotp(code: String) async throws -> TOTPResource
   @MainActor func disableTotp() async throws -> DeletedObject
-  @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+  @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
   @MainActor func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-  @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
   @MainActor func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults
   @MainActor func getSessions(user: User) async throws -> [Session]
   @MainActor func updatePassword(params: User.UpdatePasswordParams) async throws -> User
@@ -225,15 +225,21 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationInvitations(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+    var queryParams: [(String, String?)] = [
+      ("_clerk_session_id", value: Clerk.shared.session?.id),
+      ("offset", value: String(offset)),
+      ("limit", value: String(pageSize)),
+    ]
+
+    if let status {
+      queryParams.append(("status", value: status))
+    }
+
     let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
       path: "/v1/me/organization_invitations",
       method: .get,
-      query: [
-        ("_clerk_session_id", value: Clerk.shared.session?.id),
-        ("offset", value: String(offset)),
-        ("limit", value: String(pageSize)),
-      ]
+      query: queryParams
     )
 
     return try await apiClient.send(request).value.response
@@ -256,16 +262,14 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationSuggestions(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
 
-    if let status {
-      queryParams.append(("status", value: status))
-    }
+    queryParams += status.map { ("status", $0 as String?) }
 
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
       path: "/v1/me/organization_suggestions",

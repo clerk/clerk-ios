@@ -23,8 +23,8 @@ struct SessionTaskCreateOrganizationView: View {
   init(creationDefaults: OrganizationCreationDefaults?, showBackButton: Bool = false) {
     self.creationDefaults = creationDefaults
     self.showBackButton = showBackButton
-    _organizationName = State(initialValue: creationDefaults?.form.name ?? "")
-    _slug = State(initialValue: creationDefaults?.form.slug ?? "")
+    _organizationName = State(initialValue: creationDefaults?.form?.name ?? "")
+    _slug = State(initialValue: creationDefaults?.form?.slug ?? "")
   }
 
   @State private var error: Error?
@@ -115,12 +115,13 @@ struct SessionTaskCreateOrganizationView: View {
     .onChange(of: organizationName) { _, newValue in
       slug = createSlug(from: newValue)
     }
-    .task {
-      guard let logoUrl = creationDefaults?.form.logo, let url = URL(string: logoUrl) else { return }
+    .taskOnce {
+      guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
       imageIsLoading = true
       defer { imageIsLoading = false }
       do {
         let (data, _) = try await URLSession.shared.data(from: url)
+        guard selectedImageData == nil else { return }
         selectedImageData = processImageData(data)
       } catch {
         // Logo fetch failure is non-critical — proceed without logo
@@ -262,7 +263,11 @@ struct SessionTaskCreateOrganizationView: View {
       let organization = try await clerk.organizations.create(name: name, slug: slugValue)
 
       if let selectedImageData {
-        try await organization.setLogo(imageData: selectedImageData)
+        do {
+          try await organization.setLogo(imageData: selectedImageData)
+        } catch {
+          ClerkLogger.error("Failed to set organization logo", error: error)
+        }
       }
 
       await selectOrganization(id: organization.id)

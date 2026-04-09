@@ -40,7 +40,7 @@ struct SessionTaskMfaSetupView: View {
 
   var body: some View {
     if noMethodsAvailable {
-      GetHelpView(context: .sessionTask)
+      GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
     } else {
       chooseMethodView

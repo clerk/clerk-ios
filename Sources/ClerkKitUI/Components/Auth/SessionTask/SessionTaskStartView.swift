@@ -27,7 +27,7 @@ struct SessionTaskStartView: View {
     case .chooseOrganization:
       SessionTaskChooseOrganizationView()
     case .unknown:
-      GetHelpView(context: .sessionTask)
+      GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
