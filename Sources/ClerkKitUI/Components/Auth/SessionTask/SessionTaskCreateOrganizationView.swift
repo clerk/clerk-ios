@@ -216,18 +216,7 @@ struct SessionTaskCreateOrganizationView: View {
         Button {
           photosPickerIsPresented = true
         } label: {
-          Text("Upload logo", bundle: .module)
-            .font(.subheadline)
-            .foregroundStyle(theme.colors.foreground)
-            .padding(.horizontal, 14)
-            .frame(height: 32)
-            .background(theme.colors.background)
-            .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-            .overlay {
-              RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
-            }
-            .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
+          PillButtonLabelView("Upload logo")
         }
         .buttonStyle(.plain)
 

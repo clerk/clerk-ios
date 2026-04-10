@@ -134,17 +134,17 @@ struct SessionTaskChooseOrganizationView: View {
                   }
                   .buttonStyle(.plain)
                 } else {
-                  AsyncButton {
-                    await acceptInvitation(invitation)
-                  } label: { isRunning in
-                    OrganizationRow(
-                      name: invitation.publicOrganizationData.name,
-                      imageUrl: invitation.publicOrganizationData.imageUrl
-                    ) {
-                      ActionLabel("Join", isLoading: isRunning)
+                  OrganizationRow(
+                    name: invitation.publicOrganizationData.name,
+                    imageUrl: invitation.publicOrganizationData.imageUrl
+                  ) {
+                    AsyncButton {
+                      await acceptInvitation(invitation)
+                    } label: { isRunning in
+                      PillButtonLabelView("Join", isLoading: isRunning)
                     }
+                    .buttonStyle(.plain)
                   }
-                  .buttonStyle(.plain)
                 }
               }
               .onAppear {
@@ -163,20 +163,20 @@ struct SessionTaskChooseOrganizationView: View {
                   OrganizationRow(
                     name: suggestion.publicOrganizationData.name,
                     imageUrl: suggestion.publicOrganizationData.imageUrl,
-                    subtitle: String(localized: "Pending approval", bundle: .module)
+                    subtitle: "Pending approval"
                   )
                 } else {
-                  AsyncButton {
-                    await acceptSuggestion(suggestion)
-                  } label: { isRunning in
-                    OrganizationRow(
-                      name: suggestion.publicOrganizationData.name,
-                      imageUrl: suggestion.publicOrganizationData.imageUrl
-                    ) {
-                      ActionLabel("Request to join", isLoading: isRunning)
+                  OrganizationRow(
+                    name: suggestion.publicOrganizationData.name,
+                    imageUrl: suggestion.publicOrganizationData.imageUrl
+                  ) {
+                    AsyncButton {
+                      await acceptSuggestion(suggestion)
+                    } label: { isRunning in
+                      PillButtonLabelView("Request to join", isLoading: isRunning)
                     }
+                    .buttonStyle(.plain)
                   }
-                  .buttonStyle(.plain)
                 }
               }
               .onAppear {
@@ -385,7 +385,7 @@ extension SessionTaskChooseOrganizationView.PagerState where Item: Codable & Sen
 private struct OrganizationRow<Action: View>: View {
   let name: String
   let imageUrl: String
-  var subtitle: String?
+  var subtitle: Text?
   let action: Action
 
   @Environment(\.clerkTheme) private var theme
@@ -397,7 +397,18 @@ private struct OrganizationRow<Action: View>: View {
   ) where Action == EmptyView {
     self.name = name
     self.imageUrl = imageUrl
-    self.subtitle = subtitle
+    self.subtitle = Text(verbatim: subtitle)
+    action = EmptyView()
+  }
+
+  init(
+    name: String,
+    imageUrl: String,
+    subtitle: LocalizedStringKey
+  ) where Action == EmptyView {
+    self.name = name
+    self.imageUrl = imageUrl
+    self.subtitle = Text(subtitle, bundle: .module)
     action = EmptyView()
   }
 
@@ -437,7 +448,7 @@ private struct OrganizationRow<Action: View>: View {
           .lineLimit(1)
 
         if let subtitle {
-          Text(verbatim: subtitle)
+          subtitle
             .font(.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
         }

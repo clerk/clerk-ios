@@ -1,14 +1,16 @@
 //
-//  ActionLabel.swift
+//  PillButtonLabelView.swift
 //
+
+#if os(iOS)
 
 import SwiftUI
 
-struct ActionLabel: View {
-  let text: LocalizedStringKey
-  var isLoading: Bool = false
-
+struct PillButtonLabelView: View {
   @Environment(\.clerkTheme) private var theme
+
+  let text: LocalizedStringKey
+  var isLoading = false
 
   init(_ text: LocalizedStringKey, isLoading: Bool = false) {
     self.text = text
@@ -17,12 +19,12 @@ struct ActionLabel: View {
 
   var body: some View {
     Text(text, bundle: .module)
-      .font(.subheadline)
-      .foregroundStyle(theme.colors.foreground)
       .overlayProgressView(isActive: isLoading) {
         SpinnerView()
           .frame(width: 14, height: 14)
       }
+      .font(.subheadline)
+      .foregroundStyle(theme.colors.foreground)
       .padding(.horizontal, 14)
       .frame(height: 32)
       .background(theme.colors.background)
@@ -34,3 +36,14 @@ struct ActionLabel: View {
       .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
   }
 }
+
+#Preview {
+  VStack(spacing: 16) {
+    PillButtonLabelView("Upload logo")
+
+    PillButtonLabelView("Join", isLoading: true)
+  }
+  .padding()
+}
+
+#endif
