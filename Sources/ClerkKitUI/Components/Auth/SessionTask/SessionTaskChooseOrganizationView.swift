@@ -100,7 +100,11 @@ struct SessionTaskChooseOrganizationView: View {
         LazyVStack(spacing: 0) {
           Divider()
 
-          ForEach(membershipsPager.items) { membership in
+          PaginatedRows(
+            items: membershipsPager.items,
+            hasNextPage: membershipsPager.hasNextPage,
+            onLoadMore: loadMoreMemberships
+          ) { membership in
             AsyncButton {
               await selectOrganization(id: membership.organization.id)
             } label: { _ in
@@ -111,16 +115,14 @@ struct SessionTaskChooseOrganizationView: View {
               )
             }
             .buttonStyle(.plain)
-            .onAppear {
-              if membership.id == membershipsPager.items.last?.id {
-                Task { await loadMoreMemberships() }
-              }
-            }
-            Divider()
           }
 
           if !membershipsPager.hasNextPage {
-            ForEach(invitationsPager.items) { invitation in
+            PaginatedRows(
+              items: invitationsPager.items,
+              hasNextPage: invitationsPager.hasNextPage,
+              onLoadMore: loadMoreInvitations
+            ) { invitation in
               Group {
                 if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
                   AsyncButton {
@@ -147,17 +149,15 @@ struct SessionTaskChooseOrganizationView: View {
                   }
                 }
               }
-              .onAppear {
-                if invitation.id == invitationsPager.items.last?.id {
-                  Task { await loadMoreInvitations() }
-                }
-              }
-              Divider()
             }
           }
 
           if !membershipsPager.hasNextPage, !invitationsPager.hasNextPage {
-            ForEach(suggestionsPager.items) { suggestion in
+            PaginatedRows(
+              items: suggestionsPager.items,
+              hasNextPage: suggestionsPager.hasNextPage,
+              onLoadMore: loadMoreSuggestions
+            ) { suggestion in
               Group {
                 if suggestion.status == "accepted" {
                   OrganizationRow(
@@ -179,12 +179,6 @@ struct SessionTaskChooseOrganizationView: View {
                   }
                 }
               }
-              .onAppear {
-                if suggestion.id == suggestionsPager.items.last?.id {
-                  Task { await loadMoreSuggestions() }
-                }
-              }
-              Divider()
             }
           }
 
@@ -381,6 +375,36 @@ extension SessionTaskChooseOrganizationView.PagerState where Item: Codable & Sen
 }
 
 // MARK: - Organization Row
+
+private struct PaginatedRows<Item: Identifiable, Content: View>: View {
+  let items: [Item]
+  let hasNextPage: Bool
+  let onLoadMore: () async -> Void
+  let content: (Item) -> Content
+
+  init(
+    items: [Item],
+    hasNextPage: Bool,
+    onLoadMore: @escaping () async -> Void,
+    @ViewBuilder content: @escaping (Item) -> Content
+  ) {
+    self.items = items
+    self.hasNextPage = hasNextPage
+    self.onLoadMore = onLoadMore
+    self.content = content
+  }
+
+  var body: some View {
+    ForEach(items) { item in
+      content(item)
+        .onAppear {
+          guard hasNextPage, item.id == items.last?.id else { return }
+          Task { await onLoadMore() }
+        }
+      Divider()
+    }
+  }
+}
 
 private struct OrganizationRow<Action: View>: View {
   let name: String
