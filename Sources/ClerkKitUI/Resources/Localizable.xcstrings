@@ -1,7 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
+    "": {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -64,6 +64,12 @@
           }
         },
         "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : ""
@@ -139,6 +145,12 @@
             "state" : "translated",
             "value" : " "
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
         }
       },
       "shouldTranslate" : false
@@ -210,6 +222,12 @@
             "state" : "translated",
             "value" : " 和 "
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " ve "
+          }
         }
       }
     },
@@ -279,6 +297,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@将从该账户中移除。您将无法再使用此关联账户登录。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu bağlı hesabı kullanarak artık giriş yapamayacaksınız."
           }
         }
       }
@@ -350,6 +374,12 @@
             "state" : "translated",
             "value" : "%@将从该账户中移除。您将无法再使用此电子邮件地址登录。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu e-posta adresini kullanarak artık giriş yapamayacaksınız."
+          }
         }
       }
     },
@@ -419,6 +449,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@将从该账户中移除。您将无法再使用此密码钥匙登录。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu geçiş anahtarını kullanarak artık giriş yapamayacaksınız."
           }
         }
       }
@@ -490,6 +526,12 @@
             "state" : "translated",
             "value" : "%@将从该账户中移除。您将无法再使用此电话号码登录。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu telefon numarasını kullanarak artık giriş yapamayacaksınız."
+          }
         }
       }
     },
@@ -559,6 +601,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 将不再在登录时接收验证码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ giriş yaparken artık doğrulama kodu almayacak."
           }
         }
       }
@@ -630,6 +678,12 @@
             "state" : "translated",
             "value" : "将向此电话号码发送包含验证码的短信。可能会收取短信和数据费用。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu telefon numarasına doğrulama kodu içeren bir SMS gönderilecek. Mesaj ve veri ücretleri geçerli olabilir."
+          }
         }
       }
     },
@@ -699,6 +753,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap"
           }
         }
       }
@@ -770,6 +830,12 @@
             "state" : "translated",
             "value" : "活跃设备"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AKTİF CİHAZLAR"
+          }
         }
       }
     },
@@ -839,6 +905,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加通行密钥"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı ekle"
           }
         }
       }
@@ -910,6 +982,12 @@
             "state" : "translated",
             "value" : "添加账户"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap ekle"
+          }
         }
       }
     },
@@ -979,6 +1057,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加身份验证应用"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması ekle"
           }
         }
       }
@@ -1050,6 +1134,12 @@
             "state" : "translated",
             "value" : "添加电子邮箱地址"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi ekle"
+          }
         }
       }
     },
@@ -1119,6 +1209,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加密码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parola ekle"
           }
         }
       }
@@ -1190,6 +1286,12 @@
             "state" : "translated",
             "value" : "添加电话号码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası ekle"
+          }
         }
       }
     },
@@ -1260,6 +1362,12 @@
             "state" : "translated",
             "value" : "添加短信验证码验证"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu doğrulaması ekle"
+          }
         }
       }
     },
@@ -1329,6 +1437,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "添加两步验证"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama ekle"
           }
         }
       }
@@ -1472,6 +1586,12 @@
             "state" : "translated",
             "value" : "或者，如果您的身份验证器支持TOTP URI，您也可以复制完整的URI。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanız TOTP URI'lerini destekliyorsa tam URI'yi de kopyalayabilirsiniz."
+          }
         }
       }
     },
@@ -1541,6 +1661,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您确定要删除您的账户吗？此操作是永久性的且不可逆转。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem kalıcıdır ve geri alınamaz."
           }
         }
       }
@@ -1612,6 +1738,12 @@
             "state" : "translated",
             "value" : "身份验证器应用"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması"
+          }
         }
       }
     },
@@ -1681,6 +1813,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证器应用程序验证已启用"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması doğrulaması etkinleştirildi"
           }
         }
       }
@@ -1752,6 +1890,12 @@
             "state" : "translated",
             "value" : "身份验证应用程序"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması"
+          }
         }
       }
     },
@@ -1821,6 +1965,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "备用码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod"
           }
         }
       }
@@ -1892,6 +2042,12 @@
             "state" : "translated",
             "value" : "备用码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodlar"
+          }
         }
       }
     },
@@ -1961,6 +2117,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "备份代码现已启用。如果您无法访问身份验证设备，可以使用其中一个代码登录您的帐户。每个代码只能使用一次。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodlar etkinleştirildi. Doğrulama cihazınıza erişiminizi kaybederseniz hesabınıza giriş yapmak için bunlardan birini kullanabilirsiniz. Her kod yalnızca bir kez kullanılabilir."
           }
         }
       }
@@ -2032,6 +2194,12 @@
             "state" : "translated",
             "value" : "取消"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İptal"
+          }
         }
       }
     },
@@ -2101,6 +2269,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更改密码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı değiştir"
           }
         }
       }
@@ -2172,6 +2346,12 @@
             "state" : "translated",
             "value" : "请检查您的邮箱"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postanı kontrol et"
+          }
         }
       }
     },
@@ -2242,6 +2422,12 @@
             "state" : "translated",
             "value" : "请查看您的手机"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonunu kontrol et"
+          }
         }
       }
     },
@@ -2311,6 +2497,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择用户名。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kullanıcı adı seç."
           }
         }
       }
@@ -2454,6 +2646,12 @@
             "state" : "translated",
             "value" : "从照片库中选择"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf kitaplığından seç"
+          }
         }
       }
     },
@@ -2523,6 +2721,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择您希望如何接收两步验证码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama kodunuzu nasıl almak istediğinizi seçin."
           }
         }
       }
@@ -2596,6 +2800,12 @@
             "state" : "translated",
             "value" : "选择您要用于短信代码两步验证的电话号码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu ile iki adımlı doğrulama için kullanmak istediğiniz telefon numarasını seçin"
+          }
         }
       }
     },
@@ -2665,6 +2875,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择您喜欢的方法来保护您的帐户并提供额外的安全层"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızı ekstra bir güvenlik katmanıyla korumak için tercih ettiğiniz yöntemi seçin"
           }
         }
       }
@@ -2736,6 +2952,12 @@
             "state" : "translated",
             "value" : "选择您的密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı seçin"
+          }
         }
       }
     },
@@ -2805,6 +3027,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择您的用户名"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adınızı seçin"
           }
         }
       }
@@ -2876,6 +3104,12 @@
             "state" : "translated",
             "value" : "关闭"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapat"
+          }
         }
       }
     },
@@ -2945,6 +3179,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完善您的个人资料"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilini tamamla"
           }
         }
       }
@@ -3016,6 +3256,12 @@
             "state" : "translated",
             "value" : "确认密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı onayla"
+          }
         }
       }
     },
@@ -3086,6 +3332,12 @@
             "state" : "translated",
             "value" : "连接账户"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap bağla"
+          }
         }
       }
     },
@@ -3155,6 +3407,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关联账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BAĞLI HESAPLAR"
           }
         }
       }
@@ -3298,6 +3556,12 @@
             "state" : "translated",
             "value" : "继续"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam et"
+          }
         }
       }
     },
@@ -3367,6 +3631,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "继续前往%@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ile devam et"
           }
         }
       }
@@ -3438,6 +3708,12 @@
             "state" : "translated",
             "value" : "使用%@继续"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ile devam et"
+          }
         }
       }
     },
@@ -3508,6 +3784,12 @@
             "state" : "translated",
             "value" : "复制到剪贴板"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panoya kopyala"
+          }
         }
       }
     },
@@ -3577,6 +3859,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建一个独特的密码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benzersiz bir parola oluştur."
           }
         }
       }
@@ -3720,6 +4008,12 @@
             "state" : "translated",
             "value" : "创建您的账户"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabını oluştur"
+          }
         }
       }
     },
@@ -3789,6 +4083,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建时间：%@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oluşturulma: %@"
           }
         }
       }
@@ -3860,6 +4160,12 @@
             "state" : "translated",
             "value" : "当前密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut parola"
+          }
         }
       }
     },
@@ -3929,6 +4235,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "默认"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsayılan"
           }
         }
       }
@@ -4000,6 +4312,12 @@
             "state" : "translated",
             "value" : "删除"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SİL"
+          }
         }
       }
     },
@@ -4069,6 +4387,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabı sil"
           }
         }
       }
@@ -4140,6 +4464,12 @@
             "state" : "translated",
             "value" : "删除账户"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HESABI SİL"
+          }
         }
       }
     },
@@ -4209,6 +4539,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "桌面设备"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masaüstü cihaz"
           }
         }
       }
@@ -4280,6 +4616,12 @@
             "state" : "translated",
             "value" : "没有收到验证码？"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kod almadın mı?"
+          }
         }
       }
     },
@@ -4349,6 +4691,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完成"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamam"
           }
         }
       }
@@ -4422,6 +4770,12 @@
             "state" : "translated",
             "value" : "下载"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İndir"
+          }
         }
       }
     },
@@ -4491,6 +4845,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑个人资料"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profili düzenle"
           }
         }
       }
@@ -4562,6 +4922,12 @@
             "state" : "translated",
             "value" : "电子邮箱地址"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi"
+          }
         }
       }
     },
@@ -4631,6 +4997,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "电子邮箱地址"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-POSTA ADRESLERİ"
           }
         }
       }
@@ -4702,6 +5074,12 @@
             "state" : "translated",
             "value" : "发送验证码至%@"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ adresine e-posta kodu gönder"
+          }
         }
       }
     },
@@ -4772,6 +5150,12 @@
             "state" : "translated",
             "value" : "电子邮件支持"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta desteği"
+          }
         }
       }
     },
@@ -4841,6 +5225,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入备用码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod gir"
           }
         }
       }
@@ -4984,6 +5374,12 @@
             "state" : "translated",
             "value" : "使用您的密码登录"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı gir"
+          }
         }
       }
     },
@@ -5053,6 +5449,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您想要使用的电子邮箱地址。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanmak istediğiniz e-posta adresini girin."
           }
         }
       }
@@ -5124,6 +5526,12 @@
             "state" : "translated",
             "value" : "输入您账户的密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızın parolasını girin"
+          }
         }
       }
     },
@@ -5193,6 +5601,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您想要使用的电话号码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanmak istediğiniz telefon numarasını girin."
           }
         }
       }
@@ -5264,6 +5678,12 @@
             "state" : "translated",
             "value" : "输入验证器应用程序中的验证码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamasındaki kodu girin"
+          }
         }
       }
     },
@@ -5333,6 +5753,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入来自您的身份验证应用的验证码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızdaki kodu girin."
           }
         }
       }
@@ -5404,6 +5830,12 @@
             "state" : "translated",
             "value" : "输入发送到%@的验证码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ adresine gönderilen doğrulama kodunu girin"
+          }
         }
       }
     },
@@ -5473,6 +5905,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您当前的密码以设置新密码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni bir parola belirlemek için mevcut parolanızı girin."
           }
         }
       }
@@ -5544,6 +5982,12 @@
             "state" : "translated",
             "value" : "请输入您的邮箱"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postanızı girin"
+          }
         }
       }
     },
@@ -5613,6 +6057,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请输入您的邮箱或用户名"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta veya kullanıcı adınızı girin"
           }
         }
       }
@@ -5756,6 +6206,12 @@
             "state" : "translated",
             "value" : "使用密码登录"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı girin"
+          }
         }
       }
     },
@@ -5825,6 +6281,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请输入您的电话号码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numaranızı girin"
           }
         }
       }
@@ -5896,6 +6358,12 @@
             "state" : "translated",
             "value" : "请输入您的用户名"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adınızı girin"
+          }
         }
       }
     },
@@ -5965,6 +6433,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "遇到问题？您可以使用以下任一方法登录。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorun mu yaşıyorsun? Bu yöntemlerden herhangi birini kullanarak giriş yapabilirsin."
           }
         }
       }
@@ -6036,6 +6510,12 @@
             "state" : "translated",
             "value" : "名"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ad"
+          }
         }
       }
     },
@@ -6105,6 +6585,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "首先，输入发送到您邮箱的验证码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önce e-posta adresine gönderilen kodu gir"
           }
         }
       }
@@ -6176,6 +6662,12 @@
             "state" : "translated",
             "value" : "首先，输入发送到您手机的验证码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önce telefonuna gönderilen kodu gir"
+          }
         }
       }
     },
@@ -6245,6 +6737,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "忘记密码？"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanı mı unuttun?"
           }
         }
       }
@@ -6316,6 +6814,12 @@
             "state" : "translated",
             "value" : "获取帮助"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yardım al"
+          }
         }
       }
     },
@@ -6386,6 +6890,12 @@
             "state" : "translated",
             "value" : "返回"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geri dön"
+          }
         }
       }
     },
@@ -6455,6 +6965,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "我同意 "
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kabul ediyorum: "
           }
         }
       }
@@ -6528,6 +7044,12 @@
             "state" : "translated",
             "value" : "如果您在完成所需的帐户设置时遇到困难，请给我们发送电子邮件，我们将帮助您尽快完成。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap kurulumunu tamamlamakta sorun yaşıyorsanız bize e-posta gönderin, en kısa sürede yardımcı olalım."
+          }
         }
       }
     },
@@ -6597,6 +7119,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "如果您在创建账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快完成您的注册。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap oluştururken sorun yaşıyorsanız bize e-posta gönderin, kaydınızı en kısa sürede tamamlayalım."
           }
         }
       }
@@ -6668,6 +7196,12 @@
             "state" : "translated",
             "value" : "如果您在登录账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快恢复访问权限。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınıza giriş yapmakta sorun yaşıyorsanız bize e-posta gönderin, erişiminizi en kısa sürede geri yükleyelim."
+          }
         }
       }
     },
@@ -6738,6 +7272,12 @@
             "state" : "translated",
             "value" : "国际"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uluslararası"
+          }
         }
       }
     },
@@ -6807,6 +7347,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建议从所有可能使用过您旧密码的其他设备注销。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eski parolanızı kullanmış olabilecek diğer tüm cihazlardan çıkış yapmanız önerilir."
           }
         }
       }
@@ -7090,6 +7636,12 @@
             "state" : "translated",
             "value" : "姓"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soyad"
+          }
         }
       }
     },
@@ -7159,6 +7711,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最后使用"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son Kullanım"
           }
         }
       }
@@ -7230,6 +7788,12 @@
             "state" : "translated",
             "value" : "最后使用：%@"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son kullanım: %@"
+          }
         }
       }
     },
@@ -7300,6 +7864,12 @@
             "state" : "translated",
             "value" : "将其他登录选项链接到您的账户。使用前需要验证。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınıza başka bir giriş seçeneği bağlayın. Kullanılmadan önce doğrulamanız gerekecek."
+          }
         }
       }
     },
@@ -7369,6 +7939,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已关联"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlı"
           }
         }
       }
@@ -7442,6 +8018,12 @@
             "state" : "translated",
             "value" : "确保启用基于时间或一次性的密码，然后完成帐户关联。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
+          }
         }
       }
     },
@@ -7511,6 +8093,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "管理账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabı yönet"
           }
         }
       }
@@ -7583,6 +8171,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "手动设置键"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manuel kurulum anahtarı"
           }
         }
       }
@@ -7724,6 +8318,12 @@
             "state" : "translated",
             "value" : "为MFA保留"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MFA ayrılmış"
+          }
         }
       }
     },
@@ -7793,6 +8393,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移动设备"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobil cihaz"
           }
         }
       }
@@ -7864,6 +8470,12 @@
             "state" : "translated",
             "value" : "通行密钥名称"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı adı"
+          }
         }
       }
     },
@@ -7933,6 +8545,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新密码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni parola"
           }
         }
       }
@@ -8004,6 +8622,12 @@
             "state" : "translated",
             "value" : "下一步"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İleri"
+          }
         }
       }
     },
@@ -8074,6 +8698,12 @@
             "state" : "translated",
             "value" : "或"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "veya"
+          }
         }
       }
     },
@@ -8143,6 +8773,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "或使用其他方式登录"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veya başka bir yöntemle giriş yap"
           }
         }
       }
@@ -8286,6 +8922,12 @@
             "state" : "translated",
             "value" : "通行密钥"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GEÇİŞ ANAHTARLARI"
+          }
         }
       }
     },
@@ -8355,6 +8997,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "密码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parola"
           }
         }
       }
@@ -8426,6 +9074,12 @@
             "state" : "translated",
             "value" : "密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PAROLA"
+          }
         }
       }
     },
@@ -8495,6 +9149,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "密码不匹配。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolalar eşleşmiyor."
           }
         }
       }
@@ -8638,6 +9298,12 @@
             "state" : "translated",
             "value" : "电话号码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası"
+          }
         }
       }
     },
@@ -8707,6 +9373,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "电话号码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TELEFON NUMARALARI"
           }
         }
       }
@@ -8778,6 +9450,12 @@
             "state" : "translated",
             "value" : "主要"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birincil"
+          }
         }
       }
     },
@@ -8848,6 +9526,12 @@
             "state" : "translated",
             "value" : "隐私政策"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gizlilik Politikası"
+          }
         }
       }
     },
@@ -8917,6 +9601,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "个人资料详情"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil Bilgileri"
           }
         }
       }
@@ -9060,6 +9750,12 @@
             "state" : "translated",
             "value" : "重新连接"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden bağlan"
+          }
         }
       }
     },
@@ -9131,6 +9827,12 @@
             "state" : "translated",
             "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URL'si eksik veya geçersiz. Harici kimlik doğrulama akışı başlatılamıyor."
+          }
         }
       }
     },
@@ -9200,6 +9902,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新生成"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden oluştur"
           }
         }
       }
@@ -9271,6 +9979,12 @@
             "state" : "translated",
             "value" : "移除"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaldır"
+          }
         }
       }
     },
@@ -9340,6 +10054,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除已连接账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlı hesabı kaldır"
           }
         }
       }
@@ -9411,6 +10131,12 @@
             "state" : "translated",
             "value" : "删除连接"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantıyı kaldır"
+          }
         }
       }
     },
@@ -9480,6 +10206,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除邮箱"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postayı kaldır"
           }
         }
       }
@@ -9551,6 +10283,12 @@
             "state" : "translated",
             "value" : "删除邮箱地址"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresini kaldır"
+          }
         }
       }
     },
@@ -9620,6 +10358,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除密码钥匙"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarını kaldır"
           }
         }
       }
@@ -9691,6 +10435,12 @@
             "state" : "translated",
             "value" : "删除电话"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonu kaldır"
+          }
         }
       }
     },
@@ -9760,6 +10510,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "删除电话号码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarasını kaldır"
           }
         }
       }
@@ -9831,6 +10587,12 @@
             "state" : "translated",
             "value" : "移除照片"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğrafı kaldır"
+          }
         }
       }
     },
@@ -9900,6 +10662,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移除两步验证"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulamayı kaldır"
           }
         }
       }
@@ -9971,6 +10739,12 @@
             "state" : "translated",
             "value" : "重命名"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden adlandır"
+          }
         }
       }
     },
@@ -10040,6 +10814,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重命名通行密钥"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarını yeniden adlandır"
           }
         }
       }
@@ -10183,6 +10963,12 @@
             "state" : "translated",
             "value" : "重新发送"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar gönder"
+          }
         }
       }
     },
@@ -10252,6 +11038,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新发送 (%lld)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar gönder (%lld)"
           }
         }
       }
@@ -10323,6 +11115,12 @@
             "state" : "translated",
             "value" : "重置密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı sıfırla"
+          }
         }
       }
     },
@@ -10393,6 +11191,12 @@
             "state" : "translated",
             "value" : "重置您的密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı sıfırlayın"
+          }
         }
       }
     },
@@ -10462,6 +11266,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "保存"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydet"
           }
         }
       }
@@ -10535,6 +11345,12 @@
             "state" : "translated",
             "value" : "将这些代码保存在安全的地方。如果您无法访问身份验证设备，您可以使用备份代码登录。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu kodları güvenli bir yere kaydedin. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kod kullanabilirsiniz."
+          }
         }
       }
     },
@@ -10604,6 +11420,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "安全提供"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenlik sağlayıcı:"
           }
         }
       }
@@ -10675,6 +11497,12 @@
             "state" : "translated",
             "value" : "安全"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenlik"
+          }
         }
       }
     },
@@ -10744,6 +11572,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择现有电话号码注册短信验证码两步验证，或添加新号码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu ile iki adımlı doğrulama için mevcut bir telefon numarası seçin veya yeni bir tane ekleyin."
           }
         }
       }
@@ -10815,6 +11649,12 @@
             "state" : "translated",
             "value" : "发送验证码至%@"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ numarasına SMS kodu gönder"
+          }
         }
       }
     },
@@ -10884,6 +11724,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "设为默认"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsayılan olarak ayarla"
           }
         }
       }
@@ -10955,6 +11801,12 @@
             "state" : "translated",
             "value" : "设为主要"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birincil olarak ayarla"
+          }
         }
       }
     },
@@ -11025,6 +11877,12 @@
             "state" : "translated",
             "value" : "设置新密码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni parola belirle"
+          }
         }
       }
     },
@@ -11094,6 +11952,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在您的身份验证器中设置新的登录方法，并输入下面提供的密钥。\n\n确保启用基于时间或一次性密码，然后完成账户链接。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve aşağıda verilen Anahtarı girin.\n\nZamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
           }
         }
       }
@@ -11167,6 +12031,12 @@
             "state" : "translated",
             "value" : "在您的身份验证器应用中设置新的登录方式，并使用下方的手动设置密钥将其关联到您的帐户。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aşağıdaki manuel kurulum anahtarını kullanarak doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve hesabınıza bağlayın."
+          }
         }
       }
     },
@@ -11239,6 +12109,12 @@
             "state" : "translated",
             "value" : "设置两步验证"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulamayı kur"
+          }
         }
       }
     },
@@ -11308,6 +12184,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用您的通行密钥登录"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınla giriş yap"
           }
         }
       }
@@ -11379,6 +12261,12 @@
             "state" : "translated",
             "value" : "使用密码登录"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanla giriş yap"
+          }
         }
       }
     },
@@ -11448,6 +12336,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "退出登录"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çıkış yap"
           }
         }
       }
@@ -11519,6 +12413,12 @@
             "state" : "translated",
             "value" : "退出所有账户"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tüm hesaplardan çıkış yap"
+          }
         }
       }
     },
@@ -11588,6 +12488,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "退出所有其他设备"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diğer tüm cihazlardan çıkış yap"
           }
         }
       }
@@ -11659,6 +12565,12 @@
             "state" : "translated",
             "value" : "从设备注销"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cihazdan çıkış yap"
+          }
         }
       }
     },
@@ -11728,6 +12640,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "注册"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıt ol"
           }
         }
       }
@@ -11871,6 +12789,12 @@
             "state" : "translated",
             "value" : "短信验证码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu"
+          }
         }
       }
     },
@@ -11940,6 +12864,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "短信验证码已启用"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu doğrulaması etkinleştirildi"
           }
         }
       }
@@ -12011,6 +12941,12 @@
             "state" : "translated",
             "value" : "成功"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başarılı"
+          }
         }
       }
     },
@@ -12080,6 +13016,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "切换账户"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap değiştir"
           }
         }
       }
@@ -12151,6 +13093,12 @@
             "state" : "translated",
             "value" : "服务条款"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanım Koşulları"
+          }
         }
       }
     },
@@ -12220,6 +13168,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "从照片库加载图像时出错。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf kitaplığından görsel yüklenirken bir hata oluştu."
           }
         }
       }
@@ -12291,6 +13245,12 @@
             "state" : "translated",
             "value" : "这个设备"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihaz"
+          }
         }
       }
     },
@@ -12360,6 +13320,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "继续"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "devam etmek için"
           }
         }
       }
@@ -12431,6 +13397,12 @@
             "state" : "translated",
             "value" : "继续前往%@"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ için devam etmek için"
+          }
         }
       }
     },
@@ -12500,6 +13472,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "要继续，请输入您的身份验证器应用生成的验证码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için doğrulama uygulamanız tarafından oluşturulan kodu girin"
           }
         }
       }
@@ -12571,6 +13549,12 @@
             "state" : "translated",
             "value" : "两步验证"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama"
+          }
         }
       }
     },
@@ -12640,6 +13624,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "两步验证"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İKİ ADIMLI DOĞRULAMA"
           }
         }
       }
@@ -12711,6 +13701,12 @@
             "state" : "translated",
             "value" : "两步验证现已启用。登录时，您需要输入来自此身份验证应用的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama etkinleştirildi. Giriş yaparken ek bir adım olarak bu doğrulama uygulamasından bir kod girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
+          }
         }
       }
     },
@@ -12780,6 +13776,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "两步验证设置"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama kurulumu"
           }
         }
       }
@@ -12851,6 +13853,12 @@
             "state" : "translated",
             "value" : "输入\"删除\"以继续"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için \"SİL\" yazın"
+          }
         }
       }
     },
@@ -12920,6 +13928,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未知的验证码验证方式。请使用其他方式。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilinmeyen doğrulama yöntemi. Lütfen başka bir yöntem kullanın."
           }
         }
       }
@@ -12991,6 +14005,12 @@
             "state" : "translated",
             "value" : "未知设备"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilinmeyen cihaz"
+          }
         }
       }
     },
@@ -13061,6 +14081,12 @@
             "state" : "translated",
             "value" : "未验证"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulanmamış"
+          }
         }
       }
     },
@@ -13130,6 +14156,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更新密码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı güncelle"
           }
         }
       }
@@ -13273,6 +14305,12 @@
             "state" : "translated",
             "value" : "使用备用码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod kullan"
+          }
         }
       }
     },
@@ -13342,6 +14380,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用其他方法"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başka yöntem kullan"
           }
         }
       }
@@ -13413,6 +14457,12 @@
             "state" : "translated",
             "value" : "使用电子邮箱"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi kullan"
+          }
         }
       }
     },
@@ -13482,6 +14532,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用电子邮箱或用户名"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta veya kullanıcı adı kullan"
           }
         }
       }
@@ -13553,6 +14609,12 @@
             "state" : "translated",
             "value" : "使用电话号码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası kullan"
+          }
         }
       }
     },
@@ -13622,6 +14684,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用用户名"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adı kullan"
           }
         }
       }
@@ -13693,6 +14761,12 @@
             "state" : "translated",
             "value" : "使用您的身份验证器应用"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızı kullanın"
+          }
         }
       }
     },
@@ -13762,6 +14836,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用您的通行密钥"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınızı kullanın"
           }
         }
       }
@@ -13833,6 +14913,12 @@
             "state" : "translated",
             "value" : "用户名"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adı"
+          }
         }
       }
     },
@@ -13902,6 +14988,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用您的通行密钥可确认您的身份。您的设备可能会要求您提供指纹、面容或屏幕锁定。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınızı kullanmak kimliğinizi doğrular. Cihazınız parmak izi, yüz tanıma veya ekran kilidi isteyebilir."
           }
         }
       }
@@ -13973,6 +15065,12 @@
             "state" : "translated",
             "value" : "登录时将不再需要此身份验证器的验证码。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu doğrulama uygulamasından gelen kodlar giriş yaparken artık istenmeyecek."
+          }
         }
       }
     },
@@ -14042,6 +15140,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrula"
           }
         }
       }
@@ -14113,6 +15217,12 @@
             "state" : "translated",
             "value" : "验证身份验证应用"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamasını doğrula"
+          }
         }
       }
     },
@@ -14183,6 +15293,12 @@
             "state" : "translated",
             "value" : "验证电子邮箱地址"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresini doğrula"
+          }
         }
       }
     },
@@ -14252,6 +15368,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "验证电话号码"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarasını doğrula"
           }
         }
       }
@@ -14325,6 +15447,12 @@
             "state" : "translated",
             "value" : "验证您的电话号码"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numaranızı doğrulayın"
+          }
         }
       }
     },
@@ -14394,6 +15522,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在验证..."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulanıyor..."
           }
         }
       }
@@ -14465,6 +15599,12 @@
             "state" : "translated",
             "value" : "欢迎！请填写详细信息以开始使用。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoş geldin! Başlamak için bilgileri doldur."
+          }
         }
       }
     },
@@ -14534,6 +15674,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "欢迎！登录以继续"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoş geldin! Devam etmek için giriş yap"
           }
         }
       }
@@ -14605,6 +15751,12 @@
             "state" : "translated",
             "value" : "登录时，您需要输入发送到此电话号码的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaparken ek bir adım olarak bu telefon numarasına gönderilen doğrulama kodunu girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
+          }
         }
       }
     },
@@ -14674,6 +15826,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "登录时，系统会要求您提供发送到该电话号码的验证码。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaptığınızda bu telefon numarasına gönderilen doğrulama kodu istenecek."
           }
         }
       }
@@ -14745,6 +15903,12 @@
             "state" : "translated",
             "value" : "登录时，您需要输入此身份验证器应用程序中的验证码。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaptığınızda bu doğrulama uygulamasından bir kod girmeniz gerekecek."
+          }
         }
       }
     },
@@ -14814,6 +15978,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "哎呀，出错了"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir şeyler ters gitti"
           }
         }
       }
@@ -15029,6 +16199,12 @@
             "state" : "translated",
             "value" : "您可以更改通行密钥名称，以便更容易找到。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı adını kolayca bulabilmek için değiştirebilirsiniz."
+          }
         }
       }
     },
@@ -15171,6 +16347,12 @@
             "state" : "translated",
             "value" : "在将此电子邮箱地址添加到您的账户之前，您需要先进行验证。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu e-posta adresini hesabınıza eklemeden önce doğrulamanız gerekecek."
+          }
         }
       }
     },
@@ -15240,6 +16422,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您正在从新设备登录。我们要求进行验证以保护您的账户安全。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni bir cihazdan giriş yapıyorsunuz. Hesabınızın güvenliği için doğrulama istiyoruz."
           }
         }
       }
@@ -15311,6 +16499,12 @@
             "state" : "translated",
             "value" : "您的账户需要设置新密码才能继续。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmeden önce hesabınız için yeni bir parola belirlemeniz gerekiyor"
+          }
         }
       }
     },
@@ -15380,6 +16574,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您的备用码是在设置两步验证时获得的。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodunuz iki adımlı doğrulamayı kurarken aldığınız koddur."
           }
         }
       }
