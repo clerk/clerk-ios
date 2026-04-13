@@ -310,7 +310,10 @@ struct SessionTaskChooseOrganizationView: View {
   private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
     do {
       try await invitation.accept()
-      acceptedInvitationOrgIds.insert(invitation.publicOrganizationData.id)
+      let wasInserted = acceptedInvitationOrgIds.insert(invitation.publicOrganizationData.id).inserted
+      guard wasInserted else { return }
+      invitationsPager.offset = max(0, invitationsPager.offset - 1)
+      invitationsPager.totalCount = max(0, invitationsPager.totalCount - 1)
     } catch {
       self.error = error
     }

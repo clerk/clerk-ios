@@ -345,6 +345,7 @@ extension User {
   /// - Parameters:
   ///   - offset: The number of items to skip before returning results.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
   public func getOrganizationInvitations(
@@ -372,7 +373,7 @@ extension User {
   /// - Parameters:
   ///   - offset: The number of items to skip before returning results.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The status an invitation can have.
+  ///   - status: An array of suggestion statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
   @discardableResult @MainActor
   public func getOrganizationSuggestions(

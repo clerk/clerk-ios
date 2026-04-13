@@ -61,6 +61,10 @@ package final class MockUserService: UserServiceProtocol {
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
   /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
+  ///
+  /// The closure receives the pagination arguments plus an array of suggestion status filters.
+  /// Pass `[]` in tests to simulate no status filter, or include one or more values such as
+  /// `["pending", "accepted"]` to mirror filtered suggestion requests.
   package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
   /// Custom handler for the `getOrganizationCreationDefaults()` method.
@@ -101,7 +105,10 @@ package final class MockUserService: UserServiceProtocol {
   ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
   ///     or provide a value such as `"pending"` when a test needs filtered invitations.
   ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
-  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method.
+  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
+  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
+  ///     The third argument accepts multiple suggestion statuses; pass `[]` to simulate an unfiltered request
+  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered suggestions.
   ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
   ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
   ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.

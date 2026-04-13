@@ -33,7 +33,6 @@ extension Clerk.Environment {
     }
 
     /// Sensible defaults when organization settings are absent from a decoded payload.
-    /// Values mirror the JS SDK defaults in OrganizationSettings.ts.
     public static let `default` = OrganizationSettings(
       enabled: false,
       maxAllowedMemberships: 1,

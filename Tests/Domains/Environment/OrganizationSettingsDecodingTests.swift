@@ -6,6 +6,10 @@ struct OrganizationSettingsDecodingTests {
   private let decoder = JSONDecoder.clerkDecoder
   private let encoder = JSONEncoder.clerkEncoder
 
+  private enum TestError: Error {
+    case invalidUTF8
+  }
+
   /// Builds a full Environment JSON, optionally injecting a custom
   /// `organization_settings` value (pass `nil` to omit the key entirely).
   private func environmentJSON(organizationSettings: String? = nil) throws -> Data {
@@ -13,11 +17,18 @@ struct OrganizationSettingsDecodingTests {
     let authConfig = try encoder.encode(Clerk.Environment.AuthConfig.mock)
     let userSettings = try encoder.encode(Clerk.Environment.UserSettings.mock)
     let displayConfig = try encoder.encode(Clerk.Environment.DisplayConfig.mock)
+    guard
+      let authConfigString = String(data: authConfig, encoding: .utf8),
+      let userSettingsString = String(data: userSettings, encoding: .utf8),
+      let displayConfigString = String(data: displayConfig, encoding: .utf8)
+    else {
+      throw TestError.invalidUTF8
+    }
 
     var parts = [
-      "\"auth_config\": \(String(data: authConfig, encoding: .utf8)!)",
-      "\"user_settings\": \(String(data: userSettings, encoding: .utf8)!)",
-      "\"display_config\": \(String(data: displayConfig, encoding: .utf8)!)",
+      "\"auth_config\": \(authConfigString)",
+      "\"user_settings\": \(userSettingsString)",
+      "\"display_config\": \(displayConfigString)",
     ]
     if let organizationSettings {
       parts.append("\"organization_settings\": \(organizationSettings)")
