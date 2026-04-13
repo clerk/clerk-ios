@@ -164,7 +164,8 @@ public struct AuthView: View {
           guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
           let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
-          if becameActive, isDismissable, !isHandlingSessionTask {
+          let sessionSwitched = oldValue?.id != newValue?.id
+          if becameActive, isDismissable, !isHandlingSessionTask || sessionSwitched {
             dismiss()
           }
         default:
