@@ -50,7 +50,11 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `disableTotp()` method.
   package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
 
-  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:)` method.
+  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:)` method.
+  ///
+  /// The closure receives the pagination arguments plus an optional invitation status filter.
+  /// Pass `nil` in tests to simulate no status filter, or a status value such as `"pending"`
+  /// to mirror filtered invitation requests.
   package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
   /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
@@ -92,7 +96,10 @@ package final class MockUserService: UserServiceProtocol {
   ///   - createTotp: Optional implementation of the `createTotp()` method.
   ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
   ///   - disableTotp: Optional implementation of the `disableTotp()` method.
-  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:)` method.
+  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:)` method
+  ///     with signature `((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
+  ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
+  ///     or provide a value such as `"pending"` when a test needs filtered invitations.
   ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
   ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method.
   ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.

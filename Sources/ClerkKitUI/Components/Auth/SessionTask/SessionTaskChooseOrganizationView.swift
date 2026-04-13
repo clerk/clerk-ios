@@ -76,7 +76,10 @@ struct SessionTaskChooseOrganizationView: View {
         }
       }
     }
-    .clerkErrorPresenting($error)
+    .clerkErrorPresenting($error, onDismiss: { _ in
+      guard isLoading, !hasExistingResources, user != nil else { return }
+      Task { await fetchOrganizationResources() }
+    })
     .taskOnce {
       await fetchOrganizationResources()
     }
@@ -245,11 +248,10 @@ struct SessionTaskChooseOrganizationView: View {
       invitationsPager.replace(with: invitationsResult)
       suggestionsPager.replace(with: suggestionsResult)
       creationDefaults = try await fetchedDefaults
+      isLoading = false
     } catch {
       self.error = error
     }
-
-    isLoading = false
   }
 
   private func loadMoreMemberships() async {
