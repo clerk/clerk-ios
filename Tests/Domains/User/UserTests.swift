@@ -208,7 +208,7 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationInvitations(initialPage: 2, pageSize: 10, status: "pending")
+    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: "pending")
 
     let params = try #require(captured.value)
     #expect(params.0 == 10)
@@ -226,7 +226,7 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationMemberships(initialPage: 3, pageSize: 10)
+    _ = try await User.mock.getOrganizationMemberships(page: 3, pageSize: 10)
 
     let params = try #require(captured.value)
     #expect(params.0 == 20)
@@ -255,7 +255,7 @@ struct UserTests {
     configureService(service)
 
     _ = try await User.mock.getOrganizationSuggestions(
-      initialPage: 2,
+      page: 2,
       pageSize: 10,
       status: scenario.status
     )

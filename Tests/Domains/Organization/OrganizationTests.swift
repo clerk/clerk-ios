@@ -99,7 +99,7 @@ struct OrganizationTests {
 
     configureOrganizationService(service)
 
-    _ = try await organization.getRoles(initialPage: 2, pageSize: 10)
+    _ = try await organization.getRoles(page: 2, pageSize: 10)
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
@@ -129,7 +129,7 @@ struct OrganizationTests {
     _ = try await organization.getMemberships(
       query: scenario.query,
       role: scenario.role,
-      initialPage: 3,
+      page: 3,
       pageSize: 10
     )
 
@@ -253,7 +253,7 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getInvitations(
-      initialPage: 2,
+      page: 2,
       pageSize: 10,
       status: scenario.status
     )
@@ -321,7 +321,7 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getDomains(
-      initialPage: 2,
+      page: 2,
       pageSize: 10,
       enrollmentMode: scenario.enrollmentMode
     )
@@ -370,7 +370,7 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(
-      initialPage: 2,
+      page: 2,
       pageSize: 10,
       status: scenario.status
     )

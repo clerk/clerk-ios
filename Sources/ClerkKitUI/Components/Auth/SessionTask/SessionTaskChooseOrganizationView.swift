@@ -235,9 +235,9 @@ struct SessionTaskChooseOrganizationView: View {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
 
     do {
-      async let fetchedMemberships = user.getOrganizationMemberships(initialPage: 1, pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(initialPage: 1, pageSize: pageSize, status: "pending")
-      async let fetchedSuggestions = user.getOrganizationSuggestions(initialPage: 1, pageSize: pageSize, status: ["pending", "accepted"])
+      async let fetchedMemberships = user.getOrganizationMemberships(page: 1, pageSize: pageSize)
+      async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: "pending")
+      async let fetchedSuggestions = user.getOrganizationSuggestions(page: 1, pageSize: pageSize, status: ["pending", "accepted"])
       async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
 
       let membershipsResult = try await fetchedMemberships

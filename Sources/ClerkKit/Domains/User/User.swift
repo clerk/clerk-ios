@@ -343,18 +343,18 @@ extension User {
 
   /// Retrieves a list of organization invitations for the user.
   /// - Parameters:
-  ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
   ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
   public func getOrganizationInvitations(
-    initialPage: Int = 1,
+    page: Int = 1,
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await getOrganizationInvitations(
-      offset: offset(forInitialPage: initialPage, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -377,16 +377,16 @@ extension User {
 
   /// Retrieves a list of organization memberships for the user.
   /// - Parameters:
-  ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
   @discardableResult @MainActor
   public func getOrganizationMemberships(
-    initialPage: Int = 1,
+    page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await getOrganizationMemberships(
-      offset: offset(forInitialPage: initialPage, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize
     )
   }
@@ -406,18 +406,18 @@ extension User {
 
   /// Retrieves a list of organization suggestions for the user.
   /// - Parameters:
-  ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
   ///   - status: An array of suggestion statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
   @discardableResult @MainActor
   public func getOrganizationSuggestions(
-    initialPage: Int = 1,
+    page: Int = 1,
     pageSize: Int = 20,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await getOrganizationSuggestions(
-      offset: offset(forInitialPage: initialPage, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -438,8 +438,8 @@ extension User {
     try await userService.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)
   }
 
-  private func offset(forInitialPage initialPage: Int, pageSize: Int) -> Int {
-    max(initialPage - 1, 0) * pageSize
+  private func offset(forPage page: Int, pageSize: Int) -> Int {
+    max(page - 1, 0) * pageSize
   }
 
   /// Retrieves the organization creation defaults for this user.
