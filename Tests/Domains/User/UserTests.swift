@@ -267,24 +267,6 @@ struct UserTests {
   }
 
   @Test
-  func getOrganizationSuggestionsSingleStatusUsesUserServiceGetOrganizationSuggestions() async throws {
-    let captured = LockIsolated<(Int, Int, [String])?>(nil)
-    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status in
-      captured.setValue((offset, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.getOrganizationSuggestions(initialPage: 2, pageSize: 10, status: "pending")
-
-    let params = try #require(captured.value)
-    #expect(params.0 == 10)
-    #expect(params.1 == 10)
-    #expect(params.2 == ["pending"])
-  }
-
-  @Test
   func getSessionsUsesUserServiceGetSessions() async throws {
     let user = User.mock
     let captured = LockIsolated<User?>(nil)

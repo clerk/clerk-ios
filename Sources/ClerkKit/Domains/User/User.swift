@@ -408,45 +408,13 @@ extension User {
   /// - Parameters:
   ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
-  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
-  @discardableResult @MainActor
-  public func getOrganizationSuggestions(
-    initialPage: Int = 1,
-    pageSize: Int = 20
-  ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await getOrganizationSuggestions(initialPage: initialPage, pageSize: pageSize, status: [])
-  }
-
-  /// Retrieves a list of organization suggestions for the user.
-  /// - Parameters:
-  ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
-  ///   - status: The optional suggestion status to filter by. Defaults to `nil`, which applies no status filter.
+  ///   - status: An array of suggestion statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
   @discardableResult @MainActor
   public func getOrganizationSuggestions(
     initialPage: Int = 1,
     pageSize: Int = 20,
-    status: String? = nil
-  ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await getOrganizationSuggestions(
-      offset: offset(forInitialPage: initialPage, pageSize: pageSize),
-      pageSize: pageSize,
-      status: status.map { [$0] } ?? []
-    )
-  }
-
-  /// Retrieves a list of organization suggestions for the user.
-  /// - Parameters:
-  ///   - initialPage: The 1-based page number to fetch. Defaults to `1`.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
-  ///   - status: An array of suggestion statuses to filter by. Pass `[]` to apply no status filter.
-  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
-  @discardableResult @MainActor
-  public func getOrganizationSuggestions(
-    initialPage: Int = 1,
-    pageSize: Int = 20,
-    status: [String]
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await getOrganizationSuggestions(
       offset: offset(forInitialPage: initialPage, pageSize: pageSize),
