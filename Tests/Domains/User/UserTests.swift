@@ -208,10 +208,10 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationInvitations(offset: 0, pageSize: 10, status: "pending")
+    _ = try await User.mock.getOrganizationInvitations(initialPage: 2, pageSize: 10, status: "pending")
 
     let params = try #require(captured.value)
-    #expect(params.0 == 0)
+    #expect(params.0 == 10)
     #expect(params.1 == 10)
     #expect(params.2 == "pending")
   }
@@ -226,10 +226,10 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationMemberships(offset: 0, pageSize: 10)
+    _ = try await User.mock.getOrganizationMemberships(initialPage: 3, pageSize: 10)
 
     let params = try #require(captured.value)
-    #expect(params.0 == 0)
+    #expect(params.0 == 20)
     #expect(params.1 == 10)
   }
 
@@ -255,15 +255,33 @@ struct UserTests {
     configureService(service)
 
     _ = try await User.mock.getOrganizationSuggestions(
-      offset: 0,
+      initialPage: 2,
       pageSize: 10,
       status: scenario.status
     )
 
     let params = try #require(captured.value)
-    #expect(params.0 == 0)
+    #expect(params.0 == 10)
     #expect(params.1 == 10)
     #expect(params.2 == scenario.status)
+  }
+
+  @Test
+  func getOrganizationSuggestionsSingleStatusUsesUserServiceGetOrganizationSuggestions() async throws {
+    let captured = LockIsolated<(Int, Int, [String])?>(nil)
+    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status in
+      captured.setValue((offset, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
+
+    configureService(service)
+
+    _ = try await User.mock.getOrganizationSuggestions(initialPage: 2, pageSize: 10, status: "pending")
+
+    let params = try #require(captured.value)
+    #expect(params.0 == 10)
+    #expect(params.1 == 10)
+    #expect(params.2 == ["pending"])
   }
 
   @Test
