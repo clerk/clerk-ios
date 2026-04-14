@@ -140,37 +140,27 @@ struct SessionTaskCreateOrganizationView: View {
       slugValidationError = nil
     }
     .taskOnce {
-      guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
-      imageIsLoading = true
-      defer { imageIsLoading = false }
-      do {
-        let (data, _) = try await URLSession.shared.data(from: url)
-        guard selectedImageData == nil else { return }
-        selectedImageData = processImageData(data)
-      } catch {
-        // Logo fetch failure is non-critical — proceed without logo
-      }
+      await loadDefaultLogo()
     }
   }
 
   // MARK: - Advisory
 
   private func advisoryView(_ message: String) -> some View {
-    HStack(spacing: 8) {
+    HStack(alignment: .top, spacing: 8) {
       Image(systemName: "exclamationmark.triangle.fill")
+        .font(theme.fonts.caption)
         .foregroundStyle(theme.colors.warning)
       Text(message)
-        .font(.caption)
-        .foregroundStyle(theme.colors.foreground)
+        .font(theme.fonts.caption)
+        .foregroundStyle(theme.colors.warning)
+        .multilineTextAlignment(.leading)
     }
-    .padding(12)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(theme.colors.backgroundWarning)
     .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-    .overlay {
-      RoundedRectangle(cornerRadius: theme.design.borderRadius)
-        .strokeBorder(theme.colors.borderWarning, lineWidth: 1)
-    }
   }
 
   private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
@@ -270,6 +260,21 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   // MARK: - Helpers
+
+  private func loadDefaultLogo() async {
+    guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
+
+    imageIsLoading = true
+    defer { imageIsLoading = false }
+
+    do {
+      let (data, _) = try await URLSession.shared.data(from: url)
+      guard selectedImageData == nil else { return }
+      selectedImageData = processImageData(data)
+    } catch {
+      // Logo fetch failure is non-critical — proceed without logo
+    }
+  }
 
   private func processImageData(_ data: Data) -> Data? {
     UIImage(data: data)?
