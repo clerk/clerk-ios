@@ -77,7 +77,7 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     .clerkErrorPresenting($error, onDismiss: { _ in
-      guard isLoading, !hasExistingResources, user != nil else { return }
+      guard isLoading, user != nil else { return }
       Task { await fetchOrganizationResources() }
     })
     .taskOnce {
@@ -235,9 +235,9 @@ struct SessionTaskChooseOrganizationView: View {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
 
     do {
-      async let fetchedMemberships = user.getOrganizationMemberships(pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(pageSize: pageSize, status: "pending")
-      async let fetchedSuggestions = user.getOrganizationSuggestions(pageSize: pageSize, status: ["pending", "accepted"])
+      async let fetchedMemberships = user.getOrganizationMemberships(initialPage: 1, pageSize: pageSize)
+      async let fetchedInvitations = user.getOrganizationInvitations(initialPage: 1, pageSize: pageSize, status: "pending")
+      async let fetchedSuggestions = user.getOrganizationSuggestions(initialPage: 1, pageSize: pageSize, status: ["pending", "accepted"])
       async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
 
       let membershipsResult = try await fetchedMemberships
