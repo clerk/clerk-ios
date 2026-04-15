@@ -238,7 +238,15 @@ struct SessionTaskChooseOrganizationView: View {
       async let fetchedMemberships = user.getOrganizationMemberships(page: 1, pageSize: pageSize)
       async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: "pending")
       async let fetchedSuggestions = user.getOrganizationSuggestions(page: 1, pageSize: pageSize, status: ["pending", "accepted"])
-      async let fetchedDefaults = defaultsEnabled ? user.getOrganizationCreationDefaults() : nil
+      async let fetchedDefaults: OrganizationCreationDefaults? = {
+        guard defaultsEnabled else { return nil }
+        do {
+          return try await user.getOrganizationCreationDefaults()
+        } catch {
+          ClerkLogger.error("Failed to fetch organization creation defaults", error: error)
+          return nil
+        }
+      }()
 
       let membershipsResult = try await fetchedMemberships
       let invitationsResult = try await fetchedInvitations
@@ -247,7 +255,7 @@ struct SessionTaskChooseOrganizationView: View {
       membershipsPager.replace(with: membershipsResult)
       invitationsPager.replace(with: invitationsResult)
       suggestionsPager.replace(with: suggestionsResult)
-      creationDefaults = try await fetchedDefaults
+      creationDefaults = await fetchedDefaults
       isLoading = false
     } catch {
       self.error = error
