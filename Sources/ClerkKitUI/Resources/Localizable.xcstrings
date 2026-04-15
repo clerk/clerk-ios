@@ -2586,7 +2586,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bir kuruluş seç"
+            "value" : "Kuruluş seç"
           }
         }
       }
@@ -7618,7 +7618,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mevcut bir kuruluşa katılın veya yeni bir kuruluş oluşturun"
+            "value" : "Mevcut bir kuruluşa katıl veya yeni bir kuruluş oluştur"
           }
         }
       }
@@ -10975,7 +10975,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Katılma isteği gönder"
+            "value" : "Katılma talebi gönder"
           }
         }
       }
