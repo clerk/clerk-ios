@@ -63,6 +63,12 @@
             "value" : ""
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ""
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -134,6 +140,12 @@
             "value" : " "
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " "
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -142,76 +154,6 @@
         }
       },
       "shouldTranslate" : false
-    },
-    " and " : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " و "
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " und "
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " και "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " y "
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " et "
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " और "
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " e "
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " と "
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " 및 "
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " e "
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " 和 "
-          }
-        }
-      }
     },
     "%@ will be removed from this account. You will no longer be able to sign in using this connected account." : {
       "localizations" : {
@@ -273,6 +215,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando esta conta conectada."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu bağlı hesabı kullanarak artık giriş yapamayacaksınız."
           }
         },
         "zh-Hans" : {
@@ -345,6 +293,12 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando este endereço de e-mail."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu e-posta adresini kullanarak artık giriş yapamayacaksınız."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -413,6 +367,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando esta chave de acesso."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu geçiş anahtarını kullanarak artık giriş yapamayacaksınız."
           }
         },
         "zh-Hans" : {
@@ -485,6 +445,12 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando este número de telefone."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bu hesaptan kaldırılacak. Bu telefon numarasını kullanarak artık giriş yapamayacaksınız."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -553,6 +519,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ não receberá mais códigos de verificação ao entrar."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ giriş yaparken artık doğrulama kodu almayacak."
           }
         },
         "zh-Hans" : {
@@ -625,6 +597,12 @@
             "value" : "Uma mensagem de texto contendo um código de verificação será enviada para este número de telefone. Taxas de mensagem e dados podem ser aplicadas."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu telefon numarasına doğrulama kodu içeren bir SMS gönderilecek. Mesaj ve veri ücretleri geçerli olabilir."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -693,6 +671,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conta"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap"
           }
         },
         "zh-Hans" : {
@@ -765,6 +749,12 @@
             "value" : "DISPOSITIVOS ATIVOS"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AKTİF CİHAZLAR"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -833,6 +823,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adicionar uma chave de acesso"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı ekle"
           }
         },
         "zh-Hans" : {
@@ -905,6 +901,12 @@
             "value" : "Adicionar conta"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap ekle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -973,6 +975,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adicionar aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması ekle"
           }
         },
         "zh-Hans" : {
@@ -1045,6 +1053,12 @@
             "value" : "Adicionar endereço de e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi ekle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1113,6 +1127,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adicionar senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parola ekle"
           }
         },
         "zh-Hans" : {
@@ -1185,6 +1205,12 @@
             "value" : "Adicionar número de telefone"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası ekle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1255,6 +1281,12 @@
             "value" : "Adicionar verificação por código SMS"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu doğrulaması ekle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1323,6 +1355,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adicionar verificação em duas etapas"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama ekle"
           }
         },
         "zh-Hans" : {
@@ -1397,6 +1435,12 @@
             "value" : "Administrador"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönetici"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1465,6 +1509,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alternativamente, se seu autenticador suporta URIs TOTP, você também pode copiar o URI completo."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanız TOTP URI'lerini destekliyorsa tam URI'yi de kopyalayabilirsiniz."
           }
         },
         "zh-Hans" : {
@@ -1537,6 +1587,12 @@
             "value" : "Tem certeza de que deseja excluir sua conta? Esta ação é permanente e irreversível."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem kalıcıdır ve geri alınamaz."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1605,6 +1661,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması"
           }
         },
         "zh-Hans" : {
@@ -1677,6 +1739,12 @@
             "value" : "Verificação do aplicativo autenticador ativada"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması doğrulaması etkinleştirildi"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1745,6 +1813,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulaması"
           }
         },
         "zh-Hans" : {
@@ -1817,6 +1891,12 @@
             "value" : "Código de backup"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1885,6 +1965,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Códigos de backup"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodlar"
           }
         },
         "zh-Hans" : {
@@ -1957,6 +2043,12 @@
             "value" : "Os códigos de backup agora estão habilitados. Você pode usar um deles para entrar na sua conta, se perder o acesso ao seu dispositivo de autenticação. Cada código só pode ser usado uma vez."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodlar etkinleştirildi. Doğrulama cihazınıza erişiminizi kaybederseniz hesabınıza giriş yapmak için bunlardan birini kullanabilirsiniz. Her kod yalnızca bir kez kullanılabilir."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2025,6 +2117,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancelar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İptal"
           }
         },
         "zh-Hans" : {
@@ -2097,6 +2195,12 @@
             "value" : "Alterar senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı değiştir"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2165,6 +2269,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verifique seu e-mail"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postanı kontrol et"
           }
         },
         "zh-Hans" : {
@@ -2237,6 +2347,12 @@
             "value" : "Verifique seu telefone"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonunu kontrol et"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2305,6 +2421,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escolha um nome de usuário."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kullanıcı adı seç."
           }
         },
         "zh-Hans" : {
@@ -2379,6 +2501,12 @@
             "value" : "Escolha uma organização"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kuruluş seç"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2449,6 +2577,12 @@
             "value" : "Escolher da biblioteca de fotos"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf kitaplığından seç"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2517,6 +2651,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escolha como deseja receber seu código de verificação em duas etapas."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama kodunuzu nasıl almak istediğinizi seçin."
           }
         },
         "zh-Hans" : {
@@ -2591,6 +2731,12 @@
             "value" : "Escolha o número de telefone que deseja usar para a verificação em duas etapas do código SMS"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu ile iki adımlı doğrulama için kullanmak istediğiniz telefon numarasını seçin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2659,6 +2805,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escolha qual método você prefere para proteger sua conta com uma camada extra de segurança"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızı ekstra bir güvenlik katmanıyla korumak için tercih ettiğiniz yöntemi seçin"
           }
         },
         "zh-Hans" : {
@@ -2731,6 +2883,12 @@
             "value" : "Escolha sua senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı seçin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2799,6 +2957,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escolha seu nome de usuário"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adınızı seçin"
           }
         },
         "zh-Hans" : {
@@ -2871,6 +3035,12 @@
             "value" : "Fechar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kapat"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2939,6 +3109,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Complete seu perfil"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilini tamamla"
           }
         },
         "zh-Hans" : {
@@ -3011,6 +3187,12 @@
             "value" : "Confirmar senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı onayla"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3081,6 +3263,12 @@
             "value" : "Conectar conta"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap bağla"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3149,6 +3337,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CONTAS CONECTADAS"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BAĞLI HESAPLAR"
           }
         },
         "zh-Hans" : {
@@ -3223,6 +3417,12 @@
             "value" : "Entre em contato com o administrador da sua organização para obter um convite."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Davet için kuruluş yöneticinizle iletişime geçin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3291,6 +3491,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam et"
           }
         },
         "zh-Hans" : {
@@ -3363,6 +3569,12 @@
             "value" : "Continuar para %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ uygulamasına devam et"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3431,6 +3643,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuar com %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ile devam et"
           }
         },
         "zh-Hans" : {
@@ -3503,6 +3721,12 @@
             "value" : "Copiar para área de transferência"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panoya kopyala"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3571,6 +3795,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crie uma senha única."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Benzersiz bir parola oluştur."
           }
         },
         "zh-Hans" : {
@@ -3645,6 +3875,12 @@
             "value" : "Criar organização"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kuruluş oluştur"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3713,6 +3949,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crie sua conta"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabını oluştur"
           }
         },
         "zh-Hans" : {
@@ -3785,6 +4027,12 @@
             "value" : "Criado: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oluşturulma: %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3853,6 +4101,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Senha atual"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut parola"
           }
         },
         "zh-Hans" : {
@@ -3925,6 +4179,12 @@
             "value" : "Padrão"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsayılan"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3993,6 +4253,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "EXCLUIR"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SİL"
           }
         },
         "zh-Hans" : {
@@ -4065,6 +4331,12 @@
             "value" : "Excluir conta"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabı sil"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4133,6 +4405,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "EXCLUIR CONTA"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HESABI SİL"
           }
         },
         "zh-Hans" : {
@@ -4205,6 +4483,12 @@
             "value" : "Dispositivo de desktop"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masaüstü cihaz"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4275,6 +4559,12 @@
             "value" : "Não recebeu o código?"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kod almadın mı?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4343,6 +4633,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Concluído"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamam"
           }
         },
         "zh-Hans" : {
@@ -4417,6 +4713,12 @@
             "value" : "Download"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İndir"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4485,6 +4787,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Editar perfil"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profili düzenle"
           }
         },
         "zh-Hans" : {
@@ -4557,6 +4865,12 @@
             "value" : "Endereço de e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4625,6 +4939,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ENDEREÇOS DE E-MAIL"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-POSTA ADRESLERİ"
           }
         },
         "zh-Hans" : {
@@ -4697,6 +5017,12 @@
             "value" : "Enviar código por e-mail para %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ adresine e-posta kodu gönder"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4767,6 +5093,12 @@
             "value" : "Suporte por e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta desteği"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4835,6 +5167,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite um código de backup"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod gir"
           }
         },
         "zh-Hans" : {
@@ -4909,6 +5247,12 @@
             "value" : "Insira um slug com letras minúsculas, números e hífens."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küçük harfler, sayılar ve kısa çizgiler kullanarak bir slug girin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4977,6 +5321,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite a senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı gir"
           }
         },
         "zh-Hans" : {
@@ -5049,6 +5399,12 @@
             "value" : "Digite o endereço de e-mail que deseja usar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanmak istediğiniz e-posta adresini girin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5117,6 +5473,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite a senha da sua conta"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınızın parolasını girin"
           }
         },
         "zh-Hans" : {
@@ -5189,6 +5551,12 @@
             "value" : "Digite o número de telefone que deseja usar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanmak istediğiniz telefon numarasını girin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5257,6 +5625,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Insira o código de verificação do aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamasındaki kodu girin"
           }
         },
         "zh-Hans" : {
@@ -5329,6 +5703,12 @@
             "value" : "Digite o código de verificação do seu aplicativo autenticador."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızdaki kodu girin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5397,6 +5777,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite o código de verificação enviado para %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ adresine gönderilen doğrulama kodunu girin"
           }
         },
         "zh-Hans" : {
@@ -5469,6 +5855,12 @@
             "value" : "Digite sua senha atual para definir uma nova."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni bir parola belirlemek için mevcut parolanızı girin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5539,6 +5931,12 @@
             "value" : "Digite seu e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postanızı girin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5607,6 +6005,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite seu e-mail ou nome de usuário"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta veya kullanıcı adınızı girin"
           }
         },
         "zh-Hans" : {
@@ -5681,6 +6085,12 @@
             "value" : "Insira os detalhes da sua organização para continuar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için kuruluş bilgilerinizi girin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5749,6 +6159,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite sua senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı girin"
           }
         },
         "zh-Hans" : {
@@ -5821,6 +6237,12 @@
             "value" : "Digite seu número de telefone"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numaranızı girin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5889,6 +6311,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite seu nome de usuário"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adınızı girin"
           }
         },
         "zh-Hans" : {
@@ -5961,6 +6389,12 @@
             "value" : "Enfrentando problemas? Você pode usar qualquer um desses métodos para entrar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorun mu yaşıyorsun? Bu yöntemlerden herhangi birini kullanarak giriş yapabilirsin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6029,6 +6463,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ad"
           }
         },
         "zh-Hans" : {
@@ -6101,6 +6541,12 @@
             "value" : "Primeiro, digite o código enviado para seu endereço de e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önce e-posta adresine gönderilen kodu gir"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6169,6 +6615,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Primeiro, digite o código enviado para seu telefone"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önce telefonuna gönderilen kodu gir"
           }
         },
         "zh-Hans" : {
@@ -6241,6 +6693,12 @@
             "value" : "Esqueceu a senha?"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanı mı unuttun?"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6309,6 +6767,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Obter ajuda"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yardım al"
           }
         },
         "zh-Hans" : {
@@ -6381,6 +6845,12 @@
             "value" : "Voltar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geri dön"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6389,72 +6859,230 @@
         }
       }
     },
-    "I agree to the " : {
+    "I agree to the [Privacy Policy](LegalConsentView://privacy)" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أوافق على "
+            "value" : "أوافق على [سياسة الخصوصية](LegalConsentView://privacy)"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich stimme der "
+            "value" : "Ich stimme der [Datenschutzrichtlinie](LegalConsentView://privacy) zu"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Συμφωνώ με την "
+            "value" : "Συμφωνώ με την [Πολιτική Απορρήτου](LegalConsentView://privacy)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acepto la "
+            "value" : "Acepto la [Política de Privacidad](LegalConsentView://privacy)"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "J'accepte la "
+            "value" : "J'accepte la [Politique de Confidentialité](LegalConsentView://privacy)"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "मैं इससे सहमत हूं "
+            "value" : "मैं [गोपनीयता नीति](LegalConsentView://privacy) से सहमत हूं"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accetto la "
+            "value" : "Accetto l'[Informativa sulla Privacy](LegalConsentView://privacy)"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "に同意します "
+            "value" : "[プライバシーポリシー](LegalConsentView://privacy)に同意します"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "에 동의합니다 "
+            "value" : "[개인정보 보호정책](LegalConsentView://privacy)에 동의합니다"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eu concordo com os "
+            "value" : "Eu concordo com a [Política de Privacidade](LegalConsentView://privacy)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Gizlilik Politikası](LegalConsentView://privacy)'nı kabul ediyorum"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我同意 "
+            "value" : "我同意[隐私政策](LegalConsentView://privacy)"
+          }
+        }
+      }
+    },
+    "I agree to the [Terms of Service](LegalConsentView://terms)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوافق على [شروط الخدمة](LegalConsentView://terms)"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich stimme den [Nutzungsbedingungen](LegalConsentView://terms) zu"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συμφωνώ με τους [Όρους Χρήσης](LegalConsentView://terms)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acepto los [Términos de Servicio](LegalConsentView://terms)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'accepte les [Conditions de Service](LegalConsentView://terms)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैं [सेवा की शर्तें](LegalConsentView://terms) से सहमत हूं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accetto i [Termini di Servizio](LegalConsentView://terms)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[利用規約](LegalConsentView://terms)に同意します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[서비스 약관](LegalConsentView://terms)에 동의합니다"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eu concordo com os [Termos de Serviço](LegalConsentView://terms)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Kullanım Koşulları](LegalConsentView://terms)'nı kabul ediyorum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我同意[服务条款](LegalConsentView://terms)"
+          }
+        }
+      }
+    },
+    "I agree to the [Terms of Service](LegalConsentView://terms) and [Privacy Policy](LegalConsentView://privacy)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوافق على [شروط الخدمة](LegalConsentView://terms) و[سياسة الخصوصية](LegalConsentView://privacy)"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich stimme den [Nutzungsbedingungen](LegalConsentView://terms) und der [Datenschutzrichtlinie](LegalConsentView://privacy) zu"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συμφωνώ με τους [Όρους Χρήσης](LegalConsentView://terms) και την [Πολιτική Απορρήτου](LegalConsentView://privacy)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acepto los [Términos de Servicio](LegalConsentView://terms) y la [Política de Privacidad](LegalConsentView://privacy)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'accepte les [Conditions de Service](LegalConsentView://terms) et la [Politique de Confidentialité](LegalConsentView://privacy)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैं [सेवा की शर्तें](LegalConsentView://terms) और [गोपनीयता नीति](LegalConsentView://privacy) से सहमत हूं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accetto i [Termini di Servizio](LegalConsentView://terms) e l'[Informativa sulla Privacy](LegalConsentView://privacy)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[利用規約](LegalConsentView://terms)と[プライバシーポリシー](LegalConsentView://privacy)に同意します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[서비스 약관](LegalConsentView://terms) 및 [개인정보 보호정책](LegalConsentView://privacy)에 동의합니다"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eu concordo com os [Termos de Serviço](LegalConsentView://terms) e a [Política de Privacidade](LegalConsentView://privacy)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Kullanım Koşulları](LegalConsentView://terms) ve [Gizlilik Politikası](LegalConsentView://privacy)'nı kabul ediyorum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我同意[服务条款](LegalConsentView://terms)和[隐私政策](LegalConsentView://privacy)"
           }
         }
       }
@@ -6521,6 +7149,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se você tiver problemas para concluir a configuração necessária da conta, envie-nos um e-mail e nós o ajudaremos a terminar o mais rápido possível."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap kurulumunu tamamlamakta sorun yaşıyorsanız bize e-posta gönderin, en kısa sürede yardımcı olalım."
           }
         },
         "zh-Hans" : {
@@ -6593,6 +7227,12 @@
             "value" : "Se você tiver problemas para criar sua conta, envie-nos um e-mail e trabalharemos com você para concluir seu cadastro o mais rápido possível."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap oluştururken sorun yaşıyorsanız bize e-posta gönderin, kaydınızı en kısa sürede tamamlayalım."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6661,6 +7301,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se você tiver problemas para entrar na sua conta, envie-nos um e-mail e trabalharemos com você para restaurar o acesso o mais rápido possível."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınıza giriş yapmakta sorun yaşıyorsanız bize e-posta gönderin, erişiminizi en kısa sürede geri yükleyelim."
           }
         },
         "zh-Hans" : {
@@ -6733,6 +7379,12 @@
             "value" : "Internacional"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uluslararası"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6801,6 +7453,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "É recomendado sair de todos os outros dispositivos que podem ter usado sua senha antiga."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eski parolanızı kullanmış olabilecek diğer tüm cihazlardan çıkış yapmanız önerilir."
           }
         },
         "zh-Hans" : {
@@ -6873,6 +7531,12 @@
             "value" : "Participar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katıl"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6941,6 +7605,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Junte-se a uma organização existente"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut bir kuruluşa katıl"
           }
         },
         "zh-Hans" : {
@@ -7015,6 +7685,12 @@
             "value" : "Junte-se a uma organização existente ou crie uma nova"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut bir kuruluşa katıl veya yeni bir kuruluş oluştur"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7083,6 +7759,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sobrenome"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soyad"
           }
         },
         "zh-Hans" : {
@@ -7155,6 +7837,12 @@
             "value" : "Último uso"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son Kullanım"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7223,6 +7911,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Último uso: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son kullanım: %@"
           }
         },
         "zh-Hans" : {
@@ -7295,6 +7989,12 @@
             "value" : "Vincular outra opção de login à sua conta. Você precisará verificá-la antes que possa ser usada."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabınıza başka bir giriş seçeneği bağlayın. Kullanılmadan önce doğrulamanız gerekecek."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7363,6 +8063,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vinculado"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlı"
           }
         },
         "zh-Hans" : {
@@ -7437,6 +8143,12 @@
             "value" : "Certifique-se de que as senhas baseadas em tempo ou de uso único estejam ativadas e termine de vincular sua conta."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7505,6 +8217,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gerenciar conta"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesabı yönet"
           }
         },
         "zh-Hans" : {
@@ -7579,6 +8297,12 @@
             "value" : "Chave de configuração manual"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manuel kurulum anahtarı"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7647,6 +8371,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Membro"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üye"
           }
         },
         "zh-Hans" : {
@@ -7719,6 +8449,12 @@
             "value" : "MFA reservado"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MFA için ayrılmış"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7787,6 +8523,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dispositivo móvel"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mobil cihaz"
           }
         },
         "zh-Hans" : {
@@ -7859,6 +8601,12 @@
             "value" : "Nome da chave de acesso"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı adı"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7927,6 +8675,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nova senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni parola"
           }
         },
         "zh-Hans" : {
@@ -7999,6 +8753,12 @@
             "value" : "Próximo"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İleri"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8069,6 +8829,12 @@
             "value" : "ou"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "veya"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8137,6 +8903,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ou, entre com outro método"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veya başka bir yöntemle giriş yap"
           }
         },
         "zh-Hans" : {
@@ -8211,6 +8983,12 @@
             "value" : "Nome da organização"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kuruluş adı"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8279,6 +9057,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CHAVES DE ACESSO"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GEÇİŞ ANAHTARLARI"
           }
         },
         "zh-Hans" : {
@@ -8351,6 +9135,12 @@
             "value" : "Senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parola"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8421,6 +9211,12 @@
             "value" : "SENHA"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PAROLA"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8489,6 +9285,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "As senhas não coincidem."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolalar eşleşmiyor."
           }
         },
         "zh-Hans" : {
@@ -8563,6 +9365,12 @@
             "value" : "Aprovação pendente"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onay bekleniyor"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8631,6 +9439,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Número de telefone"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası"
           }
         },
         "zh-Hans" : {
@@ -8703,6 +9517,12 @@
             "value" : "NÚMEROS DE TELEFONE"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TELEFON NUMARALARI"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8773,6 +9593,12 @@
             "value" : "Principal"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birincil"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8782,6 +9608,7 @@
       }
     },
     "Privacy Policy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8841,6 +9668,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Política de Privacidade"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gizlilik Politikası"
           }
         },
         "zh-Hans" : {
@@ -8911,6 +9744,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Detalhes do Perfil"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil Bilgileri"
           }
         },
         "zh-Hans" : {
@@ -8985,6 +9824,12 @@
             "value" : "Tamanho recomendado 1:1, até 10 MB."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önerilen boyut 1:1, en fazla 10 MB."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9053,6 +9898,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reconectar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden bağlan"
           }
         },
         "zh-Hans" : {
@@ -9126,6 +9977,12 @@
             "value" : "URL de redirecionamento está ausente ou inválida. Não foi possível iniciar o fluxo de autenticação externa."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URL'si eksik veya geçersiz. Harici kimlik doğrulama akışı başlatılamıyor."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9194,6 +10051,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Regenerar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden oluştur"
           }
         },
         "zh-Hans" : {
@@ -9266,6 +10129,12 @@
             "value" : "Remover"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaldır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9334,6 +10203,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover conta conectada"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlı hesabı kaldır"
           }
         },
         "zh-Hans" : {
@@ -9406,6 +10281,12 @@
             "value" : "Remover conexão"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bağlantıyı kaldır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9474,6 +10355,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover e-mail"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-postayı kaldır"
           }
         },
         "zh-Hans" : {
@@ -9546,6 +10433,12 @@
             "value" : "Remover endereço de e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresini kaldır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9614,6 +10507,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover chave de acesso"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarını kaldır"
           }
         },
         "zh-Hans" : {
@@ -9686,6 +10585,12 @@
             "value" : "Remover telefone"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefonu kaldır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9754,6 +10659,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover número de telefone"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarasını kaldır"
           }
         },
         "zh-Hans" : {
@@ -9826,6 +10737,12 @@
             "value" : "Remover foto"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğrafı kaldır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9894,6 +10811,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remover verificação em duas etapas"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulamayı kaldır"
           }
         },
         "zh-Hans" : {
@@ -9966,6 +10889,12 @@
             "value" : "Renomear"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden adlandır"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10034,6 +10963,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Renomear chave de acesso"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarını yeniden adlandır"
           }
         },
         "zh-Hans" : {
@@ -10108,6 +11043,12 @@
             "value" : "Solicitar participação"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katılma talebi gönder"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10176,6 +11117,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reenviar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar gönder"
           }
         },
         "zh-Hans" : {
@@ -10248,6 +11195,12 @@
             "value" : "Reenviar (%lld)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar gönder (%lld)"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10316,6 +11269,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Redefinir senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı sıfırla"
           }
         },
         "zh-Hans" : {
@@ -10388,6 +11347,12 @@
             "value" : "Redefinir sua senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanızı sıfırlayın"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10456,6 +11421,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salvar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydet"
           }
         },
         "zh-Hans" : {
@@ -10530,6 +11501,12 @@
             "value" : "Salve esses códigos em algum lugar seguro. Se você perder o acesso ao seu dispositivo de autenticação, poderá usar um código alternativo para fazer login."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu kodları güvenli bir yere kaydedin. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kod kullanabilirsiniz."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10598,6 +11575,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Protegido por"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenlik sağlayıcı:"
           }
         },
         "zh-Hans" : {
@@ -10670,6 +11653,12 @@
             "value" : "Segurança"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenlik"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10738,6 +11727,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Selecione um número de telefone existente para registrar verificação em duas etapas por código SMS ou adicione um novo."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu ile iki adımlı doğrulama için mevcut bir telefon numarası seçin veya yeni bir tane ekleyin."
           }
         },
         "zh-Hans" : {
@@ -10810,6 +11805,12 @@
             "value" : "Enviar código SMS para %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ numarasına SMS kodu gönder"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -10878,6 +11879,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Definir como padrão"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsayılan olarak ayarla"
           }
         },
         "zh-Hans" : {
@@ -10950,6 +11957,12 @@
             "value" : "Definir como principal"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birincil olarak ayarla"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11020,6 +12033,12 @@
             "value" : "Definir nova senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni parola belirle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11088,6 +12107,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Configure um novo método de entrada no seu autenticador e insira a Chave fornecida abaixo.\n\nCertifique-se de que Senhas baseadas em tempo ou de uso único estão habilitadas e conclua a vinculação da sua conta."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve aşağıda verilen Anahtarı girin.\n\nZamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
           }
         },
         "zh-Hans" : {
@@ -11162,6 +12187,12 @@
             "value" : "Configure um novo método de login no seu aplicativo autenticador usando a chave de configuração manual abaixo para vinculá-lo à sua conta."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aşağıdaki manuel kurulum anahtarını kullanarak doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve hesabınıza bağlayın."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11234,6 +12265,12 @@
             "value" : "Configure a verificação em duas etapas"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulamayı kur"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11302,6 +12339,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Entre com sua chave de acesso"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınla giriş yap"
           }
         },
         "zh-Hans" : {
@@ -11374,6 +12417,12 @@
             "value" : "Entre com sua senha"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanla giriş yap"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11442,6 +12491,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sair"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çıkış yap"
           }
         },
         "zh-Hans" : {
@@ -11514,6 +12569,12 @@
             "value" : "Sair de todas as contas"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tüm hesaplardan çıkış yap"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11582,6 +12643,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sair de todos os outros dispositivos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diğer tüm cihazlardan çıkış yap"
           }
         },
         "zh-Hans" : {
@@ -11654,6 +12721,12 @@
             "value" : "Sair do dispositivo"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cihazdan çıkış yap"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11724,6 +12797,12 @@
             "value" : "Inscrever-se"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıt ol"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11791,6 +12870,12 @@
           }
         },
         "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slug"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slug"
@@ -11866,6 +12951,12 @@
             "value" : "Código SMS"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11934,6 +13025,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificação de código SMS ativada"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SMS kodu doğrulaması etkinleştirildi"
           }
         },
         "zh-Hans" : {
@@ -12006,6 +13103,12 @@
             "value" : "Sucesso"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başarılı"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12076,6 +13179,12 @@
             "value" : "Trocar de conta"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hesap değiştir"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12085,6 +13194,7 @@
       }
     },
     "Terms of Service" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -12144,6 +13254,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termos de Serviço"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanım Koşulları"
           }
         },
         "zh-Hans" : {
@@ -12216,6 +13332,12 @@
             "value" : "Houve um erro ao carregar a imagem da biblioteca de fotos."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf kitaplığından görsel yüklenirken bir hata oluştu."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12284,6 +13406,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Este dispositivo"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihaz"
           }
         },
         "zh-Hans" : {
@@ -12356,6 +13484,12 @@
             "value" : "para continuar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "devam etmek için"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12424,6 +13558,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "para continuar para %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ için devam etmek için"
           }
         },
         "zh-Hans" : {
@@ -12496,6 +13636,12 @@
             "value" : "Para continuar, digite o código de verificação gerado pelo seu aplicativo autenticador"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için doğrulama uygulamanız tarafından oluşturulan kodu girin"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12564,6 +13710,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificação em duas etapas"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama"
           }
         },
         "zh-Hans" : {
@@ -12636,6 +13788,12 @@
             "value" : "VERIFICAÇÃO EM DUAS ETAPAS"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İKİ ADIMLI DOĞRULAMA"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12704,6 +13862,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A verificação em duas etapas agora está habilitada. Ao entrar, você precisará digitar um código de verificação deste aplicativo autenticador como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama etkinleştirildi. Giriş yaparken ek bir adım olarak bu doğrulama uygulamasından bir kod girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
           }
         },
         "zh-Hans" : {
@@ -12776,6 +13940,12 @@
             "value" : "Configuração da verificação em duas etapas"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İki adımlı doğrulama kurulumu"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12844,6 +14014,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Digite \"EXCLUIR\" para continuar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için \"SİL\" yazın"
           }
         },
         "zh-Hans" : {
@@ -12916,6 +14092,12 @@
             "value" : "Método de verificação de código desconhecido. Por favor, use outro método."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilinmeyen doğrulama yöntemi. Lütfen başka bir yöntem kullanın."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -12984,6 +14166,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dispositivo desconhecido"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilinmeyen cihaz"
           }
         },
         "zh-Hans" : {
@@ -13056,6 +14244,12 @@
             "value" : "Não verificado"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulanmamış"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13124,6 +14318,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Atualizar senha"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolayı güncelle"
           }
         },
         "zh-Hans" : {
@@ -13198,6 +14398,12 @@
             "value" : "Carregar logotipo"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo yükle"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13266,6 +14472,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usar um código de backup"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kod kullan"
           }
         },
         "zh-Hans" : {
@@ -13338,6 +14550,12 @@
             "value" : "Usar outro método"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başka yöntem kullan"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13406,6 +14624,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usar endereço de e-mail"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi kullan"
           }
         },
         "zh-Hans" : {
@@ -13478,6 +14702,12 @@
             "value" : "Usar endereço de e-mail ou nome de usuário"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta veya kullanıcı adı kullan"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13546,6 +14776,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usar número de telefone"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarası kullan"
           }
         },
         "zh-Hans" : {
@@ -13618,6 +14854,12 @@
             "value" : "Usar nome de usuário"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adı kullan"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13686,6 +14928,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use seu aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamanızı kullanın"
           }
         },
         "zh-Hans" : {
@@ -13758,6 +15006,12 @@
             "value" : "Use sua chave de acesso"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınızı kullanın"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13826,6 +15080,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome de usuário"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kullanıcı adı"
           }
         },
         "zh-Hans" : {
@@ -13898,6 +15158,12 @@
             "value" : "Usar sua chave de acesso confirma que é você. Seu dispositivo pode solicitar sua impressão digital, rosto ou bloqueio de tela."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarınızı kullanmak kimliğinizi doğrular. Cihazınız parmak izi, yüz tanıma veya ekran kilidi isteyebilir."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13966,6 +15232,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Os códigos de verificação deste autenticador não serão mais necessários ao entrar."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu doğrulama uygulamasından gelen kodlar giriş yaparken artık istenmeyecek."
           }
         },
         "zh-Hans" : {
@@ -14038,6 +15310,12 @@
             "value" : "Verificar"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrula"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14106,6 +15384,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificar aplicativo autenticador"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulama uygulamasını doğrula"
           }
         },
         "zh-Hans" : {
@@ -14178,6 +15462,12 @@
             "value" : "Verificar endereço de e-mail"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresini doğrula"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14246,6 +15536,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificar número de telefone"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numarasını doğrula"
           }
         },
         "zh-Hans" : {
@@ -14320,6 +15616,12 @@
             "value" : "Verifique seu número de telefone"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefon numaranızı doğrulayın"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14388,6 +15690,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificando..."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrulanıyor..."
           }
         },
         "zh-Hans" : {
@@ -14460,6 +15768,12 @@
             "value" : "Bem-vindo! Preencha os detalhes para começar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoş geldin! Başlamak için bilgileri doldur."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14528,6 +15842,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bem-vindo! Entre para continuar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoş geldin! Devam etmek için giriş yap"
           }
         },
         "zh-Hans" : {
@@ -14600,6 +15920,12 @@
             "value" : "Ao entrar, você precisará digitar um código de verificação enviado para este número de telefone como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaparken ek bir adım olarak bu telefon numarasına gönderilen doğrulama kodunu girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14668,6 +15994,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ao fazer login, será solicitado um código de verificação enviado para este número de telefone."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaptığınızda bu telefon numarasına gönderilen doğrulama kodu istenecek."
           }
         },
         "zh-Hans" : {
@@ -14740,6 +16072,12 @@
             "value" : "Ao fazer login, você precisará inserir um código de verificação deste aplicativo autenticador."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giriş yaptığınızda bu doğrulama uygulamasından bir kod girmeniz gerekecek."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14808,6 +16146,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ops, algo está errado"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir şeyler ters gitti"
           }
         },
         "zh-Hans" : {
@@ -14882,6 +16226,12 @@
             "value" : "Você não é mais membro desta organização. Escolha outra."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14954,6 +16304,12 @@
             "value" : "Você não é mais membro desta organização. Escolha outra ou crie uma nova."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin veya yeni bir kuruluş oluşturun."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15022,6 +16378,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Você pode alterar o nome da chave de acesso para facilitar a localização."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı adını kolayca bulabilmek için değiştirebilirsiniz."
           }
         },
         "zh-Hans" : {
@@ -15096,6 +16458,12 @@
             "value" : "Você deve pertencer a uma organização"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kuruluşun üyesi olmalısınız"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15164,6 +16532,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Você precisará verificar este endereço de e-mail antes que ele possa ser adicionado à sua conta."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu e-posta adresini hesabınıza eklemeden önce doğrulamanız gerekecek."
           }
         },
         "zh-Hans" : {
@@ -15236,6 +16610,12 @@
             "value" : "Você está fazendo login de um novo dispositivo. Estamos solicitando verificação para manter sua conta segura."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni bir cihazdan giriş yapıyorsunuz. Hesabınızın güvenliği için doğrulama istiyoruz."
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15306,6 +16686,12 @@
             "value" : "Sua conta requer uma nova senha antes de poder continuar."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmeden önce hesabınız için yeni bir parola belirlemeniz gerekiyor"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15374,6 +16760,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seu código de backup é aquele que você recebeu ao configurar a autenticação em duas etapas."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yedek kodunuz iki adımlı doğrulamayı kurarken aldığınız koddur."
           }
         },
         "zh-Hans" : {

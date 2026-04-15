@@ -28,20 +28,25 @@ struct LegalConsentView: View {
   }
 
   private var markdownText: String {
-    var text = String(localized: "I agree to the ", bundle: .module)
-
-    if hasTerms {
-      text += "[\(String(localized: "Terms of Service", bundle: .module))](LegalConsentView://terms)"
-      if hasPrivacy {
-        text += String(localized: " and ", bundle: .module)
-      }
+    switch (hasTerms, hasPrivacy) {
+    case (true, true):
+      String(
+        localized: "I agree to the [Terms of Service](LegalConsentView://terms) and [Privacy Policy](LegalConsentView://privacy)",
+        bundle: .module
+      )
+    case (true, false):
+      String(
+        localized: "I agree to the [Terms of Service](LegalConsentView://terms)",
+        bundle: .module
+      )
+    case (false, true):
+      String(
+        localized: "I agree to the [Privacy Policy](LegalConsentView://privacy)",
+        bundle: .module
+      )
+    case (false, false):
+      ""
     }
-
-    if hasPrivacy {
-      text += "[\(String(localized: "Privacy Policy", bundle: .module))](LegalConsentView://privacy)"
-    }
-
-    return text
   }
 
   var body: some View {
