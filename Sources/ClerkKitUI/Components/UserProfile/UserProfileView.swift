@@ -206,6 +206,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         for await event in clerk.auth.events {
           switch event {
           case .signInCompleted, .signUpCompleted:
+            guard clerk.session?.pendingTasks.isEmpty != false else { break }
             sheetNavigation.authViewIsPresented = false
           default:
             break

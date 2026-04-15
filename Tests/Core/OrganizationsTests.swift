@@ -11,9 +11,9 @@ struct OrganizationsTests {
 
   @Test
   func createUsesOrganizationServiceCreateOrganization() async throws {
-    let capturedName = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(createOrganization: { name in
-      capturedName.setValue(name)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let service = MockOrganizationService(createOrganization: { name, slug in
+      captured.setValue((name, slug))
       return .mock
     })
 
@@ -22,8 +22,10 @@ struct OrganizationsTests {
       organizationService: service
     )
 
-    _ = try await Clerk.shared.organizations.create(name: "My Org")
+    _ = try await Clerk.shared.organizations.create(name: "My Org", slug: nil)
 
-    #expect(capturedName.value == "My Org")
+    let params = try #require(captured.value)
+    #expect(params.0 == "My Org")
+    #expect(params.1 == nil)
   }
 }

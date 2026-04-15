@@ -166,8 +166,8 @@ struct UserProfileUpdateProfileView: View {
           .opacity(0.5)
       }
     }
-    .onChange(of: user.imageUrl) { _, _ in
-      imageIsLoading = true
+    .onChange(of: user.imageUrl) { _, newValue in
+      imageIsLoading = !newValue.isEmpty
     }
     .overlay {
       if imageIsLoading {

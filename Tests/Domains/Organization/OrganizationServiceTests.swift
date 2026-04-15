@@ -26,11 +26,36 @@ struct OrganizationServiceTests {
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["name"] == "My Org")
+      #expect(request.urlEncodedFormBody!["slug"] == nil)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org")
+    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org", slug: nil)
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createOrganizationIncludesSlugWhenProvided() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["name"] == "My Org")
+      #expect(request.urlEncodedFormBody!["slug"] == "my-org")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org", slug: "my-org")
     #expect(requestHandled.value)
   }
 

@@ -50,14 +50,25 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `disableTotp()` method.
   package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
 
-  /// Custom handler for the `getOrganizationInvitations(initialPage:pageSize:)` method.
-  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
+  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:)` method.
+  ///
+  /// The closure receives the pagination arguments plus an optional invitation status filter.
+  /// Pass `nil` in tests to simulate no status filter, or a status value such as `"pending"`
+  /// to mirror filtered invitation requests.
+  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
-  /// Custom handler for the `getOrganizationMemberships(initialPage:pageSize:)` method.
+  /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
-  /// Custom handler for the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
-  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
+  /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
+  ///
+  /// The closure receives the pagination arguments plus an array of suggestion status filters.
+  /// Pass `[]` in tests to simulate no status filter, or include one or more values such as
+  /// `["pending", "accepted"]` to mirror filtered suggestion requests.
+  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
+
+  /// Custom handler for the `getOrganizationCreationDefaults()` method.
+  package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: (() async throws -> OrganizationCreationDefaults)?
 
   /// Custom handler for the `updatePassword(params:)` method.
   package nonisolated(unsafe) var updatePasswordHandler: ((User.UpdatePasswordParams) async throws -> User)?
@@ -89,9 +100,16 @@ package final class MockUserService: UserServiceProtocol {
   ///   - createTotp: Optional implementation of the `createTotp()` method.
   ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
   ///   - disableTotp: Optional implementation of the `disableTotp()` method.
-  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(initialPage:pageSize:)` method.
-  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(initialPage:pageSize:)` method.
-  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(initialPage:pageSize:status:)` method.
+  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:)` method
+  ///     with signature `((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
+  ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
+  ///     or provide a value such as `"pending"` when a test needs filtered invitations.
+  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
+  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
+  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
+  ///     The third argument accepts multiple suggestion statuses; pass `[]` to simulate an unfiltered request
+  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered suggestions.
+  ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
   ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
   ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.
   ///   - deleteProfileImage: Optional implementation of the `deleteProfileImage()` method.
@@ -122,9 +140,10 @@ package final class MockUserService: UserServiceProtocol {
     createTotp: (() async throws -> TOTPResource)? = nil,
     verifyTotp: ((String) async throws -> TOTPResource)? = nil,
     disableTotp: (() async throws -> DeletedObject)? = nil,
-    getOrganizationInvitations: ((Int, Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
+    getOrganizationInvitations: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
     getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
-    getOrganizationSuggestions: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
+    getOrganizationSuggestions: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
+    getOrganizationCreationDefaults: (() async throws -> OrganizationCreationDefaults)? = nil,
     updatePassword: ((User.UpdatePasswordParams) async throws -> User)? = nil,
     setProfileImage: ((Data) async throws -> ImageResource)? = nil,
     deleteProfileImage: (() async throws -> DeletedObject)? = nil,
@@ -144,6 +163,7 @@ package final class MockUserService: UserServiceProtocol {
     getOrganizationInvitationsHandler = getOrganizationInvitations
     getOrganizationMembershipsHandler = getOrganizationMemberships
     getOrganizationSuggestionsHandler = getOrganizationSuggestions
+    getOrganizationCreationDefaultsHandler = getOrganizationCreationDefaults
     updatePasswordHandler = updatePassword
     setProfileImageHandler = setProfileImage
     deleteProfileImageHandler = deleteProfileImage
@@ -255,27 +275,38 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
-      return try await handler(initialPage, pageSize)
+      return try await handler(offset, pageSize, status)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationMemberships(initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  package func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     if let handler = getOrganizationMembershipsHandler {
-      return try await handler(initialPage, pageSize)
+      return try await handler(offset, pageSize)
     }
     return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationSuggestions(initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     if let handler = getOrganizationSuggestionsHandler {
-      return try await handler(initialPage, pageSize, status)
+      return try await handler(offset, pageSize, status)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+  }
+
+  @MainActor
+  package func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+    if let handler = getOrganizationCreationDefaultsHandler {
+      return try await handler()
+    }
+    return OrganizationCreationDefaults(
+      advisory: nil,
+      form: .init(name: "My organization", slug: "my-organization", logo: nil, blurHash: nil)
+    )
   }
 
   @MainActor

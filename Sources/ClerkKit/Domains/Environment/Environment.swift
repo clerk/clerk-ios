@@ -9,15 +9,26 @@ extension Clerk {
     public var authConfig: AuthConfig
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
+    public var organizationSettings: OrganizationSettings
 
     public init(
       authConfig: AuthConfig,
       userSettings: UserSettings,
-      displayConfig: DisplayConfig
+      displayConfig: DisplayConfig,
+      organizationSettings: OrganizationSettings = .default
     ) {
       self.authConfig = authConfig
       self.userSettings = userSettings
       self.displayConfig = displayConfig
+      self.organizationSettings = organizationSettings
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      authConfig = try container.decode(AuthConfig.self, forKey: .authConfig)
+      userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
+      displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
+      organizationSettings = try container.decodeIfPresent(OrganizationSettings.self, forKey: .organizationSettings) ?? .default
     }
   }
 }

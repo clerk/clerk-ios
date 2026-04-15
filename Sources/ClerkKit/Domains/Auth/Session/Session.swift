@@ -190,6 +190,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   public enum Task: Codable, Equatable, Hashable, Sendable {
     case setupMfa
     case resetPassword
+    case chooseOrganization
     case unknown(String)
 
     private enum CodingKeys: String, CodingKey {
@@ -203,6 +204,8 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         "setup-mfa"
       case .resetPassword:
         "reset-password"
+      case .chooseOrganization:
+        "choose-organization"
       case .unknown(let value):
         value
       }
@@ -215,6 +218,8 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
         self = .setupMfa
       case "reset-password":
         self = .resetPassword
+      case "choose-organization":
+        self = .chooseOrganization
       default:
         self = .unknown(rawValue)
       }

@@ -6,7 +6,7 @@
 import Foundation
 
 protocol OrganizationServiceProtocol: Sendable {
-  @MainActor func createOrganization(name: String) async throws -> Organization
+  @MainActor func createOrganization(name: String, slug: String?) async throws -> Organization
   @MainActor func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization
   @MainActor func destroyOrganization(organizationId: String) async throws -> DeletedObject
   @MainActor func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization
@@ -41,12 +41,17 @@ final class OrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  func createOrganization(name: String) async throws -> Organization {
+  func createOrganization(name: String, slug: String?) async throws -> Organization {
+    var body: [String: String] = ["name": name]
+    if let slug {
+      body["slug"] = slug
+    }
+
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations",
       method: .post,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
-      body: ["name": name]
+      body: body
     )
 
     return try await apiClient.send(request).value.response

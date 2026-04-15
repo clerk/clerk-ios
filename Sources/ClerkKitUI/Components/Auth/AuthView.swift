@@ -164,7 +164,8 @@ public struct AuthView: View {
           guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
           let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
-          if becameActive, isDismissable, !isHandlingSessionTask {
+          let sessionSwitched = oldValue?.id != newValue?.id
+          if becameActive, isDismissable, !isHandlingSessionTask || sessionSwitched {
             dismiss()
           }
         default:
@@ -269,6 +270,7 @@ extension AuthView {
     case taskVerifySms(phoneNumber: PhoneNumber)
     case taskMfaTotp(totpResource: TOTPResource)
     case taskVerifyTotp
+    case sessionTaskCreateOrganization(creationDefaults: OrganizationCreationDefaults?)
     case backupCodes(
       backupCodes: [String],
       mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
@@ -313,6 +315,8 @@ extension AuthView {
         SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
       case .taskMfaTotp(let totpResource):
         SessionTaskMfaTotpView(totp: totpResource)
+      case .sessionTaskCreateOrganization(let creationDefaults):
+        SessionTaskCreateOrganizationView(creationDefaults: creationDefaults, showBackButton: true)
       case .taskVerifyTotp:
         SessionTaskMfaVerifyTotpView()
       case .backupCodes(let backupCodes, let mfaType):

@@ -17,7 +17,21 @@ struct GetHelpView: View {
   enum Context: Hashable {
     case signIn
     case signUp
-    case sessionTask
+    case sessionTask(SessionTaskKind)
+
+    enum SessionTaskKind: Hashable {
+      case generic
+      case organizationRequired
+    }
+
+    var titleText: LocalizedStringKey {
+      switch self {
+      case .signIn, .signUp, .sessionTask(.generic):
+        "Get help"
+      case .sessionTask(.organizationRequired):
+        "You must belong to an organization"
+      }
+    }
 
     var subtitleText: LocalizedStringKey {
       switch self {
@@ -25,8 +39,10 @@ struct GetHelpView: View {
         "If you have trouble signing into your account, email us and we will work with you to restore access as soon as possible."
       case .signUp:
         "If you have trouble creating your account, email us and we will work with you to complete your registration as soon as possible."
-      case .sessionTask:
+      case .sessionTask(.generic):
         "If you have trouble completing required account setup, email us and we will help you finish as soon as possible."
+      case .sessionTask(.organizationRequired):
+        "Contact your organization admin for an invitation."
       }
     }
   }
@@ -35,7 +51,7 @@ struct GetHelpView: View {
     ScrollView {
       VStack(spacing: 0) {
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Get help")
+          HeaderView(style: .title, text: context.titleText)
           HeaderView(style: .subtitle, text: context.subtitleText)
         }
         .padding(.bottom, 32)
@@ -83,7 +99,13 @@ extension GetHelpView {
 }
 
 #Preview("Session Task") {
-  GetHelpView(context: .sessionTask)
+  GetHelpView(context: .sessionTask(.generic))
+    .clerkPreview()
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Organization Required") {
+  GetHelpView(context: .sessionTask(.organizationRequired))
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

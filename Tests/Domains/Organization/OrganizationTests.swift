@@ -99,11 +99,11 @@ struct OrganizationTests {
 
     configureOrganizationService(service)
 
-    _ = try await organization.getRoles(initialPage: 0, pageSize: 10)
+    _ = try await organization.getRoles(page: 2, pageSize: 10)
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
-    #expect(params.1 == 0)
+    #expect(params.1 == 10)
     #expect(params.2 == 10)
   }
 
@@ -129,7 +129,7 @@ struct OrganizationTests {
     _ = try await organization.getMemberships(
       query: scenario.query,
       role: scenario.role,
-      initialPage: 0,
+      page: 3,
       pageSize: 10
     )
 
@@ -137,7 +137,7 @@ struct OrganizationTests {
     #expect(params.0 == organization.id)
     #expect(params.1 == scenario.query)
     #expect(params.2 == scenario.role)
-    #expect(params.3 == 0)
+    #expect(params.3 == 20)
     #expect(params.4 == 10)
   }
 
@@ -253,14 +253,14 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getInvitations(
-      initialPage: 0,
+      page: 2,
       pageSize: 10,
       status: scenario.status
     )
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
-    #expect(params.1 == 0)
+    #expect(params.1 == 10)
     #expect(params.2 == 10)
     #expect(params.3 == scenario.status)
   }
@@ -321,14 +321,14 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getDomains(
-      initialPage: 0,
+      page: 2,
       pageSize: 10,
       enrollmentMode: scenario.enrollmentMode
     )
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
-    #expect(params.1 == 0)
+    #expect(params.1 == 10)
     #expect(params.2 == 10)
     #expect(params.3 == scenario.enrollmentMode)
   }
@@ -370,14 +370,14 @@ struct OrganizationTests {
     configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(
-      initialPage: 0,
+      page: 2,
       pageSize: 10,
       status: scenario.status
     )
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
-    #expect(params.1 == 0)
+    #expect(params.1 == 10)
     #expect(params.2 == 10)
     #expect(params.3 == scenario.status)
   }

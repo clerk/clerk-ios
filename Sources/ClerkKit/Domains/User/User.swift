@@ -343,43 +343,112 @@ extension User {
 
   /// Retrieves a list of organization invitations for the user.
   /// - Parameters:
-  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
+  ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
   public func getOrganizationInvitations(
-    initialPage: Int = 0,
-    pageSize: Int = 20
+    page: Int = 1,
+    pageSize: Int = 20,
+    status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await userService.getOrganizationInvitations(initialPage: initialPage, pageSize: pageSize)
+    try await getOrganizationInvitations(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves a list of organization invitations for the user.
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
+  @discardableResult @MainActor
+  package func getOrganizationInvitations(
+    offset: Int = 0,
+    pageSize: Int = 10,
+    status: String? = nil
+  ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+    try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)
   }
 
   /// Retrieves a list of organization memberships for the user.
   /// - Parameters:
-  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
   @discardableResult @MainActor
   public func getOrganizationMemberships(
-    initialPage: Int = 0,
+    page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await userService.getOrganizationMemberships(initialPage: initialPage, pageSize: pageSize)
+    try await getOrganizationMemberships(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize
+    )
+  }
+
+  /// Retrieves a list of organization memberships for the user.
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
+  @discardableResult @MainActor
+  package func getOrganizationMemberships(
+    offset: Int = 0,
+    pageSize: Int = 10
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    try await userService.getOrganizationMemberships(offset: offset, pageSize: pageSize)
   }
 
   /// Retrieves a list of organization suggestions for the user.
   /// - Parameters:
-  ///   - initialPage: A number that can be used to skip the first n-1 pages. For example, if initialPage is set to 10, it is will skip the first 9 pages and will fetch the 10th page.
-  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The status an invitation can have.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
+  ///   - status: An array of suggestion statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
   @discardableResult @MainActor
   public func getOrganizationSuggestions(
-    initialPage: Int = 0,
+    page: Int = 1,
     pageSize: Int = 20,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await userService.getOrganizationSuggestions(initialPage: initialPage, pageSize: pageSize, status: status)
+    try await getOrganizationSuggestions(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves a list of organization suggestions for the user.
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///   - status: An array of suggestion statuses to filter by. Defaults to an empty array, which applies no status filter.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationSuggestion`` objects.
+  @discardableResult @MainActor
+  package func getOrganizationSuggestions(
+    offset: Int = 0,
+    pageSize: Int = 10,
+    status: [String] = []
+  ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+    try await userService.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)
+  }
+
+  private func offset(forPage page: Int, pageSize: Int) -> Int {
+    max(page - 1, 0) * pageSize
+  }
+
+  /// Retrieves the organization creation defaults for this user.
+  ///
+  /// Returns pre-filled form values (name, slug, logo) based on the instance's default naming rules.
+  /// - Returns: An ``OrganizationCreationDefaults`` object.
+  @discardableResult @MainActor
+  public func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+    try await userService.getOrganizationCreationDefaults()
   }
 
   /// Retrieves all active sessions for this user.
