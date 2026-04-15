@@ -1516,6 +1516,12 @@
             "state" : "translated",
             "value" : "管理员"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönetici"
+          }
         }
       }
     },
@@ -2576,6 +2582,12 @@
             "state" : "translated",
             "value" : "选择组织"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kuruluş seç"
+          }
         }
       }
     },
@@ -3486,6 +3498,12 @@
             "state" : "translated",
             "value" : "请联系您的组织管理员获取邀请。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Davet için kuruluş yöneticinizle iletişime geçin."
+          }
         }
       }
     },
@@ -3937,6 +3955,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "创建组织"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kuruluş oluştur"
           }
         }
       }
@@ -5304,6 +5328,12 @@
             "state" : "translated",
             "value" : "请输入仅包含小写字母、数字和连字符的 slug。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küçük harfler, sayılar ve kısa çizgiler kullanarak bir slug girin."
+          }
         }
       }
     },
@@ -6135,6 +6165,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "输入您的组织详细信息以继续"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devam etmek için kuruluş bilgilerinizi girin"
           }
         }
       }
@@ -7424,6 +7460,12 @@
             "state" : "translated",
             "value" : "加入"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katıl"
+          }
         }
       }
     },
@@ -7493,6 +7535,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加入现有组织"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut bir kuruluşa katıl"
           }
         }
       }
@@ -7565,6 +7613,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加入现有组织或创建新组织"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut bir kuruluşa katılın veya yeni bir kuruluş oluşturun"
           }
         }
       }
@@ -8248,6 +8302,12 @@
             "state" : "translated",
             "value" : "成员"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üye"
+          }
         }
       }
     },
@@ -8852,6 +8912,12 @@
             "state" : "translated",
             "value" : "组织名称"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kuruluş adı"
+          }
         }
       }
     },
@@ -9227,6 +9293,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "等待批准"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onay bekleniyor"
           }
         }
       }
@@ -9679,6 +9751,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "建议尺寸为 1:1，最大 10MB。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Önerilen boyut 1:1, en fazla 10 MB."
           }
         }
       }
@@ -10892,6 +10970,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请求加入"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katılma isteği gönder"
           }
         }
       }
@@ -12719,6 +12803,12 @@
             "state" : "translated",
             "value" : "URL 简称"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slug"
+          }
         }
       }
     },
@@ -14234,6 +14324,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上传徽标"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logo yükle"
           }
         }
       }
@@ -16057,6 +16153,12 @@
             "state" : "translated",
             "value" : "您不再是该组织的成员。请选择其他组织。"
           }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin."
+          }
         }
       }
     },
@@ -16128,6 +16230,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您不再是该组织的成员。请选择其他组织或创建新组织。"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin veya yeni bir kuruluş oluşturun."
           }
         }
       }
@@ -16276,6 +16384,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "您必须属于一个组织"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir kuruluşun üyesi olmalısınız"
           }
         }
       }
