@@ -33,11 +33,17 @@ struct SessionTaskCreateOrganizationView: View {
   @State private var photosPickerIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var selectedImageData: Data?
-  @State private var imageIsLoading = false
   @State private var imageLoadTask: Task<Void, Never>?
+  @State private var preloadedLogoTask: Task<Void, Never>?
+  @State private var isPickerImageLoading = false
+  @State private var isPreloadedLogoLoading = false
 
   private var slugEnabled: Bool {
     clerk.environment?.organizationSettings.slug.disabled == false
+  }
+
+  private var imageIsLoading: Bool {
+    isPickerImageLoading || isPreloadedLogoLoading
   }
 
   private var trimmedOrganizationName: String {
@@ -118,10 +124,16 @@ struct SessionTaskCreateOrganizationView: View {
     .onChange(of: photosPickerItem) { _, item in
       guard let item else { return }
       imageLoadTask?.cancel()
+      isPreloadedLogoLoading = false
+      preloadedLogoTask?.cancel()
       error = nil
       imageLoadTask = Task {
-        imageIsLoading = true
-        defer { if !Task.isCancelled { imageIsLoading = false } }
+        isPickerImageLoading = true
+        defer {
+          if !Task.isCancelled {
+            isPickerImageLoading = false
+          }
+        }
         do {
           guard
             let data = try await item.loadTransferable(type: Data.self),
@@ -253,9 +265,9 @@ struct SessionTaskCreateOrganizationView: View {
       let slugValue = slugEnabled ? trimmedSlug : nil
       let organization = try await clerk.organizations.create(name: name, slug: slugValue)
 
-      if let selectedImageData {
+      if let logoData = await organizationLogoDataForUpload() {
         do {
-          try await organization.setLogo(imageData: selectedImageData)
+          try await organization.setLogo(imageData: logoData)
         } catch {
           ClerkLogger.error("Failed to set organization logo", error: error)
         }
@@ -272,9 +284,13 @@ struct SessionTaskCreateOrganizationView: View {
   private func loadDefaultLogo() {
     guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
 
-    imageLoadTask = Task {
-      imageIsLoading = true
-      defer { if !Task.isCancelled { imageIsLoading = false } }
+    preloadedLogoTask = Task {
+      isPreloadedLogoLoading = true
+      defer {
+        if !Task.isCancelled {
+          isPreloadedLogoLoading = false
+        }
+      }
 
       do {
         let (data, _) = try await URLSession.shared.data(from: url)
@@ -285,6 +301,15 @@ struct SessionTaskCreateOrganizationView: View {
         // Logo fetch failure is non-critical — proceed without logo
       }
     }
+  }
+
+  private func organizationLogoDataForUpload() async -> Data? {
+    if let selectedImageData {
+      return selectedImageData
+    }
+
+    await preloadedLogoTask?.value
+    return selectedImageData
   }
 
   private func processImageData(_ data: Data) -> Data? {
