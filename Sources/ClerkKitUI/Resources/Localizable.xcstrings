@@ -3654,7 +3654,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ile devam et"
+            "value" : "%@ uygulamasına devam et"
           }
         }
       }
@@ -8382,7 +8382,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MFA ayrılmış"
+            "value" : "MFA için ayrılmış"
           }
         }
       }
