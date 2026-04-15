@@ -51,10 +51,7 @@ struct SignInSetNewPasswordView: View {
           HeaderView(style: .title, text: "Set new password")
 
           if mode == .sessionTask {
-            Text("Your account requires a new password before you can continue", bundle: .module)
-              .foregroundStyle(theme.colors.warning)
-              .font(theme.fonts.subheadline)
-              .multilineTextAlignment(.center)
+            WarningText("Your account requires a new password before you can continue", bundle: .module)
           }
         }
         .padding(.bottom, 32)

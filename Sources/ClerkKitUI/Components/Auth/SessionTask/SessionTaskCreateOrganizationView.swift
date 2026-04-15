@@ -64,7 +64,7 @@ struct SessionTaskCreateOrganizationView: View {
         .padding(.bottom, 32)
 
         if let advisory = creationDefaults?.advisory, let advisoryMessage = advisoryMessage(for: advisory) {
-          advisoryView(advisoryMessage)
+          WarningText(verbatim: advisoryMessage)
             .padding(.bottom, 16)
         }
 
@@ -162,23 +162,6 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   // MARK: - Advisory
-
-  private func advisoryView(_ message: String) -> some View {
-    HStack(alignment: .top, spacing: 8) {
-      Image(systemName: "exclamationmark.triangle.fill")
-        .font(theme.fonts.caption)
-        .foregroundStyle(theme.colors.warning)
-      Text(message)
-        .font(theme.fonts.caption)
-        .foregroundStyle(theme.colors.warning)
-        .multilineTextAlignment(.leading)
-    }
-    .padding(.horizontal, 12)
-    .padding(.vertical, 10)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(theme.colors.backgroundWarning)
-    .clipShape(.rect(cornerRadius: theme.design.borderRadius))
-  }
 
   private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
     switch advisory.code {

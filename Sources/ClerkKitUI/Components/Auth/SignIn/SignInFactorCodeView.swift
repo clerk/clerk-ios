@@ -97,10 +97,7 @@ extension SignInFactorCodeView {
   }
 
   private var clientTrustWarning: some View {
-    Text("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
-      .foregroundStyle(theme.colors.warning)
-      .font(theme.fonts.subheadline)
-      .multilineTextAlignment(.center)
+    WarningText("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
       .padding(.bottom, 32)
   }
 
