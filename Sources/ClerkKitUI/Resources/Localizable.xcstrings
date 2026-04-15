@@ -1,7 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "": {
+    "" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -63,13 +63,13 @@
             "value" : ""
           }
         },
-        "zh-Hans" : {
+        "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : ""
           }
         },
-        "tr" : {
+        "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : ""
@@ -140,13 +140,13 @@
             "value" : " "
           }
         },
-        "zh-Hans" : {
+        "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : " "
           }
         },
-        "tr" : {
+        "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : " "
@@ -154,82 +154,6 @@
         }
       },
       "shouldTranslate" : false
-    },
-    " and " : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " و "
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " und "
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " και "
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " y "
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " et "
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " और "
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " e "
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " と "
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " 및 "
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " e "
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " 和 "
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : " ve "
-          }
-        }
-      }
     },
     "%@ will be removed from this account. You will no longer be able to sign in using this connected account." : {
       "localizations" : {
@@ -293,16 +217,16 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando esta conta conectada."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@将从该账户中移除。您将无法再使用此关联账户登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ bu hesaptan kaldırılacak. Bu bağlı hesabı kullanarak artık giriş yapamayacaksınız."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此关联账户登录。"
           }
         }
       }
@@ -369,16 +293,16 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando este endereço de e-mail."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@将从该账户中移除。您将无法再使用此电子邮件地址登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ bu hesaptan kaldırılacak. Bu e-posta adresini kullanarak artık giriş yapamayacaksınız."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此电子邮件地址登录。"
           }
         }
       }
@@ -445,16 +369,16 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando esta chave de acesso."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@将从该账户中移除。您将无法再使用此密码钥匙登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ bu hesaptan kaldırılacak. Bu geçiş anahtarını kullanarak artık giriş yapamayacaksınız."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此密码钥匙登录。"
           }
         }
       }
@@ -521,16 +445,16 @@
             "value" : "%@ será removido desta conta. Você não poderá mais entrar usando este número de telefone."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@将从该账户中移除。您将无法再使用此电话号码登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ bu hesaptan kaldırılacak. Bu telefon numarasını kullanarak artık giriş yapamayacaksınız."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@将从该账户中移除。您将无法再使用此电话号码登录。"
           }
         }
       }
@@ -597,16 +521,16 @@
             "value" : "%@ não receberá mais códigos de verificação ao entrar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 将不再在登录时接收验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ giriş yaparken artık doğrulama kodu almayacak."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 将不再在登录时接收验证码。"
           }
         }
       }
@@ -673,16 +597,16 @@
             "value" : "Uma mensagem de texto contendo um código de verificação será enviada para este número de telefone. Taxas de mensagem e dados podem ser aplicadas."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将向此电话号码发送包含验证码的短信。可能会收取短信和数据费用。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu telefon numarasına doğrulama kodu içeren bir SMS gönderilecek. Mesaj ve veri ücretleri geçerli olabilir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将向此电话号码发送包含验证码的短信。可能会收取短信和数据费用。"
           }
         }
       }
@@ -749,16 +673,16 @@
             "value" : "Conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账户"
           }
         }
       }
@@ -825,16 +749,16 @@
             "value" : "DISPOSITIVOS ATIVOS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "活跃设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "AKTİF CİHAZLAR"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活跃设备"
           }
         }
       }
@@ -901,16 +825,16 @@
             "value" : "Adicionar uma chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加通行密钥"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarı ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加通行密钥"
           }
         }
       }
@@ -977,16 +901,16 @@
             "value" : "Adicionar conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加账户"
           }
         }
       }
@@ -1053,16 +977,16 @@
             "value" : "Adicionar aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加身份验证应用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulaması ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加身份验证应用"
           }
         }
       }
@@ -1129,16 +1053,16 @@
             "value" : "Adicionar endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加电子邮箱地址"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta adresi ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加电子邮箱地址"
           }
         }
       }
@@ -1205,16 +1129,16 @@
             "value" : "Adicionar senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parola ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加密码"
           }
         }
       }
@@ -1281,16 +1205,16 @@
             "value" : "Adicionar número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numarası ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加电话号码"
           }
         }
       }
@@ -1357,16 +1281,16 @@
             "value" : "Adicionar verificação por código SMS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加短信验证码验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SMS kodu doğrulaması ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加短信验证码验证"
           }
         }
       }
@@ -1433,16 +1357,16 @@
             "value" : "Adicionar verificação em duas etapas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "添加两步验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulama ekle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加两步验证"
           }
         }
       }
@@ -1511,16 +1435,16 @@
             "value" : "Administrador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "管理员"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yönetici"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理员"
           }
         }
       }
@@ -1587,16 +1511,16 @@
             "value" : "Alternativamente, se seu autenticador suporta URIs TOTP, você também pode copiar o URI completo."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "或者，如果您的身份验证器支持TOTP URI，您也可以复制完整的URI。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamanız TOTP URI'lerini destekliyorsa tam URI'yi de kopyalayabilirsiniz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或者，如果您的身份验证器支持TOTP URI，您也可以复制完整的URI。"
           }
         }
       }
@@ -1663,16 +1587,16 @@
             "value" : "Tem certeza de que deseja excluir sua conta? Esta ação é permanente e irreversível."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您确定要删除您的账户吗？此操作是永久性的且不可逆转。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem kalıcıdır ve geri alınamaz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您确定要删除您的账户吗？此操作是永久性的且不可逆转。"
           }
         }
       }
@@ -1739,16 +1663,16 @@
             "value" : "Aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "身份验证器应用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulaması"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "身份验证器应用"
           }
         }
       }
@@ -1815,16 +1739,16 @@
             "value" : "Verificação do aplicativo autenticador ativada"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证器应用程序验证已启用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulaması doğrulaması etkinleştirildi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证器应用程序验证已启用"
           }
         }
       }
@@ -1891,16 +1815,16 @@
             "value" : "Aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "身份验证应用程序"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulaması"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "身份验证应用程序"
           }
         }
       }
@@ -1967,16 +1891,16 @@
             "value" : "Código de backup"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "备用码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kod"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备用码"
           }
         }
       }
@@ -2043,16 +1967,16 @@
             "value" : "Códigos de backup"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "备用码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kodlar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备用码"
           }
         }
       }
@@ -2119,16 +2043,16 @@
             "value" : "Os códigos de backup agora estão habilitados. Você pode usar um deles para entrar na sua conta, se perder o acesso ao seu dispositivo de autenticação. Cada código só pode ser usado uma vez."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "备份代码现已启用。如果您无法访问身份验证设备，可以使用其中一个代码登录您的帐户。每个代码只能使用一次。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kodlar etkinleştirildi. Doğrulama cihazınıza erişiminizi kaybederseniz hesabınıza giriş yapmak için bunlardan birini kullanabilirsiniz. Her kod yalnızca bir kez kullanılabilir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "备份代码现已启用。如果您无法访问身份验证设备，可以使用其中一个代码登录您的帐户。每个代码只能使用一次。"
           }
         }
       }
@@ -2195,16 +2119,16 @@
             "value" : "Cancelar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "取消"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İptal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
           }
         }
       }
@@ -2271,16 +2195,16 @@
             "value" : "Alterar senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更改密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolayı değiştir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改密码"
           }
         }
       }
@@ -2347,16 +2271,16 @@
             "value" : "Verifique seu e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请检查您的邮箱"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-postanı kontrol et"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请检查您的邮箱"
           }
         }
       }
@@ -2423,16 +2347,16 @@
             "value" : "Verifique seu telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请查看您的手机"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefonunu kontrol et"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请查看您的手机"
           }
         }
       }
@@ -2499,16 +2423,16 @@
             "value" : "Escolha um nome de usuário."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择用户名。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bir kullanıcı adı seç."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择用户名。"
           }
         }
       }
@@ -2577,16 +2501,16 @@
             "value" : "Escolha uma organização"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择组织"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kuruluş seç"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择组织"
           }
         }
       }
@@ -2653,16 +2577,16 @@
             "value" : "Escolher da biblioteca de fotos"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从照片库中选择"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotoğraf kitaplığından seç"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从照片库中选择"
           }
         }
       }
@@ -2729,16 +2653,16 @@
             "value" : "Escolha como deseja receber seu código de verificação em duas etapas."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择您希望如何接收两步验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulama kodunuzu nasıl almak istediğinizi seçin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您希望如何接收两步验证码。"
           }
         }
       }
@@ -2807,16 +2731,16 @@
             "value" : "Escolha o número de telefone que deseja usar para a verificação em duas etapas do código SMS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择您要用于短信代码两步验证的电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SMS kodu ile iki adımlı doğrulama için kullanmak istediğiniz telefon numarasını seçin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您要用于短信代码两步验证的电话号码"
           }
         }
       }
@@ -2883,16 +2807,16 @@
             "value" : "Escolha qual método você prefere para proteger sua conta com uma camada extra de segurança"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择您喜欢的方法来保护您的帐户并提供额外的安全层"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabınızı ekstra bir güvenlik katmanıyla korumak için tercih ettiğiniz yöntemi seçin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您喜欢的方法来保护您的帐户并提供额外的安全层"
           }
         }
       }
@@ -2959,16 +2883,16 @@
             "value" : "Escolha sua senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择您的密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolanızı seçin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您的密码"
           }
         }
       }
@@ -3035,16 +2959,16 @@
             "value" : "Escolha seu nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择您的用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanıcı adınızı seçin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择您的用户名"
           }
         }
       }
@@ -3111,16 +3035,16 @@
             "value" : "Fechar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关闭"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kapat"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
           }
         }
       }
@@ -3187,16 +3111,16 @@
             "value" : "Complete seu perfil"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完善您的个人资料"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profilini tamamla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完善您的个人资料"
           }
         }
       }
@@ -3263,16 +3187,16 @@
             "value" : "Confirmar senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "确认密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolayı onayla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认密码"
           }
         }
       }
@@ -3339,16 +3263,16 @@
             "value" : "Conectar conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "连接账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap bağla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接账户"
           }
         }
       }
@@ -3415,16 +3339,16 @@
             "value" : "CONTAS CONECTADAS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关联账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "BAĞLI HESAPLAR"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关联账户"
           }
         }
       }
@@ -3493,16 +3417,16 @@
             "value" : "Entre em contato com o administrador da sua organização para obter um convite."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请联系您的组织管理员获取邀请。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Davet için kuruluş yöneticinizle iletişime geçin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请联系您的组织管理员获取邀请。"
           }
         }
       }
@@ -3569,16 +3493,16 @@
             "value" : "Continuar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Devam et"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
           }
         }
       }
@@ -3645,16 +3569,16 @@
             "value" : "Continuar para %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "继续前往%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ uygulamasına devam et"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续前往%@"
           }
         }
       }
@@ -3721,16 +3645,16 @@
             "value" : "Continuar com %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用%@继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ ile devam et"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用%@继续"
           }
         }
       }
@@ -3797,16 +3721,16 @@
             "value" : "Copiar para área de transferência"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "复制到剪贴板"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Panoya kopyala"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制到剪贴板"
           }
         }
       }
@@ -3873,16 +3797,16 @@
             "value" : "Crie uma senha única."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建一个独特的密码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Benzersiz bir parola oluştur."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建一个独特的密码。"
           }
         }
       }
@@ -3951,16 +3875,16 @@
             "value" : "Criar organização"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建组织"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kuruluş oluştur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建组织"
           }
         }
       }
@@ -4027,16 +3951,16 @@
             "value" : "Crie sua conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建您的账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabını oluştur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建您的账户"
           }
         }
       }
@@ -4103,16 +4027,16 @@
             "value" : "Criado: %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "创建时间：%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oluşturulma: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建时间：%@"
           }
         }
       }
@@ -4179,16 +4103,16 @@
             "value" : "Senha atual"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "当前密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mevcut parola"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前密码"
           }
         }
       }
@@ -4255,16 +4179,16 @@
             "value" : "Padrão"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "默认"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Varsayılan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认"
           }
         }
       }
@@ -4331,16 +4255,16 @@
             "value" : "EXCLUIR"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SİL"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除"
           }
         }
       }
@@ -4407,16 +4331,16 @@
             "value" : "Excluir conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabı sil"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账户"
           }
         }
       }
@@ -4483,16 +4407,16 @@
             "value" : "EXCLUIR CONTA"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "HESABI SİL"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除账户"
           }
         }
       }
@@ -4559,16 +4483,16 @@
             "value" : "Dispositivo de desktop"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "桌面设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Masaüstü cihaz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "桌面设备"
           }
         }
       }
@@ -4635,16 +4559,16 @@
             "value" : "Não recebeu o código?"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有收到验证码？"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kod almadın mı?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有收到验证码？"
           }
         }
       }
@@ -4711,16 +4635,16 @@
             "value" : "Concluído"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tamam"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
           }
         }
       }
@@ -4789,16 +4713,16 @@
             "value" : "Download"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下载"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İndir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载"
           }
         }
       }
@@ -4865,16 +4789,16 @@
             "value" : "Editar perfil"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑个人资料"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profili düzenle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑个人资料"
           }
         }
       }
@@ -4941,16 +4865,16 @@
             "value" : "Endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "电子邮箱地址"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta adresi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子邮箱地址"
           }
         }
       }
@@ -5017,16 +4941,16 @@
             "value" : "ENDEREÇOS DE E-MAIL"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "电子邮箱地址"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-POSTA ADRESLERİ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子邮箱地址"
           }
         }
       }
@@ -5093,16 +5017,16 @@
             "value" : "Enviar código por e-mail para %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发送验证码至%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ adresine e-posta kodu gönder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送验证码至%@"
           }
         }
       }
@@ -5169,16 +5093,16 @@
             "value" : "Suporte por e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "电子邮件支持"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta desteği"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子邮件支持"
           }
         }
       }
@@ -5245,16 +5169,16 @@
             "value" : "Digite um código de backup"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入备用码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kod gir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入备用码"
           }
         }
       }
@@ -5323,16 +5247,16 @@
             "value" : "Insira um slug com letras minúsculas, números e hífens."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请输入仅包含小写字母、数字和连字符的 slug。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Küçük harfler, sayılar ve kısa çizgiler kullanarak bir slug girin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入仅包含小写字母、数字和连字符的 slug。"
           }
         }
       }
@@ -5399,16 +5323,16 @@
             "value" : "Digite a senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的密码登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolayı gir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的密码登录"
           }
         }
       }
@@ -5475,16 +5399,16 @@
             "value" : "Digite o endereço de e-mail que deseja usar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入您想要使用的电子邮箱地址。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanmak istediğiniz e-posta adresini girin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入您想要使用的电子邮箱地址。"
           }
         }
       }
@@ -5551,16 +5475,16 @@
             "value" : "Digite a senha da sua conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入您账户的密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabınızın parolasını girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入您账户的密码"
           }
         }
       }
@@ -5627,16 +5551,16 @@
             "value" : "Digite o número de telefone que deseja usar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入您想要使用的电话号码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanmak istediğiniz telefon numarasını girin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入您想要使用的电话号码。"
           }
         }
       }
@@ -5703,16 +5627,16 @@
             "value" : "Insira o código de verificação do aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入验证器应用程序中的验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamasındaki kodu girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入验证器应用程序中的验证码"
           }
         }
       }
@@ -5779,16 +5703,16 @@
             "value" : "Digite o código de verificação do seu aplicativo autenticador."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入来自您的身份验证应用的验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamanızdaki kodu girin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入来自您的身份验证应用的验证码。"
           }
         }
       }
@@ -5855,16 +5779,16 @@
             "value" : "Digite o código de verificação enviado para %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入发送到%@的验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ adresine gönderilen doğrulama kodunu girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入发送到%@的验证码"
           }
         }
       }
@@ -5931,16 +5855,16 @@
             "value" : "Digite sua senha atual para definir uma nova."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入您当前的密码以设置新密码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeni bir parola belirlemek için mevcut parolanızı girin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入您当前的密码以设置新密码。"
           }
         }
       }
@@ -6007,16 +5931,16 @@
             "value" : "Digite seu e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请输入您的邮箱"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-postanızı girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入您的邮箱"
           }
         }
       }
@@ -6083,16 +6007,16 @@
             "value" : "Digite seu e-mail ou nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请输入您的邮箱或用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta veya kullanıcı adınızı girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入您的邮箱或用户名"
           }
         }
       }
@@ -6161,16 +6085,16 @@
             "value" : "Insira os detalhes da sua organização para continuar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入您的组织详细信息以继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Devam etmek için kuruluş bilgilerinizi girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入您的组织详细信息以继续"
           }
         }
       }
@@ -6237,16 +6161,16 @@
             "value" : "Digite sua senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用密码登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolanızı girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用密码登录"
           }
         }
       }
@@ -6313,16 +6237,16 @@
             "value" : "Digite seu número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请输入您的电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numaranızı girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入您的电话号码"
           }
         }
       }
@@ -6389,16 +6313,16 @@
             "value" : "Digite seu nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请输入您的用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanıcı adınızı girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请输入您的用户名"
           }
         }
       }
@@ -6465,16 +6389,16 @@
             "value" : "Enfrentando problemas? Você pode usar qualquer um desses métodos para entrar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "遇到问题？您可以使用以下任一方法登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sorun mu yaşıyorsun? Bu yöntemlerden herhangi birini kullanarak giriş yapabilirsin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "遇到问题？您可以使用以下任一方法登录。"
           }
         }
       }
@@ -6541,16 +6465,16 @@
             "value" : "Nome"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ad"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名"
           }
         }
       }
@@ -6617,16 +6541,16 @@
             "value" : "Primeiro, digite o código enviado para seu endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "首先，输入发送到您邮箱的验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Önce e-posta adresine gönderilen kodu gir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首先，输入发送到您邮箱的验证码"
           }
         }
       }
@@ -6693,16 +6617,16 @@
             "value" : "Primeiro, digite o código enviado para seu telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "首先，输入发送到您手机的验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Önce telefonuna gönderilen kodu gir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首先，输入发送到您手机的验证码"
           }
         }
       }
@@ -6769,16 +6693,16 @@
             "value" : "Esqueceu a senha?"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "忘记密码？"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolanı mı unuttun?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "忘记密码？"
           }
         }
       }
@@ -6845,16 +6769,16 @@
             "value" : "Obter ajuda"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "获取帮助"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yardım al"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "获取帮助"
           }
         }
       }
@@ -6921,92 +6845,244 @@
             "value" : "Voltar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "返回"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geri dön"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
         }
       }
     },
-    "I agree to the " : {
+    "I agree to the [Privacy Policy](LegalConsentView://privacy)" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أوافق على "
+            "value" : "أوافق على [سياسة الخصوصية](LegalConsentView://privacy)"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich stimme der "
+            "value" : "Ich stimme der [Datenschutzrichtlinie](LegalConsentView://privacy) zu"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Συμφωνώ με την "
+            "value" : "Συμφωνώ με την [Πολιτική Απορρήτου](LegalConsentView://privacy)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acepto la "
+            "value" : "Acepto la [Política de Privacidad](LegalConsentView://privacy)"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "J'accepte la "
+            "value" : "J'accepte la [Politique de Confidentialité](LegalConsentView://privacy)"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "मैं इससे सहमत हूं "
+            "value" : "मैं [गोपनीयता नीति](LegalConsentView://privacy) से सहमत हूं"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accetto la "
+            "value" : "Accetto l'[Informativa sulla Privacy](LegalConsentView://privacy)"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "に同意します "
+            "value" : "[プライバシーポリシー](LegalConsentView://privacy)に同意します"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "에 동의합니다 "
+            "value" : "[개인정보 보호정책](LegalConsentView://privacy)에 동의합니다"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eu concordo com os "
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "我同意 "
+            "value" : "Eu concordo com a [Política de Privacidade](LegalConsentView://privacy)"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kabul ediyorum: "
+            "value" : "[Gizlilik Politikası](LegalConsentView://privacy)'nı kabul ediyorum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我同意[隐私政策](LegalConsentView://privacy)"
+          }
+        }
+      }
+    },
+    "I agree to the [Terms of Service](LegalConsentView://terms)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوافق على [شروط الخدمة](LegalConsentView://terms)"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich stimme den [Nutzungsbedingungen](LegalConsentView://terms) zu"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συμφωνώ με τους [Όρους Χρήσης](LegalConsentView://terms)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acepto los [Términos de Servicio](LegalConsentView://terms)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'accepte les [Conditions de Service](LegalConsentView://terms)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैं [सेवा की शर्तें](LegalConsentView://terms) से सहमत हूं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accetto i [Termini di Servizio](LegalConsentView://terms)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[利用規約](LegalConsentView://terms)に同意します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[서비스 약관](LegalConsentView://terms)에 동의합니다"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eu concordo com os [Termos de Serviço](LegalConsentView://terms)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Kullanım Koşulları](LegalConsentView://terms)'nı kabul ediyorum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我同意[服务条款](LegalConsentView://terms)"
+          }
+        }
+      }
+    },
+    "I agree to the [Terms of Service](LegalConsentView://terms) and [Privacy Policy](LegalConsentView://privacy)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوافق على [شروط الخدمة](LegalConsentView://terms) و[سياسة الخصوصية](LegalConsentView://privacy)"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich stimme den [Nutzungsbedingungen](LegalConsentView://terms) und der [Datenschutzrichtlinie](LegalConsentView://privacy) zu"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συμφωνώ με τους [Όρους Χρήσης](LegalConsentView://terms) και την [Πολιτική Απορρήτου](LegalConsentView://privacy)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acepto los [Términos de Servicio](LegalConsentView://terms) y la [Política de Privacidad](LegalConsentView://privacy)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'accepte les [Conditions de Service](LegalConsentView://terms) et la [Politique de Confidentialité](LegalConsentView://privacy)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैं [सेवा की शर्तें](LegalConsentView://terms) और [गोपनीयता नीति](LegalConsentView://privacy) से सहमत हूं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accetto i [Termini di Servizio](LegalConsentView://terms) e l'[Informativa sulla Privacy](LegalConsentView://privacy)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[利用規約](LegalConsentView://terms)と[プライバシーポリシー](LegalConsentView://privacy)に同意します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[서비스 약관](LegalConsentView://terms) 및 [개인정보 보호정책](LegalConsentView://privacy)에 동의합니다"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eu concordo com os [Termos de Serviço](LegalConsentView://terms) e a [Política de Privacidade](LegalConsentView://privacy)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Kullanım Koşulları](LegalConsentView://terms) ve [Gizlilik Politikası](LegalConsentView://privacy)'nı kabul ediyorum"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我同意[服务条款](LegalConsentView://terms)和[隐私政策](LegalConsentView://privacy)"
           }
         }
       }
@@ -7075,16 +7151,16 @@
             "value" : "Se você tiver problemas para concluir a configuração necessária da conta, envie-nos um e-mail e nós o ajudaremos a terminar o mais rápido possível."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "如果您在完成所需的帐户设置时遇到困难，请给我们发送电子邮件，我们将帮助您尽快完成。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap kurulumunu tamamlamakta sorun yaşıyorsanız bize e-posta gönderin, en kısa sürede yardımcı olalım."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果您在完成所需的帐户设置时遇到困难，请给我们发送电子邮件，我们将帮助您尽快完成。"
           }
         }
       }
@@ -7151,16 +7227,16 @@
             "value" : "Se você tiver problemas para criar sua conta, envie-nos um e-mail e trabalharemos com você para concluir seu cadastro o mais rápido possível."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "如果您在创建账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快完成您的注册。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap oluştururken sorun yaşıyorsanız bize e-posta gönderin, kaydınızı en kısa sürede tamamlayalım."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果您在创建账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快完成您的注册。"
           }
         }
       }
@@ -7227,16 +7303,16 @@
             "value" : "Se você tiver problemas para entrar na sua conta, envie-nos um e-mail e trabalharemos com você para restaurar o acesso o mais rápido possível."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "如果您在登录账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快恢复访问权限。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabınıza giriş yapmakta sorun yaşıyorsanız bize e-posta gönderin, erişiminizi en kısa sürede geri yükleyelim."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果您在登录账户时遇到问题，请发送电子邮件给我们，我们将与您合作尽快恢复访问权限。"
           }
         }
       }
@@ -7303,16 +7379,16 @@
             "value" : "Internacional"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "国际"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uluslararası"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "国际"
           }
         }
       }
@@ -7379,16 +7455,16 @@
             "value" : "É recomendado sair de todos os outros dispositivos que podem ter usado sua senha antiga."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建议从所有可能使用过您旧密码的其他设备注销。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eski parolanızı kullanmış olabilecek diğer tüm cihazlardan çıkış yapmanız önerilir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议从所有可能使用过您旧密码的其他设备注销。"
           }
         }
       }
@@ -7455,16 +7531,16 @@
             "value" : "Participar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加入"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Katıl"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入"
           }
         }
       }
@@ -7531,16 +7607,16 @@
             "value" : "Junte-se a uma organização existente"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加入现有组织"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mevcut bir kuruluşa katıl"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入现有组织"
           }
         }
       }
@@ -7609,16 +7685,16 @@
             "value" : "Junte-se a uma organização existente ou crie uma nova"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加入现有组织或创建新组织"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mevcut bir kuruluşa katıl veya yeni bir kuruluş oluştur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入现有组织或创建新组织"
           }
         }
       }
@@ -7685,16 +7761,16 @@
             "value" : "Sobrenome"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "姓"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Soyad"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "姓"
           }
         }
       }
@@ -7761,16 +7837,16 @@
             "value" : "Último uso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最后使用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Son Kullanım"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最后使用"
           }
         }
       }
@@ -7837,16 +7913,16 @@
             "value" : "Último uso: %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最后使用：%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Son kullanım: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最后使用：%@"
           }
         }
       }
@@ -7913,16 +7989,16 @@
             "value" : "Vincular outra opção de login à sua conta. Você precisará verificá-la antes que possa ser usada."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将其他登录选项链接到您的账户。使用前需要验证。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabınıza başka bir giriş seçeneği bağlayın. Kullanılmadan önce doğrulamanız gerekecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将其他登录选项链接到您的账户。使用前需要验证。"
           }
         }
       }
@@ -7989,16 +8065,16 @@
             "value" : "Vinculado"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已关联"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bağlı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已关联"
           }
         }
       }
@@ -8067,16 +8143,16 @@
             "value" : "Certifique-se de que as senhas baseadas em tempo ou de uso único estejam ativadas e termine de vincular sua conta."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "确保启用基于时间或一次性的密码，然后完成帐户关联。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确保启用基于时间或一次性的密码，然后完成帐户关联。"
           }
         }
       }
@@ -8143,16 +8219,16 @@
             "value" : "Gerenciar conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "管理账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesabı yönet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理账户"
           }
         }
       }
@@ -8221,16 +8297,16 @@
             "value" : "Chave de configuração manual"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "手动设置键"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manuel kurulum anahtarı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手动设置键"
           }
         }
       }
@@ -8297,16 +8373,16 @@
             "value" : "Membro"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "成员"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Üye"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成员"
           }
         }
       }
@@ -8373,16 +8449,16 @@
             "value" : "MFA reservado"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为MFA保留"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "MFA için ayrılmış"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为MFA保留"
           }
         }
       }
@@ -8449,16 +8525,16 @@
             "value" : "Dispositivo móvel"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移动设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mobil cihaz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动设备"
           }
         }
       }
@@ -8525,16 +8601,16 @@
             "value" : "Nome da chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "通行密钥名称"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarı adı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通行密钥名称"
           }
         }
       }
@@ -8601,16 +8677,16 @@
             "value" : "Nova senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeni parola"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新密码"
           }
         }
       }
@@ -8677,16 +8753,16 @@
             "value" : "Próximo"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一步"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İleri"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一步"
           }
         }
       }
@@ -8753,16 +8829,16 @@
             "value" : "ou"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "或"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "veya"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或"
           }
         }
       }
@@ -8829,16 +8905,16 @@
             "value" : "Ou, entre com outro método"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "或使用其他方式登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Veya başka bir yöntemle giriş yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "或使用其他方式登录"
           }
         }
       }
@@ -8907,16 +8983,16 @@
             "value" : "Nome da organização"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "组织名称"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kuruluş adı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "组织名称"
           }
         }
       }
@@ -8983,16 +9059,16 @@
             "value" : "CHAVES DE ACESSO"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "通行密钥"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "GEÇİŞ ANAHTARLARI"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通行密钥"
           }
         }
       }
@@ -9059,16 +9135,16 @@
             "value" : "Senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parola"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码"
           }
         }
       }
@@ -9135,16 +9211,16 @@
             "value" : "SENHA"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "PAROLA"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码"
           }
         }
       }
@@ -9211,16 +9287,16 @@
             "value" : "As senhas não coincidem."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密码不匹配。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolalar eşleşmiyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密码不匹配。"
           }
         }
       }
@@ -9289,16 +9365,16 @@
             "value" : "Aprovação pendente"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "等待批准"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Onay bekleniyor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "等待批准"
           }
         }
       }
@@ -9365,16 +9441,16 @@
             "value" : "Número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numarası"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电话号码"
           }
         }
       }
@@ -9441,16 +9517,16 @@
             "value" : "NÚMEROS DE TELEFONE"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "TELEFON NUMARALARI"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电话号码"
           }
         }
       }
@@ -9517,21 +9593,22 @@
             "value" : "Principal"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主要"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Birincil"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主要"
+          }
         }
       }
     },
     "Privacy Policy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9593,16 +9670,16 @@
             "value" : "Política de Privacidade"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "隐私政策"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gizlilik Politikası"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐私政策"
           }
         }
       }
@@ -9669,16 +9746,16 @@
             "value" : "Detalhes do Perfil"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "个人资料详情"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profil Bilgileri"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "个人资料详情"
           }
         }
       }
@@ -9747,16 +9824,16 @@
             "value" : "Tamanho recomendado 1:1, até 10 MB."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "建议尺寸为 1:1，最大 10MB。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Önerilen boyut 1:1, en fazla 10 MB."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建议尺寸为 1:1，最大 10MB。"
           }
         }
       }
@@ -9823,16 +9900,16 @@
             "value" : "Reconectar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新连接"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeniden bağlan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新连接"
           }
         }
       }
@@ -9900,16 +9977,16 @@
             "value" : "URL de redirecionamento está ausente ou inválida. Não foi possível iniciar o fluxo de autenticação externa."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yönlendirme URL'si eksik veya geçersiz. Harici kimlik doğrulama akışı başlatılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
           }
         }
       }
@@ -9976,16 +10053,16 @@
             "value" : "Regenerar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新生成"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeniden oluştur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新生成"
           }
         }
       }
@@ -10052,16 +10129,16 @@
             "value" : "Remover"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除"
           }
         }
       }
@@ -10128,16 +10205,16 @@
             "value" : "Remover conta conectada"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除已连接账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bağlı hesabı kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除已连接账户"
           }
         }
       }
@@ -10204,16 +10281,16 @@
             "value" : "Remover conexão"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除连接"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bağlantıyı kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除连接"
           }
         }
       }
@@ -10280,16 +10357,16 @@
             "value" : "Remover e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除邮箱"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-postayı kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除邮箱"
           }
         }
       }
@@ -10356,16 +10433,16 @@
             "value" : "Remover endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除邮箱地址"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta adresini kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除邮箱地址"
           }
         }
       }
@@ -10432,16 +10509,16 @@
             "value" : "Remover chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除密码钥匙"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarını kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除密码钥匙"
           }
         }
       }
@@ -10508,16 +10585,16 @@
             "value" : "Remover telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除电话"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefonu kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除电话"
           }
         }
       }
@@ -10584,16 +10661,16 @@
             "value" : "Remover número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "删除电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numarasını kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除电话号码"
           }
         }
       }
@@ -10660,16 +10737,16 @@
             "value" : "Remover foto"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除照片"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotoğrafı kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除照片"
           }
         }
       }
@@ -10736,16 +10813,16 @@
             "value" : "Remover verificação em duas etapas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除两步验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulamayı kaldır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除两步验证"
           }
         }
       }
@@ -10812,16 +10889,16 @@
             "value" : "Renomear"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重命名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeniden adlandır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名"
           }
         }
       }
@@ -10888,16 +10965,16 @@
             "value" : "Renomear chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重命名通行密钥"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarını yeniden adlandır"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名通行密钥"
           }
         }
       }
@@ -10966,16 +11043,16 @@
             "value" : "Solicitar participação"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请求加入"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Katılma talebi gönder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请求加入"
           }
         }
       }
@@ -11042,16 +11119,16 @@
             "value" : "Reenviar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新发送"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tekrar gönder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新发送"
           }
         }
       }
@@ -11118,16 +11195,16 @@
             "value" : "Reenviar (%lld)"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新发送 (%lld)"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tekrar gönder (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新发送 (%lld)"
           }
         }
       }
@@ -11194,16 +11271,16 @@
             "value" : "Redefinir senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重置密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolayı sıfırla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置密码"
           }
         }
       }
@@ -11270,16 +11347,16 @@
             "value" : "Redefinir sua senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重置您的密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolanızı sıfırlayın"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重置您的密码"
           }
         }
       }
@@ -11346,16 +11423,16 @@
             "value" : "Salvar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "保存"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kaydet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
           }
         }
       }
@@ -11424,16 +11501,16 @@
             "value" : "Salve esses códigos em algum lugar seguro. Se você perder o acesso ao seu dispositivo de autenticação, poderá usar um código alternativo para fazer login."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将这些代码保存在安全的地方。如果您无法访问身份验证设备，您可以使用备份代码登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu kodları güvenli bir yere kaydedin. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kod kullanabilirsiniz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将这些代码保存在安全的地方。如果您无法访问身份验证设备，您可以使用备份代码登录。"
           }
         }
       }
@@ -11500,16 +11577,16 @@
             "value" : "Protegido por"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安全提供"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Güvenlik sağlayıcı:"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全提供"
           }
         }
       }
@@ -11576,16 +11653,16 @@
             "value" : "Segurança"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "安全"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Güvenlik"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全"
           }
         }
       }
@@ -11652,16 +11729,16 @@
             "value" : "Selecione um número de telefone existente para registrar verificação em duas etapas por código SMS ou adicione um novo."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择现有电话号码注册短信验证码两步验证，或添加新号码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SMS kodu ile iki adımlı doğrulama için mevcut bir telefon numarası seçin veya yeni bir tane ekleyin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择现有电话号码注册短信验证码两步验证，或添加新号码。"
           }
         }
       }
@@ -11728,16 +11805,16 @@
             "value" : "Enviar código SMS para %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发送验证码至%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ numarasına SMS kodu gönder"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送验证码至%@"
           }
         }
       }
@@ -11804,16 +11881,16 @@
             "value" : "Definir como padrão"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设为默认"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Varsayılan olarak ayarla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设为默认"
           }
         }
       }
@@ -11880,16 +11957,16 @@
             "value" : "Definir como principal"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设为主要"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Birincil olarak ayarla"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设为主要"
           }
         }
       }
@@ -11956,16 +12033,16 @@
             "value" : "Definir nova senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设置新密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeni parola belirle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置新密码"
           }
         }
       }
@@ -12032,16 +12109,16 @@
             "value" : "Configure um novo método de entrada no seu autenticador e insira a Chave fornecida abaixo.\n\nCertifique-se de que Senhas baseadas em tempo ou de uso único estão habilitadas e conclua a vinculação da sua conta."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在您的身份验证器中设置新的登录方法，并输入下面提供的密钥。\n\n确保启用基于时间或一次性密码，然后完成账户链接。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve aşağıda verilen Anahtarı girin.\n\nZamana dayalı veya tek kullanımlık parolaların etkin olduğundan emin olun, ardından hesabınızı bağlamayı tamamlayın."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的身份验证器中设置新的登录方法，并输入下面提供的密钥。\n\n确保启用基于时间或一次性密码，然后完成账户链接。"
           }
         }
       }
@@ -12110,16 +12187,16 @@
             "value" : "Configure um novo método de login no seu aplicativo autenticador usando a chave de configuração manual abaixo para vinculá-lo à sua conta."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在您的身份验证器应用中设置新的登录方式，并使用下方的手动设置密钥将其关联到您的帐户。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aşağıdaki manuel kurulum anahtarını kullanarak doğrulama uygulamanızda yeni bir giriş yöntemi oluşturun ve hesabınıza bağlayın."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在您的身份验证器应用中设置新的登录方式，并使用下方的手动设置密钥将其关联到您的帐户。"
           }
         }
       }
@@ -12188,16 +12265,16 @@
             "value" : "Configure a verificação em duas etapas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设置两步验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulamayı kur"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置两步验证"
           }
         }
       }
@@ -12264,16 +12341,16 @@
             "value" : "Entre com sua chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的通行密钥登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarınla giriş yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥登录"
           }
         }
       }
@@ -12340,16 +12417,16 @@
             "value" : "Entre com sua senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用密码登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolanla giriş yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用密码登录"
           }
         }
       }
@@ -12416,16 +12493,16 @@
             "value" : "Sair"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "退出登录"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çıkış yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出登录"
           }
         }
       }
@@ -12492,16 +12569,16 @@
             "value" : "Sair de todas as contas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "退出所有账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tüm hesaplardan çıkış yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出所有账户"
           }
         }
       }
@@ -12568,16 +12645,16 @@
             "value" : "Sair de todos os outros dispositivos"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "退出所有其他设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diğer tüm cihazlardan çıkış yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出所有其他设备"
           }
         }
       }
@@ -12644,16 +12721,16 @@
             "value" : "Sair do dispositivo"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从设备注销"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cihazdan çıkış yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从设备注销"
           }
         }
       }
@@ -12720,16 +12797,16 @@
             "value" : "Inscrever-se"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "注册"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kayıt ol"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注册"
           }
         }
       }
@@ -12798,16 +12875,16 @@
             "value" : "Slug"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL 简称"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slug"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL 简称"
           }
         }
       }
@@ -12874,16 +12951,16 @@
             "value" : "Código SMS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "短信验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SMS kodu"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "短信验证码"
           }
         }
       }
@@ -12950,16 +13027,16 @@
             "value" : "Verificação de código SMS ativada"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "短信验证码已启用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SMS kodu doğrulaması etkinleştirildi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "短信验证码已启用"
           }
         }
       }
@@ -13026,16 +13103,16 @@
             "value" : "Sucesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "成功"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Başarılı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成功"
           }
         }
       }
@@ -13102,21 +13179,22 @@
             "value" : "Trocar de conta"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "切换账户"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hesap değiştir"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "切换账户"
+          }
         }
       }
     },
     "Terms of Service" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -13178,16 +13256,16 @@
             "value" : "Termos de Serviço"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "服务条款"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanım Koşulları"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务条款"
           }
         }
       }
@@ -13254,16 +13332,16 @@
             "value" : "Houve um erro ao carregar a imagem da biblioteca de fotos."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从照片库加载图像时出错。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotoğraf kitaplığından görsel yüklenirken bir hata oluştu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从照片库加载图像时出错。"
           }
         }
       }
@@ -13330,16 +13408,16 @@
             "value" : "Este dispositivo"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "这个设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu cihaz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这个设备"
           }
         }
       }
@@ -13406,16 +13484,16 @@
             "value" : "para continuar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "devam etmek için"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
           }
         }
       }
@@ -13482,16 +13560,16 @@
             "value" : "para continuar para %@"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "继续前往%@"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ için devam etmek için"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续前往%@"
           }
         }
       }
@@ -13558,16 +13636,16 @@
             "value" : "Para continuar, digite o código de verificação gerado pelo seu aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要继续，请输入您的身份验证器应用生成的验证码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Devam etmek için doğrulama uygulamanız tarafından oluşturulan kodu girin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要继续，请输入您的身份验证器应用生成的验证码"
           }
         }
       }
@@ -13634,16 +13712,16 @@
             "value" : "Verificação em duas etapas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "两步验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulama"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证"
           }
         }
       }
@@ -13710,16 +13788,16 @@
             "value" : "VERIFICAÇÃO EM DUAS ETAPAS"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "两步验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İKİ ADIMLI DOĞRULAMA"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证"
           }
         }
       }
@@ -13786,16 +13864,16 @@
             "value" : "A verificação em duas etapas agora está habilitada. Ao entrar, você precisará digitar um código de verificação deste aplicativo autenticador como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "两步验证现已启用。登录时，您需要输入来自此身份验证应用的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulama etkinleştirildi. Giriş yaparken ek bir adım olarak bu doğrulama uygulamasından bir kod girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证现已启用。登录时，您需要输入来自此身份验证应用的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
           }
         }
       }
@@ -13862,16 +13940,16 @@
             "value" : "Configuração da verificação em duas etapas"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "两步验证设置"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "İki adımlı doğrulama kurulumu"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两步验证设置"
           }
         }
       }
@@ -13938,16 +14016,16 @@
             "value" : "Digite \"EXCLUIR\" para continuar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "输入\"删除\"以继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Devam etmek için \"SİL\" yazın"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入\"删除\"以继续"
           }
         }
       }
@@ -14014,16 +14092,16 @@
             "value" : "Método de verificação de código desconhecido. Por favor, use outro método."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未知的验证码验证方式。请使用其他方式。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilinmeyen doğrulama yöntemi. Lütfen başka bir yöntem kullanın."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知的验证码验证方式。请使用其他方式。"
           }
         }
       }
@@ -14090,16 +14168,16 @@
             "value" : "Dispositivo desconhecido"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未知设备"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilinmeyen cihaz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未知设备"
           }
         }
       }
@@ -14166,16 +14244,16 @@
             "value" : "Não verificado"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulanmamış"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未验证"
           }
         }
       }
@@ -14242,16 +14320,16 @@
             "value" : "Atualizar senha"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更新密码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parolayı güncelle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新密码"
           }
         }
       }
@@ -14320,16 +14398,16 @@
             "value" : "Carregar logotipo"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "上传徽标"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logo yükle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上传徽标"
           }
         }
       }
@@ -14396,16 +14474,16 @@
             "value" : "Usar um código de backup"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用备用码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kod kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用备用码"
           }
         }
       }
@@ -14472,16 +14550,16 @@
             "value" : "Usar outro método"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用其他方法"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Başka yöntem kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用其他方法"
           }
         }
       }
@@ -14548,16 +14626,16 @@
             "value" : "Usar endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用电子邮箱"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta adresi kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用电子邮箱"
           }
         }
       }
@@ -14624,16 +14702,16 @@
             "value" : "Usar endereço de e-mail ou nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用电子邮箱或用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta veya kullanıcı adı kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用电子邮箱或用户名"
           }
         }
       }
@@ -14700,16 +14778,16 @@
             "value" : "Usar número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numarası kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用电话号码"
           }
         }
       }
@@ -14776,16 +14854,16 @@
             "value" : "Usar nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanıcı adı kullan"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用用户名"
           }
         }
       }
@@ -14852,16 +14930,16 @@
             "value" : "Use seu aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的身份验证器应用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamanızı kullanın"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的身份验证器应用"
           }
         }
       }
@@ -14928,16 +15006,16 @@
             "value" : "Use sua chave de acesso"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的通行密钥"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarınızı kullanın"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥"
           }
         }
       }
@@ -15004,16 +15082,16 @@
             "value" : "Nome de usuário"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户名"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kullanıcı adı"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用户名"
           }
         }
       }
@@ -15080,16 +15158,16 @@
             "value" : "Usar sua chave de acesso confirma que é você. Seu dispositivo pode solicitar sua impressão digital, rosto ou bloqueio de tela."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用您的通行密钥可确认您的身份。您的设备可能会要求您提供指纹、面容或屏幕锁定。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarınızı kullanmak kimliğinizi doğrular. Cihazınız parmak izi, yüz tanıma veya ekran kilidi isteyebilir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用您的通行密钥可确认您的身份。您的设备可能会要求您提供指纹、面容或屏幕锁定。"
           }
         }
       }
@@ -15156,16 +15234,16 @@
             "value" : "Os códigos de verificação deste autenticador não serão mais necessários ao entrar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "登录时将不再需要此身份验证器的验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu doğrulama uygulamasından gelen kodlar giriş yaparken artık istenmeyecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时将不再需要此身份验证器的验证码。"
           }
         }
       }
@@ -15232,16 +15310,16 @@
             "value" : "Verificar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrula"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证"
           }
         }
       }
@@ -15308,16 +15386,16 @@
             "value" : "Verificar aplicativo autenticador"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证身份验证应用"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulama uygulamasını doğrula"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证身份验证应用"
           }
         }
       }
@@ -15384,16 +15462,16 @@
             "value" : "Verificar endereço de e-mail"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证电子邮箱地址"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "E-posta adresini doğrula"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证电子邮箱地址"
           }
         }
       }
@@ -15460,16 +15538,16 @@
             "value" : "Verificar número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numarasını doğrula"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证电话号码"
           }
         }
       }
@@ -15538,16 +15616,16 @@
             "value" : "Verifique seu número de telefone"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "验证您的电话号码"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefon numaranızı doğrulayın"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "验证您的电话号码"
           }
         }
       }
@@ -15614,16 +15692,16 @@
             "value" : "Verificando..."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在验证..."
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Doğrulanıyor..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在验证..."
           }
         }
       }
@@ -15690,16 +15768,16 @@
             "value" : "Bem-vindo! Preencha os detalhes para começar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "欢迎！请填写详细信息以开始使用。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoş geldin! Başlamak için bilgileri doldur."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎！请填写详细信息以开始使用。"
           }
         }
       }
@@ -15766,16 +15844,16 @@
             "value" : "Bem-vindo! Entre para continuar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "欢迎！登录以继续"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hoş geldin! Devam etmek için giriş yap"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎！登录以继续"
           }
         }
       }
@@ -15842,16 +15920,16 @@
             "value" : "Ao entrar, você precisará digitar um código de verificação enviado para este número de telefone como uma etapa adicional.\n\nSalve estes códigos de backup e guarde-os em um local seguro. Se você perder o acesso ao seu dispositivo de autenticação, pode usar códigos de backup para entrar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "登录时，您需要输入发送到此电话号码的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giriş yaparken ek bir adım olarak bu telefon numarasına gönderilen doğrulama kodunu girmeniz gerekecek.\n\nBu yedek kodları kaydedin ve güvenli bir yerde saklayın. Doğrulama cihazınıza erişiminizi kaybederseniz giriş yapmak için yedek kodları kullanabilirsiniz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，您需要输入发送到此电话号码的验证码作为额外步骤。\n\n保存这些备份代码并将其存储在安全的地方。如果您无法访问身份验证设备，可以使用备份代码登录。"
           }
         }
       }
@@ -15918,16 +15996,16 @@
             "value" : "Ao fazer login, será solicitado um código de verificação enviado para este número de telefone."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "登录时，系统会要求您提供发送到该电话号码的验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giriş yaptığınızda bu telefon numarasına gönderilen doğrulama kodu istenecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，系统会要求您提供发送到该电话号码的验证码。"
           }
         }
       }
@@ -15994,16 +16072,16 @@
             "value" : "Ao fazer login, você precisará inserir um código de verificação deste aplicativo autenticador."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "登录时，您需要输入此身份验证器应用程序中的验证码。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giriş yaptığınızda bu doğrulama uygulamasından bir kod girmeniz gerekecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时，您需要输入此身份验证器应用程序中的验证码。"
           }
         }
       }
@@ -16070,16 +16148,16 @@
             "value" : "Ops, algo está errado"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "哎呀，出错了"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bir şeyler ters gitti"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "哎呀，出错了"
           }
         }
       }
@@ -16148,16 +16226,16 @@
             "value" : "Você não é mais membro desta organização. Escolha outra."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您不再是该组织的成员。请选择其他组织。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您不再是该组织的成员。请选择其他组织。"
           }
         }
       }
@@ -16226,16 +16304,16 @@
             "value" : "Você não é mais membro desta organização. Escolha outra ou crie uma nova."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您不再是该组织的成员。请选择其他组织或创建新组织。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Artık bu kuruluşun bir üyesi değilsiniz. Lütfen başka bir kuruluş seçin veya yeni bir kuruluş oluşturun."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您不再是该组织的成员。请选择其他组织或创建新组织。"
           }
         }
       }
@@ -16302,16 +16380,16 @@
             "value" : "Você pode alterar o nome da chave de acesso para facilitar a localização."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您可以更改通行密钥名称，以便更容易找到。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geçiş anahtarı adını kolayca bulabilmek için değiştirebilirsiniz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您可以更改通行密钥名称，以便更容易找到。"
           }
         }
       }
@@ -16380,16 +16458,16 @@
             "value" : "Você deve pertencer a uma organização"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您必须属于一个组织"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bir kuruluşun üyesi olmalısınız"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您必须属于一个组织"
           }
         }
       }
@@ -16456,16 +16534,16 @@
             "value" : "Você precisará verificar este endereço de e-mail antes que ele possa ser adicionado à sua conta."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在将此电子邮箱地址添加到您的账户之前，您需要先进行验证。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu e-posta adresini hesabınıza eklemeden önce doğrulamanız gerekecek."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在将此电子邮箱地址添加到您的账户之前，您需要先进行验证。"
           }
         }
       }
@@ -16532,16 +16610,16 @@
             "value" : "Você está fazendo login de um novo dispositivo. Estamos solicitando verificação para manter sua conta segura."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您正在从新设备登录。我们要求进行验证以保护您的账户安全。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yeni bir cihazdan giriş yapıyorsunuz. Hesabınızın güvenliği için doğrulama istiyoruz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您正在从新设备登录。我们要求进行验证以保护您的账户安全。"
           }
         }
       }
@@ -16608,16 +16686,16 @@
             "value" : "Sua conta requer uma nova senha antes de poder continuar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您的账户需要设置新密码才能继续。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Devam etmeden önce hesabınız için yeni bir parola belirlemeniz gerekiyor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的账户需要设置新密码才能继续。"
           }
         }
       }
@@ -16684,16 +16762,16 @@
             "value" : "Seu código de backup é aquele que você recebeu ao configurar a autenticação em duas etapas."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "您的备用码是在设置两步验证时获得的。"
-          }
-        },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Yedek kodunuz iki adımlı doğrulamayı kurarken aldığınız koddur."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的备用码是在设置两步验证时获得的。"
           }
         }
       }
