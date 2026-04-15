@@ -34,6 +34,7 @@ struct SessionTaskCreateOrganizationView: View {
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var selectedImageData: Data?
   @State private var imageIsLoading = false
+  @State private var imageLoadTask: Task<Void, Never>?
 
   private var slugEnabled: Bool {
     clerk.environment?.organizationSettings.slug.disabled == false
@@ -116,9 +117,11 @@ struct SessionTaskCreateOrganizationView: View {
     )
     .onChange(of: photosPickerItem) { _, item in
       guard let item else { return }
-      Task {
+      imageLoadTask?.cancel()
+      error = nil
+      imageLoadTask = Task {
         imageIsLoading = true
-        defer { imageIsLoading = false }
+        defer { if !Task.isCancelled { imageIsLoading = false } }
         do {
           guard
             let data = try await item.loadTransferable(type: Data.self),
@@ -126,8 +129,10 @@ struct SessionTaskCreateOrganizationView: View {
           else {
             throw ClerkClientError(message: "There was an error loading the image from the photos library.")
           }
+          guard !Task.isCancelled else { return }
           selectedImageData = resizedData
         } catch {
+          guard !Task.isCancelled else { return }
           self.error = error
         }
       }
@@ -140,7 +145,7 @@ struct SessionTaskCreateOrganizationView: View {
       slugValidationError = nil
     }
     .taskOnce {
-      await loadDefaultLogo()
+      loadDefaultLogo()
     }
   }
 
@@ -231,6 +236,9 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   private func createOrganization() async {
+    await imageLoadTask?.value
+    guard error == nil else { return }
+
     let name = trimmedOrganizationName
     guard !name.isEmpty else { return }
 
@@ -261,18 +269,21 @@ struct SessionTaskCreateOrganizationView: View {
 
   // MARK: - Helpers
 
-  private func loadDefaultLogo() async {
+  private func loadDefaultLogo() {
     guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
 
-    imageIsLoading = true
-    defer { imageIsLoading = false }
+    imageLoadTask = Task {
+      imageIsLoading = true
+      defer { if !Task.isCancelled { imageIsLoading = false } }
 
-    do {
-      let (data, _) = try await URLSession.shared.data(from: url)
-      guard selectedImageData == nil else { return }
-      selectedImageData = processImageData(data)
-    } catch {
-      // Logo fetch failure is non-critical — proceed without logo
+      do {
+        let (data, _) = try await URLSession.shared.data(from: url)
+        guard !Task.isCancelled else { return }
+        guard selectedImageData == nil else { return }
+        selectedImageData = processImageData(data)
+      } catch {
+        // Logo fetch failure is non-critical — proceed without logo
+      }
     }
   }
 
