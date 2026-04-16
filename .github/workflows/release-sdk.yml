@@ -7,6 +7,15 @@ on:
         description: SDK version to release (SemVer, for example 1.2.3)
         required: true
         type: string
+      skip_expo_compat:
+        description: "Skip the @clerk/expo compat gate (emergency override only)"
+        required: false
+        type: boolean
+        default: false
+      skip_reason:
+        description: "Reason for skipping compat gate (required when skip=true)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -61,13 +70,41 @@ jobs:
       run_integration_tests: true
     secrets: inherit
 
+  log-skip:
+    name: "Log gate skip (emergency override)"
+    needs: authorize
+    runs-on: ubuntu-latest
+    if: inputs.skip_expo_compat == true
+    steps:
+      - name: Fail if skip invoked without a reason
+        if: ${{ !inputs.skip_reason }}
+        run: |
+          echo "::error::skip_expo_compat=true requires skip_reason to be provided"
+          exit 1
+      - name: Record skip to the job summary
+        run: |
+          {
+            echo "## ⚠️ Expo compat gate skipped"
+            echo ""
+            echo "- Actor: @${{ github.triggering_actor }}"
+            echo "- Reason: ${{ inputs.skip_reason }}"
+            echo "- Version: ${{ inputs.version }}"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   expo-compat:
     name: "@clerk/expo compat (Maestro)"
     needs: checks
     runs-on: macos-15
+    timeout-minutes: 60
+    if: inputs.skip_expo_compat != true
     # Release gate: verifies the clerk-ios ref about to be published does not
     # break @clerk/expo. If any Maestro flow fails, the publish job below will
     # not run.
+    #
+    # Emergency override: maintainers can skip this gate by setting
+    # skip_expo_compat=true AND providing skip_reason on workflow_dispatch.
+    # The skip is recorded permanently in the Actions run log.
     env:
       CLERK_IOS_SHA: ${{ github.sha }}
       JAVASCRIPT_REPO_REF: "main"
@@ -157,8 +194,18 @@ jobs:
 
   publish:
     name: Bump, tag, and publish release
-    needs: [checks, expo-compat]
+    needs: [checks, expo-compat, log-skip]
     runs-on: macos-latest
+    # Publish when checks passed AND:
+    #   - expo-compat succeeded, OR
+    #   - the gate was explicitly skipped via skip_expo_compat=true + skip_reason
+    if: |
+      always()
+      && needs.checks.result == 'success'
+      && (
+        needs.expo-compat.result == 'success'
+        || (inputs.skip_expo_compat == true && needs.log-skip.result == 'success')
+      )
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 
