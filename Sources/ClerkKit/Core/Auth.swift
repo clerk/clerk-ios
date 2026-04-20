@@ -40,40 +40,6 @@ public struct Auth {
     self.urlHandlingCoordinator = urlHandlingCoordinator
   }
 
-  /// The current sign-in attempt, if any.
-  ///
-  /// This mirrors the in-progress `SignIn` stored on the current client.
-  /// Useful for continuing identifier-first flows or multi-step verifications.
-  ///
-  /// ```swift
-  /// if let signIn = clerk.auth.currentSignIn {
-  ///   // Continue the flow with the existing SignIn instance
-  ///   _ = try await signIn.sendEmailCode()
-  /// }
-  /// ```
-  public var currentSignIn: SignIn? {
-    Clerk.shared.client?.signIn
-  }
-
-  /// The current sign-up attempt, if any.
-  ///
-  /// This mirrors the in-progress `SignUp` stored on the current client.
-  ///
-  /// ```swift
-  /// if let signUp = clerk.auth.currentSignUp {
-  ///   // Continue the flow with the existing SignUp instance
-  ///   _ = try await signUp.sendEmailCode()
-  /// }
-  /// ```
-  public var currentSignUp: SignUp? {
-    Clerk.shared.client?.signUp
-  }
-
-  /// The sessions on the current client.
-  public var sessions: [Session] {
-    Clerk.shared.client?.sessions ?? []
-  }
-
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.
@@ -312,105 +278,6 @@ public struct Auth {
     ))
   }
 
-  /// Returns whether a URL looks like a native magic-link callback.
-  ///
-  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
-  func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    guard case .magicLink = try? ClerkURLRoute(url: url) else {
-      return false
-    }
-
-    return true
-  }
-
-  /// Handles a native magic-link callback and completes the pending auth flow using the stored PKCE verifier.
-  ///
-  /// - Parameter url: The callback URL opened by the app.
-  /// - Returns: The completed `SignIn` or `SignUp` flow result.
-  /// - Throws: An error if the callback is invalid or completion fails.
-  @discardableResult
-  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
-    guard canHandleMagicLinkCallback(url) else {
-      throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
-    }
-
-    let callback = try MagicLinkCallback(url: url)
-    return try await handle(.magicLink(
-      flowId: callback.flowId,
-      approvalToken: callback.approvalToken
-    ))
-  }
-
-  /// Completes a pending native magic-link flow using callback values from the deep link.
-  ///
-  /// - Parameters:
-  ///   - flowId: The `flow_id` value from the callback.
-  ///   - approvalToken: The `approval_token` value from the callback.
-  /// - Returns: The completed `SignIn` or `SignUp` flow result.
-  /// - Throws: An error if no pending flow exists or completion fails.
-  @discardableResult
-  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
-    let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
-    let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    guard !resolvedFlowId.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing flow_id.")
-    }
-
-    guard !resolvedApprovalToken.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing approval_token.")
-    }
-
-    guard let pendingFlow = magicLinkStore.load() else {
-      throw ClerkClientError(message: "No pending magic link flow was found.")
-    }
-
-    Clerk.shared.setCallbackContinuation(nil)
-
-    let request = Request<MagicLinkCompleteResponse>(
-      path: "/v1/client/magic_links/complete",
-      method: .post,
-      body: MagicLinkCompleteParams(
-        flowId: resolvedFlowId,
-        approvalToken: resolvedApprovalToken,
-        codeVerifier: pendingFlow.codeVerifier
-      )
-    )
-
-    let completionResponse = try await apiClient.send(request).value
-    magicLinkStore.clear()
-
-    let result: TransferFlowResult = switch pendingFlow.kind {
-    case .signIn:
-      try await .signIn(signInWithTicket(completionResponse.ticket))
-    case .signUp:
-      try await .signUp(signUpWithTicket(completionResponse.ticket))
-    }
-
-    if let sessionId = result.createdSessionId {
-      try await activateSession(sessionId: sessionId)
-    }
-
-    if result.needsContinuation {
-      sendContinuation(for: result)
-    }
-
-    return result
-  }
-
-  @discardableResult
-  func handle(_ route: ClerkURLRoute) async throws -> TransferFlowResult {
-    try await urlHandlingCoordinator.handle(route) {
-      switch route {
-      case .magicLink(let flowId, let approvalToken):
-        try await completeMagicLink(
-          flowId: flowId,
-          approvalToken: approvalToken
-        )
-      }
-    }
-  }
-
   // MARK: - Sign Up Entry Points
 
   /// Creates a new sign-up attempt with the provided parameters.
@@ -564,7 +431,45 @@ public struct Auth {
       strategy: .ticket
     ))
   }
+}
 
+extension Auth {
+  /// The current sign-in attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignIn` stored on the current client.
+  /// Useful for continuing identifier-first flows or multi-step verifications.
+  ///
+  /// ```swift
+  /// if let signIn = clerk.auth.currentSignIn {
+  ///   // Continue the flow with the existing SignIn instance
+  ///   _ = try await signIn.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignIn: SignIn? {
+    Clerk.shared.client?.signIn
+  }
+
+  /// The current sign-up attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignUp` stored on the current client.
+  ///
+  /// ```swift
+  /// if let signUp = clerk.auth.currentSignUp {
+  ///   // Continue the flow with the existing SignUp instance
+  ///   _ = try await signUp.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignUp: SignUp? {
+    Clerk.shared.client?.signUp
+  }
+
+  /// The sessions on the current client.
+  public var sessions: [Session] {
+    Clerk.shared.client?.sessions ?? []
+  }
+}
+
+extension Auth {
   // MARK: - Session Management
 
   /// Signs out the active user.
@@ -613,7 +518,9 @@ public struct Auth {
   public func revokeSession(_ session: Session) async throws -> Session {
     try await sessionService.revoke(sessionId: session.id)
   }
+}
 
+extension Auth {
   // MARK: - Events
 
   /// An `AsyncStream` of authentication events.
@@ -674,6 +581,107 @@ public struct Auth {
     } catch {
       if Clerk.shared.client?.lastActiveSessionId != sessionId {
         throw error
+      }
+    }
+  }
+}
+
+extension Auth {
+  /// Returns whether a URL looks like a native magic-link callback.
+  ///
+  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
+  func canHandleMagicLinkCallback(_ url: URL) -> Bool {
+    guard case .magicLink = try? ClerkURLRoute(url: url) else {
+      return false
+    }
+
+    return true
+  }
+
+  /// Handles a native magic-link callback and completes the pending auth flow using the stored PKCE verifier.
+  ///
+  /// - Parameter url: The callback URL opened by the app.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
+  /// - Throws: An error if the callback is invalid or completion fails.
+  @discardableResult
+  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
+    guard canHandleMagicLinkCallback(url) else {
+      throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
+    }
+
+    let callback = try MagicLinkCallback(url: url)
+    return try await handle(.magicLink(
+      flowId: callback.flowId,
+      approvalToken: callback.approvalToken
+    ))
+  }
+
+  /// Completes a pending native magic-link flow using callback values from the deep link.
+  ///
+  /// - Parameters:
+  ///   - flowId: The `flow_id` value from the callback.
+  ///   - approvalToken: The `approval_token` value from the callback.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
+  /// - Throws: An error if no pending flow exists or completion fails.
+  @discardableResult
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
+    let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
+    let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !resolvedFlowId.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing flow_id.")
+    }
+
+    guard !resolvedApprovalToken.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing approval_token.")
+    }
+
+    guard let pendingFlow = magicLinkStore.load() else {
+      throw ClerkClientError(message: "No pending magic link flow was found.")
+    }
+
+    Clerk.shared.setCallbackContinuation(nil)
+
+    let request = Request<MagicLinkCompleteResponse>(
+      path: "/v1/client/magic_links/complete",
+      method: .post,
+      body: MagicLinkCompleteParams(
+        flowId: resolvedFlowId,
+        approvalToken: resolvedApprovalToken,
+        codeVerifier: pendingFlow.codeVerifier
+      )
+    )
+
+    let completionResponse = try await apiClient.send(request).value
+    magicLinkStore.clear()
+
+    let result: TransferFlowResult = switch pendingFlow.kind {
+    case .signIn:
+      try await .signIn(signInWithTicket(completionResponse.ticket))
+    case .signUp:
+      try await .signUp(signUpWithTicket(completionResponse.ticket))
+    }
+
+    if let sessionId = result.createdSessionId {
+      try await activateSession(sessionId: sessionId)
+    }
+
+    if result.needsContinuation {
+      sendContinuation(for: result)
+    }
+
+    return result
+  }
+
+  @discardableResult
+  func handle(_ route: ClerkURLRoute) async throws -> TransferFlowResult {
+    try await urlHandlingCoordinator.handle(route) {
+      switch route {
+      case .magicLink(let flowId, let approvalToken):
+        try await completeMagicLink(
+          flowId: flowId,
+          approvalToken: approvalToken
+        )
       }
     }
   }
