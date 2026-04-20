@@ -174,7 +174,7 @@ extension SignUp {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
-    try magicLinkStore.save(codeVerifier: pkcePair.verifier)
+    try magicLinkStore.save(kind: .signUp, codeVerifier: pkcePair.verifier)
 
     return try await signUpService.prepareVerification(
       signUpId: id,

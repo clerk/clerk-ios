@@ -58,7 +58,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   }
 
   @Test
-  func validateDoesNotEmitSignInCompletedForIncompleteSignInAttempt() async throws {
+  func validateDoesNotEmitAuthEventForIncompleteSignInAttempt() async throws {
     let clerk = Clerk()
     let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
 
@@ -67,6 +67,42 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         signInResponse,
         data: signInResponseData(object: "sign_in_attempt", status: "needs_second_factor"),
         for: signInRequest
+      )
+    }
+
+    if let event {
+      Issue.record("Expected no auth event but received \(String(describing: event))")
+    }
+  }
+
+  @Test
+  func validateDoesNotEmitAuthEventForIncompleteSignUpAttempt() async throws {
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+
+    let event = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        signUpResponse,
+        data: signUpResponseData(object: "sign_up_attempt", status: "missing_requirements"),
+        for: signUpRequest
+      )
+    }
+
+    if let event {
+      Issue.record("Expected no auth event but received \(String(describing: event))")
+    }
+  }
+
+  @Test
+  func validateDoesNotEmitAuthEventForAbandonedSignUpAttempt() async throws {
+    let clerk = Clerk()
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+
+    let event = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        signUpResponse,
+        data: signUpResponseData(object: "sign_up_attempt", status: "abandoned"),
+        for: signUpRequest
       )
     }
 

@@ -32,3 +32,23 @@ public enum TransferFlowResult: Sendable {
   /// being signed up, although further steps may be required to complete the process.
   case signUp(SignUp)
 }
+
+extension TransferFlowResult {
+  package var createdSessionId: String? {
+    switch self {
+    case .signIn(let signIn):
+      signIn.createdSessionId
+    case .signUp(let signUp):
+      signUp.createdSessionId
+    }
+  }
+
+  package var needsContinuation: Bool {
+    switch self {
+    case .signIn(let signIn):
+      signIn.status.needsContinuation
+    case .signUp(let signUp):
+      signUp.status.needsContinuation
+    }
+  }
+}

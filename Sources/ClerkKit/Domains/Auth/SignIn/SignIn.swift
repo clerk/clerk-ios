@@ -140,7 +140,7 @@ extension SignIn {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
-    try magicLinkStore.save(codeVerifier: pkcePair.verifier)
+    try magicLinkStore.save(kind: .signIn, codeVerifier: pkcePair.verifier)
 
     return try await signInService.prepareFirstFactor(
       signInId: id,

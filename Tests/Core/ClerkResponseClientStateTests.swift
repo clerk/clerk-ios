@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -77,6 +78,66 @@ struct ClerkResponseClientStateTests {
     Clerk.shared.applyResponseClient(incoming, serverDate: serverDate)
 
     #expect(Clerk.shared.lastClientServerFetchDate == serverDate)
+  }
+
+  @Test
+  func applyResponseClientDoesNotEmitContinuationForResumableSignIn() async throws {
+    configureClerkForTesting()
+    let incoming = client(
+      id: "client-sign-in",
+      signInId: "sign-in-resumable",
+      signInStatus: .needsSecondFactor,
+      updatedAt: 2000
+    )
+
+    Clerk.shared.client = nil
+    let event = try await captureNextAuthEvent(from: Clerk.shared) {
+      Clerk.shared.applyResponseClient(incoming)
+    }
+
+    if let event {
+      Issue.record("Expected no auth event but received \(String(describing: event))")
+    }
+  }
+
+  @Test
+  func applyResponseClientDoesNotEmitContinuationForResumableSignUp() async throws {
+    configureClerkForTesting()
+    let incoming = client(
+      id: "client-sign-up",
+      signUpId: "sign-up-resumable",
+      signUpStatus: .missingRequirements,
+      updatedAt: 2000
+    )
+
+    Clerk.shared.client = nil
+    let event = try await captureNextAuthEvent(from: Clerk.shared) {
+      Clerk.shared.applyResponseClient(incoming)
+    }
+
+    if let event {
+      Issue.record("Expected no auth event but received \(String(describing: event))")
+    }
+  }
+
+  @Test
+  func applyResponseClientDoesNotEmitContinuationWhenResumableSignInIsUnchanged() async throws {
+    configureClerkForTesting()
+    let incoming = client(
+      id: "client-sign-in",
+      signInId: "sign-in-resumable",
+      signInStatus: .needsSecondFactor,
+      updatedAt: 2000
+    )
+
+    Clerk.shared.client = incoming
+    let event = try await captureNextAuthEvent(from: Clerk.shared) {
+      Clerk.shared.applyResponseClient(incoming)
+    }
+
+    if let event {
+      Issue.record("Expected no auth event but received \(String(describing: event))")
+    }
   }
 
   // MARK: - Watch Sync (Authoritative / Phone → Watch)
@@ -238,15 +299,64 @@ struct ClerkResponseClientStateTests {
     #expect(Clerk.shared.client?.signIn?.id == replacement.signIn?.id)
   }
 
-  private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
+  private func captureNextAuthEvent(
+    from clerk: Clerk,
+    timeout: Duration = .milliseconds(250),
+    operation: () async throws -> Void
+  ) async throws -> AuthEvent? {
+    let captured = LockIsolated<AuthEvent?>(nil)
+    var listener: Task<Void, Never>?
+    await withCheckedContinuation { (ready: CheckedContinuation<Void, Never>) in
+      listener = Task { @MainActor in
+        var iterator = clerk.auth.events.makeAsyncIterator()
+        ready.resume()
+        if let event = await iterator.next() {
+          captured.setValue(event)
+        }
+      }
+    }
+    defer { listener?.cancel() }
+
+    try await operation()
+
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+      if let event = captured.value {
+        return event
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    return captured.value
+  }
+
+  private func client(
+    id: String,
+    signInId: String? = nil,
+    signInStatus: SignIn.Status = .needsFirstFactor,
+    signUpId: String? = nil,
+    signUpStatus: SignUp.Status = .missingRequirements,
+    updatedAt: TimeInterval,
+    lastActiveSessionId: String? = nil
+  ) -> Client {
     var client = Client.mockSignedOut
     client.id = id
     client.updatedAt = Date(timeIntervalSince1970: updatedAt)
     client.lastActiveSessionId = lastActiveSessionId
+    client.signIn = nil
+    client.signUp = nil
     if let signInId {
       var signIn = SignIn.mock
       signIn.id = signInId
+      signIn.status = signInStatus
       client.signIn = signIn
+    }
+    if let signUpId {
+      var signUp = SignUp.mock
+      signUp.id = signUpId
+      signUp.status = signUpStatus
+      client.signUp = signUp
     }
     return client
   }

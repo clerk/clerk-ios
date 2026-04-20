@@ -323,13 +323,13 @@ public struct Auth {
     return true
   }
 
-  /// Handles a native magic-link callback and completes sign-in using the stored PKCE verifier.
+  /// Handles a native magic-link callback and completes the pending auth flow using the stored PKCE verifier.
   ///
   /// - Parameter url: The callback URL opened by the app.
-  /// - Returns: The completed `SignIn`.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
   /// - Throws: An error if the callback is invalid or completion fails.
   @discardableResult
-  public func handleMagicLinkCallback(_ url: URL) async throws -> SignIn {
+  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
     guard canHandleMagicLinkCallback(url) else {
       throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
     }
@@ -341,15 +341,15 @@ public struct Auth {
     ))
   }
 
-  /// Completes a pending native magic-link sign-in flow using callback values from the deep link.
+  /// Completes a pending native magic-link flow using callback values from the deep link.
   ///
   /// - Parameters:
   ///   - flowId: The `flow_id` value from the callback.
   ///   - approvalToken: The `approval_token` value from the callback.
-  /// - Returns: The completed `SignIn`.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
   /// - Throws: An error if no pending flow exists or completion fails.
   @discardableResult
-  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> SignIn {
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
     let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
     let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -365,6 +365,8 @@ public struct Auth {
       throw ClerkClientError(message: "No pending magic link flow was found.")
     }
 
+    Clerk.shared.setPendingAuthResult(nil)
+
     let request = Request<MagicLinkCompleteResponse>(
       path: "/v1/client/magic_links/complete",
       method: .post,
@@ -378,23 +380,26 @@ public struct Auth {
     let completionResponse = try await apiClient.send(request).value
     magicLinkStore.clear()
 
-    let signIn = try await signInWithTicket(completionResponse.ticket)
-
-    if let sessionId = signIn.createdSessionId {
-      do {
-        try await setActive(sessionId: sessionId)
-      } catch {
-        if Clerk.shared.client?.lastActiveSessionId != sessionId {
-          throw error
-        }
-      }
+    let result: TransferFlowResult = switch pendingFlow.kind {
+    case .signIn:
+      try await .signIn(signInWithTicket(completionResponse.ticket))
+    case .signUp:
+      try await .signUp(signUpWithTicket(completionResponse.ticket))
     }
 
-    return signIn
+    if let sessionId = result.createdSessionId {
+      try await activateSession(sessionId: sessionId)
+    }
+
+    if result.needsContinuation {
+      sendContinuation(for: result)
+    }
+
+    return result
   }
 
   @discardableResult
-  func handle(_ route: ClerkURLRoute) async throws -> SignIn {
+  func handle(_ route: ClerkURLRoute) async throws -> TransferFlowResult {
     try await urlHandlingCoordinator.handle(route) {
       switch route {
       case .magicLink(let flowId, let approvalToken):
@@ -613,16 +618,20 @@ public struct Auth {
 
   /// An `AsyncStream` of authentication events.
   ///
-  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion,
-  /// sign-out, session changes, and token refreshes.
+  /// Subscribe to this stream to receive notifications about callback-recovered sign-in/sign-up
+  /// continuation, sign-in/sign-up completion, sign-out, session changes, and token refreshes.
   ///
   /// ### Example:
   /// ```swift
   /// Task {
   ///     for await event in clerk.auth.events {
   ///         switch event {
+  ///         case .signInNeedsContinuation(let signIn):
+  ///             print("Magic-link sign in needs continuation: \(signIn)")
   ///         case .signInCompleted(let signIn):
   ///             print("Sign in completed: \(signIn)")
+  ///         case .signUpNeedsContinuation(let signUp):
+  ///             print("Magic-link sign up needs continuation: \(signUp)")
   ///         case .signUpCompleted(let signUp):
   ///             print("Sign up completed: \(signUp)")
   ///         case .signedOut(let session):
@@ -646,5 +655,26 @@ public struct Auth {
   /// This is internal to allow middleware to emit events while keeping the emitter private.
   func send(_ event: AuthEvent) {
     eventEmitter.send(event)
+  }
+
+  private func sendContinuation(for result: TransferFlowResult) {
+    Clerk.shared.setPendingAuthResult(result)
+
+    switch result {
+    case .signIn(let signIn):
+      send(.signInNeedsContinuation(signIn: signIn))
+    case .signUp(let signUp):
+      send(.signUpNeedsContinuation(signUp: signUp))
+    }
+  }
+
+  private func activateSession(sessionId: String) async throws {
+    do {
+      try await setActive(sessionId: sessionId)
+    } catch {
+      if Clerk.shared.client?.lastActiveSessionId != sessionId {
+        throw error
+      }
+    }
   }
 }
