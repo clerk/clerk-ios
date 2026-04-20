@@ -160,18 +160,6 @@ public final class Clerk {
   /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
-  /// The outcome of attempting to route an incoming URL through Clerk.
-  public enum URLHandleResult: Sendable {
-    /// The URL did not match a known Clerk callback route.
-    case ignored
-
-    /// The URL matched a Clerk callback and completed without additional auth UI work.
-    case handled
-
-    /// The URL matched a Clerk callback and recovered a sign-in or sign-up that can continue.
-    case continuation(TransferFlowResult)
-  }
-
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
@@ -353,8 +341,8 @@ extension Clerk {
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
-  /// be processed automatically and this method returns its handling result.
-  /// Unrecognized URLs are ignored.
+  /// be processed automatically and this method returns `true`. Unrecognized
+  /// URLs are ignored and this method returns `false`.
   ///
   /// ```swift
   /// .onOpenURL { url in
@@ -362,18 +350,14 @@ extension Clerk {
   /// }
   /// ```
   @discardableResult
-  public func handle(_ url: URL) async throws -> URLHandleResult {
+  public func handle(_ url: URL) async throws -> Bool {
     guard let route = try ClerkURLRoute(url: url) else {
-      return .ignored
+      return false
     }
 
-    let result = try await auth.handle(route)
+    _ = try await auth.handle(route)
 
-    if result.needsContinuation {
-      return .continuation(result)
-    }
-
-    return .handled
+    return true
   }
 }
 

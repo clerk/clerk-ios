@@ -22,12 +22,19 @@ struct ContentView: View {
     .onOpenURL { url in
       Task {
         do {
-          let result = try await clerk.handle(url)
-          if case .continuation = result {
-            authViewIsPresented = true
-          }
+          try await clerk.handle(url)
         } catch {
           print("Failed to handle Clerk URL: \(error.localizedDescription)")
+        }
+      }
+    }
+    .task {
+      for await event in clerk.auth.events {
+        switch event {
+        case .signInNeedsContinuation, .signUpNeedsContinuation:
+          authViewIsPresented = true
+        default:
+          break
         }
       }
     }

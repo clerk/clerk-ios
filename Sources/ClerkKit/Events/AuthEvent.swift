@@ -12,11 +12,11 @@ import Foundation
 public enum AuthEvent: Sendable {
   /// The current sign in was completed.
   case signInCompleted(signIn: SignIn)
-  /// A Clerk callback recovered an incomplete sign in that can continue.
+  /// A Clerk callback recovered an incomplete sign-in flow that can continue.
   case signInNeedsContinuation(signIn: SignIn)
   /// The current sign up was completed.
   case signUpCompleted(signUp: SignUp)
-  /// A Clerk callback recovered an incomplete sign up that can continue.
+  /// A Clerk callback recovered an incomplete sign-up flow that can continue.
   case signUpNeedsContinuation(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)
