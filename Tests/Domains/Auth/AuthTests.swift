@@ -346,7 +346,7 @@ struct AuthTests {
     #expect(signIn.createdSessionId == "sess_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(clerk.pendingAuthResult == nil)
+    #expect(clerk.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
@@ -416,7 +416,7 @@ struct AuthTests {
       Issue.record("Expected signInNeedsContinuation event but received \(String(describing: event))")
     }
 
-    let pendingResult = clerk.pendingAuthResult
+    let pendingResult = clerk.callbackContinuation
     switch pendingResult {
     case .signIn(let signIn):
       #expect(signIn.id == "sign_in_123")
@@ -491,7 +491,7 @@ struct AuthTests {
     #expect(signUpParams.value?.ticket == "ticket_123")
     #expect(signUp.createdSessionId == "sess_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(clerk.pendingAuthResult == nil)
+    #expect(clerk.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
@@ -559,7 +559,7 @@ struct AuthTests {
       Issue.record("Expected signUpNeedsContinuation event but received \(String(describing: event))")
     }
 
-    let pendingResult = clerk.pendingAuthResult
+    let pendingResult = clerk.callbackContinuation
     switch pendingResult {
     case .signUp(let signUp):
       #expect(signUp.id == resumableSignUp.id)

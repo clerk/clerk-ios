@@ -87,34 +87,6 @@ public final class Clerk {
     session?.user
   }
 
-  /// A host-facing signal that auth UI presentation may be required.
-  ///
-  /// This reflects durable SDK state rather than a transient event, allowing hosts to
-  /// react on first render after cold start as well as during normal runtime.
-  ///
-  /// Hosts should use this as a presentation trigger, not as a source of truth for
-  /// whether their sheet or full-screen cover is currently visible.
-  public enum AuthPresentationRequirement: Equatable, Sendable {
-    /// A recovered sign-in or sign-up flow can continue in auth UI.
-    case continuation
-
-    /// The current session has pending session tasks that should be handled in auth UI.
-    case sessionTasks
-  }
-
-  /// The current auth presentation requirement, if any.
-  package var authPresentationRequirement: AuthPresentationRequirement? {
-    if pendingAuthResult?.needsContinuation == true {
-      return .continuation
-    }
-
-    if session?.pendingTasks.isEmpty == false {
-      return .sessionTasks
-    }
-
-    return nil
-  }
-
   /// A dictionary of a user's active sessions on all devices.
   public internal(set) var sessionsByUserId: [String: [Session]] = [:]
 
@@ -185,7 +157,20 @@ public final class Clerk {
   private let authEventEmitter = EventEmitter<AuthEvent>()
   /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
   private let urlHandlingCoordinator = URLHandlingCoordinator()
-  package private(set) var pendingAuthResult: TransferFlowResult?
+  /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
+  package private(set) var callbackContinuation: TransferFlowResult?
+
+  /// The outcome of attempting to route an incoming URL through Clerk.
+  public enum URLHandleResult: Sendable {
+    /// The URL did not match a known Clerk callback route.
+    case ignored
+
+    /// The URL matched a Clerk callback and completed without additional auth UI work.
+    case handled
+
+    /// The URL matched a Clerk callback and recovered a sign-in or sign-up that can continue.
+    case continuation(TransferFlowResult)
+  }
 
   /// The main entry point for all authentication operations.
   ///
@@ -203,8 +188,8 @@ public final class Clerk {
     )
   }
 
-  package func setPendingAuthResult(_ result: TransferFlowResult?) {
-    pendingAuthResult = result
+  package func setCallbackContinuation(_ result: TransferFlowResult?) {
+    callbackContinuation = result
   }
 
   /// The main entry point for organization operations.
@@ -368,8 +353,8 @@ extension Clerk {
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
-  /// be processed automatically and this method returns `true`. Unrecognized
-  /// URLs are ignored and this method returns `false`.
+  /// be processed automatically and this method returns its handling result.
+  /// Unrecognized URLs are ignored.
   ///
   /// ```swift
   /// .onOpenURL { url in
@@ -377,14 +362,18 @@ extension Clerk {
   /// }
   /// ```
   @discardableResult
-  public func handle(_ url: URL) async throws -> Bool {
+  public func handle(_ url: URL) async throws -> URLHandleResult {
     guard let route = try ClerkURLRoute(url: url) else {
-      return false
+      return .ignored
     }
 
-    try await auth.handle(route)
+    let result = try await auth.handle(route)
 
-    return true
+    if result.needsContinuation {
+      return .continuation(result)
+    }
+
+    return .handled
   }
 }
 

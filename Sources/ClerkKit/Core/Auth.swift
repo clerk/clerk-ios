@@ -365,7 +365,7 @@ public struct Auth {
       throw ClerkClientError(message: "No pending magic link flow was found.")
     }
 
-    Clerk.shared.setPendingAuthResult(nil)
+    Clerk.shared.setCallbackContinuation(nil)
 
     let request = Request<MagicLinkCompleteResponse>(
       path: "/v1/client/magic_links/complete",
@@ -658,7 +658,7 @@ public struct Auth {
   }
 
   private func sendContinuation(for result: TransferFlowResult) {
-    Clerk.shared.setPendingAuthResult(result)
+    Clerk.shared.setCallbackContinuation(result)
 
     switch result {
     case .signIn(let signIn):

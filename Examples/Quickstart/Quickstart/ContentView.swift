@@ -22,14 +22,19 @@ struct ContentView: View {
     .onOpenURL { url in
       Task {
         do {
-          try await clerk.handle(url)
+          let result = try await clerk.handle(url)
+          if case .continuation = result {
+            authViewIsPresented = true
+          }
         } catch {
           print("Failed to handle Clerk URL: \(error.localizedDescription)")
         }
       }
     }
-    .onAuthPresentationRequirement { _ in
-      authViewIsPresented = true
+    .onChange(of: clerk.session?.tasks, initial: true) { _, newValue in
+      if newValue?.isEmpty == false {
+        authViewIsPresented = true
+      }
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView()

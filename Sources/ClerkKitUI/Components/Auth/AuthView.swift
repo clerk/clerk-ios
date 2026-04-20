@@ -157,8 +157,8 @@ public struct AuthView: View {
     .environment(codeLimiter)
     .onAppear {
       navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
-      if let pendingAuthResult = clerk.pendingAuthResult {
-        resumeAuth(pendingAuthResult)
+      if let callbackContinuation = clerk.callbackContinuation {
+        resumeAuth(callbackContinuation)
       }
     }
     .task {
@@ -236,10 +236,10 @@ extension AuthView {
     switch result {
     case .signIn(let signIn):
       navigation.setToStepForStatus(signIn: signIn)
-      clerk.setPendingAuthResult(nil)
+      clerk.setCallbackContinuation(nil)
     case .signUp(let signUp):
       navigation.setToStepForStatus(signUp: signUp)
-      clerk.setPendingAuthResult(nil)
+      clerk.setCallbackContinuation(nil)
     }
   }
 }
