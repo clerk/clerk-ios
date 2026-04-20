@@ -20,9 +20,37 @@ struct MagicLinkCompleteResponse: Codable, Equatable {
 }
 
 struct PendingMagicLinkFlow: Codable, Equatable {
+  enum Kind: String, Codable, Equatable {
+    case signIn
+    case signUp
+  }
+
+  let kind: Kind
   let codeVerifier: String
   let createdAt: Date
   let expiresAt: Date
+
+  private enum CodingKeys: String, CodingKey {
+    case kind
+    case codeVerifier
+    case createdAt
+    case expiresAt
+  }
+
+  init(kind: Kind, codeVerifier: String, createdAt: Date, expiresAt: Date) {
+    self.kind = kind
+    self.codeVerifier = codeVerifier
+    self.createdAt = createdAt
+    self.expiresAt = expiresAt
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .signIn
+    codeVerifier = try container.decode(String.self, forKey: .codeVerifier)
+    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    expiresAt = try container.decode(Date.self, forKey: .expiresAt)
+  }
 }
 
 struct MagicLinkCallback: Equatable {
@@ -83,9 +111,10 @@ final class MagicLinkStore {
   ///
   /// Only one pending flow is persisted at a time. Saving a new verifier
   /// replaces any previously stored pending flow.
-  func save(codeVerifier: String) throws {
+  func save(kind: PendingMagicLinkFlow.Kind, codeVerifier: String) throws {
     let createdAt = Date()
     let pendingFlow = PendingMagicLinkFlow(
+      kind: kind,
       codeVerifier: codeVerifier,
       createdAt: createdAt,
       expiresAt: createdAt.addingTimeInterval(ttl)

@@ -110,7 +110,7 @@ public struct AuthView: View {
     self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
   }
 
-  private init(
+  init(
     mode: Mode,
     isDismissible: Bool,
     config: AuthConfig
@@ -159,6 +159,9 @@ public struct AuthView: View {
     .environment(codeLimiter)
     .onAppear {
       navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+      if let pendingAuthResult = clerk.pendingAuthResult {
+        resumeAuth(pendingAuthResult)
+      }
     }
     .task {
       _ = try? await clerk.refreshEnvironment()
@@ -166,6 +169,10 @@ public struct AuthView: View {
     .task {
       for await event in clerk.auth.events {
         switch event {
+        case .signInNeedsContinuation(let signIn):
+          resumeAuth(.signIn(signIn))
+        case .signUpNeedsContinuation(let signUp):
+          resumeAuth(.signUp(signUp))
         case .sessionChanged(let oldValue, let newValue):
           guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
@@ -238,6 +245,17 @@ extension AuthView {
       DismissToolbarItem {
         dismiss()
       }
+    }
+  }
+
+  private func resumeAuth(_ result: TransferFlowResult) {
+    switch result {
+    case .signIn(let signIn):
+      navigation.setToStepForStatus(signIn: signIn)
+      clerk.setPendingAuthResult(nil)
+    case .signUp(let signUp):
+      navigation.setToStepForStatus(signUp: signUp)
+      clerk.setPendingAuthResult(nil)
     }
   }
 }
