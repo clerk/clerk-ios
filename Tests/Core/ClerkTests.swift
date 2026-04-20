@@ -233,19 +233,16 @@ struct ClerkTests {
   }
 
   @Test
-  func handleReturnsIgnoredForUnrecognizedURL() async throws {
+  func handleReturnsFalseForUnrecognizedURL() async throws {
     let url = try #require(URL(string: "https://example.com/not-clerk"))
 
     let handled = try await Clerk.shared.handle(url)
 
-    guard case .ignored = handled else {
-      Issue.record("Expected Clerk to ignore non-Clerk URL.")
-      return
-    }
+    #expect(handled == false)
   }
 
   @Test
-  func handleReturnsHandledForMagicLinkCallback() async throws {
+  func handleReturnsTrueForMagicLinkCallback() async throws {
     let keychain = InMemoryKeychain()
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
@@ -299,64 +296,10 @@ struct ClerkTests {
 
     let handled = try await clerk.handle(callbackUrl)
 
-    guard case .handled = handled else {
-      Issue.record("Expected Clerk to fully handle the magic link callback.")
-      return
-    }
+    #expect(handled == true)
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
-  }
-
-  @Test
-  func handleReturnsContinuationForIncompleteMagicLinkCallback() async throws {
-    let keychain = InMemoryKeychain()
-    let testBaseUrl = try #require(URL(string: "https://mock-clerktests-continuation-result.clerk.accounts.dev"))
-    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
-
-    let completionMock = try Mock(
-      url: completionUrl,
-      ignoreQuery: true,
-      contentType: .json,
-      statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
-        ),
-      ]
-    )
-    completionMock.register()
-
-    let resumableSignIn = SignIn(
-      id: "sign_in_123",
-      status: .needsSecondFactor,
-      createdSessionId: nil
-    )
-
-    let signInService = MockSignInService(create: { params in
-      #expect(params.ticket == "ticket_123")
-      return resumableSignIn
-    })
-
-    let clerk = Clerk()
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(baseURL: testBaseUrl),
-      keychain: keychain,
-      signInService: signInService
-    )
-    clerk.environment = .mock
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
-
-    let handled = try await clerk.handle(callbackUrl)
-
-    guard case .continuation(.signIn(let signIn)) = handled else {
-      Issue.record("Expected Clerk to return a sign-in continuation result.")
-      return
-    }
-
-    #expect(signIn.id == resumableSignIn.id)
-    #expect(signIn.status == .needsSecondFactor)
   }
 
   @Test
@@ -411,14 +354,8 @@ struct ClerkTests {
 
     let (first, second) = try await (firstHandled, secondHandled)
 
-    guard case .handled = first else {
-      Issue.record("Expected first callback result to be handled.")
-      return
-    }
-    guard case .handled = second else {
-      Issue.record("Expected second callback result to be handled.")
-      return
-    }
+    #expect(first == true)
+    #expect(second == true)
     #expect(createCallCount.value == 1)
     #expect(activatedSessionId.value == "sess_123")
   }
