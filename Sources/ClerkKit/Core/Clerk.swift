@@ -221,7 +221,20 @@ public final class Clerk {
   private let authEventEmitter = EventEmitter<AuthEvent>()
   /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
   private let urlHandlingCoordinator = URLHandlingCoordinator()
-  package private(set) var pendingAuthResult: TransferFlowResult?
+  /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
+  package private(set) var callbackContinuation: TransferFlowResult?
+
+  /// The outcome of attempting to route an incoming URL through Clerk.
+  public enum URLHandleResult: Sendable {
+    /// The URL did not match a known Clerk callback route.
+    case ignored
+
+    /// The URL matched a Clerk callback and completed without additional auth UI work.
+    case handled
+
+    /// The URL matched a Clerk callback and recovered a sign-in or sign-up that can continue.
+    case continuation(TransferFlowResult)
+  }
 
   /// The main entry point for all authentication operations.
   ///
@@ -239,8 +252,8 @@ public final class Clerk {
     )
   }
 
-  package func setPendingAuthResult(_ result: TransferFlowResult?) {
-    pendingAuthResult = result
+  package func setCallbackContinuation(_ result: TransferFlowResult?) {
+    callbackContinuation = result
   }
 
   /// The main entry point for organization operations.
@@ -510,8 +523,8 @@ extension Clerk {
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
-  /// be processed automatically and this method returns `true`. Unrecognized
-  /// URLs are ignored and this method returns `false`.
+  /// be processed automatically and this method returns its handling result.
+  /// Unrecognized URLs are ignored.
   ///
   /// ```swift
   /// .onOpenURL { url in
@@ -519,14 +532,18 @@ extension Clerk {
   /// }
   /// ```
   @discardableResult
-  public func handle(_ url: URL) async throws -> Bool {
+  public func handle(_ url: URL) async throws -> URLHandleResult {
     guard let route = try ClerkURLRoute(url: url) else {
-      return false
+      return .ignored
     }
 
-    try await auth.handle(route)
+    let result = try await auth.handle(route)
 
-    return true
+    if result.needsContinuation {
+      return .continuation(result)
+    }
+
+    return .handled
   }
 
   @discardableResult

@@ -501,9 +501,6 @@ Why fourth:
 - [x] Keep root-level presentation policy out of `ClerkKitUI` for now
 - [x] Keep `AuthView` resumable once it is presented
 - [x] Keep callback-scoped continuation events available to hosts
-- [x] Add a small non-UI host signal:
-  - [x] `Clerk.authPresentationRequirement`
-  - [x] `View.onAuthPresentationRequirement(...)`
 
 ### Presentation Behavior
 
@@ -549,7 +546,6 @@ If the goal is to match Android and keep iOS prebuilt UI easy to integrate, the 
 - host-controlled presentation for auth UI
 - no SDK-owned opinion about sheet vs full screen
 - SDK still handles callback recognition and auth resumption plumbing
-- hosts can opt into a small presentation trigger API via `onAuthPresentationRequirement(...)`
 - `AuthView` handles the actual next-step routing once shown
 - custom flows can still listen to lower-level continuation auth events when they need more control
 
@@ -560,7 +556,6 @@ iOS UI-side parity has mostly landed:
 - callback-scoped continuation events exist
 - `AuthView` can resume callback continuation and route session tasks when visible
 - host apps remain responsible for presenting `AuthView`
-- hosts can observe `authPresentationRequirement` / `onAuthPresentationRequirement(...)` instead of owning raw auth-event wiring
 
 The main remaining parity gap is still core native magic-link completion:
 
