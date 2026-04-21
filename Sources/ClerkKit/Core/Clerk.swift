@@ -355,8 +355,7 @@ extension Clerk {
       return false
     }
 
-    _ = try await auth.handle(route)
-
+    try await auth.handle(route)
     return true
   }
 }
