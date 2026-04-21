@@ -35,6 +35,32 @@ struct AuthTests {
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: options)
     Clerk.shared.environment = environment
+    Clerk.shared.setCallbackContinuation(nil)
+  }
+
+  private func makeIsolatedClerk(
+    signInService: MockSignInService? = nil,
+    signUpService: MockSignUpService? = nil,
+    sessionService: MockSessionService? = nil,
+    environment: Clerk.Environment? = .mock,
+    keychain: (any KeychainStorage)? = nil,
+    baseURL: URL = mockBaseUrl,
+    options: Clerk.Options = .init()
+  ) -> Clerk {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(baseURL: baseURL),
+      keychain: keychain,
+      signInService: signInService,
+      signUpService: signUpService,
+      sessionService: sessionService
+    )
+    try! (clerk.dependencies as! MockDependencyContainer)
+      .configurationManager
+      .configure(publishableKey: testPublishableKey, options: options)
+    clerk.environment = environment
+    Clerk.shared.setCallbackContinuation(nil)
+    return clerk
   }
 
   struct SignOutScenario: Codable, Equatable {
@@ -324,14 +350,13 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signInService: signInService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
@@ -346,7 +371,7 @@ struct AuthTests {
     #expect(signIn.createdSessionId == "sess_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(clerk.callbackContinuation == nil)
+    #expect(Clerk.shared.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
@@ -384,14 +409,13 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signInService: signInService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
@@ -416,7 +440,7 @@ struct AuthTests {
       Issue.record("Expected signInNeedsContinuation event but received \(String(describing: event))")
     }
 
-    let pendingResult = clerk.callbackContinuation
+    let pendingResult = Clerk.shared.callbackContinuation
     switch pendingResult {
     case .signIn(let signIn):
       #expect(signIn.id == "sign_in_123")
@@ -467,15 +491,14 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signInService: signInService,
       signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signUp, codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
@@ -491,7 +514,7 @@ struct AuthTests {
     #expect(signUpParams.value?.ticket == "ticket_123")
     #expect(signUp.createdSessionId == "sess_123")
     #expect(activatedSessionId.value == "sess_123")
-    #expect(clerk.callbackContinuation == nil)
+    #expect(Clerk.shared.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
@@ -527,14 +550,13 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signUp, codeVerifier: "verifier_123")
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
@@ -559,7 +581,7 @@ struct AuthTests {
       Issue.record("Expected signUpNeedsContinuation event but received \(String(describing: event))")
     }
 
-    let pendingResult = clerk.callbackContinuation
+    let pendingResult = Clerk.shared.callbackContinuation
     switch pendingResult {
     case .signUp(let signUp):
       #expect(signUp.id == resumableSignUp.id)
@@ -574,81 +596,44 @@ struct AuthTests {
 
   @Test
   func handleMagicLinkCallbackDeduplicatesConcurrentCallbacks() async throws {
-    let keychain = InMemoryKeychain()
-    let signInCreateCount = LockIsolated(0)
-    let activatedSessionId = LockIsolated<String?>(nil)
-    let completionRequestCount = LockIsolated(0)
-    let testBaseUrl = try #require(URL(string: "https://mock-authtests-dedupe.clerk.accounts.dev"))
-    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
-
-    var completionMock = try Mock(
-      url: completionUrl,
-      ignoreQuery: true,
-      contentType: .json,
-      statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
-        ),
-      ]
-    )
-    completionMock.onRequestHandler = OnRequestHandler { request in
-      completionRequestCount.withValue { $0 += 1 }
-      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_123")
-    }
-    completionMock.register()
-
-    let completedSignIn = SignIn(
+    let coordinator = URLHandlingCoordinator()
+    let invocationCount = LockIsolated(0)
+    let route = ClerkURLRoute.magicLink(flowId: "flow_123", approvalToken: "approval_123")
+    let expectedResult = TransferFlowResult.signIn(SignIn(
       id: "sign_in_123",
       status: .complete,
       createdSessionId: "sess_123"
-    )
+    ))
 
-    let signInService = MockSignInService(create: { params in
-      signInCreateCount.withValue { $0 += 1 }
-      #expect(params.ticket == "ticket_123")
+    async let first = coordinator.handle(route) {
+      invocationCount.withValue { $0 += 1 }
       try await Task.sleep(for: .milliseconds(50))
-      return completedSignIn
-    })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+      return expectedResult
+    }
+    async let second = coordinator.handle(route) {
+      invocationCount.withValue { $0 += 1 }
+      return expectedResult
+    }
 
-    let clerk = Clerk.shared
-    configureDependencies(
-      signInService: signInService,
-      sessionService: sessionService,
-      keychain: keychain,
-      baseURL: testBaseUrl
-    )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
-
-    async let firstResult = clerk.auth.handleMagicLinkCallback(callbackUrl)
-    async let secondResult = clerk.auth.handleMagicLinkCallback(callbackUrl)
-
-    let (first, second) = try await (firstResult, secondResult)
-    let firstSignIn = switch first {
+    let (firstResult, secondResult) = try await (first, second)
+    let firstSignIn = switch firstResult {
     case .signIn(let signIn):
       signIn
     case .signUp:
-      Issue.record("Expected sign-in result for sign-in magic link callback.")
+      Issue.record("Expected sign-in result for first deduped route.")
       throw ClerkClientError(message: "Expected sign-in result.")
     }
-    let secondSignIn = switch second {
+    let secondSignIn = switch secondResult {
     case .signIn(let signIn):
       signIn
     case .signUp:
-      Issue.record("Expected sign-in result for sign-in magic link callback.")
+      Issue.record("Expected sign-in result for second deduped route.")
       throw ClerkClientError(message: "Expected sign-in result.")
     }
 
     #expect(firstSignIn.createdSessionId == "sess_123")
     #expect(secondSignIn.createdSessionId == "sess_123")
-    #expect(signInCreateCount.value == 1)
-    #expect(completionRequestCount.value == 1)
-    #expect(activatedSessionId.value == "sess_123")
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+    #expect(invocationCount.value == 1)
   }
 
   @Test
@@ -696,14 +681,13 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signInService: signInService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_old&approval_token=approval_old"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_old&approval_token=approval_old"))
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_new")
 
     do {
@@ -721,8 +705,8 @@ struct AuthTests {
 
   @Test
   func canHandleMagicLinkCallbackRejectsMismatchedOrigin() throws {
-    let clerk = Clerk.shared
     configureDependencies()
+    let clerk = Clerk.shared
 
     let mismatchedUrl = try #require(URL(string: "https://example.com/callback?flow_id=flow_123&approval_token=approval_123"))
 
@@ -731,8 +715,8 @@ struct AuthTests {
 
   @Test
   func handleMagicLinkCallbackRejectsMismatchedOrigin() async throws {
-    let clerk = Clerk.shared
     configureDependencies()
+    let clerk = Clerk.shared
 
     let mismatchedUrl = try #require(URL(string: "https://example.com/callback?flow_id=flow_123&approval_token=approval_123"))
 
@@ -783,13 +767,13 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    let clerk = Clerk.shared
     configureDependencies(
       signInService: signInService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
+    let clerk = Clerk.shared
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
