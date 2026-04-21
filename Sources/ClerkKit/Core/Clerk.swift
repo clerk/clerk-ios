@@ -835,6 +835,7 @@ extension Clerk {
     if finishAuthEventStreams {
       authEventEmitter.finish()
     }
+    callbackContinuation = nil
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
   }

@@ -209,6 +209,7 @@ extension EmailLinkVerificationView {
       switch mode {
       case .signIn(let factor):
         guard let signIn = clerk.auth.currentSignIn else {
+          deliveryState = .idle
           navigation.path = []
           return
         }
@@ -216,6 +217,7 @@ extension EmailLinkVerificationView {
 
       case .signUp:
         guard let signUp = clerk.auth.currentSignUp else {
+          deliveryState = .idle
           navigation.path = []
           return
         }
