@@ -35,6 +35,30 @@ public struct UserProfileCustomRow<Route: Hashable> {
     self.icon = icon
     self.placement = placement
   }
+
+  /// Creates a custom row for ``UserProfileView`` using a plain string title.
+  ///
+  /// Rows that share the same placement are displayed in the order they appear in the
+  /// array passed to ``UserProfileView/userProfileRows(_:)``.
+  ///
+  /// - Parameters:
+  ///   - route: The route that should be pushed when the row is tapped.
+  ///   - title: The row title.
+  ///   - icon: The icon displayed for the row.
+  ///   - placement: The insertion point relative to Clerk's built-in rows.
+  public init(
+    route: Route,
+    title: String,
+    icon: UserProfileRowIcon,
+    placement: UserProfileCustomRowPlacement = .sectionEnd(.profile)
+  ) {
+    self.init(
+      route: route,
+      title: LocalizedStringKey(title),
+      icon: icon,
+      placement: placement
+    )
+  }
 }
 
 /// The icon displayed by a user profile row.
