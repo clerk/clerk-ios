@@ -237,12 +237,11 @@ extension EmailLinkVerificationView {
       return
     }
 
-    guard UIApplication.shared.canOpenURL(url) else {
-      error = ClerkClientError(message: "No email app is available on this device.")
-      return
+    UIApplication.shared.open(url, options: [:]) { success in
+      if !success {
+        error = ClerkClientError(message: "No email app is available on this device.")
+      }
     }
-
-    UIApplication.shared.open(url)
   }
 }
 
