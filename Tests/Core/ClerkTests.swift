@@ -57,10 +57,11 @@ struct ClerkTests {
       status: .needsSecondFactor,
       createdSessionId: nil
     )
+    let clerk = Clerk()
 
-    Clerk.shared.setCallbackContinuation(.signIn(signIn))
+    clerk.setCallbackContinuation(.signIn(signIn))
 
-    guard case .signIn(let pendingSignIn) = Clerk.shared.callbackContinuation else {
+    guard case .signIn(let pendingSignIn) = clerk.callbackContinuation else {
       Issue.record("Expected callbackContinuation to contain the pending sign-in result.")
       return
     }

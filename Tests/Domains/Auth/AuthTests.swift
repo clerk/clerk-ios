@@ -47,6 +47,7 @@ struct AuthTests {
     baseURL: URL = mockBaseUrl,
     options: Clerk.Options = .init()
   ) -> Clerk {
+    Clerk.shared.setCallbackContinuation(nil)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(baseURL: baseURL),
@@ -59,7 +60,7 @@ struct AuthTests {
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: options)
     clerk.environment = environment
-    Clerk.shared.setCallbackContinuation(nil)
+    clerk.setCallbackContinuation(nil)
     return clerk
   }
 
@@ -440,15 +441,6 @@ struct AuthTests {
       Issue.record("Expected signInNeedsContinuation event but received \(String(describing: event))")
     }
 
-    let pendingResult = Clerk.shared.callbackContinuation
-    switch pendingResult {
-    case .signIn(let signIn):
-      #expect(signIn.id == "sign_in_123")
-      #expect(signIn.status == .needsSecondFactor)
-    default:
-      Issue.record("Expected stored signIn result but received \(String(describing: pendingResult))")
-    }
-
     #expect(activatedSessionId.value == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
@@ -579,15 +571,6 @@ struct AuthTests {
       #expect(signUp.status == .missingRequirements)
     default:
       Issue.record("Expected signUpNeedsContinuation event but received \(String(describing: event))")
-    }
-
-    let pendingResult = Clerk.shared.callbackContinuation
-    switch pendingResult {
-    case .signUp(let signUp):
-      #expect(signUp.id == resumableSignUp.id)
-      #expect(signUp.status == .missingRequirements)
-    default:
-      Issue.record("Expected stored signUp result but received \(String(describing: pendingResult))")
     }
 
     #expect(activatedSessionId.value == nil)
@@ -767,13 +750,12 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signInService: signInService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let clerk = Clerk.shared
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")

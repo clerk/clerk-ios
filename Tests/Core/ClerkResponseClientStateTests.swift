@@ -289,14 +289,21 @@ struct ClerkResponseClientStateTests {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
     let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 2000)
+    let pendingSignIn = SignIn(
+      id: "sign_in_pending",
+      status: .needsSecondFactor,
+      createdSessionId: nil
+    )
 
     clerk.client = nil
     clerk.applyResponseClient(original, responseSequence: 10)
+    clerk.setCallbackContinuation(.signIn(pendingSignIn))
 
     clerk.cleanupManagers()
     clerk.applyResponseClient(replacement, responseSequence: 1)
 
     #expect(clerk.client?.signIn?.id == replacement.signIn?.id)
+    #expect(clerk.callbackContinuation == nil)
   }
 
   private func captureNextAuthEvent(

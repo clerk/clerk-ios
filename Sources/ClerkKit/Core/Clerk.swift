@@ -572,6 +572,7 @@ extension Clerk {
 
   private func resetManagerStateForCleanup() {
     authEventEmitter.finish()
+    callbackContinuation = nil
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
   }
