@@ -32,6 +32,10 @@ final class DependencyContainer: Dependencies {
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
+  // MARK: - Magic Link
+
+  let magicLinkStore: MagicLinkStore
+
   // MARK: - Logging
 
   let sessionStatusLogger: SessionStatusLogger
@@ -80,6 +84,8 @@ final class DependencyContainer: Dependencies {
       service: options.keychainConfig.service,
       accessGroup: options.keychainConfig.accessGroup
     )
+
+    magicLinkStore = MagicLinkStore(keychain: keychain)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline

@@ -74,6 +74,9 @@ public struct AuthView: View {
   /// Configuration values for identifier pre-filling and persistence.
   private let config: AuthIdentifierConfig
 
+  /// Error to present to the user.
+  @State private var error: Error?
+
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
 
@@ -109,7 +112,7 @@ public struct AuthView: View {
     config = AuthIdentifierConfig()
   }
 
-  private init(
+  init(
     mode: Mode,
     isDismissable: Bool,
     config: AuthIdentifierConfig
@@ -148,11 +151,15 @@ public struct AuthView: View {
     .presentationBackground(theme.colors.background)
     .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
     .tint(theme.colors.primary)
+    .clerkErrorPresenting($error)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
     .onAppear {
       navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+      if let callbackContinuation = clerk.callbackContinuation {
+        resumeAuth(callbackContinuation)
+      }
     }
     .task {
       _ = try? await clerk.refreshEnvironment()
@@ -160,6 +167,10 @@ public struct AuthView: View {
     .task {
       for await event in clerk.auth.events {
         switch event {
+        case .signInNeedsContinuation(let signIn):
+          resumeAuth(.signIn(signIn))
+        case .signUpNeedsContinuation(let signUp):
+          resumeAuth(.signUp(signUp))
         case .sessionChanged(let oldValue, let newValue):
           guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
@@ -193,6 +204,15 @@ public struct AuthView: View {
     .onChange(of: config, initial: true) { _, newConfig in
       authState.configure(newConfig)
     }
+    .onOpenURL { url in
+      Task {
+        do {
+          try await clerk.handle(url)
+        } catch {
+          self.error = error
+        }
+      }
+    }
     .taskOnce {
       await clerk.telemetry.record(
         TelemetryEvents.viewDidAppear(
@@ -211,6 +231,17 @@ extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissable && !navigation.hasSessionTaskStartInPath
+  }
+
+  private func resumeAuth(_ result: TransferFlowResult) {
+    switch result {
+    case .signIn(let signIn):
+      navigation.setToStepForStatus(signIn: signIn)
+      clerk.setCallbackContinuation(nil)
+    case .signUp(let signUp):
+      navigation.setToStepForStatus(signUp: signUp)
+      clerk.setCallbackContinuation(nil)
+    }
   }
 }
 
@@ -262,6 +293,7 @@ extension AuthView {
     // Sign up
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
+    case signUpEmailLink
     case signUpCompleteProfile
 
     // Session tasks
@@ -305,6 +337,8 @@ extension AuthView {
         SignUpCollectFieldView(field: field)
       case let .signUpCode(field):
         SignUpCodeView(field: field)
+      case .signUpEmailLink:
+        EmailLinkVerificationView(mode: .signUp)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
       case .sessionTaskStart(let task):

@@ -148,6 +148,7 @@ extension SignIn {
       supportedIdentifiers: [.emailAddress, .phoneNumber],
       identifier: User.mock.emailAddresses.first?.emailAddress,
       supportedFirstFactors: [
+        .mockEmailLink,
         .mockEmailCode,
         .mockPhoneCode,
         .mockGoogle,
@@ -319,8 +320,20 @@ extension Verification {
 // MARK: Factor
 
 extension Factor {
+  public static var mockEmailLink: Factor {
+    Factor(
+      strategy: .emailLink,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
+  }
+
   public static var mockEmailCode: Factor {
-    Factor(strategy: .emailCode)
+    Factor(
+      strategy: .emailCode,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
   }
 
   public static var mockPhoneCode: Factor {

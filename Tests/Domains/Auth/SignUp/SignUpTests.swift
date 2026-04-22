@@ -41,6 +41,33 @@ struct SignUpTests {
   }
 
   @Test
+  func sendEmailLinkUsesSignUpServicePrepareVerification() async throws {
+    let keychain = InMemoryKeychain()
+    let signUp = SignUp.mock
+    let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)
+    let service = MockSignUpService(prepareVerification: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signUpService: service
+    )
+
+    _ = try await signUp.sendEmailLink()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signUp.id)
+    #expect(params.1.strategy == .emailLink)
+    #expect(params.1.emailAddressId == nil)
+    #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.1.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
+    #expect(params.1.codeChallenge?.isEmpty == false)
+  }
+
+  @Test
   func sendEmailCodeUsesSignUpServicePrepareVerification() async throws {
     let signUp = SignUp.mock
     let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)

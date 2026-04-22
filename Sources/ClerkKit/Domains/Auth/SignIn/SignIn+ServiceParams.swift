@@ -41,17 +41,26 @@ extension SignIn {
     let emailAddressId: String?
     let phoneNumberId: String?
     let redirectUrl: String?
+    let redirectUri: String?
+    let codeChallenge: String?
+    let codeChallengeMethod: String?
 
     init(
       strategy: FactorStrategy,
       emailAddressId: String? = nil,
       phoneNumberId: String? = nil,
-      redirectUrl: String? = nil
+      redirectUrl: String? = nil,
+      redirectUri: String? = nil,
+      codeChallenge: String? = nil,
+      codeChallengeMethod: String? = nil
     ) {
       self.strategy = strategy
       self.emailAddressId = emailAddressId
       self.phoneNumberId = phoneNumberId
       self.redirectUrl = redirectUrl
+      self.redirectUri = redirectUri
+      self.codeChallenge = codeChallenge
+      self.codeChallengeMethod = codeChallengeMethod
     }
   }
 

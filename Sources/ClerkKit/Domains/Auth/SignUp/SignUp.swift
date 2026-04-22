@@ -113,6 +113,11 @@ extension SignUp {
     Clerk.shared.dependencies.signUpService
   }
 
+  @MainActor
+  private var magicLinkStore: MagicLinkStore {
+    Clerk.shared.dependencies.magicLinkStore
+  }
+
   /// This method is used to update the current sign-up.
   ///
   /// This method is used to modify the details of an ongoing sign-up process.
@@ -151,6 +156,36 @@ extension SignUp {
       unsafeMetadata: unsafeMetadata,
       legalAccepted: legalAccepted
     ))
+  }
+
+  /// Sends a native magic link to the email address for verification.
+  ///
+  /// This prepares the `email_link` verification using PKCE and stores the verifier locally
+  /// so the callback can be completed inside the app.
+  ///
+  /// - Parameter redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
+  /// - Returns: An updated `SignUp` object with the email-link verification started.
+  /// - Throws: An error if the redirect URI is missing or preparation fails.
+  @discardableResult @MainActor
+  public func sendEmailLink(redirectUri: String? = nil) async throws -> SignUp {
+    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
+    guard !resolvedRedirectUri.isEmpty else {
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-up verification.")
+    }
+
+    let pkcePair = try MagicLinkPKCE.generatePair()
+    try magicLinkStore.save(kind: .signUp, codeVerifier: pkcePair.verifier)
+
+    return try await signUpService.prepareVerification(
+      signUpId: id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: nil,
+        redirectUri: resolvedRedirectUri,
+        codeChallenge: pkcePair.challenge,
+        codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
+      )
+    )
   }
 
   /// Sends a verification code to the email address.
