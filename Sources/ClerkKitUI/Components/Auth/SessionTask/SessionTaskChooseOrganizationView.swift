@@ -2,7 +2,7 @@
 //  SessionTaskChooseOrganizationView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -26,12 +26,12 @@ struct SessionTaskChooseOrganizationView: View {
       if !accountList.isLoading, !accountList.hasExistingResources, user?.createOrganizationEnabled == false {
         GetHelpView(context: .sessionTask(.organizationRequired))
           .navigationBarBackButtonHidden()
+        #if os(iOS)
           .navigationBarTitleDisplayMode(.inline)
+        #endif
           .preGlassSolidNavBar()
           .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-              UserButton(presentationContext: .sessionTaskToolbar)
-            }
+            UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
           }
       } else if !accountList.isLoading, !accountList.hasExistingResources {
         SessionTaskCreateOrganizationView(creationDefaults: accountList.creationDefaults)
@@ -47,13 +47,13 @@ struct SessionTaskChooseOrganizationView: View {
         }
         .background(theme.colors.background)
         .navigationBarBackButtonHidden()
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            UserButton(presentationContext: .sessionTaskToolbar)
+        #if os(iOS)
+          .navigationBarTitleDisplayMode(.inline)
+        #endif
+          .preGlassSolidNavBar()
+          .toolbar {
+            UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
           }
-        }
       }
     }
     .clerkErrorPresenting($accountList.error, onDismiss: { _ in

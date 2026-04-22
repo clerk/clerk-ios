@@ -2,7 +2,7 @@
 //  SessionTaskCreateOrganizationView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -19,13 +19,16 @@ struct SessionTaskCreateOrganizationView: View {
       navigation.handleSessionTaskCompletion(session: clerk.session)
     }
     .navigationBarBackButtonHidden(!showBackButton)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
       }
-    }
+    #if os(macOS)
+      .macOSBackButton(hidden: !showBackButton)
+    #endif
   }
 }
 

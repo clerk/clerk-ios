@@ -40,47 +40,46 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
     #elseif os(macOS)
-    .macOSBackButton()
+      .macOSBackButton()
     #endif
       .preGlassSolidNavBar()
       .toolbar {
         UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
       }
-    }
-    .onChange(of: navigation.path) { oldPath, newPath in
-      if newPath.count > oldPath.count {
-        didNavigateAway = true
-      } else if newPath.count < oldPath.count, didNavigateAway {
-        // On macOS, onDisappear doesn't fire on back navigation so we reset here.
+      .onChange(of: navigation.path) { oldPath, newPath in
+        if newPath.count > oldPath.count {
+          didNavigateAway = true
+        } else if newPath.count < oldPath.count, didNavigateAway {
+          // On macOS, onDisappear doesn't fire on back navigation so we reset here.
+          didNavigateAway = false
+          isSubmittingPhone = false
+        }
+      }
+      .onDisappear {
+        guard didNavigateAway else { return }
         didNavigateAway = false
         isSubmittingPhone = false
+        isReservingForSecondFactor = false
       }
-    }
-    .onDisappear {
-      guard didNavigateAway else { return }
-      didNavigateAway = false
-      isSubmittingPhone = false
-      isReservingForSecondFactor = false
-    }
-    .sheet(isPresented: $addPhoneNumberIsPresented) {
-      NavigationStack {
-        ScrollView {
-          SessionTaskAddPhoneForm { _ in
-            addPhoneNumberIsPresented = false
+      .sheet(isPresented: $addPhoneNumberIsPresented) {
+        NavigationStack {
+          ScrollView {
+            SessionTaskAddPhoneForm { _ in
+              addPhoneNumberIsPresented = false
+            }
+          }
+          .background(theme.colors.background)
+          .toolbar {
+            DismissToolbarItem {
+              addPhoneNumberIsPresented = false
+            }
           }
         }
-        .background(theme.colors.background)
-        .toolbar {
-          DismissToolbarItem {
-            addPhoneNumberIsPresented = false
-          }
-        }
+        .presentationBackground(theme.colors.background)
+        .tint(theme.colors.primary)
       }
-      .presentationBackground(theme.colors.background)
-      .tint(theme.colors.primary)
-    }
   }
 
   private var addPhoneContent: some View {

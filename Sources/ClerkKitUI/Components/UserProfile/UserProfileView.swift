@@ -347,7 +347,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
     }
     #if os(macOS)
-    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }

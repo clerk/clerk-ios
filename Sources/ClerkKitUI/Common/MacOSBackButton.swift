@@ -40,10 +40,15 @@ struct MacOSBackButton: View {
 }
 
 extension View {
-  func macOSBackButton() -> some View {
-    VStack(spacing: 0) {
-      MacOSBackButton()
+  @ViewBuilder
+  func macOSBackButton(hidden: Bool = false) -> some View {
+    if hidden {
       self
+    } else {
+      VStack(spacing: 0) {
+        MacOSBackButton()
+        self
+      }
     }
   }
 }

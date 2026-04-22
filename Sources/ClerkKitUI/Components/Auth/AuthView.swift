@@ -138,7 +138,7 @@ public struct AuthView: View {
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
     #if os(iOS)
-    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
+      .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
     #endif
     .tint(theme.colors.primary)
     .environment(navigation)

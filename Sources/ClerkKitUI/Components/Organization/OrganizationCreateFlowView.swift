@@ -2,7 +2,7 @@
 //  OrganizationCreateFlowView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -34,6 +34,7 @@ struct OrganizationCreateFlowView: View {
         completeFlow()
       }
     }
+    #if os(iOS)
     .navigationDestination(isPresented: $inviteMembersIsPresented) {
       OrganizationInviteMembersView(
         cancellationTitle: "Skip",
@@ -43,6 +44,7 @@ struct OrganizationCreateFlowView: View {
       }
       .navigationBarBackButtonHidden(true)
     }
+    #endif
   }
 
   private func completeFlow() {
@@ -54,7 +56,11 @@ struct OrganizationCreateFlowView: View {
   }
 
   private func shouldShowPostCreateInviteStep(for organization: Organization) -> Bool {
+    #if os(iOS)
     !skipInvitationScreen && organization.maxAllowedMemberships != 1
+    #else
+    false
+    #endif
   }
 }
 
