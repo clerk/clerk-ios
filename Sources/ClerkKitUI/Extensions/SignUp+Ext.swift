@@ -13,12 +13,14 @@ extension SignUp {
   static let individuallyCollectableFields: Set<SignUp.Field> = [.emailAddress, .phoneNumber, .username, .password]
   static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
 
+  var emailVerification: Verification? {
+    verifications["email_address"] ?? nil
+  }
+
   @MainActor
   var emailVerificationStrategy: FactorStrategy {
     // Check if there's an active verification with a strategy
-    if let verification = verifications["email_address"],
-       let strategy = verification?.strategy
-    {
+    if let strategy = emailVerification?.strategy {
       return strategy
     }
 

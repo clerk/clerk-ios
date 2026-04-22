@@ -189,8 +189,10 @@ extension EmailLinkVerificationView {
     let alreadySent: Bool = switch mode {
     case .signIn:
       clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
+        && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
     case .signUp:
-      clerk.auth.currentSignUp?.verifications["email_address"]??.strategy == .emailLink
+      clerk.auth.currentSignUp?.emailVerification?.strategy == .emailLink
+        && clerk.auth.currentSignUp?.emailVerification?.status == .unverified
     }
 
     guard !alreadySent else {
@@ -231,6 +233,7 @@ extension EmailLinkVerificationView {
     }
   }
 
+  @MainActor
   private func openEmailApp() {
     guard let url = URL(string: "mailto:") else {
       error = ClerkClientError(message: "No email app is available on this device.")
@@ -239,7 +242,9 @@ extension EmailLinkVerificationView {
 
     UIApplication.shared.open(url, options: [:]) { success in
       if !success {
-        error = ClerkClientError(message: "No email app is available on this device.")
+        Task { @MainActor in
+          error = ClerkClientError(message: "No email app is available on this device.")
+        }
       }
     }
   }
