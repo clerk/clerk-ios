@@ -199,9 +199,7 @@ public final class Clerk {
   }
 
   init(
-    dependencies: any Dependencies,
-    startManagers: Bool = false,
-    configureLogger: Bool = false
+    dependencies: any Dependencies
   ) {
     self.dependencies = dependencies
 
@@ -211,35 +209,17 @@ public final class Clerk {
         authEventEmitter.send(.tokenRefreshed(token: token))
       }
     )
-
-    if configureLogger {
-      let options = dependencies.configurationManager.options
-      ClerkLogger.configure(
-        logLevel: options.logLevel,
-        handler: options.loggerHandler
-      )
-    }
-
-    if startManagers {
-      startManagedRuntime()
-    }
   }
 
   convenience init(
     publishableKey: String,
-    options: Clerk.Options = .init(),
-    startManagers: Bool = false,
-    configureLogger: Bool = false
+    options: Clerk.Options = .init()
   ) throws {
     let dependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options
     )
-    self.init(
-      dependencies: dependencies,
-      startManagers: startManagers,
-      configureLogger: configureLogger
-    )
+    self.init(dependencies: dependencies)
   }
 }
 
@@ -332,14 +312,18 @@ extension Clerk {
     do {
       let clerk = try Clerk(
         publishableKey: publishableKey,
-        options: options,
-        startManagers: true,
-        configureLogger: true
+        options: options
       )
+
+      ClerkLogger.configure(
+        logLevel: options.logLevel,
+        handler: options.loggerHandler
+      )
+
+      clerk.startManagedRuntime()
       installShared(clerk)
       return clerk
     } catch {
-      assertionFailure("Failed to configure Clerk: \(error.localizedDescription)")
       fatalError("Failed to configure Clerk: \(error.localizedDescription)")
     }
   }
