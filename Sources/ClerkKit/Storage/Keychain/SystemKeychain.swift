@@ -19,12 +19,11 @@ struct SystemKeychain: KeychainStorage {
   private let accessibility: Accessibility
 
   init(
-    service: String,
-    accessGroup: String? = nil,
+    config: Clerk.Options.KeychainConfig,
     accessibility: Accessibility = .afterFirstUnlockThisDeviceOnly
   ) {
-    self.service = service
-    self.accessGroup = accessGroup
+    service = config.service
+    accessGroup = config.accessGroup
     self.accessibility = accessibility
   }
 

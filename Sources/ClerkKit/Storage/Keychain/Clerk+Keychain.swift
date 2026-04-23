@@ -18,7 +18,8 @@ extension Clerk {
   /// - App Attest key ID
   ///
   /// This method uses a best-effort approach - errors are logged but don't prevent deletion
-  /// of other items. Clerk must be configured before calling this method.
+  /// of other items. If Clerk is configured, the configured keychain is cleared. Otherwise,
+  /// the default Clerk keychain service for the current app bundle is cleared.
   ///
   /// **Note:** This only clears keychain items. It does not clear in-memory state such as
   /// the `client` and `environment` properties. To fully reset Clerk, you may also need
@@ -35,7 +36,8 @@ extension Clerk {
   /// ```
   @MainActor
   public static func clearAllKeychainItems() {
-    clearAllKeychainItems(using: Clerk.shared.dependencies.keychain)
+    let keychain = sharedKeychain ?? SystemKeychain(config: .init())
+    clearAllKeychainItems(using: keychain)
   }
 
   @MainActor

@@ -231,6 +231,10 @@ extension Clerk {
     _shared = clerk
   }
 
+  static var sharedKeychain: (any KeychainStorage)? {
+    _shared?.dependencies.keychain
+  }
+
   private func startManagedRuntime() {
     taskCoordinator = TaskCoordinator()
 

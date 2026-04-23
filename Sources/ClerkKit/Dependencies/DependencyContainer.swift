@@ -76,10 +76,7 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    keychain = SystemKeychain(
-      service: options.keychainConfig.service,
-      accessGroup: options.keychainConfig.accessGroup
-    )
+    keychain = SystemKeychain(config: options.keychainConfig)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline

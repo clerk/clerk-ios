@@ -122,6 +122,7 @@ func configureClerkForIntegrationTesting(keyName: String) throws -> Clerk? {
   clerk.client = nil
   clerk.environment = nil
   clerk.sessionsByUserId = [:]
+  Clerk.installShared(clerk)
 
   return clerk
 }
