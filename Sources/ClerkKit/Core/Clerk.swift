@@ -12,14 +12,14 @@ import Foundation
 @MainActor
 @Observable
 public final class Clerk {
+  nonisolated static let mockPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
+
   /// The shared Clerk instance.
   ///
-  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` will trigger an assertion failure in debug builds.
-  /// In release builds, a new unconfigured `Clerk` instance is returned.
+  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` is a programmer error.
   public static var shared: Clerk {
     guard let instance = _shared else {
-      assertionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
-      return Clerk()
+      fatalError("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
     }
     return instance
   }
@@ -150,29 +150,21 @@ public final class Clerk {
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
   /// Dependency container holding all SDK dependencies.
-  var dependencies: any Dependencies {
-    didSet {
-      sessionTokenFetcher = makeSessionTokenFetcher()
-    }
-  }
+  let dependencies: any Dependencies
 
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
 
   /// Coalesces session token refreshes for this Clerk instance.
-  private var sessionTokenFetcher: SessionTokenFetcher?
+  private let sessionTokenFetcher: SessionTokenFetcher
 
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
   /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
-    guard let sessionTokenFetcher else {
-      fatalError("Session token fetcher has not been initialized.")
-    }
-
-    return Auth(
+    Auth(
       clerk: self,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
@@ -206,44 +198,61 @@ public final class Clerk {
     dependencies.configurationManager.proxyConfiguration
   }
 
-  package init() {
-    // Create temporary container - will be replaced during configure with proper values
-    do {
-      dependencies = try DependencyContainer(
-        publishableKey: "",
-        options: .init()
-      )
-    } catch {
-      // This should never happen, but handle it just in case
-      assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
-      if let fallbackDependencies = try? DependencyContainer(publishableKey: "", options: .init()) {
-        dependencies = fallbackDependencies
-      } else {
-        fatalError("Failed to create temporary dependency container")
+  init(
+    dependencies: any Dependencies,
+    startManagers: Bool = false,
+    configureLogger: Bool = false
+  ) {
+    self.dependencies = dependencies
+
+    sessionTokenFetcher = SessionTokenFetcher(
+      sessionService: dependencies.sessionService,
+      onTokenRefreshed: { [authEventEmitter] token in
+        authEventEmitter.send(.tokenRefreshed(token: token))
       }
+    )
+
+    if configureLogger {
+      let options = dependencies.configurationManager.options
+      ClerkLogger.configure(
+        logLevel: options.logLevel,
+        handler: options.loggerHandler
+      )
     }
 
-    sessionTokenFetcher = makeSessionTokenFetcher()
+    if startManagers {
+      startManagedRuntime()
+    }
+  }
+
+  convenience init(
+    publishableKey: String,
+    options: Clerk.Options = .init(),
+    startManagers: Bool = false,
+    configureLogger: Bool = false
+  ) throws {
+    let dependencies = try DependencyContainer(
+      publishableKey: publishableKey,
+      options: options
+    )
+    self.init(
+      dependencies: dependencies,
+      startManagers: startManagers,
+      configureLogger: configureLogger
+    )
   }
 }
 
 extension Clerk {
-  /// Internal helper method that performs the actual configuration work.
-  @MainActor
-  package func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
-    ClerkLogger.configure(
-      logLevel: options.logLevel,
-      handler: options.loggerHandler
-    )
+  static func installShared(_ clerk: Clerk) {
+    if let existing = _shared, existing !== clerk {
+      existing.cleanupManagers()
+    }
+    _shared = clerk
+  }
 
-    // Initialize task coordinator
+  private func startManagedRuntime() {
     taskCoordinator = TaskCoordinator()
-
-    // Create dependency container (which creates and configures ConfigurationManager internally)
-    dependencies = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options
-    )
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -257,6 +266,7 @@ extension Clerk {
     lifecycleManager?.startObserving()
 
     // Set up watch connectivity coordinator only if enabled
+    let options = dependencies.configurationManager.options
     if options.watchConnectivityEnabled {
       watchConnectivityCoordinator = WatchConnectivityCoordinator()
     }
@@ -308,10 +318,8 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
-        // Clean up old managers before resetting to prevent background tasks from interfering
         existing.cleanupManagers()
         ClerkLogger.resetConfiguration()
         _shared = nil
@@ -321,17 +329,19 @@ extension Clerk {
       }
     }
 
-    let clerk = Clerk()
-
     do {
-      try clerk.performConfiguration(publishableKey: publishableKey, options: options)
+      let clerk = try Clerk(
+        publishableKey: publishableKey,
+        options: options,
+        startManagers: true,
+        configureLogger: true
+      )
+      installShared(clerk)
+      return clerk
     } catch {
       assertionFailure("Failed to configure Clerk: \(error.localizedDescription)")
-      return Clerk()
+      fatalError("Failed to configure Clerk: \(error.localizedDescription)")
     }
-
-    _shared = clerk
-    return clerk
   }
 
   /// Refreshes the current client from the API.
@@ -550,38 +560,10 @@ extension Clerk {
     teardownNonCacheManagers()
   }
 
-  package func cleanupManagersAndDrainCache() async {
-    invalidAuthRefreshTask?.cancel()
-    await invalidAuthRefreshTask?.value
-    invalidAuthRefreshTask = nil
-    watchSyncRefreshTask?.cancel()
-    await watchSyncRefreshTask?.value
-    watchSyncRefreshTask = nil
-
-    // Cancel task coordinator tasks before draining the cache to prevent
-    // in-flight refreshes from enqueuing new writes during the drain.
-    taskCoordinator?.cancelAll()
-
-    resetManagerStateForCleanup()
-    await cacheManager?.shutdownAndDrain()
-    cacheManager = nil
-    teardownNonCacheManagers()
-  }
-
   private func resetManagerStateForCleanup() {
     authEventEmitter.finish()
-    sessionTokenFetcher = makeSessionTokenFetcher()
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
-  }
-
-  private func makeSessionTokenFetcher() -> SessionTokenFetcher {
-    SessionTokenFetcher(
-      sessionService: dependencies.sessionService,
-      onTokenRefreshed: { [weak self] token in
-        self?.authEventEmitter.send(.tokenRefreshed(token: token))
-      }
-    )
   }
 
   private func teardownNonCacheManagers() {

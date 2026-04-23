@@ -32,7 +32,7 @@ struct ClerkTests {
   }
 
   func makeClerk() -> Clerk {
-    Clerk()
+    makeBareClerk()
   }
 
   @Test

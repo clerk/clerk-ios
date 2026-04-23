@@ -14,12 +14,7 @@ struct EnvironmentTests {
       called.setValue(true)
       return expectedEnvironment
     })
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      environmentService: service
-    )
+    let clerk = try ClerkTestFixture().makeClerk(environmentService: service)
 
     _ = try await clerk.refreshEnvironment()
 

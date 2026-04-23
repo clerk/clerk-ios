@@ -13,7 +13,7 @@ import Foundation
 
 extension Clerk {
   public static var mock: Clerk {
-    let clerk = Clerk()
+    let clerk = makeMockClerk()
     clerk.client = .mock
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
@@ -21,12 +21,23 @@ extension Clerk {
   }
 
   public static var mockSignedOut: Clerk {
-    let clerk = Clerk()
+    let clerk = makeMockClerk()
     clerk.client = .mockSignedOut
     clerk.environment = .mock
     clerk.sessionsByUserId = [:]
     return clerk
   }
+}
+
+@MainActor
+private func makeMockClerk() -> Clerk {
+  let apiClient = APIClient(baseURL: URL(string: "https://mock.clerk.accounts.dev")!)
+  let container = MockDependencyContainer(apiClient: apiClient)
+  try? container.configurationManager.configure(
+    publishableKey: Clerk.mockPublishableKey,
+    options: .init()
+  )
+  return Clerk(dependencies: container)
 }
 
 // MARK: - Client

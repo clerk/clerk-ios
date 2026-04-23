@@ -19,22 +19,24 @@ struct SharedClerkTestSupport {
     client: Client? = nil,
     environment: Clerk.Environment? = .mock
   ) throws -> Clerk {
-    let clerk = Clerk.configure(publishableKey: testPublishableKey, options: options)
-    clerk.dependencies = try fixture.makeMockDependencies(
-      userService: userService,
-      signInService: signInService,
-      signUpService: signUpService,
-      sessionService: sessionService,
-      passkeyService: passkeyService,
-      organizationService: organizationService,
-      emailAddressService: emailAddressService,
-      phoneNumberService: phoneNumberService,
-      externalAccountService: externalAccountService,
-      options: options
+    let clerk = try Clerk(
+      dependencies: fixture.makeMockDependencies(
+        userService: userService,
+        signInService: signInService,
+        signUpService: signUpService,
+        sessionService: sessionService,
+        passkeyService: passkeyService,
+        organizationService: organizationService,
+        emailAddressService: emailAddressService,
+        phoneNumberService: phoneNumberService,
+        externalAccountService: externalAccountService,
+        options: options
+      )
     )
     clerk.client = client
     clerk.environment = environment
     clerk.sessionsByUserId = [:]
+    Clerk.installShared(clerk)
     return clerk
   }
 }

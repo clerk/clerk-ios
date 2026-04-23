@@ -10,7 +10,7 @@ import Foundation
 actor SessionTokenFetcher {
   private let sessionService: any SessionServiceProtocol
   private let tokenCache: SessionTokensCache
-  private let onTokenRefreshed: (@MainActor @Sendable (String) -> Void)?
+  private let onTokenRefreshed: @MainActor @Sendable (String) -> Void
 
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
@@ -18,14 +18,17 @@ actor SessionTokenFetcher {
   init(
     sessionService: any SessionServiceProtocol,
     tokenCache: SessionTokensCache = .shared,
-    onTokenRefreshed: (@MainActor @Sendable (String) -> Void)? = nil
+    onTokenRefreshed: @escaping @MainActor @Sendable (String) -> Void = { _ in }
   ) {
     self.sessionService = sessionService
     self.tokenCache = tokenCache
     self.onTokenRefreshed = onTokenRefreshed
   }
 
-  func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+  func getToken(
+    _ session: Session,
+    options: Session.GetTokenOptions = .init()
+  ) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if let inProgressTask = tokenTasks[cacheKey] {
@@ -50,7 +53,10 @@ actor SessionTokenFetcher {
    Internal function to get the session token. Checks the cache first.
    */
   @discardableResult @MainActor
-  func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+  func fetchToken(
+    _ session: Session,
+    options: Session.GetTokenOptions = .init()
+  ) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if options.skipCache == false,
@@ -68,7 +74,7 @@ actor SessionTokenFetcher {
 
     if let token {
       await tokenCache.insertToken(token, cacheKey: cacheKey)
-      onTokenRefreshed?(token.jwt)
+      onTokenRefreshed(token.jwt)
     }
 
     return token

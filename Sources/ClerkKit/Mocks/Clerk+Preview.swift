@@ -62,7 +62,7 @@ extension Clerk {
   /// environment via the `PreviewBuilder`, it uses the provided environment or falls back to `.mock`.
   ///
   /// **Important:** This method only works when running in SwiftUI previews. When used outside of previews,
-  /// it returns `Clerk.shared` if already configured, or configures Clerk with an empty publishable key.
+  /// it returns `Clerk.shared`.
   ///
   /// - Parameter preview: An optional closure that receives a `PreviewBuilder` for configuring preview settings.
   ///
@@ -108,9 +108,6 @@ extension Clerk {
       return Clerk.shared
     }
 
-    // Configure Clerk.shared if not already configured
-    let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
-
     // Create a minimal API client (won't be used if services are mocked)
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL)
@@ -138,10 +135,10 @@ extension Clerk {
       services: previewBuilder.services
     )
 
-    // Replace dependencies with mock services
-    clerk.dependencies = container
+    let clerk = Clerk(dependencies: container)
     clerk.client = mockClient
     clerk.environment = mockEnvironment
+    Clerk.installShared(clerk)
 
     return clerk
   }
@@ -165,7 +162,7 @@ extension Clerk {
   ) -> MockDependencyContainer {
     // Use the services from the builder directly - this allows users to customize
     // individual service behaviors (like adding delays for loading states).
-    MockDependencyContainer(
+    let container = MockDependencyContainer(
       apiClient: apiClient,
       clientService: services.clientService,
       userService: services.userService,
@@ -179,5 +176,12 @@ extension Clerk {
       phoneNumberService: services.phoneNumberService,
       externalAccountService: services.externalAccountService
     )
+
+    try? container.configurationManager.configure(
+      publishableKey: Clerk.mockPublishableKey,
+      options: .init()
+    )
+
+    return container
   }
 }

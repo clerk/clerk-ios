@@ -5,7 +5,7 @@ import Mocker
 let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 
 /// Test publishable key that decodes to mock.clerk.accounts.dev
-let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
+let testPublishableKey = Clerk.mockPublishableKey
 
 typealias TestURLProtocolHandler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 
@@ -134,29 +134,38 @@ final class ClerkTestFixture {
     client: Client? = nil,
     environment: Clerk.Environment? = nil
   ) throws -> Clerk {
-    let clerk = Clerk()
-    clerk.dependencies = try makeMockDependencies(
-      apiClient: apiClient,
-      keychain: keychain,
-      telemetryCollector: telemetryCollector,
-      clientService: clientService,
-      userService: userService,
-      signInService: signInService,
-      signUpService: signUpService,
-      sessionService: sessionService,
-      passkeyService: passkeyService,
-      organizationService: organizationService,
-      environmentService: environmentService,
-      emailAddressService: emailAddressService,
-      phoneNumberService: phoneNumberService,
-      externalAccountService: externalAccountService,
-      options: options
+    let clerk = try Clerk(
+      dependencies: makeMockDependencies(
+        apiClient: apiClient,
+        keychain: keychain,
+        telemetryCollector: telemetryCollector,
+        clientService: clientService,
+        userService: userService,
+        signInService: signInService,
+        signUpService: signUpService,
+        sessionService: sessionService,
+        passkeyService: passkeyService,
+        organizationService: organizationService,
+        environmentService: environmentService,
+        emailAddressService: emailAddressService,
+        phoneNumberService: phoneNumberService,
+        externalAccountService: externalAccountService,
+        options: options
+      )
     )
     clerk.client = client
     clerk.environment = environment
     clerk.sessionsByUserId = [:]
     return clerk
   }
+}
+
+@MainActor
+func makeBareClerk(
+  client: Client? = nil,
+  environment: Clerk.Environment? = nil
+) -> Clerk {
+  try! ClerkTestFixture().makeClerk(client: client, environment: environment)
 }
 
 private enum TestWaitError: LocalizedError {

@@ -31,10 +31,7 @@ struct SessionTokenFetcherTests {
       tokenCache: cache
     )
 
-    _ = try await fetcher.fetchToken(
-      session,
-      options: .init(template: scenario.template, skipCache: true)
-    )
+    _ = try await fetcher.fetchToken(session, options: .init(template: scenario.template, skipCache: true))
 
     let values = try #require(captured.value)
     #expect(values.sessionId == session.id)
@@ -55,10 +52,7 @@ struct SessionTokenFetcherTests {
       tokenCache: cache
     )
 
-    _ = try await fetcher.fetchToken(
-      session,
-      options: .init(template: template, skipCache: true)
-    )
+    _ = try await fetcher.fetchToken(session, options: .init(template: template, skipCache: true))
 
     let cachedToken = await cache.getToken(
       cacheKey: session.tokenCacheKey(template: template)

@@ -12,12 +12,7 @@ struct OrganizationsTests {
       captured.setValue((name, slug))
       return .mock
     })
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      organizationService: service
-    )
+    let clerk = try ClerkTestFixture().makeClerk(organizationService: service)
 
     _ = try await clerk.organizations.create(name: "My Org", slug: nil)
 

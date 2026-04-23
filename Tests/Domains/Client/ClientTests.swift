@@ -19,12 +19,7 @@ struct ClientTests {
       called.setValue(true)
       return expectedClient
     })
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: service
-    )
+    let clerk = try ClerkTestFixture().makeClerk(clientService: service)
     clerk.client = nil
 
     _ = try await clerk.refreshClient()
@@ -36,12 +31,7 @@ struct ClientTests {
   @Test
   func refreshClientClearsClientWhenServiceReturnsNil() async throws {
     let service = MockClientService(get: { nil })
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: service
-    )
+    let clerk = try ClerkTestFixture().makeClerk(clientService: service)
     clerk.client = Client.mock
 
     let client = try await clerk.refreshClient()
@@ -64,17 +54,13 @@ struct ClientTests {
       lastActiveSessionId: "session-stale",
       updatedAt: Date(timeIntervalSince1970: 1000)
     )
-    let clerk = Clerk()
-
-    clerk.cleanupManagers()
-
-    clerk.applyResponseClient(current, responseSequence: 2)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+    let clerk = try ClerkTestFixture().makeClerk(
       clientService: SequencedClientService(
         response: ClientServiceResponse(client: stale, requestSequence: 1, serverDate: nil)
       )
     )
+
+    clerk.applyResponseClient(current, responseSequence: 2)
 
     let client = try await clerk.refreshClient()
 
@@ -91,16 +77,12 @@ struct ClientTests {
       lastActiveSessionId: "session-current",
       updatedAt: Date(timeIntervalSince1970: 2000)
     )
-    let clerk = Clerk()
-
-    clerk.cleanupManagers()
-    clerk.applyResponseClient(current, responseSequence: 2)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+    let clerk = try ClerkTestFixture().makeClerk(
       clientService: SequencedClientService(
         response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
       )
     )
+    clerk.applyResponseClient(current, responseSequence: 2)
 
     let client = try await clerk.refreshClient()
 

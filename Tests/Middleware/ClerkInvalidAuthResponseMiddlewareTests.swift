@@ -10,10 +10,7 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
   func coalescesConcurrentInvalidAuthRefreshes() async throws {
     let refreshCount = LockIsolated(0)
     let gate = RefreshGate()
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+    let clerk = try ClerkTestFixture().makeClerk(
       clientService: MockClientService(get: {
         refreshCount.withValue { $0 += 1 }
         await gate.signalStarted()
@@ -26,9 +23,10 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
         await clerk.refreshClientAfterInvalidAuth()
       }
     )
-    let request = try URLRequest(url: #require(URL(string: "https://example.com/v1/me")))
+    let url = try #require(URL(string: "https://example.com/v1/me"))
+    let request = URLRequest(url: url)
     let response = try #require(HTTPURLResponse(
-      url: #require(URL(string: "https://example.com/v1/me")),
+      url: url,
       statusCode: 401,
       httpVersion: nil,
       headerFields: nil

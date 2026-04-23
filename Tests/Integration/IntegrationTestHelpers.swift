@@ -66,8 +66,8 @@ func getIntegrationTestPublishableKey(keyName: String) -> String {
 
 /// Creates a local Clerk instance for integration testing with real API calls.
 ///
-/// Unlike `configureClerkForTesting()` which uses mocked responses, this function creates
-/// a fresh `Clerk()` instance backed by the real API client for a Clerk instance.
+/// Unlike unit-test helpers that use mocked responses, this function creates
+/// a fresh `Clerk` instance backed by the real API client for a Clerk instance.
 ///
 /// Uses an in-memory keychain to avoid affecting the simulator's real keychain state.
 /// This ensures integration tests are isolated and don't log out the user or affect
@@ -118,8 +118,7 @@ func configureClerkForIntegrationTesting(keyName: String) throws -> Clerk? {
 
   try container.configurationManager.configure(publishableKey: publishableKey, options: .init())
 
-  let clerk = Clerk()
-  clerk.dependencies = container
+  let clerk = Clerk(dependencies: container)
   clerk.client = nil
   clerk.environment = nil
   clerk.sessionsByUserId = [:]
