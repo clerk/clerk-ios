@@ -1,35 +1,34 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct PasskeyServiceTests {
-  init() {
-    configureClerkForTesting()
+  private let sessionId = "session_test_123"
+
+  private func makeService(baseURL: URL) -> PasskeyService {
+    PasskeyService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/passkeys")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.passkeyService.create()
+    _ = try await makeService(baseURL: baseURL).create(sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -37,23 +36,21 @@ struct PasskeyServiceTests {
   func testUpdate() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/passkeys/\(passkey.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .patch,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["name"] == "New Name")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.passkeyService.update(passkeyId: passkey.id, name: "New Name")
+    _ = try await makeService(baseURL: baseURL).update(passkeyId: passkey.id, name: "New Name", sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -61,26 +58,25 @@ struct PasskeyServiceTests {
   func testAttemptVerification() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)/attempt_verification")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/passkeys/\(passkey.id)/attempt_verification")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Passkey>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
       #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.passkeyService.attemptVerification(
+    _ = try await makeService(baseURL: baseURL).attemptVerification(
       passkeyId: passkey.id,
-      credential: "mock_credential"
+      credential: "mock_credential",
+      sessionId: sessionId
     )
     #expect(requestHandled.value)
   }
@@ -89,22 +85,20 @@ struct PasskeyServiceTests {
   func testDelete() async throws {
     let passkey = Passkey.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/passkeys/\(passkey.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/passkeys/\(passkey.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .delete,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.passkeyService.delete(passkeyId: passkey.id)
+    _ = try await makeService(baseURL: baseURL).delete(passkeyId: passkey.id, sessionId: sessionId)
     #expect(requestHandled.value)
   }
 }

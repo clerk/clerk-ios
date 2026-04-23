@@ -46,23 +46,13 @@ final class MockCacheCoordinator: CacheCoordinator {
 
 /// Tests for CacheManager caching operations.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct CacheManagerTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   /// Creates a fresh test setup with keychain, coordinator, and cache manager.
   ///
   /// - Returns: A tuple containing the keychain, coordinator, and cache manager.
   private func createTestSetup() -> (keychain: InMemoryKeychain, coordinator: MockCacheCoordinator, cacheManager: CacheManager) {
     let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
 
     let coordinator = MockCacheCoordinator()
     let cacheManager = CacheManager(coordinator: coordinator, keychain: keychain)
@@ -188,9 +178,9 @@ struct CacheManagerTests {
     cacheManager.shutdown()
     cacheManager.saveEnvironment(Clerk.Environment.mock)
 
-    try await Task.sleep(for: .milliseconds(50))
-
-    #expect(try keychain.data(forKey: "cachedEnvironment") == nil)
+    try await waitUntil("cachedEnvironment to remain absent") {
+      try keychain.data(forKey: "cachedEnvironment") == nil
+    }
   }
 
   @Test
@@ -220,25 +210,16 @@ struct CacheManagerTests {
     key: String,
     timeout: Duration = .milliseconds(500)
   ) async throws -> Data {
-    enum TimeoutError: Error {
-      case timedOut(String)
+    var data: Data?
+    try await waitUntil(
+      "key '\(key)' to appear in InMemoryKeychain",
+      timeout: timeout
+    ) {
+      data = try keychain.data(forKey: key)
+      return data != nil
     }
 
-    let deadline = ContinuousClock.now + timeout
-
-    while ContinuousClock.now < deadline {
-      if let data = try keychain.data(forKey: key) {
-        return data
-      }
-
-      try await Task.sleep(for: .milliseconds(10))
-    }
-
-    if let data = try keychain.data(forKey: key) {
-      return data
-    }
-
-    throw TimeoutError.timedOut("Timed out waiting for key '\(key)' to appear in InMemoryKeychain")
+    return try #require(data)
   }
 
   private func waitForKeychainDeletion(
@@ -246,22 +227,11 @@ struct CacheManagerTests {
     key: String,
     timeout: Duration = .milliseconds(250)
   ) async throws {
-    let deadline = ContinuousClock.now + timeout
-
-    while ContinuousClock.now < deadline {
-      if try keychain.data(forKey: key) == nil {
-        return
-      }
-
-      try await Task.sleep(for: .milliseconds(10))
-    }
-
-    enum TimeoutError: Error {
-      case timedOut(String)
-    }
-
-    if try keychain.data(forKey: key) != nil {
-      throw TimeoutError.timedOut("Timed out waiting for key '\(key)' deletion from InMemoryKeychain")
+    try await waitUntil(
+      "key '\(key)' deletion from InMemoryKeychain",
+      timeout: timeout
+    ) {
+      try keychain.data(forKey: key) == nil
     }
   }
 }

@@ -7,7 +7,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ConfigurationManagerTests {
   // Helper to create a valid test publishable key
   // Format: pk_test_{base64_encoded_url_with_$}

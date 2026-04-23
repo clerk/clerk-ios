@@ -4,20 +4,23 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct UserTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct AccountFacadeTests {
+  private let fixture = ClerkTestFixture()
 
-  private func configureService(_ service: MockUserService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      userService: service
+  private func makeClerk(
+    userService: MockUserService,
+    emailAddressService: MockEmailAddressService? = nil,
+    phoneNumberService: MockPhoneNumberService? = nil,
+    options: Clerk.Options = .init()
+  ) throws -> Clerk {
+    try fixture.makeClerk(
+      userService: userService,
+      emailAddressService: emailAddressService,
+      phoneNumberService: phoneNumberService,
+      options: options,
+      environment: .mock
     )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
   }
 
   @Test
@@ -27,10 +30,9 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.reload()
+    _ = try await clerk.account.reload()
 
     #expect(called.value == true)
   }
@@ -42,10 +44,9 @@ struct UserTests {
       captured.setValue(params)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.update(.init(firstName: "John", lastName: "Doe"))
+    _ = try await clerk.account.update(.init(firstName: "John", lastName: "Doe"))
 
     let params = try #require(captured.value)
     #expect(params.firstName == "John")
@@ -59,40 +60,37 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createBackupCodes()
+    _ = try await clerk.account.createBackupCodes()
 
     #expect(called.value == true)
   }
 
   @Test
-  func createEmailAddressUsesUserServiceCreateEmailAddress() async throws {
+  func createEmailAddressUsesEmailAddressServiceCreate() async throws {
     let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createEmailAddress: { email in
+    let service = MockEmailAddressService(create: { email in
       captured.setValue(email)
       return .mock
     })
+    let clerk = try makeClerk(userService: MockUserService(), emailAddressService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createEmailAddress("new@example.com")
+    _ = try await clerk.account.createEmailAddress("new@example.com")
 
     #expect(captured.value == "new@example.com")
   }
 
   @Test
-  func createPhoneNumberUsesUserServiceCreatePhoneNumber() async throws {
+  func createPhoneNumberUsesPhoneNumberServiceCreate() async throws {
     let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createPhoneNumber: { phoneNumber in
+    let service = MockPhoneNumberService(create: { phoneNumber in
       captured.setValue(phoneNumber)
       return .mock
     })
+    let clerk = try makeClerk(userService: MockUserService(), phoneNumberService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createPhoneNumber("+1234567890")
+    _ = try await clerk.account.createPhoneNumber("+1234567890")
 
     #expect(captured.value == "+1234567890")
   }
@@ -119,10 +117,9 @@ struct UserTests {
       captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
       return .mockVerified
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createExternalAccount(
+    _ = try await clerk.account.createExternalAccount(
       provider: .google,
       redirectUrl: scenario.redirectUrl,
       additionalScopes: scenario.additionalScopes,
@@ -131,7 +128,7 @@ struct UserTests {
 
     let params = try #require(captured.value)
     #expect(params.0 == .google)
-    #expect(params.1 == scenario.redirectUrl)
+    #expect(params.1 == scenario.redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
     #expect(params.2 == scenario.additionalScopes)
     #expect(params.3 == scenario.oidcPrompts)
   }
@@ -143,10 +140,9 @@ struct UserTests {
       captured.setValue((provider, idToken))
       return .mockVerified
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createExternalAccount(provider: .apple, idToken: "mock_id_token")
+    _ = try await clerk.account.createExternalAccount(provider: .apple, idToken: "mock_id_token")
 
     let params = try #require(captured.value)
     #expect(params.0 == .apple)
@@ -160,10 +156,9 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.createTOTP()
+    _ = try await clerk.account.createTOTP()
 
     #expect(called.value == true)
   }
@@ -175,10 +170,9 @@ struct UserTests {
       captured.setValue(code)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.verifyTOTP(code: "123456")
+    _ = try await clerk.account.verifyTOTP("123456")
 
     #expect(captured.value == "123456")
   }
@@ -190,10 +184,9 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.disableTOTP()
+    _ = try await clerk.account.disableTOTP()
 
     #expect(called.value == true)
   }
@@ -205,10 +198,9 @@ struct UserTests {
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: "pending")
+    _ = try await clerk.account.getOrganizationInvitations(page: 2, pageSize: 10, status: "pending")
 
     let params = try #require(captured.value)
     #expect(params.0 == 10)
@@ -223,10 +215,9 @@ struct UserTests {
       captured.setValue((offset, pageSize))
       return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.getOrganizationMemberships(page: 3, pageSize: 10)
+    _ = try await clerk.account.getOrganizationMemberships(page: 3, pageSize: 10)
 
     let params = try #require(captured.value)
     #expect(params.0 == 20)
@@ -251,10 +242,9 @@ struct UserTests {
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.getOrganizationSuggestions(
+    _ = try await clerk.account.getOrganizationSuggestions(
       page: 2,
       pageSize: 10,
       status: scenario.status
@@ -269,17 +259,16 @@ struct UserTests {
   @Test
   func getSessionsUsesUserServiceGetSessions() async throws {
     let user = User.mock
-    let captured = LockIsolated<User?>(nil)
-    let service = MockUserService(getSessions: { user in
-      captured.setValue(user)
+    let called = LockIsolated(false)
+    let service = MockUserService(getSessions: {
+      called.setValue(true)
       return [Session.mock]
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
+    _ = try await clerk.account.getSessions(for: user)
 
-    _ = try await user.getSessions()
-
-    #expect(captured.value?.id == user.id)
+    #expect(called.value == true)
   }
 
   @Test
@@ -289,10 +278,9 @@ struct UserTests {
       captured.setValue(params)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.updatePassword(.init(newPassword: "newPassword123", signOutOfOtherSessions: true))
+    _ = try await clerk.account.updatePassword(.init(newPassword: "newPassword123", signOutOfOtherSessions: true))
 
     let params = try #require(captured.value)
     #expect(params.newPassword == "newPassword123")
@@ -307,10 +295,9 @@ struct UserTests {
       captured.setValue(data)
       return ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg")
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.setProfileImage(imageData: imageData)
+    _ = try await clerk.account.setProfileImage(imageData: imageData)
 
     #expect(captured.value == imageData)
   }
@@ -322,10 +309,9 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.deleteProfileImage()
+    _ = try await clerk.account.deleteProfileImage()
 
     #expect(called.value == true)
   }
@@ -337,10 +323,9 @@ struct UserTests {
       called.setValue(true)
       return .mock
     })
+    let clerk = try makeClerk(userService: service)
 
-    configureService(service)
-
-    _ = try await User.mock.delete()
+    _ = try await clerk.account.delete()
 
     #expect(called.value == true)
   }

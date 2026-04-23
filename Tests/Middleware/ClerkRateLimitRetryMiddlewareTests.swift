@@ -12,12 +12,8 @@ import Testing
 
 /// Tests for ClerkRateLimitRetryMiddleware retry logic and delay calculations.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct ClerkRateLimitRetryMiddlewareTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   @Test
   func shouldRetryForRateLimit429() async throws {
     let sleepCalled = LockIsolated(false)

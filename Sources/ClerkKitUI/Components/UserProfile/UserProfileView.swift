@@ -639,7 +639,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.services.userService.getSessionsHandler = {
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -688,7 +688,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.services.userService.getSessionsHandler = {
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -713,7 +713,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.services.userService.getSessionsHandler = {
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -740,7 +740,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.services.userService.getSessionsHandler = {
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }

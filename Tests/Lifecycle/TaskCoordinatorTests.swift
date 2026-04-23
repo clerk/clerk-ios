@@ -12,7 +12,7 @@ import Testing
 
 /// Tests for TaskCoordinator task tracking and cancellation.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct TaskCoordinatorTests {
   @Test
   func tracksTask() async {

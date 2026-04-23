@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct RetryingOperationTests {
   @Test
   @MainActor

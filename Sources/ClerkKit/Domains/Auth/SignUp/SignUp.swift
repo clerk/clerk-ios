@@ -108,11 +108,6 @@ public struct SignUp: Codable, Sendable, Equatable {
 }
 
 extension SignUp {
-  @MainActor
-  private var signUpService: any SignUpServiceProtocol {
-    Clerk.shared.dependencies.signUpService
-  }
-
   /// This method is used to update the current sign-up.
   ///
   /// This method is used to modify the details of an ongoing sign-up process.
@@ -141,16 +136,17 @@ extension SignUp {
     unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
-    try await signUpService.update(signUpId: id, params: .init(
+    try await Clerk.shared.auth.update(
+      self,
       emailAddress: emailAddress,
-      phoneNumber: phoneNumber,
       password: password,
       firstName: firstName,
       lastName: lastName,
       username: username,
+      phoneNumber: phoneNumber,
       unsafeMetadata: unsafeMetadata,
       legalAccepted: legalAccepted
-    ))
+    )
   }
 
   /// Sends a verification code to the email address.
@@ -159,10 +155,7 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendEmailCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
-      signUpId: id,
-      params: .init(strategy: .emailCode, emailAddressId: nil)
-    )
+    try await Clerk.shared.auth.sendEmailCode(for: self)
   }
 
   /// Sends a verification code to the phone number.
@@ -171,10 +164,7 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendPhoneCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
-      signUpId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: nil)
-    )
+    try await Clerk.shared.auth.sendPhoneCode(for: self)
   }
 
   /// Verifies the email code entered by the user.
@@ -184,10 +174,7 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
-      signUpId: id,
-      params: .init(strategy: .emailCode, code: code)
-    )
+    try await Clerk.shared.auth.verifyEmailCode(code, for: self)
   }
 
   /// Verifies the phone code entered by the user.
@@ -197,65 +184,31 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
-      signUpId: id,
-      params: .init(strategy: .phoneCode, code: code)
-    )
+    try await Clerk.shared.auth.verifyPhoneCode(code, for: self)
   }
 }
 
 extension SignUp {
   // MARK: - Internal Helpers
 
-  private var needsTransferToSignIn: Bool {
+  var needsTransferToSignIn: Bool {
     verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
   }
 
   /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
-    if needsTransferToSignIn == true {
-      let signInService: any SignInServiceProtocol = Clerk.shared.dependencies.signInService
-      let signIn = try await signInService.create(params: .init(transfer: true))
-      return .signIn(signIn)
-    } else {
-      return .signUp(self)
-    }
+    try await Clerk.shared.auth.handleTransferFlow(for: self)
   }
 
   @discardableResult @MainActor
   func handleRedirectCallbackUrl(_ url: URL) async throws -> TransferFlowResult {
-    if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-      let updatedSignUp = try await reload(rotatingTokenNonce: nonce)
-      if let verification = updatedSignUp.verifications.first(where: { $0.key == "external_account" })?.value,
-         let error = verification.error
-      {
-        throw error
-      }
-      return .signUp(updatedSignUp)
-    } else {
-      // transfer flow
-      let signUp = try await reload()
-      let result = try await signUp.handleTransferFlow()
-      switch result {
-      case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.error {
-          throw error
-        }
-      case .signUp(let signUp):
-        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-           let error = verification.error
-        {
-          throw error
-        }
-      }
-      return result
-    }
+    try await Clerk.shared.auth.handleRedirectCallbackUrl(url, for: self)
   }
 
   /// Returns the current sign up.
   @discardableResult @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await signUpService.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.shared.auth.reload(self, rotatingTokenNonce: rotatingTokenNonce)
   }
 }

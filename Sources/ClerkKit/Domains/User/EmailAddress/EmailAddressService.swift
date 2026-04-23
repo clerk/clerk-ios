@@ -6,10 +6,10 @@
 import Foundation
 
 protocol EmailAddressServiceProtocol: Sendable {
-  @MainActor func create(email: String) async throws -> EmailAddress
-  @MainActor func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress
-  @MainActor func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress
-  @MainActor func destroy(emailAddressId: String) async throws -> DeletedObject
+  @MainActor func create(email: String, sessionId: String?) async throws -> EmailAddress
+  @MainActor func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy, sessionId: String?) async throws -> EmailAddress
+  @MainActor func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy, sessionId: String?) async throws -> EmailAddress
+  @MainActor func destroy(emailAddressId: String, sessionId: String?) async throws -> DeletedObject
 }
 
 final class EmailAddressService: EmailAddressServiceProtocol {
@@ -20,11 +20,11 @@ final class EmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  func create(email: String) async throws -> EmailAddress {
+  func create(email: String, sessionId: String?) async throws -> EmailAddress {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "v1/me/email_addresses",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["email_address": email]
     )
 
@@ -32,11 +32,11 @@ final class EmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress {
+  func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy, sessionId: String?) async throws -> EmailAddress {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: strategy.requestBody
     )
 
@@ -44,11 +44,11 @@ final class EmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress {
+  func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy, sessionId: String?) async throws -> EmailAddress {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: strategy.requestBody
     )
 
@@ -56,11 +56,11 @@ final class EmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  func destroy(emailAddressId: String) async throws -> DeletedObject {
+  func destroy(emailAddressId: String, sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/email_addresses/\(emailAddressId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response

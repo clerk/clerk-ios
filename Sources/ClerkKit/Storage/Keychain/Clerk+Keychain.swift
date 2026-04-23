@@ -35,8 +35,11 @@ extension Clerk {
   /// ```
   @MainActor
   public static func clearAllKeychainItems() {
-    let keychain = Clerk.shared.dependencies.keychain
+    clearAllKeychainItems(using: Clerk.shared.dependencies.keychain)
+  }
 
+  @MainActor
+  static func clearAllKeychainItems(using keychain: any KeychainStorage) {
     // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases {
       do {

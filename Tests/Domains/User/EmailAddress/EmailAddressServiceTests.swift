@@ -1,36 +1,35 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct EmailAddressServiceTests {
-  init() {
-    configureClerkForTesting()
+  private let sessionId = "session_test_123"
+
+  private func makeService(baseURL: URL) -> EmailAddressService {
+    EmailAddressService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/email_addresses")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.emailAddressService.create(email: "test@example.com")
+    _ = try await makeService(baseURL: baseURL).create(email: "test@example.com", sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -38,25 +37,24 @@ struct EmailAddressServiceTests {
   func testPrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/email_addresses/\(emailAddress.id)/prepare_verification")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.emailAddressService.prepareVerification(
+    _ = try await makeService(baseURL: baseURL).prepareVerification(
       emailAddressId: emailAddress.id,
-      strategy: .emailCode
+      strategy: .emailCode,
+      sessionId: sessionId
     )
     #expect(requestHandled.value)
   }
@@ -65,25 +63,24 @@ struct EmailAddressServiceTests {
   func testAttemptVerification() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)/attempt_verification")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/email_addresses/\(emailAddress.id)/attempt_verification")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.emailAddressService.attemptVerification(
+    _ = try await makeService(baseURL: baseURL).attemptVerification(
       emailAddressId: emailAddress.id,
-      strategy: .emailCode(code: "123456")
+      strategy: .emailCode(code: "123456"),
+      sessionId: sessionId
     )
     #expect(requestHandled.value)
   }
@@ -92,22 +89,20 @@ struct EmailAddressServiceTests {
   func testDestroy() async throws {
     let emailAddress = EmailAddress.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses/\(emailAddress.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/email_addresses/\(emailAddress.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .delete,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.emailAddressService.destroy(emailAddressId: emailAddress.id)
+    _ = try await makeService(baseURL: baseURL).destroy(emailAddressId: emailAddress.id, sessionId: sessionId)
     #expect(requestHandled.value)
   }
 }

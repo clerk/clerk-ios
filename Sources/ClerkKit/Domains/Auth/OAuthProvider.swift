@@ -117,7 +117,12 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   /// The url to an the icon for the provider.
   @MainActor
   public var iconImageUrl: URL? {
-    guard let environment = Clerk.shared.environment,
+    iconImageUrl(in: Clerk.shared.environment)
+  }
+
+  @MainActor
+  func iconImageUrl(in environment: Clerk.Environment?) -> URL? {
+    guard let environment,
           let socialConfig = environment.userSettings.social.first(where: { socialConfig in
             socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
           })

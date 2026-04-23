@@ -4,18 +4,9 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct SignUpTests {
-  init() {
-    configureClerkForTesting()
-  }
-
-  private func configureService(_ service: MockSignUpService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signUpService: service
-    )
-  }
+@Suite(.tags(.unit))
+struct SignUpAuthFacadeTests {
+  private let support = AuthTestSupport()
 
   struct ReloadScenario: Codable, Equatable {
     let rotatingTokenNonce: String?
@@ -29,10 +20,9 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.update(firstName: "John", lastName: "Doe")
+    _ = try await clerk.auth.update(signUp, firstName: "John", lastName: "Doe")
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
@@ -48,10 +38,9 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.sendEmailCode()
+    _ = try await clerk.auth.sendEmailCode(for: signUp)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
@@ -66,10 +55,9 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.sendPhoneCode()
+    _ = try await clerk.auth.sendPhoneCode(for: signUp)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
@@ -84,10 +72,9 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.verifyEmailCode("123456")
+    _ = try await clerk.auth.verifyEmailCode("123456", for: signUp)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
@@ -103,10 +90,9 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.verifyPhoneCode("654321")
+    _ = try await clerk.auth.verifyPhoneCode("654321", for: signUp)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
@@ -129,13 +115,41 @@ struct SignUpTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: service)
 
-    configureService(service)
-
-    _ = try await signUp.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
+    _ = try await clerk.auth.reload(signUp, rotatingTokenNonce: scenario.rotatingTokenNonce)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
     #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
+  }
+
+  @Test
+  func handleTransferFlowUsesInjectedSignInService() async throws {
+    var signUp = SignUp.mock
+    signUp.verifications["external_account"] = Verification(
+      status: .transferable,
+      strategy: .oauth(.google)
+    )
+
+    let captured = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { params in
+      captured.setValue(params)
+      return .mock
+    })
+    let clerk = try support.makeClerk(signInService: signInService)
+
+    let result = try await clerk.auth.handleTransferFlow(for: signUp)
+
+    let signIn = try #require({
+      if case .signIn(let signIn) = result {
+        return signIn
+      }
+      return nil
+    }())
+
+    let params = try #require(captured.value)
+    #expect(params.transfer == true)
+    #expect(signIn.id == SignIn.mock.id)
   }
 }

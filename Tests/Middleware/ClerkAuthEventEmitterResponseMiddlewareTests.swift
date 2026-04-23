@@ -4,7 +4,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateEmitsSignInCompletedForSignInAttemptResponseObject() async throws {
@@ -143,13 +143,12 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
     try await operation()
 
-    let deadline = ContinuousClock.now + timeout
-    while ContinuousClock.now < deadline {
-      if let event = captured.value {
-        return event
+    do {
+      try await waitUntil("the next auth event to be emitted", timeout: timeout) {
+        captured.value != nil
       }
-
-      try await Task.sleep(for: .milliseconds(10))
+    } catch {
+      return captured.value
     }
 
     return captured.value

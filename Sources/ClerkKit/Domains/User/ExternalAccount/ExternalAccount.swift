@@ -84,11 +84,6 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Equatable {
 }
 
 extension ExternalAccount {
-  @MainActor
-  private var externalAccountService: any ExternalAccountServiceProtocol {
-    Clerk.shared.dependencies.externalAccountService
-  }
-
   /// Prepares a reauthorization for an existing external account, requesting new scopes or prompts.
   ///
   /// Calls the backend to generate a new authorization URL with the specified parameters.
@@ -106,8 +101,8 @@ extension ExternalAccount {
     additionalScopes: [String] = [],
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
-    try await externalAccountService.reauthorize(
-      id,
+    try await Clerk.shared.account.prepareReauthorization(
+      for: self,
       redirectUrl: redirectUrl,
       additionalScopes: additionalScopes,
       oidcPrompts: oidcPrompts
@@ -127,30 +122,15 @@ extension ExternalAccount {
   ///                                         a private browsing experience.
   @discardableResult @MainActor
   public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
-    guard
-      let redirectUrl = verification?.externalVerificationRedirectUrl,
-      let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
+    try await Clerk.shared.account.reauthorize(
+      self,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
-
-    _ = try await authSession.start()
-
-    try await Clerk.shared.refreshClient()
-    guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
-      throw ClerkClientError(message: "Something went wrong. Please try again.")
-    }
-    return externalAccount
   }
 
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await externalAccountService.destroy(id)
+    try await Clerk.shared.account.destroy(self)
   }
 }

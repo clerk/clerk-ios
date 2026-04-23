@@ -4,16 +4,15 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct EmailAddressTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct EmailAddressAccountFacadeTests {
+  private let fixture = ClerkTestFixture()
 
-  private func configureService(_ service: MockEmailAddressService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
+  private func makeClerk(_ service: MockEmailAddressService) throws -> Clerk {
+    try fixture.makeClerk(
       apiClient: createMockAPIClient(),
-      emailAddressService: service
+      emailAddressService: service,
+      environment: .mock
     )
   }
 
@@ -25,10 +24,9 @@ struct EmailAddressTests {
       captured.setValue((id, strategy))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await emailAddress.sendCode()
+    _ = try await clerk.account.sendCode(to: emailAddress)
 
     let params = try #require(captured.value)
     #expect(params.0 == emailAddress.id)
@@ -43,10 +41,9 @@ struct EmailAddressTests {
       captured.setValue((id, strategy))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await emailAddress.verifyCode("123456")
+    _ = try await clerk.account.verifyCode("123456", for: emailAddress)
 
     let params = try #require(captured.value)
     #expect(params.0 == emailAddress.id)
@@ -64,10 +61,9 @@ struct EmailAddressTests {
       captured.setValue(id)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await emailAddress.destroy()
+    _ = try await clerk.account.destroy(emailAddress)
 
     #expect(captured.value == emailAddress.id)
   }

@@ -3,75 +3,53 @@
 //  Clerk
 //
 
-import AuthenticationServices
 import Foundation
 
 protocol UserServiceProtocol: Sendable {
-  @MainActor func reload() async throws -> User
-  @MainActor func update(params: User.UpdateParams) async throws -> User
-  @MainActor func createBackupCodes() async throws -> BackupCodeResource
-  @MainActor func createEmailAddress(emailAddress: String) async throws -> EmailAddress
-  @MainActor func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber
-  @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String?, additionalScopes: [String], oidcPrompts: [OIDCPrompt]) async throws -> ExternalAccount
-  @MainActor func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount
-  #if canImport(AuthenticationServices) && !os(watchOS)
-  @MainActor func createPasskey() async throws -> Passkey
-  #endif
-  @MainActor func createTotp() async throws -> TOTPResource
-  @MainActor func verifyTotp(code: String) async throws -> TOTPResource
-  @MainActor func disableTotp() async throws -> DeletedObject
-  @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
-  @MainActor func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
-  @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
-  @MainActor func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults
-  @MainActor func getSessions(user: User) async throws -> [Session]
-  @MainActor func updatePassword(params: User.UpdatePasswordParams) async throws -> User
-  @MainActor func setProfileImage(imageData: Data) async throws -> ImageResource
-  @MainActor func deleteProfileImage() async throws -> DeletedObject
-  @MainActor func delete() async throws -> DeletedObject
+  @MainActor func reload(sessionId: String?) async throws -> User
+  @MainActor func update(params: User.UpdateParams, sessionId: String?) async throws -> User
+  @MainActor func createBackupCodes(sessionId: String?) async throws -> BackupCodeResource
+  @MainActor func createExternalAccount(provider: OAuthProvider, redirectUrl: String, additionalScopes: [String], oidcPrompts: [OIDCPrompt], sessionId: String?) async throws -> ExternalAccount
+  @MainActor func createExternalAccountToken(provider: IDTokenProvider, idToken: String, sessionId: String?) async throws -> ExternalAccount
+  @MainActor func createTotp(sessionId: String?) async throws -> TOTPResource
+  @MainActor func verifyTotp(code: String, sessionId: String?) async throws -> TOTPResource
+  @MainActor func disableTotp(sessionId: String?) async throws -> DeletedObject
+  @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?, sessionId: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+  @MainActor func getOrganizationMemberships(offset: Int, pageSize: Int, sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String], sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  @MainActor func getOrganizationCreationDefaults(sessionId: String?) async throws -> OrganizationCreationDefaults
+  @MainActor func getSessions(sessionId: String?) async throws -> [Session]
+  @MainActor func updatePassword(params: User.UpdatePasswordParams, sessionId: String?) async throws -> User
+  @MainActor func setProfileImage(imageData: Data, sessionId: String?) async throws -> ImageResource
+  @MainActor func deleteProfileImage(sessionId: String?) async throws -> DeletedObject
+  @MainActor func delete(sessionId: String?) async throws -> DeletedObject
 }
 
 // swiftlint:disable:next type_body_length
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
-  @MainActor
-  private var emailAddressService: any EmailAddressServiceProtocol {
-    Clerk.shared.dependencies.emailAddressService
-  }
-
-  @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol {
-    Clerk.shared.dependencies.phoneNumberService
-  }
-
-  #if canImport(AuthenticationServices) && !os(watchOS)
-  @MainActor
-  private var passkeyService: any PasskeyServiceProtocol {
-    Clerk.shared.dependencies.passkeyService
-  }
-  #endif
 
   init(apiClient: APIClient) {
     self.apiClient = apiClient
   }
 
   @MainActor
-  func reload() async throws -> User {
+  func reload(sessionId: String?) async throws -> User {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func update(params: User.UpdateParams) async throws -> User {
+  func update(params: User.UpdateParams, sessionId: String?) async throws -> User {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: params
     )
 
@@ -79,36 +57,27 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func createBackupCodes() async throws -> BackupCodeResource {
+  func createBackupCodes(sessionId: String?) async throws -> BackupCodeResource {
     let request = Request<ClientResponse<BackupCodeResource>>(
       path: "/v1/me/backup_codes",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
-    try await emailAddressService.create(email: emailAddress)
-  }
-
-  @MainActor
-  func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
-    try await phoneNumberService.create(phoneNumber: phoneNumber)
-  }
-
-  @MainActor
   func createExternalAccount(
     provider: OAuthProvider,
-    redirectUrl: String?,
+    redirectUrl: String,
     additionalScopes: [String],
-    oidcPrompts: [OIDCPrompt]
+    oidcPrompts: [OIDCPrompt],
+    sessionId: String?
   ) async throws -> ExternalAccount {
     var bodyParams: [String: JSON] = [
       "strategy": .string(provider.strategy),
-      "redirect_url": .string(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl),
+      "redirect_url": .string(redirectUrl),
     ]
 
     if !additionalScopes.isEmpty {
@@ -122,7 +91,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: bodyParams
     )
 
@@ -130,11 +99,11 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func createExternalAccountToken(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
+  func createExternalAccountToken(provider: IDTokenProvider, idToken: String, sessionId: String?) async throws -> ExternalAccount {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: [
         "strategy": provider.strategy,
         "token": idToken,
@@ -144,69 +113,23 @@ final class UserService: UserServiceProtocol {
     return try await apiClient.send(request).value.response
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
-  func createPasskey() async throws -> Passkey {
-    let passkey = try await passkeyService.create()
-
-    guard let challenge = passkey.challenge else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-    }
-
-    guard let name = passkey.username else {
-      throw ClerkClientError(message: "Unable to get the username for the passkey.")
-    }
-
-    guard let userId = passkey.userId else {
-      throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
-    }
-
-    let manager = PasskeyHelper()
-    let authorization = try await manager.createPasskey(
-      challenge: challenge,
-      name: name,
-      userId: userId
-    )
-
-    guard
-      let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
-      let rawAttestationObject = credentialRegistration.rawAttestationObject
-    else {
-      throw ClerkClientError(message: "Invalid credential type.")
-    }
-
-    let publicKeyCredential: [String: any Encodable] = [
-      "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "type": "public-key",
-      "response": [
-        "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
-        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-      ],
-    ]
-
-    let publicKeyCredentialJSON = try JSON(publicKeyCredential)
-    return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
-  }
-  #endif
-
-  @MainActor
-  func createTotp() async throws -> TOTPResource {
+  func createTotp(sessionId: String?) async throws -> TOTPResource {
     let request = Request<ClientResponse<TOTPResource>>(
       path: "/v1/me/totp",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func verifyTotp(code: String) async throws -> TOTPResource {
+  func verifyTotp(code: String, sessionId: String?) async throws -> TOTPResource {
     let request = Request<ClientResponse<TOTPResource>>(
       path: "/v1/me/totp/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["code": code]
     )
 
@@ -214,20 +137,20 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func disableTotp() async throws -> DeletedObject {
+  func disableTotp(sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/totp",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?, sessionId: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
+      ("_clerk_session_id", value: sessionId),
       ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
@@ -246,12 +169,12 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  func getOrganizationMemberships(offset: Int, pageSize: Int, sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
       path: "/v1/me/organization_memberships",
       method: .get,
       query: [
-        ("_clerk_session_id", value: Clerk.shared.session?.id),
+        ("_clerk_session_id", value: sessionId),
         ("offset", value: String(offset)),
         ("limit", value: String(pageSize)),
         ("paginated", value: "true"),
@@ -262,9 +185,9 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String], sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
+      ("_clerk_session_id", value: sessionId),
       ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
@@ -281,35 +204,33 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
+  func getOrganizationCreationDefaults(sessionId: String?) async throws -> OrganizationCreationDefaults {
     let request = Request<ClientResponse<OrganizationCreationDefaults>>(
       path: "/v1/me/organization_creation_defaults",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func getSessions(user: User) async throws -> [Session] {
+  func getSessions(sessionId: String?) async throws -> [Session] {
     let request = Request<[Session]>(
       path: "/v1/me/sessions/active",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
-    let sessions = try await apiClient.send(request).value
-    Clerk.shared.sessionsByUserId[user.id] = sessions
-    return sessions
+    return try await apiClient.send(request).value
   }
 
   @MainActor
-  func updatePassword(params: User.UpdatePasswordParams) async throws -> User {
+  func updatePassword(params: User.UpdatePasswordParams, sessionId: String?) async throws -> User {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me/change_password",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: params
     )
 
@@ -317,7 +238,7 @@ final class UserService: UserServiceProtocol {
   }
 
   @MainActor
-  func setProfileImage(imageData: Data) async throws -> ImageResource {
+  func setProfileImage(imageData: Data, sessionId: String?) async throws -> ImageResource {
     let boundary = UUID().uuidString
     var data = Data()
     data.append(Data("\r\n--\(boundary)\r\n".utf8))
@@ -330,33 +251,31 @@ final class UserService: UserServiceProtocol {
       path: "/v1/me/profile_image",
       method: .post,
       headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.upload(for: request, from: data).value.response
   }
 
   @MainActor
-  func deleteProfileImage() async throws -> DeletedObject {
+  func deleteProfileImage(sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/profile_image",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func delete() async throws -> DeletedObject {
+  func delete(sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
-    let deletedObject = try await apiClient.send(request).value.response
-    Clerk.shared.auth.send(.accountDeleted)
-    return deletedObject
+    return try await apiClient.send(request).value.response
   }
 }

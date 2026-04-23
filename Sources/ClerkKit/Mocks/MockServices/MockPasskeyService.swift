@@ -38,7 +38,7 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  package func create() async throws -> Passkey {
+  package func create(sessionId _: String?) async throws -> Passkey {
     if let handler = createHandler {
       return try await handler()
     }
@@ -46,7 +46,7 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  package func update(passkeyId: String, name: String) async throws -> Passkey {
+  package func update(passkeyId: String, name: String, sessionId _: String?) async throws -> Passkey {
     if let handler = updateHandler {
       return try await handler(passkeyId, name)
     }
@@ -54,7 +54,7 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  package func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey {
+  package func attemptVerification(passkeyId: String, credential: String, sessionId _: String?) async throws -> Passkey {
     if let handler = attemptVerificationHandler {
       return try await handler(passkeyId, credential)
     }
@@ -62,7 +62,7 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  package func delete(passkeyId: String) async throws -> DeletedObject {
+  package func delete(passkeyId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = deleteHandler {
       return try await handler(passkeyId)
     }

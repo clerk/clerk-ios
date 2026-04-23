@@ -22,32 +22,23 @@ if [ ! -f "$KEYS_FILE" ]; then
   echo "   Run 'make setup' to create .keys.json file."
 fi
 
-# Run each integration suite in a separate `swift test` invocation.
-# Integration tests use shared singleton state and can interfere when suites run concurrently.
-integration_suites=()
-while IFS= read -r suite; do
-  if [ -n "$suite" ]; then
-    integration_suites+=("$suite")
-  fi
-done < <(
-  grep -hE '^struct[[:space:]]+[A-Za-z0-9_]*IntegrationTests\b' "$REPO_ROOT"/Tests/Integration/*IntegrationTests.swift \
-    | sed -E 's/^struct[[:space:]]+([A-Za-z0-9_]*IntegrationTests).*/\1/' \
-    | sort -u
-)
+# Run all integration suites in a single `swift test` invocation.
+# Integration tests now create isolated Clerk instances, so separate per-suite
+# processes are no longer needed to avoid shared singleton interference.
+integration_filter='^ClerkKitTests\..*IntegrationTests/'
 
-if [ "${#integration_suites[@]}" -eq 0 ]; then
+if ! find "$REPO_ROOT/Tests/Integration" -name '*IntegrationTests.swift' -print -quit | grep -q .; then
   echo "❌ Error: No integration test suites found in Tests/Integration."
   exit 1
 fi
 
-echo "Discovered integration test suites: ${integration_suites[*]}"
+echo "Using integration test filter: $integration_filter"
 echo ""
 
 network_failure_pattern="NSURLErrorDomain Code=-(1001|1003|1004)|kCFErrorDomainCFNetwork Code=-(1001|1003|1004)|hostname could not be found|could not connect to the server|timed out"
 
-run_suite_with_retries() {
-  local suite="$1"
-  local skip_build="$2"
+run_integration_tests_with_retries() {
+  local skip_build="$1"
   local max_attempts=3
   local attempt=1
   local log_file
@@ -55,10 +46,10 @@ run_suite_with_retries() {
   local -a swift_test_args
 
   while [ "$attempt" -le "$max_attempts" ]; do
-    echo "Running integration suite '$suite' attempt $attempt/$max_attempts..."
+    echo "Running integration tests attempt $attempt/$max_attempts..."
     log_file="$(mktemp)"
 
-    swift_test_args=(--filter "^ClerkKitTests\\.$suite/")
+    swift_test_args=(--filter "$integration_filter")
     if [ "$skip_build" = "true" ]; then
       swift_test_args=(--skip-build "${swift_test_args[@]}")
     fi
@@ -76,9 +67,10 @@ run_suite_with_retries() {
     if grep -Eq "$network_failure_pattern" "$log_file"; then
       if [ "$attempt" -lt "$max_attempts" ]; then
         sleep_seconds=$((attempt * 5))
-        echo "⚠️  Transient network/DNS failure detected for '$suite'. Retrying in ${sleep_seconds}s..."
+        echo "⚠️  Transient network/DNS failure detected. Retrying in ${sleep_seconds}s..."
         rm -f "$log_file"
         sleep "$sleep_seconds"
+        skip_build="true"
         attempt=$((attempt + 1))
         continue
       fi
@@ -91,8 +83,4 @@ run_suite_with_retries() {
   return 1
 }
 
-should_skip_build="false"
-for suite in "${integration_suites[@]}"; do
-  run_suite_with_retries "$suite" "$should_skip_build"
-  should_skip_build="true"
-done
+run_integration_tests_with_retries "false"

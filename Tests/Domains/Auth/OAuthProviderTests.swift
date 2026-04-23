@@ -3,12 +3,8 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct OAuthProviderTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   @Test
   func supportsTintedIconMaskMatchesBuiltInAllowlist() {
     #expect(OAuthProvider.apple.supportsTintedIconMask == true)
@@ -20,25 +16,19 @@ struct OAuthProviderTests {
 
   @Test
   func iconImageUrlUsesConfiguredProviderLogoUrl() throws {
-    let previousEnvironment = Clerk.shared.environment
-    Clerk.shared.environment = makeEnvironmentWithSocialLogos()
-    defer { Clerk.shared.environment = previousEnvironment }
-
+    let environment = makeEnvironmentWithSocialLogos()
     let expected = try #require(URL(string: "https://img.clerk.com/static/apple.png"))
-    let iconUrl = try #require(OAuthProvider.apple.iconImageUrl)
+    let iconUrl = try #require(OAuthProvider.apple.iconImageUrl(in: environment))
 
     #expect(iconUrl == expected)
   }
 
   @Test
   func customProviderUsesConfiguredLogoUrlWithoutDarkVariantLookup() throws {
-    let previousEnvironment = Clerk.shared.environment
-    Clerk.shared.environment = makeEnvironmentWithSocialLogos()
-    defer { Clerk.shared.environment = previousEnvironment }
-
+    let environment = makeEnvironmentWithSocialLogos()
     let provider = OAuthProvider.custom("oauth_custom_acme")
     let expected = try #require(URL(string: "https://cdn.example.com/acme-logo.png"))
-    let iconUrl = try #require(provider.iconImageUrl)
+    let iconUrl = try #require(provider.iconImageUrl(in: environment))
 
     #expect(iconUrl == expected)
   }

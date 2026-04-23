@@ -2,7 +2,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct NetworkingPipelineResponseMiddlewareOrderTests {
   private final class OrderRecorder: @unchecked Sendable {
     private let lock = NSLock()

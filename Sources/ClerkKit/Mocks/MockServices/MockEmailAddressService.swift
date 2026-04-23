@@ -37,7 +37,7 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  package func create(email: String) async throws -> EmailAddress {
+  package func create(email: String, sessionId _: String?) async throws -> EmailAddress {
     if let handler = createHandler {
       return try await handler(email)
     }
@@ -45,7 +45,7 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  package func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy) async throws -> EmailAddress {
+  package func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy, sessionId _: String?) async throws -> EmailAddress {
     if let handler = prepareVerificationHandler {
       return try await handler(emailAddressId, strategy)
     }
@@ -53,7 +53,7 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  package func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy) async throws -> EmailAddress {
+  package func attemptVerification(emailAddressId: String, strategy: EmailAddress.AttemptStrategy, sessionId _: String?) async throws -> EmailAddress {
     if let handler = attemptVerificationHandler {
       return try await handler(emailAddressId, strategy)
     }
@@ -61,7 +61,7 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  package func destroy(emailAddressId: String) async throws -> DeletedObject {
+  package func destroy(emailAddressId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = destroyHandler {
       return try await handler(emailAddressId)
     }

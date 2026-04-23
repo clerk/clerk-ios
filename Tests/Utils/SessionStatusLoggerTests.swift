@@ -7,8 +7,33 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct SessionStatusLoggerTests {
+  enum PendingSessionLoggingScenario: String, CaseIterable {
+    case noSessionId
+    case noMatchingSession
+    case nonPendingSession
+    case firstClient
+    case noPreviousSession
+    case sessionIdChanged
+    case sessionStatusChanged
+    case tasksChanged
+    case tasksChangedFromNilToEmpty
+    case tasksChangedFromEmptyToNil
+    case noChange
+    case sameTasksNil
+
+    var expected: Bool {
+      switch self {
+      case .noSessionId, .noMatchingSession, .nonPendingSession, .tasksChangedFromNilToEmpty,
+           .tasksChangedFromEmptyToNil, .noChange, .sameTasksNil:
+        false
+      case .firstClient, .noPreviousSession, .sessionIdChanged, .sessionStatusChanged, .tasksChanged:
+        true
+      }
+    }
+  }
+
   func createSession(
     id: String,
     status: Session.SessionStatus,
@@ -40,147 +65,85 @@ struct SessionStatusLoggerTests {
     )
   }
 
-  @Test
-  func shouldLogPendingSessionStatus_NoSessionId() {
+  @Test(arguments: PendingSessionLoggingScenario.allCases)
+  func shouldLogPendingSessionStatusReturnsExpectedValue(for scenario: PendingSessionLoggingScenario) {
     let logger = SessionStatusLogger()
-    let session = createSession(id: "session1", status: .pending)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: nil)
+    let clients = clients(for: scenario)
 
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client)
-    #expect(shouldLog == false)
+    let shouldLog = logger.shouldLogPendingSessionStatus(
+      previousClient: clients.previous,
+      currentClient: clients.current
+    )
+    #expect(shouldLog == scenario.expected)
   }
 
-  @Test
-  func shouldLogPendingSessionStatus_NoMatchingSession() {
-    let logger = SessionStatusLogger()
-    let session = createSession(id: "session1", status: .pending)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "nonexistent")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client)
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_NonPendingSession() {
-    let logger = SessionStatusLogger()
-    let session = createSession(id: "session1", status: .active)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client)
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_FirstClient() {
-    let logger = SessionStatusLogger()
-    let session = createSession(id: "session1", status: .pending)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client)
-    #expect(shouldLog == true)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_NoPreviousSession() {
-    let logger = SessionStatusLogger()
-    let previousClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
-    let currentSession = createSession(id: "session1", status: .pending)
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == true)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_SessionIdChanged() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending)
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session2", status: .pending)
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session2")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == true)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_SessionStatusChanged() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .active)
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending)
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == true)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_TasksChanged() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task2")])
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == true)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_TasksChangedFromNilToEmpty() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: nil)
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: [])
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    // nil and [] are considered equal in the comparison, so should not log
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_TasksChangedFromEmptyToNil() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: [])
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: nil)
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    // nil and [] are considered equal in the comparison, so should not log
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_NoChange() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_SameTasksNil() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: nil)
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: nil)
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == false)
+  private func clients(
+    for scenario: PendingSessionLoggingScenario
+  ) -> (previous: Client?, current: Client) {
+    switch scenario {
+    case .noSessionId:
+      let session = createSession(id: "session1", status: .pending)
+      let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: nil)
+      return (nil, client)
+    case .noMatchingSession:
+      let session = createSession(id: "session1", status: .pending)
+      let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "nonexistent")
+      return (nil, client)
+    case .nonPendingSession:
+      let session = createSession(id: "session1", status: .active)
+      let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
+      return (nil, client)
+    case .firstClient:
+      let session = createSession(id: "session1", status: .pending)
+      let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
+      return (nil, client)
+    case .noPreviousSession:
+      let previous = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
+      let currentSession = createSession(id: "session1", status: .pending)
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .sessionIdChanged:
+      let previousSession = createSession(id: "session1", status: .pending)
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session2", status: .pending)
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session2")
+      return (previous, current)
+    case .sessionStatusChanged:
+      let previousSession = createSession(id: "session1", status: .active)
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending)
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .tasksChanged:
+      let previousSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task2")])
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .tasksChangedFromNilToEmpty:
+      let previousSession = createSession(id: "session1", status: .pending, tasks: nil)
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending, tasks: [])
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .tasksChangedFromEmptyToNil:
+      let previousSession = createSession(id: "session1", status: .pending, tasks: [])
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending, tasks: nil)
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .noChange:
+      let previousSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    case .sameTasksNil:
+      let previousSession = createSession(id: "session1", status: .pending, tasks: nil)
+      let previous = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
+      let currentSession = createSession(id: "session1", status: .pending, tasks: nil)
+      let current = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
+      return (previous, current)
+    }
   }
 }

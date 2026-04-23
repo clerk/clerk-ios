@@ -94,15 +94,10 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
 }
 
 extension OrganizationDomain {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    Clerk.shared.dependencies.organizationService
-  }
-
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await organizationService.deleteOrganizationDomain(organizationId: organizationId, domainId: id)
+    try await Clerk.shared.organizations.delete(self)
   }
 
   /// Begins the verification process of a created organization domain.
@@ -114,7 +109,7 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
   public func sendEmailCode(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-    try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
+    try await Clerk.shared.organizations.sendEmailCode(for: self, affiliationEmailAddress: affiliationEmailAddress)
   }
 
   /// Attempts to complete the domain verification process.
@@ -128,6 +123,6 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> OrganizationDomain {
-    try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
+    try await Clerk.shared.organizations.verifyCode(code, for: self)
   }
 }

@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct WatchSyncPayloadTests {
   @Test
   func applicationContextRoundTripsPayloadValues() throws {
@@ -39,7 +39,6 @@ struct WatchSyncPayloadTests {
 
   @Test
   func phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync() throws {
-    configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     try keychain.set("watch-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
@@ -66,7 +65,6 @@ struct WatchSyncPayloadTests {
 
   @Test
   func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() throws {
-    configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
@@ -93,7 +91,6 @@ struct WatchSyncPayloadTests {
 
   @Test
   func watchPayloadSeedsPhoneWhenNoLocalClient() {
-    configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.client = nil
@@ -116,7 +113,6 @@ struct WatchSyncPayloadTests {
 
   @Test
   func watchPayloadNilClientDoesNotClearPhoneClient() {
-    configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.applyResponseClient(
@@ -139,7 +135,6 @@ struct WatchSyncPayloadTests {
 
   @Test
   func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() {
-    configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.applyResponseClient(

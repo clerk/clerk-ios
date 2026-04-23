@@ -5,6 +5,7 @@
 import Testing
 
 @MainActor
+@Suite(.tags(.uiState, .unit))
 struct AuthNavigationTests {
   @Test
   func handleSessionTaskCompletionRoutesToCurrentFirstPendingTask() {

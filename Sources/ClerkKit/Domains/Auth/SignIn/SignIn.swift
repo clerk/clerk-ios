@@ -80,11 +80,6 @@ public struct SignIn: Codable, Sendable, Equatable {
 }
 
 extension SignIn {
-  @MainActor
-  private var signInService: any SignInServiceProtocol {
-    Clerk.shared.dependencies.signInService
-  }
-
   // MARK: - First Factor Verification
 
   /// Sends a verification code to the specified email address.
@@ -95,11 +90,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    try await Clerk.shared.auth.sendEmailCode(for: self, emailAddressId: emailAddressId)
   }
 
   /// Sends a verification code to the specified phone number.
@@ -110,11 +101,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    try await Clerk.shared.auth.sendPhoneCode(for: self, phoneNumberId: phoneNumberId)
   }
 
   /// Verifies the code entered by the user.
@@ -127,20 +114,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyCode(_ code: String) async throws -> SignIn {
-    guard let resolvedStrategy = firstFactorVerification?.strategy else {
-      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.")
-    }
-
-    guard resolvedStrategy.canAttemptFirstFactorCode else {
-      throw ClerkClientError(
-        message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'."
-      )
-    }
-
-    return try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: resolvedStrategy, code: code)
-    )
+    try await Clerk.shared.auth.verifyCode(code, for: self)
   }
 
   /// Authenticates with the user's password.
@@ -151,10 +125,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: .password, password: password)
-    )
+    try await Clerk.shared.auth.authenticateWithPassword(password, for: self)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -174,7 +145,11 @@ extension SignIn {
     callbackURL: URL,
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    try await handleRedirectCallbackUrl(callbackURL, transferable: transferable)
+    try await Clerk.shared.auth.completeEnterpriseSSO(
+      for: self,
+      callbackURL: callbackURL,
+      transferable: transferable
+    )
   }
   #endif
 
@@ -193,10 +168,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: .idToken(provider), token: idToken)
-    )
+    try await Clerk.shared.auth.authenticateWithIdToken(idToken, provider: provider, for: self)
   }
 
   /// Authenticates with Apple using Sign in with Apple.
@@ -219,18 +191,11 @@ extension SignIn {
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
-
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
-    }
-
-    let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
-    let result = try await signIn.handleTransferFlow(transferable: transferable)
-    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
-      throw error
-    }
-    return result
+    try await Clerk.shared.auth.authenticateWithApple(
+      for: self,
+      requestedScopes: requestedScopes,
+      transferable: transferable
+    )
   }
   #endif
 
@@ -244,11 +209,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareSecondFactor(
-      signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    try await Clerk.shared.auth.sendMfaPhoneCode(for: self, phoneNumberId: phoneNumberId)
   }
 
   /// Sends an MFA code to the email address.
@@ -259,11 +220,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareSecondFactor(
-      signInId: id,
-      params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    try await Clerk.shared.auth.sendMfaEmailCode(for: self, emailAddressId: emailAddressId)
   }
 
   /// Verifies the MFA code with the specified type.
@@ -276,10 +233,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
-    try await signInService.attemptSecondFactor(
-      signInId: id,
-      params: .init(strategy: type.strategy, code: code)
-    )
+    try await Clerk.shared.auth.verifyMfaCode(code, type: type, for: self)
   }
 
   // MARK: - Password Reset
@@ -292,11 +246,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
-    )
+    try await Clerk.shared.auth.sendResetPasswordEmailCode(for: self, emailAddressId: emailAddressId)
   }
 
   /// Sends a password reset code to the specified phone number.
@@ -307,11 +257,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
-    )
+    try await Clerk.shared.auth.sendResetPasswordPhoneCode(for: self, phoneNumberId: phoneNumberId)
   }
 
   /// Resets the user's password after verification.
@@ -324,9 +270,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
-    try await signInService.resetPassword(
-      signInId: id,
-      params: .init(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
+    try await Clerk.shared.auth.resetPassword(
+      for: self,
+      newPassword: newPassword,
+      signOutOfOtherSessions: signOutOfOtherSessions
     )
   }
 
@@ -351,26 +298,11 @@ extension SignIn {
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .enterpriseSSO,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      )
+    try await Clerk.shared.auth.authenticateWithEnterpriseSSO(
+      for: self,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
     )
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: transferable)
   }
 
   /// Authenticates with OAuth using the specified provider.
@@ -393,26 +325,12 @@ extension SignIn {
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .oauth(provider),
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      )
+    try await Clerk.shared.auth.authenticateWithOAuth(
+      for: self,
+      provider: provider,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable
     )
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: transferable)
   }
   #endif
 
@@ -432,19 +350,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
-    )
-
-    let credential = try await signIn.getCredentialForPasskey(
+    try await Clerk.shared.auth.authenticateWithPasskey(
+      for: self,
       autofill: autofill,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
-
-    return try await signInService.attemptFirstFactor(
-      signInId: signIn.id,
-      params: .init(strategy: .passkey, publicKeyCredential: credential)
     )
   }
   #endif
@@ -461,115 +370,19 @@ extension SignIn {
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.shared.auth.reload(self, rotatingTokenNonce: rotatingTokenNonce)
   }
-
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Gets the credential for passkey authentication.
-  ///
-  /// - Parameters:
-  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
-  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
-  /// - Returns: A JSON-encoded string containing the passkey credential.
-  /// - Throws: An error if getting the credential fails.
-  @MainActor
-  func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
-    guard
-      let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
-      let challengeString = nonceJSON["challenge"]?.stringValue,
-      let challenge = challengeString.dataFromBase64URL()
-    else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
-    }
-
-    let manager = PasskeyHelper()
-    let authorization: ASAuthorization
-
-    #if os(iOS) && !targetEnvironment(macCatalyst)
-    if autofill {
-      authorization = try await manager.beginAutoFillAssistedPasskeySignIn(challenge: challenge)
-    } else {
-      authorization = try await manager.signIn(
-        challenge: challenge,
-        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-      )
-    }
-    #else
-    authorization = try await manager.signIn(
-      challenge: challenge,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
-    #endif
-
-    guard
-      let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-      let authenticatorData = credentialAssertion.rawAuthenticatorData
-    else {
-      throw ClerkClientError(message: "Invalid credential type.")
-    }
-
-    let publicKeyCredential: [String: Any] = [
-      "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "type": "public-key",
-      "response": [
-        "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
-        "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-        "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-        "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
-      ],
-    ]
-
-    let jsonData = try JSONSerialization.data(
-      withJSONObject: publicKeyCredential,
-      options: []
-    )
-    return String(
-      data: jsonData,
-      encoding: .utf8
-    ) ?? ""
-  }
-  #endif
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
   func handleRedirectCallbackUrl(_ url: URL, transferable: Bool = true) async throws -> TransferFlowResult {
-    if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-      let updatedSignIn = try await reload(rotatingTokenNonce: nonce)
-      if let error = updatedSignIn.firstFactorVerification?.error {
-        throw error
-      }
-      return .signIn(updatedSignIn)
-    } else {
-      // transfer flow
-      let signIn = try await reload()
-      let result = try await signIn.handleTransferFlow(transferable: transferable)
-      switch result {
-      case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.error {
-          throw error
-        }
-      case .signUp(let signUp):
-        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-           let error = verification.error
-        {
-          throw error
-        }
-      }
-      return result
-    }
+    try await Clerk.shared.auth.handleRedirectCallbackUrl(url, for: self, transferable: transferable)
   }
 
   /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow(transferable: Bool = true) async throws -> TransferFlowResult {
-    if needsTransferToSignUp == true, transferable {
-      let signUpService: any SignUpServiceProtocol = Clerk.shared.dependencies.signUpService
-      let signUp = try await signUpService.create(params: .init(transfer: true))
-      return .signUp(signUp)
-    } else {
-      return .signIn(self)
-    }
+    try await Clerk.shared.auth.handleTransferFlow(for: self, transferable: transferable)
   }
 
   /// Helper to determine if the SignIn needs to be transferred to a SignUp

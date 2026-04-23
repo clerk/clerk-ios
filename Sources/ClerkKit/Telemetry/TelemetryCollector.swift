@@ -229,8 +229,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     } catch {
       // Log telemetry flush errors when log level is debug or verbose
       let shouldLog = await Task { @MainActor in
-        let configuredLevel = Clerk.shared.options.logLevel
-        return configuredLevel <= .debug
+        ClerkLogger.shouldLog(level: .debug)
       }.value
 
       if shouldLog {
@@ -248,9 +247,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   private func logEventIfDebug(name: String, _ payload: Any) async {
     // Check if we should log based on the configured log level
     let shouldLog = await Task { @MainActor in
-      let configuredLevel = Clerk.shared.options.logLevel
-      // Log telemetry at debug level or higher (debug, verbose)
-      return configuredLevel <= .debug
+      ClerkLogger.shouldLog(level: .debug)
     }.value
 
     guard shouldLog else { return }

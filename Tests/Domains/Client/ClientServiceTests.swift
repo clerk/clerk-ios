@@ -1,51 +1,48 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct ClientServiceTests {
-  init() {
-    configureClerkForTesting()
+  private func makeService(baseURL: URL) -> ClientService {
+    ClientService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func testGetResponse() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .get,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.clientService.getResponse()
+    _ = try await makeService(baseURL: baseURL).getResponse()
     #expect(requestHandled.value)
   }
 
   @Test
   func getResponseIncludesRequestSequence() async throws {
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client")
 
-    let mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
-      ]
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .get,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock))
     )
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    let response = try await Clerk.shared.dependencies.clientService.getResponse()
+    let response = try await makeService(baseURL: baseURL).getResponse()
 
     #expect(response.client?.id == Client.mock.id)
     #expect(response.requestSequence == 1)

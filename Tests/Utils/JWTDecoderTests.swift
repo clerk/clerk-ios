@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct JWTDecoderTests {
   /// Helper to create a valid JWT for testing
   func createTestJWT(header: [String: Any] = ["alg": "HS256", "typ": "JWT"],

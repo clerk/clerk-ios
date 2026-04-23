@@ -11,7 +11,7 @@ import Testing
 
 /// Tests for KeychainStorage protocol operations.
 /// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct SystemKeychainTests {
   @Test
   func setAndGetData() throws {

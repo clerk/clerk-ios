@@ -29,7 +29,7 @@ final class MockLifecycleHandler: LifecycleEventHandling {
 
 /// Tests for LifecycleManager notification handling.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct LifecycleManagerTests {
   @Test
   func startsObserving() {

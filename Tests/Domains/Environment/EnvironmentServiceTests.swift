@@ -1,35 +1,32 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct EnvironmentServiceTests {
-  init() {
-    configureClerkForTesting()
+  private func makeService(baseURL: URL) -> EnvironmentService {
+    EnvironmentService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func testGet() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/environment")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .get,
+      data: JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)
+    ) { request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.environmentService.get()
+    _ = try await makeService(baseURL: baseURL).get()
     #expect(requestHandled.value)
   }
 }

@@ -7,7 +7,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct VersionTests {
   @Test
   func clerkVersion() {

@@ -38,8 +38,34 @@ private func createSession(
 
 /// Tests for SessionPollingManager ensuring proper polling behavior and cleanup.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct SessionPollingManagerTests {
+  enum RefreshEligibilityScenario: CaseIterable {
+    case noSession
+    case pendingSession
+    case activeSession
+
+    var session: Session? {
+      switch self {
+      case .noSession:
+        nil
+      case .pendingSession:
+        createSession(id: "session1", status: .pending)
+      case .activeSession:
+        createSession(id: "session1", status: .active)
+      }
+    }
+
+    var expected: Bool {
+      switch self {
+      case .activeSession:
+        true
+      case .noSession, .pendingSession:
+        false
+      }
+    }
+  }
+
   @Test
   func stopPollingMultipleTimes() {
     let provider = MockSessionProvider()
@@ -81,30 +107,12 @@ struct SessionPollingManagerTests {
     manager.stopPolling()
   }
 
-  @Test
-  func shouldRefreshReturnsFalseForNilSession() {
+  @Test(arguments: RefreshEligibilityScenario.allCases)
+  func shouldRefreshReturnsExpectedValue(for scenario: RefreshEligibilityScenario) {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
-    #expect(manager.shouldRefresh(session: nil) == false)
-  }
-
-  @Test
-  func shouldRefreshReturnsFalseForPendingSession() {
-    let provider = MockSessionProvider()
-    let manager = SessionPollingManager(sessionProvider: provider)
-
-    let session = createSession(id: "session1", status: .pending)
-    #expect(manager.shouldRefresh(session: session) == false)
-  }
-
-  @Test
-  func shouldRefreshReturnsTrueForActiveSession() {
-    let provider = MockSessionProvider()
-    let manager = SessionPollingManager(sessionProvider: provider)
-
-    let session = createSession(id: "session1", status: .active)
-    #expect(manager.shouldRefresh(session: session) == true)
+    #expect(manager.shouldRefresh(session: scenario.session) == scenario.expected)
   }
 
   @Test
@@ -256,7 +264,7 @@ struct SessionPollingManagerTests {
 // MARK: - Backoff Tests
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct SessionPollingManagerBackoffTests {
   @Test
   func consecutiveFailuresStartsAtZero() {

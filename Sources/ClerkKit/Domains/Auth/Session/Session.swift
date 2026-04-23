@@ -305,27 +305,22 @@ extension Session {
 }
 
 extension Session {
-  @MainActor
-  private var sessionService: any SessionServiceProtocol {
-    Clerk.shared.dependencies.sessionService
-  }
-
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
   public func revoke() async throws -> Session {
-    try await sessionService.revoke(sessionId: id)
+    try await Clerk.shared.auth.revoke(self)
   }
 
   /**
-   Retrieves the user's session token for the given template or the default Clerk token.
-   This method uses a cache so a network request will only be made if the token in memory is expired.
-   The TTL for the Clerk token is one minute.
+    Retrieves the user's session token for the given template or the default Clerk token.
+    This method uses a cache so a network request will only be made if the token in memory is expired.
+    The TTL for the Clerk token is one minute.
 
-   - Returns: The JWT string, or nil if no active session exists.
+    - Returns: The JWT string, or nil if no active session exists.
    */
   @discardableResult
   public func getToken(_ options: GetTokenOptions = .init()) async throws -> String? {
-    try await SessionTokenFetcher.shared.getToken(self, options: options)?.jwt
+    try await Clerk.shared.auth.getToken(for: self, options: options)
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.

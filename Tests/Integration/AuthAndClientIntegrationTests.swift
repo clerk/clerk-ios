@@ -20,7 +20,7 @@ import Testing
 /// - Valid Clerk test instance (configured via `configureClerkForIntegrationTesting(keyName:)`)
 /// - Test instance should be stable and not modified by other processes
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.integration), .enabled(if: isIntegrationTestingEnabled))
 struct AuthAndClientIntegrationTests {
   /// Shared test password used across SignUp and SignIn tests.
   private static let testPassword = "Clerk_iOS_Test_2025_XyZ9#mK2$pL7"
@@ -35,7 +35,7 @@ struct AuthAndClientIntegrationTests {
   @Test
   func signUpAndSignIn() async throws {
     let keyName = "with-email-codes"
-    guard try configureClerkForIntegrationTesting(keyName: keyName) else {
+    guard let clerk = try configureClerkForIntegrationTesting(keyName: keyName) else {
       return
     }
     let testEmail = Self.makeUniqueTestEmail()
@@ -47,7 +47,7 @@ struct AuthAndClientIntegrationTests {
 
       // Step 1: Create a SignUp with an email address and password
       // Use a unique test email to avoid collisions across concurrent CI runs.
-      let signUp = try await Clerk.shared.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
+      let signUp = try await clerk.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
       didCreateSignUp = true
 
       // Step 2: Prepare verification (email_code)
@@ -58,12 +58,12 @@ struct AuthAndClientIntegrationTests {
       try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
 
       // Sign out so that SignIn can sign in with the new account
-      try await Clerk.shared.auth.signOut()
+      try await clerk.auth.signOut()
 
       // MARK: - SignIn Flow
 
       // Step 1: Create a SignIn with the same email used in SignUp
-      let signIn = try await Clerk.shared.auth.signIn(testEmail)
+      let signIn = try await clerk.auth.signIn(testEmail)
 
       // Step 2: Prepare first factor verification (email_code)
       // This will send a code to the email address
@@ -75,7 +75,11 @@ struct AuthAndClientIntegrationTests {
       capturedError = error
     }
 
-    await deleteTestAccountIfExists(email: testEmail, allowPasswordCleanup: didCreateSignUp)
+    await deleteTestAccountIfExists(
+      clerk: clerk,
+      email: testEmail,
+      allowPasswordCleanup: didCreateSignUp
+    )
 
     if let capturedError {
       if try shouldSkipIntegrationTest(capturedError, keyName: keyName) {
@@ -90,9 +94,13 @@ struct AuthAndClientIntegrationTests {
     return "test+clerk_test_\(suffix)@example.com"
   }
 
-  private func deleteTestAccountIfExists(email: String, allowPasswordCleanup: Bool) async {
+  private func deleteTestAccountIfExists(
+    clerk: Clerk,
+    email: String,
+    allowPasswordCleanup: Bool
+  ) async {
     do {
-      if let currentUser = Clerk.shared.user {
+      if let currentUser = clerk.user {
         try await currentUser.delete()
         return
       }
@@ -101,8 +109,8 @@ struct AuthAndClientIntegrationTests {
         return
       }
 
-      _ = try await Clerk.shared.auth.signInWithPassword(identifier: email, password: Self.testPassword)
-      try await Clerk.shared.user?.delete()
+      _ = try await clerk.auth.signInWithPassword(identifier: email, password: Self.testPassword)
+      try await clerk.user?.delete()
     } catch {
       // Best-effort cleanup. Some failure paths may not produce a deletable account.
     }

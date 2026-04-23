@@ -1,35 +1,34 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct SessionServiceTests {
-  init() {
-    configureClerkForTesting()
+  private let actingSessionId = "acting_session_test_123"
+
+  private func makeService(baseURL: URL) -> SessionService {
+    SessionService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func signOut() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .delete,
+      data: JSONEncoder.clerkEncoder.encode(EmptyResponse())
+    ) { request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
+    try await makeService(baseURL: baseURL).signOut(sessionId: nil)
     #expect(requestHandled.value)
   }
 
@@ -37,22 +36,20 @@ struct SessionServiceTests {
   func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions/\(sessionId)/remove")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(EmptyResponse())
+    ) { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
+    try await makeService(baseURL: baseURL).signOut(sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -60,16 +57,14 @@ struct SessionServiceTests {
   func setActive() async throws {
     let sessionId = "sess_test123"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/touch")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions/\(sessionId)/touch")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(EmptyResponse())
+    ) { request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody
       if let body {
@@ -77,9 +72,9 @@ struct SessionServiceTests {
       }
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    try await Clerk.shared.dependencies.sessionService.setActive(sessionId: sessionId, organizationId: nil)
+    try await makeService(baseURL: baseURL).setActive(sessionId: sessionId, organizationId: nil)
     #expect(requestHandled.value)
   }
 
@@ -88,16 +83,14 @@ struct SessionServiceTests {
     let sessionId = "sess_test123"
     let organizationId = "org_test456"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/touch")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions/\(sessionId)/touch")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(EmptyResponse()),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(EmptyResponse())
+    ) { request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody
       if let body {
@@ -105,9 +98,9 @@ struct SessionServiceTests {
       }
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    try await Clerk.shared.dependencies.sessionService.setActive(
+    try await makeService(baseURL: baseURL).setActive(
       sessionId: sessionId,
       organizationId: organizationId
     )
@@ -118,22 +111,20 @@ struct SessionServiceTests {
   func fetchToken() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions/\(session.id)/tokens")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(TokenResource.mock)
+    ) { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: nil)
+    _ = try await makeService(baseURL: baseURL).fetchToken(sessionId: session.id, template: nil)
     #expect(requestHandled.value)
   }
 
@@ -142,22 +133,20 @@ struct SessionServiceTests {
     let session = Session.mock
     let template = "firebase"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens/\(template)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/client/sessions/\(session.id)/tokens/\(template)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(TokenResource.mock)
+    ) { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: template)
+    _ = try await makeService(baseURL: baseURL).fetchToken(sessionId: session.id, template: template)
     #expect(requestHandled.value)
   }
 
@@ -165,22 +154,20 @@ struct SessionServiceTests {
   func testRevoke() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/\(session.id)/revoke")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/sessions/\(session.id)/revoke")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.sessionService.revoke(sessionId: session.id)
+    _ = try await makeService(baseURL: baseURL).revoke(sessionId: session.id, actingSessionId: actingSessionId)
     #expect(requestHandled.value)
   }
 }

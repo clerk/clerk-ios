@@ -4,11 +4,9 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct SessionTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct SessionAuthFacadeTests {
+  private let support = AuthTestSupport()
 
   @Test
   func revokeUsesSessionServiceRevoke() async throws {
@@ -18,13 +16,9 @@ struct SessionTests {
       captured.setValue(sessionId)
       return .mock
     })
+    let clerk = try support.makeClerk(sessionService: service)
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
-    )
-
-    _ = try await session.revoke()
+    _ = try await clerk.auth.revoke(session)
 
     #expect(captured.value == session.id)
   }

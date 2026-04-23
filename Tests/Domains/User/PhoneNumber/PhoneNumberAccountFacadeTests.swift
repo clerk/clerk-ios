@@ -4,16 +4,15 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct PhoneNumberTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct PhoneNumberAccountFacadeTests {
+  private let fixture = ClerkTestFixture()
 
-  private func configureService(_ service: MockPhoneNumberService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
+  private func makeClerk(_ service: MockPhoneNumberService) throws -> Clerk {
+    try fixture.makeClerk(
       apiClient: createMockAPIClient(),
-      phoneNumberService: service
+      phoneNumberService: service,
+      environment: .mock
     )
   }
 
@@ -25,10 +24,9 @@ struct PhoneNumberTests {
       captured.setValue(phoneNumberId)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await phoneNumber.delete()
+    _ = try await clerk.account.delete(phoneNumber)
 
     #expect(captured.value == phoneNumber.id)
   }
@@ -41,10 +39,9 @@ struct PhoneNumberTests {
       captured.setValue(phoneNumberId)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await phoneNumber.sendCode()
+    _ = try await clerk.account.sendCode(to: phoneNumber)
 
     #expect(captured.value == phoneNumber.id)
   }
@@ -57,10 +54,9 @@ struct PhoneNumberTests {
       captured.setValue((phoneNumberId, code))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await phoneNumber.verifyCode("123456")
+    _ = try await clerk.account.verifyCode("123456", for: phoneNumber)
 
     let params = try #require(captured.value)
     #expect(params.0 == phoneNumber.id)
@@ -75,10 +71,9 @@ struct PhoneNumberTests {
       captured.setValue(phoneNumberId)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await phoneNumber.makeDefaultSecondFactor()
+    _ = try await clerk.account.makeDefaultSecondFactor(for: phoneNumber)
 
     #expect(captured.value == phoneNumber.id)
   }
@@ -91,10 +86,9 @@ struct PhoneNumberTests {
       captured.setValue((phoneNumberId, reserved))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await phoneNumber.setReservedForSecondFactor(reserved: true)
+    _ = try await clerk.account.setReservedForSecondFactor(true, for: phoneNumber)
 
     let params = try #require(captured.value)
     #expect(params.0 == phoneNumber.id)

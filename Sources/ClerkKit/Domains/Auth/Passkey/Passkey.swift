@@ -64,26 +64,21 @@ extension Passkey {
 }
 
 extension Passkey {
-  @MainActor
-  private var passkeyService: any PasskeyServiceProtocol {
-    Clerk.shared.dependencies.passkeyService
-  }
-
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    try await passkeyService.update(passkeyId: id, name: name)
+    try await Clerk.shared.account.update(self, name: name)
   }
 
   /// Attempts to verify the passkey with a credential.
   @discardableResult @MainActor
   public func attemptVerification(credential: String) async throws -> Passkey {
-    try await passkeyService.attemptVerification(passkeyId: id, credential: credential)
+    try await Clerk.shared.account.attemptVerification(credential, for: self)
   }
 
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await passkeyService.delete(passkeyId: id)
+    try await Clerk.shared.account.delete(self)
   }
 }

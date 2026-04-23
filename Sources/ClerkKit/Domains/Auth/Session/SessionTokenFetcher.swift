@@ -8,10 +8,22 @@ import Foundation
 /// The purpose of this actor is to NOT trigger refreshes of tokens if a refresh is already in progress.
 /// This is not a token cache. It is only responsible to returning in progress tasks to refresh a token.
 actor SessionTokenFetcher {
-  static let shared = SessionTokenFetcher()
+  private let sessionService: any SessionServiceProtocol
+  private let tokenCache: SessionTokensCache
+  private let onTokenRefreshed: (@MainActor @Sendable (String) -> Void)?
 
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
+
+  init(
+    sessionService: any SessionServiceProtocol,
+    tokenCache: SessionTokensCache = .shared,
+    onTokenRefreshed: (@MainActor @Sendable (String) -> Void)? = nil
+  ) {
+    self.sessionService = sessionService
+    self.tokenCache = tokenCache
+    self.onTokenRefreshed = onTokenRefreshed
+  }
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
@@ -42,21 +54,21 @@ actor SessionTokenFetcher {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if options.skipCache == false,
-       let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
+       let token = await tokenCache.getToken(cacheKey: cacheKey),
        let expiresAt = token.decodedJWT?.expiresAt,
        Date.now.distance(to: expiresAt) > options.expirationBuffer
     {
       return token
     }
 
-    let token = try await Clerk.shared.dependencies.sessionService.fetchToken(
+    let token = try await sessionService.fetchToken(
       sessionId: session.id,
       template: options.template
     )
 
     if let token {
-      await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
-      Clerk.shared.auth.send(.tokenRefreshed(token: token.jwt))
+      await tokenCache.insertToken(token, cacheKey: cacheKey)
+      onTokenRefreshed?(token.jwt)
     }
 
     return token

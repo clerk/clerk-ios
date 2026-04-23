@@ -7,10 +7,10 @@ import AuthenticationServices
 import Foundation
 
 protocol PasskeyServiceProtocol: Sendable {
-  @MainActor func create() async throws -> Passkey
-  @MainActor func update(passkeyId: String, name: String) async throws -> Passkey
-  @MainActor func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey
-  @MainActor func delete(passkeyId: String) async throws -> DeletedObject
+  @MainActor func create(sessionId: String?) async throws -> Passkey
+  @MainActor func update(passkeyId: String, name: String, sessionId: String?) async throws -> Passkey
+  @MainActor func attemptVerification(passkeyId: String, credential: String, sessionId: String?) async throws -> Passkey
+  @MainActor func delete(passkeyId: String, sessionId: String?) async throws -> DeletedObject
 }
 
 final class PasskeyService: PasskeyServiceProtocol {
@@ -21,22 +21,22 @@ final class PasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  func create() async throws -> Passkey {
+  func create(sessionId: String?) async throws -> Passkey {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func update(passkeyId: String, name: String) async throws -> Passkey {
+  func update(passkeyId: String, name: String, sessionId: String?) async throws -> Passkey {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys/\(passkeyId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["name": name]
     )
 
@@ -44,11 +44,11 @@ final class PasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey {
+  func attemptVerification(passkeyId: String, credential: String, sessionId: String?) async throws -> Passkey {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys/\(passkeyId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: [
         "strategy": "passkey",
         "public_key_credential": credential,
@@ -59,11 +59,11 @@ final class PasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  func delete(passkeyId: String) async throws -> DeletedObject {
+  func delete(passkeyId: String, sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/passkeys/\(passkeyId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response

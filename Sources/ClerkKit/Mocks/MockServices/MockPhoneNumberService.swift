@@ -47,7 +47,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func create(phoneNumber: String) async throws -> PhoneNumber {
+  package func create(phoneNumber: String, sessionId _: String?) async throws -> PhoneNumber {
     if let handler = createHandler {
       return try await handler(phoneNumber)
     }
@@ -55,7 +55,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func delete(phoneNumberId: String) async throws -> DeletedObject {
+  package func delete(phoneNumberId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = deleteHandler {
       return try await handler(phoneNumberId)
     }
@@ -63,7 +63,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func prepareVerification(phoneNumberId: String) async throws -> PhoneNumber {
+  package func prepareVerification(phoneNumberId: String, sessionId _: String?) async throws -> PhoneNumber {
     if let handler = prepareVerificationHandler {
       return try await handler(phoneNumberId)
     }
@@ -71,7 +71,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func attemptVerification(phoneNumberId: String, code: String) async throws -> PhoneNumber {
+  package func attemptVerification(phoneNumberId: String, code: String, sessionId _: String?) async throws -> PhoneNumber {
     if let handler = attemptVerificationHandler {
       return try await handler(phoneNumberId, code)
     }
@@ -79,7 +79,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func makeDefaultSecondFactor(phoneNumberId: String) async throws -> PhoneNumber {
+  package func makeDefaultSecondFactor(phoneNumberId: String, sessionId _: String?) async throws -> PhoneNumber {
     if let handler = makeDefaultSecondFactorHandler {
       return try await handler(phoneNumberId)
     }
@@ -87,7 +87,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber {
+  package func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool, sessionId _: String?) async throws -> PhoneNumber {
     if let handler = setReservedForSecondFactorHandler {
       return try await handler(phoneNumberId, reserved)
     }

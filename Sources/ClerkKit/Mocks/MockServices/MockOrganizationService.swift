@@ -139,7 +139,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func createOrganization(name: String, slug: String?) async throws -> Organization {
+  package func createOrganization(name: String, slug: String?, sessionId _: String?) async throws -> Organization {
     if let handler = createOrganizationHandler {
       return try await handler(name, slug)
     }
@@ -147,7 +147,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization {
+  package func updateOrganization(organizationId: String, name: String, slug: String?, sessionId _: String?) async throws -> Organization {
     if let handler = updateOrganizationHandler {
       return try await handler(organizationId, name, slug)
     }
@@ -155,7 +155,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func destroyOrganization(organizationId: String) async throws -> DeletedObject {
+  package func destroyOrganization(organizationId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = destroyOrganizationHandler {
       return try await handler(organizationId)
     }
@@ -163,7 +163,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization {
+  package func setOrganizationLogo(organizationId: String, imageData: Data, sessionId _: String?) async throws -> Organization {
     if let handler = setOrganizationLogoHandler {
       return try await handler(organizationId, imageData)
     }
@@ -171,7 +171,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationRoles(organizationId: String, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource> {
+  package func getOrganizationRoles(organizationId: String, initialPage: Int, pageSize: Int, sessionId _: String?) async throws -> ClerkPaginatedResponse<RoleResource> {
     if let handler = getOrganizationRolesHandler {
       return try await handler(organizationId, initialPage, pageSize)
     }
@@ -179,7 +179,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  package func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int, sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     if let handler = getOrganizationMembershipsHandler {
       return try await handler(organizationId, query, role, initialPage, pageSize)
     }
@@ -187,7 +187,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func addOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership {
+  package func addOrganizationMember(organizationId: String, userId: String, role: String, sessionId _: String?) async throws -> OrganizationMembership {
     if let handler = addOrganizationMemberHandler {
       return try await handler(organizationId, userId, role)
     }
@@ -195,7 +195,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func updateOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership {
+  package func updateOrganizationMember(organizationId: String, userId: String, role: String, sessionId _: String?) async throws -> OrganizationMembership {
     if let handler = updateOrganizationMemberHandler {
       return try await handler(organizationId, userId, role)
     }
@@ -203,7 +203,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func removeOrganizationMember(organizationId: String, userId: String) async throws -> OrganizationMembership {
+  package func removeOrganizationMember(organizationId: String, userId: String, sessionId _: String?) async throws -> OrganizationMembership {
     if let handler = removeOrganizationMemberHandler {
       return try await handler(organizationId, userId)
     }
@@ -211,7 +211,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+  package func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?, sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
       return try await handler(organizationId, initialPage, pageSize, status)
     }
@@ -219,7 +219,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func inviteOrganizationMember(organizationId: String, emailAddress: String, role: String) async throws -> OrganizationInvitation {
+  package func inviteOrganizationMember(organizationId: String, emailAddress: String, role: String, sessionId _: String?) async throws -> OrganizationInvitation {
     if let handler = inviteOrganizationMemberHandler {
       return try await handler(organizationId, emailAddress, role)
     }
@@ -227,7 +227,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func createOrganizationDomain(organizationId: String, domainName: String) async throws -> OrganizationDomain {
+  package func createOrganizationDomain(organizationId: String, domainName: String, sessionId _: String?) async throws -> OrganizationDomain {
     if let handler = createOrganizationDomainHandler {
       return try await handler(organizationId, domainName)
     }
@@ -235,7 +235,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationDomains(organizationId: String, initialPage: Int, pageSize: Int, enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+  package func getOrganizationDomains(organizationId: String, initialPage: Int, pageSize: Int, enrollmentMode: String?, sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     if let handler = getOrganizationDomainsHandler {
       return try await handler(organizationId, initialPage, pageSize, enrollmentMode)
     }
@@ -243,7 +243,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationDomain(organizationId: String, domainId: String) async throws -> OrganizationDomain {
+  package func getOrganizationDomain(organizationId: String, domainId: String, sessionId _: String?) async throws -> OrganizationDomain {
     if let handler = getOrganizationDomainHandler {
       return try await handler(organizationId, domainId)
     }
@@ -251,7 +251,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationMembershipRequests(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+  package func getOrganizationMembershipRequests(organizationId: String, initialPage: Int, pageSize: Int, status: String?, sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     if let handler = getOrganizationMembershipRequestsHandler {
       return try await handler(organizationId, initialPage, pageSize, status)
     }
@@ -259,7 +259,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func deleteOrganizationDomain(organizationId: String, domainId: String) async throws -> DeletedObject {
+  package func deleteOrganizationDomain(organizationId: String, domainId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = deleteOrganizationDomainHandler {
       return try await handler(organizationId, domainId)
     }
@@ -267,7 +267,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func prepareOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, affiliationEmailAddress: String) async throws -> OrganizationDomain {
+  package func prepareOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, affiliationEmailAddress: String, sessionId _: String?) async throws -> OrganizationDomain {
     if let handler = prepareOrganizationDomainAffiliationVerificationHandler {
       return try await handler(organizationId, domainId, affiliationEmailAddress)
     }
@@ -275,7 +275,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func attemptOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, code: String) async throws -> OrganizationDomain {
+  package func attemptOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, code: String, sessionId _: String?) async throws -> OrganizationDomain {
     if let handler = attemptOrganizationDomainAffiliationVerificationHandler {
       return try await handler(organizationId, domainId, code)
     }
@@ -283,7 +283,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func revokeOrganizationInvitation(organizationId: String, invitationId: String) async throws -> OrganizationInvitation {
+  package func revokeOrganizationInvitation(organizationId: String, invitationId: String, sessionId _: String?) async throws -> OrganizationInvitation {
     if let handler = revokeOrganizationInvitationHandler {
       return try await handler(organizationId, invitationId)
     }
@@ -291,7 +291,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func destroyOrganizationMembership(organizationId: String, userId: String) async throws -> OrganizationMembership {
+  package func destroyOrganizationMembership(organizationId: String, userId: String, sessionId _: String?) async throws -> OrganizationMembership {
     if let handler = destroyOrganizationMembershipHandler {
       return try await handler(organizationId, userId)
     }
@@ -299,7 +299,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func acceptUserOrganizationInvitation(invitationId: String) async throws -> UserOrganizationInvitation {
+  package func acceptUserOrganizationInvitation(invitationId: String, sessionId _: String?) async throws -> UserOrganizationInvitation {
     if let handler = acceptUserOrganizationInvitationHandler {
       return try await handler(invitationId)
     }
@@ -307,7 +307,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func acceptOrganizationSuggestion(suggestionId: String) async throws -> OrganizationSuggestion {
+  package func acceptOrganizationSuggestion(suggestionId: String, sessionId _: String?) async throws -> OrganizationSuggestion {
     if let handler = acceptOrganizationSuggestionHandler {
       return try await handler(suggestionId)
     }
@@ -315,7 +315,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func acceptOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest {
+  package func acceptOrganizationMembershipRequest(organizationId: String, requestId: String, sessionId _: String?) async throws -> OrganizationMembershipRequest {
     if let handler = acceptOrganizationMembershipRequestHandler {
       return try await handler(organizationId, requestId)
     }
@@ -323,7 +323,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func rejectOrganizationMembershipRequest(organizationId: String, requestId: String) async throws -> OrganizationMembershipRequest {
+  package func rejectOrganizationMembershipRequest(organizationId: String, requestId: String, sessionId _: String?) async throws -> OrganizationMembershipRequest {
     if let handler = rejectOrganizationMembershipRequestHandler {
       return try await handler(organizationId, requestId)
     }

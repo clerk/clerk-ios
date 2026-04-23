@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct JSONUtilitiesTests {
   // MARK: - JSON Enum Cases
 

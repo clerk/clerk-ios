@@ -5,12 +5,8 @@ import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ClerkTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   func createSession(
     id: String,
     status: Session.SessionStatus,
@@ -35,17 +31,14 @@ struct ClerkTests {
     )
   }
 
+  func makeClerk() -> Clerk {
+    Clerk()
+  }
+
   @Test
   func clearAllKeychainItemsDeletesAllKeys() throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
 
-    // Add test data for all keychain keys
     try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set(#require("test-date-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
@@ -58,10 +51,8 @@ struct ClerkTests {
       #expect(try keychain.hasItem(forKey: key.rawValue) == true)
     }
 
-    // Clear all keychain items
-    Clerk.clearAllKeychainItems()
+    Clerk.clearAllKeychainItems(using: keychain)
 
-    // Verify all keys are deleted
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == false)
     }
@@ -69,22 +60,13 @@ struct ClerkTests {
 
   @Test
   func clearAllKeychainItemsHandlesMissingKeysGracefully() throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
 
-    // Add only some keys (not all)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
 
-    // Clear all keychain items (should not throw even though some keys don't exist)
-    Clerk.clearAllKeychainItems()
+    Clerk.clearAllKeychainItems(using: keychain)
 
-    // Verify all keys are deleted (including ones that didn't exist)
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == false)
     }
@@ -92,47 +74,23 @@ struct ClerkTests {
 
   @Test
   func clearAllKeychainItemsWorksWhenClerkNotConfigured() throws {
-    // Note: This test verifies that clearAllKeychainItems can be called even when Clerk is configured.
-    // When Clerk is not configured, clearAllKeychainItems creates a temporary SystemKeychain instance.
-    // Since we can't easily test the unconfigured state without accessing private properties,
-    // we verify that the function works correctly when Clerk is configured (which is the common case).
-    // The unconfigured case is tested implicitly through code coverage.
-
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
 
-    // Add test data
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    // Function should work correctly
-    Clerk.clearAllKeychainItems()
+    Clerk.clearAllKeychainItems(using: keychain)
 
-    // Verify key was deleted
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
   }
 
   @Test
   func clearAllKeychainItemsDoesNotThrow() throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
 
-    // Add some test data
     try keychain.set("test-data", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    // Function should not throw even if there are errors
-    Clerk.clearAllKeychainItems()
+    Clerk.clearAllKeychainItems(using: keychain)
 
-    // Verify key was deleted
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
   }
 
@@ -140,89 +98,80 @@ struct ClerkTests {
 
   @Test
   func isLoadedReturnsFalseWhenBothNil() {
-    // Clear both client and environment
-    Clerk.shared.client = nil
-    Clerk.shared.environment = nil
-
-    // isLoaded should return false when both are nil
-    #expect(Clerk.shared.isLoaded == false)
+    let clerk = makeClerk()
+    clerk.client = nil
+    clerk.environment = nil
+    #expect(clerk.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsFalseWhenOnlyEnvironmentSet() {
-    // Set only environment
-    Clerk.shared.environment = Clerk.Environment.mock
-    Clerk.shared.client = nil
-
-    // isLoaded should return false when client is nil
-    #expect(Clerk.shared.isLoaded == false)
+    let clerk = makeClerk()
+    clerk.environment = Clerk.Environment.mock
+    clerk.client = nil
+    #expect(clerk.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsFalseWhenOnlyClientSet() {
-    // Set only client
-    Clerk.shared.client = Client.mock
-    Clerk.shared.environment = nil
-
-    // isLoaded should return false when environment is nil
-    #expect(Clerk.shared.isLoaded == false)
+    let clerk = makeClerk()
+    clerk.client = Client.mock
+    clerk.environment = nil
+    #expect(clerk.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsTrueWhenBothSet() {
-    // Set both client and environment
-    Clerk.shared.client = Client.mock
-    Clerk.shared.environment = Clerk.Environment.mock
-
-    // isLoaded should return true when both are set
-    #expect(Clerk.shared.isLoaded == true)
+    let clerk = makeClerk()
+    clerk.client = Client.mock
+    clerk.environment = Clerk.Environment.mock
+    #expect(clerk.isLoaded == true)
   }
 
   @Test
   func isLoadedBecomesTrue() {
-    // Clear both client and environment first
-    Clerk.shared.client = nil
-    Clerk.shared.environment = nil
-    #expect(Clerk.shared.isLoaded == false)
+    let clerk = makeClerk()
+    clerk.client = nil
+    clerk.environment = nil
+    #expect(clerk.isLoaded == false)
 
-    // Set client - should still be false since environment is nil
-    Clerk.shared.client = Client.mock
-    #expect(Clerk.shared.isLoaded == false)
+    clerk.client = Client.mock
+    #expect(clerk.isLoaded == false)
 
-    // Set environment - now both are set so should be true
-    Clerk.shared.environment = Clerk.Environment.mock
-    #expect(Clerk.shared.isLoaded == true)
+    clerk.environment = Clerk.Environment.mock
+    #expect(clerk.isLoaded == true)
 
-    // Clear client - should become false again
-    Clerk.shared.client = nil
-    #expect(Clerk.shared.isLoaded == false)
+    clerk.client = nil
+    #expect(clerk.isLoaded == false)
   }
 
   // MARK: - Current / Active Session Tests
 
   @Test
   func sessionReturnsPendingSession() {
+    let clerk = makeClerk()
     let pendingSession = createSession(id: "session1", status: .pending)
-    Clerk.shared.client = Client(
+    clerk.client = Client(
       id: "client1",
       sessions: [pendingSession],
       lastActiveSessionId: "session1",
       updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
     )
 
-    #expect(Clerk.shared.session?.id == "session1")
+    #expect(clerk.session?.id == "session1")
   }
 
   @Test
   func userReturnsUserForPendingSession() {
+    let clerk = makeClerk()
     let pendingSession = createSession(id: "session1", status: .pending, user: .mock)
-    Clerk.shared.client = Client(
+    clerk.client = Client(
       id: "client1",
       sessions: [pendingSession],
       lastActiveSessionId: "session1",
       updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
     )
 
-    #expect(Clerk.shared.user?.id == User.mock.id)
+    #expect(clerk.user?.id == User.mock.id)
   }
 }

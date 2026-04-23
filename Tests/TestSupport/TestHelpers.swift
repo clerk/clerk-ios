@@ -7,45 +7,191 @@ let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 /// Test publishable key that decodes to mock.clerk.accounts.dev
 let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
-/// Configures Clerk for testing and replaces the API client with one that uses MockingURLProtocol.
-/// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
-///
-/// This function should be called at the start of each test suite or test to ensure proper isolation.
-@MainActor
-func configureClerkForTesting() {
-  // Configure Clerk with test publishable key
-  Clerk.configure(publishableKey: testPublishableKey)
+typealias TestURLProtocolHandler = @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)
 
-  // Replace the container with a mock container that uses MockingURLProtocol
-  setupMockAPIClient()
+private final class TestURLProtocolRegistry: @unchecked Sendable {
+  static let shared = TestURLProtocolRegistry()
 
-  // Unit tests should not inherit startup refreshes or session polling from configure().
-  Clerk.shared.cleanupManagers()
+  private let lock = NSLock()
+  private var handlers: [String: TestURLProtocolHandler] = [:]
+
+  func register(host: String, handler: @escaping TestURLProtocolHandler) {
+    lock.lock()
+    defer { lock.unlock() }
+    handlers[host] = handler
+  }
+
+  func handler(for host: String) -> TestURLProtocolHandler? {
+    lock.lock()
+    defer { lock.unlock() }
+    return handlers[host]
+  }
+
+  func remove(host: String) {
+    lock.lock()
+    defer { lock.unlock() }
+    handlers.removeValue(forKey: host)
+  }
 }
 
-/// Replaces the API client with MockingURLProtocol after Clerk.configure() creates the container.
-/// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
-@MainActor
-func setupMockAPIClient() {
-  let mockAPIClient = createMockAPIClient()
+final class IsolatedMockURLProtocol: URLProtocol, @unchecked Sendable {
+  override class func canInit(with request: URLRequest) -> Bool {
+    guard let host = request.url?.host else { return false }
+    return TestURLProtocolRegistry.shared.handler(for: host) != nil
+  }
 
-  // Replace the container with a mock container that uses the mock API client
-  // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: mockAPIClient,
-    telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-    clientService: ClientService(apiClient: mockAPIClient),
-    userService: UserService(apiClient: mockAPIClient),
-    signInService: SignInService(apiClient: mockAPIClient),
-    signUpService: SignUpService(apiClient: mockAPIClient),
-    sessionService: SessionService(apiClient: mockAPIClient),
-    passkeyService: PasskeyService(apiClient: mockAPIClient),
-    organizationService: OrganizationService(apiClient: mockAPIClient),
-    environmentService: EnvironmentService(apiClient: mockAPIClient),
-    emailAddressService: EmailAddressService(apiClient: mockAPIClient),
-    phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
-    externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
-  )
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    request
+  }
+
+  override func startLoading() {
+    guard
+      let url = request.url,
+      let host = url.host,
+      let handler = TestURLProtocolRegistry.shared.handler(for: host)
+    else {
+      client?.urlProtocol(self, didFailWithError: URLError(.unsupportedURL))
+      return
+    }
+
+    do {
+      let (response, data) = try handler(request)
+      client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+      client?.urlProtocol(self, didLoad: data)
+      client?.urlProtocolDidFinishLoading(self)
+    } catch {
+      client?.urlProtocol(self, didFailWithError: error)
+    }
+  }
+
+  override func stopLoading() {}
+}
+
+@MainActor
+final class ClerkTestFixture {
+  init() {}
+
+  func register(_ mock: Mock) {
+    mock.register()
+  }
+
+  @discardableResult
+  func makeMockDependencies(
+    apiClient: APIClient? = nil,
+    keychain: (any KeychainStorage)? = nil,
+    telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
+    clientService: (any ClientServiceProtocol)? = nil,
+    userService: (any UserServiceProtocol)? = nil,
+    signInService: (any SignInServiceProtocol)? = nil,
+    signUpService: (any SignUpServiceProtocol)? = nil,
+    sessionService: (any SessionServiceProtocol)? = nil,
+    passkeyService: (any PasskeyServiceProtocol)? = nil,
+    organizationService: (any OrganizationServiceProtocol)? = nil,
+    environmentService: (any EnvironmentServiceProtocol)? = nil,
+    emailAddressService: (any EmailAddressServiceProtocol)? = nil,
+    phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
+    externalAccountService: (any ExternalAccountServiceProtocol)? = nil,
+    options: Clerk.Options = .init()
+  ) throws -> MockDependencyContainer {
+    let container = MockDependencyContainer(
+      apiClient: apiClient ?? createMockAPIClient(),
+      keychain: keychain,
+      telemetryCollector: telemetryCollector,
+      clientService: clientService,
+      userService: userService,
+      signInService: signInService,
+      signUpService: signUpService,
+      sessionService: sessionService,
+      passkeyService: passkeyService,
+      organizationService: organizationService,
+      environmentService: environmentService,
+      emailAddressService: emailAddressService,
+      phoneNumberService: phoneNumberService,
+      externalAccountService: externalAccountService
+    )
+
+    try container.configurationManager.configure(publishableKey: testPublishableKey, options: options)
+
+    return container
+  }
+
+  func makeClerk(
+    apiClient: APIClient? = nil,
+    keychain: (any KeychainStorage)? = nil,
+    telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
+    clientService: (any ClientServiceProtocol)? = nil,
+    userService: (any UserServiceProtocol)? = nil,
+    signInService: (any SignInServiceProtocol)? = nil,
+    signUpService: (any SignUpServiceProtocol)? = nil,
+    sessionService: (any SessionServiceProtocol)? = nil,
+    passkeyService: (any PasskeyServiceProtocol)? = nil,
+    organizationService: (any OrganizationServiceProtocol)? = nil,
+    environmentService: (any EnvironmentServiceProtocol)? = nil,
+    emailAddressService: (any EmailAddressServiceProtocol)? = nil,
+    phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
+    externalAccountService: (any ExternalAccountServiceProtocol)? = nil,
+    options: Clerk.Options = .init(),
+    client: Client? = nil,
+    environment: Clerk.Environment? = nil
+  ) throws -> Clerk {
+    let clerk = Clerk()
+    clerk.dependencies = try makeMockDependencies(
+      apiClient: apiClient,
+      keychain: keychain,
+      telemetryCollector: telemetryCollector,
+      clientService: clientService,
+      userService: userService,
+      signInService: signInService,
+      signUpService: signUpService,
+      sessionService: sessionService,
+      passkeyService: passkeyService,
+      organizationService: organizationService,
+      environmentService: environmentService,
+      emailAddressService: emailAddressService,
+      phoneNumberService: phoneNumberService,
+      externalAccountService: externalAccountService,
+      options: options
+    )
+    clerk.client = client
+    clerk.environment = environment
+    clerk.sessionsByUserId = [:]
+    return clerk
+  }
+}
+
+private enum TestWaitError: LocalizedError {
+  case timedOut(String)
+
+  var errorDescription: String? {
+    switch self {
+    case .timedOut(let description):
+      description
+    }
+  }
+}
+
+@MainActor
+func waitUntil(
+  _ description: String,
+  timeout: Duration = .milliseconds(250),
+  pollingInterval: Duration = .milliseconds(10),
+  condition: () throws -> Bool
+) async throws {
+  let deadline = ContinuousClock.now + timeout
+
+  while ContinuousClock.now < deadline {
+    if try condition() {
+      return
+    }
+
+    try await Task.sleep(for: pollingInterval)
+  }
+
+  if try condition() {
+    return
+  }
+
+  throw TestWaitError.timedOut("Timed out waiting for \(description)")
 }
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
@@ -63,6 +209,87 @@ func createMockAPIClient() -> APIClient {
       "x-mobile": "1",
     ]
   }
+}
+
+/// Creates a mock API client for isolated service/request tests without the
+/// default `Clerk` middleware stack.
+@MainActor
+func createIsolatedMockAPIClient(
+  baseURL: URL = mockBaseUrl,
+  protocolClass: AnyClass = MockingURLProtocol.self
+) -> APIClient {
+  APIClient(baseURL: baseURL) { @Sendable configuration in
+    configuration.pipeline = NetworkingPipeline(
+      requestMiddleware: [
+        ClerkQueryItemsRequestMiddleware(),
+        ClerkURLEncodedFormEncoderMiddleware(),
+      ]
+    )
+    configuration.decoder = .clerkDecoder
+    configuration.encoder = .clerkEncoder
+    configuration.sessionConfiguration.protocolClasses = [protocolClass]
+    configuration.sessionConfiguration.httpAdditionalHeaders = [
+      "Content-Type": "application/x-www-form-urlencoded",
+      "clerk-api-version": Clerk.apiVersion,
+      "x-ios-sdk-version": Clerk.sdkVersion,
+      "x-mobile": "1",
+    ]
+  }
+}
+
+func makeIsolatedMockBaseURL(path: String = "") -> URL {
+  var components = URLComponents(url: mockBaseUrl, resolvingAgainstBaseURL: false)!
+  components.host = "\(UUID().uuidString.lowercased()).mock.clerk.accounts.dev"
+  components.path = path
+  return components.url!
+}
+
+func registerIsolatedStub(
+  url: URL,
+  method: HTTPMethod,
+  statusCode: Int = 200,
+  headers: [String: String] = ["Content-Type": "application/json"],
+  data: Data,
+  onRequest: @escaping @Sendable (URLRequest) throws -> Void = { _ in }
+) {
+  let host = url.host!
+  TestURLProtocolRegistry.shared.register(host: host) { request in
+    guard request.httpMethod == method.rawValue else {
+      throw URLError(.badServerResponse)
+    }
+
+    guard
+      let requestURL = request.url,
+      var requestComponents = URLComponents(url: requestURL, resolvingAgainstBaseURL: false),
+      var expectedComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    else {
+      throw URLError(.badURL)
+    }
+
+    requestComponents.host = nil
+    requestComponents.scheme = nil
+    expectedComponents.host = nil
+    expectedComponents.scheme = nil
+
+    guard requestComponents.path == expectedComponents.path else {
+      throw URLError(.resourceUnavailable)
+    }
+
+    try onRequest(request)
+
+    let response = HTTPURLResponse(
+      url: requestURL,
+      statusCode: statusCode,
+      httpVersion: nil,
+      headerFields: headers
+    )!
+    return (response, data)
+  }
+}
+
+func removeIsolatedStub(for url: URL) {
+  guard let host = url.host else { return }
+  TestURLProtocolRegistry.shared.remove(host: host)
 }
 
 extension URLRequest {

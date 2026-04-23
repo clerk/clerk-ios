@@ -6,8 +6,8 @@
 import Foundation
 
 protocol ExternalAccountServiceProtocol: Sendable {
-  @MainActor func reauthorize(_ externalAccountId: String, redirectUrl: String?, additionalScopes: [String], oidcPrompts: [OIDCPrompt]) async throws -> ExternalAccount
-  @MainActor func destroy(_ externalAccountId: String) async throws -> DeletedObject
+  @MainActor func reauthorize(_ externalAccountId: String, redirectUrl: String, additionalScopes: [String], oidcPrompts: [OIDCPrompt], sessionId: String?) async throws -> ExternalAccount
+  @MainActor func destroy(_ externalAccountId: String, sessionId: String?) async throws -> DeletedObject
 }
 
 final class ExternalAccountService: ExternalAccountServiceProtocol {
@@ -20,12 +20,13 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
   @MainActor
   func reauthorize(
     _ externalAccountId: String,
-    redirectUrl: String?,
+    redirectUrl: String,
     additionalScopes: [String],
-    oidcPrompts: [OIDCPrompt]
+    oidcPrompts: [OIDCPrompt],
+    sessionId: String?
   ) async throws -> ExternalAccount {
     var bodyParams: [String: JSON] = [
-      "redirect_url": .string(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl),
+      "redirect_url": .string(redirectUrl),
     ]
 
     if !additionalScopes.isEmpty {
@@ -39,7 +40,7 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts/\(externalAccountId)/reauthorize",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: bodyParams
     )
 
@@ -47,11 +48,11 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
   }
 
   @MainActor
-  func destroy(_ externalAccountId: String) async throws -> DeletedObject {
+  func destroy(_ externalAccountId: String, sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/external_accounts/\(externalAccountId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response

@@ -26,6 +26,17 @@ private var isRunningInCI: Bool {
   ProcessInfo.processInfo.environment["CI"] != nil
 }
 
+var isIntegrationTestingEnabled: Bool {
+  guard let value = ProcessInfo.processInfo.environment["CLERK_RUN_INTEGRATION_TESTS"]?
+    .trimmingCharacters(in: .whitespacesAndNewlines)
+    .lowercased()
+  else {
+    return false
+  }
+
+  return ["1", "true", "yes"].contains(value)
+}
+
 /// Gets the publishable key for integration tests.
 ///
 /// Reads from `.keys.json` file using the specified `keyName`.
@@ -53,11 +64,10 @@ func getIntegrationTestPublishableKey(keyName: String) -> String {
   return ""
 }
 
-/// Configures Clerk for integration testing with real API calls.
+/// Creates a local Clerk instance for integration testing with real API calls.
 ///
-/// Unlike `configureClerkForTesting()` which uses mocked responses, this function configures
-/// Clerk to make real API calls to a Clerk instance. This is used for integration tests that
-/// verify the SDK works correctly with the actual Clerk API.
+/// Unlike `configureClerkForTesting()` which uses mocked responses, this function creates
+/// a fresh `Clerk()` instance backed by the real API client for a Clerk instance.
 ///
 /// Uses an in-memory keychain to avoid affecting the simulator's real keychain state.
 /// This ensures integration tests are isolated and don't log out the user or affect
@@ -69,39 +79,52 @@ func getIntegrationTestPublishableKey(keyName: String) -> String {
 /// - Note: Integration tests require network access and a valid Clerk test instance.
 /// - Note: Integration tests are slower than unit tests due to real network calls.
 @MainActor
-func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
+func configureClerkForIntegrationTesting(keyName: String) throws -> Clerk? {
   let publishableKey = getIntegrationTestPublishableKey(keyName: keyName)
   guard !publishableKey.isEmpty else {
     if isRunningInCI {
       throw IntegrationTestConfigurationError.missingPublishableKey(keyName)
     }
-    return false
+    return nil
   }
 
-  Clerk.configure(publishableKey: publishableKey)
+  let dependencies = try DependencyContainer(
+    publishableKey: publishableKey,
+    options: .init()
+  )
 
-  // Replace the dependencies with a container that uses an in-memory keychain
-  // but keeps the real API client and services for making actual API calls
-  let apiClient = Clerk.shared.dependencies.apiClient
+  // Keep the real API client and services, but replace the keychain with in-memory storage.
+  let apiClient = dependencies.apiClient
+  let emailAddressService = EmailAddressService(apiClient: apiClient)
+  let phoneNumberService = PhoneNumberService(apiClient: apiClient)
+  let passkeyService = PasskeyService(apiClient: apiClient)
 
-  Clerk.shared.dependencies = MockDependencyContainer(
+  let container = MockDependencyContainer(
     apiClient: apiClient,
     keychain: InMemoryKeychain(),
-    telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
+    telemetryCollector: dependencies.telemetryCollector,
     clientService: ClientService(apiClient: apiClient),
     userService: UserService(apiClient: apiClient),
     signInService: SignInService(apiClient: apiClient),
     signUpService: SignUpService(apiClient: apiClient),
     sessionService: SessionService(apiClient: apiClient),
-    passkeyService: PasskeyService(apiClient: apiClient),
+    passkeyService: passkeyService,
     organizationService: OrganizationService(apiClient: apiClient),
     environmentService: EnvironmentService(apiClient: apiClient),
-    emailAddressService: EmailAddressService(apiClient: apiClient),
-    phoneNumberService: PhoneNumberService(apiClient: apiClient),
+    emailAddressService: emailAddressService,
+    phoneNumberService: phoneNumberService,
     externalAccountService: ExternalAccountService(apiClient: apiClient)
   )
 
-  return true
+  try container.configurationManager.configure(publishableKey: publishableKey, options: .init())
+
+  let clerk = Clerk()
+  clerk.dependencies = container
+  clerk.client = nil
+  clerk.environment = nil
+  clerk.sessionsByUserId = [:]
+
+  return clerk
 }
 
 func shouldSkipIntegrationTest(_ error: Error, keyName: String) throws -> Bool {

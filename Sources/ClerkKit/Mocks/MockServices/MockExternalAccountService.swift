@@ -29,9 +29,10 @@ package final class MockExternalAccountService: ExternalAccountServiceProtocol {
   @MainActor
   package func reauthorize(
     _ externalAccountId: String,
-    redirectUrl: String?,
+    redirectUrl: String,
     additionalScopes: [String],
-    oidcPrompts: [OIDCPrompt]
+    oidcPrompts: [OIDCPrompt],
+    sessionId _: String?
   ) async throws -> ExternalAccount {
     if let handler = reauthorizeHandler {
       return try await handler(externalAccountId, redirectUrl, additionalScopes, oidcPrompts)
@@ -40,7 +41,7 @@ package final class MockExternalAccountService: ExternalAccountServiceProtocol {
   }
 
   @MainActor
-  package func destroy(_ externalAccountId: String) async throws -> DeletedObject {
+  package func destroy(_ externalAccountId: String, sessionId _: String?) async throws -> DeletedObject {
     if let handler = destroyHandler {
       return try await handler(externalAccountId)
     }

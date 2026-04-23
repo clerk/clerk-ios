@@ -6,7 +6,7 @@
 import Foundation
 
 protocol SessionServiceProtocol: Sendable {
-  @MainActor func revoke(sessionId: String) async throws -> Session
+  @MainActor func revoke(sessionId: String, actingSessionId: String?) async throws -> Session
 
   /// Signs out the active user.
   /// - Parameter sessionId: Optional session ID to sign out from a specific session.
@@ -33,11 +33,11 @@ final class SessionService: SessionServiceProtocol {
   }
 
   @MainActor
-  func revoke(sessionId: String) async throws -> Session {
+  func revoke(sessionId: String, actingSessionId: String?) async throws -> Session {
     let request = Request<ClientResponse<Session>>(
       path: "/v1/me/sessions/\(sessionId)/revoke",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: actingSessionId)]
     )
 
     return try await apiClient.send(request).value.response

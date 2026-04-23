@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ProxyConfigurationTests {
   @Test
   func initWithValidURL() throws {

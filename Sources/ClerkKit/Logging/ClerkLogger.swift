@@ -99,6 +99,28 @@ package enum ClerkLogger {
   /// The unified logging instance for Clerk
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
+  private struct Configuration {
+    var logLevel: LogLevel = .error
+    var handler: (@Sendable (LogEntry) -> Void)?
+  }
+
+  @MainActor
+  private static var configuration = Configuration()
+
+  @MainActor
+  package static func configure(
+    logLevel: LogLevel,
+    handler: (@Sendable (LogEntry) -> Void)?
+  ) {
+    configuration.logLevel = logLevel
+    configuration.handler = handler
+  }
+
+  @MainActor
+  package static func resetConfiguration() {
+    configuration = Configuration()
+  }
+
   /// Log an error message (always logs regardless of debug mode)
   /// - Parameters:
   ///   - message: The error message to log
@@ -198,7 +220,7 @@ package enum ClerkLogger {
   ) {
     // Errors always log regardless of level
     if !forceLog {
-      // Check log level asynchronously since Clerk.shared.options requires MainActor
+      // Check logger configuration asynchronously since it is MainActor-isolated.
       let shouldLogTask = Task { @MainActor in
         ClerkLogger.shouldLog(level: level)
       }
@@ -272,9 +294,7 @@ package enum ClerkLogger {
         formattedMessage: logMessage
       )
 
-      // Capture handler closure while we're on MainActor (where Clerk.shared is safe to access)
-      // This avoids issues if Clerk isn't configured yet or if we're in a detached context
-      let handler = Clerk.shared.options.loggerHandler
+      let handler = configuration.handler
 
       // Invoke handler asynchronously to avoid blocking
       if let handler {
@@ -288,7 +308,7 @@ package enum ClerkLogger {
   /// Determines if a message at the given level should be logged based on the configured log level
   @MainActor
   static func shouldLog(level: LogLevel) -> Bool {
-    let configuredLevel = Clerk.shared.options.logLevel
+    let configuredLevel = configuration.logLevel
     // Log if the message level is <= configured level (lower severity number = higher priority)
     return level <= configuredLevel
   }

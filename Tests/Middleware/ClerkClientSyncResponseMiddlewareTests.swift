@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func decodeClientFromClientField() throws {
@@ -32,7 +32,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   @Test
   func validateClearsClientWhenResponseAndClientAreNull() async throws {
-    configureClerkForTesting()
     let clerk = Clerk()
     clerk.client = Client.mock
     let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
@@ -56,7 +55,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
-    configureClerkForTesting()
     let clerk = Clerk()
     let existingClient = Client.mock
     clerk.client = existingClient

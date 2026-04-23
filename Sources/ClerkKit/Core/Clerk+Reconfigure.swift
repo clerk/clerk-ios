@@ -33,6 +33,7 @@ extension Clerk {
     shared.client = nil
     shared.environment = nil
     shared.sessionsByUserId = [:]
+    ClerkLogger.resetConfiguration()
 
     // 4. Re-run configuration
     try shared.performConfiguration(publishableKey: publishableKey, options: options)

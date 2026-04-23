@@ -6,7 +6,7 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ClerkOptionsTests {
   private struct TestRequestMiddleware: ClerkRequestMiddleware {
     func prepare(_: inout URLRequest) async throws {}

@@ -4,13 +4,8 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct SessionTokenFetcherTests {
-  init() {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-  }
-
   struct FetchTokenScenario: Codable, Equatable {
     let template: String?
   }
@@ -30,13 +25,13 @@ struct SessionTokenFetcherTests {
       captured.setValue((sessionId: sessionId, template: template))
       return .mock
     })
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
+    let cache = SessionTokensCache()
+    let fetcher = SessionTokenFetcher(
+      sessionService: service,
+      tokenCache: cache
     )
 
-    _ = try await SessionTokenFetcher.shared.fetchToken(
+    _ = try await fetcher.fetchToken(
       session,
       options: .init(template: scenario.template, skipCache: true)
     )
@@ -54,18 +49,18 @@ struct SessionTokenFetcherTests {
     let service = MockSessionService(fetchToken: { _, _ in
       tokenResource
     })
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
+    let cache = SessionTokensCache()
+    let fetcher = SessionTokenFetcher(
+      sessionService: service,
+      tokenCache: cache
     )
 
-    _ = try await SessionTokenFetcher.shared.fetchToken(
+    _ = try await fetcher.fetchToken(
       session,
       options: .init(template: template, skipCache: true)
     )
 
-    let cachedToken = await SessionTokensCache.shared.getToken(
+    let cachedToken = await cache.getToken(
       cacheKey: session.tokenCacheKey(template: template)
     )
     #expect(cachedToken == tokenResource)

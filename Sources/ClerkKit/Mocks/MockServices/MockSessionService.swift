@@ -37,7 +37,7 @@ package final class MockSessionService: SessionServiceProtocol {
   }
 
   @MainActor
-  package func revoke(sessionId: String) async throws -> Session {
+  package func revoke(sessionId: String, actingSessionId _: String?) async throws -> Session {
     if let handler = revokeHandler {
       return try await handler(sessionId)
     }

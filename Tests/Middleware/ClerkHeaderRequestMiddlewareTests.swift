@@ -11,33 +11,23 @@ import Testing
 
 /// Tests for ClerkHeaderRequestMiddleware header injection.
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct ClerkHeaderRequestMiddlewareTests {
-  init() {
-    configureClerkForTesting()
-  }
-
-  /// Creates a test setup with a fresh keychain and configured dependencies.
-  ///
-  /// - Returns: A fresh InMemoryKeychain instance.
-  private func createTestKeychain() -> InMemoryKeychain {
+  private func createMiddleware(
+    clientId: String? = nil
+  ) -> (keychain: InMemoryKeychain, middleware: ClerkHeaderRequestMiddleware) {
     let keychain = InMemoryKeychain()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    let middleware = ClerkHeaderRequestMiddleware(
+      keychainProvider: { keychain },
+      clientIdProvider: { clientId }
     )
-
-    return keychain
+    return (keychain, middleware)
   }
 
   @Test
   func addsDeviceTokenHeaderWhenPresent() async throws {
-    let keychain = createTestKeychain()
+    let (keychain, middleware) = createMiddleware()
     try keychain.set("test-device-token", forKey: "clerkDeviceToken")
-
-    let middleware = ClerkHeaderRequestMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -47,9 +37,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
-    _ = createTestKeychain()
-
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -59,10 +47,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsClientIdHeaderWhenAvailable() async throws {
-    // Set a mock client
-    Clerk.shared.client = .mock
-
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware(clientId: Client.mock.id)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -72,10 +57,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func doesNotAddClientIdHeaderWhenClientMissing() async throws {
-    // Ensure no client is set
-    Clerk.shared.client = nil
-
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -85,7 +67,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsNativeDeviceIdHeaderWhenAvailable() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -102,7 +84,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsDeviceTypeHeader() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -114,7 +96,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsDeviceInfoHeaders() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let (_, middleware) = createMiddleware()
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)

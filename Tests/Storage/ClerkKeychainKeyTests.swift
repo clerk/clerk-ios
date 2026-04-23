@@ -10,7 +10,7 @@ import Foundation
 import Testing
 
 /// Tests for ClerkKeychainKey enum.
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {

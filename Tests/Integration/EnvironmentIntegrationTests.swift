@@ -20,15 +20,15 @@ import Testing
 /// - Valid Clerk test instance (configured via `configureClerkForIntegrationTesting(keyName:)`)
 /// - Test instance should be stable and not modified by other processes
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.integration), .enabled(if: isIntegrationTestingEnabled))
 struct EnvironmentIntegrationTests {
   @Test
   func fetchAndDecodeEnvironment() async throws {
-    guard try configureClerkForIntegrationTesting(keyName: "with-email-codes") else {
+    guard let clerk = try configureClerkForIntegrationTesting(keyName: "with-email-codes") else {
       return
     }
 
     // Test that we can fetch and decode the environment from a real Clerk instance
-    _ = try await Clerk.shared.refreshEnvironment()
+    _ = try await clerk.refreshEnvironment()
   }
 }

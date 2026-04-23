@@ -4,16 +4,15 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct PasskeyTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct PasskeyAccountFacadeTests {
+  private let fixture = ClerkTestFixture()
 
-  private func configureService(_ service: MockPasskeyService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
+  private func makeClerk(_ service: MockPasskeyService) throws -> Clerk {
+    try fixture.makeClerk(
       apiClient: createMockAPIClient(),
-      passkeyService: service
+      passkeyService: service,
+      environment: .mock
     )
   }
 
@@ -25,10 +24,9 @@ struct PasskeyTests {
       captured.setValue((passkeyId, name))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await passkey.update(name: "New Name")
+    _ = try await clerk.account.update(passkey, name: "New Name")
 
     let params = try #require(captured.value)
     #expect(params.0 == passkey.id)
@@ -43,10 +41,9 @@ struct PasskeyTests {
       captured.setValue((passkeyId, credential))
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await passkey.attemptVerification(credential: "mock_credential")
+    _ = try await clerk.account.attemptVerification("mock_credential", for: passkey)
 
     let params = try #require(captured.value)
     #expect(params.0 == passkey.id)
@@ -61,10 +58,9 @@ struct PasskeyTests {
       captured.setValue(passkeyId)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await passkey.delete()
+    _ = try await clerk.account.delete(passkey)
 
     #expect(captured.value == passkey.id)
   }

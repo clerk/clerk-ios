@@ -150,22 +150,47 @@ public final class Clerk {
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
   /// Dependency container holding all SDK dependencies.
-  var dependencies: any Dependencies
+  var dependencies: any Dependencies {
+    didSet {
+      sessionTokenFetcher = makeSessionTokenFetcher()
+    }
+  }
 
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
+
+  /// Coalesces session token refreshes for this Clerk instance.
+  private var sessionTokenFetcher: SessionTokenFetcher?
 
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
   /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
-    Auth(
+    guard let sessionTokenFetcher else {
+      fatalError("Session token fetcher has not been initialized.")
+    }
+
+    return Auth(
+      clerk: self,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
+      sessionTokenFetcher: sessionTokenFetcher,
       eventEmitter: authEventEmitter
+    )
+  }
+
+  /// The main entry point for current-user account operations.
+  var account: Account {
+    Account(
+      clerk: self,
+      userService: dependencies.userService,
+      emailAddressService: dependencies.emailAddressService,
+      phoneNumberService: dependencies.phoneNumberService,
+      externalAccountService: dependencies.externalAccountService,
+      passkeyService: dependencies.passkeyService
     )
   }
 
@@ -173,7 +198,7 @@ public final class Clerk {
   ///
   /// Use this property to create organizations.
   public var organizations: Organizations {
-    Organizations(organizationService: dependencies.organizationService)
+    Organizations(clerk: self, organizationService: dependencies.organizationService)
   }
 
   /// Proxy configuration derived from `proxyUrl`, if present.
@@ -197,6 +222,8 @@ public final class Clerk {
         fatalError("Failed to create temporary dependency container")
       }
     }
+
+    sessionTokenFetcher = makeSessionTokenFetcher()
   }
 }
 
@@ -204,6 +231,11 @@ extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   @MainActor
   package func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
+    ClerkLogger.configure(
+      logLevel: options.logLevel,
+      handler: options.loggerHandler
+    )
+
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
@@ -281,6 +313,7 @@ extension Clerk {
       if EnvironmentDetection.isRunningInTests {
         // Clean up old managers before resetting to prevent background tasks from interfering
         existing.cleanupManagers()
+        ClerkLogger.resetConfiguration()
         _shared = nil
       } else {
         ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
@@ -537,8 +570,18 @@ extension Clerk {
 
   private func resetManagerStateForCleanup() {
     authEventEmitter.finish()
+    sessionTokenFetcher = makeSessionTokenFetcher()
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
+  }
+
+  private func makeSessionTokenFetcher() -> SessionTokenFetcher {
+    SessionTokenFetcher(
+      sessionService: dependencies.sessionService,
+      onTokenRefreshed: { [weak self] token in
+        self?.authEventEmitter.send(.tokenRefreshed(token: token))
+      }
+    )
   }
 
   private func teardownNonCacheManagers() {

@@ -4,16 +4,15 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct ExternalAccountTests {
-  init() {
-    configureClerkForTesting()
-  }
+@Suite(.tags(.unit))
+struct ExternalAccountAccountFacadeTests {
+  private let fixture = ClerkTestFixture()
 
-  private func configureService(_ service: MockExternalAccountService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
+  private func makeClerk(_ service: MockExternalAccountService) throws -> Clerk {
+    try fixture.makeClerk(
       apiClient: createMockAPIClient(),
-      externalAccountService: service
+      externalAccountService: service,
+      environment: .mock
     )
   }
 
@@ -25,10 +24,9 @@ struct ExternalAccountTests {
       captured.setValue(externalAccountId)
       return .mock
     })
+    let clerk = try makeClerk(service)
 
-    configureService(service)
-
-    _ = try await externalAccount.destroy()
+    _ = try await clerk.account.destroy(externalAccount)
 
     #expect(captured.value == externalAccount.id)
   }

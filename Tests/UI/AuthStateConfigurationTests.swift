@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @MainActor
+@Suite(.tags(.uiState, .unit))
 struct AuthStateConfigurationTests {
   @Test
   func defaultConfigurationLoadsPersistedValues() {

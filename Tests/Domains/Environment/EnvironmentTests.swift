@@ -4,12 +4,8 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct EnvironmentTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   @Test
   func refreshEnvironmentUsesEnvironmentServiceGet() async throws {
     let called = LockIsolated(false)
@@ -18,15 +14,16 @@ struct EnvironmentTests {
       called.setValue(true)
       return expectedEnvironment
     })
+    let clerk = Clerk()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       environmentService: service
     )
 
-    _ = try await Clerk.shared.refreshEnvironment()
+    _ = try await clerk.refreshEnvironment()
 
     #expect(called.value == true)
-    #expect(Clerk.shared.environment == expectedEnvironment)
+    #expect(clerk.environment == expectedEnvironment)
   }
 }

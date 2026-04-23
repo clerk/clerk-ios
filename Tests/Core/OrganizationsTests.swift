@@ -3,12 +3,8 @@ import ConcurrencyExtras
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct OrganizationsTests {
-  init() {
-    configureClerkForTesting()
-  }
-
   @Test
   func createUsesOrganizationServiceCreateOrganization() async throws {
     let captured = LockIsolated<(String, String?)?>(nil)
@@ -16,13 +12,14 @@ struct OrganizationsTests {
       captured.setValue((name, slug))
       return .mock
     })
+    let clerk = Clerk()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       organizationService: service
     )
 
-    _ = try await Clerk.shared.organizations.create(name: "My Org", slug: nil)
+    _ = try await clerk.organizations.create(name: "My Org", slug: nil)
 
     let params = try #require(captured.value)
     #expect(params.0 == "My Org")

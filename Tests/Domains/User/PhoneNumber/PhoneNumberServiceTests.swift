@@ -1,36 +1,35 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.networking, .unit))
 struct PhoneNumberServiceTests {
-  init() {
-    configureClerkForTesting()
+  private let sessionId = "session_test_123"
+
+  private func makeService(baseURL: URL) -> PhoneNumberService {
+    PhoneNumberService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
   @Test
   func testCreate() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["phone_number"] == "+1234567890")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.create(phoneNumber: "+1234567890")
+    _ = try await makeService(baseURL: baseURL).create(phoneNumber: "+1234567890", sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -38,22 +37,20 @@ struct PhoneNumberServiceTests {
   func testDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers/\(phoneNumber.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .delete,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.delete(phoneNumberId: phoneNumber.id)
+    _ = try await makeService(baseURL: baseURL).delete(phoneNumberId: phoneNumber.id, sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -61,23 +58,21 @@ struct PhoneNumberServiceTests {
   func testPrepareVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)/prepare_verification")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers/\(phoneNumber.id)/prepare_verification")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.prepareVerification(phoneNumberId: phoneNumber.id)
+    _ = try await makeService(baseURL: baseURL).prepareVerification(phoneNumberId: phoneNumber.id, sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -85,25 +80,24 @@ struct PhoneNumberServiceTests {
   func testAttemptVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)/attempt_verification")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers/\(phoneNumber.id)/attempt_verification")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .post,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.attemptVerification(
+    _ = try await makeService(baseURL: baseURL).attemptVerification(
       phoneNumberId: phoneNumber.id,
-      code: "123456"
+      code: "123456",
+      sessionId: sessionId
     )
     #expect(requestHandled.value)
   }
@@ -112,23 +106,21 @@ struct PhoneNumberServiceTests {
   func testMakeDefaultSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers/\(phoneNumber.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .patch,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["default_second_factor"] == "1")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.makeDefaultSecondFactor(phoneNumberId: phoneNumber.id)
+    _ = try await makeService(baseURL: baseURL).makeDefaultSecondFactor(phoneNumberId: phoneNumber.id, sessionId: sessionId)
     #expect(requestHandled.value)
   }
 
@@ -136,25 +128,24 @@ struct PhoneNumberServiceTests {
   func testSetReservedForSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers/\(phoneNumber.id)")!
+    let baseURL = makeIsolatedMockBaseURL()
+    let originalURL = baseURL.appendingPathComponent("v1/me/phone_numbers/\(phoneNumber.id)")
 
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { request in
+    try registerIsolatedStub(
+      url: originalURL,
+      method: .patch,
+      data: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock))
+    ) { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["reserved_for_second_factor"] == "1")
       requestHandled.setValue(true)
     }
-    mock.register()
+    defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.setReservedForSecondFactor(
+    _ = try await makeService(baseURL: baseURL).setReservedForSecondFactor(
       phoneNumberId: phoneNumber.id,
-      reserved: true
+      reserved: true,
+      sessionId: sessionId
     )
     #expect(requestHandled.value)
   }

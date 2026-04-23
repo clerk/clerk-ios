@@ -6,12 +6,12 @@
 import Foundation
 
 protocol PhoneNumberServiceProtocol: Sendable {
-  @MainActor func create(phoneNumber: String) async throws -> PhoneNumber
-  @MainActor func delete(phoneNumberId: String) async throws -> DeletedObject
-  @MainActor func prepareVerification(phoneNumberId: String) async throws -> PhoneNumber
-  @MainActor func attemptVerification(phoneNumberId: String, code: String) async throws -> PhoneNumber
-  @MainActor func makeDefaultSecondFactor(phoneNumberId: String) async throws -> PhoneNumber
-  @MainActor func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber
+  @MainActor func create(phoneNumber: String, sessionId: String?) async throws -> PhoneNumber
+  @MainActor func delete(phoneNumberId: String, sessionId: String?) async throws -> DeletedObject
+  @MainActor func prepareVerification(phoneNumberId: String, sessionId: String?) async throws -> PhoneNumber
+  @MainActor func attemptVerification(phoneNumberId: String, code: String, sessionId: String?) async throws -> PhoneNumber
+  @MainActor func makeDefaultSecondFactor(phoneNumberId: String, sessionId: String?) async throws -> PhoneNumber
+  @MainActor func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool, sessionId: String?) async throws -> PhoneNumber
 }
 
 final class PhoneNumberService: PhoneNumberServiceProtocol {
@@ -22,11 +22,11 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  func create(phoneNumber: String) async throws -> PhoneNumber {
+  func create(phoneNumber: String, sessionId: String?) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["phone_number": phoneNumber]
     )
 
@@ -34,22 +34,22 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  func delete(phoneNumberId: String) async throws -> DeletedObject {
+  func delete(phoneNumberId: String, sessionId: String?) async throws -> DeletedObject {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func prepareVerification(phoneNumberId: String) async throws -> PhoneNumber {
+  func prepareVerification(phoneNumberId: String, sessionId: String?) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)/prepare_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["strategy": "phone_code"]
     )
 
@@ -57,11 +57,11 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  func attemptVerification(phoneNumberId: String, code: String) async throws -> PhoneNumber {
+  func attemptVerification(phoneNumberId: String, code: String, sessionId: String?) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["code": code]
     )
 
@@ -69,11 +69,11 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  func makeDefaultSecondFactor(phoneNumberId: String) async throws -> PhoneNumber {
+  func makeDefaultSecondFactor(phoneNumberId: String, sessionId: String?) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["default_second_factor": true]
     )
 
@@ -81,11 +81,11 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool) async throws -> PhoneNumber {
+  func setReservedForSecondFactor(phoneNumberId: String, reserved: Bool, sessionId: String?) async throws -> PhoneNumber {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: ["reserved_for_second_factor": reserved]
     )
 

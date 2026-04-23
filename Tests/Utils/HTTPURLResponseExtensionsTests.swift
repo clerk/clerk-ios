@@ -6,8 +6,23 @@
 import Foundation
 import Testing
 
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct HTTPURLResponseExtensionsTests {
+  struct ClassificationScenario {
+    let statusCode: Int
+    let isError: Bool
+    let isClientError: Bool
+    let isServerError: Bool
+    let isSuccess: Bool
+    let isRedirection: Bool
+    let statusType: HTTPStatusType
+  }
+
+  struct StatusDescriptionScenario {
+    let statusCode: Int
+    let expectedCategory: String
+  }
+
   func createResponse(statusCode: Int) -> HTTPURLResponse? {
     HTTPURLResponse(
       url: URL(string: "https://example.com")!,
@@ -17,176 +32,55 @@ struct HTTPURLResponseExtensionsTests {
     )
   }
 
-  @Test
-  func testIsError() {
-    // 4xx client errors
-    #expect(createResponse(statusCode: 400)?.isError == true)
-    #expect(createResponse(statusCode: 404)?.isError == true)
-    #expect(createResponse(statusCode: 499)?.isError == true)
+  @Test(arguments: Self.classificationScenarios)
+  func responseClassificationMatchesExpectedValues(for scenario: ClassificationScenario) throws {
+    let response = try #require(createResponse(statusCode: scenario.statusCode))
 
-    // 5xx server errors
-    #expect(createResponse(statusCode: 500)?.isError == true)
-    #expect(createResponse(statusCode: 503)?.isError == true)
-    #expect(createResponse(statusCode: 599)?.isError == true)
-
-    // Success codes (should not be errors)
-    #expect(createResponse(statusCode: 200)?.isError == false)
-    #expect(createResponse(statusCode: 201)?.isError == false)
-    #expect(createResponse(statusCode: 299)?.isError == false)
-
-    // Redirect codes (should not be errors)
-    #expect(createResponse(statusCode: 300)?.isError == false)
-    #expect(createResponse(statusCode: 301)?.isError == false)
-    #expect(createResponse(statusCode: 399)?.isError == false)
-
-    // Informational codes (should not be errors)
-    #expect(createResponse(statusCode: 100)?.isError == false)
-    #expect(createResponse(statusCode: 199)?.isError == false)
+    #expect(response.isError == scenario.isError)
+    #expect(response.isClientError == scenario.isClientError)
+    #expect(response.isServerError == scenario.isServerError)
+    #expect(response.isSuccess == scenario.isSuccess)
+    #expect(response.isRedirection == scenario.isRedirection)
+    #expect(response.statusType == scenario.statusType)
   }
 
-  @Test
-  func testIsClientError() {
-    // 4xx client errors
-    #expect(createResponse(statusCode: 400)?.isClientError == true)
-    #expect(createResponse(statusCode: 404)?.isClientError == true)
-    #expect(createResponse(statusCode: 499)?.isClientError == true)
+  @Test(arguments: Self.statusDescriptionScenarios)
+  func statusDescriptionIncludesCategoryAndCode(for scenario: StatusDescriptionScenario) throws {
+    let response = try #require(createResponse(statusCode: scenario.statusCode))
 
-    // 5xx server errors (should not be client errors)
-    #expect(createResponse(statusCode: 500)?.isClientError == false)
-    #expect(createResponse(statusCode: 503)?.isClientError == false)
-
-    // Success codes
-    #expect(createResponse(statusCode: 200)?.isClientError == false)
-
-    // Redirect codes
-    #expect(createResponse(statusCode: 300)?.isClientError == false)
-
-    // Informational codes
-    #expect(createResponse(statusCode: 100)?.isClientError == false)
+    #expect(response.statusDescription.contains(scenario.expectedCategory))
+    #expect(response.statusDescription.contains(String(scenario.statusCode)))
   }
 
-  @Test
-  func testIsServerError() {
-    // 5xx server errors
-    #expect(createResponse(statusCode: 500)?.isServerError == true)
-    #expect(createResponse(statusCode: 503)?.isServerError == true)
-    #expect(createResponse(statusCode: 599)?.isServerError == true)
+  private static let classificationScenarios: [ClassificationScenario] = [
+    .init(statusCode: 0, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .unknown),
+    .init(statusCode: 99, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .unknown),
+    .init(statusCode: 100, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .informational),
+    .init(statusCode: 199, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .informational),
+    .init(statusCode: 200, isError: false, isClientError: false, isServerError: false, isSuccess: true, isRedirection: false, statusType: .success),
+    .init(statusCode: 201, isError: false, isClientError: false, isServerError: false, isSuccess: true, isRedirection: false, statusType: .success),
+    .init(statusCode: 204, isError: false, isClientError: false, isServerError: false, isSuccess: true, isRedirection: false, statusType: .success),
+    .init(statusCode: 299, isError: false, isClientError: false, isServerError: false, isSuccess: true, isRedirection: false, statusType: .success),
+    .init(statusCode: 300, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: true, statusType: .redirection),
+    .init(statusCode: 301, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: true, statusType: .redirection),
+    .init(statusCode: 302, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: true, statusType: .redirection),
+    .init(statusCode: 399, isError: false, isClientError: false, isServerError: false, isSuccess: false, isRedirection: true, statusType: .redirection),
+    .init(statusCode: 400, isError: true, isClientError: true, isServerError: false, isSuccess: false, isRedirection: false, statusType: .clientError),
+    .init(statusCode: 404, isError: true, isClientError: true, isServerError: false, isSuccess: false, isRedirection: false, statusType: .clientError),
+    .init(statusCode: 499, isError: true, isClientError: true, isServerError: false, isSuccess: false, isRedirection: false, statusType: .clientError),
+    .init(statusCode: 500, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
+    .init(statusCode: 503, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
+    .init(statusCode: 599, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
+    .init(statusCode: 600, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .unknown),
+    .init(statusCode: 999, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .unknown),
+  ]
 
-    // 4xx client errors (should not be server errors)
-    #expect(createResponse(statusCode: 400)?.isServerError == false)
-    #expect(createResponse(statusCode: 404)?.isServerError == false)
-
-    // Success codes
-    #expect(createResponse(statusCode: 200)?.isServerError == false)
-
-    // Redirect codes
-    #expect(createResponse(statusCode: 300)?.isServerError == false)
-
-    // Informational codes
-    #expect(createResponse(statusCode: 100)?.isServerError == false)
-  }
-
-  @Test
-  func testIsSuccess() {
-    // 2xx success codes
-    #expect(createResponse(statusCode: 200)?.isSuccess == true)
-    #expect(createResponse(statusCode: 201)?.isSuccess == true)
-    #expect(createResponse(statusCode: 204)?.isSuccess == true)
-    #expect(createResponse(statusCode: 299)?.isSuccess == true)
-
-    // 4xx client errors (should not be success)
-    #expect(createResponse(statusCode: 400)?.isSuccess == false)
-
-    // 5xx server errors
-    #expect(createResponse(statusCode: 500)?.isSuccess == false)
-
-    // Redirect codes
-    #expect(createResponse(statusCode: 300)?.isSuccess == false)
-
-    // Informational codes
-    #expect(createResponse(statusCode: 100)?.isSuccess == false)
-  }
-
-  @Test
-  func testIsRedirection() {
-    // 3xx redirect codes
-    #expect(createResponse(statusCode: 300)?.isRedirection == true)
-    #expect(createResponse(statusCode: 301)?.isRedirection == true)
-    #expect(createResponse(statusCode: 302)?.isRedirection == true)
-    #expect(createResponse(statusCode: 399)?.isRedirection == true)
-
-    // 2xx success codes (should not be redirects)
-    #expect(createResponse(statusCode: 200)?.isRedirection == false)
-
-    // 4xx client errors
-    #expect(createResponse(statusCode: 400)?.isRedirection == false)
-
-    // 5xx server errors
-    #expect(createResponse(statusCode: 500)?.isRedirection == false)
-
-    // Informational codes
-    #expect(createResponse(statusCode: 100)?.isRedirection == false)
-  }
-
-  @Test
-  func testStatusType() {
-    // Informational (1xx)
-    #expect(createResponse(statusCode: 100)?.statusType == .informational)
-    #expect(createResponse(statusCode: 199)?.statusType == .informational)
-
-    // Success (2xx)
-    #expect(createResponse(statusCode: 200)?.statusType == .success)
-    #expect(createResponse(statusCode: 299)?.statusType == .success)
-
-    // Redirection (3xx)
-    #expect(createResponse(statusCode: 300)?.statusType == .redirection)
-    #expect(createResponse(statusCode: 399)?.statusType == .redirection)
-
-    // Client Error (4xx)
-    #expect(createResponse(statusCode: 400)?.statusType == .clientError)
-    #expect(createResponse(statusCode: 499)?.statusType == .clientError)
-
-    // Server Error (5xx)
-    #expect(createResponse(statusCode: 500)?.statusType == .serverError)
-    #expect(createResponse(statusCode: 599)?.statusType == .serverError)
-
-    // Unknown (outside normal range)
-    #expect(createResponse(statusCode: 0)?.statusType == .unknown)
-    #expect(createResponse(statusCode: 99)?.statusType == .unknown)
-    #expect(createResponse(statusCode: 600)?.statusType == .unknown)
-    #expect(createResponse(statusCode: 999)?.statusType == .unknown)
-  }
-
-  @Test
-  func testStatusDescription() throws {
-    // Informational
-    let infoResponse = try #require(createResponse(statusCode: 100))
-    #expect(infoResponse.statusDescription.contains("Informational"))
-    #expect(infoResponse.statusDescription.contains("100"))
-
-    // Success
-    let successResponse = try #require(createResponse(statusCode: 200))
-    #expect(successResponse.statusDescription.contains("Success"))
-    #expect(successResponse.statusDescription.contains("200"))
-
-    // Redirection
-    let redirectResponse = try #require(createResponse(statusCode: 301))
-    #expect(redirectResponse.statusDescription.contains("Redirection"))
-    #expect(redirectResponse.statusDescription.contains("301"))
-
-    // Client Error
-    let clientErrorResponse = try #require(createResponse(statusCode: 404))
-    #expect(clientErrorResponse.statusDescription.contains("Client Error"))
-    #expect(clientErrorResponse.statusDescription.contains("404"))
-
-    // Server Error
-    let serverErrorResponse = try #require(createResponse(statusCode: 500))
-    #expect(serverErrorResponse.statusDescription.contains("Server Error"))
-    #expect(serverErrorResponse.statusDescription.contains("500"))
-
-    // Unknown
-    let unknownResponse = try #require(createResponse(statusCode: 999))
-    #expect(unknownResponse.statusDescription.contains("Unknown Status"))
-    #expect(unknownResponse.statusDescription.contains("999"))
-  }
+  private static let statusDescriptionScenarios: [StatusDescriptionScenario] = [
+    .init(statusCode: 100, expectedCategory: "Informational"),
+    .init(statusCode: 200, expectedCategory: "Success"),
+    .init(statusCode: 301, expectedCategory: "Redirection"),
+    .init(statusCode: 404, expectedCategory: "Client Error"),
+    .init(statusCode: 500, expectedCategory: "Server Error"),
+    .init(statusCode: 999, expectedCategory: "Unknown Status"),
+  ]
 }

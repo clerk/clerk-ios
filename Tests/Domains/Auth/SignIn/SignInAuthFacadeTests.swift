@@ -4,45 +4,9 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct SignInTests {
-  init() {
-    configureClerkForTesting()
-  }
-
-  private func configureService(_ service: MockSignInService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signInService: service
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(signUpService: MockSignUpService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signUpService: signUpService
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(
-    signInService: MockSignInService,
-    signUpService: MockSignUpService
-  ) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signInService: signInService,
-      signUpService: signUpService
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
+@Suite(.tags(.unit))
+struct SignInAuthFacadeTests {
+  private let support = AuthTestSupport()
 
   @Test
   func sendEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
@@ -52,10 +16,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendEmailCode()
+    _ = try await clerk.auth.sendEmailCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -70,10 +33,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendPhoneCode()
+    _ = try await clerk.auth.sendPhoneCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -88,10 +50,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.verifyCode("123456")
+    _ = try await clerk.auth.verifyCode("123456", for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -112,10 +73,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.verifyCode("123456")
+    _ = try await clerk.auth.verifyCode("123456", for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -136,11 +96,10 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
-
-    configureService(service)
+    let clerk = try support.makeClerk(signInService: service)
 
     do {
-      _ = try await signIn.verifyCode("123456")
+      _ = try await clerk.auth.verifyCode("123456", for: signIn)
       Issue.record("Expected ClerkClientError.")
     } catch let error as ClerkClientError {
       #expect(error.message == "Unable to verify code for strategy 'password'.")
@@ -161,11 +120,10 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
-
-    configureService(service)
+    let clerk = try support.makeClerk(signInService: service)
 
     do {
-      _ = try await signIn.verifyCode("123456")
+      _ = try await clerk.auth.verifyCode("123456", for: signIn)
       Issue.record("Expected ClerkClientError.")
     } catch let error as ClerkClientError {
       #expect(error.message == "Unable to verify code because no first factor strategy is set.")
@@ -184,10 +142,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.authenticateWithPassword("password123")
+    _ = try await clerk.auth.authenticateWithPassword("password123", for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -204,10 +161,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.authenticateWithIdToken("mock_id_token", provider: .apple)
+    _ = try await clerk.auth.authenticateWithIdToken("mock_id_token", provider: .apple, for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -224,10 +180,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendMfaPhoneCode()
+    _ = try await clerk.auth.sendMfaPhoneCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -242,10 +197,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendMfaEmailCode()
+    _ = try await clerk.auth.sendMfaEmailCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -301,10 +255,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.verifyMfaCode(scenario.code, type: scenario.mfaType)
+    _ = try await clerk.auth.verifyMfaCode(scenario.code, type: scenario.mfaType, for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -320,10 +273,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendResetPasswordEmailCode()
+    _ = try await clerk.auth.sendResetPasswordEmailCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -340,16 +292,15 @@ struct SignInTests {
       captured.setValue(params)
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: signUpService)
 
-    configureServices(signUpService: signUpService)
-
-    let result = try await signIn.handleTransferFlow(transferable: true)
+    let result = try await clerk.auth.handleTransferFlow(for: signIn, transferable: true)
 
     switch result {
     case .signUp:
       break
     case .signIn:
-      #expect(Bool(false))
+      Issue.record("Expected sign-up result.")
     }
 
     let params = try #require(captured.value)
@@ -366,16 +317,15 @@ struct SignInTests {
       captured.setValue(params)
       return .mock
     })
+    let clerk = try support.makeClerk(signUpService: signUpService)
 
-    configureServices(signUpService: signUpService)
-
-    let result = try await signIn.handleTransferFlow(transferable: false)
+    let result = try await clerk.auth.handleTransferFlow(for: signIn, transferable: false)
 
     switch result {
     case .signIn:
       break
     case .signUp:
-      #expect(Bool(false))
+      Issue.record("Expected sign-in result.")
     }
 
     #expect(captured.value == nil)
@@ -389,10 +339,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.sendResetPasswordPhoneCode()
+    _ = try await clerk.auth.sendResetPasswordPhoneCode(for: signIn)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -407,10 +356,13 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.resetPassword(newPassword: "newPassword123", signOutOfOtherSessions: true)
+    _ = try await clerk.auth.resetPassword(
+      for: signIn,
+      newPassword: "newPassword123",
+      signOutOfOtherSessions: true
+    )
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -429,11 +381,10 @@ struct SignInTests {
       captured.setValue((id, params))
       return reloadedSignIn
     })
-
-    configureService(service)
+    let clerk = try support.makeClerk(signInService: service)
 
     let callbackURL = try #require(URL(string: "myapp://callback?rotating_token_nonce=test_nonce"))
-    let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
+    let result = try await clerk.auth.completeEnterpriseSSO(for: signIn, callbackURL: callbackURL)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
@@ -464,11 +415,13 @@ struct SignInTests {
       createCaptured.setValue(params)
       return .mock
     })
-
-    configureServices(signInService: signInService, signUpService: signUpService)
+    let clerk = try support.makeClerk(
+      signInService: signInService,
+      signUpService: signUpService
+    )
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
-    let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
+    let result = try await clerk.auth.completeEnterpriseSSO(for: signIn, callbackURL: callbackURL)
 
     let getParams = try #require(getCaptured.value)
     #expect(getParams.0 == signIn.id)
@@ -502,11 +455,14 @@ struct SignInTests {
       createCaptured.setValue(params)
       return .mock
     })
-
-    configureServices(signInService: signInService, signUpService: signUpService)
+    let clerk = try support.makeClerk(
+      signInService: signInService,
+      signUpService: signUpService
+    )
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
-    let result = try await signIn.completeEnterpriseSSO(
+    let result = try await clerk.auth.completeEnterpriseSSO(
+      for: signIn,
       callbackURL: callbackURL,
       transferable: false
     )
@@ -543,10 +499,9 @@ struct SignInTests {
       captured.setValue((id, params))
       return .mock
     })
+    let clerk = try support.makeClerk(signInService: service)
 
-    configureService(service)
-
-    _ = try await signIn.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
+    _ = try await clerk.auth.reload(signIn, rotatingTokenNonce: scenario.rotatingTokenNonce)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)

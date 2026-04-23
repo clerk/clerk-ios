@@ -4,11 +4,10 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(.tags(.unit))
 struct ClientTests {
   @Test
   func refreshClientUsesClientServiceGet() async throws {
-    configureClerkForTesting()
     let called = LockIsolated(false)
     let expectedClient = Client(
       id: "refresh-client-test",
@@ -20,41 +19,39 @@ struct ClientTests {
       called.setValue(true)
       return expectedClient
     })
+    let clerk = Clerk()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: service
     )
-    Clerk.shared.client = nil
+    clerk.client = nil
 
-    _ = try await Clerk.shared.refreshClient()
+    _ = try await clerk.refreshClient()
 
     #expect(called.value == true)
-    #expect(Clerk.shared.client?.id == expectedClient.id)
+    #expect(clerk.client?.id == expectedClient.id)
   }
 
   @Test
   func refreshClientClearsClientWhenServiceReturnsNil() async throws {
-    configureClerkForTesting()
     let service = MockClientService(get: { nil })
+    let clerk = Clerk()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: service
     )
-    Clerk.shared.client = Client.mock
+    clerk.client = Client.mock
 
-    let client = try await Clerk.shared.refreshClient()
+    let client = try await clerk.refreshClient()
 
     #expect(client == nil)
-    #expect(Clerk.shared.client == nil)
+    #expect(clerk.client == nil)
   }
 
   @Test
   func refreshClientIgnoresStaleClientResponseSequence() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
     let current = Client(
       id: "current-client",
       sessions: [],
@@ -67,47 +64,49 @@ struct ClientTests {
       lastActiveSessionId: "session-stale",
       updatedAt: Date(timeIntervalSince1970: 1000)
     )
+    let clerk = Clerk()
 
-    Clerk.shared.applyResponseClient(current, responseSequence: 2)
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.cleanupManagers()
+
+    clerk.applyResponseClient(current, responseSequence: 2)
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: SequencedClientService(
         response: ClientServiceResponse(client: stale, requestSequence: 1, serverDate: nil)
       )
     )
 
-    let client = try await Clerk.shared.refreshClient()
+    let client = try await clerk.refreshClient()
 
     #expect(client?.id == current.id)
-    #expect(Clerk.shared.client?.id == current.id)
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
+    #expect(clerk.client?.id == current.id)
+    #expect(clerk.client?.lastActiveSessionId == "session-current")
   }
 
   @Test
   func refreshClientIgnoresStaleNilResponseSequence() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
     let current = Client(
       id: "current-client",
       sessions: [],
       lastActiveSessionId: "session-current",
       updatedAt: Date(timeIntervalSince1970: 2000)
     )
+    let clerk = Clerk()
 
-    Clerk.shared.applyResponseClient(current, responseSequence: 2)
-    Clerk.shared.dependencies = MockDependencyContainer(
+    clerk.cleanupManagers()
+    clerk.applyResponseClient(current, responseSequence: 2)
+    clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       clientService: SequencedClientService(
         response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
       )
     )
 
-    let client = try await Clerk.shared.refreshClient()
+    let client = try await clerk.refreshClient()
 
     #expect(client?.id == current.id)
-    #expect(Clerk.shared.client?.id == current.id)
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
+    #expect(clerk.client?.id == current.id)
+    #expect(clerk.client?.lastActiveSessionId == "session-current")
   }
 }
 

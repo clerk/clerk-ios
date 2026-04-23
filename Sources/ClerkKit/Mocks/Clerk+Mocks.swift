@@ -21,7 +21,7 @@ import Foundation
 ///     return .mock
 ///   }
 ///
-///   builder.services.userService.getSessionsHandler = { user in
+///   builder.services.userService.getSessionsHandler = {
 ///     try? await Task.sleep(for: .seconds(1))
 ///     return [Session.mock, Session.mock2]
 ///   }
