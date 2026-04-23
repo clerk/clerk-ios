@@ -147,7 +147,7 @@ final class CacheManager {
   /// - Parameters:
   ///   - coordinator: The object that coordinates cache updates with Clerk properties.
   ///   - keychain: The keychain storage to use for persisting cached data.
-  ///     Passed in directly because CacheManager is initialized during `configure()` before `Clerk.shared` is set.
+  ///     Passed in directly so cache loading stays instance-based and does not depend on `Clerk.shared`.
   init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
     persistenceWorker = CachePersistenceWorker(keychain: keychain)
     self.coordinator = coordinator

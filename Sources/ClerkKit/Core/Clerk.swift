@@ -236,6 +236,8 @@ extension Clerk {
   }
 
   private func startManagedRuntime() {
+    Self.installShared(self)
+
     taskCoordinator = TaskCoordinator()
 
     // Set up session polling and lifecycle management
@@ -325,7 +327,6 @@ extension Clerk {
       )
 
       clerk.startManagedRuntime()
-      installShared(clerk)
       return clerk
     } catch {
       fatalError("Failed to configure Clerk: \(error.localizedDescription)")
