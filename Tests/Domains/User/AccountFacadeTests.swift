@@ -265,10 +265,37 @@ struct AccountFacadeTests {
       return [Session.mock]
     })
     let clerk = try makeClerk(userService: service)
+    clerk.client = .mock
 
-    _ = try await clerk.account.getSessions(for: user)
+    let sessions = try await clerk.account.getSessions(for: user)
 
     #expect(called.value == true)
+    #expect(sessions.map(\.id) == [Session.mock.id])
+    #expect(clerk.sessionsByUserId[user.id]?.map(\.id) == [Session.mock.id])
+  }
+
+  @Test
+  func getSessionsThrowsWhenUserIsNotActiveUser() async throws {
+    let user = User.mock2
+    let called = LockIsolated(false)
+    let service = MockUserService(getSessions: {
+      called.setValue(true)
+      return [Session.mock]
+    })
+    let clerk = try makeClerk(userService: service)
+    clerk.client = .mock
+
+    do {
+      _ = try await clerk.account.getSessions(for: user)
+      Issue.record("Expected getSessions to throw for a non-active user.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Cannot get sessions for a user that is not the active user.")
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error).")
+    }
+
+    #expect(called.value == false)
+    #expect(clerk.sessionsByUserId[user.id] == nil)
   }
 
   @Test

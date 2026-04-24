@@ -18,8 +18,8 @@ struct OrganizationInvitationAndDomainFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
-      captured.setValue((organizationId, initialPage, pageSize, status))
+    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, offset, pageSize, status in
+      captured.setValue((organizationId, offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
     let clerk = try support.makeClerk(organizationService: service)
@@ -88,8 +88,8 @@ struct OrganizationInvitationAndDomainFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
-      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
+    let service = MockOrganizationService(getOrganizationDomains: { organizationId, offset, pageSize, enrollmentMode in
+      captured.setValue((organizationId, offset, pageSize, enrollmentMode))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
     let clerk = try support.makeClerk(organizationService: service)

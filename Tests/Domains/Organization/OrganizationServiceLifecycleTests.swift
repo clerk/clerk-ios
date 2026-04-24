@@ -24,6 +24,7 @@ struct OrganizationServiceLifecycleTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.urlEncodedFormBody!["name"] == "My Org")
       #expect(request.urlEncodedFormBody!["slug"] == nil)
       requestHandled.setValue(true)
@@ -46,6 +47,7 @@ struct OrganizationServiceLifecycleTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.urlEncodedFormBody!["name"] == "My Org")
       #expect(request.urlEncodedFormBody!["slug"] == "my-org")
       requestHandled.setValue(true)
@@ -69,6 +71,7 @@ struct OrganizationServiceLifecycleTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock))
     ) { request in
       #expect(request.httpMethod == "PATCH")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.urlEncodedFormBody!["name"] == "New Name")
       #expect(request.urlEncodedFormBody!["slug"] == "new-slug")
       requestHandled.setValue(true)
@@ -97,6 +100,7 @@ struct OrganizationServiceLifecycleTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
@@ -119,6 +123,7 @@ struct OrganizationServiceLifecycleTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock))
     ) { request in
       #expect(request.httpMethod == "PUT")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
       requestHandled.setValue(true)
     }
@@ -150,6 +155,7 @@ struct OrganizationServiceLifecycleTests {
       )
     ) { request in
       #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       requestHandled.setValue(true)
@@ -158,7 +164,7 @@ struct OrganizationServiceLifecycleTests {
 
     _ = try await makeService(baseURL: baseURL).getOrganizationRoles(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       sessionId: sessionId
     )

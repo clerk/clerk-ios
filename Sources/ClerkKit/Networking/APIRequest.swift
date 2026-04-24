@@ -90,7 +90,9 @@ struct Request<Response: Decodable & Sendable> {
     self.path = path
     self.method = method
     self.headers = headers
-    queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
+    queryItems = query.compactMap { name, value in
+      value.map { URLQueryItem(name: name, value: $0) }
+    }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     decodeClosure = decode
   }

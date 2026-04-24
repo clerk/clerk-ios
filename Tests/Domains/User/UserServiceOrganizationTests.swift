@@ -30,6 +30,7 @@ struct UserServiceOrganizationTests {
       )
     ) { request in
       #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       #expect(request.url?.query?.contains("status=pending") == true)
@@ -58,6 +59,7 @@ struct UserServiceOrganizationTests {
       )
     ) { request in
       #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       #expect(request.url?.query?.contains("paginated=true") == true)
@@ -86,6 +88,7 @@ struct UserServiceOrganizationTests {
       )
     ) { request in
       #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       requestHandled.setValue(true)

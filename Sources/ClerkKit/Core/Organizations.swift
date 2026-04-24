@@ -64,7 +64,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
     try await organizationService.getOrganizationRoles(
       organizationId: organization.id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       sessionId: clerk.session?.id
     )
@@ -85,7 +85,7 @@ extension Organizations {
       organizationId: organization.id,
       query: query,
       role: role,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       sessionId: clerk.session?.id
     )
@@ -153,8 +153,7 @@ extension Organizations {
 
     return try await organizationService.destroyOrganizationMembership(
       organizationId: membership.organization.id,
-      userId: userId,
-      sessionId: clerk.session?.id
+      userId: userId
     )
   }
 }
@@ -170,7 +169,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await organizationService.getOrganizationInvitations(
       organizationId: organization.id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status,
       sessionId: clerk.session?.id
@@ -195,8 +194,7 @@ extension Organizations {
   func revoke(_ invitation: OrganizationInvitation) async throws -> OrganizationInvitation {
     try await organizationService.revokeOrganizationInvitation(
       organizationId: invitation.organizationId,
-      invitationId: invitation.id,
-      sessionId: clerk.session?.id
+      invitationId: invitation.id
     )
   }
 
@@ -240,7 +238,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await organizationService.getOrganizationDomains(
       organizationId: organization.id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       enrollmentMode: enrollmentMode,
       sessionId: clerk.session?.id
@@ -262,8 +260,7 @@ extension Organizations {
   func delete(_ domain: OrganizationDomain) async throws -> DeletedObject {
     try await organizationService.deleteOrganizationDomain(
       organizationId: domain.organizationId,
-      domainId: domain.id,
-      sessionId: clerk.session?.id
+      domainId: domain.id
     )
   }
 
@@ -275,8 +272,7 @@ extension Organizations {
     try await organizationService.prepareOrganizationDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
-      affiliationEmailAddress: affiliationEmailAddress,
-      sessionId: clerk.session?.id
+      affiliationEmailAddress: affiliationEmailAddress
     )
   }
 
@@ -288,8 +284,7 @@ extension Organizations {
     try await organizationService.attemptOrganizationDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
-      code: code,
-      sessionId: clerk.session?.id
+      code: code
     )
   }
 }
@@ -305,7 +300,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     try await organizationService.getOrganizationMembershipRequests(
       organizationId: organization.id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status,
       sessionId: clerk.session?.id
@@ -316,8 +311,7 @@ extension Organizations {
   func accept(_ request: OrganizationMembershipRequest) async throws -> OrganizationMembershipRequest {
     try await organizationService.acceptOrganizationMembershipRequest(
       organizationId: request.organizationId,
-      requestId: request.id,
-      sessionId: clerk.session?.id
+      requestId: request.id
     )
   }
 
@@ -325,8 +319,7 @@ extension Organizations {
   func reject(_ request: OrganizationMembershipRequest) async throws -> OrganizationMembershipRequest {
     try await organizationService.rejectOrganizationMembershipRequest(
       organizationId: request.organizationId,
-      requestId: request.id,
-      sessionId: clerk.session?.id
+      requestId: request.id
     )
   }
 }

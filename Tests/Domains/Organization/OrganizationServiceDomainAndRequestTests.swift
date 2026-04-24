@@ -64,7 +64,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).getOrganizationDomains(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       enrollmentMode: nil,
       sessionId: sessionId
@@ -97,7 +97,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).getOrganizationDomains(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       enrollmentMode: "automatic",
       sessionId: sessionId
@@ -157,7 +157,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).getOrganizationMembershipRequests(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: nil,
       sessionId: sessionId
@@ -190,7 +190,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).getOrganizationMembershipRequests(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: "pending",
       sessionId: sessionId
@@ -217,8 +217,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).deleteOrganizationDomain(
       organizationId: domain.organizationId,
-      domainId: domain.id,
-      sessionId: sessionId
+      domainId: domain.id
     )
     #expect(requestHandled.value)
   }
@@ -244,8 +243,7 @@ struct OrganizationServiceDomainAndRequestTests {
     _ = try await makeService(baseURL: baseURL).prepareOrganizationDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
-      affiliationEmailAddress: "user@example.com",
-      sessionId: sessionId
+      affiliationEmailAddress: "user@example.com"
     )
     #expect(requestHandled.value)
   }
@@ -271,8 +269,7 @@ struct OrganizationServiceDomainAndRequestTests {
     _ = try await makeService(baseURL: baseURL).attemptOrganizationDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
-      code: "123456",
-      sessionId: sessionId
+      code: "123456"
     )
     #expect(requestHandled.value)
   }
@@ -296,8 +293,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).acceptOrganizationMembershipRequest(
       organizationId: request.organizationId,
-      requestId: request.id,
-      sessionId: sessionId
+      requestId: request.id
     )
     #expect(requestHandled.value)
   }
@@ -321,8 +317,7 @@ struct OrganizationServiceDomainAndRequestTests {
 
     _ = try await makeService(baseURL: baseURL).rejectOrganizationMembershipRequest(
       organizationId: request.organizationId,
-      requestId: request.id,
-      sessionId: sessionId
+      requestId: request.id
     )
     #expect(requestHandled.value)
   }

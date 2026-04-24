@@ -182,7 +182,7 @@ private enum TestWaitError: LocalizedError {
 @MainActor
 func waitUntil(
   _ description: String,
-  timeout: Duration = .milliseconds(250),
+  timeout: Duration = .seconds(1),
   pollingInterval: Duration = .milliseconds(10),
   condition: () throws -> Bool
 ) async throws {

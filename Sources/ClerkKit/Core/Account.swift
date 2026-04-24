@@ -144,7 +144,7 @@ struct Account {
       throw ClerkClientError(message: "Invalid credential type.")
     }
 
-    let publicKeyCredential: [String: any Encodable] = [
+    let publicKeyCredential: [String: Any] = [
       "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
       "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
       "type": "public-key",
@@ -154,10 +154,14 @@ struct Account {
       ],
     ]
 
-    let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+    let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential)
+    guard let credential = String(data: jsonData, encoding: .utf8) else {
+      throw ClerkClientError(message: "Unable to encode the passkey credential.")
+    }
+
     return try await passkeyService.attemptVerification(
       passkeyId: passkey.id,
-      credential: publicKeyCredentialJSON.debugDescription,
+      credential: credential,
       sessionId: clerk.session?.id
     )
   }
@@ -194,7 +198,7 @@ struct Account {
   @discardableResult
   func getOrganizationInvitations(
     offset: Int = 0,
-    pageSize: Int = 20,
+    pageSize: Int = 10,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await userService.getOrganizationInvitations(
@@ -219,7 +223,7 @@ struct Account {
   @discardableResult
   func getOrganizationMemberships(
     offset: Int = 0,
-    pageSize: Int = 20
+    pageSize: Int = 10
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await userService.getOrganizationMemberships(
       offset: offset,
@@ -244,7 +248,7 @@ struct Account {
   @discardableResult
   func getOrganizationSuggestions(
     offset: Int = 0,
-    pageSize: Int = 20,
+    pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await userService.getOrganizationSuggestions(
@@ -262,6 +266,10 @@ struct Account {
 
   @discardableResult
   func getSessions(for user: User) async throws -> [Session] {
+    guard user.id == clerk.user?.id else {
+      throw ClerkClientError(message: "Cannot get sessions for a user that is not the active user.")
+    }
+
     let sessions = try await userService.getSessions(sessionId: clerk.session?.id)
     clerk.sessionsByUserId[user.id] = sessions
     return sessions

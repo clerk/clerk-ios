@@ -77,7 +77,7 @@ package final class MockUserService: UserServiceProtocol {
   /// Methods not configured will return default mock values.
   ///
   /// - Parameters:
-  ///   - getSessions: Optional implementation of the `getSessions(user:)` method.
+  ///   - getSessions: Optional implementation of the `getSessions` method with signature `() async throws -> [Session]`.
   ///   - reload: Optional implementation of the `reload()` method.
   ///   - update: Optional implementation of the `update(params:)` method.
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
@@ -104,7 +104,7 @@ package final class MockUserService: UserServiceProtocol {
   /// Example:
   /// ```swift
   /// let service = MockUserService(
-  ///   getSessions: { user in
+  ///   getSessions: {
   ///     try? await Task.sleep(for: .seconds(1))
   ///     return [Session.mock, Session.mock2]
   ///   },

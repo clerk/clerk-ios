@@ -18,7 +18,7 @@ extension HTTPURLResponse {
 
   /// Returns true if the response represents a server error (5xx)
   var isServerError: Bool {
-    statusCode >= 500
+    statusCode >= 500 && statusCode < 600
   }
 
   /// Returns true if the response represents a successful response (2xx)

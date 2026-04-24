@@ -254,6 +254,20 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func queryParametersOmitNilValues() throws {
+    let request = Request<EmptyResponse>(
+      path: "/v1/test",
+      method: .get,
+      query: [("param1", "value1"), ("_clerk_session_id", nil)]
+    )
+
+    let urlRequest = try request.makeURLRequest(baseURL: mockBaseUrl, encoder: .clerkEncoder)
+    let queryString = urlRequest.url?.query ?? ""
+    #expect(queryString.contains("param1=value1") == true)
+    #expect(queryString.contains("_clerk_session_id") == false)
+  }
+
+  @Test
   func multipartUpload() async throws {
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()

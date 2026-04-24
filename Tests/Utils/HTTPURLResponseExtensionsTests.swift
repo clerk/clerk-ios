@@ -71,8 +71,8 @@ struct HTTPURLResponseExtensionsTests {
     .init(statusCode: 500, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
     .init(statusCode: 503, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
     .init(statusCode: 599, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .serverError),
-    .init(statusCode: 600, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .unknown),
-    .init(statusCode: 999, isError: true, isClientError: false, isServerError: true, isSuccess: false, isRedirection: false, statusType: .unknown),
+    .init(statusCode: 600, isError: true, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .unknown),
+    .init(statusCode: 999, isError: true, isClientError: false, isServerError: false, isSuccess: false, isRedirection: false, statusType: .unknown),
   ]
 
   private static let statusDescriptionScenarios: [StatusDescriptionScenario] = [

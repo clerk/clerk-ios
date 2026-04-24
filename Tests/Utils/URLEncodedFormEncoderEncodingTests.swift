@@ -153,7 +153,7 @@ struct URLEncodedFormEncoderEncodingTests {
   }
 
   @Test
-  func testAlphabetizeKeyValuePairs() throws {
+  func alphabetizeKeyValuePairs() throws {
     struct TestStruct: Encodable {
       let z: String
       let a: String
@@ -164,9 +164,8 @@ struct URLEncodedFormEncoderEncodingTests {
     let value = TestStruct(z: "z", a: "a", m: "m")
     let result: String = try encoder.encode(value)
 
-    let parts = result.split(separator: "&")
-    #expect(parts.count == 3)
-    #expect(parts[0].hasPrefix("a="))
+    let parts = result.split(separator: "&").map(String.init)
+    #expect(parts == ["a=a", "m=m", "z=z"])
   }
 
   @Test

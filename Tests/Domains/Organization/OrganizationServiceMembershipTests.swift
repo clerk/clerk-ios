@@ -41,7 +41,7 @@ struct OrganizationServiceMembershipTests {
       organizationId: organization.id,
       query: nil,
       role: nil,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       sessionId: sessionId
     )
@@ -75,7 +75,7 @@ struct OrganizationServiceMembershipTests {
       organizationId: organization.id,
       query: "test",
       role: nil,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       sessionId: sessionId
     )
@@ -110,7 +110,7 @@ struct OrganizationServiceMembershipTests {
       organizationId: organization.id,
       query: nil,
       role: ["admin"],
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       sessionId: sessionId
     )
@@ -221,8 +221,7 @@ struct OrganizationServiceMembershipTests {
 
     _ = try await makeService(baseURL: baseURL).destroyOrganizationMembership(
       organizationId: membership.organization.id,
-      userId: userId,
-      sessionId: sessionId
+      userId: userId
     )
     #expect(requestHandled.value)
   }

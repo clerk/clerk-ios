@@ -47,7 +47,7 @@ struct PublicWrapperCompatibilityTests {
   func sessionRevokeUsesSharedClerkAuthFacade() async throws {
     let session = Session.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockSessionService(revoke: { sessionId in
+    let service = MockSessionService(revoke: { sessionId, _ in
       captured.setValue(sessionId)
       return .mock
     })

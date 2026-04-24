@@ -174,13 +174,23 @@ struct CacheManagerTests {
   @Test
   func shutdownIgnoresFuturePersistenceRequests() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
+    let originalEnvironment = Clerk.Environment.mock
+    var ignoredEnvironment = Clerk.Environment.mock
+    ignoredEnvironment.displayConfig.applicationName = "Ignored Environment"
+
+    let encoder = JSONEncoder.clerkEncoder
+    let originalEnvironmentData = try encoder.encode(originalEnvironment)
+    try keychain.set(originalEnvironmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
 
     cacheManager.shutdown()
-    cacheManager.saveEnvironment(Clerk.Environment.mock)
+    cacheManager.saveEnvironment(ignoredEnvironment)
 
-    try await waitUntil("cachedEnvironment to remain absent") {
-      try keychain.data(forKey: "cachedEnvironment") == nil
-    }
+    try await Task.sleep(for: .milliseconds(50))
+
+    let environmentData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
+    let decodedEnvironment = try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData)
+    #expect(decodedEnvironment == originalEnvironment)
+    #expect(decodedEnvironment != ignoredEnvironment)
   }
 
   @Test

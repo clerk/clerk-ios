@@ -63,8 +63,8 @@ struct OrganizationLifecycleFacadeTests {
   func getOrganizationRolesUsesOrganizationServiceGetOrganizationRoles() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationRoles: { organizationId, initialPage, pageSize in
-      captured.setValue((organizationId, initialPage, pageSize))
+    let service = MockOrganizationService(getOrganizationRoles: { organizationId, offset, pageSize in
+      captured.setValue((organizationId, offset, pageSize))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
     let clerk = try support.makeClerk(organizationService: service)

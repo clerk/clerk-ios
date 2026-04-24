@@ -153,6 +153,7 @@ struct SessionServiceTests {
   @Test
   func testRevoke() async throws {
     let session = Session.mock
+    let actingSessionIdValue = actingSessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/me/sessions/\(session.id)/revoke")
@@ -163,11 +164,18 @@ struct SessionServiceTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      let url = try #require(request.url)
+      let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+      let actingSessionQueryItem = queryItems.first { $0.name == "_clerk_session_id" }
+      #expect(actingSessionQueryItem?.value == actingSessionIdValue)
+      guard actingSessionQueryItem?.value == actingSessionIdValue else {
+        throw URLError(.badURL)
+      }
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
-    _ = try await makeService(baseURL: baseURL).revoke(sessionId: session.id, actingSessionId: actingSessionId)
+    _ = try await makeService(baseURL: baseURL).revoke(sessionId: session.id, actingSessionId: actingSessionIdValue)
     #expect(requestHandled.value)
   }
 }

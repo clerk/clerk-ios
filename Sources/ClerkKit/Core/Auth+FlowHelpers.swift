@@ -167,12 +167,14 @@ extension Auth {
       ],
     ]
 
-    let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential)
-    guard let jsonString = String(data: jsonData, encoding: .utf8) else {
-      throw ClerkClientError(message: "Unable to encode the passkey credential.")
-    }
-
-    return jsonString
+    let jsonData = try JSONSerialization.data(
+      withJSONObject: publicKeyCredential,
+      options: []
+    )
+    return String(
+      data: jsonData,
+      encoding: .utf8
+    ) ?? ""
   }
   #endif
 }

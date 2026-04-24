@@ -16,7 +16,9 @@ public final class Clerk {
 
   /// The shared Clerk instance.
   ///
-  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` is a programmer error.
+  /// Accessing this property before calling `Clerk.configure(publishableKey:options:)`
+  /// calls `preconditionFailure(_:)`. Configure Clerk once during app startup before
+  /// using APIs that read `Clerk.shared`.
   public static var shared: Clerk {
     guard let instance = _shared else {
       preconditionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
@@ -235,6 +237,14 @@ extension Clerk {
     _shared?.dependencies.keychain
   }
 
+  private static func makeUnconfiguredClerk() -> Clerk {
+    do {
+      return try Clerk(publishableKey: "", options: .init())
+    } catch {
+      preconditionFailure("Failed to create unconfigured Clerk: \(error.localizedDescription)")
+    }
+  }
+
   private func startManagedRuntime() {
     Self.installShared(self)
 
@@ -329,7 +339,8 @@ extension Clerk {
       clerk.startManagedRuntime()
       return clerk
     } catch {
-      fatalError("Failed to configure Clerk: \(error.localizedDescription)")
+      assertionFailure("Failed to configure Clerk: \(error.localizedDescription)")
+      return makeUnconfiguredClerk()
     }
   }
 

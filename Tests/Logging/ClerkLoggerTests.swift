@@ -11,7 +11,7 @@ import Foundation
 import Testing
 
 @MainActor
-@Suite(.tags(.unit))
+@Suite(.tags(.unit), .serialized)
 struct ClerkLoggerTests {
   init() {
     ClerkLogger.resetConfiguration()

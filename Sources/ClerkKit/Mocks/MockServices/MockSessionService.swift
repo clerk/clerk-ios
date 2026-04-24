@@ -12,8 +12,8 @@ import Foundation
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
 package final class MockSessionService: SessionServiceProtocol {
-  /// Custom handler for the `revoke(sessionId:)` method.
-  package nonisolated(unsafe) var revokeHandler: ((String) async throws -> Session)?
+  /// Custom handler for the `revoke(sessionId:actingSessionId:)` method.
+  package nonisolated(unsafe) var revokeHandler: ((String, String?) async throws -> Session)?
 
   /// Custom handler for the `signOut(sessionId:)` method.
   package nonisolated(unsafe) var signOutHandler: ((String?) async throws -> Void)?
@@ -25,7 +25,7 @@ package final class MockSessionService: SessionServiceProtocol {
   package nonisolated(unsafe) var fetchTokenHandler: ((String, String?) async throws -> TokenResource?)?
 
   package init(
-    revoke: ((String) async throws -> Session)? = nil,
+    revoke: ((String, String?) async throws -> Session)? = nil,
     signOut: ((String?) async throws -> Void)? = nil,
     setActive: ((String, String?) async throws -> Void)? = nil,
     fetchToken: ((String, String?) async throws -> TokenResource?)? = nil
@@ -37,9 +37,9 @@ package final class MockSessionService: SessionServiceProtocol {
   }
 
   @MainActor
-  package func revoke(sessionId: String, actingSessionId _: String?) async throws -> Session {
+  package func revoke(sessionId: String, actingSessionId: String?) async throws -> Session {
     if let handler = revokeHandler {
-      return try await handler(sessionId)
+      return try await handler(sessionId, actingSessionId)
     }
     return .mock
   }

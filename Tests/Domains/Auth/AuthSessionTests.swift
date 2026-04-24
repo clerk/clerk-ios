@@ -56,16 +56,19 @@ struct AuthSessionTests {
 
   @Test
   func revokeExistingSessionUsesSessionServiceRevoke() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let sessionService = MockSessionService(revoke: { sessionId in
-      captured.setValue(sessionId)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let sessionService = MockSessionService(revoke: { sessionId, actingSessionId in
+      captured.setValue((sessionId, actingSessionId))
       return .mock
     })
 
     let clerk = try support.makeClerk(sessionService: sessionService)
+    clerk.client = .mock
 
-    _ = try await clerk.auth.revoke(Session.mock)
+    _ = try await clerk.auth.revoke(Session.mock2)
 
-    #expect(captured.value == Session.mock.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == Session.mock2.id)
+    #expect(params.1 == clerk.session?.id)
   }
 }

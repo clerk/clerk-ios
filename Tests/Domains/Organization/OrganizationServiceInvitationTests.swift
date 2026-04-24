@@ -12,9 +12,20 @@ struct OrganizationServiceInvitationTests {
     OrganizationService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
+  private nonisolated func assertSessionId(_ sessionId: String, in request: URLRequest) throws {
+    let url = try #require(request.url)
+    let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    let sessionQueryItem = queryItems.first { $0.name == "_clerk_session_id" }
+    #expect(sessionQueryItem?.value == sessionId)
+    guard sessionQueryItem?.value == sessionId else {
+      throw URLError(.badURL)
+    }
+  }
+
   @Test
   func getOrganizationInvitations() async throws {
     let organization = Organization.mock
+    let sessionIdValue = sessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/organizations/\(organization.id)/invitations")
@@ -33,16 +44,17 @@ struct OrganizationServiceInvitationTests {
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       #expect(request.url?.query?.contains("paginated=true") == true)
+      try assertSessionId(sessionIdValue, in: request)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
     _ = try await makeService(baseURL: baseURL).getOrganizationInvitations(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: nil,
-      sessionId: sessionId
+      sessionId: sessionIdValue
     )
     #expect(requestHandled.value)
   }
@@ -50,6 +62,7 @@ struct OrganizationServiceInvitationTests {
   @Test
   func getOrganizationInvitationsWithStatus() async throws {
     let organization = Organization.mock
+    let sessionIdValue = sessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/organizations/\(organization.id)/invitations")
@@ -66,16 +79,17 @@ struct OrganizationServiceInvitationTests {
     ) { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("status=pending") == true)
+      try assertSessionId(sessionIdValue, in: request)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
     _ = try await makeService(baseURL: baseURL).getOrganizationInvitations(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: "pending",
-      sessionId: sessionId
+      sessionId: sessionIdValue
     )
     #expect(requestHandled.value)
   }
@@ -83,6 +97,7 @@ struct OrganizationServiceInvitationTests {
   @Test
   func inviteOrganizationMember() async throws {
     let organization = Organization.mock
+    let sessionIdValue = sessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/organizations/\(organization.id)/invitations")
@@ -95,6 +110,7 @@ struct OrganizationServiceInvitationTests {
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["email_address"] == "user@example.com")
       #expect(request.urlEncodedFormBody!["role"] == "org:member")
+      try assertSessionId(sessionIdValue, in: request)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
@@ -103,7 +119,7 @@ struct OrganizationServiceInvitationTests {
       organizationId: organization.id,
       emailAddress: "user@example.com",
       role: "org:member",
-      sessionId: sessionId
+      sessionId: sessionIdValue
     )
     #expect(requestHandled.value)
   }
@@ -127,8 +143,7 @@ struct OrganizationServiceInvitationTests {
 
     _ = try await makeService(baseURL: baseURL).revokeOrganizationInvitation(
       organizationId: invitation.organizationId,
-      invitationId: invitation.id,
-      sessionId: sessionId
+      invitationId: invitation.id
     )
     #expect(requestHandled.value)
   }
@@ -136,6 +151,7 @@ struct OrganizationServiceInvitationTests {
   @Test
   func acceptUserOrganizationInvitation() async throws {
     let invitation = UserOrganizationInvitation.mock
+    let sessionIdValue = sessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/me/organization_invitations/\(invitation.id)/accept")
@@ -146,13 +162,14 @@ struct OrganizationServiceInvitationTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<UserOrganizationInvitation>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      try assertSessionId(sessionIdValue, in: request)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
     _ = try await makeService(baseURL: baseURL).acceptUserOrganizationInvitation(
       invitationId: invitation.id,
-      sessionId: sessionId
+      sessionId: sessionIdValue
     )
     #expect(requestHandled.value)
   }
@@ -160,6 +177,7 @@ struct OrganizationServiceInvitationTests {
   @Test
   func acceptOrganizationSuggestion() async throws {
     let suggestion = OrganizationSuggestion.mock
+    let sessionIdValue = sessionId
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
     let originalURL = baseURL.appendingPathComponent("v1/me/organization_suggestions/\(suggestion.id)/accept")
@@ -170,13 +188,14 @@ struct OrganizationServiceInvitationTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationSuggestion>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      try assertSessionId(sessionIdValue, in: request)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
     _ = try await makeService(baseURL: baseURL).acceptOrganizationSuggestion(
       suggestionId: suggestion.id,
-      sessionId: sessionId
+      sessionId: sessionIdValue
     )
     #expect(requestHandled.value)
   }

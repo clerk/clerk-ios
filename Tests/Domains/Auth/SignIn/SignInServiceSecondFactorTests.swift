@@ -6,12 +6,23 @@ import Testing
 @MainActor
 @Suite(.tags(.networking, .unit))
 struct SignInServiceSecondFactorTests {
+  struct PrepareSecondFactorScenario {
+    let strategy: FactorStrategy
+    let encodedStrategy: String
+  }
+
   private func makeService(baseURL: URL) -> SignInService {
     SignInService(apiClient: createIsolatedMockAPIClient(baseURL: baseURL, protocolClass: IsolatedMockURLProtocol.self))
   }
 
-  @Test
-  func prepareSecondFactor() async throws {
+  @Test(
+    arguments: [
+      PrepareSecondFactorScenario(strategy: .phoneCode, encodedStrategy: "phone_code"),
+      PrepareSecondFactorScenario(strategy: .totp, encodedStrategy: "totp"),
+      PrepareSecondFactorScenario(strategy: .backupCode, encodedStrategy: "backup_code"),
+    ]
+  )
+  func prepareSecondFactor(scenario: PrepareSecondFactorScenario) async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let baseURL = makeIsolatedMockBaseURL()
@@ -23,14 +34,15 @@ struct SignInServiceSecondFactorTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
+      let body = try #require(request.urlEncodedFormBody)
+      #expect(body["strategy"] == scenario.encodedStrategy)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
 
     _ = try await makeService(baseURL: baseURL).prepareSecondFactor(
       signInId: signIn.id,
-      params: .init(strategy: .phoneCode)
+      params: .init(strategy: scenario.strategy)
     )
     #expect(requestHandled.value)
   }

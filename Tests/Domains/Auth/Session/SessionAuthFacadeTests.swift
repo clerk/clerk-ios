@@ -11,16 +11,19 @@ struct SessionAuthFacadeTests {
   @Test
   func revokeUsesSessionServiceRevoke() async throws {
     let session = Session.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockSessionService(revoke: { sessionId in
-      captured.setValue(sessionId)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let service = MockSessionService(revoke: { sessionId, actingSessionId in
+      captured.setValue((sessionId, actingSessionId))
       return .mock
     })
     let clerk = try support.makeClerk(sessionService: service)
+    clerk.client = .mock
 
     _ = try await clerk.auth.revoke(session)
 
-    #expect(captured.value == session.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == session.id)
+    #expect(params.1 == clerk.session?.id)
   }
 
   @Test
