@@ -14,6 +14,8 @@ echo "⚠️  Note: Integration tests require network access and a valid Clerk t
 echo "⚠️  Note: Only Clerk employees can run integration tests locally (requires 1Password vault access)"
 echo ""
 
+export CLERK_RUN_INTEGRATION_TESTS=1
+
 # Check if .keys.json exists (tests will read from it directly)
 if [ ! -f "$KEYS_FILE" ]; then
   echo "⚠️  Warning: .keys.json file not found."
