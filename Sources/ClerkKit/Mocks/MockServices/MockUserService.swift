@@ -13,63 +13,63 @@ import Foundation
 /// All methods return default mock values if handlers are not provided.
 package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `getSessions(sessionId:)` method.
-  package nonisolated(unsafe) var getSessionsHandler: (() async throws -> [Session])?
+  package nonisolated(unsafe) var getSessionsHandler: ((String?) async throws -> [Session])?
 
-  /// Custom handler for the `reload()` method.
-  package nonisolated(unsafe) var reloadHandler: (() async throws -> User)?
+  /// Custom handler for the `reload(sessionId:)` method.
+  package nonisolated(unsafe) var reloadHandler: ((String?) async throws -> User)?
 
-  /// Custom handler for the `update(params:)` method.
-  package nonisolated(unsafe) var updateHandler: ((User.UpdateParams) async throws -> User)?
+  /// Custom handler for the `update(params:sessionId:)` method.
+  package nonisolated(unsafe) var updateHandler: ((User.UpdateParams, String?) async throws -> User)?
 
-  /// Custom handler for the `createBackupCodes()` method.
-  package nonisolated(unsafe) var createBackupCodesHandler: (() async throws -> BackupCodeResource)?
+  /// Custom handler for the `createBackupCodes(sessionId:)` method.
+  package nonisolated(unsafe) var createBackupCodesHandler: ((String?) async throws -> BackupCodeResource)?
 
   /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:sessionId:)` method.
   package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String], [OIDCPrompt], String?) async throws -> ExternalAccount)?
 
-  /// Custom handler for the `createExternalAccountToken(provider:idToken:)` method.
-  package nonisolated(unsafe) var createExternalAccountTokenHandler: ((IDTokenProvider, String) async throws -> ExternalAccount)?
+  /// Custom handler for the `createExternalAccountToken(provider:idToken:sessionId:)` method.
+  package nonisolated(unsafe) var createExternalAccountTokenHandler: ((IDTokenProvider, String, String?) async throws -> ExternalAccount)?
 
-  /// Custom handler for the `createTotp()` method.
-  package nonisolated(unsafe) var createTotpHandler: (() async throws -> TOTPResource)?
+  /// Custom handler for the `createTotp(sessionId:)` method.
+  package nonisolated(unsafe) var createTotpHandler: ((String?) async throws -> TOTPResource)?
 
-  /// Custom handler for the `verifyTotp(code:)` method.
-  package nonisolated(unsafe) var verifyTotpHandler: ((String) async throws -> TOTPResource)?
+  /// Custom handler for the `verifyTotp(code:sessionId:)` method.
+  package nonisolated(unsafe) var verifyTotpHandler: ((String, String?) async throws -> TOTPResource)?
 
-  /// Custom handler for the `disableTotp()` method.
-  package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
+  /// Custom handler for the `disableTotp(sessionId:)` method.
+  package nonisolated(unsafe) var disableTotpHandler: ((String?) async throws -> DeletedObject)?
 
-  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:)` method.
+  /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:sessionId:)` method.
   ///
-  /// The closure receives the pagination arguments plus an optional invitation status filter.
+  /// The closure receives the pagination arguments, an optional invitation status filter, and the session ID.
   /// Pass `nil` in tests to simulate no status filter, or a status value such as `"pending"`
   /// to mirror filtered invitation requests.
-  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
+  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
-  /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
-  package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
+  /// Custom handler for the `getOrganizationMemberships(offset:pageSize:sessionId:)` method.
+  package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
-  /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
+  /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:sessionId:)` method.
   ///
-  /// The closure receives the pagination arguments plus an array of suggestion status filters.
+  /// The closure receives the pagination arguments, an array of suggestion status filters, and the session ID.
   /// Pass `[]` in tests to simulate no status filter, or include one or more values such as
   /// `["pending", "accepted"]` to mirror filtered suggestion requests.
-  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
+  package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String], String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
-  /// Custom handler for the `getOrganizationCreationDefaults()` method.
-  package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: (() async throws -> OrganizationCreationDefaults)?
+  /// Custom handler for the `getOrganizationCreationDefaults(sessionId:)` method.
+  package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: ((String?) async throws -> OrganizationCreationDefaults)?
 
-  /// Custom handler for the `updatePassword(params:)` method.
-  package nonisolated(unsafe) var updatePasswordHandler: ((User.UpdatePasswordParams) async throws -> User)?
+  /// Custom handler for the `updatePassword(params:sessionId:)` method.
+  package nonisolated(unsafe) var updatePasswordHandler: ((User.UpdatePasswordParams, String?) async throws -> User)?
 
-  /// Custom handler for the `setProfileImage(imageData:)` method.
-  package nonisolated(unsafe) var setProfileImageHandler: ((Data) async throws -> ImageResource)?
+  /// Custom handler for the `setProfileImage(imageData:sessionId:)` method.
+  package nonisolated(unsafe) var setProfileImageHandler: ((Data, String?) async throws -> ImageResource)?
 
-  /// Custom handler for the `deleteProfileImage()` method.
-  package nonisolated(unsafe) var deleteProfileImageHandler: (() async throws -> DeletedObject)?
+  /// Custom handler for the `deleteProfileImage(sessionId:)` method.
+  package nonisolated(unsafe) var deleteProfileImageHandler: ((String?) async throws -> DeletedObject)?
 
-  /// Custom handler for the `delete()` method.
-  package nonisolated(unsafe) var deleteHandler: (() async throws -> DeletedObject)?
+  /// Custom handler for the `delete(sessionId:)` method.
+  package nonisolated(unsafe) var deleteHandler: ((String?) async throws -> DeletedObject)?
 
   /// Creates a new mock user service with named closure parameters matching protocol method names.
   ///
@@ -77,61 +77,63 @@ package final class MockUserService: UserServiceProtocol {
   /// Methods not configured will return default mock values.
   ///
   /// - Parameters:
-  ///   - getSessions: Optional implementation of the `getSessions` method with signature `() async throws -> [Session]`.
-  ///   - reload: Optional implementation of the `reload()` method.
-  ///   - update: Optional implementation of the `update(params:)` method.
-  ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
+  ///   - getSessions: Optional implementation of the `getSessions(sessionId:)` method.
+  ///   - reload: Optional implementation of the `reload(sessionId:)` method.
+  ///   - update: Optional implementation of the `update(params:sessionId:)` method.
+  ///   - createBackupCodes: Optional implementation of the `createBackupCodes(sessionId:)` method.
   ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:sessionId:)` method.
-  ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:)` method.
-  ///   - createTotp: Optional implementation of the `createTotp()` method.
-  ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
-  ///   - disableTotp: Optional implementation of the `disableTotp()` method.
-  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:)` method
-  ///     with signature `((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
-  ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
-  ///     or provide a value such as `"pending"` when a test needs filtered invitations.
-  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
-  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
-  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
-  ///     The third argument accepts multiple suggestion statuses; pass `[]` to simulate an unfiltered request
-  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered suggestions.
-  ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
-  ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
-  ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.
-  ///   - deleteProfileImage: Optional implementation of the `deleteProfileImage()` method.
-  ///   - delete: Optional implementation of the `delete()` method.
+  ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:sessionId:)` method.
+  ///   - createTotp: Optional implementation of the `createTotp(sessionId:)` method.
+  ///   - verifyTotp: Optional implementation of the `verifyTotp(code:sessionId:)` method.
+  ///   - disableTotp: Optional implementation of the `disableTotp(sessionId:)` method.
+  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:sessionId:)` method
+  ///     with signature `((Int, Int, String?, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
+  ///     The third argument is an optional invitation status filter, and the fourth is the session ID.
+  ///     Pass `nil` to simulate an unfiltered request or provide a value such as `"pending"`
+  ///     when a test needs filtered invitations.
+  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:sessionId:)` method.
+  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:sessionId:)` method
+  ///     with signature `((Int, Int, [String], String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
+  ///     The third argument accepts multiple suggestion statuses, and the fourth is the session ID.
+  ///     Pass `[]` to simulate an unfiltered request or provide values such as `["pending", "accepted"]`
+  ///     when a test needs filtered suggestions.
+  ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults(sessionId:)` method.
+  ///   - updatePassword: Optional implementation of the `updatePassword(params:sessionId:)` method.
+  ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:sessionId:)` method.
+  ///   - deleteProfileImage: Optional implementation of the `deleteProfileImage(sessionId:)` method.
+  ///   - delete: Optional implementation of the `delete(sessionId:)` method.
   ///
   /// Example:
   /// ```swift
   /// let service = MockUserService(
-  ///   getSessions: {
+  ///   getSessions: { _ in
   ///     try? await Task.sleep(for: .seconds(1))
   ///     return [Session.mock, Session.mock2]
   ///   },
-  ///   reload: {
+  ///   reload: { _ in
   ///     try? await Task.sleep(for: .milliseconds(500))
   ///     return User.mock
   ///   }
   /// )
   /// ```
   package init(
-    getSessions: (() async throws -> [Session])? = nil,
-    reload: (() async throws -> User)? = nil,
-    update: ((User.UpdateParams) async throws -> User)? = nil,
-    createBackupCodes: (() async throws -> BackupCodeResource)? = nil,
+    getSessions: ((String?) async throws -> [Session])? = nil,
+    reload: ((String?) async throws -> User)? = nil,
+    update: ((User.UpdateParams, String?) async throws -> User)? = nil,
+    createBackupCodes: ((String?) async throws -> BackupCodeResource)? = nil,
     createExternalAccount: ((OAuthProvider, String?, [String], [OIDCPrompt], String?) async throws -> ExternalAccount)? = nil,
-    createExternalAccountToken: ((IDTokenProvider, String) async throws -> ExternalAccount)? = nil,
-    createTotp: (() async throws -> TOTPResource)? = nil,
-    verifyTotp: ((String) async throws -> TOTPResource)? = nil,
-    disableTotp: (() async throws -> DeletedObject)? = nil,
-    getOrganizationInvitations: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
-    getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
-    getOrganizationSuggestions: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
-    getOrganizationCreationDefaults: (() async throws -> OrganizationCreationDefaults)? = nil,
-    updatePassword: ((User.UpdatePasswordParams) async throws -> User)? = nil,
-    setProfileImage: ((Data) async throws -> ImageResource)? = nil,
-    deleteProfileImage: (() async throws -> DeletedObject)? = nil,
-    delete: (() async throws -> DeletedObject)? = nil
+    createExternalAccountToken: ((IDTokenProvider, String, String?) async throws -> ExternalAccount)? = nil,
+    createTotp: ((String?) async throws -> TOTPResource)? = nil,
+    verifyTotp: ((String, String?) async throws -> TOTPResource)? = nil,
+    disableTotp: ((String?) async throws -> DeletedObject)? = nil,
+    getOrganizationInvitations: ((Int, Int, String?, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
+    getOrganizationMemberships: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
+    getOrganizationSuggestions: ((Int, Int, [String], String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
+    getOrganizationCreationDefaults: ((String?) async throws -> OrganizationCreationDefaults)? = nil,
+    updatePassword: ((User.UpdatePasswordParams, String?) async throws -> User)? = nil,
+    setProfileImage: ((Data, String?) async throws -> ImageResource)? = nil,
+    deleteProfileImage: ((String?) async throws -> DeletedObject)? = nil,
+    delete: ((String?) async throws -> DeletedObject)? = nil
   ) {
     getSessionsHandler = getSessions
     reloadHandler = reload
@@ -153,25 +155,25 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func reload(sessionId _: String?) async throws -> User {
+  package func reload(sessionId: String?) async throws -> User {
     if let handler = reloadHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func update(params: User.UpdateParams, sessionId _: String?) async throws -> User {
+  package func update(params: User.UpdateParams, sessionId: String?) async throws -> User {
     if let handler = updateHandler {
-      return try await handler(params)
+      return try await handler(params, sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func createBackupCodes(sessionId _: String?) async throws -> BackupCodeResource {
+  package func createBackupCodes(sessionId: String?) async throws -> BackupCodeResource {
     if let handler = createBackupCodesHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }
@@ -191,65 +193,65 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func createExternalAccountToken(provider: IDTokenProvider, idToken: String, sessionId _: String?) async throws -> ExternalAccount {
+  package func createExternalAccountToken(provider: IDTokenProvider, idToken: String, sessionId: String?) async throws -> ExternalAccount {
     if let handler = createExternalAccountTokenHandler {
-      return try await handler(provider, idToken)
+      return try await handler(provider, idToken, sessionId)
     }
     return .mockVerified
   }
 
   @MainActor
-  package func createTotp(sessionId _: String?) async throws -> TOTPResource {
+  package func createTotp(sessionId: String?) async throws -> TOTPResource {
     if let handler = createTotpHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func verifyTotp(code: String, sessionId _: String?) async throws -> TOTPResource {
+  package func verifyTotp(code: String, sessionId: String?) async throws -> TOTPResource {
     if let handler = verifyTotpHandler {
-      return try await handler(code)
+      return try await handler(code, sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func disableTotp(sessionId _: String?) async throws -> DeletedObject {
+  package func disableTotp(sessionId: String?) async throws -> DeletedObject {
     if let handler = disableTotpHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?, sessionId _: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?, sessionId: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
-      return try await handler(offset, pageSize, status)
+      return try await handler(offset, pageSize, status, sessionId)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationMemberships(offset: Int, pageSize: Int, sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+  package func getOrganizationMemberships(offset: Int, pageSize: Int, sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     if let handler = getOrganizationMembershipsHandler {
-      return try await handler(offset, pageSize)
+      return try await handler(offset, pageSize, sessionId)
     }
     return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String], sessionId _: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+  package func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String], sessionId: String?) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     if let handler = getOrganizationSuggestionsHandler {
-      return try await handler(offset, pageSize, status)
+      return try await handler(offset, pageSize, status, sessionId)
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
   }
 
   @MainActor
-  package func getOrganizationCreationDefaults(sessionId _: String?) async throws -> OrganizationCreationDefaults {
+  package func getOrganizationCreationDefaults(sessionId: String?) async throws -> OrganizationCreationDefaults {
     if let handler = getOrganizationCreationDefaultsHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return OrganizationCreationDefaults(
       advisory: nil,
@@ -258,41 +260,41 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getSessions(sessionId _: String?) async throws -> [Session] {
+  package func getSessions(sessionId: String?) async throws -> [Session] {
     if let handler = getSessionsHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return [.mock, .mock2]
   }
 
   @MainActor
-  package func updatePassword(params: User.UpdatePasswordParams, sessionId _: String?) async throws -> User {
+  package func updatePassword(params: User.UpdatePasswordParams, sessionId: String?) async throws -> User {
     if let handler = updatePasswordHandler {
-      return try await handler(params)
+      return try await handler(params, sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func setProfileImage(imageData: Data, sessionId _: String?) async throws -> ImageResource {
+  package func setProfileImage(imageData: Data, sessionId: String?) async throws -> ImageResource {
     if let handler = setProfileImageHandler {
-      return try await handler(imageData)
+      return try await handler(imageData, sessionId)
     }
     return ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil)
   }
 
   @MainActor
-  package func deleteProfileImage(sessionId _: String?) async throws -> DeletedObject {
+  package func deleteProfileImage(sessionId: String?) async throws -> DeletedObject {
     if let handler = deleteProfileImageHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }
 
   @MainActor
-  package func delete(sessionId _: String?) async throws -> DeletedObject {
+  package func delete(sessionId: String?) async throws -> DeletedObject {
     if let handler = deleteHandler {
-      return try await handler()
+      return try await handler(sessionId)
     }
     return .mock
   }

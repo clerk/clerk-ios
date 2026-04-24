@@ -12,14 +12,14 @@ import Foundation
 /// Allows customizing the behavior of service methods through handler closures.
 /// All methods return default mock values if handlers are not provided.
 package final class MockExternalAccountService: ExternalAccountServiceProtocol {
-  /// Custom handler for the `reauthorize(_:redirectUrl:additionalScopes:oidcPrompts:)` method.
-  package nonisolated(unsafe) var reauthorizeHandler: ((String, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
+  /// Custom handler for the `reauthorize(_:sessionId:redirectUrl:additionalScopes:oidcPrompts:)` method.
+  package nonisolated(unsafe) var reauthorizeHandler: ((String, String?, String, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
 
   /// Custom handler for the `destroy(_:sessionId:)` method.
   package nonisolated(unsafe) var destroyHandler: ((String, String?) async throws -> DeletedObject)?
 
   package init(
-    reauthorize: ((String, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)? = nil,
+    reauthorize: ((String, String?, String, [String], [OIDCPrompt]) async throws -> ExternalAccount)? = nil,
     destroy: ((String, String?) async throws -> DeletedObject)? = nil
   ) {
     reauthorizeHandler = reauthorize
@@ -32,10 +32,10 @@ package final class MockExternalAccountService: ExternalAccountServiceProtocol {
     redirectUrl: String,
     additionalScopes: [String],
     oidcPrompts: [OIDCPrompt],
-    sessionId _: String?
+    sessionId: String?
   ) async throws -> ExternalAccount {
     if let handler = reauthorizeHandler {
-      return try await handler(externalAccountId, redirectUrl, additionalScopes, oidcPrompts)
+      return try await handler(externalAccountId, sessionId, redirectUrl, additionalScopes, oidcPrompts)
     }
     return .mockVerified
   }

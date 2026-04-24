@@ -35,7 +35,7 @@ struct PhoneNumberAccountFacadeTests {
   func sendCodeUsesPhoneNumberServicePrepareVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(prepareVerification: { phoneNumberId in
+    let service = MockPhoneNumberService(prepareVerification: { phoneNumberId, _ in
       captured.setValue(phoneNumberId)
       return .mock
     })
@@ -50,7 +50,7 @@ struct PhoneNumberAccountFacadeTests {
   func verifyCodeUsesPhoneNumberServiceAttemptVerification() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code in
+    let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code, _ in
       captured.setValue((phoneNumberId, code))
       return .mock
     })
@@ -67,7 +67,7 @@ struct PhoneNumberAccountFacadeTests {
   func makeDefaultSecondFactorUsesPhoneNumberServiceMakeDefaultSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(makeDefaultSecondFactor: { phoneNumberId in
+    let service = MockPhoneNumberService(makeDefaultSecondFactor: { phoneNumberId, _ in
       captured.setValue(phoneNumberId)
       return .mock
     })
@@ -82,7 +82,7 @@ struct PhoneNumberAccountFacadeTests {
   func setReservedForSecondFactorUsesPhoneNumberServiceSetReservedForSecondFactor() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<(String, Bool)?>(nil)
-    let service = MockPhoneNumberService(setReservedForSecondFactor: { phoneNumberId, reserved in
+    let service = MockPhoneNumberService(setReservedForSecondFactor: { phoneNumberId, reserved, _ in
       captured.setValue((phoneNumberId, reserved))
       return .mock
     })

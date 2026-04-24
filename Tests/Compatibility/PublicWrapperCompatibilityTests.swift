@@ -80,7 +80,7 @@ struct PublicWrapperCompatibilityTests {
   @Test
   func userReloadUsesSharedClerkAccountFacade() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(reload: {
+    let service = MockUserService(reload: { _ in
       called.setValue(true)
       return .mock
     })

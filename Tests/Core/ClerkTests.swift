@@ -69,7 +69,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsWorksWhenClerkNotConfigured() throws {
+  func clearAllKeychainItemsUsingKeychainClearsSinglePreseededKey() throws {
     let keychain = InMemoryKeychain()
 
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)

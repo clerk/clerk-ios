@@ -26,7 +26,7 @@ struct AccountFacadeTests {
   @Test
   func reloadUsesUserServiceReload() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(reload: {
+    let service = MockUserService(reload: { _ in
       called.setValue(true)
       return .mock
     })
@@ -40,7 +40,7 @@ struct AccountFacadeTests {
   @Test
   func updateUsesUserServiceUpdate() async throws {
     let captured = LockIsolated<User.UpdateParams?>(nil)
-    let service = MockUserService(update: { params in
+    let service = MockUserService(update: { params, _ in
       captured.setValue(params)
       return .mock
     })
@@ -56,7 +56,7 @@ struct AccountFacadeTests {
   @Test
   func createBackupCodesUsesUserServiceCreateBackupCodes() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(createBackupCodes: {
+    let service = MockUserService(createBackupCodes: { _ in
       called.setValue(true)
       return .mock
     })
@@ -84,7 +84,7 @@ struct AccountFacadeTests {
   @Test
   func createPhoneNumberUsesPhoneNumberServiceCreate() async throws {
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(create: { phoneNumber in
+    let service = MockPhoneNumberService(create: { phoneNumber, _ in
       captured.setValue(phoneNumber)
       return .mock
     })
@@ -112,12 +112,14 @@ struct AccountFacadeTests {
   func createExternalAccountUsesUserServiceCreateExternalAccount(
     scenario: ExternalAccountScenario
   ) async throws {
-    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt])?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts, _ in
-      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
+    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt], String?)?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts, sessionId in
+      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts, sessionId))
       return .mockVerified
     })
     let clerk = try makeClerk(userService: service)
+    clerk.client = .mock
+    let sessionId = try #require(clerk.session?.id)
 
     _ = try await clerk.account.createExternalAccount(
       provider: .google,
@@ -131,12 +133,13 @@ struct AccountFacadeTests {
     #expect(params.1 == scenario.redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
     #expect(params.2 == scenario.additionalScopes)
     #expect(params.3 == scenario.oidcPrompts)
+    #expect(params.4 == sessionId)
   }
 
   @Test
   func createExternalAccountTokenUsesUserServiceCreateExternalAccountToken() async throws {
     let captured = LockIsolated<(IDTokenProvider, String)?>(nil)
-    let service = MockUserService(createExternalAccountToken: { provider, idToken in
+    let service = MockUserService(createExternalAccountToken: { provider, idToken, _ in
       captured.setValue((provider, idToken))
       return .mockVerified
     })
@@ -152,7 +155,7 @@ struct AccountFacadeTests {
   @Test
   func createTotpUsesUserServiceCreateTotp() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(createTotp: {
+    let service = MockUserService(createTotp: { _ in
       called.setValue(true)
       return .mock
     })
@@ -166,7 +169,7 @@ struct AccountFacadeTests {
   @Test
   func verifyTotpUsesUserServiceVerifyTotp() async throws {
     let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(verifyTotp: { code in
+    let service = MockUserService(verifyTotp: { code, _ in
       captured.setValue(code)
       return .mock
     })
@@ -180,7 +183,7 @@ struct AccountFacadeTests {
   @Test
   func disableTotpUsesUserServiceDisableTotp() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(disableTotp: {
+    let service = MockUserService(disableTotp: { _ in
       called.setValue(true)
       return .mock
     })
@@ -194,7 +197,7 @@ struct AccountFacadeTests {
   @Test
   func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
     let captured = LockIsolated<(Int, Int, String?)?>(nil)
-    let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
+    let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status, _ in
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
@@ -211,7 +214,7 @@ struct AccountFacadeTests {
   @Test
   func getOrganizationMembershipsUsesUserServiceGetOrganizationMemberships() async throws {
     let captured = LockIsolated<(Int, Int)?>(nil)
-    let service = MockUserService(getOrganizationMemberships: { offset, pageSize in
+    let service = MockUserService(getOrganizationMemberships: { offset, pageSize, _ in
       captured.setValue((offset, pageSize))
       return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
     })
@@ -238,7 +241,7 @@ struct AccountFacadeTests {
     scenario: OrganizationSuggestionsScenario
   ) async throws {
     let captured = LockIsolated<(Int, Int, [String])?>(nil)
-    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status in
+    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status, _ in
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
@@ -260,16 +263,21 @@ struct AccountFacadeTests {
   func getSessionsUsesUserServiceGetSessions() async throws {
     let user = User.mock
     let called = LockIsolated(false)
-    let service = MockUserService(getSessions: {
+    let capturedSessionId = LockIsolated<String?>(nil)
+    let service = MockUserService(getSessions: { sessionId in
       called.setValue(true)
+      capturedSessionId.setValue(sessionId)
       return [Session.mock]
     })
     let clerk = try makeClerk(userService: service)
     clerk.client = .mock
+    #expect(clerk.user?.id == user.id)
+    let sessionId = try #require(clerk.session?.id)
 
     let sessions = try await clerk.account.getSessions(for: user)
 
     #expect(called.value == true)
+    #expect(capturedSessionId.value == sessionId)
     #expect(sessions.map(\.id) == [Session.mock.id])
     #expect(clerk.sessionsByUserId[user.id]?.map(\.id) == [Session.mock.id])
   }
@@ -278,7 +286,7 @@ struct AccountFacadeTests {
   func getSessionsThrowsWhenUserIsNotActiveUser() async throws {
     let user = User.mock2
     let called = LockIsolated(false)
-    let service = MockUserService(getSessions: {
+    let service = MockUserService(getSessions: { _ in
       called.setValue(true)
       return [Session.mock]
     })
@@ -301,7 +309,7 @@ struct AccountFacadeTests {
   @Test
   func updatePasswordUsesUserServiceUpdatePassword() async throws {
     let captured = LockIsolated<User.UpdatePasswordParams?>(nil)
-    let service = MockUserService(updatePassword: { params in
+    let service = MockUserService(updatePassword: { params, _ in
       captured.setValue(params)
       return .mock
     })
@@ -318,7 +326,7 @@ struct AccountFacadeTests {
   func setProfileImageUsesUserServiceSetProfileImage() async throws {
     let imageData = Data("fake image data".utf8)
     let captured = LockIsolated<Data?>(nil)
-    let service = MockUserService(setProfileImage: { data in
+    let service = MockUserService(setProfileImage: { data, _ in
       captured.setValue(data)
       return ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg")
     })
@@ -332,7 +340,7 @@ struct AccountFacadeTests {
   @Test
   func deleteProfileImageUsesUserServiceDeleteProfileImage() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(deleteProfileImage: {
+    let service = MockUserService(deleteProfileImage: { _ in
       called.setValue(true)
       return .mock
     })
@@ -346,7 +354,7 @@ struct AccountFacadeTests {
   @Test
   func deleteUsesUserServiceDelete() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(delete: {
+    let service = MockUserService(delete: { _ in
       called.setValue(true)
       return .mock
     })

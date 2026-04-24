@@ -128,11 +128,12 @@ extension Auth {
     )
     #endif
 
-    guard
-      let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-      let authenticatorData = credentialAssertion.rawAuthenticatorData
-    else {
-      throw ClerkClientError(message: "Invalid credential type.")
+    guard let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion else {
+      throw ClerkClientError(message: "Credential is not a platform public key assertion.")
+    }
+
+    guard let authenticatorData = credentialAssertion.rawAuthenticatorData else {
+      throw ClerkClientError(message: "Missing rawAuthenticatorData from credentialAssertion.")
     }
 
     let publicKeyCredential: [String: Any] = [
