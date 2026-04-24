@@ -52,10 +52,10 @@ struct AuthAndClientIntegrationTests {
 
       // Step 2: Prepare verification (email_code)
       // This will send a code to the email address
-      let preparedSignUp = try await signUp.sendEmailCode()
+      let preparedSignUp = try await clerk.auth.sendEmailCode(for: signUp)
 
       // Step 3: Attempt verification with the test verification code
-      try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
+      try await clerk.auth.verifyEmailCode(Self.testVerificationCode, for: preparedSignUp)
 
       // Sign out so that SignIn can sign in with the new account
       try await clerk.auth.signOut()
@@ -67,10 +67,10 @@ struct AuthAndClientIntegrationTests {
 
       // Step 2: Prepare first factor verification (email_code)
       // This will send a code to the email address
-      let preparedSignIn = try await signIn.sendEmailCode()
+      let preparedSignIn = try await clerk.auth.sendEmailCode(for: signIn)
 
       // Step 3: Attempt first factor with the test verification code
-      try await preparedSignIn.verifyCode(Self.testVerificationCode)
+      try await clerk.auth.verifyCode(Self.testVerificationCode, for: preparedSignIn)
     } catch {
       capturedError = error
     }
@@ -100,8 +100,8 @@ struct AuthAndClientIntegrationTests {
     allowPasswordCleanup: Bool
   ) async {
     do {
-      if let currentUser = clerk.user {
-        try await currentUser.delete()
+      if clerk.user != nil {
+        try await clerk.account.delete()
         return
       }
 
@@ -110,7 +110,9 @@ struct AuthAndClientIntegrationTests {
       }
 
       _ = try await clerk.auth.signInWithPassword(identifier: email, password: Self.testPassword)
-      try await clerk.user?.delete()
+      if clerk.user != nil {
+        try await clerk.account.delete()
+      }
     } catch {
       // Best-effort cleanup. Some failure paths may not produce a deletable account.
     }
