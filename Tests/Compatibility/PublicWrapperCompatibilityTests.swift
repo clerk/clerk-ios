@@ -182,7 +182,7 @@ struct PublicWrapperCompatibilityTests {
   func organizationDestroyUsesSharedClerkOrganizationsFacade() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(destroyOrganization: { organizationId in
+    let service = MockOrganizationService(destroyOrganization: { _, organizationId in
       captured.setValue(organizationId)
       return .mock
     })
@@ -197,7 +197,7 @@ struct PublicWrapperCompatibilityTests {
   func organizationMembershipUpdateUsesSharedClerkOrganizationsFacade() async throws {
     let membership = OrganizationMembership.mockWithUserData
     let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
+    let service = MockOrganizationService(updateOrganizationMember: { _, organizationId, userId, role in
       captured.setValue((organizationId, userId, role))
       return .mockWithUserData
     })
@@ -266,7 +266,7 @@ struct PublicWrapperCompatibilityTests {
   func userOrganizationInvitationAcceptUsesSharedClerkOrganizationsFacade() async throws {
     let invitation = UserOrganizationInvitation.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+    let service = MockOrganizationService(acceptUserOrganizationInvitation: { _, invitationId in
       captured.setValue(invitationId)
       return .mock
     })
@@ -281,7 +281,7 @@ struct PublicWrapperCompatibilityTests {
   func organizationSuggestionAcceptUsesSharedClerkOrganizationsFacade() async throws {
     let suggestion = OrganizationSuggestion.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
+    let service = MockOrganizationService(acceptOrganizationSuggestion: { _, suggestionId in
       captured.setValue(suggestionId)
       return .mock
     })

@@ -12,7 +12,7 @@ struct OrganizationLifecycleFacadeTests {
   func updateOrganizationUsesOrganizationServiceUpdateOrganization() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String?)?>(nil)
-    let service = MockOrganizationService(updateOrganization: { id, name, slug in
+    let service = MockOrganizationService(updateOrganization: { _, id, name, slug in
       captured.setValue((id, name, slug))
       return .mock
     })
@@ -30,7 +30,7 @@ struct OrganizationLifecycleFacadeTests {
   func destroyOrganizationUsesOrganizationServiceDestroyOrganization() async throws {
     let organization = Organization.mock
     let capturedId = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(destroyOrganization: { organizationId in
+    let service = MockOrganizationService(destroyOrganization: { _, organizationId in
       capturedId.setValue(organizationId)
       return .mock
     })
@@ -45,7 +45,7 @@ struct OrganizationLifecycleFacadeTests {
   func setOrganizationLogoUsesOrganizationServiceSetOrganizationLogo() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Data)?>(nil)
-    let service = MockOrganizationService(setOrganizationLogo: { organizationId, imageData in
+    let service = MockOrganizationService(setOrganizationLogo: { _, organizationId, imageData in
       captured.setValue((organizationId, imageData))
       return .mock
     })
@@ -63,7 +63,7 @@ struct OrganizationLifecycleFacadeTests {
   func getOrganizationRolesUsesOrganizationServiceGetOrganizationRoles() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationRoles: { organizationId, offset, pageSize in
+    let service = MockOrganizationService(getOrganizationRoles: { _, organizationId, offset, pageSize in
       captured.setValue((organizationId, offset, pageSize))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })

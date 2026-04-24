@@ -19,7 +19,7 @@ struct OrganizationMembershipFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, offset, pageSize in
+    let service = MockOrganizationService(getOrganizationMemberships: { _, organizationId, query, role, offset, pageSize in
       captured.setValue((organizationId, query, role, offset, pageSize))
       return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
     })
@@ -45,7 +45,7 @@ struct OrganizationMembershipFacadeTests {
   func addOrganizationMemberUsesOrganizationServiceAddOrganizationMember() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(addOrganizationMember: { organizationId, userId, role in
+    let service = MockOrganizationService(addOrganizationMember: { _, organizationId, userId, role in
       captured.setValue((organizationId, userId, role))
       return .mockWithUserData
     })
@@ -67,7 +67,7 @@ struct OrganizationMembershipFacadeTests {
   func updateOrganizationMemberUsesOrganizationServiceUpdateOrganizationMember() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
+    let service = MockOrganizationService(updateOrganizationMember: { _, organizationId, userId, role in
       captured.setValue((organizationId, userId, role))
       return .mockWithUserData
     })
@@ -89,7 +89,7 @@ struct OrganizationMembershipFacadeTests {
   func removeOrganizationMemberUsesOrganizationServiceRemoveOrganizationMember() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(removeOrganizationMember: { organizationId, userId in
+    let service = MockOrganizationService(removeOrganizationMember: { _, organizationId, userId in
       captured.setValue((organizationId, userId))
       return .mockWithUserData
     })
@@ -105,8 +105,9 @@ struct OrganizationMembershipFacadeTests {
   @Test
   func updateOrganizationMembershipUsesOrganizationServiceUpdateOrganizationMember() async throws {
     let membership = OrganizationMembership.mockWithUserData
+    let userId = try #require(membership.publicUserData?.userId)
     let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
+    let service = MockOrganizationService(updateOrganizationMember: { _, organizationId, userId, role in
       captured.setValue((organizationId, userId, role))
       return .mockWithUserData
     })
@@ -116,13 +117,14 @@ struct OrganizationMembershipFacadeTests {
 
     let params = try #require(captured.value)
     #expect(params.0 == membership.organization.id)
-    #expect(params.1 == membership.publicUserData?.userId)
+    #expect(params.1 == userId)
     #expect(params.2 == "org:admin")
   }
 
   @Test
   func destroyOrganizationMembershipUsesOrganizationServiceDestroyOrganizationMembership() async throws {
     let membership = OrganizationMembership.mockWithUserData
+    let userId = try #require(membership.publicUserData?.userId)
     let captured = LockIsolated<(String, String)?>(nil)
     let service = MockOrganizationService(destroyOrganizationMembership: { organizationId, userId in
       captured.setValue((organizationId, userId))
@@ -134,6 +136,6 @@ struct OrganizationMembershipFacadeTests {
 
     let params = try #require(captured.value)
     #expect(params.0 == membership.organization.id)
-    #expect(params.1 == membership.publicUserData?.userId)
+    #expect(params.1 == userId)
   }
 }

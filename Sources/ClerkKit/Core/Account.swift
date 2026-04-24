@@ -36,19 +36,6 @@ struct Account {
     self.passkeyService = passkeyService
   }
 
-  private func offset(forPage page: Int, pageSize: Int) -> Int {
-    max(page - 1, 0) * pageSize
-  }
-
-  private func externalAuthenticationURL(_ redirectUrl: String?) throws -> URL {
-    guard let redirectUrl,
-          let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-    return url
-  }
-
   @discardableResult
   func reload() async throws -> User {
     try await userService.reload(sessionId: clerk.session?.id)
@@ -189,7 +176,7 @@ struct Account {
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await getOrganizationInvitations(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -215,7 +202,7 @@ struct Account {
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await getOrganizationMemberships(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize
     )
   }
@@ -239,7 +226,7 @@ struct Account {
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await getOrganizationSuggestions(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -374,7 +361,7 @@ struct Account {
     _ externalAccount: ExternalAccount,
     prefersEphemeralWebBrowserSession: Bool = false
   ) async throws -> ExternalAccount {
-    let url = try externalAuthenticationURL(externalAccount.verification?.externalVerificationRedirectUrl)
+    let url = try clerkExternalAuthenticationURL(from: externalAccount.verification?.externalVerificationRedirectUrl)
     let authSession = WebAuthentication(
       url: url,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession

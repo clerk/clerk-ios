@@ -343,7 +343,7 @@ extension User {
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await getOrganizationInvitations(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -379,7 +379,7 @@ extension User {
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await getOrganizationMemberships(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize
     )
   }
@@ -413,7 +413,7 @@ extension User {
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await getOrganizationSuggestions(
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status
     )
@@ -436,10 +436,6 @@ extension User {
       pageSize: pageSize,
       status: status
     )
-  }
-
-  private func offset(forPage page: Int, pageSize: Int) -> Int {
-    max(page - 1, 0) * pageSize
   }
 
   /// Retrieves the organization creation defaults for this user.

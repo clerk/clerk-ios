@@ -8,7 +8,7 @@ struct OrganizationsTests {
   @Test
   func createUsesOrganizationServiceCreateOrganization() async throws {
     let captured = LockIsolated<(String, String?)?>(nil)
-    let service = MockOrganizationService(createOrganization: { name, slug in
+    let service = MockOrganizationService(createOrganization: { _, name, slug in
       captured.setValue((name, slug))
       return .mock
     })

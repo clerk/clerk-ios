@@ -518,7 +518,7 @@ extension Auth {
       )
     )
 
-    let url = try externalAuthenticationURL(preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl)
+    let url = try clerkExternalAuthenticationURL(from: preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl)
     let authSession = WebAuthentication(
       url: url,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
@@ -543,7 +543,7 @@ extension Auth {
       )
     )
 
-    let url = try externalAuthenticationURL(preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl)
+    let url = try clerkExternalAuthenticationURL(from: preparedSignIn.firstFactorVerification?.externalVerificationRedirectUrl)
     let authSession = WebAuthentication(
       url: url,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
@@ -638,7 +638,7 @@ extension Auth {
     ))
 
     let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value
-    let url = try externalAuthenticationURL(verification?.externalVerificationRedirectUrl)
+    let url = try clerkExternalAuthenticationURL(from: verification?.externalVerificationRedirectUrl)
     let authSession = WebAuthentication(
       url: url,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
@@ -710,7 +710,7 @@ extension Auth {
     ))
 
     let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value
-    let url = try externalAuthenticationURL(verification?.externalVerificationRedirectUrl)
+    let url = try clerkExternalAuthenticationURL(from: verification?.externalVerificationRedirectUrl)
     let authSession = WebAuthentication(
       url: url,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
@@ -838,10 +838,7 @@ extension Auth {
   /// - Throws: An error if revoking the session fails.
   @discardableResult
   public func revokeSession(_ session: Session) async throws -> Session {
-    try await sessionService.revoke(
-      sessionId: session.id,
-      actingSessionId: clerk.session?.id
-    )
+    try await revoke(session)
   }
 
   @discardableResult

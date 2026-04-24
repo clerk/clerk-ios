@@ -33,6 +33,7 @@ struct OrganizationServiceMembershipTests {
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       #expect(request.url?.query?.contains("paginated=true") == true)
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
@@ -67,6 +68,7 @@ struct OrganizationServiceMembershipTests {
     ) { request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("query=test") == true)
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
@@ -101,7 +103,8 @@ struct OrganizationServiceMembershipTests {
     ) { request in
       #expect(request.httpMethod == "GET")
       let queryString = request.url?.query ?? ""
-      #expect(queryString.contains("role") == true)
+      #expect(queryString.contains("role%5B%5D=admin") == true)
+      #expect(queryString.contains("_clerk_session_id=\(sessionId)") == true)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }
@@ -130,6 +133,7 @@ struct OrganizationServiceMembershipTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
     ) { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.urlEncodedFormBody!["user_id"] == "user123")
       #expect(request.urlEncodedFormBody!["role"] == "org:member")
       requestHandled.setValue(true)
@@ -160,6 +164,7 @@ struct OrganizationServiceMembershipTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
     ) { request in
       #expect(request.httpMethod == "PATCH")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       #expect(request.urlEncodedFormBody!["role"] == "org:admin")
       requestHandled.setValue(true)
     }
@@ -189,6 +194,7 @@ struct OrganizationServiceMembershipTests {
       data: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationMembership>(response: .mockWithUserData, client: .mock))
     ) { request in
       #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.query?.contains("_clerk_session_id=\(sessionId)") == true)
       requestHandled.setValue(true)
     }
     defer { removeIsolatedStub(for: originalURL) }

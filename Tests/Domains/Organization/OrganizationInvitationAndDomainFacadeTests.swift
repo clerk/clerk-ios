@@ -18,7 +18,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, offset, pageSize, status in
+    let service = MockOrganizationService(getOrganizationInvitations: { _, organizationId, offset, pageSize, status in
       captured.setValue((organizationId, offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
@@ -42,7 +42,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   func inviteOrganizationMemberUsesOrganizationServiceInviteOrganizationMember() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(inviteOrganizationMember: { organizationId, emailAddress, role in
+    let service = MockOrganizationService(inviteOrganizationMember: { _, organizationId, emailAddress, role in
       captured.setValue((organizationId, emailAddress, role))
       return .mock
     })
@@ -64,7 +64,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   func createOrganizationDomainUsesOrganizationServiceCreateOrganizationDomain() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(createOrganizationDomain: { organizationId, domainName in
+    let service = MockOrganizationService(createOrganizationDomain: { _, organizationId, domainName in
       captured.setValue((organizationId, domainName))
       return .mock
     })
@@ -88,7 +88,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomains: { organizationId, offset, pageSize, enrollmentMode in
+    let service = MockOrganizationService(getOrganizationDomains: { _, organizationId, offset, pageSize, enrollmentMode in
       captured.setValue((organizationId, offset, pageSize, enrollmentMode))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })
@@ -112,7 +112,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   func getOrganizationDomainUsesOrganizationServiceGetOrganizationDomain() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomain: { organizationId, domainId in
+    let service = MockOrganizationService(getOrganizationDomain: { _, organizationId, domainId in
       captured.setValue((organizationId, domainId))
       return .mock
     })
@@ -202,7 +202,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   func acceptUserOrganizationInvitationUsesOrganizationServiceAcceptUserOrganizationInvitation() async throws {
     let invitation = UserOrganizationInvitation.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+    let service = MockOrganizationService(acceptUserOrganizationInvitation: { _, invitationId in
       captured.setValue(invitationId)
       return .mock
     })
@@ -217,7 +217,7 @@ struct OrganizationInvitationAndDomainFacadeTests {
   func acceptOrganizationSuggestionUsesOrganizationServiceAcceptOrganizationSuggestion() async throws {
     let suggestion = OrganizationSuggestion.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
+    let service = MockOrganizationService(acceptOrganizationSuggestion: { _, suggestionId in
       captured.setValue(suggestionId)
       return .mock
     })

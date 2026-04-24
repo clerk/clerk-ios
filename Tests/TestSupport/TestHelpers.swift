@@ -1,6 +1,7 @@
 @testable import ClerkKit
 import Foundation
 import Mocker
+import Testing
 
 let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 
@@ -261,7 +262,11 @@ func registerIsolatedStub(
   data: Data,
   onRequest: @escaping @Sendable (URLRequest) throws -> Void = { _ in }
 ) {
-  let host = url.host!
+  guard let host = url.host else {
+    Issue.record("registerIsolatedStub requires a URL with a host")
+    return
+  }
+
   TestURLProtocolRegistry.shared.register(host: host) { request in
     guard request.httpMethod == method.rawValue else {
       throw URLError(.badServerResponse)

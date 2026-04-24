@@ -9,16 +9,6 @@ import Foundation
 // MARK: - Flow Helpers
 
 extension Auth {
-  func externalAuthenticationURL(_ redirectUrl: String?) throws -> URL {
-    guard let redirectUrl,
-          let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
-    }
-
-    return url
-  }
-
   @discardableResult
   func reload(_ signIn: SignIn, rotatingTokenNonce: String? = nil) async throws -> SignIn {
     try await signInService.get(signInId: signIn.id, params: .init(rotatingTokenNonce: rotatingTokenNonce))

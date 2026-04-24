@@ -64,7 +64,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
     try await organizationService.getOrganizationRoles(
       organizationId: organization.id,
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       sessionId: clerk.session?.id
     )
@@ -85,7 +85,7 @@ extension Organizations {
       organizationId: organization.id,
       query: query,
       role: role,
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       sessionId: clerk.session?.id
     )
@@ -169,7 +169,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await organizationService.getOrganizationInvitations(
       organizationId: organization.id,
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status,
       sessionId: clerk.session?.id
@@ -238,7 +238,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await organizationService.getOrganizationDomains(
       organizationId: organization.id,
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       enrollmentMode: enrollmentMode,
       sessionId: clerk.session?.id
@@ -300,7 +300,7 @@ extension Organizations {
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     try await organizationService.getOrganizationMembershipRequests(
       organizationId: organization.id,
-      offset: offset(forPage: page, pageSize: pageSize),
+      offset: clerkPaginationOffset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       status: status,
       sessionId: clerk.session?.id
@@ -321,13 +321,5 @@ extension Organizations {
       organizationId: request.organizationId,
       requestId: request.id
     )
-  }
-}
-
-// MARK: - Helpers
-
-extension Organizations {
-  func offset(forPage page: Int, pageSize: Int) -> Int {
-    max(page - 1, 0) * pageSize
   }
 }

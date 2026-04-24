@@ -18,7 +18,7 @@ struct OrganizationMembershipRequestFacadeTests {
   ) async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, offset, pageSize, status in
+    let service = MockOrganizationService(getOrganizationMembershipRequests: { _, organizationId, offset, pageSize, status in
       captured.setValue((organizationId, offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
     })

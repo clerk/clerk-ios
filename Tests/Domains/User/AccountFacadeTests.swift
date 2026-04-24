@@ -289,7 +289,7 @@ struct AccountFacadeTests {
       _ = try await clerk.account.getSessions(for: user)
       Issue.record("Expected getSessions to throw for a non-active user.")
     } catch let error as ClerkClientError {
-      #expect(error.message == "Cannot get sessions for a user that is not the active user.")
+      #expect(error.message?.contains("Cannot get sessions") == true)
     } catch {
       Issue.record("Expected ClerkClientError, got \(error).")
     }

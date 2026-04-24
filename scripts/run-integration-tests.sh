@@ -28,7 +28,7 @@ integration_suites=()
 while IFS= read -r suite_name; do
   integration_suites+=("$suite_name")
 done < <(
-  find "$REPO_ROOT/Tests/Integration" -name '*IntegrationTests.swift' -print \
+  find "$REPO_ROOT/Tests/Integration" -type f -name '*IntegrationTests.swift' -print \
     | sed -E 's|.*/([^/]+)\.swift$|\1|' \
     | sort
 )
@@ -93,7 +93,16 @@ run_integration_tests_with_retries() {
 }
 
 skip_build="false"
+failed_suites=()
 for suite_name in "${integration_suites[@]}"; do
-  run_integration_tests_with_retries "$suite_name" "$skip_build"
+  if ! run_integration_tests_with_retries "$suite_name" "$skip_build"; then
+    failed_suites+=("$suite_name")
+  fi
   skip_build="true"
 done
+
+if [ "${#failed_suites[@]}" -gt 0 ]; then
+  echo "❌ ${#failed_suites[@]} integration test suite(s) failed:"
+  printf '  - %s\n' "${failed_suites[@]}"
+  exit 1
+fi
