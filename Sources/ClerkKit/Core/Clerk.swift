@@ -19,7 +19,7 @@ public final class Clerk {
   /// Accessing this property before calling `Clerk.configure(publishableKey:options:)` is a programmer error.
   public static var shared: Clerk {
     guard let instance = _shared else {
-      fatalError("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
+      preconditionFailure("Clerk has not been configured. Call Clerk.configure(publishableKey:options:) before accessing Clerk.shared")
     }
     return instance
   }
