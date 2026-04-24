@@ -24,8 +24,8 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `createBackupCodes()` method.
   package nonisolated(unsafe) var createBackupCodesHandler: (() async throws -> BackupCodeResource)?
 
-  /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
-  package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
+  /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:sessionId:)` method.
+  package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String], [OIDCPrompt], String?) async throws -> ExternalAccount)?
 
   /// Custom handler for the `createExternalAccountToken(provider:idToken:)` method.
   package nonisolated(unsafe) var createExternalAccountTokenHandler: ((IDTokenProvider, String) async throws -> ExternalAccount)?
@@ -81,7 +81,7 @@ package final class MockUserService: UserServiceProtocol {
   ///   - reload: Optional implementation of the `reload()` method.
   ///   - update: Optional implementation of the `update(params:)` method.
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
-  ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
+  ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:sessionId:)` method.
   ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:)` method.
   ///   - createTotp: Optional implementation of the `createTotp()` method.
   ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
@@ -119,7 +119,7 @@ package final class MockUserService: UserServiceProtocol {
     reload: (() async throws -> User)? = nil,
     update: ((User.UpdateParams) async throws -> User)? = nil,
     createBackupCodes: (() async throws -> BackupCodeResource)? = nil,
-    createExternalAccount: ((OAuthProvider, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)? = nil,
+    createExternalAccount: ((OAuthProvider, String?, [String], [OIDCPrompt], String?) async throws -> ExternalAccount)? = nil,
     createExternalAccountToken: ((IDTokenProvider, String) async throws -> ExternalAccount)? = nil,
     createTotp: (() async throws -> TOTPResource)? = nil,
     verifyTotp: ((String) async throws -> TOTPResource)? = nil,
@@ -182,10 +182,10 @@ package final class MockUserService: UserServiceProtocol {
     redirectUrl: String,
     additionalScopes: [String],
     oidcPrompts: [OIDCPrompt],
-    sessionId _: String?
+    sessionId: String?
   ) async throws -> ExternalAccount {
     if let handler = createExternalAccountHandler {
-      return try await handler(provider, redirectUrl, additionalScopes, oidcPrompts)
+      return try await handler(provider, redirectUrl, additionalScopes, oidcPrompts, sessionId)
     }
     return .mockVerified
   }

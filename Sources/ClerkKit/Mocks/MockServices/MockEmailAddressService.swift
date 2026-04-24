@@ -15,8 +15,8 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   /// Custom handler for the `create(email:)` method.
   package nonisolated(unsafe) var createHandler: ((String) async throws -> EmailAddress)?
 
-  /// Custom handler for the `prepareVerification(emailAddressId:strategy:)` method.
-  package nonisolated(unsafe) var prepareVerificationHandler: ((String, EmailAddress.PrepareStrategy) async throws -> EmailAddress)?
+  /// Custom handler for the `prepareVerification(emailAddressId:strategy:sessionId:)` method.
+  package nonisolated(unsafe) var prepareVerificationHandler: ((String, EmailAddress.PrepareStrategy, String?) async throws -> EmailAddress)?
 
   /// Custom handler for the `attemptVerification(emailAddressId:strategy:)` method.
   package nonisolated(unsafe) var attemptVerificationHandler: ((String, EmailAddress.AttemptStrategy) async throws -> EmailAddress)?
@@ -26,7 +26,7 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
 
   package init(
     create: ((String) async throws -> EmailAddress)? = nil,
-    prepareVerification: ((String, EmailAddress.PrepareStrategy) async throws -> EmailAddress)? = nil,
+    prepareVerification: ((String, EmailAddress.PrepareStrategy, String?) async throws -> EmailAddress)? = nil,
     attemptVerification: ((String, EmailAddress.AttemptStrategy) async throws -> EmailAddress)? = nil,
     destroy: ((String) async throws -> DeletedObject)? = nil
   ) {
@@ -45,9 +45,9 @@ package final class MockEmailAddressService: EmailAddressServiceProtocol {
   }
 
   @MainActor
-  package func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy, sessionId _: String?) async throws -> EmailAddress {
+  package func prepareVerification(emailAddressId: String, strategy: EmailAddress.PrepareStrategy, sessionId: String?) async throws -> EmailAddress {
     if let handler = prepareVerificationHandler {
-      return try await handler(emailAddressId, strategy)
+      return try await handler(emailAddressId, strategy, sessionId)
     }
     return .mock
   }

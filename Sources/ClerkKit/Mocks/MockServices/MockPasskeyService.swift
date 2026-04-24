@@ -22,14 +22,14 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   /// Custom handler for the `attemptVerification(passkeyId:credential:)` method.
   package nonisolated(unsafe) var attemptVerificationHandler: ((String, String) async throws -> Passkey)?
 
-  /// Custom handler for the `delete(passkeyId:)` method.
-  package nonisolated(unsafe) var deleteHandler: ((String) async throws -> DeletedObject)?
+  /// Custom handler for the `delete(passkeyId:sessionId:)` method.
+  package nonisolated(unsafe) var deleteHandler: ((String, String?) async throws -> DeletedObject)?
 
   package init(
     create: (() async throws -> Passkey)? = nil,
     update: ((String, String) async throws -> Passkey)? = nil,
     attemptVerification: ((String, String) async throws -> Passkey)? = nil,
-    delete: ((String) async throws -> DeletedObject)? = nil
+    delete: ((String, String?) async throws -> DeletedObject)? = nil
   ) {
     createHandler = create
     updateHandler = update
@@ -62,9 +62,9 @@ package final class MockPasskeyService: PasskeyServiceProtocol {
   }
 
   @MainActor
-  package func delete(passkeyId: String, sessionId _: String?) async throws -> DeletedObject {
+  package func delete(passkeyId: String, sessionId: String?) async throws -> DeletedObject {
     if let handler = deleteHandler {
-      return try await handler(passkeyId)
+      return try await handler(passkeyId, sessionId)
     }
     return .mock
   }

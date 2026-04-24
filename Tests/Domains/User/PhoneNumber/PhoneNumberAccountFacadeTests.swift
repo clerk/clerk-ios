@@ -20,7 +20,7 @@ struct PhoneNumberAccountFacadeTests {
   func deleteUsesPhoneNumberServiceDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(delete: { phoneNumberId in
+    let service = MockPhoneNumberService(delete: { phoneNumberId, _ in
       captured.setValue(phoneNumberId)
       return .mock
     })

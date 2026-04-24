@@ -143,12 +143,8 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
 
     try await operation()
 
-    do {
-      try await waitUntil("the next auth event to be emitted", timeout: timeout) {
-        captured.value != nil
-      }
-    } catch {
-      return captured.value
+    try? await waitUntil("the next auth event to be emitted", timeout: timeout) {
+      captured.value != nil
     }
 
     return captured.value

@@ -113,7 +113,7 @@ struct AccountFacadeTests {
     scenario: ExternalAccountScenario
   ) async throws {
     let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt])?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts in
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts, _ in
       captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
       return .mockVerified
     })

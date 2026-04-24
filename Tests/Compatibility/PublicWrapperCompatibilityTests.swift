@@ -100,13 +100,14 @@ struct PublicWrapperCompatibilityTests {
         callbackUrlScheme: "test-app"
       )
     )
-    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt])?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts in
-      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
+    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt], String?)?>(nil)
+    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts, sessionId in
+      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts, sessionId))
       return .mockVerified
     })
 
-    _ = try support.makeSharedClerk(userService: service, options: options)
+    let clerk = try support.makeSharedClerk(userService: service, options: options, client: .mock)
+    let sessionId = try #require(clerk.session?.id)
     _ = try await User.mock.createExternalAccount(provider: .google)
 
     let params = try #require(captured.value)
@@ -114,68 +115,80 @@ struct PublicWrapperCompatibilityTests {
     #expect(params.1 == expectedRedirectUrl)
     #expect(params.2.isEmpty)
     #expect(params.3.isEmpty)
+    #expect(params.4 == sessionId)
   }
 
   @Test
   func emailAddressSendCodeUsesSharedClerkAccountFacade() async throws {
     let emailAddress = EmailAddress.mock
-    let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
-    let service = MockEmailAddressService(prepareVerification: { id, strategy in
-      captured.setValue((id, strategy))
+    let captured = LockIsolated<(String, EmailAddress.PrepareStrategy, String?)?>(nil)
+    let service = MockEmailAddressService(prepareVerification: { id, strategy, sessionId in
+      captured.setValue((id, strategy, sessionId))
       return .mock
     })
 
-    _ = try support.makeSharedClerk(emailAddressService: service)
+    let clerk = try support.makeSharedClerk(emailAddressService: service, client: .mock)
+    let sessionId = try #require(clerk.session?.id)
     _ = try await emailAddress.sendCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == emailAddress.id)
     #expect(params.1 == .emailCode)
+    #expect(params.2 == sessionId)
   }
 
   @Test
   func phoneNumberDeleteUsesSharedClerkAccountFacade() async throws {
     let phoneNumber = PhoneNumber.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(delete: { phoneNumberId in
-      captured.setValue(phoneNumberId)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let service = MockPhoneNumberService(delete: { phoneNumberId, sessionId in
+      captured.setValue((phoneNumberId, sessionId))
       return .mock
     })
 
-    _ = try support.makeSharedClerk(phoneNumberService: service)
+    let clerk = try support.makeSharedClerk(phoneNumberService: service, client: .mock)
+    let sessionId = try #require(clerk.session?.id)
     _ = try await phoneNumber.delete()
 
-    #expect(captured.value == phoneNumber.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == phoneNumber.id)
+    #expect(params.1 == sessionId)
   }
 
   @Test
   func externalAccountDestroyUsesSharedClerkAccountFacade() async throws {
     let externalAccount = ExternalAccount.mockVerified
-    let captured = LockIsolated<String?>(nil)
-    let service = MockExternalAccountService(destroy: { externalAccountId in
-      captured.setValue(externalAccountId)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let service = MockExternalAccountService(destroy: { externalAccountId, sessionId in
+      captured.setValue((externalAccountId, sessionId))
       return .mock
     })
 
-    _ = try support.makeSharedClerk(externalAccountService: service)
+    let clerk = try support.makeSharedClerk(externalAccountService: service, client: .mock)
+    let sessionId = try #require(clerk.session?.id)
     _ = try await externalAccount.destroy()
 
-    #expect(captured.value == externalAccount.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == externalAccount.id)
+    #expect(params.1 == sessionId)
   }
 
   @Test
   func passkeyDeleteUsesSharedClerkAccountFacade() async throws {
     let passkey = Passkey.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockPasskeyService(delete: { passkeyId in
-      captured.setValue(passkeyId)
+    let captured = LockIsolated<(String, String?)?>(nil)
+    let service = MockPasskeyService(delete: { passkeyId, sessionId in
+      captured.setValue((passkeyId, sessionId))
       return .mock
     })
 
-    _ = try support.makeSharedClerk(passkeyService: service)
+    let clerk = try support.makeSharedClerk(passkeyService: service, client: .mock)
+    let sessionId = try #require(clerk.session?.id)
     _ = try await passkey.delete()
 
-    #expect(captured.value == passkey.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == passkey.id)
+    #expect(params.1 == sessionId)
   }
 
   @Test

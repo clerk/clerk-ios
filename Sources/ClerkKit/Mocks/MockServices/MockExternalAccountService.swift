@@ -15,12 +15,12 @@ package final class MockExternalAccountService: ExternalAccountServiceProtocol {
   /// Custom handler for the `reauthorize(_:redirectUrl:additionalScopes:oidcPrompts:)` method.
   package nonisolated(unsafe) var reauthorizeHandler: ((String, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
 
-  /// Custom handler for the `destroy(_:)` method.
-  package nonisolated(unsafe) var destroyHandler: ((String) async throws -> DeletedObject)?
+  /// Custom handler for the `destroy(_:sessionId:)` method.
+  package nonisolated(unsafe) var destroyHandler: ((String, String?) async throws -> DeletedObject)?
 
   package init(
     reauthorize: ((String, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)? = nil,
-    destroy: ((String) async throws -> DeletedObject)? = nil
+    destroy: ((String, String?) async throws -> DeletedObject)? = nil
   ) {
     reauthorizeHandler = reauthorize
     destroyHandler = destroy
@@ -41,9 +41,9 @@ package final class MockExternalAccountService: ExternalAccountServiceProtocol {
   }
 
   @MainActor
-  package func destroy(_ externalAccountId: String, sessionId _: String?) async throws -> DeletedObject {
+  package func destroy(_ externalAccountId: String, sessionId: String?) async throws -> DeletedObject {
     if let handler = destroyHandler {
-      return try await handler(externalAccountId)
+      return try await handler(externalAccountId, sessionId)
     }
     return .mock
   }

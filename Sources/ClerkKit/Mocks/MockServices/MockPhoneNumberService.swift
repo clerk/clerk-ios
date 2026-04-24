@@ -15,8 +15,8 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   /// Custom handler for the `create(phoneNumber:)` method.
   package nonisolated(unsafe) var createHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `delete(phoneNumberId:)` method.
-  package nonisolated(unsafe) var deleteHandler: ((String) async throws -> DeletedObject)?
+  /// Custom handler for the `delete(phoneNumberId:sessionId:)` method.
+  package nonisolated(unsafe) var deleteHandler: ((String, String?) async throws -> DeletedObject)?
 
   /// Custom handler for the `prepareVerification(phoneNumberId:)` method.
   package nonisolated(unsafe) var prepareVerificationHandler: ((String) async throws -> PhoneNumber)?
@@ -32,7 +32,7 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
 
   package init(
     create: ((String) async throws -> PhoneNumber)? = nil,
-    delete: ((String) async throws -> DeletedObject)? = nil,
+    delete: ((String, String?) async throws -> DeletedObject)? = nil,
     prepareVerification: ((String) async throws -> PhoneNumber)? = nil,
     attemptVerification: ((String, String) async throws -> PhoneNumber)? = nil,
     makeDefaultSecondFactor: ((String) async throws -> PhoneNumber)? = nil,
@@ -55,9 +55,9 @@ package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
   }
 
   @MainActor
-  package func delete(phoneNumberId: String, sessionId _: String?) async throws -> DeletedObject {
+  package func delete(phoneNumberId: String, sessionId: String?) async throws -> DeletedObject {
     if let handler = deleteHandler {
-      return try await handler(phoneNumberId)
+      return try await handler(phoneNumberId, sessionId)
     }
     return .mock
   }

@@ -31,10 +31,6 @@ struct ClerkTests {
     )
   }
 
-  func makeClerk() throws -> Clerk {
-    try makeBareClerk()
-  }
-
   @Test
   func clearAllKeychainItemsDeletesAllKeys() throws {
     let keychain = InMemoryKeychain()
@@ -84,21 +80,19 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDoesNotThrow() throws {
-    let keychain = InMemoryKeychain()
-
-    try keychain.set("test-data", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+  func clearAllKeychainItemsDoesNotThrow() {
+    let keychain = FailingDeleteKeychain()
 
     Clerk.clearAllKeychainItems(using: keychain)
 
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(keychain.deleteAttempts == ClerkKeychainKey.allCases.count)
   }
 
   // MARK: - isLoaded Tests
 
   @Test
   func isLoadedReturnsFalseWhenBothNil() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     clerk.client = nil
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
@@ -106,7 +100,7 @@ struct ClerkTests {
 
   @Test
   func isLoadedReturnsFalseWhenOnlyEnvironmentSet() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     clerk.environment = Clerk.Environment.mock
     clerk.client = nil
     #expect(clerk.isLoaded == false)
@@ -114,7 +108,7 @@ struct ClerkTests {
 
   @Test
   func isLoadedReturnsFalseWhenOnlyClientSet() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     clerk.client = Client.mock
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
@@ -122,7 +116,7 @@ struct ClerkTests {
 
   @Test
   func isLoadedReturnsTrueWhenBothSet() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     clerk.client = Client.mock
     clerk.environment = Clerk.Environment.mock
     #expect(clerk.isLoaded == true)
@@ -130,7 +124,7 @@ struct ClerkTests {
 
   @Test
   func isLoadedBecomesTrue() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     clerk.client = nil
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
@@ -149,7 +143,7 @@ struct ClerkTests {
 
   @Test
   func sessionReturnsPendingSession() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     let pendingSession = createSession(id: "session1", status: .pending)
     clerk.client = Client(
       id: "client1",
@@ -163,7 +157,7 @@ struct ClerkTests {
 
   @Test
   func userReturnsUserForPendingSession() throws {
-    let clerk = try makeClerk()
+    let clerk = try makeBareClerk()
     let pendingSession = createSession(id: "session1", status: .pending, user: .mock)
     clerk.client = Client(
       id: "client1",
@@ -173,5 +167,30 @@ struct ClerkTests {
     )
 
     #expect(clerk.user?.id == User.mock.id)
+  }
+
+  private final class FailingDeleteKeychain: @unchecked Sendable, KeychainStorage {
+    var deleteAttempts = 0
+
+    func set(_: String, forKey _: String) throws {}
+
+    func set(_: Data, forKey _: String) throws {}
+
+    func string(forKey _: String) throws -> String? {
+      nil
+    }
+
+    func data(forKey _: String) throws -> Data? {
+      nil
+    }
+
+    func deleteItem(forKey _: String) throws {
+      deleteAttempts += 1
+      throw NSError(domain: "FailingDeleteKeychain", code: 1)
+    }
+
+    func hasItem(forKey _: String) throws -> Bool {
+      false
+    }
   }
 }

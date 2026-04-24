@@ -54,7 +54,7 @@ struct PasskeyAccountFacadeTests {
   func deleteUsesPasskeyServiceDelete() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPasskeyService(delete: { passkeyId in
+    let service = MockPasskeyService(delete: { passkeyId, _ in
       captured.setValue(passkeyId)
       return .mock
     })

@@ -35,10 +35,9 @@ extension Auth {
   ) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignIn = try await reload(signIn, rotatingTokenNonce: nonce)
-      if let error = updatedSignIn.firstFactorVerification?.error {
-        throw error
-      }
-      return .signIn(updatedSignIn)
+      let result = TransferFlowResult.signIn(updatedSignIn)
+      try throwIfTransferResultHasError(result)
+      return result
     }
 
     let updatedSignIn = try await reload(signIn)
@@ -68,12 +67,9 @@ extension Auth {
   func handleRedirectCallbackUrl(_ url: URL, for signUp: SignUp) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignUp = try await reload(signUp, rotatingTokenNonce: nonce)
-      if let verification = updatedSignUp.verifications.first(where: { $0.key == "external_account" })?.value,
-         let error = verification.error
-      {
-        throw error
-      }
-      return .signUp(updatedSignUp)
+      let result = TransferFlowResult.signUp(updatedSignUp)
+      try throwIfTransferResultHasError(result)
+      return result
     }
 
     let updatedSignUp = try await reload(signUp)

@@ -20,7 +20,7 @@ struct ExternalAccountAccountFacadeTests {
   func destroyUsesExternalAccountServiceDestroy() async throws {
     let externalAccount = ExternalAccount.mockVerified
     let captured = LockIsolated<String?>(nil)
-    let service = MockExternalAccountService(destroy: { externalAccountId in
+    let service = MockExternalAccountService(destroy: { externalAccountId, _ in
       captured.setValue(externalAccountId)
       return .mock
     })

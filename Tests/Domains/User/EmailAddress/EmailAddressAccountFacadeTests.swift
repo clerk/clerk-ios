@@ -20,7 +20,7 @@ struct EmailAddressAccountFacadeTests {
   func sendCodeUsesEmailAddressServicePrepareVerification() async throws {
     let emailAddress = EmailAddress.mock
     let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
-    let service = MockEmailAddressService(prepareVerification: { id, strategy in
+    let service = MockEmailAddressService(prepareVerification: { id, strategy, _ in
       captured.setValue((id, strategy))
       return .mock
     })
