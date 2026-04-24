@@ -32,7 +32,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   @Test
   func validateClearsClientWhenResponseAndClientAreNull() async throws {
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     clerk.client = Client.mock
     let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
 
@@ -55,7 +55,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
   @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     let existingClient = Client.mock
     clerk.client = existingClient
     let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })

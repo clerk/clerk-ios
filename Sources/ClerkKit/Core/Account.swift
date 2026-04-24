@@ -141,10 +141,7 @@ struct Account {
       ],
     ]
 
-    let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential)
-    guard let credential = String(data: jsonData, encoding: .utf8) else {
-      throw ClerkClientError(message: "Unable to encode the passkey credential.")
-    }
+    let credential = try clerkPasskeyCredentialJSONString(from: publicKeyCredential)
 
     return try await passkeyService.attemptVerification(
       passkeyId: passkey.id,
@@ -185,7 +182,7 @@ struct Account {
   @discardableResult
   func getOrganizationInvitations(
     offset: Int = 0,
-    pageSize: Int = 10,
+    pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await userService.getOrganizationInvitations(
@@ -210,7 +207,7 @@ struct Account {
   @discardableResult
   func getOrganizationMemberships(
     offset: Int = 0,
-    pageSize: Int = 10
+    pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await userService.getOrganizationMemberships(
       offset: offset,
@@ -235,7 +232,7 @@ struct Account {
   @discardableResult
   func getOrganizationSuggestions(
     offset: Int = 0,
-    pageSize: Int = 10,
+    pageSize: Int = 20,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await userService.getOrganizationSuggestions(
@@ -370,10 +367,10 @@ struct Account {
     _ = try await authSession.start()
 
     try await clerk.refreshClient()
-    guard let externalAccount = clerk.user?.externalAccounts.first(where: { $0.id == externalAccount.id }) else {
+    guard let refreshedAccount = clerk.user?.externalAccounts.first(where: { $0.id == externalAccount.id }) else {
       throw ClerkClientError(message: "Something went wrong. Please try again.")
     }
-    return externalAccount
+    return refreshedAccount
   }
 
   @discardableResult

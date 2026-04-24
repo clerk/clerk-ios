@@ -6,9 +6,9 @@ import Testing
 @Suite(.tags(.unit))
 struct ClerkResponseClientStateTests {
   @Test
-  func applyResponseClientSetsFirstClient() {
+  func applyResponseClientSetsFirstClient() throws {
     let incoming = client(id: "client-first", updatedAt: 2000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(incoming)
@@ -17,10 +17,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientWithoutSequenceReplacesExistingClient() {
+  func applyResponseClientWithoutSequenceReplacesExistingClient() throws {
     let current = client(id: "client-current", updatedAt: 3000, lastActiveSessionId: "session-a")
     let replacement = client(id: "client-replacement", updatedAt: 2000, lastActiveSessionId: "session-b")
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     clerk.client = current
 
     clerk.applyResponseClient(replacement)
@@ -30,10 +30,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientAcceptsNewerResponseSequenceEvenWhenUpdatedAtIsOlder() {
+  func applyResponseClientAcceptsNewerResponseSequenceEvenWhenUpdatedAtIsOlder() throws {
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 4000)
     let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 3000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(original, responseSequence: 1)
@@ -43,10 +43,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientIgnoresOlderResponseSequenceEvenWhenUpdatedAtIsNewer() {
+  func applyResponseClientIgnoresOlderResponseSequenceEvenWhenUpdatedAtIsNewer() throws {
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
     let stale = client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 5000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(original, responseSequence: 2)
@@ -56,9 +56,9 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientNilIgnoresOlderResponseSequence() {
+  func applyResponseClientNilIgnoresOlderResponseSequence() throws {
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(original, responseSequence: 2)
@@ -68,10 +68,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientStoresServerDate() {
+  func applyResponseClientStoresServerDate() throws {
     let serverDate = Date(timeIntervalSince1970: 1000)
     let incoming = client(id: "client-1", updatedAt: 2000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(incoming, serverDate: serverDate)
@@ -82,10 +82,10 @@ struct ClerkResponseClientStateTests {
   // MARK: - Watch Sync (Authoritative / Phone → Watch)
 
   @Test
-  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
+  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() throws {
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
     let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.applyResponseClient(current, responseSequence: 10)
     clerk.applyWatchSyncedClient(
@@ -99,9 +99,9 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyWatchSyncedClientAuthoritativeNilClearsClient() {
+  func applyWatchSyncedClientAuthoritativeNilClearsClient() throws {
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     clerk.applyResponseClient(current, responseSequence: 10)
 
     clerk.applyWatchSyncedClient(
@@ -116,12 +116,12 @@ struct ClerkResponseClientStateTests {
   // MARK: - Watch Sync (Non-authoritative / Watch → Phone)
 
   @Test
-  func nonAuthoritativeWatchSyncAcceptsNewerServerFetchDate() {
+  func nonAuthoritativeWatchSyncAcceptsNewerServerFetchDate() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
     let phoneServerDate = Date(timeIntervalSince1970: 100)
     let watchServerDate = Date(timeIntervalSince1970: 200)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
     clerk.applyWatchSyncedClient(
@@ -136,12 +136,12 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder() {
+  func nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
     let phoneServerDate = Date(timeIntervalSince1970: 200)
     let watchServerDate = Date(timeIntervalSince1970: 100)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
     clerk.applyWatchSyncedClient(
@@ -155,10 +155,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncSchedulesRefreshWhenNoServerFetchDates() {
+  func nonAuthoritativeWatchSyncSchedulesRefreshWhenNoServerFetchDates() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1)
     clerk.applyWatchSyncedClient(
@@ -173,9 +173,9 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncNilDoesNotClearPhoneClient() {
+  func nonAuthoritativeWatchSyncNilDoesNotClearPhoneClient() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
     clerk.applyWatchSyncedClient(
@@ -190,10 +190,10 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient() {
+  func nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient() throws {
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
     let watchServerDate = Date(timeIntervalSince1970: 100)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     clerk.client = nil
 
     clerk.applyWatchSyncedClient(
@@ -208,8 +208,8 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncNilDoesNotSeedPhone() {
-    let clerk = makeBareClerk()
+  func nonAuthoritativeWatchSyncNilDoesNotSeedPhone() throws {
+    let clerk = try makeBareClerk()
     clerk.client = nil
 
     clerk.applyWatchSyncedClient(
@@ -224,10 +224,10 @@ struct ClerkResponseClientStateTests {
   // MARK: - Cleanup
 
   @Test
-  func cleanupManagersResetsLastAppliedClientResponseSequence() {
+  func cleanupManagersResetsLastAppliedClientResponseSequence() throws {
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
     let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 2000)
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
 
     clerk.client = nil
     clerk.applyResponseClient(original, responseSequence: 10)

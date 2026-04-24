@@ -358,7 +358,7 @@ extension User {
   @discardableResult @MainActor
   package func getOrganizationInvitations(
     offset: Int = 0,
-    pageSize: Int = 10,
+    pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await Clerk.shared.account.getOrganizationInvitations(
@@ -392,7 +392,7 @@ extension User {
   @discardableResult @MainActor
   package func getOrganizationMemberships(
     offset: Int = 0,
-    pageSize: Int = 10
+    pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await Clerk.shared.account.getOrganizationMemberships(
       offset: offset,
@@ -428,7 +428,7 @@ extension User {
   @discardableResult @MainActor
   package func getOrganizationSuggestions(
     offset: Int = 0,
-    pageSize: Int = 10,
+    pageSize: Int = 20,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await Clerk.shared.account.getOrganizationSuggestions(

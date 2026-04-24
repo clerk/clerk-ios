@@ -39,7 +39,7 @@ struct WatchSyncPayloadTests {
 
   @Test
   func phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync() throws {
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     let keychain = InMemoryKeychain()
     try keychain.set("watch-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.applyResponseClient(
@@ -65,7 +65,7 @@ struct WatchSyncPayloadTests {
 
   @Test
   func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() throws {
-    let clerk = makeBareClerk()
+    let clerk = try makeBareClerk()
     let keychain = InMemoryKeychain()
     try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.applyResponseClient(
@@ -90,8 +90,8 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadSeedsPhoneWhenNoLocalClient() {
-    let clerk = makeBareClerk()
+  func watchPayloadSeedsPhoneWhenNoLocalClient() throws {
+    let clerk = try makeBareClerk()
     let keychain = InMemoryKeychain()
     clerk.client = nil
     let watchServerDate = Date(timeIntervalSince1970: 100)
@@ -112,8 +112,8 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadNilClientDoesNotClearPhoneClient() {
-    let clerk = makeBareClerk()
+  func watchPayloadNilClientDoesNotClearPhoneClient() throws {
+    let clerk = try makeBareClerk()
     let keychain = InMemoryKeychain()
     clerk.applyResponseClient(
       client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local"),
@@ -134,8 +134,8 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() {
-    let clerk = makeBareClerk()
+  func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() throws {
+    let clerk = try makeBareClerk()
     let keychain = InMemoryKeychain()
     clerk.applyResponseClient(
       client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local"),

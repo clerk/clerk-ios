@@ -44,18 +44,7 @@ extension Auth {
     let updatedSignIn = try await reload(signIn)
     let result = try await handleTransferFlow(for: updatedSignIn, transferable: transferable)
 
-    switch result {
-    case .signIn(let signIn):
-      if let error = signIn.firstFactorVerification?.error {
-        throw error
-      }
-    case .signUp(let signUp):
-      if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-         let error = verification.error
-      {
-        throw error
-      }
-    }
+    try throwIfTransferResultHasError(result)
 
     return result
   }
@@ -65,6 +54,7 @@ extension Auth {
     try await signUpService.get(signUpId: signUp.id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
   }
 
+  @discardableResult
   func handleTransferFlow(for signUp: SignUp) async throws -> TransferFlowResult {
     guard signUp.needsTransferToSignIn else {
       return .signUp(signUp)
@@ -89,6 +79,12 @@ extension Auth {
     let updatedSignUp = try await reload(signUp)
     let result = try await handleTransferFlow(for: updatedSignUp)
 
+    try throwIfTransferResultHasError(result)
+
+    return result
+  }
+
+  private func throwIfTransferResultHasError(_ result: TransferFlowResult) throws {
     switch result {
     case .signIn(let signIn):
       if let error = signIn.firstFactorVerification?.error {
@@ -101,8 +97,6 @@ extension Auth {
         throw error
       }
     }
-
-    return result
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -157,14 +151,7 @@ extension Auth {
       ],
     ]
 
-    let jsonData = try JSONSerialization.data(
-      withJSONObject: publicKeyCredential,
-      options: []
-    )
-    return String(
-      data: jsonData,
-      encoding: .utf8
-    ) ?? ""
+    return try clerkPasskeyCredentialJSONString(from: publicKeyCredential)
   }
   #endif
 }

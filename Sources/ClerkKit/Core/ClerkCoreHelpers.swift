@@ -13,3 +13,12 @@ func clerkExternalAuthenticationURL(from redirectUrl: String?) throws -> URL {
 
   return url
 }
+
+func clerkPasskeyCredentialJSONString(from jsonObject: Any) throws -> String {
+  let jsonData = try JSONSerialization.data(withJSONObject: jsonObject, options: [])
+  guard let credential = String(data: jsonData, encoding: .utf8) else {
+    throw ClerkClientError(message: "Unable to encode the passkey credential.")
+  }
+
+  return credential
+}

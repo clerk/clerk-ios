@@ -165,8 +165,8 @@ final class ClerkTestFixture {
 func makeBareClerk(
   client: Client? = nil,
   environment: Clerk.Environment? = nil
-) -> Clerk {
-  try! ClerkTestFixture().makeClerk(client: client, environment: environment)
+) throws -> Clerk {
+  try ClerkTestFixture().makeClerk(client: client, environment: environment)
 }
 
 private enum TestWaitError: LocalizedError {
@@ -195,10 +195,6 @@ func waitUntil(
     }
 
     try await Task.sleep(for: pollingInterval)
-  }
-
-  if try condition() {
-    return
   }
 
   throw TestWaitError.timedOut("Timed out waiting for \(description)")
@@ -254,6 +250,14 @@ func makeIsolatedMockBaseURL(path: String = "") -> URL {
   return components.url!
 }
 
+/// Registers a host-scoped stub for isolated request tests.
+///
+/// `TestURLProtocolRegistry` keys handlers by host, and `IsolatedMockURLProtocol.canInit`
+/// selects a handler using only the request host. The path check inside `registerIsolatedStub`
+/// is best-effort and throws `URLError(.resourceUnavailable)` on mismatch. Query parameters
+/// are not matched; tests should assert query and body values in the `onRequest` closure.
+/// Calling `registerIsolatedStub` more than once for the same host, including hosts created by
+/// `makeIsolatedMockBaseURL`, replaces the previous handler.
 func registerIsolatedStub(
   url: URL,
   method: HTTPMethod,

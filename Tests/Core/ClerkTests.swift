@@ -31,8 +31,8 @@ struct ClerkTests {
     )
   }
 
-  func makeClerk() -> Clerk {
-    makeBareClerk()
+  func makeClerk() throws -> Clerk {
+    try makeBareClerk()
   }
 
   @Test
@@ -97,40 +97,40 @@ struct ClerkTests {
   // MARK: - isLoaded Tests
 
   @Test
-  func isLoadedReturnsFalseWhenBothNil() {
-    let clerk = makeClerk()
+  func isLoadedReturnsFalseWhenBothNil() throws {
+    let clerk = try makeClerk()
     clerk.client = nil
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
   }
 
   @Test
-  func isLoadedReturnsFalseWhenOnlyEnvironmentSet() {
-    let clerk = makeClerk()
+  func isLoadedReturnsFalseWhenOnlyEnvironmentSet() throws {
+    let clerk = try makeClerk()
     clerk.environment = Clerk.Environment.mock
     clerk.client = nil
     #expect(clerk.isLoaded == false)
   }
 
   @Test
-  func isLoadedReturnsFalseWhenOnlyClientSet() {
-    let clerk = makeClerk()
+  func isLoadedReturnsFalseWhenOnlyClientSet() throws {
+    let clerk = try makeClerk()
     clerk.client = Client.mock
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
   }
 
   @Test
-  func isLoadedReturnsTrueWhenBothSet() {
-    let clerk = makeClerk()
+  func isLoadedReturnsTrueWhenBothSet() throws {
+    let clerk = try makeClerk()
     clerk.client = Client.mock
     clerk.environment = Clerk.Environment.mock
     #expect(clerk.isLoaded == true)
   }
 
   @Test
-  func isLoadedBecomesTrue() {
-    let clerk = makeClerk()
+  func isLoadedBecomesTrue() throws {
+    let clerk = try makeClerk()
     clerk.client = nil
     clerk.environment = nil
     #expect(clerk.isLoaded == false)
@@ -148,8 +148,8 @@ struct ClerkTests {
   // MARK: - Current / Active Session Tests
 
   @Test
-  func sessionReturnsPendingSession() {
-    let clerk = makeClerk()
+  func sessionReturnsPendingSession() throws {
+    let clerk = try makeClerk()
     let pendingSession = createSession(id: "session1", status: .pending)
     clerk.client = Client(
       id: "client1",
@@ -162,8 +162,8 @@ struct ClerkTests {
   }
 
   @Test
-  func userReturnsUserForPendingSession() {
-    let clerk = makeClerk()
+  func userReturnsUserForPendingSession() throws {
+    let clerk = try makeClerk()
     let pendingSession = createSession(id: "session1", status: .pending, user: .mock)
     clerk.client = Client(
       id: "client1",
