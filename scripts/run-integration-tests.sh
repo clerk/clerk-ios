@@ -22,31 +22,38 @@ if [ ! -f "$KEYS_FILE" ]; then
   echo "   Run 'make setup' to create .keys.json file."
 fi
 
-# Run all integration suites in a single `swift test` invocation.
-# Integration tests now create isolated Clerk instances, so separate per-suite
-# processes are no longer needed to avoid shared singleton interference.
-integration_filter='^ClerkKitTests\..*IntegrationTests/'
+integration_suites=()
+while IFS= read -r suite_name; do
+  integration_suites+=("$suite_name")
+done < <(
+  find "$REPO_ROOT/Tests/Integration" -name '*IntegrationTests.swift' -print \
+    | sed -E 's|.*/([^/]+)\.swift$|\1|' \
+    | sort
+)
 
-if ! find "$REPO_ROOT/Tests/Integration" -name '*IntegrationTests.swift' -print -quit | grep -q .; then
+if [ "${#integration_suites[@]}" -eq 0 ]; then
   echo "❌ Error: No integration test suites found in Tests/Integration."
   exit 1
 fi
 
-echo "Using integration test filter: $integration_filter"
+echo "Found ${#integration_suites[@]} integration test suite(s):"
+printf '  - %s\n' "${integration_suites[@]}"
 echo ""
 
 network_failure_pattern="NSURLErrorDomain Code=-(1001|1003|1004)|kCFErrorDomainCFNetwork Code=-(1001|1003|1004)|hostname could not be found|could not connect to the server|timed out"
 
 run_integration_tests_with_retries() {
-  local skip_build="$1"
+  local suite_name="$1"
+  local skip_build="$2"
   local max_attempts=3
   local attempt=1
+  local integration_filter="^ClerkKitTests\\.${suite_name}/"
   local log_file
   local status
   local -a swift_test_args
 
   while [ "$attempt" -le "$max_attempts" ]; do
-    echo "Running integration tests attempt $attempt/$max_attempts..."
+    echo "Running ${suite_name} attempt $attempt/$max_attempts..."
     log_file="$(mktemp)"
 
     swift_test_args=(--filter "$integration_filter")
@@ -83,4 +90,8 @@ run_integration_tests_with_retries() {
   return 1
 }
 
-run_integration_tests_with_retries "false"
+skip_build="false"
+for suite_name in "${integration_suites[@]}"; do
+  run_integration_tests_with_retries "$suite_name" "$skip_build"
+  skip_build="true"
+done
