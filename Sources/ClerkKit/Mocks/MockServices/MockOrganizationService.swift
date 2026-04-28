@@ -15,6 +15,9 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   /// Custom handler for the `createOrganization(name:slug:)` method.
   package nonisolated(unsafe) var createOrganizationHandler: ((String, String?) async throws -> Organization)?
 
+  /// Custom handler for the `getOrganization(organizationId:)` method.
+  package nonisolated(unsafe) var getOrganizationHandler: ((String) async throws -> Organization)?
+
   /// Custom handler for the `updateOrganization(organizationId:name:slug:)` method.
   package nonisolated(unsafe) var updateOrganizationHandler: ((String, String, String?) async throws -> Organization)?
 
@@ -23,6 +26,9 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
 
   /// Custom handler for the `setOrganizationLogo(organizationId:imageData:)` method.
   package nonisolated(unsafe) var setOrganizationLogoHandler: ((String, Data) async throws -> Organization)?
+
+  /// Custom handler for the `deleteOrganizationLogo(organizationId:)` method.
+  package nonisolated(unsafe) var deleteOrganizationLogoHandler: ((String) async throws -> Organization)?
 
   /// Custom handler for the `getOrganizationRoles(organizationId:initialPage:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationRolesHandler: ((String, Int, Int) async throws -> ClerkPaginatedResponse<RoleResource>)?
@@ -45,6 +51,9 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   /// Custom handler for the `inviteOrganizationMember(organizationId:emailAddress:role:)` method.
   package nonisolated(unsafe) var inviteOrganizationMemberHandler: ((String, String, String) async throws -> OrganizationInvitation)?
 
+  /// Custom handler for the `inviteOrganizationMembers(organizationId:emailAddresses:role:)` method.
+  package nonisolated(unsafe) var inviteOrganizationMembersHandler: ((String, [String], String) async throws -> [OrganizationInvitation])?
+
   /// Custom handler for the `createOrganizationDomain(organizationId:domainName:)` method.
   package nonisolated(unsafe) var createOrganizationDomainHandler: ((String, String) async throws -> OrganizationDomain)?
 
@@ -66,6 +75,9 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   /// Custom handler for the `attemptOrganizationDomainAffiliationVerification(organizationId:domainId:code:)` method.
   package nonisolated(unsafe) var attemptOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
+  /// Custom handler for the `updateOrganizationDomainEnrollmentMode(organizationId:domainId:enrollmentMode:deletePending:)` method.
+  package nonisolated(unsafe) var updateOrganizationDomainEnrollmentModeHandler: ((String, String, String, Bool?) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
+
   /// Custom handler for the `revokeOrganizationInvitation(organizationId:invitationId:)` method.
   package nonisolated(unsafe) var revokeOrganizationInvitationHandler: ((String, String) async throws -> OrganizationInvitation)?
 
@@ -86,9 +98,11 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
 
   package init(
     createOrganization: ((String, String?) async throws -> Organization)? = nil,
+    getOrganization: ((String) async throws -> Organization)? = nil,
     updateOrganization: ((String, String, String?) async throws -> Organization)? = nil,
     destroyOrganization: ((String) async throws -> DeletedObject)? = nil,
     setOrganizationLogo: ((String, Data) async throws -> Organization)? = nil,
+    deleteOrganizationLogo: ((String) async throws -> Organization)? = nil,
     getOrganizationRoles: ((String, Int, Int) async throws -> ClerkPaginatedResponse<RoleResource>)? = nil,
     getOrganizationMemberships: ((String, String?, [String]?, Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
     addOrganizationMember: ((String, String, String) async throws -> OrganizationMembership)? = nil,
@@ -96,6 +110,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     removeOrganizationMember: ((String, String) async throws -> OrganizationMembership)? = nil,
     getOrganizationInvitations: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)? = nil,
     inviteOrganizationMember: ((String, String, String) async throws -> OrganizationInvitation)? = nil,
+    inviteOrganizationMembers: ((String, [String], String) async throws -> [OrganizationInvitation])? = nil,
     createOrganizationDomain: ((String, String) async throws -> OrganizationDomain)? = nil,
     getOrganizationDomains: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationDomain>)? = nil,
     getOrganizationDomain: ((String, String) async throws -> OrganizationDomain)? = nil,
@@ -105,6 +120,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     prepareOrganizationDomainAffiliationVerification: ((String, String, String) async throws -> OrganizationDomain)? = nil,
     // swiftlint:disable:next identifier_name
     attemptOrganizationDomainAffiliationVerification: ((String, String, String) async throws -> OrganizationDomain)? = nil,
+    updateOrganizationDomainEnrollmentMode: ((String, String, String, Bool?) async throws -> OrganizationDomain)? = nil,
     revokeOrganizationInvitation: ((String, String) async throws -> OrganizationInvitation)? = nil,
     destroyOrganizationMembership: ((String, String) async throws -> OrganizationMembership)? = nil,
     acceptUserOrganizationInvitation: ((String) async throws -> UserOrganizationInvitation)? = nil,
@@ -113,9 +129,11 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     rejectOrganizationMembershipRequest: ((String, String) async throws -> OrganizationMembershipRequest)? = nil
   ) {
     createOrganizationHandler = createOrganization
+    getOrganizationHandler = getOrganization
     updateOrganizationHandler = updateOrganization
     destroyOrganizationHandler = destroyOrganization
     setOrganizationLogoHandler = setOrganizationLogo
+    deleteOrganizationLogoHandler = deleteOrganizationLogo
     getOrganizationRolesHandler = getOrganizationRoles
     getOrganizationMembershipsHandler = getOrganizationMemberships
     addOrganizationMemberHandler = addOrganizationMember
@@ -123,6 +141,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     removeOrganizationMemberHandler = removeOrganizationMember
     getOrganizationInvitationsHandler = getOrganizationInvitations
     inviteOrganizationMemberHandler = inviteOrganizationMember
+    inviteOrganizationMembersHandler = inviteOrganizationMembers
     createOrganizationDomainHandler = createOrganizationDomain
     getOrganizationDomainsHandler = getOrganizationDomains
     getOrganizationDomainHandler = getOrganizationDomain
@@ -130,6 +149,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     deleteOrganizationDomainHandler = deleteOrganizationDomain
     prepareOrganizationDomainAffiliationVerificationHandler = prepareOrganizationDomainAffiliationVerification
     attemptOrganizationDomainAffiliationVerificationHandler = attemptOrganizationDomainAffiliationVerification
+    updateOrganizationDomainEnrollmentModeHandler = updateOrganizationDomainEnrollmentMode
     revokeOrganizationInvitationHandler = revokeOrganizationInvitation
     destroyOrganizationMembershipHandler = destroyOrganizationMembership
     acceptUserOrganizationInvitationHandler = acceptUserOrganizationInvitation
@@ -147,9 +167,25 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
+  package func getOrganization(organizationId: String) async throws -> Organization {
+    if let handler = getOrganizationHandler {
+      return try await handler(organizationId)
+    }
+    return .mock
+  }
+
+  @MainActor
   package func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization {
     if let handler = updateOrganizationHandler {
       return try await handler(organizationId, name, slug)
+    }
+    return .mock
+  }
+
+  @MainActor
+  package func deleteOrganizationLogo(organizationId: String) async throws -> Organization {
+    if let handler = deleteOrganizationLogoHandler {
+      return try await handler(organizationId)
     }
     return .mock
   }
@@ -227,6 +263,14 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
+  package func inviteOrganizationMembers(organizationId: String, emailAddresses: [String], role: String) async throws -> [OrganizationInvitation] {
+    if let handler = inviteOrganizationMembersHandler {
+      return try await handler(organizationId, emailAddresses, role)
+    }
+    return [.mock]
+  }
+
+  @MainActor
   package func createOrganizationDomain(organizationId: String, domainName: String) async throws -> OrganizationDomain {
     if let handler = createOrganizationDomainHandler {
       return try await handler(organizationId, domainName)
@@ -278,6 +322,14 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   package func attemptOrganizationDomainAffiliationVerification(organizationId: String, domainId: String, code: String) async throws -> OrganizationDomain {
     if let handler = attemptOrganizationDomainAffiliationVerificationHandler {
       return try await handler(organizationId, domainId, code)
+    }
+    return .mock
+  }
+
+  @MainActor
+  package func updateOrganizationDomainEnrollmentMode(organizationId: String, domainId: String, enrollmentMode: String, deletePending: Bool?) async throws -> OrganizationDomain {
+    if let handler = updateOrganizationDomainEnrollmentModeHandler {
+      return try await handler(organizationId, domainId, enrollmentMode, deletePending)
     }
     return .mock
   }

@@ -89,6 +89,22 @@ struct OrganizationTests {
   }
 
   @Test
+  func deleteOrganizationLogoUsesOrganizationServiceDeleteOrganizationLogo() async throws {
+    let organization = Organization.mock
+    let capturedId = LockIsolated<String?>(nil)
+    let service = MockOrganizationService(deleteOrganizationLogo: { organizationId in
+      capturedId.setValue(organizationId)
+      return .mock
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.deleteLogo()
+
+    #expect(capturedId.value == organization.id)
+  }
+
+  @Test
   func getOrganizationRolesUsesOrganizationServiceGetOrganizationRoles() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int)?>(nil)
@@ -234,6 +250,36 @@ struct OrganizationTests {
     #expect(params.1 == membership.publicUserData?.userId)
   }
 
+  @Test
+  func organizationMembershipPermissionHelpers() {
+    var membership = OrganizationMembership.mockWithUserData
+    membership.permissions = [
+      OrganizationSystemPermission.manageProfile.rawValue,
+      OrganizationSystemPermission.deleteProfile.rawValue,
+      OrganizationSystemPermission.readMemberships.rawValue,
+      OrganizationSystemPermission.manageDomains.rawValue,
+      OrganizationSystemPermission.manageBilling.rawValue,
+      "org:custom:permission",
+    ]
+
+    #expect(membership.hasPermission(.manageProfile))
+    #expect(membership.hasPermission("org:custom:permission"))
+    #expect(membership.canManageProfile)
+    #expect(membership.canDeleteOrganization)
+    #expect(membership.canReadMemberships)
+    #expect(membership.canManageDomains)
+    #expect(membership.canManageBilling)
+    #expect(membership.canManageMemberships == false)
+    #expect(membership.canReadDomains == false)
+    #expect(membership.canReadBilling == false)
+    #expect(membership.canReadAPIKeys == false)
+    #expect(membership.canManageAPIKeys == false)
+
+    membership.permissions = nil
+
+    #expect(membership.hasPermission(.manageProfile) == false)
+  }
+
   @Test(
     arguments: [
       InvitationsScenario(status: nil),
@@ -285,6 +331,28 @@ struct OrganizationTests {
   }
 
   @Test
+  func inviteOrganizationMembersUsesOrganizationServiceInviteOrganizationMembers() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, [String], String)?>(nil)
+    let service = MockOrganizationService(inviteOrganizationMembers: { organizationId, emailAddresses, role in
+      captured.setValue((organizationId, emailAddresses, role))
+      return [.mock]
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.inviteMembers(
+      emailAddresses: ["one@example.com", "two@example.com"],
+      role: "org:member"
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == ["one@example.com", "two@example.com"])
+    #expect(params.2 == "org:member")
+  }
+
+  @Test
   func createOrganizationDomainUsesOrganizationServiceCreateOrganizationDomain() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String)?>(nil)
@@ -331,6 +399,30 @@ struct OrganizationTests {
     #expect(params.1 == 10)
     #expect(params.2 == 10)
     #expect(params.3 == scenario.enrollmentMode)
+  }
+
+  @Test
+  func getOrganizationDomainsWithTypedEnrollmentModeUsesRawEnrollmentMode() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
+      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.getDomains(
+      page: 2,
+      pageSize: 10,
+      enrollmentMode: .automaticInvitation
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 10)
+    #expect(params.2 == 10)
+    #expect(params.3 == OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue)
   }
 
   @Test
@@ -436,6 +528,38 @@ struct OrganizationTests {
     #expect(params.0 == domain.organizationId)
     #expect(params.1 == domain.id)
     #expect(params.2 == "123456")
+  }
+
+  @Test
+  func organizationDomainEnrollmentModeTypeUsesTypedMode() {
+    var domain = OrganizationDomain.mock
+    domain.enrollmentMode = OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue
+
+    #expect(domain.enrollmentModeType == .automaticInvitation)
+
+    domain.enrollmentMode = "future_mode"
+
+    #expect(domain.enrollmentModeType == .unknown("future_mode"))
+  }
+
+  @Test
+  func updateOrganizationDomainEnrollmentModeUsesOrganizationServiceUpdateOrganizationDomainEnrollmentMode() async throws {
+    let domain = OrganizationDomain.mock
+    let captured = LockIsolated<(String, String, String, Bool?)?>(nil)
+    let service = MockOrganizationService(updateOrganizationDomainEnrollmentMode: { organizationId, domainId, enrollmentMode, deletePending in
+      captured.setValue((organizationId, domainId, enrollmentMode, deletePending))
+      return .mock
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await domain.updateEnrollmentMode(.automaticSuggestion, deletePending: true)
+
+    let params = try #require(captured.value)
+    #expect(params.0 == domain.organizationId)
+    #expect(params.1 == domain.id)
+    #expect(params.2 == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
+    #expect(params.3 == true)
   }
 
   @Test

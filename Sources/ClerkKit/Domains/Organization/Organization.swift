@@ -111,6 +111,14 @@ extension Organization {
     try await organizationService.setOrganizationLogo(organizationId: id, imageData: imageData)
   }
 
+  /// Deletes the organization's uploaded logo and falls back to the default logo.
+  ///
+  /// - Returns: ``Organization``
+  @discardableResult @MainActor
+  public func deleteLogo() async throws -> Organization {
+    try await organizationService.deleteOrganizationLogo(organizationId: id)
+  }
+
   /// Returns a ClerkPaginatedResponse of RoleResource objects.
   ///
   /// - Parameters:
@@ -246,6 +254,26 @@ extension Organization {
     try await organizationService.inviteOrganizationMember(organizationId: id, emailAddress: emailAddress, role: role)
   }
 
+  /// Creates and sends invitations to the target email addresses to become members with the specified role.
+  ///
+  /// - Parameters:
+  ///   - emailAddresses: The email addresses to invite.
+  ///   - role: The role of the new members.
+  ///
+  /// - Returns:
+  ///   An array of ``OrganizationInvitation`` objects.
+  @discardableResult @MainActor
+  public func inviteMembers(
+    emailAddresses: [String],
+    role: String
+  ) async throws -> [OrganizationInvitation] {
+    try await organizationService.inviteOrganizationMembers(
+      organizationId: id,
+      emailAddresses: emailAddresses,
+      role: role
+    )
+  }
+
   /// Creates a new domain for the currently active organization.
   ///
   /// - Parameters:
@@ -276,6 +304,26 @@ extension Organization {
       initialPage: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
       enrollmentMode: enrollmentMode
+    )
+  }
+
+  /// Retrieves the list of domains for the currently active organization filtered by a typed enrollment mode.
+  ///
+  /// - Parameters:
+  ///  - page: The 1-based page number to fetch. Defaults to `1`.
+  ///  - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
+  ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
+  @MainActor
+  public func getDomains(
+    page: Int = 1,
+    pageSize: Int = 20,
+    enrollmentMode: OrganizationDomain.EnrollmentMode
+  ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+    try await getDomains(
+      page: page,
+      pageSize: pageSize,
+      enrollmentMode: enrollmentMode.rawValue
     )
   }
 
