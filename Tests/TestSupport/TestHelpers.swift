@@ -110,7 +110,7 @@ extension URLRequest {
     var bodyDict: [String: String] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
-      let parts = pair.split(separator: "=", maxSplits: 1)
+      let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1])
@@ -136,7 +136,7 @@ extension URLRequest {
     var bodyDict: [String: [String]] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
-      let parts = pair.split(separator: "=", maxSplits: 1)
+      let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1]).removingPercentEncoding ?? String(parts[1])
