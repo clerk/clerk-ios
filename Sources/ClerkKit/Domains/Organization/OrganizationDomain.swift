@@ -7,6 +7,54 @@ import Foundation
 
 /// The model representing an organization domain.
 public struct OrganizationDomain: Codable, Identifiable, Sendable {
+  /// The enrollment mode for new users joining an organization.
+  public enum EnrollmentMode: Codable, Sendable, Equatable, Hashable, CaseIterable {
+    case manualInvitation
+    case automaticInvitation
+    case automaticSuggestion
+    case unknown(String)
+
+    public static var allCases: [EnrollmentMode] {
+      [.manualInvitation, .automaticInvitation, .automaticSuggestion]
+    }
+
+    public var rawValue: String {
+      switch self {
+      case .manualInvitation:
+        "manual_invitation"
+      case .automaticInvitation:
+        "automatic_invitation"
+      case .automaticSuggestion:
+        "automatic_suggestion"
+      case .unknown(let value):
+        value
+      }
+    }
+
+    public init(rawValue: String) {
+      switch rawValue {
+      case "manual_invitation":
+        self = .manualInvitation
+      case "automatic_invitation":
+        self = .automaticInvitation
+      case "automatic_suggestion":
+        self = .automaticSuggestion
+      default:
+        self = .unknown(rawValue)
+      }
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      try self.init(rawValue: container.decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      try container.encode(rawValue)
+    }
+  }
+
   /// The unique identifier for this organization domain.
   public var id: String
 
@@ -18,6 +66,11 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
 
   /// The enrollment mode for new users joining the organization.
   public var enrollmentMode: String
+
+  /// The typed enrollment mode value.
+  public var enrollmentModeType: EnrollmentMode {
+    EnrollmentMode(rawValue: enrollmentMode)
+  }
 
   /// The object that describes the status of the verification process of the domain.
   public var verification: Verification
@@ -129,5 +182,24 @@ extension OrganizationDomain {
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> OrganizationDomain {
     try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
+  }
+
+  /// Updates the enrollment mode for this organization domain.
+  ///
+  /// - Parameters:
+  ///   - enrollmentMode: The enrollment mode to apply.
+  ///   - deletePending: Whether pending invitations or suggestions for the previous mode should be deleted.
+  /// - Returns: The updated ``OrganizationDomain`` object.
+  @discardableResult @MainActor
+  public func updateEnrollmentMode(
+    _ enrollmentMode: EnrollmentMode,
+    deletePending: Bool? = nil
+  ) async throws -> OrganizationDomain {
+    try await organizationService.updateOrganizationDomainEnrollmentMode(
+      organizationId: organizationId,
+      domainId: id,
+      enrollmentMode: enrollmentMode.rawValue,
+      deletePending: deletePending
+    )
   }
 }
