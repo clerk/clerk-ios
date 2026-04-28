@@ -55,6 +55,31 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateAppliesClientFromClientResponseEnvelope() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+    var session = Session.mock
+    session.lastActiveOrganizationId = "org_test456"
+    var expectedClient = Client.mock
+    expectedClient.lastActiveSessionId = session.id
+    expectedClient.sessions = [session]
+    let data = try JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: expectedClient))
+    let url = try #require(URL(string: "https://example.com/v1/client/sessions/\(session.id)/touch"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.client?.currentSession?.lastActiveOrganizationId == "org_test456")
+  }
+
+  @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
     configureClerkForTesting()
     let clerk = Clerk()

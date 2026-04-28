@@ -15,7 +15,7 @@ protocol SessionServiceProtocol: Sendable {
   /// Sets the active session and optionally the active organization.
   /// - Parameters:
   ///   - sessionId: The session ID to set as active.
-  ///   - organizationId: Optional organization ID to set as active in the session.
+  ///   - organizationId: Optional organization ID to set as active in the session. If nil, removes the active organization.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
 
   /// Creates a session token for the given session and optional template.
@@ -64,10 +64,19 @@ final class SessionService: SessionServiceProtocol {
 
   @MainActor
   func setActive(sessionId: String, organizationId: String?) async throws {
-    let request = Request<EmptyResponse>(
+    if organizationId == nil,
+       Clerk.shared.environment?.organizationSettings.forceOrganizationSelection == true
+    {
+      return
+    }
+
+    let request = Request<ClientResponse<Session>>(
       path: "/v1/client/sessions/\(sessionId)/touch",
       method: .post,
-      body: ["active_organization_id": organizationId ?? ""]
+      body: [
+        "active_organization_id": organizationId ?? "",
+        "intent": "select_org",
+      ]
     )
 
     try await apiClient.send(request)
