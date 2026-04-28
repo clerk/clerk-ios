@@ -15,35 +15,15 @@ struct SessionTaskChooseOrganizationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  private let pageSize = 10
-
-  @State private var membershipsPager = PagerState<OrganizationMembership>()
-  @State private var invitationsPager = PagerState<UserOrganizationInvitation>()
-  @State private var suggestionsPager = PagerState<OrganizationSuggestion>()
-  @State private var acceptedInvitationOrgIds: Set<String> = []
-  @State private var isLoading = true
-  @State private var creationDefaults: OrganizationCreationDefaults?
-  @State private var error: Error?
+  @State private var accountList = OrganizationAccountListModel()
 
   private var user: User? {
     clerk.user
   }
 
-  private var hasExistingResources: Bool {
-    !membershipsPager.items.isEmpty || !invitationsPager.items.isEmpty || !suggestionsPager.items.isEmpty
-  }
-
-  private var isLoadingMore: Bool {
-    membershipsPager.isLoadingMore || invitationsPager.isLoadingMore || suggestionsPager.isLoadingMore
-  }
-
-  private var hasNextPage: Bool {
-    membershipsPager.hasNextPage || invitationsPager.hasNextPage || suggestionsPager.hasNextPage
-  }
-
   var body: some View {
     Group {
-      if !isLoading, !hasExistingResources, user?.createOrganizationEnabled == false {
+      if !accountList.isLoading, !accountList.hasExistingResources, user?.createOrganizationEnabled == false {
         GetHelpView(context: .sessionTask(.organizationRequired))
           .navigationBarBackButtonHidden()
           .navigationBarTitleDisplayMode(.inline)
@@ -53,11 +33,11 @@ struct SessionTaskChooseOrganizationView: View {
               UserButton(presentationContext: .sessionTaskToolbar)
             }
           }
-      } else if !isLoading, !hasExistingResources {
-        SessionTaskCreateOrganizationView(creationDefaults: creationDefaults)
+      } else if !accountList.isLoading, !accountList.hasExistingResources {
+        SessionTaskCreateOrganizationView(creationDefaults: accountList.creationDefaults)
       } else {
         Group {
-          if isLoading {
+          if accountList.isLoading {
             SpinnerView()
               .frame(width: 32, height: 32)
               .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,8 +56,8 @@ struct SessionTaskChooseOrganizationView: View {
         }
       }
     }
-    .clerkErrorPresenting($error, onDismiss: { _ in
-      guard isLoading, user != nil else { return }
+    .clerkErrorPresenting($accountList.error, onDismiss: { _ in
+      guard accountList.isLoading, user != nil else { return }
       Task { await fetchOrganizationResources() }
     })
     .taskOnce {
@@ -104,8 +84,8 @@ struct SessionTaskChooseOrganizationView: View {
           Divider()
 
           PaginatedRows(
-            items: membershipsPager.items,
-            hasNextPage: membershipsPager.hasNextPage,
+            items: accountList.membershipsPager.items,
+            hasNextPage: accountList.membershipsPager.hasNextPage,
             onLoadMore: loadMoreMemberships
           ) { membership in
             AsyncButton {
@@ -120,14 +100,14 @@ struct SessionTaskChooseOrganizationView: View {
             .buttonStyle(.plain)
           }
 
-          if !membershipsPager.hasNextPage {
+          if !accountList.membershipsPager.hasNextPage {
             PaginatedRows(
-              items: invitationsPager.items,
-              hasNextPage: invitationsPager.hasNextPage,
+              items: accountList.invitationsPager.items,
+              hasNextPage: accountList.invitationsPager.hasNextPage,
               onLoadMore: loadMoreInvitations
             ) { invitation in
               Group {
-                if acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id) {
+                if accountList.isInvitationAccepted(invitation) {
                   AsyncButton {
                     await selectOrganization(id: invitation.publicOrganizationData.id)
                   } label: { _ in
@@ -155,10 +135,10 @@ struct SessionTaskChooseOrganizationView: View {
             }
           }
 
-          if !membershipsPager.hasNextPage, !invitationsPager.hasNextPage {
+          if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
             PaginatedRows(
-              items: suggestionsPager.items,
-              hasNextPage: suggestionsPager.hasNextPage,
+              items: accountList.suggestionsPager.items,
+              hasNextPage: accountList.suggestionsPager.hasNextPage,
               onLoadMore: loadMoreSuggestions
             ) { suggestion in
               Group {
@@ -185,16 +165,16 @@ struct SessionTaskChooseOrganizationView: View {
             }
           }
 
-          if isLoadingMore {
+          if accountList.isLoadingMore {
             SpinnerView()
               .frame(width: 24, height: 24)
               .frame(maxWidth: .infinity)
               .padding(.vertical, 16)
           }
 
-          if !hasNextPage, user?.createOrganizationEnabled == true {
+          if !accountList.hasNextPage, user?.createOrganizationEnabled == true {
             Button {
-              navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: creationDefaults))
+              navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: accountList.creationDefaults))
             } label: {
               createOrganizationRow
             }
@@ -230,78 +210,20 @@ struct SessionTaskChooseOrganizationView: View {
   // MARK: - Actions
 
   private func fetchOrganizationResources() async {
-    guard let user else { return }
-
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
-
-    do {
-      async let fetchedMemberships = user.getOrganizationMemberships(page: 1, pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: "pending")
-      async let fetchedSuggestions = user.getOrganizationSuggestions(page: 1, pageSize: pageSize, status: ["pending", "accepted"])
-      async let fetchedDefaults: OrganizationCreationDefaults? = {
-        guard defaultsEnabled else { return nil }
-        do {
-          return try await user.getOrganizationCreationDefaults()
-        } catch {
-          ClerkLogger.error("Failed to fetch organization creation defaults", error: error)
-          return nil
-        }
-      }()
-
-      let membershipsResult = try await fetchedMemberships
-      let invitationsResult = try await fetchedInvitations
-      let suggestionsResult = try await fetchedSuggestions
-
-      membershipsPager.replace(with: membershipsResult)
-      invitationsPager.replace(with: invitationsResult)
-      suggestionsPager.replace(with: suggestionsResult)
-      creationDefaults = await fetchedDefaults
-      isLoading = false
-    } catch {
-      self.error = error
-    }
+    await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
   }
 
   private func loadMoreMemberships() async {
-    guard let user, !isLoadingMore, membershipsPager.hasNextPage else { return }
-
-    membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationMemberships(offset: membershipsPager.offset, pageSize: pageSize)
-      membershipsPager.append(result)
-    } catch {
-      self.error = error
-    }
+    await accountList.loadMoreMemberships(user: user)
   }
 
   private func loadMoreInvitations() async {
-    guard let user, !isLoadingMore, invitationsPager.hasNextPage else { return }
-
-    invitationsPager.isLoadingMore = true
-    defer { invitationsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: "pending")
-      invitationsPager.append(result)
-    } catch {
-      self.error = error
-    }
+    await accountList.loadMoreInvitations(user: user)
   }
 
   private func loadMoreSuggestions() async {
-    guard let user, !isLoadingMore, suggestionsPager.hasNextPage else { return }
-
-    suggestionsPager.isLoadingMore = true
-    defer { suggestionsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationSuggestions(offset: suggestionsPager.offset, pageSize: pageSize, status: ["pending", "accepted"])
-      suggestionsPager.append(result)
-    } catch {
-      self.error = error
-    }
+    await accountList.loadMoreSuggestions(user: user)
   }
 
   private func selectOrganization(id: String) async {
@@ -311,31 +233,16 @@ struct SessionTaskChooseOrganizationView: View {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
       navigation.handleSessionTaskCompletion(session: clerk.session)
     } catch {
-      self.error = organizationError(from: error)
+      accountList.error = organizationError(from: error)
     }
   }
 
   private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
-    do {
-      try await invitation.accept()
-      let wasInserted = acceptedInvitationOrgIds.insert(invitation.publicOrganizationData.id).inserted
-      guard wasInserted else { return }
-      invitationsPager.offset = max(0, invitationsPager.offset - 1)
-      invitationsPager.totalCount = max(0, invitationsPager.totalCount - 1)
-    } catch {
-      self.error = error
-    }
+    await accountList.acceptInvitation(invitation)
   }
 
   private func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
-    do {
-      let accepted = try await suggestion.accept()
-      if let index = suggestionsPager.items.firstIndex(where: { $0.id == suggestion.id }) {
-        suggestionsPager.items[index] = accepted
-      }
-    } catch {
-      self.error = error
-    }
+    await accountList.acceptSuggestion(suggestion)
   }
 
   private func displayRoleName(for role: String) -> String {
@@ -357,33 +264,6 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     return error
-  }
-}
-
-extension SessionTaskChooseOrganizationView {
-  fileprivate struct PagerState<Item> {
-    var items: [Item] = []
-    var totalCount = 0
-    var offset = 0
-    var isLoadingMore = false
-
-    var hasNextPage: Bool {
-      offset < totalCount
-    }
-  }
-}
-
-extension SessionTaskChooseOrganizationView.PagerState where Item: Codable & Sendable {
-  mutating func replace(with page: ClerkPaginatedResponse<Item>) {
-    items = page.data
-    totalCount = page.totalCount
-    offset = page.data.count
-  }
-
-  mutating func append(_ page: ClerkPaginatedResponse<Item>) {
-    items.append(contentsOf: page.data)
-    totalCount = page.totalCount
-    offset += page.data.count
   }
 }
 
