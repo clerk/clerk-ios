@@ -5,7 +5,6 @@
 #if os(iOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 /// A view shown when a session requires the user to choose or create an organization
@@ -83,7 +82,7 @@ struct SessionTaskChooseOrganizationView: View {
         LazyVStack(spacing: 0) {
           Divider()
 
-          PaginatedRows(
+          OrganizationPaginatedListSection(
             items: accountList.membershipsPager.items,
             hasNextPage: accountList.membershipsPager.hasNextPage,
             onLoadMore: loadMoreMemberships
@@ -101,7 +100,7 @@ struct SessionTaskChooseOrganizationView: View {
           }
 
           if !accountList.membershipsPager.hasNextPage {
-            PaginatedRows(
+            OrganizationPaginatedListSection(
               items: accountList.invitationsPager.items,
               hasNextPage: accountList.invitationsPager.hasNextPage,
               onLoadMore: loadMoreInvitations
@@ -136,7 +135,7 @@ struct SessionTaskChooseOrganizationView: View {
           }
 
           if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
-            PaginatedRows(
+            OrganizationPaginatedListSection(
               items: accountList.suggestionsPager.items,
               hasNextPage: accountList.suggestionsPager.hasNextPage,
               onLoadMore: loadMoreSuggestions
@@ -176,7 +175,7 @@ struct SessionTaskChooseOrganizationView: View {
             Button {
               navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: accountList.creationDefaults))
             } label: {
-              createOrganizationRow
+              OrganizationCreateRow()
             }
             .buttonStyle(.plain)
             Divider()
@@ -188,23 +187,6 @@ struct SessionTaskChooseOrganizationView: View {
       }
       .padding(.vertical, 16)
     }
-  }
-
-  private var createOrganizationRow: some View {
-    HStack(spacing: 16) {
-      Image(systemName: "plus")
-        .font(.system(size: 16, weight: .medium))
-        .foregroundStyle(theme.colors.foreground)
-        .frame(width: 48)
-
-      Text("Create organization", bundle: .module)
-        .font(.body.weight(.semibold))
-        .foregroundStyle(theme.colors.foreground)
-
-      Spacer()
-    }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 16)
   }
 
   // MARK: - Actions
@@ -264,130 +246,6 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     return error
-  }
-}
-
-// MARK: - Organization Row
-
-private struct PaginatedRows<Item: Identifiable, Content: View>: View {
-  let items: [Item]
-  let hasNextPage: Bool
-  let onLoadMore: () async -> Void
-  let content: (Item) -> Content
-
-  init(
-    items: [Item],
-    hasNextPage: Bool,
-    onLoadMore: @escaping () async -> Void,
-    @ViewBuilder content: @escaping (Item) -> Content
-  ) {
-    self.items = items
-    self.hasNextPage = hasNextPage
-    self.onLoadMore = onLoadMore
-    self.content = content
-  }
-
-  var body: some View {
-    ForEach(items) { item in
-      content(item)
-        .onAppear {
-          guard hasNextPage, item.id == items.last?.id else { return }
-          Task { await onLoadMore() }
-        }
-      Divider()
-    }
-  }
-}
-
-private struct OrganizationRow<Action: View>: View {
-  let name: String
-  let imageUrl: String
-  var subtitle: Text?
-  let action: Action
-
-  @Environment(\.clerkTheme) private var theme
-
-  init(
-    name: String,
-    imageUrl: String,
-    subtitle: String
-  ) where Action == EmptyView {
-    self.name = name
-    self.imageUrl = imageUrl
-    self.subtitle = Text(verbatim: subtitle)
-    action = EmptyView()
-  }
-
-  init(
-    name: String,
-    imageUrl: String,
-    subtitle: LocalizedStringKey
-  ) where Action == EmptyView {
-    self.name = name
-    self.imageUrl = imageUrl
-    self.subtitle = Text(subtitle, bundle: .module)
-    action = EmptyView()
-  }
-
-  init(
-    name: String,
-    imageUrl: String,
-    @ViewBuilder action: () -> Action
-  ) {
-    self.name = name
-    self.imageUrl = imageUrl
-    subtitle = nil
-    self.action = action()
-  }
-
-  private var initials: String {
-    String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)).uppercased()
-  }
-
-  var body: some View {
-    HStack(spacing: 16) {
-      LazyImage(url: URL(string: imageUrl)) { state in
-        if let image = state.image {
-          image
-            .resizable()
-            .scaledToFill()
-        } else {
-          initialsView
-        }
-      }
-      .frame(width: 48, height: 48)
-      .clipShape(RoundedRectangle(cornerRadius: theme.design.borderRadius))
-
-      VStack(alignment: .leading, spacing: 4) {
-        Text(verbatim: name)
-          .font(.body)
-          .foregroundStyle(theme.colors.foreground)
-          .lineLimit(1)
-
-        if let subtitle {
-          subtitle
-            .font(.subheadline)
-            .foregroundStyle(theme.colors.mutedForeground)
-        }
-      }
-
-      Spacer()
-
-      action
-    }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 16)
-    .contentShape(Rectangle())
-  }
-
-  private var initialsView: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: theme.design.borderRadius)
-        .fill(theme.colors.primary.gradient)
-      Text(verbatim: initials)
-        .font(.system(size: 18, weight: .semibold))
-        .foregroundStyle(theme.colors.primaryForeground)
-    }
   }
 }
 
