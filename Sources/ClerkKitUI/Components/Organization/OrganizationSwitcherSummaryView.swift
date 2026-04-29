@@ -14,7 +14,7 @@ struct OrganizationSwitcherSummaryView: View {
   let organization: Organization
   let roleName: String?
   @Binding var contentHeight: CGFloat
-  let onManageOrganization: ((Organization) -> Void)?
+  let onManageOrganization: (Organization) -> Void
   let onSwitchAccount: () -> Void
 
   var body: some View {
@@ -24,16 +24,13 @@ struct OrganizationSwitcherSummaryView: View {
           organizationRow
           Divider()
 
-          if let onManageOrganization {
-            Button {
-              dismiss()
-              onManageOrganization(organization)
-            } label: {
-              UserProfileRowView(icon: "icon-cog", text: "Manage")
-            }
-            .buttonStyle(.pressedBackground)
-            Divider()
+          Button {
+            onManageOrganization(organization)
+          } label: {
+            UserProfileRowView(icon: "icon-cog", text: "Manage")
           }
+          .buttonStyle(.pressedBackground)
+          Divider()
 
           Button {
             onSwitchAccount()

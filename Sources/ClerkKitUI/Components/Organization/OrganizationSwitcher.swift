@@ -78,7 +78,14 @@ public struct OrganizationSwitcher: View {
               organization: organization,
               roleName: activeMembership?.roleName,
               contentHeight: $summaryHeight,
-              onManageOrganization: onManageOrganization,
+              onManageOrganization: { organization in
+                if let onManageOrganization {
+                  presentedSheet = nil
+                  onManageOrganization(organization)
+                } else {
+                  presentedSheet = .profile
+                }
+              },
               onSwitchAccount: {
                 presentedSheet = .accountList
               }
@@ -91,6 +98,8 @@ public struct OrganizationSwitcher: View {
             title: "Switch account",
             subtitle: nil
           )
+        case .profile:
+          OrganizationProfileView()
         }
       }
     }
@@ -126,6 +135,7 @@ extension OrganizationSwitcher {
   enum PresentedSheet: String, Identifiable {
     case summary
     case accountList
+    case profile
 
     var id: String {
       rawValue
