@@ -11,12 +11,14 @@ struct ContentView: View {
   @State private var authViewIsPresented = false
 
   var body: some View {
-    VStack {
+    VStack(spacing: 16) {
       UserButton(signedOutContent: {
         Button("Sign in") {
           authViewIsPresented = true
         }
       })
+
+      OrganizationSwitcher()
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView()
