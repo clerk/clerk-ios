@@ -113,6 +113,83 @@ struct OrganizationServiceTests {
   }
 
   @Test
+  func updateOrganizationOmitsSlugWhenNil() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody!["name"] == "New Name")
+      #expect(request.urlEncodedFormBody!["slug"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+      organizationId: organization.id,
+      name: "New Name",
+      slug: nil
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateOrganizationPropagatesAPIErrors() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 422,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "form_param_format_invalid",
+                message: "Slug is invalid",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    do {
+      _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+        organizationId: organization.id,
+        name: "New Name",
+        slug: "invalid slug"
+      )
+      #expect(Bool(false), "Expected API error to be thrown")
+    } catch let error as ClerkAPIError {
+      #expect(requestHandled.value)
+      #expect(error.code == "form_param_format_invalid")
+      #expect(error.message == "Slug is invalid")
+    } catch {
+      #expect(Bool(false), "Expected ClerkAPIError, got \(error)")
+    }
+  }
+
+  @Test
   func destroyOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -440,7 +517,7 @@ struct OrganizationServiceTests {
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("paginated=true") == true)
+      #expect(request.url?.query?.contains("paginated") == false)
       requestHandled.setValue(true)
     }
     mock.register()

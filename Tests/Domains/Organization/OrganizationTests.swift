@@ -158,6 +158,32 @@ struct OrganizationTests {
   }
 
   @Test
+  func getOrganizationMembershipsWithOffsetUsesOrganizationServiceGetOrganizationMemberships() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
+    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
+      captured.setValue((organizationId, query, role, initialPage, pageSize))
+      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.getMemberships(
+      query: "search",
+      role: ["admin"],
+      offset: 30,
+      pageSize: 10
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == "search")
+    #expect(params.2 == ["admin"])
+    #expect(params.3 == 30)
+    #expect(params.4 == 10)
+  }
+
+  @Test
   func addOrganizationMemberUsesOrganizationServiceAddOrganizationMember() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String)?>(nil)
@@ -309,6 +335,30 @@ struct OrganizationTests {
     #expect(params.1 == 10)
     #expect(params.2 == 10)
     #expect(params.3 == scenario.status)
+  }
+
+  @Test
+  func getOrganizationInvitationsWithOffsetUsesOrganizationServiceGetOrganizationInvitations() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.getInvitations(
+      offset: 30,
+      pageSize: 10,
+      status: "pending"
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 30)
+    #expect(params.2 == 10)
+    #expect(params.3 == "pending")
   }
 
   @Test

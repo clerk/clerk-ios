@@ -214,7 +214,6 @@ final class OrganizationService: OrganizationServiceProtocol {
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
-      ("paginated", value: String(true)),
     ]
 
     if let status {
