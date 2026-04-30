@@ -155,11 +155,36 @@ extension Organization {
     page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    try await getMemberships(
+      query: query,
+      role: role,
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize
+    )
+  }
+
+  /// Retrieves the list of memberships for the currently active organization.
+  ///
+  /// - Parameters:
+  ///     - query: Returns members that match the given query.
+  ///     - role: Filter by roles. This can be one of the predefined roles or a custom role.
+  ///     - offset: The number of items to skip before returning results.
+  ///     - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///
+  /// - Returns:
+  ///     A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
+  @MainActor
+  package func getMemberships(
+    query: String? = nil,
+    role: [String]? = nil,
+    offset: Int,
+    pageSize: Int = 10
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await organizationService.getOrganizationMemberships(
       organizationId: id,
       query: query,
       role: role,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize
     )
   }
@@ -230,9 +255,31 @@ extension Organization {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+    try await getInvitations(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves the list of invitations for the currently active organization.
+  ///
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///   - status: The status an invitation can have.
+  ///
+  /// - Returns:
+  ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
+  @MainActor
+  package func getInvitations(
+    offset: Int,
+    pageSize: Int = 10,
+    status: String? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await organizationService.getOrganizationInvitations(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       status: status
     )

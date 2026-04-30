@@ -142,6 +142,9 @@ public struct OrganizationProfileView: View {
         }
       }
     }
+    .navigationDestination(for: OrganizationProfileDestination.self) { destination in
+      view(for: destination)
+    }
   }
 }
 
@@ -187,13 +190,35 @@ extension OrganizationProfileView {
 extension OrganizationProfileView {
   private func action(for row: OrganizationProfileRow) async {
     switch row {
-    case .members, .verifiedDomains, .leaveOrganization, .deleteOrganization:
+    case .members:
+      navigateToBuiltIn(.members)
+    case .verifiedDomains, .leaveOrganization, .deleteOrganization:
       break
+    }
+  }
+
+  private func navigateToBuiltIn(_ destination: OrganizationProfileDestination) {
+    if let navigationPath {
+      navigationPath.wrappedValue.append(destination)
+    } else {
+      internalPath.append(destination)
+    }
+  }
+
+  @ViewBuilder
+  private func view(for destination: OrganizationProfileDestination) -> some View {
+    switch destination {
+    case .members:
+      OrganizationMembersView()
     }
   }
 }
 
 // MARK: - Types
+
+private enum OrganizationProfileDestination: Hashable {
+  case members
+}
 
 private enum OrganizationProfileRow: Hashable, Identifiable {
   case members
