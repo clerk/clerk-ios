@@ -397,9 +397,29 @@ extension Organization {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+    try await getMembershipRequests(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves the list of membership requests for the currently active organization.
+  ///
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///   - status: The status of the membership requests that will be included in the response.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembershipRequest`` objects.
+  @MainActor
+  package func getMembershipRequests(
+    offset: Int,
+    pageSize: Int = 10,
+    status: String? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     try await organizationService.getOrganizationMembershipRequests(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       status: status
     )

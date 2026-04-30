@@ -18,11 +18,15 @@ struct OrganizationMembersView: View {
   @State private var searchDebounceTask: Task<Void, Never>?
   @State private var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()
   @State private var invitationsPager = OrganizationAccountListPager<OrganizationInvitation>()
+  @State private var membershipRequestsPager = OrganizationAccountListPager<OrganizationMembershipRequest>()
   @State private var isLoadingMembers = true
   @State private var isLoadingInvitations = true
+  @State private var isLoadingMembershipRequests = true
   @State private var roles: [RoleResource] = []
   @State private var removingMembershipIds: Set<String> = []
   @State private var revokingInvitationIds: Set<String> = []
+  @State private var acceptingMembershipRequestIds: Set<String> = []
+  @State private var rejectingMembershipRequestIds: Set<String> = []
   @State private var inviteMembersIsPresented = false
   @State private var error: Error?
 
@@ -44,6 +48,10 @@ struct OrganizationMembersView: View {
     organizationMembership?.canManageMemberships == true
   }
 
+  private var canManageMembershipRequests: Bool {
+    canManageMemberships && clerk.environment?.organizationSettings.domains.enabled == true
+  }
+
   private var availableTabs: [OrganizationMembersTab] {
     var tabs: [OrganizationMembersTab] = []
     if canReadMemberships {
@@ -51,6 +59,9 @@ struct OrganizationMembersView: View {
     }
     if canManageMemberships {
       tabs.append(.invitations)
+    }
+    if canManageMembershipRequests {
+      tabs.append(.requests)
     }
     return tabs
   }
@@ -176,6 +187,8 @@ extension OrganizationMembersView {
       membersList
     case .invitations:
       invitationsList
+    case .requests:
+      requestsList
     }
   }
 
@@ -214,6 +227,31 @@ extension OrganizationMembersView {
         isRevoking: revokingInvitationIds.contains(invitation.id),
         onRevoke: {
           await revokeInvitation(invitation)
+        }
+      )
+    }
+  }
+
+  private var requestsList: some View {
+    OrganizationAccountPaginatedList(
+      pager: membershipRequestsPager,
+      isLoading: isLoadingMembershipRequests,
+      emptyText: "No pending requests",
+      onRefresh: loadInitialData,
+      onLoadMore: loadMoreMembershipRequests
+    ) { request in
+      let isAccepting = acceptingMembershipRequestIds.contains(request.id)
+      let isRejecting = rejectingMembershipRequestIds.contains(request.id)
+
+      OrganizationMembershipRequestRow(
+        request: request,
+        isAccepting: isAccepting,
+        isRejecting: isRejecting,
+        onAccept: {
+          await acceptMembershipRequest(request)
+        },
+        onReject: {
+          await rejectMembershipRequest(request)
         }
       )
     }
@@ -503,8 +541,10 @@ extension OrganizationMembersView {
     guard canReadMemberships || canManageMemberships else {
       isLoadingMembers = false
       isLoadingInvitations = false
+      isLoadingMembershipRequests = false
       membershipsPager = OrganizationAccountListPager()
       invitationsPager = OrganizationAccountListPager()
+      membershipRequestsPager = OrganizationAccountListPager()
       return
     }
 
@@ -522,6 +562,13 @@ extension OrganizationMembersView {
     } else {
       isLoadingInvitations = false
       invitationsPager = OrganizationAccountListPager()
+    }
+
+    if canManageMembershipRequests {
+      await loadMembershipRequests(page: 1)
+    } else {
+      isLoadingMembershipRequests = false
+      membershipRequestsPager = OrganizationAccountListPager()
     }
   }
 
@@ -624,6 +671,46 @@ extension OrganizationMembersView {
   }
 
   @MainActor
+  private func loadMembershipRequests(page: Int) async {
+    guard let organization else { return }
+
+    isLoadingMembershipRequests = true
+    defer { isLoadingMembershipRequests = false }
+
+    do {
+      let page = try await organization.getMembershipRequests(page: page, pageSize: pageSize, status: "pending")
+      membershipRequestsPager.replace(with: page)
+    } catch {
+      guard !error.isCancellationError else { return }
+
+      self.error = error
+      ClerkLogger.error("Failed to load organization membership requests", error: error)
+    }
+  }
+
+  @MainActor
+  private func loadMoreMembershipRequests() async {
+    guard let organization, !membershipRequestsPager.isLoadingMore, membershipRequestsPager.hasNextPage else { return }
+
+    membershipRequestsPager.isLoadingMore = true
+    defer { membershipRequestsPager.isLoadingMore = false }
+
+    do {
+      let page = try await organization.getMembershipRequests(
+        offset: membershipRequestsPager.offset,
+        pageSize: pageSize,
+        status: "pending"
+      )
+      membershipRequestsPager.append(page)
+    } catch {
+      guard !error.isCancellationError else { return }
+
+      self.error = error
+      ClerkLogger.error("Failed to load more organization membership requests", error: error)
+    }
+  }
+
+  @MainActor
   private func removeMember(_ membership: OrganizationMembership) async {
     guard membership.publicUserData?.userId != clerk.user?.id else { return }
     guard !removingMembershipIds.contains(membership.id) else { return }
@@ -653,6 +740,45 @@ extension OrganizationMembersView {
     } catch {
       self.error = error
       ClerkLogger.error("Failed to revoke organization invitation", error: error)
+    }
+  }
+
+  @MainActor
+  private func acceptMembershipRequest(_ request: OrganizationMembershipRequest) async {
+    guard !acceptingMembershipRequestIds.contains(request.id),
+          !rejectingMembershipRequestIds.contains(request.id)
+    else { return }
+
+    acceptingMembershipRequestIds.insert(request.id)
+    defer { acceptingMembershipRequestIds.remove(request.id) }
+
+    do {
+      try await request.accept()
+      await loadMembershipRequests(page: 1)
+      if canReadMemberships {
+        await loadMembers(page: 1)
+      }
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to accept organization membership request", error: error)
+    }
+  }
+
+  @MainActor
+  private func rejectMembershipRequest(_ request: OrganizationMembershipRequest) async {
+    guard !acceptingMembershipRequestIds.contains(request.id),
+          !rejectingMembershipRequestIds.contains(request.id)
+    else { return }
+
+    rejectingMembershipRequestIds.insert(request.id)
+    defer { rejectingMembershipRequestIds.remove(request.id) }
+
+    do {
+      try await request.reject()
+      await loadMembershipRequests(page: 1)
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to reject organization membership request", error: error)
     }
   }
 
@@ -875,6 +1001,93 @@ private struct OrganizationInvitationRow: View {
   }
 }
 
+private struct OrganizationMembershipRequestRow: View {
+  @Environment(\.clerkTheme) private var theme
+
+  let request: OrganizationMembershipRequest
+  let isAccepting: Bool
+  let isRejecting: Bool
+  let onAccept: () async -> Void
+  let onReject: () async -> Void
+
+  private var publicUserData: PublicUserData? {
+    request.publicUserData
+  }
+
+  private var displayName: String? {
+    publicUserData?.displayName
+  }
+
+  private var identifier: String? {
+    publicUserData?.identifier
+  }
+
+  private var requestedDate: String {
+    request.createdAt.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).year())
+  }
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 16) {
+      HStack(alignment: .top, spacing: 16) {
+        OrganizationMemberAvatarView(userData: publicUserData)
+
+        VStack(alignment: .leading, spacing: 4) {
+          if let displayName {
+            Text(verbatim: displayName)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.foreground)
+              .lineLimit(1)
+          }
+
+          if let identifier, !identifier.isEmpty {
+            Text(verbatim: identifier)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.mutedForeground)
+              .lineLimit(1)
+          }
+
+          Text(verbatim: "Requested \(requestedDate)")
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.mutedForeground)
+            .lineLimit(1)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      requestMenu
+    }
+    .padding(.horizontal, 24)
+    .padding(.vertical, 16)
+    .background(theme.colors.background)
+  }
+
+  private var requestMenu: some View {
+    Menu {
+      AsyncButton {
+        await onAccept()
+      } label: { _ in
+        Text("Accept request", bundle: .module)
+      }
+      .disabled(isAccepting || isRejecting)
+
+      AsyncButton(role: .destructive) {
+        await onReject()
+      } label: { _ in
+        Text("Reject request", bundle: .module)
+      }
+      .disabled(isAccepting || isRejecting)
+    } label: {
+      Image("icon-three-dots-vertical", bundle: .module)
+        .resizable()
+        .scaledToFit()
+        .foregroundColor(theme.colors.mutedForeground)
+        .frame(width: 20, height: 20)
+        .accessibilityLabel(Text("Request actions", bundle: .module))
+    }
+    .frame(width: 30, height: 30)
+  }
+}
+
 private struct OrganizationMemberAvatarView: View {
   @Environment(\.clerkTheme) private var theme
 
@@ -959,6 +1172,7 @@ private struct OrganizationInvitationAvatarView: View {
 private enum OrganizationMembersTab: Hashable, Identifiable {
   case members
   case invitations
+  case requests
 
   var id: Self {
     self
@@ -970,6 +1184,8 @@ private enum OrganizationMembersTab: Hashable, Identifiable {
       "Members"
     case .invitations:
       "Invitations"
+    case .requests:
+      "Requests"
     }
   }
 }
@@ -1009,7 +1225,9 @@ extension PublicUserData {
         client.lastActiveSessionId = session.id
 
         preview.client = client
-        preview.environment = .mock
+        var environment = Clerk.Environment.mock
+        environment.organizationSettings.domains.enabled = true
+        preview.environment = environment
       })
   }
 }

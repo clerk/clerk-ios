@@ -525,6 +525,30 @@ struct OrganizationTests {
   }
 
   @Test
+  func getOrganizationMembershipRequestsWithOffsetUsesOrganizationServiceGetOrganizationMembershipRequests() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, initialPage, pageSize, status in
+      captured.setValue((organizationId, initialPage, pageSize, status))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.getMembershipRequests(
+      offset: 30,
+      pageSize: 10,
+      status: "pending"
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 30)
+    #expect(params.2 == 10)
+    #expect(params.3 == "pending")
+  }
+
+  @Test
   func deleteOrganizationDomainUsesOrganizationServiceDeleteOrganizationDomain() async throws {
     let domain = OrganizationDomain.mock
     let captured = LockIsolated<(String, String)?>(nil)
