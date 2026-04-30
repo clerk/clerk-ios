@@ -11,7 +11,7 @@ protocol OrganizationServiceProtocol: Sendable {
   @MainActor func updateOrganization(organizationId: String, name: String, slug: String?) async throws -> Organization
   @MainActor func destroyOrganization(organizationId: String) async throws -> DeletedObject
   @MainActor func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization
-  @MainActor func deleteOrganizationLogo(organizationId: String) async throws -> Organization
+  @MainActor func deleteOrganizationLogo(organizationId: String) async throws -> DeletedObject
   @MainActor func getOrganizationRoles(organizationId: String, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<RoleResource>
   @MainActor func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
   @MainActor func addOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership
@@ -119,8 +119,8 @@ final class OrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  func deleteOrganizationLogo(organizationId: String) async throws -> Organization {
-    let request = Request<ClientResponse<Organization>>(
+  func deleteOrganizationLogo(organizationId: String) async throws -> DeletedObject {
+    let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/organizations/\(organizationId)/logo",
       method: .delete,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)]

@@ -113,9 +113,9 @@ extension Organization {
 
   /// Deletes the organization's uploaded logo and falls back to the default logo.
   ///
-  /// - Returns: ``Organization``
+  /// - Returns: ``DeletedObject``
   @discardableResult @MainActor
-  public func deleteLogo() async throws -> Organization {
+  public func deleteLogo() async throws -> DeletedObject {
     try await organizationService.deleteOrganizationLogo(organizationId: id)
   }
 

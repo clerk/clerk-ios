@@ -10,12 +10,11 @@ import SwiftUI
 struct OrganizationSwitcherSummaryView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(OrganizationSwitcherSheetNavigation.self) private var navigation
 
   let organization: Organization
   let roleName: String?
   @Binding var contentHeight: CGFloat
-  let onManageOrganization: (Organization) -> Void
-  let onSwitchAccount: () -> Void
 
   var body: some View {
     NavigationStack {
@@ -25,7 +24,8 @@ struct OrganizationSwitcherSummaryView: View {
           Divider()
 
           Button {
-            onManageOrganization(organization)
+            navigation.summaryIsPresented = false
+            navigation.presentedSheet = .profile
           } label: {
             UserProfileRowView(icon: "icon-cog", text: "Manage")
           }
@@ -33,7 +33,8 @@ struct OrganizationSwitcherSummaryView: View {
           Divider()
 
           Button {
-            onSwitchAccount()
+            navigation.summaryIsPresented = false
+            navigation.presentedSheet = .accountList
           } label: {
             UserProfileRowView(icon: "icon-switch", text: "Switch account")
           }
@@ -107,10 +108,9 @@ struct OrganizationSwitcherSummaryView: View {
   OrganizationSwitcherSummaryView(
     organization: .mock,
     roleName: "Admin",
-    contentHeight: .constant(220),
-    onManageOrganization: { _ in },
-    onSwitchAccount: {}
+    contentHeight: .constant(220)
   )
+  .environment(OrganizationSwitcherSheetNavigation())
   .environment(\.clerkTheme, .clerk)
 }
 
