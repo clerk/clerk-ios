@@ -87,6 +87,20 @@ public final class Clerk {
     session?.user
   }
 
+  /// The current user's membership in the active organization.
+  public var organizationMembership: OrganizationMembership? {
+    guard let activeOrganizationId = session?.lastActiveOrganizationId else {
+      return nil
+    }
+
+    return user?.organizationMemberships?.first { $0.organization.id == activeOrganizationId }
+  }
+
+  /// The active organization for the current session.
+  public var organization: Organization? {
+    organizationMembership?.organization
+  }
+
   /// A dictionary of a user's active sessions on all devices.
   public internal(set) var sessionsByUserId: [String: [Session]] = [:]
 

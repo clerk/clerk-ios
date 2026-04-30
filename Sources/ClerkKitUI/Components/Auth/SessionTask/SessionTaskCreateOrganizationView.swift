@@ -15,8 +15,8 @@ struct SessionTaskCreateOrganizationView: View {
   var showBackButton = false
 
   var body: some View {
-    OrganizationCreateView(creationDefaults: creationDefaults) { organization in
-      try await selectOrganization(id: organization.id)
+    OrganizationCreateView(creationDefaults: creationDefaults) {
+      navigation.handleSessionTaskCompletion(session: clerk.session)
     }
     .navigationBarBackButtonHidden(!showBackButton)
     .navigationBarTitleDisplayMode(.inline)
@@ -26,12 +26,6 @@ struct SessionTaskCreateOrganizationView: View {
         UserButton(presentationContext: .sessionTaskToolbar)
       }
     }
-  }
-
-  private func selectOrganization(id: String) async throws {
-    guard let session = clerk.session else { return }
-    try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
-    navigation.handleSessionTaskCompletion(session: clerk.session)
   }
 }
 

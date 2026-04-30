@@ -13,20 +13,12 @@ public struct OrganizationSwitcher: View {
   @Environment(\.clerkTheme) private var theme
 
   private let hidePersonal: Bool
-  private let onManageOrganization: ((Organization) -> Void)?
 
-  @State private var presentedSheet: PresentedSheet?
+  @State private var sheetNavigation = OrganizationSwitcherSheetNavigation()
   @State private var summaryHeight: CGFloat = 220
-  @State private var activeMembership: OrganizationMembership?
-  @State private var activeOrganization: Organization?
-  @State private var error: Error?
 
   private var user: User? {
     clerk.user
-  }
-
-  private var activeOrganizationId: String? {
-    clerk.session?.lastActiveOrganizationId
   }
 
   private var forceOrganizationSelection: Bool {
@@ -37,61 +29,53 @@ public struct OrganizationSwitcher: View {
     user != nil && !hidePersonal && !forceOrganizationSelection
   }
 
+  private var activeOrganization: Organization? {
+    clerk.organization
+  }
+
+  private var activeMembership: OrganizationMembership? {
+    clerk.organizationMembership
+  }
+
   /// Creates a new organization switcher.
   ///
   /// - Parameters:
   ///   - hidePersonal: Whether the personal account option should be hidden.
-  ///   - onManageOrganization: Optional action for the Manage row until the prebuilt organization profile view is available.
   public init(
-    hidePersonal: Bool = false,
-    onManageOrganization: ((Organization) -> Void)? = nil
+    hidePersonal: Bool = false
   ) {
     self.hidePersonal = hidePersonal
-    self.onManageOrganization = onManageOrganization
   }
 
   public var body: some View {
     if let user {
       Button {
-        if resolvedActiveOrganization == nil {
-          presentedSheet = .accountList
+        if activeOrganization == nil {
+          sheetNavigation.presentedSheet = .accountList
         } else {
-          presentedSheet = .summary
+          sheetNavigation.summaryIsPresented = true
         }
       } label: {
         OrganizationSwitcherLabel(
-          organization: resolvedActiveOrganization,
-          user: activeOrganizationId == nil && shouldShowPersonalAccount ? user : nil
+          organization: activeOrganization,
+          user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil
         )
       }
       .buttonStyle(.plain)
       .tint(theme.colors.primary)
-      .clerkErrorPresenting($error)
-      .task(id: activeOrganizationId) {
-        await loadActiveOrganization()
+      .sheet(isPresented: $sheetNavigation.summaryIsPresented) {
+        if let organization = activeOrganization {
+          OrganizationSwitcherSummaryView(
+            organization: organization,
+            roleName: activeMembership?.roleName,
+            contentHeight: $summaryHeight
+          )
+          .presentationDetents([.height(summaryHeight)])
+          .environment(sheetNavigation)
+        }
       }
-      .sheet(item: $presentedSheet) { sheet in
+      .sheet(item: $sheetNavigation.presentedSheet) { sheet in
         switch sheet {
-        case .summary:
-          if let organization = resolvedActiveOrganization {
-            OrganizationSwitcherSummaryView(
-              organization: organization,
-              roleName: activeMembership?.roleName,
-              contentHeight: $summaryHeight,
-              onManageOrganization: { organization in
-                if let onManageOrganization {
-                  presentedSheet = nil
-                  onManageOrganization(organization)
-                } else {
-                  presentedSheet = .profile
-                }
-              },
-              onSwitchAccount: {
-                presentedSheet = .accountList
-              }
-            )
-            .presentationDetents([.height(summaryHeight)])
-          }
         case .accountList:
           OrganizationListView(
             hidePersonal: hidePersonal,
@@ -104,36 +88,10 @@ public struct OrganizationSwitcher: View {
       }
     }
   }
-
-  private var resolvedActiveOrganization: Organization? {
-    activeMembership?.organization ?? activeOrganization
-  }
-
-  private func loadActiveOrganization() async {
-    guard let activeOrganizationId else {
-      activeMembership = nil
-      activeOrganization = nil
-      return
-    }
-
-    if let membership = user?.organizationMemberships?.first(where: { $0.organization.id == activeOrganizationId }) {
-      activeMembership = membership
-      activeOrganization = membership.organization
-      return
-    }
-
-    do {
-      activeMembership = nil
-      activeOrganization = try await clerk.organizations.get(id: activeOrganizationId)
-    } catch {
-      self.error = error
-    }
-  }
 }
 
 extension OrganizationSwitcher {
   enum PresentedSheet: String, Identifiable {
-    case summary
     case accountList
     case profile
 

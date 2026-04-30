@@ -16,35 +16,30 @@ public struct OrganizationProfileView: View {
   private let navigationPath: Binding<NavigationPath>?
 
   @State private var internalPath = NavigationPath()
-  @State private var activeMembership: OrganizationMembership?
-  @State private var activeOrganization: Organization?
-  @State private var isLoadingActiveOrganization = true
-  @State private var error: Error?
-
-  private var activeOrganizationId: String? {
-    clerk.session?.lastActiveOrganizationId
-  }
+  @State private var updateProfileIsPresented = false
 
   private var organization: Organization? {
-    activeMembership?.organization ?? activeOrganization
+    clerk.organization
   }
 
-  private var visibility: OrganizationProfileVisibility {
-    OrganizationProfileVisibility(
-      membership: activeMembership,
-      organization: organization,
-      organizationSettings: clerk.environment?.organizationSettings
-    )
+  private var organizationMembership: OrganizationMembership? {
+    clerk.organizationMembership
+  }
+
+  private var showsUpdateProfile: Bool {
+    organizationMembership?.canManageProfile == true
   }
 
   private var profileRows: [OrganizationProfileRow] {
     var rows: [OrganizationProfileRow] = []
 
-    if visibility.showsMembers {
+    if organizationMembership?.canReadMemberships == true || organizationMembership?.canManageMemberships == true {
       rows.append(.members)
     }
 
-    if visibility.showsVerifiedDomains {
+    if clerk.environment?.organizationSettings.domains.enabled == true,
+       organizationMembership?.canReadDomains == true || organizationMembership?.canManageDomains == true
+    {
       rows.append(.verifiedDomains)
     }
 
@@ -54,11 +49,14 @@ public struct OrganizationProfileView: View {
   private var actionRows: [OrganizationProfileRow] {
     var rows: [OrganizationProfileRow] = []
 
-    if visibility.showsLeaveOrganization {
+    if organizationMembership != nil {
       rows.append(.leaveOrganization)
     }
 
-    if visibility.showsDeleteOrganization {
+    if clerk.environment?.organizationSettings.actions.adminDelete == true,
+       organization?.adminDeleteEnabled == true,
+       organizationMembership?.canDeleteOrganization == true
+    {
       rows.append(.deleteOrganization)
     }
 
@@ -79,22 +77,21 @@ public struct OrganizationProfileView: View {
   }
 
   public var body: some View {
-    if clerk.user != nil {
+    if let organization {
       Group {
         if navigationPath == nil {
           NavigationStack(path: $internalPath) {
-            profileContent
+            profileContent(organization: organization)
           }
         } else {
-          profileContent
+          profileContent(organization: organization)
         }
       }
       .tint(theme.colors.primary)
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
-      .clerkErrorPresenting($error)
-      .task(id: activeOrganizationId) {
-        await loadActiveOrganization()
+      .sheet(isPresented: $updateProfileIsPresented) {
+        OrganizationProfileUpdateProfileView(organization: organization)
       }
       .task {
         _ = try? await clerk.refreshEnvironment()
@@ -105,25 +102,21 @@ public struct OrganizationProfileView: View {
     }
   }
 
-  private var profileContent: some View {
+  private func profileContent(organization: Organization) -> some View {
     VStack(spacing: 0) {
       ScrollView {
         LazyVStack(spacing: 0) {
-          if let organization {
-            OrganizationProfileHeaderView(
-              organization: organization,
-              showsUpdateProfile: visibility.showsUpdateProfile,
-              onUpdateProfile: updateProfile
-            )
-
-            VStack(spacing: 48) {
-              section(rows: profileRows)
-              section(rows: actionRows)
+          OrganizationProfileHeaderView(
+            organization: organization,
+            showsUpdateProfile: showsUpdateProfile,
+            onUpdateProfile: {
+              updateProfileIsPresented = true
             }
-          } else if isLoadingActiveOrganization {
-            SpinnerView()
-              .frame(width: 32, height: 32)
-              .frame(maxWidth: .infinity, minHeight: 220)
+          )
+
+          VStack(spacing: 48) {
+            section(rows: profileRows)
+            section(rows: actionRows)
           }
         }
       }
@@ -131,8 +124,8 @@ public struct OrganizationProfileView: View {
 
       SecuredByClerkFooter()
     }
-    .animation(.default, value: activeOrganization)
-    .animation(.default, value: activeMembership)
+    .animation(.default, value: organization)
+    .animation(.default, value: organizationMembership)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
     .toolbar {
@@ -192,33 +185,6 @@ extension OrganizationProfileView {
 // MARK: - Actions
 
 extension OrganizationProfileView {
-  private func loadActiveOrganization() async {
-    guard let activeOrganizationId else {
-      activeMembership = nil
-      activeOrganization = nil
-      isLoadingActiveOrganization = false
-      return
-    }
-
-    isLoadingActiveOrganization = true
-    defer { isLoadingActiveOrganization = false }
-
-    if let membership = clerk.user?.organizationMemberships?.first(where: { $0.organization.id == activeOrganizationId }) {
-      activeMembership = membership
-      activeOrganization = membership.organization
-      return
-    }
-
-    do {
-      activeMembership = nil
-      activeOrganization = try await clerk.organizations.get(id: activeOrganizationId)
-    } catch {
-      self.error = error
-    }
-  }
-
-  private func updateProfile() {}
-
   private func action(for row: OrganizationProfileRow) async {
     switch row {
     case .members, .verifiedDomains, .leaveOrganization, .deleteOrganization:

@@ -35,12 +35,12 @@ public struct OrganizationListView: View {
     user != nil && !hidePersonal && !forceOrganizationSelection
   }
 
-  private var activeOrganizationId: String? {
-    clerk.session?.lastActiveOrganizationId
+  private var activeOrganization: Organization? {
+    clerk.organization
   }
 
   private var personalAccountIsSelected: Bool {
-    activeOrganizationId == nil
+    activeOrganization == nil
   }
 
   /// Creates a new organization list view.
@@ -175,7 +175,7 @@ public struct OrganizationListView: View {
             hasNextPage: accountList.membershipsPager.hasNextPage,
             onLoadMore: loadMoreMemberships
           ) { membership in
-            let isSelected = membership.organization.id == activeOrganizationId
+            let isSelected = membership.organization.id == activeOrganization?.id
             AsyncButton {
               guard !isSelected else { return }
               await selectOrganization(id: membership.organization.id)
@@ -284,8 +284,7 @@ public struct OrganizationListView: View {
   }
 
   private var createOrganizationContent: some View {
-    OrganizationCreateView(creationDefaults: accountList.creationDefaults) { organization in
-      try await activateOrganization(id: organization.id)
+    OrganizationCreateView(creationDefaults: accountList.creationDefaults) {
       dismissIfNeeded()
     }
     .navigationBarTitleDisplayMode(.inline)
@@ -324,17 +323,14 @@ public struct OrganizationListView: View {
   }
 
   private func selectOrganization(id: String) async {
+    guard let session = clerk.session else { return }
+
     do {
-      try await activateOrganization(id: id)
+      try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
       dismissIfNeeded()
     } catch {
       accountList.error = organizationError(from: error)
     }
-  }
-
-  private func activateOrganization(id: String) async throws {
-    guard let session = clerk.session else { return }
-    try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
   }
 
   private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
