@@ -142,6 +142,9 @@ public struct AuthView: View {
                 }
               }
             }
+            .environment(navigation)
+            .environment(authState)
+            .environment(codeLimiter)
         }
     }
     .background(theme.colors.background)
