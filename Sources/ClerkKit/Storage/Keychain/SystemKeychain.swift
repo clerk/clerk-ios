@@ -109,6 +109,11 @@ struct SystemKeychain: KeychainStorage {
 
     if let accessGroup {
       query[kSecAttrAccessGroup as String] = accessGroup
+      // Route to the data-protection keychain. On macOS this is the only
+      // keychain that honors `kSecAttrAccessGroup` without falling back to
+      // per-item ACL prompts ("X wants to use the 'session' keychain").
+      // No-op on iOS where the data-protection keychain is the default.
+      query[kSecUseDataProtectionKeychain as String] = kCFBooleanTrue
     }
 
     return query
