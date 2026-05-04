@@ -20,6 +20,7 @@ struct DependencyContainerKeychainTests {
     #expect(container.keychain is SystemKeychain)
   }
 
+  #if os(macOS)
   @Test
   @MainActor
   func keychainStorageWithAccessGroupUsesMigratingStorage() throws {
@@ -35,4 +36,5 @@ struct DependencyContainerKeychainTests {
 
     #expect(container.keychain is MigratingKeychainStorage)
   }
+  #endif
 }

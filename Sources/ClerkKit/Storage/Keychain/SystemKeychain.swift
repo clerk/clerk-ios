@@ -127,10 +127,10 @@ struct SystemKeychain: KeychainStorage {
   /// Wraps Apple's global SecItem functions so unit tests can verify the
   /// generated keychain queries without touching the real system keychain.
   struct SecItemClient {
-    var add: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
-    var update: @Sendable (CFDictionary, CFDictionary) -> OSStatus
-    var copyMatching: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
-    var delete: @Sendable (CFDictionary) -> OSStatus
+    let add: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
+    let update: @Sendable (CFDictionary, CFDictionary) -> OSStatus
+    let copyMatching: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
+    let delete: @Sendable (CFDictionary) -> OSStatus
 
     static let live = Self(
       add: { SecItemAdd($0, $1) },
