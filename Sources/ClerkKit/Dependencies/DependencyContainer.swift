@@ -76,10 +76,7 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    keychain = SystemKeychain(
-      service: options.keychainConfig.service,
-      accessGroup: options.keychainConfig.accessGroup
-    )
+    keychain = Self.makeKeychainStorage(config: options.keychainConfig)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
@@ -110,6 +107,32 @@ final class DependencyContainer: Dependencies {
     emailAddressService = EmailAddressService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
+  }
+
+  private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {
+    let legacyKeychain = SystemKeychain(
+      service: config.service,
+      accessGroup: config.accessGroup
+    )
+
+    #if os(macOS)
+    guard config.accessGroup != nil else {
+      return legacyKeychain
+    }
+
+    let dataProtectionKeychain = SystemKeychain(
+      service: config.service,
+      accessGroup: config.accessGroup,
+      useDataProtectionKeychain: true
+    )
+
+    return MigratingKeychainStorage(
+      primary: dataProtectionKeychain,
+      fallback: legacyKeychain
+    )
+    #else
+    return legacyKeychain
+    #endif
   }
 
   @MainActor

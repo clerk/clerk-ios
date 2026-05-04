@@ -17,15 +17,21 @@ struct SystemKeychain: KeychainStorage {
   private let service: String
   private let accessGroup: String?
   private let accessibility: Accessibility
+  private let useDataProtectionKeychain: Bool
+  private let secItemClient: SecItemClient
 
   init(
     service: String,
     accessGroup: String? = nil,
-    accessibility: Accessibility = .afterFirstUnlockThisDeviceOnly
+    accessibility: Accessibility = .afterFirstUnlockThisDeviceOnly,
+    useDataProtectionKeychain: Bool = false,
+    secItemClient: SecItemClient = .live
   ) {
     self.service = service
     self.accessGroup = accessGroup
     self.accessibility = accessibility
+    self.useDataProtectionKeychain = useDataProtectionKeychain
+    self.secItemClient = secItemClient
   }
 
   func set(_ data: Data, forKey key: String) throws {
@@ -33,7 +39,7 @@ struct SystemKeychain: KeychainStorage {
     addQuery[kSecAttrAccessible as String] = accessibility.secValue
     addQuery[kSecValueData as String] = data
 
-    let status = SecItemAdd(addQuery as CFDictionary, nil)
+    let status = secItemClient.add(addQuery as CFDictionary, nil)
 
     switch status {
     case errSecSuccess:
@@ -44,7 +50,7 @@ struct SystemKeychain: KeychainStorage {
         kSecValueData as String: data,
         kSecAttrAccessible as String: accessibility.secValue,
       ]
-      let updateStatus = SecItemUpdate(updateQuery as CFDictionary, attributes as CFDictionary)
+      let updateStatus = secItemClient.update(updateQuery as CFDictionary, attributes as CFDictionary)
       guard updateStatus == errSecSuccess else {
         throw KeychainError.unexpectedStatus(updateStatus)
       }
@@ -59,7 +65,7 @@ struct SystemKeychain: KeychainStorage {
     query[kSecMatchLimit as String] = kSecMatchLimitOne
 
     var result: CFTypeRef?
-    let status = SecItemCopyMatching(query as CFDictionary, &result)
+    let status = secItemClient.copyMatching(query as CFDictionary, &result)
 
     switch status {
     case errSecSuccess:
@@ -72,7 +78,7 @@ struct SystemKeychain: KeychainStorage {
   }
 
   func deleteItem(forKey key: String) throws {
-    let status = SecItemDelete(baseQuery(for: key) as CFDictionary)
+    let status = secItemClient.delete(baseQuery(for: key) as CFDictionary)
     switch status {
     case errSecSuccess, errSecItemNotFound:
       return
@@ -87,7 +93,7 @@ struct SystemKeychain: KeychainStorage {
     query[kSecReturnAttributes as String] = false
     query[kSecReturnData as String] = false
 
-    let status = SecItemCopyMatching(query as CFDictionary, nil)
+    let status = secItemClient.copyMatching(query as CFDictionary, nil)
     switch status {
     case errSecSuccess:
       return true
@@ -111,6 +117,26 @@ struct SystemKeychain: KeychainStorage {
       query[kSecAttrAccessGroup as String] = accessGroup
     }
 
+    if useDataProtectionKeychain {
+      query[kSecUseDataProtectionKeychain as String] = kCFBooleanTrue
+    }
+
     return query
+  }
+
+  /// Wraps Apple's global SecItem functions so unit tests can verify the
+  /// generated keychain queries without touching the real system keychain.
+  struct SecItemClient {
+    let add: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
+    let update: @Sendable (CFDictionary, CFDictionary) -> OSStatus
+    let copyMatching: @Sendable (CFDictionary, UnsafeMutablePointer<CFTypeRef?>?) -> OSStatus
+    let delete: @Sendable (CFDictionary) -> OSStatus
+
+    static let live = Self(
+      add: { SecItemAdd($0, $1) },
+      update: { SecItemUpdate($0, $1) },
+      copyMatching: { SecItemCopyMatching($0, $1) },
+      delete: { SecItemDelete($0) }
+    )
   }
 }
