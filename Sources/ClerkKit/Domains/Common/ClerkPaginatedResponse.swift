@@ -12,4 +12,13 @@ public struct ClerkPaginatedResponse<T: Codable & Sendable>: Codable, Sendable {
 
   /// The total count of data that exists remotely.
   public let totalCount: Int
+
+  /// Indicates whether organization role updates are temporarily disabled while roles migrate.
+  public let hasRoleSetMigration: Bool?
+
+  public init(data: [T], totalCount: Int, hasRoleSetMigration: Bool? = nil) {
+    self.data = data
+    self.totalCount = totalCount
+    self.hasRoleSetMigration = hasRoleSetMigration
+  }
 }

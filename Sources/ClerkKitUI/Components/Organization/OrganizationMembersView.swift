@@ -23,7 +23,8 @@ struct OrganizationMembersView: View {
   @State private var isLoadingInvitations = true
   @State private var isLoadingMembershipRequests = true
   @State private var roles: [RoleResource] = []
-  @State private var removingMembershipIds: Set<String> = []
+  @State private var hasRoleSetMigration = false
+  @State private var mutatingMembershipIds: Set<String> = []
   @State private var revokingInvitationIds: Set<String> = []
   @State private var acceptingMembershipRequestIds: Set<String> = []
   @State private var rejectingMembershipRequestIds: Set<String> = []
@@ -142,6 +143,10 @@ extension OrganizationMembersView {
 
       if selectedTab == .members {
         searchField
+
+        if hasRoleSetMigration {
+          WarningText("We are updating the available roles. Once that's done, you'll be able to update roles again.", bundle: .module)
+        }
       }
     }
     .padding(.horizontal, 16)
@@ -203,9 +208,14 @@ extension OrganizationMembersView {
       OrganizationMemberRow(
         membership: membership,
         roleName: roleName(for: membership),
+        roles: roles,
         isCurrentUser: membership.publicUserData?.userId == clerk.user?.id,
         canManageMemberships: canManageMemberships,
-        isRemoving: removingMembershipIds.contains(membership.id),
+        hasRoleSetMigration: hasRoleSetMigration,
+        isMutating: mutatingMembershipIds.contains(membership.id),
+        onUpdateRole: { role in
+          await updateMemberRole(membership, role: role)
+        },
         onRemove: {
           await removeMember(membership)
         }
@@ -577,11 +587,14 @@ extension OrganizationMembersView {
     guard let organization else { return }
 
     do {
-      roles = try await organization.getRoles(page: 1, pageSize: 20).data
+      let page = try await organization.getRoles(page: 1, pageSize: 20)
+      roles = page.data
+      hasRoleSetMigration = page.hasRoleSetMigration ?? false
     } catch {
       guard !error.isCancellationError else { return }
 
       roles = []
+      hasRoleSetMigration = false
       ClerkLogger.error("Failed to load organization roles", error: error)
     }
   }
@@ -711,16 +724,34 @@ extension OrganizationMembersView {
   }
 
   @MainActor
+  private func updateMemberRole(_ membership: OrganizationMembership, role: RoleResource) async {
+    guard role.key != membership.role else { return }
+    guard !hasRoleSetMigration else { return }
+    guard !mutatingMembershipIds.contains(membership.id) else { return }
+
+    mutatingMembershipIds.insert(membership.id)
+    defer { mutatingMembershipIds.remove(membership.id) }
+
+    do {
+      let updatedMembership = try await membership.update(role: role.key)
+      membershipsPager.replace(updatedMembership)
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to update organization member role", error: error)
+    }
+  }
+
+  @MainActor
   private func removeMember(_ membership: OrganizationMembership) async {
     guard membership.publicUserData?.userId != clerk.user?.id else { return }
-    guard !removingMembershipIds.contains(membership.id) else { return }
+    guard !mutatingMembershipIds.contains(membership.id) else { return }
 
-    removingMembershipIds.insert(membership.id)
-    defer { removingMembershipIds.remove(membership.id) }
+    mutatingMembershipIds.insert(membership.id)
+    defer { mutatingMembershipIds.remove(membership.id) }
 
     do {
       try await membership.destroy()
-      await loadMembers(page: 1)
+      membershipsPager.remove(membership)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to remove organization member", error: error)
@@ -835,9 +866,12 @@ private struct OrganizationMemberRow: View {
 
   let membership: OrganizationMembership
   let roleName: String
+  let roles: [RoleResource]
   let isCurrentUser: Bool
   let canManageMemberships: Bool
-  let isRemoving: Bool
+  let hasRoleSetMigration: Bool
+  let isMutating: Bool
+  let onUpdateRole: (RoleResource) async -> Void
   let onRemove: () async -> Void
 
   private var publicUserData: PublicUserData? {
@@ -854,6 +888,10 @@ private struct OrganizationMemberRow: View {
 
   private var joinedDate: String {
     membership.createdAt.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).year())
+  }
+
+  private var roleMenuIsDisabled: Bool {
+    roles.isEmpty || hasRoleSetMigration || isMutating
   }
 
   var body: some View {
@@ -920,12 +958,32 @@ private struct OrganizationMemberRow: View {
 
   private var memberMenu: some View {
     Menu {
+      Menu {
+        ForEach(roles) { role in
+          AsyncButton {
+            await onUpdateRole(role)
+          } label: { _ in
+            Label {
+              Text(verbatim: role.name)
+            } icon: {
+              if role.key == membership.role {
+                Image(systemName: "checkmark")
+              }
+            }
+          }
+          .disabled(role.key == membership.role || isMutating)
+        }
+      } label: {
+        Text("Change role", bundle: .module)
+      }
+      .disabled(roleMenuIsDisabled)
+
       AsyncButton(role: .destructive) {
         await onRemove()
       } label: { _ in
         Text("Remove member", bundle: .module)
       }
-      .disabled(isCurrentUser || isRemoving)
+      .disabled(isCurrentUser || isMutating)
     } label: {
       Image("icon-three-dots-vertical", bundle: .module)
         .resizable()
