@@ -985,12 +985,7 @@ private struct OrganizationMemberRow: View {
       }
       .disabled(isCurrentUser || isMutating)
     } label: {
-      Image("icon-three-dots-vertical", bundle: .module)
-        .resizable()
-        .scaledToFit()
-        .foregroundColor(theme.colors.mutedForeground)
-        .frame(width: 20, height: 20)
-        .accessibilityLabel(Text("Member actions", bundle: .module))
+      ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
   }
@@ -1048,12 +1043,7 @@ private struct OrganizationInvitationRow: View {
       }
       .disabled(isRevoking)
     } label: {
-      Image("icon-three-dots-vertical", bundle: .module)
-        .resizable()
-        .scaledToFit()
-        .foregroundColor(theme.colors.mutedForeground)
-        .frame(width: 20, height: 20)
-        .accessibilityLabel(Text("Invitation actions", bundle: .module))
+      ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
   }
@@ -1135,12 +1125,7 @@ private struct OrganizationMembershipRequestRow: View {
       }
       .disabled(isAccepting || isRejecting)
     } label: {
-      Image("icon-three-dots-vertical", bundle: .module)
-        .resizable()
-        .scaledToFit()
-        .foregroundColor(theme.colors.mutedForeground)
-        .frame(width: 20, height: 20)
-        .accessibilityLabel(Text("Request actions", bundle: .module))
+      ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
   }

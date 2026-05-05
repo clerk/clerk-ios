@@ -72,6 +72,11 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
     EnrollmentMode(rawValue: enrollmentMode)
   }
 
+  /// Whether this organization domain has completed verification.
+  public var isVerified: Bool {
+    verification.status == "verified"
+  }
+
   /// The object that describes the status of the verification process of the domain.
   public var verification: Verification
 

@@ -476,6 +476,30 @@ struct OrganizationTests {
   }
 
   @Test
+  func getOrganizationDomainsWithOffsetUsesOrganizationServiceGetOrganizationDomains() async throws {
+    let organization = Organization.mock
+    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
+      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
+      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+    })
+
+    configureOrganizationService(service)
+
+    _ = try await organization.getDomains(
+      offset: 20,
+      pageSize: 10,
+      enrollmentMode: OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue
+    )
+
+    let params = try #require(captured.value)
+    #expect(params.0 == organization.id)
+    #expect(params.1 == 20)
+    #expect(params.2 == 10)
+    #expect(params.3 == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
+  }
+
+  @Test
   func getOrganizationDomainUsesOrganizationServiceGetOrganizationDomain() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String)?>(nil)
@@ -614,6 +638,18 @@ struct OrganizationTests {
     domain.enrollmentMode = "future_mode"
 
     #expect(domain.enrollmentModeType == .unknown("future_mode"))
+  }
+
+  @Test
+  func organizationDomainIsVerifiedUsesVerificationStatus() {
+    var domain = OrganizationDomain.mock
+    domain.verification.status = "verified"
+
+    #expect(domain.isVerified)
+
+    domain.verification.status = "unverified"
+
+    #expect(!domain.isVerified)
   }
 
   @Test
