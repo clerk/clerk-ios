@@ -14,6 +14,7 @@ struct OrganizationVerifiedDomainsView: View {
   @State private var domainsPager = OrganizationAccountListPager<OrganizationDomain>()
   @State private var isLoadingDomains = true
   @State private var addDomainIsPresented = false
+  @State private var enrollmentModeDomain: OrganizationDomain?
   @State private var error: Error?
 
   private let pageSize = 10
@@ -62,7 +63,9 @@ struct OrganizationVerifiedDomainsView: View {
                   domain: domain,
                   canManageDomains: canManageDomains,
                   onVerify: {},
-                  onManage: {},
+                  onManage: {
+                    enrollmentModeDomain = domain
+                  },
                   onDelete: {}
                 )
               }
@@ -90,9 +93,15 @@ struct OrganizationVerifiedDomainsView: View {
 
       SecuredByClerkFooter()
     }
+    .tint(theme.colors.primary)
     .background(theme.colors.muted)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
+    .navigationDestination(item: $enrollmentModeDomain) { domain in
+      OrganizationDomainEnrollmentModeView(domain: domain) { updatedDomain in
+        domainsPager.replace(updatedDomain)
+      }
+    }
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Verified domains", bundle: .module)
