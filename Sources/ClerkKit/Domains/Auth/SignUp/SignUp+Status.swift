@@ -62,3 +62,14 @@ extension SignUp {
     }
   }
 }
+
+extension SignUp.Status {
+  var needsContinuation: Bool {
+    switch self {
+    case .missingRequirements:
+      true
+    case .abandoned, .complete, .unknown:
+      false
+    }
+  }
+}

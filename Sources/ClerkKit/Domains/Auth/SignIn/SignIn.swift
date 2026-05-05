@@ -85,6 +85,11 @@ extension SignIn {
     Clerk.shared.dependencies.signInService
   }
 
+  @MainActor
+  private var magicLinkStore: MagicLinkStore {
+    Clerk.shared.dependencies.magicLinkStore
+  }
+
   // MARK: - First Factor Verification
 
   /// Sends a verification code to the specified email address.
@@ -99,6 +104,53 @@ extension SignIn {
     return try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
+    )
+  }
+
+  /// Sends a native magic link to the specified email address.
+  ///
+  /// This prepares the `email_link` first factor using PKCE and stores the verifier locally
+  /// so the callback can be completed inside the app. Only one pending native
+  /// magic-link flow is stored locally at a time; starting a new flow replaces
+  /// the previously stored verifier.
+  ///
+  /// - Parameters:
+  ///   - emailAddressId: Optional email address ID. If not provided, uses the identifying email-link factor.
+  ///   - redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
+  /// - Returns: An updated `SignIn` object with the email-link verification started.
+  /// - Throws: An error if email-link sign-in is unavailable or preparation fails.
+  @discardableResult
+  @MainActor
+  public func sendEmailLink(
+    emailAddressId: String? = nil,
+    redirectUri: String? = nil
+  ) async throws -> SignIn {
+    let emailId =
+      emailAddressId
+        ?? identifyingFirstFactor(for: FactorStrategy.emailLink.rawValue)?.emailAddressId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
+
+    guard let emailId else {
+      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.")
+    }
+
+    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
+    guard !resolvedRedirectUri.isEmpty else {
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.")
+    }
+
+    let pkcePair = try MagicLinkPKCE.generatePair()
+    try magicLinkStore.save(kind: .signIn, codeVerifier: pkcePair.verifier)
+
+    return try await signInService.prepareFirstFactor(
+      signInId: id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: emailId,
+        redirectUri: resolvedRedirectUri,
+        codeChallenge: pkcePair.challenge,
+        codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
+      )
     )
   }
 
