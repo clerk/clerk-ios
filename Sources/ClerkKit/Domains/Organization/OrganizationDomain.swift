@@ -6,7 +6,7 @@
 import Foundation
 
 /// The model representing an organization domain.
-public struct OrganizationDomain: Codable, Identifiable, Sendable {
+public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Sendable {
   /// The enrollment mode for new users joining an organization.
   public enum EnrollmentMode: Codable, Sendable, Equatable, Hashable, CaseIterable {
     case manualInvitation
@@ -120,7 +120,7 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
   }
 
   /// The model representing the verification details of an organization domain.
-  public struct Verification: Codable, Sendable {
+  public struct Verification: Codable, Equatable, Hashable, Sendable {
     /// The status of the verification process.
     public var status: String
 
