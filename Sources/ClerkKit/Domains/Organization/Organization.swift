@@ -346,9 +346,29 @@ extension Organization {
     pageSize: Int = 20,
     enrollmentMode: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+    try await getDomains(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      enrollmentMode: enrollmentMode
+    )
+  }
+
+  /// Retrieves the list of domains for the currently active organization.
+  ///
+  /// - Parameters:
+  ///  - offset: The number of items to skip before returning results.
+  ///  - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
+  @MainActor
+  package func getDomains(
+    offset: Int,
+    pageSize: Int = 10,
+    enrollmentMode: String? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await organizationService.getOrganizationDomains(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       enrollmentMode: enrollmentMode
     )

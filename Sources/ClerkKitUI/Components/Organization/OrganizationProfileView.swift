@@ -192,7 +192,9 @@ extension OrganizationProfileView {
     switch row {
     case .members:
       navigateToBuiltIn(.members)
-    case .verifiedDomains, .leaveOrganization, .deleteOrganization:
+    case .verifiedDomains:
+      navigateToBuiltIn(.verifiedDomains)
+    case .leaveOrganization, .deleteOrganization:
       break
     }
   }
@@ -210,6 +212,8 @@ extension OrganizationProfileView {
     switch destination {
     case .members:
       OrganizationMembersView()
+    case .verifiedDomains:
+      OrganizationVerifiedDomainsView()
     }
   }
 }
@@ -218,6 +222,7 @@ extension OrganizationProfileView {
 
 private enum OrganizationProfileDestination: Hashable {
   case members
+  case verifiedDomains
 }
 
 private enum OrganizationProfileRow: Hashable, Identifiable {

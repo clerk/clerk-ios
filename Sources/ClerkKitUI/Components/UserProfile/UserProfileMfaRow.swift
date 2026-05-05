@@ -114,11 +114,7 @@ struct UserProfileMfaRow: View {
       Menu {
         menuItems
       } label: {
-        Image("icon-three-dots-vertical", bundle: .module)
-          .resizable()
-          .scaledToFit()
-          .foregroundColor(theme.colors.mutedForeground)
-          .frame(width: 20, height: 20)
+        ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
     }
