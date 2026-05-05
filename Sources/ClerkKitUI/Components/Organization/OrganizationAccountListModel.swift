@@ -118,9 +118,7 @@ final class OrganizationAccountListModel {
   func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
     do {
       let accepted = try await suggestion.accept()
-      if let index = suggestionsPager.items.firstIndex(where: { $0.id == suggestion.id }) {
-        suggestionsPager.items[index] = accepted
-      }
+      suggestionsPager.replace(accepted)
     } catch {
       self.error = error
     }

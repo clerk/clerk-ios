@@ -5,9 +5,9 @@
 import ClerkKit
 
 struct OrganizationAccountListPager<Item: Codable & Sendable> {
-  var items: [Item] = []
-  var totalCount = 0
-  var offset = 0
+  private(set) var items: [Item] = []
+  private(set) var totalCount = 0
+  private(set) var offset = 0
   var isLoadingMore = false
 
   var hasNextPage: Bool {
@@ -29,5 +29,20 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
   mutating func removeOneFromPagination() {
     offset = max(0, offset - 1)
     totalCount = max(0, totalCount - 1)
+  }
+}
+
+extension OrganizationAccountListPager where Item: Identifiable {
+  mutating func replace(_ item: Item) {
+    if let index = items.firstIndex(where: { $0.id == item.id }) {
+      items[index] = item
+    }
+  }
+
+  mutating func remove(_ item: Item) {
+    if let index = items.firstIndex(where: { $0.id == item.id }) {
+      items.remove(at: index)
+      removeOneFromPagination()
+    }
   }
 }

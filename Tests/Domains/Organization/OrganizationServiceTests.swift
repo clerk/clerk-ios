@@ -277,7 +277,7 @@ struct OrganizationServiceTests {
       data: [
         .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<RoleResource>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
+            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1, hasRoleSetMigration: true),
             client: .mock
           )
         ),
@@ -292,11 +292,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationRoles(
+    let response = try await Clerk.shared.dependencies.organizationService.getOrganizationRoles(
       organizationId: organization.id,
       initialPage: 0,
       pageSize: 10
     )
+    #expect(response.hasRoleSetMigration == true)
     #expect(requestHandled.value)
   }
 
