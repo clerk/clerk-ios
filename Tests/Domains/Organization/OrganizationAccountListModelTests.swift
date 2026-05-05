@@ -116,6 +116,53 @@ final class OrganizationAccountListModelTests: XCTestCase {
     XCTAssertFalse(model.membershipsPager.hasNextPage)
   }
 
+  func testPagerLoadedPageOffsetsRepresentCurrentLoadedWindow() {
+    var pager = OrganizationAccountListPager<PagerItem>()
+
+    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
+
+    pager.replace(with: ClerkPaginatedResponse(
+      data: (1 ... 10).map { PagerItem(id: "item_\($0)") },
+      totalCount: 21
+    ))
+
+    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
+
+    pager.append(ClerkPaginatedResponse(
+      data: (11 ... 20).map { PagerItem(id: "item_\($0)") },
+      totalCount: 21
+    ))
+
+    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10])
+
+    pager.append(ClerkPaginatedResponse(
+      data: [PagerItem(id: "item_21")],
+      totalCount: 21
+    ))
+
+    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10, 20])
+  }
+
+  func testPagerReplaceWithPagesPreservesLoadedWindowAndPagination() {
+    var pager = OrganizationAccountListPager<PagerItem>()
+
+    pager.replace(with: [
+      ClerkPaginatedResponse(
+        data: (1 ... 10).map { PagerItem(id: "item_\($0)") },
+        totalCount: 21
+      ),
+      ClerkPaginatedResponse(
+        data: (11 ... 20).map { PagerItem(id: "item_\($0)") },
+        totalCount: 21
+      ),
+    ])
+
+    XCTAssertEqual(pager.items.map(\.id), (1 ... 20).map { "item_\($0)" })
+    XCTAssertEqual(pager.offset, 20)
+    XCTAssertEqual(pager.totalCount, 21)
+    XCTAssertTrue(pager.hasNextPage)
+  }
+
   @MainActor
   func testAcceptInvitationMarksInvitationSelectableAndAdjustsPagination() async {
     configureClerkForTesting()
@@ -206,6 +253,10 @@ private func membership(id: String, organizationId: String) -> OrganizationMembe
     createdAt: .distantPast,
     updatedAt: .now
   )
+}
+
+private struct PagerItem: Codable, Identifiable {
+  let id: String
 }
 
 private func invitation(
