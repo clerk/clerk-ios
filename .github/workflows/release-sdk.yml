@@ -7,6 +7,15 @@ on:
         description: SDK version to release (SemVer, for example 1.2.3)
         required: true
         type: string
+      skip_expo_compat:
+        description: "Skip the @clerk/expo compat gate (emergency override only)"
+        required: false
+        type: boolean
+        default: false
+      skip_reason:
+        description: "Reason for skipping compat gate (required when skip=true)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -61,10 +70,142 @@ jobs:
       run_integration_tests: true
     secrets: inherit
 
+  log-skip:
+    name: "Log gate skip (emergency override)"
+    needs: authorize
+    runs-on: ubuntu-latest
+    if: inputs.skip_expo_compat == true
+    steps:
+      - name: Fail if skip invoked without a reason
+        if: ${{ !inputs.skip_reason }}
+        run: |
+          echo "::error::skip_expo_compat=true requires skip_reason to be provided"
+          exit 1
+      - name: Record skip to the job summary
+        run: |
+          {
+            echo "## ⚠️ Expo compat gate skipped"
+            echo ""
+            echo "- Actor: @${{ github.triggering_actor }}"
+            echo "- Reason: ${{ inputs.skip_reason }}"
+            echo "- Version: ${{ inputs.version }}"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  expo-compat:
+    name: "@clerk/expo compat (Maestro)"
+    needs: checks
+    runs-on: macos-15
+    timeout-minutes: 60
+    if: inputs.skip_expo_compat != true
+    # Release gate: verifies the clerk-ios ref about to be published does not
+    # break @clerk/expo. If any Maestro flow fails, the publish job below will
+    # not run.
+    #
+    # Emergency override: maintainers can skip this gate by setting
+    # skip_expo_compat=true AND providing skip_reason on workflow_dispatch.
+    # The skip is recorded permanently in the Actions run log.
+    env:
+      CLERK_IOS_SHA: ${{ github.sha }}
+      JAVASCRIPT_REPO_REF: "main"
+      QUICKSTART_REPO_REF: "main"
+    steps:
+      - name: Checkout @clerk/javascript
+        uses: actions/checkout@v4
+        with:
+          repository: clerk/javascript
+          ref: ${{ env.JAVASCRIPT_REPO_REF }}
+          path: javascript
+
+      - name: Checkout clerk-expo-quickstart
+        uses: actions/checkout@v4
+        with:
+          repository: clerk/clerk-expo-quickstart
+          ref: ${{ env.QUICKSTART_REPO_REF }}
+          path: clerk-expo-quickstart
+
+      - name: Patch @clerk/expo app.plugin.js to pin clerk-ios to this SHA
+        working-directory: javascript
+        run: |
+          # Change the SPM dependency from exactVersion to revision (SHA-pinned)
+          # so the quickstart builds against the exact clerk-ios commit being released.
+          sed -i '' "s|const CLERK_IOS_VERSION = '.*'|const CLERK_IOS_VERSION = '${CLERK_IOS_SHA}'|" packages/expo/app.plugin.js
+          sed -i '' "s|kind: 'exactVersion'|kind: 'revision'|" packages/expo/app.plugin.js
+          sed -i '' "s|version: CLERK_IOS_VERSION|revision: CLERK_IOS_VERSION|" packages/expo/app.plugin.js
+
+          echo "=== Patched app.plugin.js ==="
+          grep -n "CLERK_IOS_VERSION\|kind:\|revision:" packages/expo/app.plugin.js | head -10
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: javascript/pnpm-lock.yaml
+
+      - name: Install @clerk/javascript deps
+        working-directory: javascript
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @clerk/expo
+        working-directory: javascript
+        run: pnpm turbo build --filter=@clerk/expo...
+
+      - name: Install quickstart deps
+        working-directory: clerk-expo-quickstart/NativeComponentQuickstart
+        run: pnpm install
+
+      - name: Install Maestro CLI
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: spm-${{ env.CLERK_IOS_SHA }}
+
+      - name: Expo prebuild iOS
+        working-directory: clerk-expo-quickstart/NativeComponentQuickstart
+        run: npx expo prebuild --clean --platform ios
+
+      - name: Build and boot iOS Simulator
+        working-directory: clerk-expo-quickstart/NativeComponentQuickstart
+        run: |
+          xcrun simctl boot "iPhone 16 Pro" || true
+          npx expo run:ios --configuration Release --no-bundler --device "iPhone 16 Pro"
+
+      - name: Run iOS Maestro flows
+        working-directory: javascript/integration-mobile
+        env:
+          CLERK_TEST_EMAIL: ${{ secrets.CLERK_TEST_EMAIL }}
+          CLERK_TEST_PASSWORD: ${{ secrets.CLERK_TEST_PASSWORD }}
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          maestro test --exclude-tags androidOnly,manual,skip flows/
+
+      - name: Upload Maestro artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-ios-compat
+          path: ~/.maestro/tests
+
   publish:
     name: Bump, tag, and publish release
-    needs: checks
+    needs: [checks, expo-compat, log-skip]
     runs-on: macos-latest
+    # Publish when checks passed AND:
+    #   - expo-compat succeeded, OR
+    #   - the gate was explicitly skipped via skip_expo_compat=true + skip_reason
+    if: |
+      always()
+      && needs.checks.result == 'success'
+      && (
+        needs.expo-compat.result == 'success'
+        || (inputs.skip_expo_compat == true && needs.log-skip.result == 'success')
+      )
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 
