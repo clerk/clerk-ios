@@ -10,7 +10,7 @@ import SwiftUI
 struct OrganizationAddDomainView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
 
   let onDomainChanged: @MainActor () -> Void
 
@@ -84,7 +84,7 @@ struct OrganizationAddDomainView: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
-            dismiss()
+            sheetNavigation.addDomainIsPresented = false
           }
           .foregroundStyle(theme.colors.primary)
         }
@@ -107,7 +107,7 @@ struct OrganizationAddDomainView: View {
             emailAddress: affiliationEmailAddress
           ) {
             onDomainChanged()
-            dismiss()
+            sheetNavigation.addDomainIsPresented = false
           }
         }
       }
@@ -127,7 +127,7 @@ struct OrganizationAddDomainView: View {
       onDomainChanged()
 
       if domain.isVerified {
-        dismiss()
+        sheetNavigation.addDomainIsPresented = false
       } else {
         path.append(.verifyEmailAddress(domain))
       }

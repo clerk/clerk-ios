@@ -8,14 +8,17 @@ import ClerkKit
 import SwiftUI
 
 /// A prebuilt organization profile root view.
-public struct OrganizationProfileView: View {
+public struct OrganizationProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
+  private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var internalPath = NavigationPath()
+  @State private var sheetNavigation = OrganizationSheetNavigation()
+  @State private var initialPathCount = 0
   @State private var updateProfileIsPresented = false
 
   private var organization: Organization? {
@@ -63,6 +66,16 @@ public struct OrganizationProfileView: View {
     return rows
   }
 
+  init(
+    isDismissable: Bool,
+    navigationPath: Binding<NavigationPath>?,
+    customDestination: (@MainActor (Route) -> Destination)?
+  ) {
+    self.isDismissable = isDismissable
+    self.navigationPath = navigationPath
+    self.customDestination = customDestination
+  }
+
   /// Creates a new organization profile view.
   ///
   /// - Parameters:
@@ -71,9 +84,12 @@ public struct OrganizationProfileView: View {
   public init(
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil
-  ) {
-    self.isDismissable = isDismissable
-    self.navigationPath = navigationPath
+  ) where Route == Never, Destination == EmptyView {
+    self.init(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customDestination: nil
+    )
   }
 
   public var body: some View {
@@ -82,6 +98,22 @@ public struct OrganizationProfileView: View {
         if navigationPath == nil {
           NavigationStack(path: $internalPath) {
             profileContent(organization: organization)
+              .navigationDestination(for: Route.self) { route in
+                view(for: route)
+                  .environment(
+                    OrganizationProfileNavigator(
+                      push: navigateToCustom,
+                      popToRoot: { dismissAction(.popToRoot) }
+                    )
+                  )
+                  .environment(
+                    OrganizationProfileBuiltInRouter(
+                      push: navigateToBuiltIn,
+                      dismissAction: dismissAction
+                    )
+                  )
+                  .environment(sheetNavigation)
+              }
           }
         } else {
           profileContent(organization: organization)
@@ -90,6 +122,9 @@ public struct OrganizationProfileView: View {
       .tint(theme.colors.primary)
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
+      .onFirstAppear {
+        initialPathCount = navigationPath?.wrappedValue.count ?? 0
+      }
       .sheet(isPresented: $updateProfileIsPresented) {
         OrganizationProfileUpdateProfileView(organization: organization)
       }
@@ -99,6 +134,13 @@ public struct OrganizationProfileView: View {
       .task {
         _ = try? await clerk.refreshClient()
       }
+      .environment(
+        OrganizationProfileBuiltInRouter(
+          push: navigateToBuiltIn,
+          dismissAction: dismissAction
+        )
+      )
+      .environment(sheetNavigation)
     }
   }
 
@@ -142,9 +184,59 @@ public struct OrganizationProfileView: View {
         }
       }
     }
-    .navigationDestination(for: OrganizationProfileDestination.self) { destination in
+    .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
       view(for: destination)
+        .environment(
+          OrganizationProfileNavigator(
+            push: navigateToCustom,
+            popToRoot: { dismissAction(.popToRoot) }
+          )
+        )
+        .environment(
+          OrganizationProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
+          )
+        )
+        .environment(sheetNavigation)
     }
+  }
+}
+
+// MARK: - View Modifiers
+
+extension OrganizationProfileView {
+  /// Sets the custom destination builder used by custom organization profile rows.
+  ///
+  /// This modifier is used when `OrganizationProfileView` manages its own `NavigationStack`
+  /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
+  /// register your own `.navigationDestination(for:)` on the parent stack instead.
+  public func organizationProfileDestination<NewDestination: View>(
+    @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
+  ) -> OrganizationProfileView<Route, NewDestination> {
+    OrganizationProfileView<Route, NewDestination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customDestination: destination
+    )
+  }
+}
+
+extension OrganizationProfileView where Route == Never, Destination == EmptyView {
+  /// Sets the custom destination builder used by custom organization profile rows.
+  ///
+  /// This modifier is used when `OrganizationProfileView` manages its own `NavigationStack`
+  /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
+  /// register your own `.navigationDestination(for:)` on the parent stack instead.
+  public func organizationProfileDestination<NewRoute: Hashable, NewDestination: View>(
+    for _: NewRoute.Type = NewRoute.self,
+    @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
+  ) -> OrganizationProfileView<NewRoute, NewDestination> {
+    OrganizationProfileView<NewRoute, NewDestination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customDestination: destination
+    )
   }
 }
 
@@ -199,7 +291,15 @@ extension OrganizationProfileView {
     }
   }
 
-  private func navigateToBuiltIn(_ destination: OrganizationProfileDestination) {
+  private func navigateToBuiltIn(_ destination: OrganizationProfileBuiltInDestination) {
+    pushDestination(destination)
+  }
+
+  private func navigateToCustom(_ route: Route) {
+    pushDestination(route)
+  }
+
+  private func pushDestination(_ destination: any Hashable) {
     if let navigationPath {
       navigationPath.wrappedValue.append(destination)
     } else {
@@ -207,8 +307,20 @@ extension OrganizationProfileView {
     }
   }
 
+  private func dismissAction(_ action: OrganizationProfileDismissAction) {
+    let extraRemoval = action == .exitOrganizationProfile ? 1 : 0
+
+    if let navigationPath {
+      let currentCount = navigationPath.wrappedValue.count
+      let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
+      navigationPath.wrappedValue.removeLast(entriesToRemove)
+    } else {
+      internalPath = NavigationPath()
+    }
+  }
+
   @ViewBuilder
-  private func view(for destination: OrganizationProfileDestination) -> some View {
+  private func view(for destination: OrganizationProfileBuiltInDestination) -> some View {
     switch destination {
     case .members:
       OrganizationMembersView()
@@ -216,13 +328,18 @@ extension OrganizationProfileView {
       OrganizationVerifiedDomainsView()
     }
   }
-}
 
-// MARK: - Types
-
-private enum OrganizationProfileDestination: Hashable {
-  case members
-  case verifiedDomains
+  @ViewBuilder
+  private func view(for route: Route) -> some View {
+    if let customDestination {
+      customDestination(route)
+    } else {
+      EmptyView()
+        .onAppear {
+          ClerkLogger.error("No destination registered for custom organization route \(route). Use .organizationProfileDestination to provide one.")
+        }
+    }
+  }
 }
 
 private enum OrganizationProfileRow: Hashable, Identifiable {
