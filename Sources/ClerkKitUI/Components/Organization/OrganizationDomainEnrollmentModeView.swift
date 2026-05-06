@@ -12,7 +12,7 @@ struct OrganizationDomainEnrollmentModeView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
 
-  let onDomainChanged: @MainActor (OrganizationDomain) -> Void
+  let onDomainChanged: @MainActor () -> Void
 
   @State private var domain: OrganizationDomain
   @State private var selectedMode: OrganizationDomain.EnrollmentMode
@@ -21,7 +21,7 @@ struct OrganizationDomainEnrollmentModeView: View {
 
   init(
     domain: OrganizationDomain,
-    onDomainChanged: @escaping @MainActor (OrganizationDomain) -> Void
+    onDomainChanged: @escaping @MainActor () -> Void
   ) {
     _domain = State(initialValue: domain)
     _selectedMode = State(initialValue: domain.enrollmentModeType)
@@ -180,7 +180,7 @@ extension OrganizationDomainEnrollmentModeView {
         deletePending: showsDeletePendingToggle ? deletePending : nil
       )
       domain = updatedDomain
-      onDomainChanged(updatedDomain)
+      onDomainChanged()
       sheetNavigation.presentedEnrollmentModeDomain = nil
     } catch {
       guard !error.isCancellationError else { return }
@@ -238,7 +238,7 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
       domain.verification.status = "verified"
       return domain
     }()
-  ) { _ in }
+  ) {}
     .environment(
       Clerk.preview { preview in
         var environment = Clerk.Environment.mock

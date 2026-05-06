@@ -14,6 +14,7 @@ struct OrganizationVerifiedDomainsView: View {
 
   @State private var domainsPager = OrganizationAccountListPager<OrganizationDomain>()
   @State private var isLoadingDomains = true
+  @State private var presentedDeleteDomain: OrganizationDomain?
   @State private var error: Error?
 
   private let pageSize = 10
@@ -69,7 +70,9 @@ struct OrganizationVerifiedDomainsView: View {
                   onManage: {
                     sheetNavigation.presentedEnrollmentModeDomain = domain
                   },
-                  onDelete: {}
+                  onDelete: {
+                    presentedDeleteDomain = domain
+                  }
                 )
               }
 
@@ -117,17 +120,22 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .sheet(item: $sheetNavigation.presentedVerificationDomain) { domain in
-      OrganizationDomainVerificationSheet(domain: domain) {
+      OrganizationDomainVerificationFlowSheet(domain: domain) {
         Task {
           await revalidateLoadedDomains()
         }
       }
     }
     .sheet(item: $sheetNavigation.presentedEnrollmentModeDomain) { domain in
-      OrganizationDomainEnrollmentModeView(domain: domain) { _ in
+      OrganizationDomainEnrollmentModeView(domain: domain) {
         Task {
           await revalidateLoadedDomains()
         }
+      }
+    }
+    .sheet(item: $presentedDeleteDomain) { domain in
+      OrganizationDomainDeleteConfirmationView(domain: domain) { deletedDomain in
+        domainsPager.remove(deletedDomain)
       }
     }
     .task(id: organization?.id) {
@@ -338,7 +346,7 @@ extension OrganizationVerifiedDomainsView {
 
 // MARK: - Sheets
 
-private struct OrganizationDomainVerificationSheet: View {
+private struct OrganizationDomainVerificationFlowSheet: View {
   @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
   @Environment(\.clerkTheme) private var theme
 
