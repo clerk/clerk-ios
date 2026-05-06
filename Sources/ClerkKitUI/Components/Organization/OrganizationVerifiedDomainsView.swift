@@ -10,11 +10,10 @@ import SwiftUI
 struct OrganizationVerifiedDomainsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
 
   @State private var domainsPager = OrganizationAccountListPager<OrganizationDomain>()
   @State private var isLoadingDomains = true
-  @State private var addDomainIsPresented = false
-  @State private var enrollmentModeDomain: OrganizationDomain?
   @State private var error: Error?
 
   private let pageSize = 10
@@ -36,6 +35,8 @@ struct OrganizationVerifiedDomainsView: View {
   }
 
   var body: some View {
+    @Bindable var sheetNavigation = sheetNavigation
+
     VStack(spacing: 0) {
       ScrollView {
         LazyVStack(spacing: 0) {
@@ -62,9 +63,11 @@ struct OrganizationVerifiedDomainsView: View {
                 OrganizationVerifiedDomainRow(
                   domain: domain,
                   canManageDomains: canManageDomains,
-                  onVerify: {},
+                  onVerify: {
+                    sheetNavigation.presentedVerificationDomain = domain
+                  },
                   onManage: {
-                    enrollmentModeDomain = domain
+                    sheetNavigation.presentedEnrollmentModeDomain = domain
                   },
                   onDelete: {}
                 )
@@ -80,7 +83,7 @@ struct OrganizationVerifiedDomainsView: View {
 
             if canManageDomains {
               OrganizationAddDomainRow {
-                addDomainIsPresented = true
+                sheetNavigation.addDomainIsPresented = true
               }
               Divider()
             }
@@ -97,11 +100,6 @@ struct OrganizationVerifiedDomainsView: View {
     .background(theme.colors.muted)
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
-    .navigationDestination(item: $enrollmentModeDomain) { domain in
-      OrganizationDomainEnrollmentModeView(domain: domain) { updatedDomain in
-        domainsPager.replace(updatedDomain)
-      }
-    }
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Verified domains", bundle: .module)
@@ -111,8 +109,22 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .clerkErrorPresenting($error)
-    .sheet(isPresented: $addDomainIsPresented) {
+    .sheet(isPresented: $sheetNavigation.addDomainIsPresented) {
       OrganizationAddDomainView {
+        Task {
+          await revalidateLoadedDomains()
+        }
+      }
+    }
+    .sheet(item: $sheetNavigation.presentedVerificationDomain) { domain in
+      OrganizationDomainVerificationSheet(domain: domain) {
+        Task {
+          await revalidateLoadedDomains()
+        }
+      }
+    }
+    .sheet(item: $sheetNavigation.presentedEnrollmentModeDomain) { domain in
+      OrganizationDomainEnrollmentModeView(domain: domain) { _ in
         Task {
           await revalidateLoadedDomains()
         }
@@ -324,9 +336,71 @@ extension OrganizationVerifiedDomainsView {
   }
 }
 
+// MARK: - Sheets
+
+private struct OrganizationDomainVerificationSheet: View {
+  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
+  @Environment(\.clerkTheme) private var theme
+
+  let domain: OrganizationDomain
+  let onDomainChanged: @MainActor () -> Void
+
+  @State private var path: [Destination] = []
+  @State private var codeLimiter = CodeLimiter()
+
+  private enum Destination: Hashable {
+    case verifyCode(OrganizationDomain, affiliationEmailAddress: String)
+  }
+
+  var body: some View {
+    NavigationStack(path: $path) {
+      OrganizationDomainEmailAddressView(domain: domain) { preparedDomain, affiliationEmailAddress in
+        path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
+      }
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            sheetNavigation.presentedVerificationDomain = nil
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
+      }
+      .navigationDestination(for: Destination.self) { destination in
+        switch destination {
+        case let .verifyCode(domain, affiliationEmailAddress):
+          OrganizationDomainVerifyCodeView(
+            domain: domain,
+            emailAddress: affiliationEmailAddress
+          ) {
+            onDomainChanged()
+            sheetNavigation.presentedVerificationDomain = nil
+          }
+        }
+      }
+    }
+    .environment(codeLimiter)
+  }
+}
+
 #Preview("Verified Domains") {
-  NavigationStack {
+  @Previewable @State var navigationPath = NavigationPath()
+
+  NavigationStack(path: $navigationPath) {
     OrganizationVerifiedDomainsView()
+      .environment(
+        OrganizationProfileBuiltInRouter(
+          push: { destination in
+            navigationPath.append(destination)
+          },
+          dismissAction: { action in
+            switch action {
+            case .popToRoot, .exitOrganizationProfile:
+              navigationPath = NavigationPath()
+            }
+          }
+        )
+      )
+      .environment(OrganizationSheetNavigation())
       .environment(Clerk.preview { preview in
         var membership = OrganizationMembership.mockWithUserData
         membership.permissions = [

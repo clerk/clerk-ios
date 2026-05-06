@@ -10,7 +10,7 @@ import SwiftUI
 struct OrganizationDomainEnrollmentModeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
 
   let onDomainChanged: @MainActor (OrganizationDomain) -> Void
 
@@ -39,70 +39,79 @@ struct OrganizationDomainEnrollmentModeView: View {
   }
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        Text("Choose how users from this domain can join the organization.", bundle: .module)
-          .font(theme.fonts.subheadline)
-          .foregroundStyle(theme.colors.mutedForeground)
-          .fixedSize(horizontal: false, vertical: true)
-
-        VStack(spacing: 12) {
-          ForEach(enrollmentModeOptions) { option in
-            OrganizationDomainEnrollmentModeRow(
-              option: option,
-              isSelected: selectedMode == option.mode
-            ) {
-              selectedMode = option.mode
-              if selectedMode != .manualInvitation {
-                deletePending = false
-              }
-              error = nil
-            }
-          }
-        }
-
-        if showsDeletePendingToggle {
-          Toggle(isOn: $deletePending) {
-            Text("Delete pending invitations and suggestions", bundle: .module)
-          }
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.foreground)
-          .tint(theme.colors.primary)
-          .frame(minHeight: 22)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-          .background(theme.colors.muted, in: .rect(cornerRadius: theme.design.borderRadius))
-        }
-
-        if let error {
-          ErrorText(error: error, alignment: .leading)
+    NavigationStack {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 24) {
+          Text("Choose how users from this domain can join the organization.", bundle: .module)
             .font(theme.fonts.subheadline)
-            .transition(.blurReplace.animation(.default))
-            .id(error.localizedDescription)
+            .foregroundStyle(theme.colors.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+
+          VStack(spacing: 12) {
+            ForEach(enrollmentModeOptions) { option in
+              OrganizationDomainEnrollmentModeRow(
+                option: option,
+                isSelected: selectedMode == option.mode
+              ) {
+                selectedMode = option.mode
+                if selectedMode != .manualInvitation {
+                  deletePending = false
+                }
+                error = nil
+              }
+            }
+          }
+
+          if showsDeletePendingToggle {
+            Toggle(isOn: $deletePending) {
+              Text("Delete pending invitations and suggestions", bundle: .module)
+            }
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.foreground)
+            .tint(theme.colors.primary)
+            .frame(minHeight: 22)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(theme.colors.muted, in: .rect(cornerRadius: theme.design.borderRadius))
+          }
+
+          if let error {
+            ErrorText(error: error, alignment: .leading)
+              .font(theme.fonts.subheadline)
+              .transition(.blurReplace.animation(.default))
+              .id(error.localizedDescription)
+          }
+
+          AsyncButton {
+            await save()
+          } label: { isRunning in
+            Text("Save", bundle: .module)
+              .frame(maxWidth: .infinity)
+              .overlayProgressView(isActive: isRunning) {
+                SpinnerView(color: theme.colors.primaryForeground)
+              }
+          }
+          .buttonStyle(.primary())
+        }
+        .padding(24)
+      }
+      .background(theme.colors.background)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            sheetNavigation.presentedEnrollmentModeDomain = nil
+          }
+          .foregroundStyle(theme.colors.primary)
         }
 
-        AsyncButton {
-          await save()
-        } label: { isRunning in
-          Text("Save", bundle: .module)
-            .frame(maxWidth: .infinity)
-            .overlayProgressView(isActive: isRunning) {
-              SpinnerView(color: theme.colors.primaryForeground)
-            }
+        ToolbarItem(placement: .principal) {
+          Text("Update \(domain.name)", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
         }
-        .buttonStyle(.primary())
-      }
-      .padding(24)
-    }
-    .background(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Update \(domain.name)", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
       }
     }
   }
@@ -172,7 +181,7 @@ extension OrganizationDomainEnrollmentModeView {
       )
       domain = updatedDomain
       onDomainChanged(updatedDomain)
-      dismiss()
+      sheetNavigation.presentedEnrollmentModeDomain = nil
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -221,28 +230,27 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
 }
 
 #Preview("Domain Enrollment Mode") {
-  NavigationStack {
-    OrganizationDomainEnrollmentModeView(
-      domain: {
-        var domain = OrganizationDomain.mock
-        domain.name = "clerky.com"
-        domain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
-        domain.verification.status = "verified"
-        return domain
-      }()
-    ) { _ in }
-      .environment(
-        Clerk.preview { preview in
-          var environment = Clerk.Environment.mock
-          environment.organizationSettings.domains.enrollmentModes = [
-            OrganizationDomain.EnrollmentMode.manualInvitation.rawValue,
-            OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue,
-            OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue,
-          ]
-          preview.environment = environment
-        }
-      )
-  }
+  OrganizationDomainEnrollmentModeView(
+    domain: {
+      var domain = OrganizationDomain.mock
+      domain.name = "clerky.com"
+      domain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
+      domain.verification.status = "verified"
+      return domain
+    }()
+  ) { _ in }
+    .environment(
+      Clerk.preview { preview in
+        var environment = Clerk.Environment.mock
+        environment.organizationSettings.domains.enrollmentModes = [
+          OrganizationDomain.EnrollmentMode.manualInvitation.rawValue,
+          OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue,
+          OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue,
+        ]
+        preview.environment = environment
+      }
+    )
+    .environment(OrganizationSheetNavigation())
 }
 
 #endif
