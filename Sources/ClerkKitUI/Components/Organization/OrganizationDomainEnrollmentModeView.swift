@@ -16,6 +16,7 @@ struct OrganizationDomainEnrollmentModeView: View {
 
   @State private var domain: OrganizationDomain
   @State private var selectedMode: OrganizationDomain.EnrollmentMode
+  @State private var deletePending = false
   @State private var error: Error?
 
   init(
@@ -27,14 +28,14 @@ struct OrganizationDomainEnrollmentModeView: View {
     self.onDomainChanged = onDomainChanged
   }
 
-  private var canSubmit: Bool {
-    selectedMode != domain.enrollmentModeType
-  }
-
   private var enrollmentModeOptions: [OrganizationDomainEnrollmentModeOption] {
     OrganizationDomainEnrollmentModeOption.options(
       for: clerk.environment?.organizationSettings.domains.enrollmentModes ?? []
     )
+  }
+
+  private var showsDeletePendingToggle: Bool {
+    selectedMode == .manualInvitation
   }
 
   var body: some View {
@@ -52,9 +53,25 @@ struct OrganizationDomainEnrollmentModeView: View {
               isSelected: selectedMode == option.mode
             ) {
               selectedMode = option.mode
+              if selectedMode != .manualInvitation {
+                deletePending = false
+              }
               error = nil
             }
           }
+        }
+
+        if showsDeletePendingToggle {
+          Toggle(isOn: $deletePending) {
+            Text("Delete pending invitations and suggestions", bundle: .module)
+          }
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.foreground)
+          .tint(theme.colors.primary)
+          .frame(minHeight: 22)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(theme.colors.muted, in: .rect(cornerRadius: theme.design.borderRadius))
         }
 
         if let error {
@@ -74,7 +91,6 @@ struct OrganizationDomainEnrollmentModeView: View {
             }
         }
         .buttonStyle(.primary())
-        .disabled(!canSubmit)
       }
       .padding(24)
     }
@@ -149,10 +165,11 @@ private struct OrganizationDomainEnrollmentModeRow: View {
 extension OrganizationDomainEnrollmentModeView {
   @MainActor
   private func save() async {
-    guard canSubmit else { return }
-
     do {
-      let updatedDomain = try await domain.updateEnrollmentMode(selectedMode)
+      let updatedDomain = try await domain.updateEnrollmentMode(
+        selectedMode,
+        deletePending: showsDeletePendingToggle ? deletePending : nil
+      )
       domain = updatedDomain
       onDomainChanged(updatedDomain)
       dismiss()
