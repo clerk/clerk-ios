@@ -10,7 +10,7 @@ import SwiftUI
 struct OrganizationDomainEnrollmentModeView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
+  @Environment(\.dismiss) private var dismiss
 
   let onDomainChanged: @MainActor () -> Void
 
@@ -101,7 +101,7 @@ struct OrganizationDomainEnrollmentModeView: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
-            sheetNavigation.presentedEnrollmentModeDomain = nil
+            dismiss()
           }
           .foregroundStyle(theme.colors.primary)
         }
@@ -181,7 +181,7 @@ extension OrganizationDomainEnrollmentModeView {
       )
       domain = updatedDomain
       onDomainChanged()
-      sheetNavigation.presentedEnrollmentModeDomain = nil
+      dismiss()
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -250,7 +250,6 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
         preview.environment = environment
       }
     )
-    .environment(OrganizationSheetNavigation())
 }
 
 #endif

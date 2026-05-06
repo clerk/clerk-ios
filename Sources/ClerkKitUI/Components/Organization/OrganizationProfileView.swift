@@ -17,7 +17,6 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var internalPath = NavigationPath()
-  @State private var sheetNavigation = OrganizationSheetNavigation()
   @State private var initialPathCount = 0
   @State private var updateProfileIsPresented = false
 
@@ -112,7 +111,6 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
                       dismissAction: dismissAction
                     )
                   )
-                  .environment(sheetNavigation)
               }
           }
         } else {
@@ -140,7 +138,6 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           dismissAction: dismissAction
         )
       )
-      .environment(sheetNavigation)
     }
   }
 
@@ -198,7 +195,6 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
             dismissAction: dismissAction
           )
         )
-        .environment(sheetNavigation)
     }
   }
 }

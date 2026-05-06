@@ -10,11 +10,10 @@ import SwiftUI
 struct OrganizationVerifiedDomainsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
 
   @State private var domainsPager = OrganizationAccountListPager<OrganizationDomain>()
   @State private var isLoadingDomains = true
-  @State private var presentedDeleteDomain: OrganizationDomain?
+  @State private var presentedDomainFlow: PresentedDomainFlow?
   @State private var error: Error?
 
   private let pageSize = 10
@@ -36,8 +35,6 @@ struct OrganizationVerifiedDomainsView: View {
   }
 
   var body: some View {
-    @Bindable var sheetNavigation = sheetNavigation
-
     VStack(spacing: 0) {
       ScrollView {
         LazyVStack(spacing: 0) {
@@ -65,13 +62,13 @@ struct OrganizationVerifiedDomainsView: View {
                   domain: domain,
                   canManageDomains: canManageDomains,
                   onVerify: {
-                    sheetNavigation.presentedVerificationDomain = domain
+                    presentedDomainFlow = .verify(domain)
                   },
                   onManage: {
-                    sheetNavigation.presentedEnrollmentModeDomain = domain
+                    presentedDomainFlow = .enrollmentMode(domain)
                   },
                   onDelete: {
-                    presentedDeleteDomain = domain
+                    presentedDomainFlow = .delete(domain)
                   }
                 )
               }
@@ -86,7 +83,7 @@ struct OrganizationVerifiedDomainsView: View {
 
             if canManageDomains {
               OrganizationAddDomainRow {
-                sheetNavigation.addDomainIsPresented = true
+                presentedDomainFlow = .add
               }
               Divider()
             }
@@ -112,31 +109,18 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .clerkErrorPresenting($error)
-    .sheet(isPresented: $sheetNavigation.addDomainIsPresented) {
-      OrganizationAddDomainView {
-        Task {
-          await revalidateLoadedDomains()
+    .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
+      OrganizationDomainFlowSheet(
+        presentedDomainFlow: presentedDomainFlow,
+        onDomainChanged: {
+          Task {
+            await revalidateLoadedDomains()
+          }
+        },
+        onDomainDeleted: { deletedDomain in
+          domainsPager.remove(deletedDomain)
         }
-      }
-    }
-    .sheet(item: $sheetNavigation.presentedVerificationDomain) { domain in
-      OrganizationDomainVerificationFlowSheet(domain: domain) {
-        Task {
-          await revalidateLoadedDomains()
-        }
-      }
-    }
-    .sheet(item: $sheetNavigation.presentedEnrollmentModeDomain) { domain in
-      OrganizationDomainEnrollmentModeView(domain: domain) {
-        Task {
-          await revalidateLoadedDomains()
-        }
-      }
-    }
-    .sheet(item: $presentedDeleteDomain) { domain in
-      OrganizationDomainDeleteConfirmationView(domain: domain) { deletedDomain in
-        domainsPager.remove(deletedDomain)
-      }
+      )
     }
     .task(id: organization?.id) {
       await loadDomains(page: 1)
@@ -346,9 +330,28 @@ extension OrganizationVerifiedDomainsView {
 
 // MARK: - Sheets
 
+private struct OrganizationDomainFlowSheet: View {
+  let presentedDomainFlow: PresentedDomainFlow
+  let onDomainChanged: @MainActor () -> Void
+  let onDomainDeleted: @MainActor (OrganizationDomain) -> Void
+
+  var body: some View {
+    switch presentedDomainFlow {
+    case .add:
+      OrganizationAddDomainView(onDomainChanged: onDomainChanged)
+    case let .verify(domain):
+      OrganizationDomainVerificationFlowSheet(domain: domain, onDomainChanged: onDomainChanged)
+    case let .enrollmentMode(domain):
+      OrganizationDomainEnrollmentModeView(domain: domain, onDomainChanged: onDomainChanged)
+    case let .delete(domain):
+      OrganizationDomainDeleteConfirmationView(domain: domain, onDomainDeleted: onDomainDeleted)
+    }
+  }
+}
+
 private struct OrganizationDomainVerificationFlowSheet: View {
-  @Environment(OrganizationSheetNavigation.self) private var sheetNavigation
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
 
   let domain: OrganizationDomain
   let onDomainChanged: @MainActor () -> Void
@@ -368,7 +371,7 @@ private struct OrganizationDomainVerificationFlowSheet: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
-            sheetNavigation.presentedVerificationDomain = nil
+            dismiss()
           }
           .foregroundStyle(theme.colors.primary)
         }
@@ -381,12 +384,23 @@ private struct OrganizationDomainVerificationFlowSheet: View {
             emailAddress: affiliationEmailAddress
           ) {
             onDomainChanged()
-            sheetNavigation.presentedVerificationDomain = nil
+            dismiss()
           }
         }
       }
     }
     .environment(codeLimiter)
+  }
+}
+
+private enum PresentedDomainFlow: Hashable, Identifiable {
+  case add
+  case verify(OrganizationDomain)
+  case enrollmentMode(OrganizationDomain)
+  case delete(OrganizationDomain)
+
+  var id: Self {
+    self
   }
 }
 
@@ -408,7 +422,6 @@ private struct OrganizationDomainVerificationFlowSheet: View {
           }
         )
       )
-      .environment(OrganizationSheetNavigation())
       .environment(Clerk.preview { preview in
         var membership = OrganizationMembership.mockWithUserData
         membership.permissions = [

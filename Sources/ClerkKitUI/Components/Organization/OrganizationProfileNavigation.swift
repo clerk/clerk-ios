@@ -4,18 +4,8 @@
 
 #if os(iOS)
 
-import ClerkKit
 import Foundation
 import SwiftUI
-
-/// Manages sheet presentation state for organization profile flows.
-@MainActor
-@Observable
-final class OrganizationSheetNavigation {
-  var addDomainIsPresented = false
-  var presentedVerificationDomain: OrganizationDomain?
-  var presentedEnrollmentModeDomain: OrganizationDomain?
-}
 
 /// Navigation API for navigating from custom rows to custom destinations inside
 /// `OrganizationProfileView`.

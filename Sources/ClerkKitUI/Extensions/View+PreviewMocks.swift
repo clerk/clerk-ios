@@ -47,7 +47,6 @@ extension View {
           .environment(AuthNavigation())
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
-          .environment(OrganizationSheetNavigation())
       )
     }
     return AnyView(self)
