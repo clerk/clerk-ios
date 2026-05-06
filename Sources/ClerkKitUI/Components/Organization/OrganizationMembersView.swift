@@ -341,7 +341,8 @@ private struct OrganizationInviteMembersView: View {
   let roles: [RoleResource]
   let onSuccess: () async -> Void
 
-  @State private var emailAddressText = ""
+  @State private var emailAddressTags: [String] = []
+  @State private var emailAddressDraft = ""
   @State private var selectedRoleKey = ""
   @State private var error: Error?
   @FocusState private var emailFieldIsFocused: Bool
@@ -351,22 +352,24 @@ private struct OrganizationInviteMembersView: View {
   }
 
   private var emailAddresses: [String] {
-    emailAddressText
-      .components(separatedBy: CharacterSet(charactersIn: ",;\n\t "))
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-      .filter { !$0.isEmpty }
-  }
+    let trimmedDraft = emailAddressDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard isValidEmailAddress(trimmedDraft), !emailAddressTags.contains(trimmedDraft) else {
+      return emailAddressTags
+    }
 
-  private var invalidEmailAddresses: [String] {
-    emailAddresses.filter { !isValidEmailAddress($0) }
+    return emailAddressTags + [trimmedDraft]
   }
 
   private var canSubmit: Bool {
-    !emailAddresses.isEmpty && invalidEmailAddresses.isEmpty && roleOptions.contains { $0.key == selectedRoleKey }
+    !emailAddresses.isEmpty && roleOptions.contains { $0.key == selectedRoleKey }
   }
 
   private var selectedRoleName: String {
     roleOptions.first { $0.key == selectedRoleKey }?.name ?? ""
+  }
+
+  private var emailAddressDelimiters: CharacterSet {
+    CharacterSet(charactersIn: ",;\n\t ")
   }
 
   var body: some View {
@@ -430,8 +433,9 @@ private struct OrganizationInviteMembersView: View {
         }
       }
     }
-    .onChange(of: emailAddressText) { _, _ in
+    .onChange(of: emailAddressDraft) { _, newValue in
       error = nil
+      parseEmailAddressDraft(newValue)
     }
     .onChange(of: selectedRoleKey) { _, _ in
       error = nil
@@ -449,20 +453,31 @@ private struct OrganizationInviteMembersView: View {
           .foregroundStyle(theme.colors.mutedForeground)
           .frame(maxWidth: .infinity, alignment: .leading)
 
-        TextField("", text: $emailAddressText, axis: .vertical)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.inputForeground)
-          .tint(theme.colors.primary)
-          .textContentType(.emailAddress)
-          .keyboardType(.emailAddress)
-          .autocorrectionDisabled()
-          .textInputAutocapitalization(.never)
-          .lineLimit(1 ... 4)
-          .focused($emailFieldIsFocused)
-          .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
-          .onFirstAppear {
-            emailFieldIsFocused = true
+        WrappingHStack(alignment: .leading, spacing: 6, lineSpacing: 6) {
+          ForEach(emailAddressTags, id: \.self) { emailAddress in
+            OrganizationInviteEmailTagView(emailAddress: emailAddress) {
+              removeEmailAddressTag(emailAddress)
+            }
           }
+
+          TextField("", text: $emailAddressDraft)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.inputForeground)
+            .tint(theme.colors.primary)
+            .textContentType(.emailAddress)
+            .keyboardType(.emailAddress)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .focused($emailFieldIsFocused)
+            .frame(minWidth: 96, minHeight: 24, alignment: .leading)
+            .onSubmit {
+              commitValidEmailAddressDraft()
+            }
+            .onFirstAppear {
+              emailFieldIsFocused = true
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 8)
@@ -472,6 +487,10 @@ private struct OrganizationInviteMembersView: View {
         in: .rect(cornerRadius: theme.design.borderRadius)
       )
       .clerkFocusedBorder(isFocused: emailFieldIsFocused)
+      .contentShape(.rect)
+      .onTapGesture {
+        emailFieldIsFocused = true
+      }
     }
   }
 
@@ -528,14 +547,15 @@ private struct OrganizationInviteMembersView: View {
   private func submit() async {
     error = nil
 
-    guard canSubmit else { return }
+    let submittedEmailAddresses = emailAddresses
+    guard !submittedEmailAddresses.isEmpty, roleOptions.contains(where: { $0.key == selectedRoleKey }) else { return }
     guard let organization = clerk.organization else {
       error = ClerkClientError(message: "Unable to send invitations without an active organization.")
       return
     }
 
     do {
-      try await organization.inviteMembers(emailAddresses: emailAddresses, role: selectedRoleKey)
+      try await organization.inviteMembers(emailAddresses: submittedEmailAddresses, role: selectedRoleKey)
       await onSuccess()
       dismiss()
     } catch {
@@ -556,6 +576,87 @@ private struct OrganizationInviteMembersView: View {
 
   private func isValidEmailAddress(_ emailAddress: String) -> Bool {
     emailAddress.range(of: #"^\S+@\S+\.\S+$"#, options: .regularExpression) != nil
+  }
+
+  private func parseEmailAddressDraft(_ value: String) {
+    guard value.rangeOfCharacter(from: emailAddressDelimiters) != nil else { return }
+
+    var nextTags = emailAddressTags
+    var invalidFragments: [String] = []
+
+    value
+      .components(separatedBy: emailAddressDelimiters)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+      .forEach { emailAddress in
+        if isValidEmailAddress(emailAddress), !nextTags.contains(emailAddress) {
+          nextTags.append(emailAddress)
+        } else {
+          invalidFragments.append(emailAddress)
+        }
+      }
+
+    let nextDraft = invalidFragments.joined(separator: " ")
+
+    if nextTags != emailAddressTags {
+      emailAddressTags = nextTags
+    }
+
+    if nextDraft != emailAddressDraft {
+      emailAddressDraft = nextDraft
+    }
+  }
+
+  private func commitValidEmailAddressDraft() {
+    let trimmedDraft = emailAddressDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard isValidEmailAddress(trimmedDraft), !emailAddressTags.contains(trimmedDraft) else { return }
+
+    emailAddressTags.append(trimmedDraft)
+    emailAddressDraft = ""
+    error = nil
+  }
+
+  private func removeEmailAddressTag(_ emailAddress: String) {
+    emailAddressTags.removeAll { $0 == emailAddress }
+    error = nil
+    emailFieldIsFocused = true
+  }
+}
+
+private struct OrganizationInviteEmailTagView: View {
+  @Environment(\.clerkTheme) private var theme
+
+  let emailAddress: String
+  let onRemove: () -> Void
+
+  var body: some View {
+    Button {
+      onRemove()
+    } label: {
+      HStack(spacing: 4) {
+        Text(verbatim: emailAddress)
+          .lineLimit(1)
+          .truncationMode(.middle)
+          .frame(maxWidth: 220)
+
+        Image(systemName: "xmark")
+          .font(.system(size: 10, weight: .semibold))
+          .foregroundStyle(theme.colors.mutedForeground)
+      }
+      .font(theme.fonts.subheadline)
+      .foregroundStyle(theme.colors.primary)
+      .padding(.leading, 10)
+      .padding(.trailing, 8)
+      .frame(height: 26)
+      .background(theme.colors.muted, in: .rect(cornerRadius: theme.design.borderRadius))
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.design.borderRadius)
+          .strokeBorder(theme.colors.border, lineWidth: 1)
+      }
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(Text("Remove email address", bundle: .module))
+    .accessibilityValue(Text(verbatim: emailAddress))
   }
 }
 
