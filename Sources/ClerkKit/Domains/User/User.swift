@@ -404,6 +404,14 @@ extension User {
     try await userService.getOrganizationMemberships(offset: offset, pageSize: pageSize)
   }
 
+  /// Leaves the organization with the provided id.
+  /// - Parameter organizationId: The id of the organization to leave.
+  /// - Returns: A ``DeletedObject`` response.
+  @discardableResult @MainActor
+  public func leaveOrganization(organizationId: String) async throws -> DeletedObject {
+    try await userService.leaveOrganization(organizationId: organizationId)
+  }
+
   /// Retrieves a list of organization suggestions for the user.
   /// - Parameters:
   ///   - page: The 1-based page number to fetch. Defaults to `1`.

@@ -22,6 +22,7 @@ protocol UserServiceProtocol: Sendable {
   @MainActor func disableTotp() async throws -> DeletedObject
   @MainActor func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
   @MainActor func getOrganizationMemberships(offset: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  @MainActor func leaveOrganization(organizationId: String) async throws -> DeletedObject
   @MainActor func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
   @MainActor func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults
   @MainActor func getSessions(user: User) async throws -> [Session]
@@ -256,6 +257,17 @@ final class UserService: UserServiceProtocol {
         ("limit", value: String(pageSize)),
         ("paginated", value: "true"),
       ]
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func leaveOrganization(organizationId: String) async throws -> DeletedObject {
+    let request = Request<ClientResponse<DeletedObject>>(
+      path: "/v1/me/organization_memberships/\(organizationId)",
+      method: .delete,
+      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
     )
 
     return try await apiClient.send(request).value.response

@@ -11,6 +11,7 @@ import SwiftUI
 public struct OrganizationProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
@@ -19,6 +20,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   @State private var internalPath = NavigationPath()
   @State private var initialPathCount = 0
   @State private var updateProfileIsPresented = false
+  @State private var presentedConfirmation: OrganizationProfileActionConfirmation?
 
   private var organization: Organization? {
     clerk.organization
@@ -92,52 +94,65 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   }
 
   public var body: some View {
-    if let organization {
-      Group {
-        if navigationPath == nil {
-          NavigationStack(path: $internalPath) {
+    Group {
+      if let organization {
+        Group {
+          if navigationPath == nil {
+            NavigationStack(path: $internalPath) {
+              profileContent(organization: organization)
+                .navigationDestination(for: Route.self) { route in
+                  view(for: route)
+                    .environment(
+                      OrganizationProfileNavigator(
+                        push: navigateToCustom,
+                        popToRoot: { dismissAction(.popToRoot) }
+                      )
+                    )
+                    .environment(
+                      OrganizationProfileBuiltInRouter(
+                        push: navigateToBuiltIn,
+                        dismissAction: dismissAction
+                      )
+                    )
+                }
+            }
+          } else {
             profileContent(organization: organization)
-              .navigationDestination(for: Route.self) { route in
-                view(for: route)
-                  .environment(
-                    OrganizationProfileNavigator(
-                      push: navigateToCustom,
-                      popToRoot: { dismissAction(.popToRoot) }
-                    )
-                  )
-                  .environment(
-                    OrganizationProfileBuiltInRouter(
-                      push: navigateToBuiltIn,
-                      dismissAction: dismissAction
-                    )
-                  )
-              }
           }
-        } else {
-          profileContent(organization: organization)
         }
-      }
-      .tint(theme.colors.primary)
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
-      .onFirstAppear {
-        initialPathCount = navigationPath?.wrappedValue.count ?? 0
-      }
-      .sheet(isPresented: $updateProfileIsPresented) {
-        OrganizationProfileUpdateProfileView(organization: organization)
-      }
-      .task {
-        _ = try? await clerk.refreshEnvironment()
-      }
-      .task {
-        _ = try? await clerk.refreshClient()
-      }
-      .environment(
-        OrganizationProfileBuiltInRouter(
-          push: navigateToBuiltIn,
-          dismissAction: dismissAction
+        .tint(theme.colors.primary)
+        .presentationBackground(theme.colors.background)
+        .background(theme.colors.background)
+        .onFirstAppear {
+          initialPathCount = navigationPath?.wrappedValue.count ?? 0
+        }
+        .sheet(isPresented: $updateProfileIsPresented) {
+          OrganizationProfileUpdateProfileView(organization: organization)
+        }
+        .sheet(item: $presentedConfirmation) { confirmation in
+          OrganizationProfileActionConfirmationView(
+            action: confirmation,
+            organization: organization
+          )
+        }
+        .task {
+          _ = try? await clerk.refreshEnvironment()
+        }
+        .task {
+          _ = try? await clerk.refreshClient()
+        }
+        .environment(
+          OrganizationProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
+          )
         )
-      )
+      }
+    }
+    .onChange(of: organization?.id) { _, organizationId in
+      if organizationId == nil {
+        dismiss()
+      }
     }
   }
 
@@ -282,8 +297,10 @@ extension OrganizationProfileView {
       navigateToBuiltIn(.members)
     case .verifiedDomains:
       navigateToBuiltIn(.verifiedDomains)
-    case .leaveOrganization, .deleteOrganization:
-      break
+    case .leaveOrganization:
+      presentedConfirmation = .leave
+    case .deleteOrganization:
+      presentedConfirmation = .delete
     }
   }
 
@@ -312,6 +329,9 @@ extension OrganizationProfileView {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
+      if action == .exitOrganizationProfile {
+        dismiss()
+      }
     }
   }
 
