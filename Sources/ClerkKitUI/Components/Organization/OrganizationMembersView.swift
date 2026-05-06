@@ -361,36 +361,30 @@ private struct OrganizationInviteMembersView: View {
     emailAddresses.filter { !isValidEmailAddress($0) }
   }
 
-  private var fieldError: ClerkClientError? {
-    guard !emailAddressText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      return nil
-    }
-
-    if emailAddresses.isEmpty {
-      return ClerkClientError(message: "Enter at least one email address.")
-    }
-
-    if !invalidEmailAddresses.isEmpty {
-      return ClerkClientError(message: "Enter valid email addresses.")
-    }
-
-    return nil
-  }
-
   private var canSubmit: Bool {
     !emailAddresses.isEmpty && invalidEmailAddresses.isEmpty && roleOptions.contains { $0.key == selectedRoleKey }
   }
 
-  private var submitTitle: LocalizedStringKey {
-    emailAddresses.count == 1 ? "Send invitation" : "Send invitations"
+  private var selectedRoleName: String {
+    roleOptions.first { $0.key == selectedRoleKey }?.name ?? ""
   }
 
   var body: some View {
     NavigationStack {
       ScrollView {
-        VStack(spacing: 24) {
-          emailField
-          rolePicker
+        VStack(alignment: .leading, spacing: 24) {
+          Text(
+            "Enter or paste one or more email addresses, separated by spaces or commas.",
+            bundle: .module
+          )
+          .font(theme.fonts.subheadline)
+          .foregroundStyle(theme.colors.mutedForeground)
+          .fixedSize(horizontal: false, vertical: true)
+
+          VStack(alignment: .leading, spacing: 12) {
+            emailField
+            rolePicker
+          }
 
           if let error {
             ErrorText(error: error, alignment: .leading)
@@ -402,11 +396,16 @@ private struct OrganizationInviteMembersView: View {
           AsyncButton {
             await submit()
           } label: { isRunning in
-            Text(submitTitle, bundle: .module)
-              .frame(maxWidth: .infinity)
-              .overlayProgressView(isActive: isRunning) {
-                SpinnerView(color: theme.colors.primaryForeground)
-              }
+            HStack(spacing: 4) {
+              Text("Send invitations", bundle: .module)
+              Image("icon-triangle-right", bundle: .module)
+                .foregroundStyle(theme.colors.primaryForeground)
+                .opacity(0.6)
+            }
+            .frame(maxWidth: .infinity)
+            .overlayProgressView(isActive: isRunning) {
+              SpinnerView(color: theme.colors.primaryForeground)
+            }
           }
           .buttonStyle(.primary())
           .disabled(!canSubmit)
@@ -425,7 +424,7 @@ private struct OrganizationInviteMembersView: View {
         }
 
         ToolbarItem(placement: .principal) {
-          Text("Invite members", bundle: .module)
+          Text("Invite new members", bundle: .module)
             .font(theme.fonts.headline)
             .foregroundStyle(theme.colors.foreground)
         }
@@ -444,26 +443,35 @@ private struct OrganizationInviteMembersView: View {
 
   private var emailField: some View {
     VStack(alignment: .leading, spacing: 8) {
-      ClerkTextField(
-        "Email addresses",
-        text: $emailAddressText,
-        fieldState: fieldError == nil ? .default : .error
-      )
-      .textContentType(.emailAddress)
-      .keyboardType(.emailAddress)
-      .autocorrectionDisabled()
-      .textInputAutocapitalization(.never)
-      .focused($emailFieldIsFocused)
-      .onFirstAppear {
-        emailFieldIsFocused = true
-      }
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Enter email addresses", bundle: .module)
+          .font(theme.fonts.caption)
+          .foregroundStyle(theme.colors.mutedForeground)
+          .frame(maxWidth: .infinity, alignment: .leading)
 
-      if let fieldError {
-        ErrorText(error: fieldError, alignment: .leading)
-          .font(theme.fonts.subheadline)
-          .transition(.blurReplace.animation(.default))
-          .id(fieldError.localizedDescription)
+        TextField("", text: $emailAddressText, axis: .vertical)
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.inputForeground)
+          .tint(theme.colors.primary)
+          .textContentType(.emailAddress)
+          .keyboardType(.emailAddress)
+          .autocorrectionDisabled()
+          .textInputAutocapitalization(.never)
+          .lineLimit(1 ... 4)
+          .focused($emailFieldIsFocused)
+          .frame(maxWidth: .infinity, minHeight: 72, alignment: .topLeading)
+          .onFirstAppear {
+            emailFieldIsFocused = true
+          }
       }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 8)
+      .frame(minHeight: 112, alignment: .topLeading)
+      .background(
+        theme.colors.input,
+        in: .rect(cornerRadius: theme.design.borderRadius)
+      )
+      .clerkFocusedBorder(isFocused: emailFieldIsFocused)
     }
   }
 
@@ -471,30 +479,42 @@ private struct OrganizationInviteMembersView: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 12) {
         Text("Role", bundle: .module)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.foreground)
+          .font(theme.fonts.subheadline)
+          .foregroundStyle(theme.colors.mutedForeground)
 
-        Spacer()
-
-        Picker("Role", selection: $selectedRoleKey) {
+        Menu {
           ForEach(roleOptions) { role in
-            Text(verbatim: role.name)
-              .tag(role.key)
+            Button {
+              selectedRoleKey = role.key
+            } label: {
+              Text(verbatim: role.name)
+            }
           }
+        } label: {
+          HStack(spacing: 4) {
+            Text(verbatim: selectedRoleName)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.foreground)
+
+            Image(systemName: "chevron.down")
+              .font(theme.fonts.caption)
+              .foregroundStyle(theme.colors.mutedForeground)
+          }
+          .padding(.horizontal, 14)
+          .frame(height: 32)
+          .background(
+            theme.colors.background,
+            in: .rect(cornerRadius: theme.design.borderRadius)
+          )
+          .overlay {
+            RoundedRectangle(cornerRadius: theme.design.borderRadius)
+              .strokeBorder(theme.colors.buttonBorder, lineWidth: 1)
+          }
+          .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
         }
-        .labelsHidden()
-        .pickerStyle(.menu)
         .tint(theme.colors.primary)
         .disabled(roleOptions.isEmpty)
       }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 6)
-      .frame(minHeight: 56)
-      .background(
-        theme.colors.input,
-        in: .rect(cornerRadius: theme.design.borderRadius)
-      )
-      .clerkFocusedBorder(isFocused: false)
 
       if roleOptions.isEmpty {
         Text("No roles available", bundle: .module)
