@@ -24,7 +24,7 @@ public final class Clerk {
     return instance
   }
 
-  /// Shared instance that is set during configuration.
+  /// Private shared instance that is set during configuration.
   private static var _shared: Clerk?
 
   private static var isRuntimeReconfigurationInProgress = false
