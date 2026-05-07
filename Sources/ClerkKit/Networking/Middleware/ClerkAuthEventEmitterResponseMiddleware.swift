@@ -6,10 +6,14 @@
 import Foundation
 
 struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
-  private let clerkProvider: @Sendable @MainActor () -> Clerk
+  private let runtimeScope: ClerkRuntimeScope
 
-  init(clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }) {
-    self.clerkProvider = clerkProvider
+  init(runtimeScope: ClerkRuntimeScope = .init()) {
+    self.runtimeScope = runtimeScope
+  }
+
+  init(clerkProvider: @escaping @Sendable @MainActor () -> Clerk) {
+    runtimeScope = ClerkRuntimeScope(clerkProvider: clerkProvider)
   }
 
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
@@ -17,7 +21,7 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    let clerk = await clerkProvider()
+    let clerk = try await runtimeScope.requireCurrentClerk()
     switch responseObject {
     case .signUp:
       if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,

@@ -24,8 +24,10 @@ public final class Clerk {
     return instance
   }
 
-  /// Private shared instance that is set during configuration.
-  private static var _shared: Clerk?
+  /// Shared instance that is set during configuration.
+  static var _shared: Clerk?
+
+  private static var isRuntimeReconfigurationInProgress = false
 
   /// A getter to see if the Clerk object is ready for use or not.
   /// Returns true when both environment and client are loaded.
@@ -103,6 +105,10 @@ public final class Clerk {
 
   /// Shared refresh task used to coalesce watch-sync-triggered refreshes.
   private var watchSyncRefreshTask: Task<Void, Never>?
+
+  /// Changes every time this instance is reconfigured.
+  /// SDK-owned requests capture this value so stale responses cannot mutate new state.
+  private var configurationEpoch: ClerkConfigurationEpoch = .initial
 
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
@@ -203,15 +209,23 @@ public final class Clerk {
 extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   @MainActor
-  package func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
+  func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
+    let dependencies = try DependencyContainer(
+      publishableKey: publishableKey,
+      options: options,
+      runtimeScope: runtimeScope
+    )
+
+    performConfiguration(dependencies: dependencies)
+  }
+
+  /// Internal helper method that installs a prebuilt dependency container and starts managers.
+  @MainActor
+  func performConfiguration(dependencies: any Dependencies) {
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
-    // Create dependency container (which creates and configures ConfigurationManager internally)
-    dependencies = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options
-    )
+    self.dependencies = dependencies
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -395,6 +409,50 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  @MainActor
+  static var currentConfigurationEpoch: ClerkConfigurationEpoch {
+    _shared?.configurationEpoch ?? .initial
+  }
+
+  @MainActor
+  static func beginRuntimeReconfiguration() throws {
+    guard !isRuntimeReconfigurationInProgress else {
+      throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.")
+    }
+    isRuntimeReconfigurationInProgress = true
+  }
+
+  @MainActor
+  static func endRuntimeReconfiguration() {
+    isRuntimeReconfigurationInProgress = false
+  }
+
+  var runtimeScope: ClerkRuntimeScope {
+    let epoch = configurationEpoch
+    return ClerkRuntimeScope(epoch: epoch) { [weak self] in
+      self ?? Clerk.shared
+    }
+  }
+
+  var nextConfigurationEpoch: ClerkConfigurationEpoch {
+    configurationEpoch.next()
+  }
+
+  func advanceConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
+    configurationEpoch = epoch
+  }
+
+  func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch?) -> Bool {
+    guard let epoch else { return true }
+    return configurationEpoch == epoch
+  }
+
+  func ensureCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) throws {
+    guard configurationEpoch == epoch else {
+      throw CancellationError()
+    }
+  }
+
   func refreshClientAfterInvalidAuth() async {
     if let invalidAuthRefreshTask {
       await invalidAuthRefreshTask.value
@@ -511,13 +569,21 @@ extension Clerk {
     invalidAuthRefreshTask = nil
     watchSyncRefreshTask?.cancel()
     watchSyncRefreshTask = nil
-    resetManagerStateForCleanup()
+    resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
     teardownNonCacheManagers()
   }
 
   package func cleanupManagersAndDrainCache() async {
+    await cleanupManagersAndDrainCache(finishAuthEventStreams: true)
+  }
+
+  func cleanupManagersForRuntimeReconfiguration() async {
+    await cleanupManagersAndDrainCache(finishAuthEventStreams: false)
+  }
+
+  private func cleanupManagersAndDrainCache(finishAuthEventStreams: Bool) async {
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
@@ -525,18 +591,20 @@ extension Clerk {
     await watchSyncRefreshTask?.value
     watchSyncRefreshTask = nil
 
-    // Cancel task coordinator tasks before draining the cache to prevent
-    // in-flight refreshes from enqueuing new writes during the drain.
-    taskCoordinator?.cancelAll()
+    // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
+    // from enqueuing new writes during the drain.
+    await taskCoordinator?.cancelAllAndWait()
 
-    resetManagerStateForCleanup()
+    resetManagerStateForCleanup(finishAuthEventStreams: finishAuthEventStreams)
     await cacheManager?.shutdownAndDrain()
     cacheManager = nil
     teardownNonCacheManagers()
   }
 
-  private func resetManagerStateForCleanup() {
-    authEventEmitter.finish()
+  private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {
+    if finishAuthEventStreams {
+      authEventEmitter.finish()
+    }
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
   }

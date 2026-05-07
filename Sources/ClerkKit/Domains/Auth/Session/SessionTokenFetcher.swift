@@ -13,6 +13,13 @@ actor SessionTokenFetcher {
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
 
+  func reset() {
+    for task in tokenTasks.values {
+      task.cancel()
+    }
+    tokenTasks.removeAll()
+  }
+
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
 
@@ -40,12 +47,14 @@ actor SessionTokenFetcher {
   @discardableResult @MainActor
   func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
+    let epoch = Clerk.currentConfigurationEpoch
 
     if options.skipCache == false,
        let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
        let expiresAt = token.decodedJWT?.expiresAt,
        Date.now.distance(to: expiresAt) > options.expirationBuffer
     {
+      try Clerk.shared.ensureCurrentConfigurationEpoch(epoch)
       return token
     }
 
@@ -53,6 +62,8 @@ actor SessionTokenFetcher {
       sessionId: session.id,
       template: options.template
     )
+
+    try Clerk.shared.ensureCurrentConfigurationEpoch(epoch)
 
     if let token {
       await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
@@ -83,5 +94,9 @@ actor SessionTokensCache {
   ///               For example, `sess_abc12345` or `sess_abc12345-supabase`.
   func insertToken(_ token: TokenResource, cacheKey: String) {
     cache[cacheKey] = token
+  }
+
+  func clear() {
+    cache.removeAll()
   }
 }

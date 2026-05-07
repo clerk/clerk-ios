@@ -21,9 +21,14 @@ actor APIClient {
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
+  private let runtimeScope: ClerkRuntimeScope
   private var nextRequestSequenceNumber = 0
 
-  init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
+  init(
+    baseURL: URL?,
+    runtimeScope: ClerkRuntimeScope = .init(),
+    configure: (inout Configuration) -> Void = { _ in }
+  ) {
     var configuration = Configuration()
     configure(&configuration)
 
@@ -31,6 +36,7 @@ actor APIClient {
     encoder = configuration.encoder
     decoder = configuration.decoder
     pipeline = configuration.pipeline
+    self.runtimeScope = runtimeScope
     session = URLSession(configuration: configuration.sessionConfiguration)
   }
 
@@ -55,11 +61,13 @@ actor APIClient {
     let requestSequence = makeRequestSequence()
 
     while true {
+      try await ensureCurrentRuntimeScope()
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
       try await pipeline.prepare(&urlRequest)
+      try await ensureCurrentRuntimeScope()
 
       do {
         let data: Data
@@ -71,13 +79,18 @@ actor APIClient {
           (data, response) = try await session.data(for: urlRequest)
         }
 
+        try await ensureCurrentRuntimeScope()
+
         guard let httpResponse = response as? HTTPURLResponse else {
           throw APIClientError.invalidHTTPResponse
         }
 
         do {
           try await pipeline.validate(httpResponse, data: data, for: urlRequest)
+          try await ensureCurrentRuntimeScope()
         } catch {
+          try await ensureCurrentRuntimeScope()
+
           if try await pipeline.shouldRetry(
             request: urlRequest,
             response: httpResponse,
@@ -90,8 +103,11 @@ actor APIClient {
         }
 
         let value = try request.decode(data, using: decoder)
+        try await ensureCurrentRuntimeScope()
         return APIResponse(value: value, requestSequence: requestSequence, serverDate: httpResponse.serverDate)
       } catch {
+        try await ensureCurrentRuntimeScope()
+
         if try await pipeline.shouldRetry(
           request: urlRequest,
           response: nil,
@@ -108,6 +124,12 @@ actor APIClient {
   private func makeRequestSequence() -> Int {
     nextRequestSequenceNumber += 1
     return nextRequestSequenceNumber
+  }
+
+  private func ensureCurrentRuntimeScope() async throws {
+    guard await runtimeScope.isCurrent else {
+      throw CancellationError()
+    }
   }
 }
 

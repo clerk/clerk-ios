@@ -6,18 +6,21 @@
 import Foundation
 
 struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
-  @MainActor
-  private var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope = .init()) {
+    self.runtimeScope = runtimeScope
   }
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
+    let clerk = try runtimeScope.requireCurrentClerk()
+
+    if let deviceToken = try? clerk.dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
-    if let clientId = Clerk.shared.client?.id {
+    if let clientId = clerk.client?.id {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 
