@@ -17,7 +17,14 @@ final class PasskeyHelper: NSObject {
 
   @MainActor
   static func cancelCurrentAuthorization() {
+    #if os(tvOS)
+    if #available(tvOS 18.0, *) {
+      controller?.cancel()
+    }
+    #else
     controller?.cancel()
+    #endif
+
     controller = nil
     activeHelper?.cancelContinuation()
     activeHelper = nil

@@ -94,7 +94,10 @@ final class WebAuthentication: NSObject {
   }
 
   static func cancelCurrentSession() async {
+    #if !os(tvOS)
     currentSession?.cancel()
+    #endif
+
     currentSession = nil
 
     await continuationManager.cancelSessionIfNeeded()
