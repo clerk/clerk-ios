@@ -127,8 +127,7 @@ struct ClerkReconfigureTests {
 
   @Test
   func reconfigureBeforeConfigureInstallsSharedInstance() async throws {
-    Clerk.shared.cleanupManagers()
-    Clerk._shared = nil
+    Clerk.resetSharedInstanceForTesting()
 
     let configured = try await Clerk.reconfigure(
       publishableKey: publishableKey(for: "initial-reconfigure.clerk.example.com")
