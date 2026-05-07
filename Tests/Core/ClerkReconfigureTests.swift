@@ -5,7 +5,13 @@ import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
+@Suite(
+  .serialized,
+  .enabled(
+    if: ProcessInfo.processInfo.environment["CLERK_RUN_RECONFIGURE_TESTS"] == "1",
+    "Run with CLERK_RUN_RECONFIGURE_TESTS=1 swift test --no-parallel --filter ClerkReconfigureTests"
+  )
+)
 struct ClerkReconfigureTests {
   init() {
     configureClerkForTesting()
