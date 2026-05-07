@@ -24,8 +24,10 @@ public final class Clerk {
     return instance
   }
 
+  // swiftlint:disable identifier_name
   /// Shared instance that is set during configuration.
   static var _shared: Clerk?
+  // swiftlint:enable identifier_name
 
   private static var isRuntimeReconfigurationInProgress = false
 
