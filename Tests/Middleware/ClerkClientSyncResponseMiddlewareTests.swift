@@ -35,7 +35,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     configureClerkForTesting()
     let clerk = Clerk()
     clerk.client = Client.mock
-    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let data = try #require("""
     {"response":null,"client":null}
@@ -60,7 +60,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let clerk = Clerk()
     let existingClient = Client.mock
     clerk.client = existingClient
-    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let data = try #require("""
     {"response":{"object":"session","id":"sess_123","status":"active"}}

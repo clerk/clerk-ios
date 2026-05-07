@@ -49,7 +49,7 @@ final class DependencyContainer: Dependencies {
   init(
     publishableKey: String,
     options: Clerk.Options,
-    runtimeScope: ClerkRuntimeScope = .init()
+    runtimeScope: ClerkRuntimeScope
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
     // Create and configure ConfigurationManager first (needed to determine baseURL)

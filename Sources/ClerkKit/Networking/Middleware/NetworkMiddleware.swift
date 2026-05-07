@@ -84,12 +84,8 @@ extension NetworkingPipeline {
     )
   }
 
-  static var clerkDefault: NetworkingPipeline {
-    clerkDefault()
-  }
-
   static func clerkDefault(
-    runtimeScope: ClerkRuntimeScope = .init()
+    runtimeScope: ClerkRuntimeScope
   ) -> NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: [

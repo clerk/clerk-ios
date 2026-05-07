@@ -113,7 +113,7 @@ extension Clerk {
 
     // Create a minimal API client (won't be used if services are mocked)
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
-    let mockAPIClient = APIClient(baseURL: mockBaseURL)
+    let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
 
     // Create preview builder and apply closure
     let previewBuilder = PreviewBuilder()

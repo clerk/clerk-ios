@@ -37,7 +37,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     let keychain = createTestKeychain()
     try keychain.set("test-device-token", forKey: "clerkDeviceToken")
 
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -49,7 +49,7 @@ struct ClerkHeaderRequestMiddlewareTests {
   func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
     _ = createTestKeychain()
 
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -62,7 +62,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     // Set a mock client
     Clerk.shared.client = .mock
 
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -75,7 +75,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     // Ensure no client is set
     Clerk.shared.client = nil
 
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -85,7 +85,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsNativeDeviceIdHeaderWhenAvailable() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -102,7 +102,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsDeviceTypeHeader() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
@@ -114,7 +114,7 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsDeviceInfoHeaders() async throws {
-    let middleware = ClerkHeaderRequestMiddleware()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)

@@ -128,7 +128,7 @@ struct ClerkReconfigureTests {
   @Test
   func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
     let original = Clerk.shared
-    let previousEpoch = Clerk.currentConfigurationEpoch
+    let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
     let previousDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
@@ -161,7 +161,7 @@ struct ClerkReconfigureTests {
     }
 
     #expect(Clerk.shared === original)
-    #expect(Clerk.currentConfigurationEpoch == previousEpoch)
+    #expect(Clerk.shared.configurationEpoch == previousEpoch)
     #expect((Clerk.shared.dependencies as AnyObject) === (previousDependencies as AnyObject))
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)
@@ -193,6 +193,88 @@ struct ClerkReconfigureTests {
     defer { reconfigured.cleanupManagers() }
 
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+  }
+
+  @Test
+  func reconfigureClearsTokensBeforeSessionChangedEvent() async throws {
+    let cachedJWT = try unexpiredJWT()
+    let sessionService = MockSessionService(fetchToken: { _, _ in
+      throw CancellationError()
+    })
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: InMemoryKeychain(),
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
+      sessionService: sessionService
+    )
+    Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.client = .mock
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: cachedJWT),
+      cacheKey: Session.mock.tokenCacheKey(template: nil)
+    )
+
+    let observedToken = LockIsolated<String?>(nil)
+    let observedEventProcessed = LockIsolated(false)
+    let stream = Clerk.shared.auth.events
+    let eventTask = Task { @MainActor in
+      for await event in stream {
+        guard case .sessionChanged(let oldValue, nil) = event else {
+          continue
+        }
+
+        if let oldValue {
+          let token = await SessionTokensCache.shared.getToken(cacheKey: oldValue.tokenCacheKey(template: nil))?.jwt
+          observedToken.setValue(token)
+        }
+        observedEventProcessed.setValue(true)
+        break
+      }
+    }
+    defer { eventTask.cancel() }
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "token-reset-before-event.clerk.example.com")
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    try await waitUntil(timeout: .seconds(2)) { observedEventProcessed.value }
+    #expect(observedToken.value == nil)
+  }
+
+  @Test
+  func tokenReadsAreCancelledWhileReconfigureIsInProgress() async throws {
+    let cachedJWT = try unexpiredJWT()
+    let oldKeychain = SlowKeychain(delay: 0.5)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: oldKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.client = .mock
+    let staleSession = try #require(Clerk.shared.session)
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: cachedJWT),
+      cacheKey: staleSession.tokenCacheKey(template: nil)
+    )
+
+    let reconfigureTask = Task { @MainActor in
+      try await Clerk.reconfigure(publishableKey: publishableKey(for: "token-read-window.clerk.example.com"))
+    }
+    try await Task.sleep(for: .milliseconds(20))
+
+    do {
+      _ = try await staleSession.getToken()
+      Issue.record("Expected token reads during reconfiguration to be cancelled")
+    } catch is CancellationError {
+      // Expected.
+    } catch {
+      Issue.record("Expected CancellationError, got \(error)")
+    }
+
+    let reconfigured = try await reconfigureTask.value
+    reconfigured.cleanupManagers()
   }
 
   @Test
@@ -331,6 +413,22 @@ struct ClerkReconfigureTests {
     return "\(live ? "pk_live" : "pk_test")_\(encoded)"
   }
 
+  private func unexpiredJWT() throws -> String {
+    try [
+      base64URLEncodedJSON(["alg": "none", "typ": "JWT"]),
+      base64URLEncodedJSON(["exp": Int(Date.now.addingTimeInterval(3600).timeIntervalSince1970)]),
+      "signature",
+    ].joined(separator: ".")
+  }
+
+  private func base64URLEncodedJSON(_ object: [String: Any]) throws -> String {
+    try JSONSerialization.data(withJSONObject: object)
+      .base64EncodedString()
+      .replacingOccurrences(of: "+", with: "-")
+      .replacingOccurrences(of: "/", with: "_")
+      .replacingOccurrences(of: "=", with: "")
+  }
+
   private func waitForEvents(
     _ events: LockIsolated<[AuthEvent]>,
     count: Int,
@@ -349,6 +447,27 @@ struct ClerkReconfigureTests {
     }
 
     if events.value.count < count {
+      throw TimeoutError.timedOut
+    }
+  }
+
+  private func waitUntil(
+    timeout: Duration = .milliseconds(500),
+    _ condition: () -> Bool
+  ) async throws {
+    enum TimeoutError: Error {
+      case timedOut
+    }
+
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+      if condition() {
+        return
+      }
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    if !condition() {
       throw TimeoutError.timedOut
     }
   }

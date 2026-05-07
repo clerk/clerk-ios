@@ -21,15 +21,23 @@ struct ClerkConfigurationEpoch: Equatable {
 /// reference. Use `ClerkRuntimeScope` only for dependencies that can outlive a runtime
 /// reconfiguration boundary, such as networking pipelines and response middleware.
 struct ClerkRuntimeScope {
-  let epoch: ClerkConfigurationEpoch?
+  private let epoch: ClerkConfigurationEpoch
   private let clerkProvider: @Sendable @MainActor () -> Clerk
 
   init(
-    epoch: ClerkConfigurationEpoch? = nil,
+    epoch: ClerkConfigurationEpoch,
     clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }
   ) {
     self.epoch = epoch
     self.clerkProvider = clerkProvider
+  }
+
+  @MainActor
+  static func current(
+    clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }
+  ) -> ClerkRuntimeScope {
+    let clerk = clerkProvider()
+    return ClerkRuntimeScope(epoch: clerk.configurationEpoch, clerkProvider: clerkProvider)
   }
 
   @MainActor
@@ -50,5 +58,10 @@ struct ClerkRuntimeScope {
   func withCurrentClerk<T>(_ operation: @MainActor (Clerk) throws -> T) throws -> T {
     let clerk = try requireCurrentClerk()
     return try operation(clerk)
+  }
+
+  @MainActor
+  func validateStableRuntime() throws {
+    try clerkProvider().ensureCurrentStableConfigurationEpoch(epoch)
   }
 }

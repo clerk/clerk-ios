@@ -115,7 +115,7 @@ public final class Clerk {
 
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
-  private var configurationEpoch: ClerkConfigurationEpoch = .initial
+  private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
 
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
@@ -199,12 +199,17 @@ public final class Clerk {
     do {
       dependencies = try DependencyContainer(
         publishableKey: "",
-        options: .init()
+        options: .init(),
+        runtimeScope: ClerkRuntimeScope(epoch: .initial)
       )
     } catch {
       // This should never happen, but handle it just in case
       assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
-      if let fallbackDependencies = try? DependencyContainer(publishableKey: "", options: .init()) {
+      if let fallbackDependencies = try? DependencyContainer(
+        publishableKey: "",
+        options: .init(),
+        runtimeScope: ClerkRuntimeScope(epoch: .initial)
+      ) {
         dependencies = fallbackDependencies
       } else {
         fatalError("Failed to create temporary dependency container")
@@ -433,6 +438,9 @@ extension Clerk {
 
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
     client = nil
     environment = nil
     sessionsByUserId = [:]
@@ -441,9 +449,6 @@ extension Clerk {
     #if canImport(AuthenticationServices) && !os(watchOS)
     PasskeyHelper.cancelCurrentAuthorization()
     #endif
-
-    await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
   }
 }
 
@@ -515,11 +520,6 @@ extension Clerk: LifecycleEventHandling {
 
 extension Clerk {
   @MainActor
-  static var currentConfigurationEpoch: ClerkConfigurationEpoch {
-    _shared?.configurationEpoch ?? .initial
-  }
-
-  @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
       throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.")
@@ -532,8 +532,17 @@ extension Clerk {
     isRuntimeReconfigurationInProgress = false
   }
 
+  @MainActor
+  static func requireStableRuntime() throws -> ClerkRuntimeScope {
+    guard !isRuntimeReconfigurationInProgress, let shared = _shared else {
+      throw CancellationError()
+    }
+
+    return shared.runtimeScope
+  }
+
   var runtimeScope: ClerkRuntimeScope {
-    ClerkRuntimeScope(epoch: configurationEpoch)
+    ClerkRuntimeScope.current(clerkProvider: { self })
   }
 
   var nextConfigurationEpoch: ClerkConfigurationEpoch {
@@ -560,12 +569,15 @@ extension Clerk {
     performConfiguration(dependencies: state.dependencies)
   }
 
-  func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch?) -> Bool {
-    guard let epoch else { return true }
-    return configurationEpoch == epoch
+  func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {
+    configurationEpoch == epoch
   }
 
-  func ensureCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) throws {
+  func ensureCurrentStableConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) throws {
+    guard !Self.isRuntimeReconfigurationInProgress else {
+      throw CancellationError()
+    }
+
     guard configurationEpoch == epoch else {
       throw CancellationError()
     }

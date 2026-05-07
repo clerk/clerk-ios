@@ -13,7 +13,11 @@ actor APIClient {
 
     var encoder: JSONEncoder = .clerkEncoder
     var decoder: JSONDecoder = .clerkDecoder
-    var pipeline: NetworkingPipeline = .clerkDefault
+    var pipeline: NetworkingPipeline
+
+    init(runtimeScope: ClerkRuntimeScope) {
+      pipeline = .clerkDefault(runtimeScope: runtimeScope)
+    }
   }
 
   private let baseURL: URL?
@@ -26,10 +30,10 @@ actor APIClient {
 
   init(
     baseURL: URL?,
-    runtimeScope: ClerkRuntimeScope = .init(),
+    runtimeScope: ClerkRuntimeScope,
     configure: (inout Configuration) -> Void = { _ in }
   ) {
-    var configuration = Configuration()
+    var configuration = Configuration(runtimeScope: runtimeScope)
     configure(&configuration)
 
     self.baseURL = baseURL

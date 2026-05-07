@@ -10,7 +10,7 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
   let invalidAuthCodes = ["authentication_invalid", "resource_not_found"]
   private let runtimeScope: ClerkRuntimeScope
 
-  init(runtimeScope: ClerkRuntimeScope = .init()) {
+  init(runtimeScope: ClerkRuntimeScope) {
     self.runtimeScope = runtimeScope
   }
 

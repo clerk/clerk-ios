@@ -8,7 +8,7 @@ import Foundation
 struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
   private let runtimeScope: ClerkRuntimeScope
 
-  init(runtimeScope: ClerkRuntimeScope = .init()) {
+  init(runtimeScope: ClerkRuntimeScope) {
     self.runtimeScope = runtimeScope
   }
 

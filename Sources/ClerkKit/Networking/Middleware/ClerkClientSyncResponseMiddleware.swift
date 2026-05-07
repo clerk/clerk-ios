@@ -8,12 +8,8 @@ import Foundation
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   private let runtimeScope: ClerkRuntimeScope
 
-  init(runtimeScope: ClerkRuntimeScope = .init()) {
+  init(runtimeScope: ClerkRuntimeScope) {
     self.runtimeScope = runtimeScope
-  }
-
-  init(clerkProvider: @escaping @Sendable @MainActor () -> Clerk) {
-    runtimeScope = ClerkRuntimeScope(clerkProvider: clerkProvider)
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
