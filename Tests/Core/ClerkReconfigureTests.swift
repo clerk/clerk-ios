@@ -126,6 +126,76 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
+    let original = Clerk.shared
+    let previousEpoch = Clerk.currentConfigurationEpoch
+    let throwingKeychain = ThrowingDeleteKeychain()
+    let previousDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: throwingKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    original.performConfiguration(dependencies: previousDependencies)
+    original.client = .mock
+    original.environment = .mock
+    defer { original.cleanupManagers() }
+
+    let targetService = "com.clerk.tests.failed-reconfigure.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: publishableKey(for: "failed-rollback.clerk.example.com"),
+        options: Clerk.Options(keychainConfig: .init(service: targetService))
+      )
+      Issue.record("Expected reconfigure to throw when old keychain clearing fails")
+    } catch let error as ClerkClientError {
+      #expect(error.message?.contains("Unable to clear Clerk keychain items") == true)
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
+
+    #expect(Clerk.shared === original)
+    #expect(Clerk.currentConfigurationEpoch == previousEpoch)
+    #expect((Clerk.shared.dependencies as AnyObject) === (previousDependencies as AnyObject))
+    #expect(Clerk.shared.client?.id == Client.mock.id)
+    #expect(Clerk.shared.environment == .mock)
+  }
+
+  @Test
+  func reconfigureDrainsPendingCacheWritesBeforeClearingOldKeychain() async throws {
+    let oldKeychain = SlowKeychain(delay: 0.5)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: oldKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.client = .mock
+
+    let targetService = "com.clerk.tests.pending-cache-drain.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "pending-cache-drain.clerk.example.com"),
+      options: Clerk.Options(keychainConfig: .init(service: targetService))
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+  }
+
+  @Test
   func reconfigureBeforeConfigureInstallsSharedInstance() async throws {
     Clerk.resetSharedInstanceForTesting()
 
@@ -310,6 +380,37 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     storage[key] = nil
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return storage[key] != nil
+  }
+}
+
+private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable {
+  private enum DeleteError: Error {
+    case failed
+  }
+
+  private let lock = NSLock()
+  private var storage: [String: Data] = [:]
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    storage[key] = data
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    lock.lock()
+    defer { lock.unlock() }
+    return storage[key]
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw DeleteError.failed
   }
 
   func hasItem(forKey key: String) throws -> Bool {

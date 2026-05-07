@@ -29,6 +29,13 @@ public final class Clerk {
 
   private static var isRuntimeReconfigurationInProgress = false
 
+  private struct ReconfigurationRollbackState {
+    let configurationEpoch: ClerkConfigurationEpoch
+    let dependencies: any Dependencies
+    let lastAppliedClientResponseSequence: Int?
+    let lastClientServerFetchDate: Date?
+  }
+
   /// A getter to see if the Clerk object is ready for use or not.
   /// Returns true when both environment and client are loaded.
   public var isLoaded: Bool {
@@ -355,13 +362,19 @@ extension Clerk {
       )
       let oldKeychain = existing.dependencies.keychain
       let newKeychain = newDependencies.keychain
+      let rollbackState = existing.captureReconfigurationRollbackState()
 
       try clearAllKeychainItemsStrictly(in: newKeychain)
 
       existing.advanceConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndDrainCache()
 
-      try clearAllKeychainItemsStrictly(in: oldKeychain)
+      do {
+        try clearAllKeychainItemsStrictly(in: oldKeychain)
+      } catch {
+        existing.restoreAfterFailedReconfiguration(rollbackState)
+        throw error
+      }
 
       await existing.resetRuntimeStateForReconfiguration()
       existing.performConfiguration(dependencies: newDependencies)
@@ -531,6 +544,22 @@ extension Clerk {
     configurationEpoch = epoch
   }
 
+  private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
+    ReconfigurationRollbackState(
+      configurationEpoch: configurationEpoch,
+      dependencies: dependencies,
+      lastAppliedClientResponseSequence: lastAppliedClientResponseSequence,
+      lastClientServerFetchDate: lastClientServerFetchDate
+    )
+  }
+
+  private func restoreAfterFailedReconfiguration(_ state: ReconfigurationRollbackState) {
+    configurationEpoch = state.configurationEpoch
+    lastAppliedClientResponseSequence = state.lastAppliedClientResponseSequence
+    lastClientServerFetchDate = state.lastClientServerFetchDate
+    performConfiguration(dependencies: state.dependencies)
+  }
+
   func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch?) -> Bool {
     guard let epoch else { return true }
     return configurationEpoch == epoch
@@ -543,9 +572,13 @@ extension Clerk {
   }
 
   func refreshClientAfterInvalidAuth() async {
+    let task = startRefreshClientAfterInvalidAuth()
+    await task.value
+  }
+
+  func startRefreshClientAfterInvalidAuth() -> Task<Void, Never> {
     if let invalidAuthRefreshTask {
-      await invalidAuthRefreshTask.value
-      return
+      return invalidAuthRefreshTask
     }
 
     let task = Task { [self] in
@@ -559,7 +592,7 @@ extension Clerk {
     }
 
     invalidAuthRefreshTask = task
-    await task.value
+    return task
   }
 
   func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil, serverDate: Date? = nil) {

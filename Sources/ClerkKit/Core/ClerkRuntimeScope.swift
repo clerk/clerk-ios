@@ -45,4 +45,10 @@ struct ClerkRuntimeScope {
     }
     return clerk
   }
+
+  @MainActor
+  func withCurrentClerk<T>(_ operation: @MainActor (Clerk) throws -> T) throws -> T {
+    let clerk = try requireCurrentClerk()
+    return try operation(clerk)
+  }
 }

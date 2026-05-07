@@ -21,25 +21,30 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    let clerk = try await runtimeScope.requireCurrentClerk()
     switch responseObject {
     case .signUp:
       if let signUp = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignUp>.self, from: data).response,
          signUp.status == .complete
       {
-        await clerk.auth.send(.signUpCompleted(signUp: signUp))
+        try await runtimeScope.withCurrentClerk {
+          $0.auth.send(.signUpCompleted(signUp: signUp))
+        }
       }
     case .signIn:
       if let signIn = try? JSONDecoder.clerkDecoder.decode(ClientResponse<SignIn>.self, from: data).response,
          signIn.status == .complete
       {
-        await clerk.auth.send(.signInCompleted(signIn: signIn))
+        try await runtimeScope.withCurrentClerk {
+          $0.auth.send(.signInCompleted(signIn: signIn))
+        }
       }
     case .session:
       if let session = try? JSONDecoder.clerkDecoder.decode(ClientResponse<Session>.self, from: data).response,
          session.status == .removed
       {
-        await clerk.auth.send(.signedOut(session: session))
+        try await runtimeScope.withCurrentClerk {
+          $0.auth.send(.signedOut(session: session))
+        }
       }
     case .other:
       return

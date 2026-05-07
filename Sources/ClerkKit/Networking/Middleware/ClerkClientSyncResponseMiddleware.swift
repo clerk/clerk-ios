@@ -17,13 +17,18 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    let responseSequence = request.clerkRequestSequence
+    let serverDate = response.serverDate
+
     if let client = Self.decodeClient(from: data) {
-      let clerk = try await runtimeScope.requireCurrentClerk()
-      await clerk.applyResponseClient(client, responseSequence: request.clerkRequestSequence, serverDate: response.serverDate)
+      try await runtimeScope.withCurrentClerk {
+        $0.applyResponseClient(client, responseSequence: responseSequence, serverDate: serverDate)
+      }
     } else if hasExplicitNullClientField(in: data) {
       ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
-      let clerk = try await runtimeScope.requireCurrentClerk()
-      await clerk.applyResponseClient(nil, responseSequence: request.clerkRequestSequence, serverDate: response.serverDate)
+      try await runtimeScope.withCurrentClerk {
+        $0.applyResponseClient(nil, responseSequence: responseSequence, serverDate: serverDate)
+      }
     }
   }
 

@@ -29,7 +29,9 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    let clerk = try await runtimeScope.requireCurrentClerk()
-    await clerk.refreshClientAfterInvalidAuth()
+    let refreshTask = try await runtimeScope.withCurrentClerk {
+      $0.startRefreshClientAfterInvalidAuth()
+    }
+    await refreshTask.value
   }
 }
