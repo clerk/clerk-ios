@@ -200,7 +200,7 @@ public final class Clerk {
       dependencies = try DependencyContainer(
         publishableKey: "",
         options: .init(),
-        runtimeScope: ClerkRuntimeScope(epoch: .initial)
+        runtimeScope: .init(epoch: .initial)
       )
     } catch {
       // This should never happen, but handle it just in case
@@ -208,7 +208,7 @@ public final class Clerk {
       if let fallbackDependencies = try? DependencyContainer(
         publishableKey: "",
         options: .init(),
-        runtimeScope: ClerkRuntimeScope(epoch: .initial)
+        runtimeScope: .init(epoch: .initial)
       ) {
         dependencies = fallbackDependencies
       } else {
@@ -363,7 +363,7 @@ extension Clerk {
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: ClerkRuntimeScope(epoch: nextEpoch)
+        runtimeScope: .init(epoch: nextEpoch)
       )
       let oldKeychain = existing.dependencies.keychain
       let newKeychain = newDependencies.keychain

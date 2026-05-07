@@ -37,7 +37,7 @@ struct ClerkRuntimeScope {
     clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }
   ) -> ClerkRuntimeScope {
     let clerk = clerkProvider()
-    return ClerkRuntimeScope(epoch: clerk.configurationEpoch, clerkProvider: clerkProvider)
+    return .init(epoch: clerk.configurationEpoch, clerkProvider: clerkProvider)
   }
 
   @MainActor
