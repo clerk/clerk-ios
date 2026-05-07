@@ -348,13 +348,10 @@ extension Clerk {
 
     if let existing = _shared {
       let nextEpoch = existing.nextConfigurationEpoch
-      let runtimeScope = ClerkRuntimeScope(epoch: nextEpoch) { [weak existing] in
-        existing ?? Clerk.shared
-      }
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: runtimeScope
+        runtimeScope: ClerkRuntimeScope(epoch: nextEpoch)
       )
       let oldKeychain = existing.dependencies.keychain
       let newKeychain = newDependencies.keychain
@@ -362,7 +359,7 @@ extension Clerk {
       try clearAllKeychainItemsStrictly(in: newKeychain)
 
       existing.advanceConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersForRuntimeReconfiguration()
+      await existing.cleanupManagersAndDrainCache()
 
       try clearAllKeychainItemsStrictly(in: oldKeychain)
 
@@ -523,10 +520,7 @@ extension Clerk {
   }
 
   var runtimeScope: ClerkRuntimeScope {
-    let epoch = configurationEpoch
-    return ClerkRuntimeScope(epoch: epoch) { [weak self] in
-      self ?? Clerk.shared
-    }
+    ClerkRuntimeScope(epoch: configurationEpoch)
   }
 
   var nextConfigurationEpoch: ClerkConfigurationEpoch {
@@ -670,15 +664,7 @@ extension Clerk {
     teardownNonCacheManagers()
   }
 
-  package func cleanupManagersAndDrainCache() async {
-    await cleanupManagersAndDrainCache(finishAuthEventStreams: true)
-  }
-
-  func cleanupManagersForRuntimeReconfiguration() async {
-    await cleanupManagersAndDrainCache(finishAuthEventStreams: false)
-  }
-
-  private func cleanupManagersAndDrainCache(finishAuthEventStreams: Bool) async {
+  private func cleanupManagersAndDrainCache() async {
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
@@ -690,7 +676,7 @@ extension Clerk {
     // from enqueuing new writes during the drain.
     await taskCoordinator?.cancelAllAndWait()
 
-    resetManagerStateForCleanup(finishAuthEventStreams: finishAuthEventStreams)
+    resetManagerStateForCleanup(finishAuthEventStreams: false)
     await cacheManager?.shutdownAndDrain()
     cacheManager = nil
     teardownNonCacheManagers()
