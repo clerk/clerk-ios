@@ -63,6 +63,7 @@ public struct OrganizationListView: View {
 
   @State private var accountList = OrganizationAccountListModel()
   @State private var internalPath = NavigationPath()
+  @State private var isSelectingAccount = false
 
   private var user: User? {
     clerk.user
@@ -74,14 +75,6 @@ public struct OrganizationListView: View {
 
   private var shouldShowPersonalAccount: Bool {
     user != nil && !hidePersonal && !forceOrganizationSelection
-  }
-
-  private var activeOrganization: Organization? {
-    clerk.organization
-  }
-
-  private var personalAccountIsSelected: Bool {
-    activeOrganization == nil
   }
 
   private var shouldStartCreateOrganizationFlow: Bool {
@@ -149,7 +142,7 @@ public struct OrganizationListView: View {
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-        guard accountList.isLoading, user != nil else { return }
+        guard !accountList.hasExistingResources, user != nil else { return }
         Task { await fetchOrganizationResources() }
       })
       .taskOnce {
@@ -214,144 +207,25 @@ public struct OrganizationListView: View {
               .padding(.horizontal, 16)
           }
 
-          organizationRows
+          OrganizationAccountListSections(
+            accountList: accountList,
+            mode: .accountSwitcher(showsPersonalAccount: shouldShowPersonalAccount),
+            onSelection: { selection in
+              switch selection {
+              case .personalAccount:
+                Task { await selectPersonalAccount() }
+              case .organization(let id):
+                Task { await selectOrganization(id: id) }
+              }
+            },
+            onCreateOrganization: navigateToCreateOrganization
+          )
+          .disabled(isSelectingAccount)
         }
         .padding(.top, 16)
       }
 
       SecuredByClerkFooter()
-    }
-  }
-
-  private var organizationRows: some View {
-    LazyVStack(spacing: 0) {
-      Divider()
-
-      if let user, shouldShowPersonalAccount {
-        AsyncButton {
-          guard !personalAccountIsSelected else { return }
-          await selectPersonalAccount()
-        } label: { _ in
-          OrganizationPersonalAccountRow(user: user) {
-            if personalAccountIsSelected {
-              OrganizationSelectedAccessory()
-            }
-          }
-        }
-        .buttonStyle(.plain)
-        Divider()
-      }
-
-      OrganizationPaginatedListSection(
-        items: accountList.membershipsPager.items,
-        hasNextPage: accountList.membershipsPager.hasNextPage,
-        onLoadMore: {
-          await accountList.loadMoreMemberships(user: user)
-        }
-      ) { membership in
-        let isSelected = membership.organization.id == activeOrganization?.id
-        AsyncButton {
-          guard !isSelected else { return }
-          await selectOrganization(id: membership.organization.id)
-        } label: { _ in
-          OrganizationRow(
-            name: membership.organization.name,
-            imageUrl: membership.organization.imageUrl,
-            subtitle: membership.roleName
-          ) {
-            if isSelected {
-              OrganizationSelectedAccessory()
-            }
-          }
-        }
-        .buttonStyle(.plain)
-      }
-
-      if !accountList.membershipsPager.hasNextPage {
-        OrganizationPaginatedListSection(
-          items: accountList.invitationsPager.items,
-          hasNextPage: accountList.invitationsPager.hasNextPage,
-          onLoadMore: {
-            await accountList.loadMoreInvitations(user: user)
-          }
-        ) { invitation in
-          Group {
-            if invitation.status == "accepted" {
-              AsyncButton {
-                await selectOrganization(id: invitation.publicOrganizationData.id)
-              } label: { _ in
-                OrganizationRow(
-                  name: invitation.publicOrganizationData.name,
-                  imageUrl: invitation.publicOrganizationData.imageUrl,
-                  subtitle: displayRoleName(for: invitation.role)
-                )
-              }
-              .buttonStyle(.plain)
-            } else {
-              OrganizationRow(
-                name: invitation.publicOrganizationData.name,
-                imageUrl: invitation.publicOrganizationData.imageUrl
-              ) {
-                AsyncButton {
-                  await acceptInvitation(invitation)
-                } label: { isRunning in
-                  PillButtonLabelView("Join", isLoading: isRunning)
-                }
-                .buttonStyle(.plain)
-              }
-            }
-          }
-        }
-      }
-
-      if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
-        OrganizationPaginatedListSection(
-          items: accountList.suggestionsPager.items,
-          hasNextPage: accountList.suggestionsPager.hasNextPage,
-          onLoadMore: {
-            await accountList.loadMoreSuggestions(user: user)
-          }
-        ) { suggestion in
-          Group {
-            if suggestion.status == "accepted" {
-              OrganizationRow(
-                name: suggestion.publicOrganizationData.name,
-                imageUrl: suggestion.publicOrganizationData.imageUrl,
-                subtitle: "Pending approval"
-              )
-            } else {
-              OrganizationRow(
-                name: suggestion.publicOrganizationData.name,
-                imageUrl: suggestion.publicOrganizationData.imageUrl
-              ) {
-                AsyncButton {
-                  await acceptSuggestion(suggestion)
-                } label: { isRunning in
-                  PillButtonLabelView("Request to join", isLoading: isRunning)
-                }
-                .buttonStyle(.plain)
-              }
-            }
-          }
-        }
-      }
-
-      if accountList.isLoadingMore {
-        SpinnerView()
-          .frame(width: 24, height: 24)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 16)
-      }
-
-      if !accountList.hasNextPage, user?.createOrganizationEnabled == true {
-        Button {
-          navigateToCreateOrganization()
-        } label: {
-          OrganizationCreateRow()
-        }
-        .buttonStyle(.plain)
-        Divider()
-      }
     }
   }
 
@@ -374,7 +248,10 @@ public struct OrganizationListView: View {
   }
 
   private func selectPersonalAccount() async {
-    guard let session = clerk.session else { return }
+    guard !isSelectingAccount, let session = clerk.session else { return }
+
+    isSelectingAccount = true
+    defer { isSelectingAccount = false }
 
     do {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: nil)
@@ -385,7 +262,10 @@ public struct OrganizationListView: View {
   }
 
   private func selectOrganization(id: String) async {
-    guard let session = clerk.session else { return }
+    guard !isSelectingAccount, let session = clerk.session else { return }
+
+    isSelectingAccount = true
+    defer { isSelectingAccount = false }
 
     do {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
@@ -393,14 +273,6 @@ public struct OrganizationListView: View {
     } catch {
       accountList.error = organizationError(from: error)
     }
-  }
-
-  private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
-    await accountList.acceptInvitation(invitation)
-  }
-
-  private func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
-    await accountList.acceptSuggestion(suggestion)
   }
 
   private func navigateToCreateOrganization() {
@@ -431,14 +303,6 @@ public struct OrganizationListView: View {
     } else {
       guard !internalPath.isEmpty else { return }
       internalPath.removeLast()
-    }
-  }
-
-  private func displayRoleName(for role: String) -> String {
-    switch role {
-    case "org:admin": String(localized: "Admin", bundle: .module)
-    case "org:member": String(localized: "Member", bundle: .module)
-    default: role.replacingOccurrences(of: "org:", with: "").capitalized
     }
   }
 

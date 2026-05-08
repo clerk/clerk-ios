@@ -88,6 +88,24 @@ final class OrganizationAccountListModelTests: XCTestCase {
   }
 
   @MainActor
+  func testLoadInitialClearsLoadingStateAfterFailure() async {
+    configureClerkForTesting()
+
+    let userService = MockUserService(
+      getOrganizationMemberships: { _, _ in
+        throw ClerkClientError(message: "Failed to load memberships")
+      }
+    )
+    setDependencies(userService: userService)
+
+    let model = OrganizationAccountListModel()
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+
+    XCTAssertFalse(model.isLoading)
+    XCTAssertNotNil(model.error)
+  }
+
+  @MainActor
   func testLoadMoreMembershipsUsesCurrentOffset() async throws {
     configureClerkForTesting()
 

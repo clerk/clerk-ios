@@ -35,9 +35,14 @@ final class OrganizationAccountListModel {
   }
 
   func loadInitial(user: User?, includeCreationDefaults: Bool) async {
-    guard let user else { return }
+    guard let user else {
+      isLoading = false
+      return
+    }
 
     isLoading = true
+    defer { isLoading = false }
+
     error = nil
 
     do {
@@ -54,7 +59,6 @@ final class OrganizationAccountListModel {
       invitationsPager.replace(with: invitationsResult)
       suggestionsPager.replace(with: suggestionsResult)
       creationDefaults = await fetchedDefaults
-      isLoading = false
     } catch {
       self.error = error
     }

@@ -15,6 +15,7 @@ struct SessionTaskChooseOrganizationView: View {
   @Environment(AuthNavigation.self) private var navigation
 
   @State private var accountList = OrganizationAccountListModel()
+  @State private var isSelectingOrganization = false
 
   private var user: User? {
     clerk.user
@@ -56,7 +57,7 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-      guard accountList.isLoading, user != nil else { return }
+      guard !accountList.hasExistingResources, user != nil else { return }
       Task { await fetchOrganizationResources() }
     })
     .taskOnce {
@@ -79,108 +80,22 @@ struct SessionTaskChooseOrganizationView: View {
         }
         .padding(.horizontal, 16)
 
-        LazyVStack(spacing: 0) {
-          Divider()
-
-          OrganizationPaginatedListSection(
-            items: accountList.membershipsPager.items,
-            hasNextPage: accountList.membershipsPager.hasNextPage,
-            onLoadMore: loadMoreMemberships
-          ) { membership in
-            AsyncButton {
-              await selectOrganization(id: membership.organization.id)
-            } label: { _ in
-              OrganizationRow(
-                name: membership.organization.name,
-                imageUrl: membership.organization.imageUrl,
-                subtitle: membership.roleName
-              )
+        OrganizationAccountListSections(
+          accountList: accountList,
+          mode: .requiredOrganization,
+          onSelection: { selection in
+            switch selection {
+            case .personalAccount:
+              break
+            case .organization(let id):
+              Task { await selectOrganization(id: id) }
             }
-            .buttonStyle(.plain)
+          },
+          onCreateOrganization: {
+            navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: accountList.creationDefaults))
           }
-
-          if !accountList.membershipsPager.hasNextPage {
-            OrganizationPaginatedListSection(
-              items: accountList.invitationsPager.items,
-              hasNextPage: accountList.invitationsPager.hasNextPage,
-              onLoadMore: loadMoreInvitations
-            ) { invitation in
-              Group {
-                if invitation.status == "accepted" {
-                  AsyncButton {
-                    await selectOrganization(id: invitation.publicOrganizationData.id)
-                  } label: { _ in
-                    OrganizationRow(
-                      name: invitation.publicOrganizationData.name,
-                      imageUrl: invitation.publicOrganizationData.imageUrl,
-                      subtitle: displayRoleName(for: invitation.role)
-                    )
-                  }
-                  .buttonStyle(.plain)
-                } else {
-                  OrganizationRow(
-                    name: invitation.publicOrganizationData.name,
-                    imageUrl: invitation.publicOrganizationData.imageUrl
-                  ) {
-                    AsyncButton {
-                      await acceptInvitation(invitation)
-                    } label: { isRunning in
-                      PillButtonLabelView("Join", isLoading: isRunning)
-                    }
-                    .buttonStyle(.plain)
-                  }
-                }
-              }
-            }
-          }
-
-          if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
-            OrganizationPaginatedListSection(
-              items: accountList.suggestionsPager.items,
-              hasNextPage: accountList.suggestionsPager.hasNextPage,
-              onLoadMore: loadMoreSuggestions
-            ) { suggestion in
-              Group {
-                if suggestion.status == "accepted" {
-                  OrganizationRow(
-                    name: suggestion.publicOrganizationData.name,
-                    imageUrl: suggestion.publicOrganizationData.imageUrl,
-                    subtitle: "Pending approval"
-                  )
-                } else {
-                  OrganizationRow(
-                    name: suggestion.publicOrganizationData.name,
-                    imageUrl: suggestion.publicOrganizationData.imageUrl
-                  ) {
-                    AsyncButton {
-                      await acceptSuggestion(suggestion)
-                    } label: { isRunning in
-                      PillButtonLabelView("Request to join", isLoading: isRunning)
-                    }
-                    .buttonStyle(.plain)
-                  }
-                }
-              }
-            }
-          }
-
-          if accountList.isLoadingMore {
-            SpinnerView()
-              .frame(width: 24, height: 24)
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 16)
-          }
-
-          if !accountList.hasNextPage, user?.createOrganizationEnabled == true {
-            Button {
-              navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: accountList.creationDefaults))
-            } label: {
-              OrganizationCreateRow()
-            }
-            .buttonStyle(.plain)
-            Divider()
-          }
-        }
+        )
+        .disabled(isSelectingOrganization)
 
         SecuredByClerkView()
           .padding(.horizontal, 16)
@@ -196,42 +111,17 @@ struct SessionTaskChooseOrganizationView: View {
     await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
   }
 
-  private func loadMoreMemberships() async {
-    await accountList.loadMoreMemberships(user: user)
-  }
-
-  private func loadMoreInvitations() async {
-    await accountList.loadMoreInvitations(user: user)
-  }
-
-  private func loadMoreSuggestions() async {
-    await accountList.loadMoreSuggestions(user: user)
-  }
-
   private func selectOrganization(id: String) async {
-    guard let session = clerk.session else { return }
+    guard !isSelectingOrganization, let session = clerk.session else { return }
+
+    isSelectingOrganization = true
+    defer { isSelectingOrganization = false }
 
     do {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
       navigation.handleSessionTaskCompletion(session: clerk.session)
     } catch {
       accountList.error = organizationError(from: error)
-    }
-  }
-
-  private func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
-    await accountList.acceptInvitation(invitation)
-  }
-
-  private func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
-    await accountList.acceptSuggestion(suggestion)
-  }
-
-  private func displayRoleName(for role: String) -> String {
-    switch role {
-    case "org:admin": String(localized: "Admin", bundle: .module)
-    case "org:member": String(localized: "Member", bundle: .module)
-    default: role.replacingOccurrences(of: "org:", with: "").capitalized
     }
   }
 
