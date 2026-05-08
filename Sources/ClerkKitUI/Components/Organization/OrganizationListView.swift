@@ -141,145 +141,151 @@ public struct OrganizationListView: View {
   }
 
   private var listContent: some View {
-    ScrollView {
-      VStack(spacing: 32) {
-        if let subtitle {
-          Text(subtitle, bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.mutedForeground)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 16)
+    VStack(spacing: 0) {
+      ScrollView {
+        VStack(spacing: 32) {
+          if let subtitle {
+            Text(subtitle, bundle: .module)
+              .font(theme.fonts.subheadline)
+              .foregroundStyle(theme.colors.mutedForeground)
+              .multilineTextAlignment(.center)
+              .fixedSize(horizontal: false, vertical: true)
+              .padding(.horizontal, 16)
+          }
+
+          organizationRows
         }
-
-        LazyVStack(spacing: 0) {
-          Divider()
-
-          if let user, shouldShowPersonalAccount {
-            AsyncButton {
-              guard !personalAccountIsSelected else { return }
-              await selectPersonalAccount()
-            } label: { _ in
-              OrganizationPersonalAccountRow(user: user) {
-                if personalAccountIsSelected {
-                  OrganizationSelectedAccessory()
-                }
-              }
-            }
-            .buttonStyle(.plain)
-            Divider()
-          }
-
-          OrganizationPaginatedListSection(
-            items: accountList.membershipsPager.items,
-            hasNextPage: accountList.membershipsPager.hasNextPage,
-            onLoadMore: loadMoreMemberships
-          ) { membership in
-            let isSelected = membership.organization.id == activeOrganization?.id
-            AsyncButton {
-              guard !isSelected else { return }
-              await selectOrganization(id: membership.organization.id)
-            } label: { _ in
-              OrganizationRow(
-                name: membership.organization.name,
-                imageUrl: membership.organization.imageUrl,
-                subtitle: membership.roleName
-              ) {
-                if isSelected {
-                  OrganizationSelectedAccessory()
-                }
-              }
-            }
-            .buttonStyle(.plain)
-          }
-
-          if !accountList.membershipsPager.hasNextPage {
-            OrganizationPaginatedListSection(
-              items: accountList.invitationsPager.items,
-              hasNextPage: accountList.invitationsPager.hasNextPage,
-              onLoadMore: loadMoreInvitations
-            ) { invitation in
-              Group {
-                if accountList.isInvitationAccepted(invitation) {
-                  AsyncButton {
-                    await selectOrganization(id: invitation.publicOrganizationData.id)
-                  } label: { _ in
-                    OrganizationRow(
-                      name: invitation.publicOrganizationData.name,
-                      imageUrl: invitation.publicOrganizationData.imageUrl,
-                      subtitle: displayRoleName(for: invitation.role)
-                    )
-                  }
-                  .buttonStyle(.plain)
-                } else {
-                  OrganizationRow(
-                    name: invitation.publicOrganizationData.name,
-                    imageUrl: invitation.publicOrganizationData.imageUrl
-                  ) {
-                    AsyncButton {
-                      await acceptInvitation(invitation)
-                    } label: { isRunning in
-                      PillButtonLabelView("Join", isLoading: isRunning)
-                    }
-                    .buttonStyle(.plain)
-                  }
-                }
-              }
-            }
-          }
-
-          if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
-            OrganizationPaginatedListSection(
-              items: accountList.suggestionsPager.items,
-              hasNextPage: accountList.suggestionsPager.hasNextPage,
-              onLoadMore: loadMoreSuggestions
-            ) { suggestion in
-              Group {
-                if suggestion.status == "accepted" {
-                  OrganizationRow(
-                    name: suggestion.publicOrganizationData.name,
-                    imageUrl: suggestion.publicOrganizationData.imageUrl,
-                    subtitle: "Pending approval"
-                  )
-                } else {
-                  OrganizationRow(
-                    name: suggestion.publicOrganizationData.name,
-                    imageUrl: suggestion.publicOrganizationData.imageUrl
-                  ) {
-                    AsyncButton {
-                      await acceptSuggestion(suggestion)
-                    } label: { isRunning in
-                      PillButtonLabelView("Request to join", isLoading: isRunning)
-                    }
-                    .buttonStyle(.plain)
-                  }
-                }
-              }
-            }
-          }
-
-          if accountList.isLoadingMore {
-            SpinnerView()
-              .frame(width: 24, height: 24)
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 16)
-          }
-
-          if !accountList.hasNextPage, user?.createOrganizationEnabled == true {
-            Button {
-              navigateToCreateOrganization()
-            } label: {
-              OrganizationCreateRow()
-            }
-            .buttonStyle(.plain)
-            Divider()
-          }
-        }
-
-        SecuredByClerkView()
-          .padding(.horizontal, 16)
+        .padding(.top, 16)
       }
-      .padding(.top, 16)
+      .scrollBounceBehavior(.basedOnSize)
+
+      SecuredByClerkFooter()
+    }
+  }
+
+  private var organizationRows: some View {
+    LazyVStack(spacing: 0) {
+      Divider()
+
+      if let user, shouldShowPersonalAccount {
+        AsyncButton {
+          guard !personalAccountIsSelected else { return }
+          await selectPersonalAccount()
+        } label: { _ in
+          OrganizationPersonalAccountRow(user: user) {
+            if personalAccountIsSelected {
+              OrganizationSelectedAccessory()
+            }
+          }
+        }
+        .buttonStyle(.plain)
+        Divider()
+      }
+
+      OrganizationPaginatedListSection(
+        items: accountList.membershipsPager.items,
+        hasNextPage: accountList.membershipsPager.hasNextPage,
+        onLoadMore: loadMoreMemberships
+      ) { membership in
+        let isSelected = membership.organization.id == activeOrganization?.id
+        AsyncButton {
+          guard !isSelected else { return }
+          await selectOrganization(id: membership.organization.id)
+        } label: { _ in
+          OrganizationRow(
+            name: membership.organization.name,
+            imageUrl: membership.organization.imageUrl,
+            subtitle: membership.roleName
+          ) {
+            if isSelected {
+              OrganizationSelectedAccessory()
+            }
+          }
+        }
+        .buttonStyle(.plain)
+      }
+
+      if !accountList.membershipsPager.hasNextPage {
+        OrganizationPaginatedListSection(
+          items: accountList.invitationsPager.items,
+          hasNextPage: accountList.invitationsPager.hasNextPage,
+          onLoadMore: loadMoreInvitations
+        ) { invitation in
+          Group {
+            if accountList.isInvitationAccepted(invitation) {
+              AsyncButton {
+                await selectOrganization(id: invitation.publicOrganizationData.id)
+              } label: { _ in
+                OrganizationRow(
+                  name: invitation.publicOrganizationData.name,
+                  imageUrl: invitation.publicOrganizationData.imageUrl,
+                  subtitle: displayRoleName(for: invitation.role)
+                )
+              }
+              .buttonStyle(.plain)
+            } else {
+              OrganizationRow(
+                name: invitation.publicOrganizationData.name,
+                imageUrl: invitation.publicOrganizationData.imageUrl
+              ) {
+                AsyncButton {
+                  await acceptInvitation(invitation)
+                } label: { isRunning in
+                  PillButtonLabelView("Join", isLoading: isRunning)
+                }
+                .buttonStyle(.plain)
+              }
+            }
+          }
+        }
+      }
+
+      if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
+        OrganizationPaginatedListSection(
+          items: accountList.suggestionsPager.items,
+          hasNextPage: accountList.suggestionsPager.hasNextPage,
+          onLoadMore: loadMoreSuggestions
+        ) { suggestion in
+          Group {
+            if suggestion.status == "accepted" {
+              OrganizationRow(
+                name: suggestion.publicOrganizationData.name,
+                imageUrl: suggestion.publicOrganizationData.imageUrl,
+                subtitle: "Pending approval"
+              )
+            } else {
+              OrganizationRow(
+                name: suggestion.publicOrganizationData.name,
+                imageUrl: suggestion.publicOrganizationData.imageUrl
+              ) {
+                AsyncButton {
+                  await acceptSuggestion(suggestion)
+                } label: { isRunning in
+                  PillButtonLabelView("Request to join", isLoading: isRunning)
+                }
+                .buttonStyle(.plain)
+              }
+            }
+          }
+        }
+      }
+
+      if accountList.isLoadingMore {
+        SpinnerView()
+          .frame(width: 24, height: 24)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 16)
+      }
+
+      if !accountList.hasNextPage, user?.createOrganizationEnabled == true {
+        Button {
+          navigateToCreateOrganization()
+        } label: {
+          OrganizationCreateRow()
+        }
+        .buttonStyle(.plain)
+        Divider()
+      }
     }
   }
 

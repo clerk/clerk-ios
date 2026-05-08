@@ -13,9 +13,10 @@ public struct OrganizationSwitcher: View {
   @Environment(\.clerkTheme) private var theme
 
   private let hidePersonal: Bool
+  private let displayMode: DisplayMode
 
   @State private var sheetNavigation = OrganizationSwitcherSheetNavigation()
-  @State private var summaryHeight: CGFloat = 220
+  @State private var overviewHeight: CGFloat = 220
 
   private var user: User? {
     clerk.user
@@ -41,10 +42,13 @@ public struct OrganizationSwitcher: View {
   ///
   /// - Parameters:
   ///   - hidePersonal: Whether the personal account option should be hidden.
+  ///   - displayMode: The visual presentation for the switcher trigger.
   public init(
-    hidePersonal: Bool = false
+    hidePersonal: Bool = false,
+    displayMode: DisplayMode = .normal
   ) {
     self.hidePersonal = hidePersonal
+    self.displayMode = displayMode
   }
 
   public var body: some View {
@@ -53,24 +57,25 @@ public struct OrganizationSwitcher: View {
         if activeOrganization == nil {
           sheetNavigation.presentedSheet = .accountList
         } else {
-          sheetNavigation.summaryIsPresented = true
+          sheetNavigation.overviewIsPresented = true
         }
       } label: {
         OrganizationSwitcherLabel(
           organization: activeOrganization,
-          user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil
+          user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil,
+          displayMode: displayMode
         )
       }
       .buttonStyle(.plain)
       .tint(theme.colors.primary)
-      .sheet(isPresented: $sheetNavigation.summaryIsPresented) {
+      .sheet(isPresented: $sheetNavigation.overviewIsPresented) {
         if let organization = activeOrganization {
-          OrganizationSwitcherSummaryView(
+          OrganizationSwitcherOverviewView(
             organization: organization,
             roleName: activeMembership?.roleName,
-            contentHeight: $summaryHeight
+            contentHeight: $overviewHeight
           )
-          .presentationDetents([.height(summaryHeight)])
+          .presentationDetents([.height(overviewHeight)])
           .environment(sheetNavigation)
         }
       }
@@ -91,6 +96,41 @@ public struct OrganizationSwitcher: View {
 }
 
 extension OrganizationSwitcher {
+  /// Controls whether the organization switcher trigger shows the full label or only the icon.
+  public struct DisplayMode: Sendable {
+    enum Kind {
+      case normal
+      case compact
+    }
+
+    private static let defaultSize: CGFloat = 36
+
+    let kind: Kind
+    let size: CGFloat
+
+    /// Shows icon, organization name, and disclosure chevron.
+    public static let normal = Self(kind: .normal, size: defaultSize)
+
+    /// Shows only the organization or account icon.
+    public static let compact = Self(kind: .compact, size: defaultSize)
+
+    /// Shows icon, organization name, and disclosure chevron.
+    ///
+    /// - Parameter size: The base visual size used to derive the trigger's icon,
+    ///   spacing, text, chevron, and minimum tap target.
+    public static func normal(size: CGFloat) -> Self {
+      Self(kind: .normal, size: size)
+    }
+
+    /// Shows only the organization or account icon.
+    ///
+    /// - Parameter size: The base visual size used to derive the trigger's icon
+    ///   and minimum tap target.
+    public static func compact(size: CGFloat) -> Self {
+      Self(kind: .compact, size: size)
+    }
+  }
+
   enum PresentedSheet: String, Identifiable {
     case accountList
     case profile

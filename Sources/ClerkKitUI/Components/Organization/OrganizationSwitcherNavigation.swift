@@ -9,7 +9,7 @@ import Observation
 @MainActor
 @Observable
 final class OrganizationSwitcherSheetNavigation {
-  var summaryIsPresented = false
+  var overviewIsPresented = false
   var presentedSheet: OrganizationSwitcher.PresentedSheet?
 }
 

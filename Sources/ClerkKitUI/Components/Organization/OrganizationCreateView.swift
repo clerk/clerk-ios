@@ -191,8 +191,10 @@ extension OrganizationCreateView {
       .buttonStyle(.primary())
       .disabled(trimmedOrganizationName.isEmpty || imageIsLoading)
 
-      Spacer().frame(height: 32)
-      SecuredByClerkView()
+      if !isUpdateMode {
+        Spacer().frame(height: 32)
+        SecuredByClerkView()
+      }
     }
   }
 }

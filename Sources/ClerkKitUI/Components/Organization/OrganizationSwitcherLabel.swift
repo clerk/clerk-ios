@@ -13,29 +13,56 @@ struct OrganizationSwitcherLabel: View {
 
   let organization: Organization?
   let user: User?
+  let displayMode: OrganizationSwitcher.DisplayMode
+  @ScaledMetric(wrappedValue: 1, relativeTo: .body) private var textScale: CGFloat
+
+  init(
+    organization: Organization?,
+    user: User?,
+    displayMode: OrganizationSwitcher.DisplayMode = .normal
+  ) {
+    self.organization = organization
+    self.user = user
+    self.displayMode = displayMode
+  }
 
   var body: some View {
-    HStack(spacing: 8) {
-      image
-
+    Label {
       Text(verbatim: title)
-        .font(theme.fonts.body)
-        .fontWeight(.semibold)
+        .font(.system(size: metrics.fontSize, weight: .bold))
         .foregroundStyle(theme.colors.foreground)
         .lineLimit(1)
-
-      Image(systemName: "chevron.down")
-        .font(.system(size: 10, weight: .semibold))
-        .foregroundStyle(theme.colors.mutedForeground)
+        .truncationMode(.tail)
+    } icon: {
+      image(size: metrics.avatarSize)
     }
+    .labelStyle(
+      OrganizationSwitcherTriggerLabelStyle(
+        displayMode: displayMode,
+        metrics: metrics,
+        chevronColor: theme.colors.mutedForeground
+      )
+    )
+    .frame(
+      minWidth: metrics.minimumTapTarget,
+      minHeight: metrics.minimumTapTarget,
+      alignment: .leading
+    )
     .contentShape(Rectangle())
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(verbatim: title))
   }
 
   @ViewBuilder
-  private var image: some View {
+  private func image(size: CGFloat) -> some View {
+    let cornerRadius = theme.design.borderRadius
+
     if let organization {
-      OrganizationAvatarView(name: organization.name, imageUrl: organization.imageUrl, size: 24)
+      OrganizationAvatarView(
+        name: organization.name,
+        imageUrl: organization.imageUrl,
+        size: size
+      )
     } else if let user {
       LazyImage(url: URL(string: user.imageUrl)) { state in
         if let image = state.image {
@@ -43,18 +70,32 @@ struct OrganizationSwitcherLabel: View {
             .resizable()
             .scaledToFill()
         } else {
-          Circle().fill(theme.colors.primary.gradient)
+          RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(theme.colors.primary.gradient)
         }
       }
-      .frame(width: 24, height: 24)
-      .clipShape(.circle)
+      .frame(width: size, height: size)
+      .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     } else {
       Image(systemName: "building.2")
-        .font(.system(size: 13, weight: .semibold))
+        .font(.system(size: size * 0.54, weight: .semibold))
         .foregroundStyle(theme.colors.primaryForeground)
-        .frame(width: 24, height: 24)
-        .background(theme.colors.primary.gradient, in: RoundedRectangle(cornerRadius: theme.design.borderRadius))
+        .frame(width: size, height: size)
+        .background(theme.colors.primary.gradient, in: RoundedRectangle(cornerRadius: cornerRadius))
     }
+  }
+
+  private var metrics: OrganizationSwitcherLabelMetrics {
+    let baseSize = max(1, displayMode.size)
+
+    return OrganizationSwitcherLabelMetrics(
+      avatarSize: baseSize,
+      spacing: baseSize / 3,
+      fontSize: baseSize * 0.78 * textScale,
+      chevronFrameSize: baseSize * 2 / 3,
+      chevronSize: baseSize / 3,
+      minimumTapTarget: max(44, baseSize)
+    )
   }
 
   private var title: String {
@@ -68,13 +109,105 @@ struct OrganizationSwitcherLabel: View {
   }
 }
 
-#Preview("Organization Switcher Label") {
+private struct OrganizationSwitcherTriggerLabelStyle: LabelStyle {
+  let displayMode: OrganizationSwitcher.DisplayMode
+  let metrics: OrganizationSwitcherLabelMetrics
+  let chevronColor: Color
+
+  func makeBody(configuration: Configuration) -> some View {
+    switch displayMode.kind {
+    case .normal:
+      HStack(spacing: metrics.spacing) {
+        configuration.icon
+
+        configuration.title
+          .frame(minWidth: 0, alignment: .leading)
+
+        chevron
+      }
+      .frame(minHeight: metrics.minimumTapTarget, alignment: .leading)
+    case .compact:
+      configuration.icon
+        .frame(
+          width: metrics.minimumTapTarget,
+          height: metrics.minimumTapTarget,
+          alignment: .leading
+        )
+    }
+  }
+
+  private var chevron: some View {
+    Image(systemName: "chevron.down")
+      .font(.system(size: metrics.chevronSize, weight: .semibold))
+      .foregroundStyle(chevronColor)
+      .frame(width: metrics.chevronFrameSize, height: metrics.chevronFrameSize)
+  }
+}
+
+private struct OrganizationSwitcherLabelMetrics {
+  let avatarSize: CGFloat
+  let spacing: CGFloat
+  let fontSize: CGFloat
+  let chevronFrameSize: CGFloat
+  let chevronSize: CGFloat
+  let minimumTapTarget: CGFloat
+}
+
+#Preview("Organization Switcher Label Sizes") {
   VStack(alignment: .leading, spacing: 16) {
     OrganizationSwitcherLabel(organization: .mock, user: nil)
+    OrganizationSwitcherLabel(organization: .mock, user: nil, displayMode: .normal(size: 36))
+    OrganizationSwitcherLabel(organization: .mock, user: nil, displayMode: .compact)
+    OrganizationSwitcherLabel(organization: .mock, user: nil, displayMode: .compact(size: 36))
+    OrganizationSwitcherLabel(organization: .mock, user: nil, displayMode: .normal(size: 48))
+  }
+  .padding()
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Organization Switcher Label Widths") {
+  let organization = {
+    var organization = Organization.mock
+    organization.name = "Acme International Product Research and Operations"
+    return organization
+  }()
+
+  VStack(alignment: .leading, spacing: 16) {
+    OrganizationSwitcherLabel(organization: organization, user: nil)
+      .frame(maxWidth: 320, alignment: .leading)
+    OrganizationSwitcherLabel(organization: organization, user: nil)
+      .frame(maxWidth: 220, alignment: .leading)
+    OrganizationSwitcherLabel(organization: organization, user: nil, displayMode: .normal(size: 28))
+      .frame(maxWidth: 180, alignment: .leading)
+    OrganizationSwitcherLabel(organization: organization, user: nil, displayMode: .compact)
+  }
+  .padding()
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Organization Switcher Label States") {
+  let missingImageOrganization = {
+    var organization = Organization.mock
+    organization.imageUrl = ""
+    return organization
+  }()
+
+  VStack(alignment: .leading, spacing: 16) {
+    OrganizationSwitcherLabel(organization: missingImageOrganization, user: nil)
     OrganizationSwitcherLabel(organization: nil, user: .mock)
     OrganizationSwitcherLabel(organization: nil, user: nil)
   }
   .padding()
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Organization Switcher Label Accessibility Size") {
+  VStack(alignment: .leading, spacing: 16) {
+    OrganizationSwitcherLabel(organization: .mock, user: nil)
+    OrganizationSwitcherLabel(organization: .mock, user: nil, displayMode: .compact)
+  }
+  .padding()
+  .environment(\.dynamicTypeSize, .accessibility3)
   .environment(\.clerkTheme, .clerk)
 }
 

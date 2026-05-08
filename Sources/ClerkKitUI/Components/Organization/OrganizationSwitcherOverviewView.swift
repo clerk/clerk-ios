@@ -1,5 +1,5 @@
 //
-//  OrganizationSwitcherSummaryView.swift
+//  OrganizationSwitcherOverviewView.swift
 //
 
 #if os(iOS)
@@ -7,7 +7,7 @@
 import ClerkKit
 import SwiftUI
 
-struct OrganizationSwitcherSummaryView: View {
+struct OrganizationSwitcherOverviewView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @Environment(OrganizationSwitcherSheetNavigation.self) private var navigation
@@ -24,7 +24,7 @@ struct OrganizationSwitcherSummaryView: View {
           Divider()
 
           Button {
-            navigation.summaryIsPresented = false
+            navigation.overviewIsPresented = false
             navigation.presentedSheet = .profile
           } label: {
             UserProfileRowView(icon: "icon-cog", text: "Manage")
@@ -33,7 +33,7 @@ struct OrganizationSwitcherSummaryView: View {
           Divider()
 
           Button {
-            navigation.summaryIsPresented = false
+            navigation.overviewIsPresented = false
             navigation.presentedSheet = .accountList
           } label: {
             UserProfileRowView(icon: "icon-switch", text: "Switch account")
@@ -49,11 +49,15 @@ struct OrganizationSwitcherSummaryView: View {
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button {
               dismiss()
+            } label: {
+              Text("Done", bundle: .module)
+                .font(theme.fonts.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.primary)
             }
-            .foregroundStyle(theme.colors.primary)
           }
 
           ToolbarItem(placement: .principal) {
@@ -78,7 +82,7 @@ struct OrganizationSwitcherSummaryView: View {
 
   private var organizationRow: some View {
     HStack(spacing: 16) {
-      OrganizationAvatarView(name: organization.name, imageUrl: organization.imageUrl, size: 48)
+      OrganizationAvatarView(name: organization.name, imageUrl: organization.imageUrl)
 
       VStack(alignment: .leading, spacing: 4) {
         Text(verbatim: organization.name)
@@ -104,8 +108,8 @@ struct OrganizationSwitcherSummaryView: View {
   }
 }
 
-#Preview("Organization Summary") {
-  OrganizationSwitcherSummaryView(
+#Preview("Organization Overview") {
+  OrganizationSwitcherOverviewView(
     organization: .mock,
     roleName: "Admin",
     contentHeight: .constant(220)
