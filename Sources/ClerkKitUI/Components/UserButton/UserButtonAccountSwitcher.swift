@@ -33,7 +33,7 @@ struct UserButtonAccountSwitcher: View {
 
   func setActiveSession(_ session: Session) async {
     do {
-      try await clerk.auth.setActive(sessionId: session.id)
+      try await clerk.auth.setActive(sessionId: session.id, organizationId: session.lastActiveOrganizationId)
       dismiss()
     } catch {
       self.error = error

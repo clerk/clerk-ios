@@ -67,6 +67,8 @@ final class SessionService: SessionServiceProtocol {
     if organizationId == nil,
        Clerk.shared.environment?.organizationSettings.forceOrganizationSelection == true
     {
+      // Matches Clerk.js behavior: selecting the personal account is ignored when
+      // force organization selection is enabled.
       return
     }
 
