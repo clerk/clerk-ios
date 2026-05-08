@@ -139,7 +139,6 @@ struct UserButtonAccountSwitcher: View {
             }
           )
         }
-        .scrollBounceBehavior(.basedOnSize)
       }
       .animation(.default, value: sessions)
       .clerkErrorPresenting($error)

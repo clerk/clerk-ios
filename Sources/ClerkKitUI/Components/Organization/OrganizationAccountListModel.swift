@@ -18,8 +18,6 @@ final class OrganizationAccountListModel {
   var isLoading = true
   var error: Error?
 
-  private var acceptedInvitationOrgIds: Set<String> = []
-
   var hasExistingResources: Bool {
     !membershipsPager.items.isEmpty || !invitationsPager.items.isEmpty || !suggestionsPager.items.isEmpty
   }
@@ -106,9 +104,8 @@ final class OrganizationAccountListModel {
 
   func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
     do {
-      try await invitation.accept()
-      let wasInserted = acceptedInvitationOrgIds.insert(invitation.publicOrganizationData.id).inserted
-      guard wasInserted else { return }
+      let accepted = try await invitation.accept()
+      invitationsPager.replace(accepted)
       invitationsPager.removeOneFromPagination()
     } catch {
       self.error = error
@@ -122,10 +119,6 @@ final class OrganizationAccountListModel {
     } catch {
       self.error = error
     }
-  }
-
-  func isInvitationAccepted(_ invitation: UserOrganizationInvitation) -> Bool {
-    acceptedInvitationOrgIds.contains(invitation.publicOrganizationData.id)
   }
 
   private func fetchCreationDefaults(user: User, isEnabled: Bool) async -> OrganizationCreationDefaults? {

@@ -181,11 +181,9 @@ final class OrganizationAccountListModelTests: XCTestCase {
     await model.acceptInvitation(pendingInvitation)
 
     XCTAssertEqual(capturedInvitationId.value, "inv_1")
-    XCTAssertTrue(model.isInvitationAccepted(pendingInvitation))
+    XCTAssertEqual(model.invitationsPager.items.first?.status, "accepted")
     XCTAssertEqual(model.invitationsPager.offset, 0)
     XCTAssertEqual(model.invitationsPager.totalCount, 0)
-
-    XCTAssertTrue(model.isInvitationAccepted(pendingInvitation))
   }
 
   @MainActor

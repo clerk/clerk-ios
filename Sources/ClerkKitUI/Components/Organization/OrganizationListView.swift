@@ -15,13 +15,13 @@ public struct OrganizationListView: View {
 
   private let hidePersonal: Bool
   private let isDismissable: Bool
+  private let skipInvitationScreen: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
 
   @State private var accountList = OrganizationAccountListModel()
   @State private var internalPath = NavigationPath()
-  @State private var didNavigateToCreateOrganization = false
 
   private var user: User? {
     clerk.user
@@ -43,21 +43,31 @@ public struct OrganizationListView: View {
     activeOrganization == nil
   }
 
+  private var shouldStartCreateOrganizationFlow: Bool {
+    !accountList.isLoading
+      && !accountList.hasExistingResources
+      && !shouldShowPersonalAccount
+      && user?.createOrganizationEnabled == true
+  }
+
   /// Creates a new organization list view.
   ///
   /// - Parameters:
   ///   - hidePersonal: Whether the personal account row should be hidden.
   ///   - isDismissable: Whether the view can dismiss itself after account selection and show a dismiss button.
   ///   - navigationPath: An optional parent navigation path for embedded usage.
+  ///   - skipInvitationScreen: Whether creating an organization should skip the post-create invite step.
   public init(
     hidePersonal: Bool = false,
     isDismissable: Bool = true,
-    navigationPath: Binding<NavigationPath>? = nil
+    navigationPath: Binding<NavigationPath>? = nil,
+    skipInvitationScreen: Bool = false
   ) {
     self.init(
       hidePersonal: hidePersonal,
       isDismissable: isDismissable,
       navigationPath: navigationPath,
+      skipInvitationScreen: skipInvitationScreen,
       title: "Choose an account",
       subtitle: "Select the account with which you wish to continue."
     )
@@ -67,11 +77,13 @@ public struct OrganizationListView: View {
     hidePersonal: Bool = false,
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
+    skipInvitationScreen: Bool = false,
     title: LocalizedStringKey,
     subtitle: LocalizedStringKey?
   ) {
     self.hidePersonal = hidePersonal
     self.isDismissable = isDismissable
+    self.skipInvitationScreen = skipInvitationScreen
     self.navigationPath = navigationPath
     self.title = title
     self.subtitle = subtitle
@@ -109,6 +121,8 @@ public struct OrganizationListView: View {
         SpinnerView()
           .frame(width: 32, height: 32)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else if shouldStartCreateOrganizationFlow {
+        createOrganizationContent
       } else {
         listContent
       }
@@ -123,7 +137,7 @@ public struct OrganizationListView: View {
       }
     }
     .toolbar {
-      if isDismissable {
+      if isDismissable, !shouldStartCreateOrganizationFlow {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
             dismiss()
@@ -132,10 +146,12 @@ public struct OrganizationListView: View {
         }
       }
 
-      ToolbarItem(placement: .principal) {
-        Text(title, bundle: .module)
-          .font(theme.fonts.headline)
-          .foregroundStyle(theme.colors.foreground)
+      if !shouldStartCreateOrganizationFlow {
+        ToolbarItem(placement: .principal) {
+          Text(title, bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
       }
     }
   }
@@ -157,7 +173,6 @@ public struct OrganizationListView: View {
         }
         .padding(.top, 16)
       }
-      .scrollBounceBehavior(.basedOnSize)
 
       SecuredByClerkFooter()
     }
@@ -185,7 +200,9 @@ public struct OrganizationListView: View {
       OrganizationPaginatedListSection(
         items: accountList.membershipsPager.items,
         hasNextPage: accountList.membershipsPager.hasNextPage,
-        onLoadMore: loadMoreMemberships
+        onLoadMore: {
+          await accountList.loadMoreMemberships(user: user)
+        }
       ) { membership in
         let isSelected = membership.organization.id == activeOrganization?.id
         AsyncButton {
@@ -209,10 +226,12 @@ public struct OrganizationListView: View {
         OrganizationPaginatedListSection(
           items: accountList.invitationsPager.items,
           hasNextPage: accountList.invitationsPager.hasNextPage,
-          onLoadMore: loadMoreInvitations
+          onLoadMore: {
+            await accountList.loadMoreInvitations(user: user)
+          }
         ) { invitation in
           Group {
-            if accountList.isInvitationAccepted(invitation) {
+            if invitation.status == "accepted" {
               AsyncButton {
                 await selectOrganization(id: invitation.publicOrganizationData.id)
               } label: { _ in
@@ -244,7 +263,9 @@ public struct OrganizationListView: View {
         OrganizationPaginatedListSection(
           items: accountList.suggestionsPager.items,
           hasNextPage: accountList.suggestionsPager.hasNextPage,
-          onLoadMore: loadMoreSuggestions
+          onLoadMore: {
+            await accountList.loadMoreSuggestions(user: user)
+          }
         ) { suggestion in
           Group {
             if suggestion.status == "accepted" {
@@ -290,8 +311,11 @@ public struct OrganizationListView: View {
   }
 
   private var createOrganizationContent: some View {
-    OrganizationCreateView(creationDefaults: accountList.creationDefaults) {
-      dismissIfNeeded()
+    OrganizationCreateFlowView(
+      creationDefaults: accountList.creationDefaults,
+      skipInvitationScreen: skipInvitationScreen
+    ) {
+      completeCreateOrganizationFlow()
     }
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
@@ -302,19 +326,6 @@ public struct OrganizationListView: View {
   private func fetchOrganizationResources() async {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
     await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
-    navigateToCreateOrganizationIfNeeded()
-  }
-
-  private func loadMoreMemberships() async {
-    await accountList.loadMoreMemberships(user: user)
-  }
-
-  private func loadMoreInvitations() async {
-    await accountList.loadMoreInvitations(user: user)
-  }
-
-  private func loadMoreSuggestions() async {
-    await accountList.loadMoreSuggestions(user: user)
   }
 
   private func selectPersonalAccount() async {
@@ -355,17 +366,27 @@ public struct OrganizationListView: View {
     }
   }
 
-  private func navigateToCreateOrganizationIfNeeded() {
-    guard !didNavigateToCreateOrganization else { return }
-    guard !accountList.isLoading, !accountList.hasExistingResources else { return }
-    guard !shouldShowPersonalAccount, user?.createOrganizationEnabled == true else { return }
-    didNavigateToCreateOrganization = true
-    navigateToCreateOrganization()
-  }
-
   private func dismissIfNeeded() {
     guard isDismissable else { return }
     dismiss()
+  }
+
+  private func completeCreateOrganizationFlow() {
+    if isDismissable || shouldStartCreateOrganizationFlow {
+      dismiss()
+    } else {
+      popCreateOrganizationFlow()
+    }
+  }
+
+  private func popCreateOrganizationFlow() {
+    if let navigationPath {
+      guard !navigationPath.wrappedValue.isEmpty else { return }
+      navigationPath.wrappedValue.removeLast()
+    } else {
+      guard !internalPath.isEmpty else { return }
+      internalPath.removeLast()
+    }
   }
 
   private func displayRoleName(for role: String) -> String {

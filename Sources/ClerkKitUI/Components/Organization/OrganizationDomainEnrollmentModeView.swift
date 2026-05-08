@@ -51,14 +51,8 @@ struct OrganizationDomainEnrollmentModeView: View {
             ForEach(enrollmentModeOptions) { option in
               OrganizationDomainEnrollmentModeRow(
                 option: option,
-                isSelected: selectedMode == option.mode
-              ) {
-                selectedMode = option.mode
-                if selectedMode != .manualInvitation {
-                  deletePending = false
-                }
-                error = nil
-              }
+                selectedMode: $selectedMode
+              )
             }
           }
 
@@ -114,6 +108,16 @@ struct OrganizationDomainEnrollmentModeView: View {
         }
       }
     }
+    .onChange(of: selectedMode) { _, selectedMode in
+      if selectedMode != .manualInvitation {
+        deletePending = false
+      }
+
+      error = nil
+    }
+    .onChange(of: deletePending) { _, _ in
+      error = nil
+    }
   }
 }
 
@@ -123,12 +127,15 @@ private struct OrganizationDomainEnrollmentModeRow: View {
   @Environment(\.clerkTheme) private var theme
 
   let option: OrganizationDomainEnrollmentModeOption
-  let isSelected: Bool
-  let onSelect: () -> Void
+  @Binding var selectedMode: OrganizationDomain.EnrollmentMode
+
+  private var isSelected: Bool {
+    selectedMode == option.mode
+  }
 
   var body: some View {
     Button {
-      onSelect()
+      selectedMode = option.mode
     } label: {
       HStack(alignment: .top, spacing: 8) {
         Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
@@ -177,7 +184,7 @@ extension OrganizationDomainEnrollmentModeView {
     do {
       let updatedDomain = try await domain.updateEnrollmentMode(
         selectedMode,
-        deletePending: showsDeletePendingToggle ? deletePending : nil
+        deletePending: deletePending
       )
       domain = updatedDomain
       onDomainChanged()

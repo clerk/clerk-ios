@@ -1,5 +1,5 @@
 //
-//  OrganizationCreateView.swift
+//  OrganizationProfileFormView.swift
 //
 
 #if os(iOS)
@@ -9,13 +9,14 @@ import NukeUI
 import PhotosUI
 import SwiftUI
 
-struct OrganizationCreateView: View {
+struct OrganizationProfileFormView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
 
-  private let mode: OrganizationCreateViewMode
+  private let mode: OrganizationProfileFormMode
   private let creationDefaults: OrganizationCreationDefaults?
-  private let onComplete: () -> Void
+  private let onComplete: ((Organization) -> Void)?
 
   @State private var organization: Organization? = nil
   @State private var organizationName: String
@@ -80,7 +81,7 @@ struct OrganizationCreateView: View {
 
   init(
     creationDefaults: OrganizationCreationDefaults?,
-    onComplete: @escaping () -> Void
+    onComplete: ((Organization) -> Void)? = nil
   ) {
     mode = .create
     self.creationDefaults = creationDefaults
@@ -91,7 +92,7 @@ struct OrganizationCreateView: View {
 
   init(
     organization: Organization,
-    onComplete: @escaping () -> Void = {}
+    onComplete: ((Organization) -> Void)? = nil
   ) {
     mode = .update
     creationDefaults = nil
@@ -151,7 +152,7 @@ struct OrganizationCreateView: View {
 
 // MARK: - Form Content
 
-extension OrganizationCreateView {
+extension OrganizationProfileFormView {
   private var formContent: some View {
     Group {
       logoSection
@@ -201,7 +202,7 @@ extension OrganizationCreateView {
 
 // MARK: - Logo Section
 
-extension OrganizationCreateView {
+extension OrganizationProfileFormView {
   private var logoSection: some View {
     Group {
       if showsLogoMenu {
@@ -313,7 +314,7 @@ extension OrganizationCreateView {
 
 // MARK: - Actions
 
-extension OrganizationCreateView {
+extension OrganizationProfileFormView {
   private func submit() async {
     await imageLoadTask?.value
     guard error == nil else { return }
@@ -331,9 +332,11 @@ extension OrganizationCreateView {
     do {
       switch mode {
       case .create:
-        try await createOrganization(name: name, slug: slugEnabled ? trimmedSlug : nil)
+        let organization = try await createOrganization(name: name, slug: slugEnabled ? trimmedSlug : nil)
+        complete(with: organization)
       case .update:
-        try await updateOrganization(name: name, slug: slugEnabled ? trimmedSlug : nil)
+        let organization = try await updateOrganization(name: name, slug: slugEnabled ? trimmedSlug : nil)
+        complete(with: organization)
       }
     } catch {
       self.error = error
@@ -344,7 +347,7 @@ extension OrganizationCreateView {
   private func createOrganization(
     name: String,
     slug: String?
-  ) async throws {
+  ) async throws -> Organization {
     var organization = try await clerk.organizations.create(name: name, slug: slug)
 
     if let logoData = await organizationLogoDataForUpload() {
@@ -358,20 +361,31 @@ extension OrganizationCreateView {
     if let session = clerk.session {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: organization.id)
     }
-    onComplete()
+
+    return organization
   }
 
   private func updateOrganization(
     name: String,
     slug: String?
-  ) async throws {
-    guard var organization else { return }
+  ) async throws -> Organization {
+    guard var organization else {
+      throw ClerkClientError(message: "Unable to update organization without an active organization.")
+    }
 
     let updatedOrganization = try await organization.update(name: name, slug: slug)
     organization = clerk.organization ?? updatedOrganization
     self.organization = organization
 
-    onComplete()
+    return organization
+  }
+
+  private func complete(with organization: Organization) {
+    if let onComplete {
+      onComplete(organization)
+    } else {
+      dismiss()
+    }
   }
 
   private func loadSelectedImage(_ item: PhotosPickerItem) {
@@ -445,7 +459,7 @@ extension OrganizationCreateView {
 
 // MARK: - Helpers
 
-extension OrganizationCreateView {
+extension OrganizationProfileFormView {
   private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
     switch advisory.code {
     case "organization_already_exists":
@@ -510,21 +524,21 @@ extension OrganizationCreateView {
   }
 }
 
-private enum OrganizationCreateViewMode {
+private enum OrganizationProfileFormMode {
   case create
   case update
 }
 
-#Preview("Create Organization") {
+#Preview("Create Organization Form") {
   NavigationStack {
-    OrganizationCreateView(creationDefaults: nil) {}
+    OrganizationProfileFormView(creationDefaults: nil)
       .clerkPreview()
   }
 }
 
-#Preview("Update Organization") {
+#Preview("Update Organization Form") {
   NavigationStack {
-    OrganizationCreateView(organization: .mock)
+    OrganizationProfileFormView(organization: .mock)
       .environment(Clerk.preview { preview in
         var user = User.mock
         user.organizationMemberships = [.mockWithUserData]

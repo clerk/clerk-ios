@@ -19,11 +19,9 @@ struct OrganizationProfileUpdateProfileView: View {
 
   var body: some View {
     NavigationStack {
-      OrganizationCreateView(
+      OrganizationProfileFormView(
         organization: organization
-      ) {
-        dismiss()
-      }
+      )
       .navigationBarTitleDisplayMode(.inline)
       .preGlassSolidNavBar()
       .toolbar {

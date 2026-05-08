@@ -14,6 +14,7 @@ public struct OrganizationSwitcher: View {
 
   private let hidePersonal: Bool
   private let displayMode: DisplayMode
+  private let skipInvitationScreen: Bool
 
   @State private var sheetNavigation = OrganizationSwitcherSheetNavigation()
   @State private var overviewHeight: CGFloat = 220
@@ -43,12 +44,15 @@ public struct OrganizationSwitcher: View {
   /// - Parameters:
   ///   - hidePersonal: Whether the personal account option should be hidden.
   ///   - displayMode: The visual presentation for the switcher trigger.
+  ///   - skipInvitationScreen: Whether creating an organization should skip the post-create invite step.
   public init(
     hidePersonal: Bool = false,
-    displayMode: DisplayMode = .normal
+    displayMode: DisplayMode = .normal,
+    skipInvitationScreen: Bool = false
   ) {
     self.hidePersonal = hidePersonal
     self.displayMode = displayMode
+    self.skipInvitationScreen = skipInvitationScreen
   }
 
   public var body: some View {
@@ -84,6 +88,7 @@ public struct OrganizationSwitcher: View {
         case .accountList:
           OrganizationListView(
             hidePersonal: hidePersonal,
+            skipInvitationScreen: skipInvitationScreen,
             title: "Switch account",
             subtitle: nil
           )

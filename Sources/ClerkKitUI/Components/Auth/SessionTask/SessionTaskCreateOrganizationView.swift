@@ -15,7 +15,7 @@ struct SessionTaskCreateOrganizationView: View {
   var showBackButton = false
 
   var body: some View {
-    OrganizationCreateView(creationDefaults: creationDefaults) {
+    OrganizationCreateFlowView(creationDefaults: creationDefaults, skipInvitationScreen: true) {
       navigation.handleSessionTaskCompletion(session: clerk.session)
     }
     .navigationBarBackButtonHidden(!showBackButton)

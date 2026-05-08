@@ -106,7 +106,7 @@ struct SessionTaskChooseOrganizationView: View {
               onLoadMore: loadMoreInvitations
             ) { invitation in
               Group {
-                if accountList.isInvitationAccepted(invitation) {
+                if invitation.status == "accepted" {
                   AsyncButton {
                     await selectOrganization(id: invitation.publicOrganizationData.id)
                   } label: { _ in
