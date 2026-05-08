@@ -534,8 +534,12 @@ extension Clerk {
 
   @MainActor
   static func requireStableRuntime() throws -> ClerkRuntimeScope {
-    guard !isRuntimeReconfigurationInProgress, let shared = _shared else {
+    guard !isRuntimeReconfigurationInProgress else {
       throw CancellationError()
+    }
+
+    guard let shared = _shared else {
+      throw ClerkClientError(message: "Clerk must be configured before getting a session token.")
     }
 
     return shared.runtimeScope

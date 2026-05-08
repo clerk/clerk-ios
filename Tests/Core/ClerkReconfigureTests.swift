@@ -278,6 +278,21 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func tokenReadBeforeConfigureThrowsConfigurationError() async throws {
+    Clerk.resetSharedInstanceForTesting()
+    defer { configureClerkForTesting() }
+
+    do {
+      _ = try await Session.mock.getToken()
+      Issue.record("Expected token reads before configuration to throw")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Clerk must be configured before getting a session token.")
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
+  }
+
+  @Test
   func reconfigureBeforeConfigureInstallsSharedInstance() async throws {
     Clerk.resetSharedInstanceForTesting()
 
