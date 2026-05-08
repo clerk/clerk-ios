@@ -7,7 +7,49 @@
 import ClerkKit
 import SwiftUI
 
-/// A prebuilt organization profile root view.
+/// A prebuilt organization profile view for the active organization.
+///
+/// ``OrganizationProfileView`` provides a native interface for viewing and managing
+/// the currently active organization. It includes permission-gated organization profile
+/// editing, members, invitations, membership requests, verified domains, leave organization,
+/// and delete organization flows.
+///
+/// The view renders content only when a session has an active organization. Rows and actions
+/// are shown according to the current user's organization membership permissions and the
+/// current environment settings.
+///
+/// ## Usage
+///
+/// As a dismissable sheet:
+///
+/// ```swift
+/// struct OrganizationSettingsButton: View {
+///   @State private var profileIsPresented = false
+///
+///   var body: some View {
+///     Button("Organization settings") {
+///       profileIsPresented = true
+///     }
+///     .sheet(isPresented: $profileIsPresented) {
+///       OrganizationProfileView()
+///     }
+///   }
+/// }
+/// ```
+///
+/// Embedded in a parent `NavigationStack`:
+///
+/// ```swift
+/// struct OrganizationSettingsView: View {
+///   @State private var path = NavigationPath()
+///
+///   var body: some View {
+///     NavigationStack(path: $path) {
+///       OrganizationProfileView(isDismissable: false, navigationPath: $path)
+///     }
+///   }
+/// }
+/// ```
 public struct OrganizationProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -80,8 +122,11 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   /// Creates a new organization profile view.
   ///
   /// - Parameters:
-  ///   - isDismissable: Whether the view can be dismissed by the user.
-  ///   - navigationPath: An optional parent navigation path for embedded usage.
+  ///   - isDismissable: Whether the view can be dismissed by the user. When `true`,
+  ///     a dismiss button appears in the navigation bar. When `false`, no dismiss
+  ///     button is shown.
+  ///   - navigationPath: An optional parent navigation path for embedded usage. Pass
+  ///     a parent path when the view is hosted inside your own `NavigationStack`.
   public init(
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil

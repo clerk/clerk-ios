@@ -8,6 +8,47 @@ import ClerkKit
 import SwiftUI
 
 /// A prebuilt view for choosing a personal account or organization.
+///
+/// `OrganizationListView` displays the signed-in user's personal account, organization
+/// memberships, pending organization invitations, suggested organizations, and a create
+/// organization entry when organization creation is available.
+///
+/// Selecting a personal account clears the active organization. Selecting an organization
+/// makes that organization active. Personal account selection is hidden automatically when
+/// organization selection is required by the environment.
+///
+/// ## Usage
+///
+/// As a dismissable sheet:
+///
+/// ```swift
+/// struct AccountPickerButton: View {
+///   @State private var accountPickerIsPresented = false
+///
+///   var body: some View {
+///     Button("Switch account") {
+///       accountPickerIsPresented = true
+///     }
+///     .sheet(isPresented: $accountPickerIsPresented) {
+///       OrganizationListView()
+///     }
+///   }
+/// }
+/// ```
+///
+/// Embedded in a parent `NavigationStack`:
+///
+/// ```swift
+/// struct AccountPickerView: View {
+///   @State private var path = NavigationPath()
+///
+///   var body: some View {
+///     NavigationStack(path: $path) {
+///       OrganizationListView(isDismissable: false, navigationPath: $path)
+///     }
+///   }
+/// }
+/// ```
 public struct OrganizationListView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -53,10 +94,14 @@ public struct OrganizationListView: View {
   /// Creates a new organization list view.
   ///
   /// - Parameters:
-  ///   - hidePersonal: Whether the personal account row should be hidden.
-  ///   - isDismissable: Whether the view can dismiss itself after account selection and show a dismiss button.
-  ///   - navigationPath: An optional parent navigation path for embedded usage.
-  ///   - skipInvitationScreen: Whether creating an organization should skip the post-create invite step.
+  ///   - hidePersonal: Whether the personal account row should be hidden even when
+  ///     personal account selection is allowed.
+  ///   - isDismissable: Whether the view can dismiss itself after account selection and
+  ///     show a dismiss button.
+  ///   - navigationPath: An optional parent navigation path for embedded usage. Pass
+  ///     a parent path when the view is hosted inside your own `NavigationStack`.
+  ///   - skipInvitationScreen: Whether creating an organization should skip the
+  ///     post-create invite step.
   public init(
     hidePersonal: Bool = false,
     isDismissable: Bool = true,

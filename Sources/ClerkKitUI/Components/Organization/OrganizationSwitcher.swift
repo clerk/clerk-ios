@@ -7,7 +7,41 @@
 import ClerkKit
 import SwiftUI
 
-/// A prebuilt organization switcher that opens organization account controls.
+/// A prebuilt control for viewing and changing the active organization.
+///
+/// `OrganizationSwitcher` displays the active organization, or the signed-in user's
+/// personal account when no organization is selected. Tapping the control opens native
+/// organization account controls for managing the active organization, switching to another
+/// organization, accepting invitations, requesting to join suggested organizations, or creating
+/// a new organization when allowed by the current environment.
+///
+/// The switcher renders only when a user is signed in. Personal account selection is hidden
+/// automatically when organization selection is required by the environment.
+///
+/// ## Usage
+///
+/// Basic usage alongside ``UserButton``:
+///
+/// ```swift
+/// struct HomeView: View {
+///   var body: some View {
+///     HStack(spacing: 16) {
+///       UserButton()
+///       OrganizationSwitcher()
+///     }
+///   }
+/// }
+/// ```
+///
+/// Compact usage in a navigation toolbar:
+///
+/// ```swift
+/// .toolbar {
+///   ToolbarItem(placement: .navigationBarTrailing) {
+///     OrganizationSwitcher(displayMode: .compact)
+///   }
+/// }
+/// ```
 public struct OrganizationSwitcher: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -42,9 +76,11 @@ public struct OrganizationSwitcher: View {
   /// Creates a new organization switcher.
   ///
   /// - Parameters:
-  ///   - hidePersonal: Whether the personal account option should be hidden.
+  ///   - hidePersonal: Whether the personal account option should be hidden even when
+  ///     personal account selection is allowed.
   ///   - displayMode: The visual presentation for the switcher trigger.
-  ///   - skipInvitationScreen: Whether creating an organization should skip the post-create invite step.
+  ///   - skipInvitationScreen: Whether creating an organization should skip the
+  ///     post-create invite step.
   public init(
     hidePersonal: Bool = false,
     displayMode: DisplayMode = .normal,
