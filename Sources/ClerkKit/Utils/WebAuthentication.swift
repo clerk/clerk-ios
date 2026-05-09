@@ -29,6 +29,12 @@ actor WebAuthContinuationManager {
       continuation.resume(throwing: ClerkClientError(message: "Missing callback URL"))
     }
   }
+
+  func cancelSessionIfNeeded() {
+    guard let continuation else { return }
+    self.continuation = nil
+    continuation.resume(throwing: CancellationError())
+  }
 }
 
 @available(tvOS 16.0, watchOS 6.2, *)
@@ -85,6 +91,16 @@ final class WebAuthentication: NSObject {
 
       currentSession = nil
     }
+  }
+
+  static func cancelCurrentSession() async {
+    #if !os(tvOS)
+    currentSession?.cancel()
+    #endif
+
+    currentSession = nil
+
+    await continuationManager.cancelSessionIfNeeded()
   }
 }
 

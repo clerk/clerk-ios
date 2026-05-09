@@ -13,6 +13,24 @@ final class PasskeyHelper: NSObject {
   static var controller: ASAuthorizationController?
 
   @MainActor
+  private static var activeHelper: PasskeyHelper?
+
+  @MainActor
+  static func cancelCurrentAuthorization() {
+    #if os(tvOS)
+    if #available(tvOS 18.0, *) {
+      controller?.cancel()
+    }
+    #else
+    controller?.cancel()
+    #endif
+
+    controller = nil
+    activeHelper?.cancelContinuation()
+    activeHelper = nil
+  }
+
+  @MainActor
   var domain: String {
     guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
       return ""
@@ -28,6 +46,7 @@ final class PasskeyHelper: NSObject {
   func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
+      Self.activeHelper = self
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
 
@@ -67,6 +86,7 @@ final class PasskeyHelper: NSObject {
   func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
+      Self.activeHelper = self
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
 
@@ -87,6 +107,7 @@ final class PasskeyHelper: NSObject {
   func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
+      Self.activeHelper = self
 
       let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
 
@@ -106,9 +127,35 @@ final class PasskeyHelper: NSObject {
       authController.performRequests()
     }
   }
+
+  @MainActor
+  private func cancelContinuation() {
+    guard let continuation else { return }
+    self.continuation = nil
+    continuation.resume(throwing: CancellationError())
+  }
+
+  @MainActor
+  private func complete(with authorization: ASAuthorization) {
+    guard let continuation else { return }
+    self.continuation = nil
+    Self.controller = nil
+    Self.activeHelper = nil
+    continuation.resume(returning: authorization)
+  }
+
+  @MainActor
+  private func complete(with error: any Error) {
+    guard let continuation else { return }
+    self.continuation = nil
+    Self.controller = nil
+    Self.activeHelper = nil
+    continuation.resume(throwing: error)
+  }
 }
 
 extension PasskeyHelper: ASAuthorizationControllerDelegate {
+  @MainActor
   func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
     let logger = Logger()
     switch authorization.credential {
@@ -120,7 +167,7 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
       // let clientDataJSON = credentialRegistration.rawClientDataJSON
 
       // After the server verifies the registration and creates the user account, sign in the user with the new account.
-      continuation?.resume(returning: authorization)
+      complete(with: authorization)
     case let credentialAssertion as ASAuthorizationPlatformPublicKeyCredentialAssertion:
       logger.log("A passkey was used to sign in: \(credentialAssertion)")
       // Verify the below signature and clientDataJSON with your service for the given userID.
@@ -129,7 +176,7 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
       // let userID = credentialAssertion.userID
 
       // After the server verifies the assertion, sign in the user.
-      continuation?.resume(returning: authorization)
+      complete(with: authorization)
     case let passwordCredential as ASPasswordCredential:
       logger.log("A password was provided: \(passwordCredential)")
       // Verify the userName and password with your service.
@@ -137,14 +184,15 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
       // let password = passwordCredential.password
 
       // After the server verifies the userName and password, sign in the user.
-      continuation?.resume(returning: authorization)
+      complete(with: authorization)
     default:
       fatalError("Received unknown authorization type.")
     }
   }
 
+  @MainActor
   func authorizationController(controller _: ASAuthorizationController, didCompleteWithError error: any Error) {
-    continuation?.resume(throwing: error)
+    complete(with: error)
   }
 }
 

@@ -48,7 +48,8 @@ final class DependencyContainer: Dependencies {
   @MainActor
   init(
     publishableKey: String,
-    options: Clerk.Options
+    options: Clerk.Options,
+    runtimeScope: ClerkRuntimeScope
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
     // Create and configure ConfigurationManager first (needed to determine baseURL)
@@ -73,14 +74,14 @@ final class DependencyContainer: Dependencies {
       URL(string: "https://clerk.clerk.dev")!
     }
 
-    networkingPipeline = .clerkDefault
+    networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
     keychain = Self.makeKeychainStorage(config: options.keychainConfig)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
-    apiClient = APIClient(baseURL: baseURL) { @Sendable configuration in
+    apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
       configuration.pipeline = pipeline
       configuration.decoder = .clerkDecoder
       configuration.encoder = .clerkEncoder

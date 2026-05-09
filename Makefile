@@ -149,6 +149,7 @@ clean:
 test:
 	@echo "Running unit tests..."
 	swift test --skip Integration --filter '^ClerkKitTests\.'
+	CLERK_RUN_RECONFIGURE_TESTS=1 swift test --skip Integration --no-parallel --filter '^ClerkKitTests\.ClerkReconfigureTests'
 	@echo "✅ Unit tests completed!"
 
 # Run ClerkKitUI tests on iOS Simulator

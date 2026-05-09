@@ -13,7 +13,11 @@ actor APIClient {
 
     var encoder: JSONEncoder = .clerkEncoder
     var decoder: JSONDecoder = .clerkDecoder
-    var pipeline: NetworkingPipeline = .clerkDefault
+    var pipeline: NetworkingPipeline
+
+    init(runtimeScope: ClerkRuntimeScope) {
+      pipeline = .clerkDefault(runtimeScope: runtimeScope)
+    }
   }
 
   private let baseURL: URL?
@@ -21,16 +25,22 @@ actor APIClient {
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
+  private let runtimeScope: ClerkRuntimeScope
   private var nextRequestSequenceNumber = 0
 
-  init(baseURL: URL?, configure: (inout Configuration) -> Void = { _ in }) {
-    var configuration = Configuration()
+  init(
+    baseURL: URL?,
+    runtimeScope: ClerkRuntimeScope,
+    configure: (inout Configuration) -> Void = { _ in }
+  ) {
+    var configuration = Configuration(runtimeScope: runtimeScope)
     configure(&configuration)
 
     self.baseURL = baseURL
     encoder = configuration.encoder
     decoder = configuration.decoder
     pipeline = configuration.pipeline
+    self.runtimeScope = runtimeScope
     session = URLSession(configuration: configuration.sessionConfiguration)
   }
 
@@ -55,11 +65,13 @@ actor APIClient {
     let requestSequence = makeRequestSequence()
 
     while true {
+      try ensureCurrentRuntimeScope()
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
       try await pipeline.prepare(&urlRequest)
+      try ensureCurrentRuntimeScope()
 
       do {
         let data: Data
@@ -71,13 +83,18 @@ actor APIClient {
           (data, response) = try await session.data(for: urlRequest)
         }
 
+        try ensureCurrentRuntimeScope()
+
         guard let httpResponse = response as? HTTPURLResponse else {
           throw APIClientError.invalidHTTPResponse
         }
 
         do {
           try await pipeline.validate(httpResponse, data: data, for: urlRequest)
+          try ensureCurrentRuntimeScope()
         } catch {
+          try ensureCurrentRuntimeScope()
+
           if try await pipeline.shouldRetry(
             request: urlRequest,
             response: httpResponse,
@@ -90,8 +107,11 @@ actor APIClient {
         }
 
         let value = try request.decode(data, using: decoder)
+        try ensureCurrentRuntimeScope()
         return APIResponse(value: value, requestSequence: requestSequence, serverDate: httpResponse.serverDate)
       } catch {
+        try ensureCurrentRuntimeScope()
+
         if try await pipeline.shouldRetry(
           request: urlRequest,
           response: nil,
@@ -108,6 +128,10 @@ actor APIClient {
   private func makeRequestSequence() -> Int {
     nextRequestSequenceNumber += 1
     return nextRequestSequenceNumber
+  }
+
+  private func ensureCurrentRuntimeScope() throws {
+    try runtimeScope.validateStableRuntime()
   }
 }
 

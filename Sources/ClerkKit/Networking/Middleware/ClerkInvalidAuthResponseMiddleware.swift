@@ -8,6 +8,11 @@ import Foundation
 /// When the API indicates authentication is invalid, re-sync the client state unless we already attempted it.
 struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
   let invalidAuthCodes = ["authentication_invalid", "resource_not_found"]
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope) {
+    self.runtimeScope = runtimeScope
+  }
 
   func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     guard
@@ -24,6 +29,9 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
       return
     }
 
-    await Clerk.shared.refreshClientAfterInvalidAuth()
+    let refreshTask = try await runtimeScope.withCurrentClerk {
+      $0.startRefreshClientAfterInvalidAuth()
+    }
+    await refreshTask.value
   }
 }

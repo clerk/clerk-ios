@@ -27,7 +27,7 @@ func configureClerkForTesting() {
 /// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
 @MainActor
 func setupMockAPIClient() {
-  let mockAPIClient = createMockAPIClient()
+  let mockAPIClient = createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope)
 
   // Replace the container with a mock container that uses the mock API client
   // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
@@ -50,9 +50,10 @@ func setupMockAPIClient() {
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
 @MainActor
-func createMockAPIClient() -> APIClient {
-  APIClient(baseURL: mockBaseUrl) { @Sendable configuration in
-    configuration.pipeline = .clerkDefault
+func createMockAPIClient(runtimeScope: ClerkRuntimeScope? = nil) -> APIClient {
+  let runtimeScope = runtimeScope ?? Clerk.shared.runtimeScope
+  return APIClient(baseURL: mockBaseUrl, runtimeScope: runtimeScope) { @Sendable configuration in
+    configuration.pipeline = .clerkDefault(runtimeScope: runtimeScope)
     configuration.decoder = .clerkDecoder
     configuration.encoder = .clerkEncoder
     configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]

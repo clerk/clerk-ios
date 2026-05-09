@@ -13,15 +13,26 @@ actor SessionTokenFetcher {
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
 
+  func reset() {
+    for task in tokenTasks.values {
+      task.cancel()
+    }
+    tokenTasks.removeAll()
+  }
+
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+    let runtime = try await Clerk.requireStableRuntime()
     let cacheKey = session.tokenCacheKey(template: options.template)
 
     if let inProgressTask = tokenTasks[cacheKey] {
-      return try await inProgressTask.value
+      let result = await inProgressTask.result
+      try runtime.validateStableRuntime()
+      return try result.get()
     }
 
     let task: Task<TokenResource?, Error> = Task {
-      try await fetchToken(session, options: options)
+      try Task.checkCancellation()
+      return try await fetchToken(session, options: options, runtime: runtime)
     }
 
     tokenTasks[cacheKey] = task
@@ -31,6 +42,7 @@ actor SessionTokenFetcher {
     // clear the inProgressTask on success AND failure
     tokenTasks[cacheKey] = nil
 
+    try runtime.validateStableRuntime()
     return try result.get()
   }
 
@@ -39,23 +51,48 @@ actor SessionTokenFetcher {
    */
   @discardableResult @MainActor
   func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+    let runtime = try Clerk.requireStableRuntime()
+    return try await fetchToken(session, options: options, runtime: runtime)
+  }
+
+  @discardableResult @MainActor
+  private func fetchToken(
+    _ session: Session,
+    options: Session.GetTokenOptions,
+    runtime: ClerkRuntimeScope
+  ) async throws -> TokenResource? {
     let cacheKey = session.tokenCacheKey(template: options.template)
+
+    try Task.checkCancellation()
+    try runtime.validateStableRuntime()
 
     if options.skipCache == false,
        let token = await SessionTokensCache.shared.getToken(cacheKey: cacheKey),
        let expiresAt = token.decodedJWT?.expiresAt,
        Date.now.distance(to: expiresAt) > options.expirationBuffer
     {
+      try Task.checkCancellation()
+      try runtime.validateStableRuntime()
       return token
     }
+
+    try Task.checkCancellation()
+    try runtime.validateStableRuntime()
 
     let token = try await Clerk.shared.dependencies.sessionService.fetchToken(
       sessionId: session.id,
       template: options.template
     )
 
+    try Task.checkCancellation()
+    try runtime.validateStableRuntime()
+
     if let token {
+      try Task.checkCancellation()
+      try runtime.validateStableRuntime()
       await SessionTokensCache.shared.insertToken(token, cacheKey: cacheKey)
+      try Task.checkCancellation()
+      try runtime.validateStableRuntime()
       Clerk.shared.auth.send(.tokenRefreshed(token: token.jwt))
     }
 
@@ -83,5 +120,9 @@ actor SessionTokensCache {
   ///               For example, `sess_abc12345` or `sess_abc12345-supabase`.
   func insertToken(_ token: TokenResource, cacheKey: String) {
     cache[cacheKey] = token
+  }
+
+  func clear() {
+    cache.removeAll()
   }
 }

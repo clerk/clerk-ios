@@ -6,9 +6,17 @@
 import Foundation
 
 struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope) {
+    self.runtimeScope = runtimeScope
+  }
+
   func validate(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) async throws {
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
-      await Clerk.shared.storeReceivedDeviceToken(deviceToken)
+      try await runtimeScope.withCurrentClerk {
+        $0.storeReceivedDeviceToken(deviceToken)
+      }
     }
   }
 }

@@ -14,7 +14,8 @@ struct DependencyContainerKeychainTests {
       publishableKey: testPublishableKey,
       options: .init(
         keychainConfig: .init(service: "service")
-      )
+      ),
+      runtimeScope: ClerkRuntimeScope(epoch: .initial)
     )
 
     #expect(container.keychain is SystemKeychain)
@@ -31,7 +32,8 @@ struct DependencyContainerKeychainTests {
           service: "service",
           accessGroup: "group.example"
         )
-      )
+      ),
+      runtimeScope: ClerkRuntimeScope(epoch: .initial)
     )
 
     #expect(container.keychain is MigratingKeychainStorage)

@@ -9,7 +9,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateEmitsSignInCompletedForSignInAttemptResponseObject() async throws {
     let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
@@ -34,7 +34,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateEmitsSignUpCompletedForSignUpAttemptResponseObject() async throws {
     let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
@@ -60,7 +60,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateDoesNotEmitSignInCompletedForIncompleteSignInAttempt() async throws {
     let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let event = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(
@@ -78,7 +78,7 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
   func validateEmitsSignedOutForRemovedSessionResponse() async throws {
     let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       try await middleware.validate(

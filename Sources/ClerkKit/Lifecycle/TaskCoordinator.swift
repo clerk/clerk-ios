@@ -58,4 +58,17 @@ final class TaskCoordinator {
     }
     tasks.removeAll()
   }
+
+  /// Cancels all tracked tasks and waits for them to finish observing cancellation.
+  func cancelAllAndWait() async {
+    let trackedTasks = tasks
+    for task in trackedTasks {
+      task.cancel()
+    }
+    tasks.removeAll()
+
+    for task in trackedTasks {
+      await task.value
+    }
+  }
 }

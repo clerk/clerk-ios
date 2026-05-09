@@ -84,21 +84,23 @@ extension NetworkingPipeline {
     )
   }
 
-  static var clerkDefault: NetworkingPipeline {
+  static func clerkDefault(
+    runtimeScope: ClerkRuntimeScope
+  ) -> NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: [
-        ClerkProxyRequestMiddleware(),
-        ClerkHeaderRequestMiddleware(),
+        ClerkProxyRequestMiddleware(runtimeScope: runtimeScope),
+        ClerkHeaderRequestMiddleware(runtimeScope: runtimeScope),
         ClerkQueryItemsRequestMiddleware(),
         ClerkURLEncodedFormEncoderMiddleware(),
         ClerkRequestLoggingMiddleware(),
       ],
       responseMiddleware: [
         ClerkResponseLoggingMiddleware(),
-        ClerkDeviceTokenResponseMiddleware(),
-        ClerkClientSyncResponseMiddleware(),
-        ClerkAuthEventEmitterResponseMiddleware(),
-        ClerkInvalidAuthResponseMiddleware(),
+        ClerkDeviceTokenResponseMiddleware(runtimeScope: runtimeScope),
+        ClerkClientSyncResponseMiddleware(runtimeScope: runtimeScope),
+        ClerkAuthEventEmitterResponseMiddleware(runtimeScope: runtimeScope),
+        ClerkInvalidAuthResponseMiddleware(runtimeScope: runtimeScope),
         ClerkErrorThrowingResponseMiddleware(),
       ],
       retryMiddleware: [

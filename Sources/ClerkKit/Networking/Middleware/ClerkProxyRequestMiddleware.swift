@@ -6,9 +6,15 @@
 import Foundation
 
 struct ClerkProxyRequestMiddleware: ClerkRequestMiddleware {
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope) {
+    self.runtimeScope = runtimeScope
+  }
+
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    let proxyConfiguration = Clerk.shared.proxyConfiguration
+    let proxyConfiguration = try runtimeScope.requireCurrentClerk().proxyConfiguration
 
     guard
       let proxyConfiguration,

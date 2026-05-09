@@ -36,7 +36,11 @@ extension Clerk {
   @MainActor
   public static func clearAllKeychainItems() {
     let keychain = Clerk.shared.dependencies.keychain
+    clearAllKeychainItems(in: keychain)
+  }
 
+  @MainActor
+  static func clearAllKeychainItems(in keychain: any KeychainStorage) {
     // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases {
       do {
@@ -48,6 +52,29 @@ extension Clerk {
           message: "Failed to delete keychain item '\(key.rawValue)'. This is non-critical."
         )
       }
+    }
+  }
+
+  @MainActor
+  static func clearAllKeychainItemsStrictly(in keychain: any KeychainStorage) throws {
+    var failures: [String] = []
+
+    for key in ClerkKeychainKey.allCases {
+      do {
+        try keychain.deleteItem(forKey: key.rawValue)
+      } catch {
+        failures.append(key.rawValue)
+        ClerkLogger.logError(
+          error,
+          message: "Failed to delete keychain item '\(key.rawValue)' during Clerk reconfiguration."
+        )
+      }
+    }
+
+    guard failures.isEmpty else {
+      throw ClerkClientError(
+        message: "Unable to clear Clerk keychain items during reconfiguration."
+      )
     }
   }
 }
