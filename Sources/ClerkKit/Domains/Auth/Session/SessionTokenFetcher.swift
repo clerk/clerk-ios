@@ -26,7 +26,7 @@ actor SessionTokenFetcher {
 
     if let inProgressTask = tokenTasks[cacheKey] {
       let result = await inProgressTask.result
-      try await runtime.validateStableRuntime()
+      try runtime.validateStableRuntime()
       return try result.get()
     }
 
@@ -42,7 +42,7 @@ actor SessionTokenFetcher {
     // clear the inProgressTask on success AND failure
     tokenTasks[cacheKey] = nil
 
-    try await runtime.validateStableRuntime()
+    try runtime.validateStableRuntime()
     return try result.get()
   }
 

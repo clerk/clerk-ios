@@ -126,6 +126,42 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigureWithSameKeychainClearsStorage() async throws {
+    let service = "com.clerk.tests.same-keychain.\(UUID().uuidString)"
+    let keychain = SystemKeychain(service: service)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? keychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: keychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    try keychain.set("old-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set("old-client", forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("old-environment", forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+
+    Clerk.shared.client = .mock
+    Clerk.shared.environment = .mock
+
+    let options = Clerk.Options(keychainConfig: .init(service: service))
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "same-keychain.clerk.example.com"),
+      options: options
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    #expect(reconfigured.client == nil)
+    #expect(reconfigured.environment == nil)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+  }
+
+  @Test
   func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
     let original = Clerk.shared
     let previousEpoch = Clerk.shared.configurationEpoch
@@ -371,6 +407,82 @@ struct ClerkReconfigureTests {
     }
 
     #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func staleRefreshClientDoesNotApplyAfterReconfigure() async throws {
+    let staleClient = Client(
+      id: "stale-refresh-client",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let serviceStarted = LockIsolated(false)
+    let service = MockClientService(get: {
+      serviceStarted.setValue(true)
+      try await Task.sleep(for: .milliseconds(100))
+      return staleClient
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      clientService: service
+    )
+
+    let refreshTask = Task { @MainActor in
+      try await Clerk.shared.refreshClient()
+    }
+    try await waitUntil(timeout: .seconds(1)) { serviceStarted.value }
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "stale-refresh-client.clerk.example.com")
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    do {
+      _ = try await refreshTask.value
+      Issue.record("Expected stale refreshClient result to be cancelled after reconfigure")
+    } catch is CancellationError {
+      // Expected.
+    } catch {
+      Issue.record("Expected CancellationError, got \(error)")
+    }
+
+    #expect(Clerk.shared.client?.id != staleClient.id)
+  }
+
+  @Test
+  func staleRefreshEnvironmentDoesNotApplyAfterReconfigure() async throws {
+    let serviceStarted = LockIsolated(false)
+    let service = MockEnvironmentService(get: {
+      serviceStarted.setValue(true)
+      try await Task.sleep(for: .milliseconds(100))
+      return .mock
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      environmentService: service
+    )
+
+    let refreshTask = Task { @MainActor in
+      try await Clerk.shared.refreshEnvironment()
+    }
+    try await waitUntil(timeout: .seconds(1)) { serviceStarted.value }
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "stale-refresh-environment.clerk.example.com")
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    do {
+      _ = try await refreshTask.value
+      Issue.record("Expected stale refreshEnvironment result to be cancelled after reconfigure")
+    } catch is CancellationError {
+      // Expected.
+    } catch {
+      Issue.record("Expected CancellationError, got \(error)")
+    }
+
+    #expect(Clerk.shared.environment == nil)
   }
 
   @Test

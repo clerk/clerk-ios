@@ -65,13 +65,13 @@ actor APIClient {
     let requestSequence = makeRequestSequence()
 
     while true {
-      try await ensureCurrentRuntimeScope()
+      try ensureCurrentRuntimeScope()
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
       try await pipeline.prepare(&urlRequest)
-      try await ensureCurrentRuntimeScope()
+      try ensureCurrentRuntimeScope()
 
       do {
         let data: Data
@@ -83,7 +83,7 @@ actor APIClient {
           (data, response) = try await session.data(for: urlRequest)
         }
 
-        try await ensureCurrentRuntimeScope()
+        try ensureCurrentRuntimeScope()
 
         guard let httpResponse = response as? HTTPURLResponse else {
           throw APIClientError.invalidHTTPResponse
@@ -91,9 +91,9 @@ actor APIClient {
 
         do {
           try await pipeline.validate(httpResponse, data: data, for: urlRequest)
-          try await ensureCurrentRuntimeScope()
+          try ensureCurrentRuntimeScope()
         } catch {
-          try await ensureCurrentRuntimeScope()
+          try ensureCurrentRuntimeScope()
 
           if try await pipeline.shouldRetry(
             request: urlRequest,
@@ -107,10 +107,10 @@ actor APIClient {
         }
 
         let value = try request.decode(data, using: decoder)
-        try await ensureCurrentRuntimeScope()
+        try ensureCurrentRuntimeScope()
         return APIResponse(value: value, requestSequence: requestSequence, serverDate: httpResponse.serverDate)
       } catch {
-        try await ensureCurrentRuntimeScope()
+        try ensureCurrentRuntimeScope()
 
         if try await pipeline.shouldRetry(
           request: urlRequest,
@@ -130,10 +130,8 @@ actor APIClient {
     return nextRequestSequenceNumber
   }
 
-  private func ensureCurrentRuntimeScope() async throws {
-    guard await runtimeScope.isCurrent else {
-      throw CancellationError()
-    }
+  private func ensureCurrentRuntimeScope() throws {
+    try runtimeScope.validateStableRuntime()
   }
 }
 

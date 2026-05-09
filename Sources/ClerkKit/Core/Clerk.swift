@@ -117,6 +117,9 @@ public final class Clerk {
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
   private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
 
+  /// Thread-safe runtime state used by SDK-owned dependencies to detect stale work.
+  let runtimeState = ClerkRuntimeState()
+
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
@@ -363,7 +366,7 @@ extension Clerk {
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: .init(epoch: nextEpoch)
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
       )
       let oldKeychain = existing.dependencies.keychain
       let newKeychain = newDependencies.keychain
@@ -371,7 +374,7 @@ extension Clerk {
 
       try clearAllKeychainItemsStrictly(in: newKeychain)
 
-      existing.advanceConfigurationEpoch(to: nextEpoch)
+      existing.setConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndDrainCache()
 
       do {
@@ -413,7 +416,9 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
+    let runtime = runtimeScope
     let response = try await dependencies.clientService.getResponse()
+    try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
       responseSequence: response.requestSequence,
@@ -425,7 +430,9 @@ extension Clerk {
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
+    let runtime = runtimeScope
     let environment = try await dependencies.environmentService.get()
+    try runtime.validateStableRuntime()
     self.environment = environment
     return environment
   }
@@ -525,11 +532,13 @@ extension Clerk {
       throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.")
     }
     isRuntimeReconfigurationInProgress = true
+    _shared?.runtimeState.beginReconfiguration()
   }
 
   @MainActor
   static func endRuntimeReconfiguration() {
     isRuntimeReconfigurationInProgress = false
+    _shared?.runtimeState.endReconfiguration()
   }
 
   @MainActor
@@ -553,8 +562,9 @@ extension Clerk {
     configurationEpoch.next()
   }
 
-  func advanceConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
+  func setConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
     configurationEpoch = epoch
+    runtimeState.advance(to: epoch)
   }
 
   private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
@@ -567,7 +577,7 @@ extension Clerk {
   }
 
   private func restoreAfterFailedReconfiguration(_ state: ReconfigurationRollbackState) {
-    configurationEpoch = state.configurationEpoch
+    setConfigurationEpoch(to: state.configurationEpoch)
     lastAppliedClientResponseSequence = state.lastAppliedClientResponseSequence
     lastClientServerFetchDate = state.lastClientServerFetchDate
     performConfiguration(dependencies: state.dependencies)
@@ -575,16 +585,6 @@ extension Clerk {
 
   func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {
     configurationEpoch == epoch
-  }
-
-  func ensureCurrentStableConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) throws {
-    guard !Self.isRuntimeReconfigurationInProgress else {
-      throw CancellationError()
-    }
-
-    guard configurationEpoch == epoch else {
-      throw CancellationError()
-    }
   }
 
   func refreshClientAfterInvalidAuth() async {
