@@ -404,12 +404,18 @@ extension Clerk {
   }
 
   @MainActor
-  package static func resetSharedInstanceForTesting() {
+  package static func resetSharedInstanceForTesting() async {
     guard EnvironmentDetection.isRunningInTests else {
       return
     }
 
-    _shared?.cleanupManagers()
+    guard let shared = _shared else {
+      return
+    }
+
+    await shared.cleanupManagersAndDrainCache()
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
     _shared = nil
   }
 

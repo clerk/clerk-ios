@@ -315,7 +315,7 @@ struct ClerkReconfigureTests {
 
   @Test
   func tokenReadBeforeConfigureThrowsConfigurationError() async throws {
-    Clerk.resetSharedInstanceForTesting()
+    await Clerk.resetSharedInstanceForTesting()
     defer { configureClerkForTesting() }
 
     do {
@@ -330,7 +330,7 @@ struct ClerkReconfigureTests {
 
   @Test
   func reconfigureBeforeConfigureInstallsSharedInstance() async throws {
-    Clerk.resetSharedInstanceForTesting()
+    await Clerk.resetSharedInstanceForTesting()
 
     let configured = try await Clerk.reconfigure(
       publishableKey: publishableKey(for: "initial-reconfigure.clerk.example.com")
