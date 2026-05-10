@@ -50,8 +50,7 @@ public struct OrganizationSwitcher: View {
   private let displayMode: DisplayMode
   private let skipInvitationScreen: Bool
 
-  @State private var sheetNavigation = OrganizationSwitcherSheetNavigation()
-  @State private var overviewHeight: CGFloat = 220
+  @State private var presentedSheet: PresentedSheet?
 
   private var user: User? {
     clerk.user
@@ -94,10 +93,10 @@ public struct OrganizationSwitcher: View {
   public var body: some View {
     if let user {
       Button {
-        if activeOrganization == nil {
-          sheetNavigation.presentedSheet = .accountList
+        if let activeOrganization {
+          presentedSheet = .overview(activeOrganization)
         } else {
-          sheetNavigation.overviewIsPresented = true
+          presentedSheet = .accountList
         }
       } label: {
         OrganizationSwitcherLabel(
@@ -108,30 +107,35 @@ public struct OrganizationSwitcher: View {
       }
       .buttonStyle(.plain)
       .tint(theme.colors.primary)
-      .sheet(isPresented: $sheetNavigation.overviewIsPresented) {
-        if let organization = activeOrganization {
-          OrganizationSwitcherOverviewView(
-            organization: organization,
-            roleName: activeMembership?.roleName,
-            contentHeight: $overviewHeight
-          )
-          .presentationDetents([.height(overviewHeight)])
-          .environment(sheetNavigation)
-        }
+      .sheet(item: $presentedSheet) { sheet in
+        view(for: sheet)
       }
-      .sheet(item: $sheetNavigation.presentedSheet) { sheet in
-        switch sheet {
-        case .accountList:
-          OrganizationListView(
-            hidePersonal: hidePersonal,
-            skipInvitationScreen: skipInvitationScreen,
-            title: "Switch account",
-            subtitle: nil
-          )
-        case .profile:
-          OrganizationProfileView()
+    }
+  }
+
+  @ViewBuilder
+  private func view(for sheet: PresentedSheet) -> some View {
+    switch sheet {
+    case let .overview(organization):
+      OrganizationSwitcherOverviewView(
+        organization: organization,
+        roleName: activeMembership?.roleName,
+        onManage: {
+          presentedSheet = .profile
+        },
+        onSwitchAccount: {
+          presentedSheet = .accountList
         }
-      }
+      )
+    case .accountList:
+      OrganizationListView(
+        hidePersonal: hidePersonal,
+        skipInvitationScreen: skipInvitationScreen,
+        title: "Switch account",
+        subtitle: nil
+      )
+    case .profile:
+      OrganizationProfileView()
     }
   }
 }
@@ -172,12 +176,13 @@ extension OrganizationSwitcher {
     }
   }
 
-  enum PresentedSheet: String, Identifiable {
+  enum PresentedSheet: Hashable, Identifiable {
+    case overview(Organization)
     case accountList
     case profile
 
-    var id: String {
-      rawValue
+    var id: Self {
+      self
     }
   }
 }
