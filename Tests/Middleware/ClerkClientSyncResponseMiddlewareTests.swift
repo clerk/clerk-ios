@@ -58,7 +58,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   func validateAppliesClientFromClientResponseEnvelope() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
-    let middleware = ClerkClientSyncResponseMiddleware(clerkProvider: { clerk })
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     var session = Session.mock
     session.lastActiveOrganizationId = "org_test456"
     var expectedClient = Client.mock
