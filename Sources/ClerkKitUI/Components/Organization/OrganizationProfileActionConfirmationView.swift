@@ -21,7 +21,7 @@ struct OrganizationProfileActionConfirmationView: View {
   @FocusState private var isFocused: Bool
 
   private var buttonIsDisabled: Bool {
-    confirmation != organization.name
+    confirmation.confirmationNormalized != organization.name.confirmationNormalized
   }
 
   var body: some View {
@@ -119,6 +119,20 @@ extension OrganizationProfileActionConfirmationView {
       self.error = error
       ClerkLogger.error(action.errorMessage, error: error)
     }
+  }
+}
+
+extension String {
+  fileprivate var confirmationNormalized: String {
+    precomposedStringWithCanonicalMapping
+      .replacingOccurrences(of: "\u{2018}", with: "'")
+      .replacingOccurrences(of: "\u{2019}", with: "'")
+      .replacingOccurrences(of: "\u{201B}", with: "'")
+      .replacingOccurrences(of: "\u{2032}", with: "'")
+      .replacingOccurrences(of: "\u{201C}", with: "\"")
+      .replacingOccurrences(of: "\u{201D}", with: "\"")
+      .replacingOccurrences(of: "\u{201F}", with: "\"")
+      .replacingOccurrences(of: "\u{2033}", with: "\"")
   }
 }
 

@@ -13,13 +13,13 @@ struct OrganizationSwitcherLabel: View {
 
   let organization: Organization?
   let user: User?
-  let displayMode: OrganizationSwitcher.DisplayMode
+  let displayMode: OrganizationSwitcherDisplayMode
   @ScaledMetric(wrappedValue: 1, relativeTo: .body) private var textScale: CGFloat
 
   init(
     organization: Organization?,
     user: User?,
-    displayMode: OrganizationSwitcher.DisplayMode = .normal
+    displayMode: OrganizationSwitcherDisplayMode = .normal
   ) {
     self.organization = organization
     self.user = user
@@ -110,7 +110,7 @@ struct OrganizationSwitcherLabel: View {
 }
 
 private struct OrganizationSwitcherTriggerLabelStyle: LabelStyle {
-  let displayMode: OrganizationSwitcher.DisplayMode
+  let displayMode: OrganizationSwitcherDisplayMode
   let metrics: OrganizationSwitcherLabelMetrics
   let chevronColor: Color
 

@@ -11,7 +11,7 @@ struct ContentView: View {
   @State private var authViewIsPresented = false
 
   var body: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 24) {
       UserButton(signedOutContent: {
         Button("Sign in") {
           authViewIsPresented = true

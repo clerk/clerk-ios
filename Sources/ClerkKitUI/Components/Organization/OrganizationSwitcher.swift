@@ -42,13 +42,15 @@ import SwiftUI
 ///   }
 /// }
 /// ```
-public struct OrganizationSwitcher: View {
+public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   private let hidePersonal: Bool
-  private let displayMode: DisplayMode
+  private let displayMode: OrganizationSwitcherDisplayMode
   private let skipInvitationScreen: Bool
+  private let customRows: [OrganizationProfileCustomRow<Route>]
+  private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var presentedSheet: PresentedSheet?
 
@@ -82,12 +84,30 @@ public struct OrganizationSwitcher: View {
   ///     post-create invite step.
   public init(
     hidePersonal: Bool = false,
-    displayMode: DisplayMode = .normal,
+    displayMode: OrganizationSwitcherDisplayMode = .normal,
     skipInvitationScreen: Bool = false
+  ) where Route == Never, Destination == EmptyView {
+    self.init(
+      hidePersonal: hidePersonal,
+      displayMode: displayMode,
+      skipInvitationScreen: skipInvitationScreen,
+      customRows: [],
+      customDestination: nil
+    )
+  }
+
+  init(
+    hidePersonal: Bool,
+    displayMode: OrganizationSwitcherDisplayMode,
+    skipInvitationScreen: Bool,
+    customRows: [OrganizationProfileCustomRow<Route>],
+    customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.hidePersonal = hidePersonal
     self.displayMode = displayMode
     self.skipInvitationScreen = skipInvitationScreen
+    self.customRows = customRows
+    self.customDestination = customDestination
   }
 
   public var body: some View {
@@ -135,47 +155,76 @@ public struct OrganizationSwitcher: View {
         subtitle: nil
       )
     case .profile:
-      OrganizationProfileView()
+      OrganizationProfileView(
+        isDismissable: true,
+        navigationPath: nil,
+        customRows: customRows,
+        customDestination: customDestination
+      )
     }
   }
 }
 
 extension OrganizationSwitcher {
-  /// Controls whether the organization switcher trigger shows the full label or only the icon.
-  public struct DisplayMode: Sendable {
-    enum Kind {
-      case normal
-      case compact
-    }
+  /// Replaces the custom rows shown in the presented organization profile.
+  public func organizationProfileRows(
+    _ rows: [OrganizationProfileCustomRow<Route>]
+  ) -> OrganizationSwitcher<Route, Destination> {
+    OrganizationSwitcher<Route, Destination>(
+      hidePersonal: hidePersonal,
+      displayMode: displayMode,
+      skipInvitationScreen: skipInvitationScreen,
+      customRows: rows,
+      customDestination: customDestination
+    )
+  }
+}
 
-    private static let defaultSize: CGFloat = 36
+extension OrganizationSwitcher where Destination == EmptyView {
+  /// Sets the custom destination builder used by custom rows in the presented organization profile.
+  public func organizationProfileDestination<NewDestination: View>(
+    @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
+  ) -> OrganizationSwitcher<Route, NewDestination> {
+    OrganizationSwitcher<Route, NewDestination>(
+      hidePersonal: hidePersonal,
+      displayMode: displayMode,
+      skipInvitationScreen: skipInvitationScreen,
+      customRows: customRows,
+      customDestination: destination
+    )
+  }
+}
 
-    let kind: Kind
-    let size: CGFloat
-
-    /// Shows icon, organization name, and disclosure chevron.
-    public static let normal = Self(kind: .normal, size: defaultSize)
-
-    /// Shows only the organization or account icon.
-    public static let compact = Self(kind: .compact, size: defaultSize)
-
-    /// Shows icon, organization name, and disclosure chevron.
-    ///
-    /// - Parameter size: The base visual size used to derive the trigger's icon,
-    ///   spacing, text, chevron, and minimum tap target.
-    public static func normal(size: CGFloat) -> Self {
-      Self(kind: .normal, size: size)
-    }
-
-    /// Shows only the organization or account icon.
-    ///
-    /// - Parameter size: The base visual size used to derive the trigger's icon
-    ///   and minimum tap target.
-    public static func compact(size: CGFloat) -> Self {
-      Self(kind: .compact, size: size)
-    }
+extension OrganizationSwitcher where Route == Never, Destination == EmptyView {
+  /// Sets the custom rows shown in the presented organization profile.
+  public func organizationProfileRows<NewRoute: Hashable>(
+    _ rows: [OrganizationProfileCustomRow<NewRoute>]
+  ) -> OrganizationSwitcher<NewRoute, EmptyView> {
+    OrganizationSwitcher<NewRoute, EmptyView>(
+      hidePersonal: hidePersonal,
+      displayMode: displayMode,
+      skipInvitationScreen: skipInvitationScreen,
+      customRows: rows,
+      customDestination: nil
+    )
   }
 
+  /// Sets the custom destination builder used by custom rows in the presented organization profile.
+  public func organizationProfileDestination<NewRoute: Hashable, NewDestination: View>(
+    for _: NewRoute.Type = NewRoute.self,
+    @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
+  ) -> OrganizationSwitcher<NewRoute, NewDestination> {
+    OrganizationSwitcher<NewRoute, NewDestination>(
+      hidePersonal: hidePersonal,
+      displayMode: displayMode,
+      skipInvitationScreen: skipInvitationScreen,
+      customRows: [],
+      customDestination: destination
+    )
+  }
+}
+
+extension OrganizationSwitcher {
   enum PresentedSheet: Hashable, Identifiable {
     case overview(Organization)
     case accountList
@@ -184,6 +233,41 @@ extension OrganizationSwitcher {
     var id: Self {
       self
     }
+  }
+}
+
+/// Controls whether the organization switcher trigger shows the full label or only the icon.
+public struct OrganizationSwitcherDisplayMode: Sendable {
+  enum Kind {
+    case normal
+    case compact
+  }
+
+  private static let defaultSize: CGFloat = 36
+
+  let kind: Kind
+  let size: CGFloat
+
+  /// Shows icon, organization name, and disclosure chevron.
+  public static let normal = Self(kind: .normal, size: defaultSize)
+
+  /// Shows only the organization or account icon.
+  public static let compact = Self(kind: .compact, size: defaultSize)
+
+  /// Shows icon, organization name, and disclosure chevron.
+  ///
+  /// - Parameter size: The base visual size used to derive the trigger's icon,
+  ///   spacing, text, chevron, and minimum tap target.
+  public static func normal(size: CGFloat) -> Self {
+    Self(kind: .normal, size: size)
+  }
+
+  /// Shows only the organization or account icon.
+  ///
+  /// - Parameter size: The base visual size used to derive the trigger's icon
+  ///   and minimum tap target.
+  public static func compact(size: CGFloat) -> Self {
+    Self(kind: .compact, size: size)
   }
 }
 

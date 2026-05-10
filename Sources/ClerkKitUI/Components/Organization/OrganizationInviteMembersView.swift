@@ -13,6 +13,7 @@ struct OrganizationInviteMembersView: View {
   @Environment(\.dismiss) private var dismiss
 
   private let cancellationTitle: LocalizedStringKey
+  private let cancellationPlacement: ToolbarItemPlacement
   private let onComplete: ((OrganizationInviteMembersCompletion) async -> Void)?
 
   @State private var roleOptions: [RoleResource] = []
@@ -35,9 +36,11 @@ struct OrganizationInviteMembersView: View {
 
   init(
     cancellationTitle: LocalizedStringKey = "Cancel",
+    cancellationPlacement: ToolbarItemPlacement = .cancellationAction,
     onComplete: ((OrganizationInviteMembersCompletion) async -> Void)? = nil
   ) {
     self.cancellationTitle = cancellationTitle
+    self.cancellationPlacement = cancellationPlacement
     self.onComplete = onComplete
   }
 
@@ -55,7 +58,7 @@ struct OrganizationInviteMembersView: View {
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .cancellationAction) {
+      ToolbarItem(placement: cancellationPlacement) {
         Button {
           Task {
             await complete(.cancelled)

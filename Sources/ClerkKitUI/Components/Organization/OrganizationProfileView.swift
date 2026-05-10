@@ -50,6 +50,39 @@ import SwiftUI
 ///   }
 /// }
 /// ```
+///
+/// With custom rows:
+///
+/// ```swift
+/// enum OrganizationRoute: Hashable {
+///   case billing
+///   case preferences
+/// }
+///
+/// OrganizationProfileView()
+///   .organizationProfileRows([
+///     .init(
+///       route: .billing,
+///       title: "Billing",
+///       icon: .system(name: "creditcard"),
+///       placement: .after(.members)
+///     ),
+///     .init(
+///       route: .preferences,
+///       title: "Preferences",
+///       icon: .system(name: "gear"),
+///       placement: .before(.leaveOrganization)
+///     ),
+///   ])
+///   .organizationProfileDestination { (route: OrganizationRoute) in
+///     switch route {
+///     case .billing:
+///       BillingView()
+///     case .preferences:
+///       PreferencesView()
+///     }
+///   }
+/// ```
 public struct OrganizationProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -57,6 +90,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
 
   private let isDismissable: Bool
   private let navigationPath: Binding<NavigationPath>?
+  private let customRows: [OrganizationProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
   @State private var internalPath = NavigationPath()
@@ -112,10 +146,12 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   init(
     isDismissable: Bool,
     navigationPath: Binding<NavigationPath>?,
+    customRows: [OrganizationProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.isDismissable = isDismissable
     self.navigationPath = navigationPath
+    self.customRows = customRows
     self.customDestination = customDestination
   }
 
@@ -134,6 +170,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
     self.init(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
+      customRows: [],
       customDestination: nil
     )
   }
@@ -214,8 +251,8 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           )
 
           VStack(spacing: 48) {
-            section(rows: profileRows)
-            section(rows: actionRows)
+            section(rows: renderedRows(builtInRows: profileRows, in: .profile))
+            section(rows: renderedRows(builtInRows: actionRows, in: .actions))
           }
         }
       }
@@ -262,6 +299,20 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
 // MARK: - View Modifiers
 
 extension OrganizationProfileView {
+  /// Replaces the custom rows rendered on the root organization profile screen.
+  public func organizationProfileRows(
+    _ rows: [OrganizationProfileCustomRow<Route>]
+  ) -> OrganizationProfileView<Route, Destination> {
+    OrganizationProfileView<Route, Destination>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customRows: rows,
+      customDestination: customDestination
+    )
+  }
+}
+
+extension OrganizationProfileView where Destination == EmptyView {
   /// Sets the custom destination builder used by custom organization profile rows.
   ///
   /// This modifier is used when `OrganizationProfileView` manages its own `NavigationStack`
@@ -273,12 +324,25 @@ extension OrganizationProfileView {
     OrganizationProfileView<Route, NewDestination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
+      customRows: customRows,
       customDestination: destination
     )
   }
 }
 
 extension OrganizationProfileView where Route == Never, Destination == EmptyView {
+  /// Sets the custom rows rendered on the root organization profile screen.
+  public func organizationProfileRows<NewRoute: Hashable>(
+    _ rows: [OrganizationProfileCustomRow<NewRoute>]
+  ) -> OrganizationProfileView<NewRoute, EmptyView> {
+    OrganizationProfileView<NewRoute, EmptyView>(
+      isDismissable: isDismissable,
+      navigationPath: navigationPath,
+      customRows: rows,
+      customDestination: nil
+    )
+  }
+
   /// Sets the custom destination builder used by custom organization profile rows.
   ///
   /// This modifier is used when `OrganizationProfileView` manages its own `NavigationStack`
@@ -291,6 +355,7 @@ extension OrganizationProfileView where Route == Never, Destination == EmptyView
     OrganizationProfileView<NewRoute, NewDestination>(
       isDismissable: isDismissable,
       navigationPath: navigationPath,
+      customRows: [],
       customDestination: destination
     )
   }
@@ -300,7 +365,7 @@ extension OrganizationProfileView where Route == Never, Destination == EmptyView
 
 extension OrganizationProfileView {
   @ViewBuilder
-  private func section(rows: [OrganizationProfileRow]) -> some View {
+  private func section(rows: [OrganizationProfileListRow<Route>]) -> some View {
     if !rows.isEmpty {
       VStack(spacing: 0) {
         ForEach(rows) { row in
@@ -316,11 +381,34 @@ extension OrganizationProfileView {
     }
   }
 
-  private func rowView(_ row: OrganizationProfileRow) -> some View {
+  @ViewBuilder
+  private func rowView(_ listRow: OrganizationProfileListRow<Route>) -> some View {
+    switch listRow {
+    case .builtIn(let builtInRow):
+      builtInRowView(builtInRow)
+    case .custom(let customRow, _):
+      row(icon: customRow.icon, text: customRow.title, bundle: nil) {
+        navigateToCustom(customRow.route)
+      }
+    }
+  }
+
+  private func builtInRowView(_ rowType: OrganizationProfileRow) -> some View {
+    row(icon: rowType.icon, text: rowType.title) {
+      await action(for: rowType)
+    }
+  }
+
+  private func row(
+    icon: OrganizationProfileRowIcon,
+    text: LocalizedStringKey,
+    bundle: Bundle? = .module,
+    action: @escaping () async -> Void
+  ) -> some View {
     AsyncButton {
-      await action(for: row)
+      await action()
     } label: { isRunning in
-      UserProfileRowView(icon: row.icon, text: row.title)
+      UserProfileRowView(icon: icon, text: text, bundle: bundle)
         .overlayProgressView(isActive: isRunning)
     }
     .overlay(alignment: .bottom) {
@@ -330,6 +418,50 @@ extension OrganizationProfileView {
     }
     .buttonStyle(.pressedBackground)
     .simultaneousGesture(TapGesture())
+  }
+}
+
+// MARK: - Ordering
+
+extension OrganizationProfileView {
+  private func renderedRows(
+    builtInRows: [OrganizationProfileRow],
+    in section: OrganizationProfileSection
+  ) -> [OrganizationProfileListRow<Route>] {
+    let sectionCustomRows = customRows.filter { $0.placement.section == section }
+
+    let sectionStartRows = sectionCustomRows.filter { $0.placement.isSectionStart }
+    let sectionEndRows = sectionCustomRows.filter { $0.placement.isSectionEnd }
+
+    let rowsBeforeAnchor = sectionCustomRows.reduce(into: [OrganizationProfileRow: [OrganizationProfileCustomRow<Route>]]()) { result, customRow in
+      guard case .before(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
+    }
+
+    let rowsAfterAnchor = sectionCustomRows.reduce(into: [OrganizationProfileRow: [OrganizationProfileCustomRow<Route>]]()) { result, customRow in
+      guard case .after(let anchor) = customRow.placement else { return }
+      result[anchor, default: []].append(customRow)
+    }
+
+    var routeOccurrences = [AnyHashable: Int]()
+
+    func nextCustomRow(_ customRow: OrganizationProfileCustomRow<Route>) -> OrganizationProfileListRow<Route> {
+      let key = AnyHashable(customRow.route)
+      let occurrence = routeOccurrences[key, default: 0]
+      routeOccurrences[key] = occurrence + 1
+      return .custom(customRow, occurrence: occurrence)
+    }
+
+    var rows: [OrganizationProfileListRow<Route>] = sectionStartRows.map(nextCustomRow)
+
+    for builtInRow in builtInRows {
+      rows.append(contentsOf: rowsBeforeAnchor[builtInRow, default: []].map(nextCustomRow))
+      rows.append(.builtIn(builtInRow))
+      rows.append(contentsOf: rowsAfterAnchor[builtInRow, default: []].map(nextCustomRow))
+    }
+
+    rows.append(contentsOf: sectionEndRows.map(nextCustomRow))
+    return rows
   }
 }
 
@@ -403,39 +535,23 @@ extension OrganizationProfileView {
   }
 }
 
-private enum OrganizationProfileRow: Hashable, Identifiable {
-  case members
-  case verifiedDomains
-  case leaveOrganization
-  case deleteOrganization
+private enum OrganizationProfileListRow<Route: Hashable>: Identifiable {
+  case builtIn(OrganizationProfileRow)
+  case custom(OrganizationProfileCustomRow<Route>, occurrence: Int)
 
-  var id: Self {
-    self
-  }
-
-  var icon: UserProfileRowIcon {
+  var id: OrganizationProfileListRowID<Route> {
     switch self {
-    case .members:
-      .system(name: "person.2.fill")
-    case .verifiedDomains:
-      .asset(name: "icon-security")
-    case .leaveOrganization, .deleteOrganization:
-      .asset(name: "icon-sign-out")
+    case .builtIn(let row):
+      .builtIn(row)
+    case .custom(let row, let occurrence):
+      .custom(route: row.route, occurrence: occurrence)
     }
   }
+}
 
-  var title: LocalizedStringKey {
-    switch self {
-    case .members:
-      "Members"
-    case .verifiedDomains:
-      "Verified domains"
-    case .leaveOrganization:
-      "Leave organization"
-    case .deleteOrganization:
-      "Delete organization"
-    }
-  }
+private enum OrganizationProfileListRowID<Route: Hashable>: Hashable {
+  case builtIn(OrganizationProfileRow)
+  case custom(route: Route, occurrence: Int)
 }
 
 #Preview("Organization Profile") {
