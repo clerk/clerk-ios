@@ -64,14 +64,6 @@ final class SessionService: SessionServiceProtocol {
 
   @MainActor
   func setActive(sessionId: String, organizationId: String?) async throws {
-    if organizationId == nil,
-       Clerk.shared.environment?.organizationSettings.forceOrganizationSelection == true
-    {
-      // Matches Clerk.js behavior: selecting the personal account is ignored when
-      // force organization selection is enabled.
-      return
-    }
-
     let request = Request<ClientResponse<Session>>(
       path: "/v1/client/sessions/\(sessionId)/touch",
       method: .post,

@@ -165,7 +165,7 @@ struct SessionServiceTests {
   }
 
   @Test
-  func setActiveWithNilOrganizationIdDoesNotSelectPersonalAccountWhenForcedOrganizationSelectionIsEnabled() async throws {
+  func setActiveWithNilOrganizationIdSendsRequestWhenForcedOrganizationSelectionIsEnabled() async throws {
     var organizationSettings = Clerk.Environment.OrganizationSettings.mock
     organizationSettings.forceOrganizationSelection = true
     Clerk.shared.environment = .init(
@@ -195,7 +195,7 @@ struct SessionServiceTests {
       organizationId: nil
     )
 
-    #expect(requestHandled.value == false)
+    #expect(requestHandled.value)
   }
 
   @Test(
