@@ -189,7 +189,7 @@ public struct OrganizationListView: View {
         }
       }
 
-      if !shouldStartCreateOrganizationFlow {
+      if !accountList.isLoading, !shouldStartCreateOrganizationFlow {
         ToolbarItem(placement: .principal) {
           Text(title, bundle: .module)
             .font(theme.fonts.headline)
