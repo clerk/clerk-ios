@@ -15,8 +15,9 @@ import SwiftUI
 /// organization, accepting invitations, requesting to join suggested organizations, or creating
 /// a new organization when allowed by the current environment.
 ///
-/// The switcher renders only when a user is signed in. Personal account selection is hidden
-/// automatically when organization selection is required by the environment.
+/// The switcher renders only when Organizations are enabled and a user is signed in.
+/// Personal account selection is hidden automatically when organization selection is
+/// required by the environment.
 ///
 /// ## Usage
 ///
@@ -60,6 +61,10 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
 
   private var forceOrganizationSelection: Bool {
     clerk.environment?.organizationSettings.forceOrganizationSelection == true
+  }
+
+  private var organizationsEnabled: Bool {
+    clerk.environment?.organizationSettings.enabled == true
   }
 
   private var shouldShowPersonalAccount: Bool {
@@ -111,7 +116,7 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   }
 
   public var body: some View {
-    if let user {
+    if organizationsEnabled, let user {
       Button {
         if let activeOrganization {
           presentedSheet = .overview(activeOrganization)

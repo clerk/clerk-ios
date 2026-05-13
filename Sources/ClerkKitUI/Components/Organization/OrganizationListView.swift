@@ -13,6 +13,7 @@ import SwiftUI
 /// memberships, pending organization invitations, suggested organizations, and a create
 /// organization entry when organization creation is available.
 ///
+/// The view renders only when Organizations are enabled and a user is signed in.
 /// Selecting a personal account clears the active organization. Selecting an organization
 /// makes that organization active. Personal account selection is hidden automatically when
 /// organization selection is required by the environment.
@@ -73,6 +74,10 @@ public struct OrganizationListView: View {
     clerk.environment?.organizationSettings.forceOrganizationSelection == true
   }
 
+  private var organizationsEnabled: Bool {
+    clerk.environment?.organizationSettings.enabled == true
+  }
+
   private var shouldShowPersonalAccount: Bool {
     user != nil && !hidePersonal && !forceOrganizationSelection
   }
@@ -128,7 +133,7 @@ public struct OrganizationListView: View {
   }
 
   public var body: some View {
-    if user != nil {
+    if organizationsEnabled, user != nil {
       Group {
         if navigationPath == nil {
           NavigationStack(path: $internalPath) {
