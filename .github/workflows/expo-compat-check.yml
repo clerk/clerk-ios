@@ -1,0 +1,93 @@
+name: "@clerk/expo compat check"
+
+# Manual / on-demand verification that a clerk-ios ref does not break
+# @clerk/expo's native components. Run this BEFORE you publish a clerk-ios
+# release if your change touches anything @clerk/expo depends on (auth
+# flows, AuthView, UserButton, native bridge contracts, public API of
+# ClerkKit/ClerkKitUI). Not required — small fixes can go straight to
+# release-sdk.yml.
+#
+# The Maestro suite, fixtures, caching, and CI pipeline live in
+# clerk/javascript .github/workflows/mobile-e2e.yml. This workflow is a
+# thin dispatcher that runs there with the clerk-ios SHA pinned via the
+# `clerk_ios_ref` input.
+#
+# Requires the MOBILE_E2E_DISPATCH_TOKEN secret: a PAT or GitHub App
+# token with `actions: write` scope on the clerk/javascript repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "clerk-ios ref to test (SHA or branch). Empty = github.sha of the run."
+        required: false
+        default: ""
+      quickstart_ref:
+        description: "clerk-expo-quickstart git ref (default: main)"
+        required: false
+        default: "main"
+
+jobs:
+  compat:
+    name: "Dispatch mobile-e2e and watch"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Resolve clerk-ios ref to test
+        id: ref
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          ref="${INPUT_REF:-${GITHUB_SHA}}"
+          echo "value=${ref}" >> "$GITHUB_OUTPUT"
+          echo "Testing clerk-ios ref: ${ref}"
+
+      - name: Dispatch mobile-e2e.yml on clerk/javascript and wait
+        env:
+          GH_TOKEN: ${{ secrets.MOBILE_E2E_DISPATCH_TOKEN }}
+          CLERK_IOS_REF: ${{ steps.ref.outputs.value }}
+          QUICKSTART_REF: ${{ inputs.quickstart_ref }}
+        run: |
+          set -euo pipefail
+
+          # Record dispatch time so we can disambiguate our run from any
+          # parallel dispatches (PR-triggered runs, other compat checks, etc.).
+          since="$(date -u -d '30 seconds ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+                || date -u -v-30S +%Y-%m-%dT%H:%M:%SZ)"
+
+          echo "Dispatching mobile-e2e.yml with clerk_ios_ref=${CLERK_IOS_REF}..."
+          gh workflow run mobile-e2e.yml \
+            --repo clerk/javascript \
+            --ref main \
+            -f clerk_ios_ref="${CLERK_IOS_REF}" \
+            -f quickstart_ref="${QUICKSTART_REF}"
+
+          # The workflow_dispatch REST endpoint doesn't return the run id, so
+          # poll briefly for the newest workflow_dispatch run created after
+          # `since`.
+          run_id=""
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 5
+            run_id="$(gh api \
+              "repos/clerk/javascript/actions/workflows/mobile-e2e.yml/runs?event=workflow_dispatch&created=>${since}&per_page=10" \
+              --jq '.workflow_runs | sort_by(.created_at) | reverse | .[0].id // empty')"
+            [ -n "${run_id}" ] && break
+          done
+
+          if [ -z "${run_id}" ]; then
+            echo "::error::Could not find the dispatched mobile-e2e run after 50s"
+            exit 1
+          fi
+
+          url="https://github.com/clerk/javascript/actions/runs/${run_id}"
+          {
+            echo "## @clerk/expo compat check"
+            echo "Dispatched run: [${run_id}](${url})"
+            echo ""
+            echo "- clerk-ios ref: \`${CLERK_IOS_REF}\`"
+            echo "- quickstart ref: \`${QUICKSTART_REF}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Watching ${url}"
+          gh run watch "${run_id}" --repo clerk/javascript --exit-status

@@ -7,15 +7,6 @@ on:
         description: SDK version to release (SemVer, for example 1.2.3)
         required: true
         type: string
-      skip_expo_compat:
-        description: "Skip the @clerk/expo compat gate (emergency override only)"
-        required: false
-        type: boolean
-        default: false
-      skip_reason:
-        description: "Reason for skipping compat gate (required when skip=true)"
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -70,108 +61,10 @@ jobs:
       run_integration_tests: true
     secrets: inherit
 
-  log-skip:
-    name: "Log gate skip (emergency override)"
-    needs: authorize
-    runs-on: ubuntu-latest
-    if: inputs.skip_expo_compat == true
-    steps:
-      - name: Fail if skip invoked without a reason
-        if: ${{ !inputs.skip_reason }}
-        run: |
-          echo "::error::skip_expo_compat=true requires skip_reason to be provided"
-          exit 1
-      - name: Record skip to the job summary
-        run: |
-          {
-            echo "## ⚠️ Expo compat gate skipped"
-            echo ""
-            echo "- Actor: @${{ github.triggering_actor }}"
-            echo "- Reason: ${{ inputs.skip_reason }}"
-            echo "- Version: ${{ inputs.version }}"
-            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  expo-compat:
-    name: "@clerk/expo compat (Maestro)"
-    needs: checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    if: inputs.skip_expo_compat != true
-    # Release gate: verifies the clerk-ios ref about to be published does not
-    # break @clerk/expo. The Maestro flows, fixtures, and CI pipeline live in
-    # the @clerk/javascript repo (.github/workflows/mobile-e2e.yml). This job
-    # is just a thin caller that dispatches that workflow against the SHA we
-    # are about to release and waits for its conclusion.
-    #
-    # MOBILE_E2E_DISPATCH_TOKEN must be a PAT or GitHub App token with
-    # `actions: write` scope on the clerk/javascript repository.
-    #
-    # Emergency override: maintainers can skip this gate by setting
-    # skip_expo_compat=true AND providing skip_reason on workflow_dispatch.
-    # The skip is recorded permanently in the Actions run log.
-    steps:
-      - name: Dispatch mobile-e2e.yml on clerk/javascript and wait
-        env:
-          GH_TOKEN: ${{ secrets.MOBILE_E2E_DISPATCH_TOKEN }}
-          CLERK_IOS_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          # Record dispatch time so we can disambiguate our run from any
-          # parallel dispatches (e.g. PR-triggered runs on @clerk/javascript).
-          since="$(date -u -d '30 seconds ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
-                || date -u -v-30S +%Y-%m-%dT%H:%M:%SZ)"
-
-          echo "Dispatching mobile-e2e.yml with clerk_ios_ref=${CLERK_IOS_SHA}..."
-          gh workflow run mobile-e2e.yml \
-            --repo clerk/javascript \
-            --ref main \
-            -f clerk_ios_ref="${CLERK_IOS_SHA}" \
-            -f quickstart_ref=main
-
-          # The workflow_dispatch REST endpoint doesn't return the run id, so
-          # poll briefly for the newest workflow_dispatch run created after
-          # `since`.
-          run_id=""
-          for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            sleep 5
-            run_id="$(gh api \
-              "repos/clerk/javascript/actions/workflows/mobile-e2e.yml/runs?event=workflow_dispatch&created=>${since}&per_page=10" \
-              --jq '.workflow_runs | sort_by(.created_at) | reverse | .[0].id // empty')"
-            [ -n "${run_id}" ] && break
-          done
-
-          if [ -z "${run_id}" ]; then
-            echo "::error::Could not find the dispatched mobile-e2e run after 50s"
-            exit 1
-          fi
-
-          url="https://github.com/clerk/javascript/actions/runs/${run_id}"
-          {
-            echo "## @clerk/expo compat gate"
-            echo "Dispatched run: [${run_id}](${url})"
-            echo ""
-            echo "clerk-ios SHA: \`${CLERK_IOS_SHA}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          echo "Watching ${url}"
-          gh run watch "${run_id}" --repo clerk/javascript --exit-status
-
   publish:
     name: Bump, tag, and publish release
-    needs: [checks, expo-compat, log-skip]
+    needs: checks
     runs-on: macos-latest
-    # Publish when checks passed AND:
-    #   - expo-compat succeeded, OR
-    #   - the gate was explicitly skipped via skip_expo_compat=true + skip_reason
-    if: |
-      always()
-      && needs.checks.result == 'success'
-      && (
-        needs.expo-compat.result == 'success'
-        || (inputs.skip_expo_compat == true && needs.log-skip.result == 'success')
-      )
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 
