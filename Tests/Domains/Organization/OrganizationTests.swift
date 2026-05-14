@@ -27,7 +27,7 @@ struct OrganizationTests {
   }
 
   struct DomainsScenario: Codable, Equatable {
-    let enrollmentMode: String?
+    let enrollmentMode: OrganizationDomain.EnrollmentMode?
   }
 
   struct MembershipRequestsScenario: Codable, Equatable {
@@ -423,7 +423,7 @@ struct OrganizationTests {
   @Test(
     arguments: [
       DomainsScenario(enrollmentMode: nil),
-      DomainsScenario(enrollmentMode: "automatic"),
+      DomainsScenario(enrollmentMode: .unknown("future_mode")),
     ]
   )
   func getOrganizationDomainsUsesOrganizationServiceGetOrganizationDomains(
@@ -448,11 +448,11 @@ struct OrganizationTests {
     #expect(params.0 == organization.id)
     #expect(params.1 == 10)
     #expect(params.2 == 10)
-    #expect(params.3 == scenario.enrollmentMode)
+    #expect(params.3 == scenario.enrollmentMode?.rawValue)
   }
 
   @Test
-  func getOrganizationDomainsWithTypedEnrollmentModeUsesRawEnrollmentMode() async throws {
+  func getOrganizationDomainsWithEnrollmentModeUsesRawEnrollmentMode() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
     let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in

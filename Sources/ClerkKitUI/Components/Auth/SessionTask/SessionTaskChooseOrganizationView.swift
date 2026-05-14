@@ -14,7 +14,7 @@ struct SessionTaskChooseOrganizationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  @State private var accountList = OrganizationAccountListModel()
+  @State private var accountList = OrganizationAccountListDataSource()
   @State private var isSelectingOrganization = false
 
   private var user: User? {

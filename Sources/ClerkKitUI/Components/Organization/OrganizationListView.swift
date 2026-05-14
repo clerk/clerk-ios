@@ -62,7 +62,7 @@ public struct OrganizationListView: View {
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
 
-  @State private var accountList = OrganizationAccountListModel()
+  @State private var accountList = OrganizationAccountListDataSource()
   @State private var internalPath = NavigationPath()
   @State private var isSelectingAccount = false
 

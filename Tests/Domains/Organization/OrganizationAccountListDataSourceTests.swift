@@ -4,7 +4,7 @@ import ConcurrencyExtras
 import Foundation
 import XCTest
 
-final class OrganizationAccountListModelTests: XCTestCase {
+final class OrganizationAccountListDataSourceTests: XCTestCase {
   @MainActor
   func testLoadInitialFetchesResourcesAndCreationDefaults() async throws {
     configureClerkForTesting()
@@ -35,7 +35,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     )
     setDependencies(userService: userService)
 
-    let model = OrganizationAccountListModel(pageSize: 3)
+    let model = OrganizationAccountListDataSource(pageSize: 3)
     await model.loadInitial(user: .mock, includeCreationDefaults: true)
 
     XCTAssertFalse(model.isLoading)
@@ -78,7 +78,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     )
     setDependencies(userService: userService)
 
-    let model = OrganizationAccountListModel()
+    let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
 
     XCTAssertFalse(model.isLoading)
@@ -98,7 +98,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     )
     setDependencies(userService: userService)
 
-    let model = OrganizationAccountListModel()
+    let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
 
     XCTAssertFalse(model.isLoading)
@@ -119,7 +119,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     })
     setDependencies(userService: userService)
 
-    let model = OrganizationAccountListModel(pageSize: 4)
+    let model = OrganizationAccountListDataSource(pageSize: 4)
     model.membershipsPager.replace(with: ClerkPaginatedResponse(
       data: [membership(id: "mem_1", organizationId: "org_member_1")],
       totalCount: 2
@@ -192,7 +192,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     })
     setDependencies(organizationService: organizationService)
 
-    let model = OrganizationAccountListModel()
+    let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
     model.invitationsPager.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1))
 
@@ -220,7 +220,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     )
     setDependencies(organizationService: organizationService)
 
-    let model = OrganizationAccountListModel()
+    let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
     model.invitationsPager.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1))
 
@@ -249,7 +249,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     })
     setDependencies(userService: userService, organizationService: organizationService)
 
-    let model = OrganizationAccountListModel(pageSize: 2)
+    let model = OrganizationAccountListDataSource(pageSize: 2)
     let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
     let secondInvitation = invitation(id: "inv_2", organizationId: "org_2")
     model.invitationsPager.replace(with: ClerkPaginatedResponse(
@@ -289,7 +289,7 @@ final class OrganizationAccountListModelTests: XCTestCase {
     })
     setDependencies(organizationService: organizationService)
 
-    let model = OrganizationAccountListModel()
+    let model = OrganizationAccountListDataSource()
     model.suggestionsPager.replace(with: ClerkPaginatedResponse(
       data: [suggestion(id: "sug_1", organizationId: "org_suggested")],
       totalCount: 1

@@ -1,5 +1,5 @@
 //
-//  OrganizationAccountListModel.swift
+//  OrganizationAccountListDataSource.swift
 //
 
 import ClerkKit
@@ -8,7 +8,7 @@ import Observation
 
 @MainActor
 @Observable
-final class OrganizationAccountListModel {
+final class OrganizationAccountListDataSource {
   let pageSize: Int
 
   var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()

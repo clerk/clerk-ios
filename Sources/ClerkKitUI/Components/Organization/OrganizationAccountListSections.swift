@@ -10,7 +10,7 @@ import SwiftUI
 struct OrganizationAccountListSections: View {
   @Environment(Clerk.self) private var clerk
 
-  let accountList: OrganizationAccountListModel
+  let accountList: OrganizationAccountListDataSource
   let mode: OrganizationAccountListMode
   let onSelection: (OrganizationAccountListSelection) -> Void
   let onCreateOrganization: () -> Void
@@ -165,7 +165,7 @@ private struct OrganizationAccountMembershipRow: View {
 
 private struct OrganizationAccountInvitationRow: View {
   let invitation: UserOrganizationInvitation
-  let accountList: OrganizationAccountListModel
+  let accountList: OrganizationAccountListDataSource
   let onSelectOrganization: (String) -> Void
 
   private var roleName: String {
@@ -206,7 +206,7 @@ private struct OrganizationAccountInvitationRow: View {
 
 private struct OrganizationAccountSuggestionRow: View {
   let suggestion: OrganizationSuggestion
-  let accountList: OrganizationAccountListModel
+  let accountList: OrganizationAccountListDataSource
 
   var body: some View {
     if suggestion.isAccepted {

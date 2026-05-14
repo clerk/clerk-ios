@@ -79,11 +79,8 @@ struct OrganizationDomainEmailAddressView: View {
     .onChange(of: emailLocalPart) { _, newValue in
       error = nil
 
-      let prefix = newValue.split(separator: "@", maxSplits: 1).first.map(String.init) ?? ""
-      if prefix.count > 25 {
-        emailLocalPart = String(prefix.prefix(25))
-      } else if prefix != newValue {
-        emailLocalPart = prefix
+      if let atIndex = newValue.firstIndex(of: "@") {
+        emailLocalPart = String(newValue[..<atIndex])
       }
     }
   }

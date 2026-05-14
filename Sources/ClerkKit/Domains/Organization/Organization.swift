@@ -344,12 +344,12 @@ extension Organization {
   public func getDomains(
     page: Int = 1,
     pageSize: Int = 20,
-    enrollmentMode: String? = nil
+    enrollmentMode: OrganizationDomain.EnrollmentMode? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await getDomains(
       offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize,
-      enrollmentMode: enrollmentMode
+      enrollmentMode: enrollmentMode?.rawValue
     )
   }
 
@@ -371,26 +371,6 @@ extension Organization {
       initialPage: offset,
       pageSize: pageSize,
       enrollmentMode: enrollmentMode
-    )
-  }
-
-  /// Retrieves the list of domains for the currently active organization filtered by a typed enrollment mode.
-  ///
-  /// - Parameters:
-  ///  - page: The 1-based page number to fetch. Defaults to `1`.
-  ///  - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
-  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
-  @MainActor
-  public func getDomains(
-    page: Int = 1,
-    pageSize: Int = 20,
-    enrollmentMode: OrganizationDomain.EnrollmentMode
-  ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-    try await getDomains(
-      page: page,
-      pageSize: pageSize,
-      enrollmentMode: enrollmentMode.rawValue
     )
   }
 
