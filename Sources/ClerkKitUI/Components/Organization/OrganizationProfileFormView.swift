@@ -55,10 +55,6 @@ struct OrganizationProfileFormView: View {
     slug.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
-  private var submitTitle: LocalizedStringKey {
-    isUpdateMode ? "Save" : "Create organization"
-  }
-
   private var remoteLogoUrl: URL? {
     guard
       selectedImageData == nil,
@@ -69,10 +65,6 @@ struct OrganizationProfileFormView: View {
     }
 
     return URL(string: imageUrl)
-  }
-
-  private var showsLogoMenu: Bool {
-    selectedImageData != nil || remoteLogoUrl != nil
   }
 
   private var logoCanBeRemoved: Bool {
@@ -156,7 +148,7 @@ extension OrganizationProfileFormView {
   private var formContent: some View {
     Group {
       logoSection
-        .frame(maxWidth: .infinity, alignment: showsLogoMenu ? .center : .leading)
+        .frame(maxWidth: .infinity, alignment: isUpdateMode ? .center : .leading)
         .padding(.bottom, 24)
 
       VStack(spacing: 16) {
@@ -183,7 +175,7 @@ extension OrganizationProfileFormView {
       AsyncButton {
         await submit()
       } label: { isRunning in
-        Text(submitTitle, bundle: .module)
+        Text(isUpdateMode ? "Save" : "Create organization", bundle: .module)
           .frame(maxWidth: .infinity)
           .overlayProgressView(isActive: isRunning) {
             SpinnerView(color: theme.colors.primaryForeground)
@@ -205,7 +197,7 @@ extension OrganizationProfileFormView {
 extension OrganizationProfileFormView {
   private var logoSection: some View {
     Group {
-      if showsLogoMenu {
+      if isUpdateMode {
         logoAvatar
       } else {
         HStack(spacing: 16) {
@@ -241,7 +233,7 @@ extension OrganizationProfileFormView {
     .frame(width: 96, height: 96)
     .clipShape(.circle)
     .overlay(alignment: .bottomTrailing) {
-      if showsLogoMenu {
+      if isUpdateMode {
         Menu {
           logoMenuContent
         } label: {
