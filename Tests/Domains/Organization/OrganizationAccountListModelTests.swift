@@ -205,6 +205,80 @@ final class OrganizationAccountListModelTests: XCTestCase {
   }
 
   @MainActor
+  func testAcceptInvitationKeepsPublicOrganizationDataWithoutFetchingOrganization() async throws {
+    configureClerkForTesting()
+
+    let fetchedOrganizationId = LockIsolated<String?>(nil)
+    let organizationService = MockOrganizationService(
+      getOrganization: { organizationId in
+        fetchedOrganizationId.setValue(organizationId)
+        throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
+      },
+      acceptUserOrganizationInvitation: { invitationId in
+        invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
+      }
+    )
+    setDependencies(organizationService: organizationService)
+
+    let model = OrganizationAccountListModel()
+    let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
+    model.invitationsPager.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1))
+
+    await model.acceptInvitation(pendingInvitation)
+
+    let acceptedInvitation = try XCTUnwrap(model.invitationsPager.items.first)
+    XCTAssertEqual(acceptedInvitation.status, "accepted")
+    XCTAssertEqual(acceptedInvitation.publicOrganizationData.id, "org_invite")
+    XCTAssertNil(fetchedOrganizationId.value)
+  }
+
+  @MainActor
+  func testAcceptInvitationKeepsAcceptedRowAndUsesPendingOffsetForNextPage() async throws {
+    configureClerkForTesting()
+
+    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: String?)]>([])
+    let userService = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
+      invitationCalls.withValue { $0.append((offset, pageSize, status)) }
+      return ClerkPaginatedResponse(
+        data: [invitation(id: "inv_3", organizationId: "org_3")],
+        totalCount: 2
+      )
+    })
+    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+      invitation(id: invitationId, organizationId: "org_1", status: "accepted")
+    })
+    setDependencies(userService: userService, organizationService: organizationService)
+
+    let model = OrganizationAccountListModel(pageSize: 2)
+    let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
+    let secondInvitation = invitation(id: "inv_2", organizationId: "org_2")
+    model.invitationsPager.replace(with: ClerkPaginatedResponse(
+      data: [firstInvitation, secondInvitation],
+      totalCount: 3
+    ))
+
+    await model.acceptInvitation(firstInvitation)
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
+    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending"])
+    XCTAssertEqual(model.invitationsPager.offset, 1)
+    XCTAssertEqual(model.invitationsPager.totalCount, 2)
+    XCTAssertTrue(model.invitationsPager.hasNextPage)
+
+    await model.loadMoreInvitations(user: .mock)
+
+    let invitationCall = try XCTUnwrap(invitationCalls.value.first)
+    XCTAssertEqual(invitationCall.offset, 1)
+    XCTAssertEqual(invitationCall.pageSize, 2)
+    XCTAssertEqual(invitationCall.status, "pending")
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
+    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending", "pending"])
+    XCTAssertEqual(model.invitationsPager.offset, 2)
+    XCTAssertEqual(model.invitationsPager.totalCount, 2)
+    XCTAssertFalse(model.invitationsPager.hasNextPage)
+  }
+
+  @MainActor
   func testAcceptSuggestionReplacesSuggestionWithAcceptedVersion() async {
     configureClerkForTesting()
 
