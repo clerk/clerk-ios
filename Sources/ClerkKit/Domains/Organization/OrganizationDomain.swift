@@ -74,11 +74,11 @@ public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Se
 
   /// Whether this organization domain has completed verification.
   public var isVerified: Bool {
-    verification.status == "verified"
+    verification?.status == "verified"
   }
 
-  /// The object that describes the status of the verification process of the domain.
-  public var verification: Verification
+  /// The object that describes the status of the verification process of the domain, or `nil` if verification has not been prepared.
+  public var verification: Verification?
 
   /// The email address that was used to verify this organization domain, or `nil` if not available.
   public var affiliationEmailAddress: String?
@@ -100,7 +100,7 @@ public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Se
     name: String,
     organizationId: String,
     enrollmentMode: String,
-    verification: OrganizationDomain.Verification,
+    verification: OrganizationDomain.Verification? = nil,
     affiliationEmailAddress: String? = nil,
     totalPendingInvitations: Int,
     totalPendingSuggestions: Int,

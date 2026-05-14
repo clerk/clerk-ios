@@ -643,12 +643,40 @@ struct OrganizationTests {
   @Test
   func organizationDomainIsVerifiedUsesVerificationStatus() {
     var domain = OrganizationDomain.mock
-    domain.verification.status = "verified"
+    domain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
 
     #expect(domain.isVerified)
 
-    domain.verification.status = "unverified"
+    domain.verification = .init(status: "unverified", strategy: "strategy", attempts: 0)
 
+    #expect(!domain.isVerified)
+
+    domain.verification = nil
+
+    #expect(!domain.isVerified)
+  }
+
+  @Test
+  func organizationDomainDecodesNullVerification() throws {
+    let json = """
+    {
+      "object": "organization_domain",
+      "id": "domain_1",
+      "name": "example.com",
+      "organization_id": "org_1",
+      "enrollment_mode": "manual_invitation",
+      "verification": null,
+      "affiliation_email_address": null,
+      "total_pending_invitations": 0,
+      "total_pending_suggestions": 0,
+      "created_at": 0,
+      "updated_at": 0
+    }
+    """.data(using: .utf8)!
+
+    let domain = try JSONDecoder.clerkDecoder.decode(OrganizationDomain.self, from: json)
+
+    #expect(domain.verification == nil)
     #expect(!domain.isVerified)
   }
 

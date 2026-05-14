@@ -242,7 +242,7 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
       var domain = OrganizationDomain.mock
       domain.name = "clerky.com"
       domain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
-      domain.verification.status = "verified"
+      domain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
       return domain
     }()
   ) {}

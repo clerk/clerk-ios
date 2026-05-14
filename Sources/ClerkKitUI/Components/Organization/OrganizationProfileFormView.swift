@@ -361,15 +361,14 @@ extension OrganizationProfileFormView {
     name: String,
     slug: String?
   ) async throws -> Organization {
-    guard var organization else {
+    guard let organization else {
       throw ClerkClientError(message: "Unable to update organization without an active organization.")
     }
 
     let updatedOrganization = try await organization.update(name: name, slug: slug)
-    organization = clerk.organization ?? updatedOrganization
-    self.organization = organization
+    self.organization = updatedOrganization
 
-    return organization
+    return updatedOrganization
   }
 
   private func complete(with organization: Organization) {
@@ -414,30 +413,21 @@ extension OrganizationProfileFormView {
   }
 
   private func setOrganizationLogo(imageData: Data) async throws {
-    guard var organization else { return }
+    guard let organization else { return }
 
-    let updatedOrganization = try await organization.setLogo(imageData: imageData)
-    organization = clerk.organization ?? updatedOrganization
-    self.organization = organization
+    self.organization = try await organization.setLogo(imageData: imageData)
     selectedImageData = imageData
   }
 
   private func removeLogo() async {
     if isUpdateMode {
-      guard var organization else { return }
+      guard let organization else { return }
 
       isPickerImageLoading = true
       defer { isPickerImageLoading = false }
 
       do {
-        try await organization.deleteLogo()
-        if let syncedOrganization = clerk.organization {
-          organization = syncedOrganization
-        } else {
-          organization.hasImage = false
-          organization.imageUrl = ""
-        }
-        self.organization = organization
+        self.organization = try await organization.deleteLogo()
         selectedImageData = nil
       } catch {
         self.error = error
