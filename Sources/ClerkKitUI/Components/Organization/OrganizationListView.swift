@@ -180,7 +180,7 @@ public struct OrganizationListView: View {
       }
     }
     .toolbar {
-      if isDismissable, !shouldStartCreateOrganizationFlow {
+      if isDismissable {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
             dismiss()
