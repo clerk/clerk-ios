@@ -45,7 +45,6 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
             .fontWeight(.bold)
             .frame(minHeight: 28)
             .foregroundStyle(theme.colors.foreground)
-            .lineLimit(2)
             .multilineTextAlignment(.center)
         }
 
@@ -53,7 +52,6 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
           Text(verbatim: subtitle)
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
-            .lineLimit(1)
         }
       }
 
