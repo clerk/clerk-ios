@@ -117,7 +117,7 @@ extension OrganizationProfileActionConfirmationView {
       dismiss()
     } catch {
       self.error = error
-      ClerkLogger.error(action.errorMessage, error: error)
+      ClerkLogger.error(action.logMessage, error: error)
     }
   }
 }
@@ -166,7 +166,7 @@ enum OrganizationProfileActionConfirmation: Hashable, Identifiable {
     "This action is permanent and irreversible."
   }
 
-  var errorMessage: String {
+  var logMessage: String {
     switch self {
     case .leave:
       "Failed to leave organization"

@@ -29,18 +29,6 @@ struct OrganizationRow<Accessory: View>: View {
   init(
     name: String,
     imageUrl: String,
-    subtitle: String,
-    @ViewBuilder accessory: () -> Accessory
-  ) {
-    self.name = name
-    self.imageUrl = imageUrl
-    self.subtitle = Text(verbatim: subtitle)
-    self.accessory = accessory()
-  }
-
-  init(
-    name: String,
-    imageUrl: String,
     subtitle: LocalizedStringKey,
     @ViewBuilder accessory: () -> Accessory
   ) {
@@ -86,12 +74,6 @@ extension OrganizationRow where Accessory == EmptyView {
   }
 
   init(name: String, imageUrl: String, subtitle: String?) {
-    self.init(name: name, imageUrl: imageUrl, subtitle: subtitle) {
-      EmptyView()
-    }
-  }
-
-  init(name: String, imageUrl: String, subtitle: String) {
     self.init(name: name, imageUrl: imageUrl, subtitle: subtitle) {
       EmptyView()
     }

@@ -110,20 +110,32 @@ struct OrganizationVerifiedDomainsView: View {
     }
     .clerkErrorPresenting($error)
     .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
-      OrganizationDomainFlowSheet(
-        presentedDomainFlow: presentedDomainFlow,
-        onDomainChanged: {
-          Task {
-            await revalidateLoadedDomains()
-          }
-        },
-        onDomainDeleted: { deletedDomain in
-          domainsPager.remove(deletedDomain)
-        }
-      )
+      view(for: presentedDomainFlow)
     }
     .task(id: organization?.id) {
       await loadDomains(page: 1)
+    }
+  }
+
+  @ViewBuilder
+  private func view(for presentedDomainFlow: PresentedDomainFlow) -> some View {
+    switch presentedDomainFlow {
+    case .add:
+      OrganizationAddDomainView(onDomainChanged: revalidateDomains)
+    case let .verify(domain):
+      OrganizationDomainVerificationFlowSheet(domain: domain, onDomainChanged: revalidateDomains)
+    case let .enrollmentMode(domain):
+      OrganizationDomainEnrollmentModeView(domain: domain, onDomainChanged: revalidateDomains)
+    case let .delete(domain):
+      OrganizationDomainDeleteConfirmationView(domain: domain) { deletedDomain in
+        domainsPager.remove(deletedDomain)
+      }
+    }
+  }
+
+  private func revalidateDomains() {
+    Task {
+      await revalidateLoadedDomains()
     }
   }
 }
@@ -324,27 +336,6 @@ extension OrganizationVerifiedDomainsView {
 
       self.error = error
       ClerkLogger.error("Failed to load more organization domains", error: error)
-    }
-  }
-}
-
-// MARK: - Sheets
-
-private struct OrganizationDomainFlowSheet: View {
-  let presentedDomainFlow: PresentedDomainFlow
-  let onDomainChanged: @MainActor () -> Void
-  let onDomainDeleted: @MainActor (OrganizationDomain) -> Void
-
-  var body: some View {
-    switch presentedDomainFlow {
-    case .add:
-      OrganizationAddDomainView(onDomainChanged: onDomainChanged)
-    case let .verify(domain):
-      OrganizationDomainVerificationFlowSheet(domain: domain, onDomainChanged: onDomainChanged)
-    case let .enrollmentMode(domain):
-      OrganizationDomainEnrollmentModeView(domain: domain, onDomainChanged: onDomainChanged)
-    case let .delete(domain):
-      OrganizationDomainDeleteConfirmationView(domain: domain, onDomainDeleted: onDomainDeleted)
     }
   }
 }

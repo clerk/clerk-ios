@@ -182,11 +182,10 @@ extension OrganizationDomainEnrollmentModeView {
   @MainActor
   private func save() async {
     do {
-      let updatedDomain = try await domain.updateEnrollmentMode(
+      domain = try await domain.updateEnrollmentMode(
         selectedMode,
         deletePending: deletePending
       )
-      domain = updatedDomain
       onDomainChanged()
       dismiss()
     } catch {

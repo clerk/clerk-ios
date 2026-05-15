@@ -116,24 +116,41 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   }
 
   public var body: some View {
-    if organizationsEnabled, let user {
-      Button {
-        if let activeOrganization {
-          presentedSheet = .overview(activeOrganization)
-        } else {
-          presentedSheet = .accountList
+    Group {
+      if organizationsEnabled, let user {
+        Button {
+          if let activeOrganization {
+            presentedSheet = .overview(activeOrganization)
+          } else {
+            presentedSheet = .accountList
+          }
+        } label: {
+          OrganizationSwitcherLabel(
+            organization: activeOrganization,
+            user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil,
+            displayMode: displayMode
+          )
         }
-      } label: {
-        OrganizationSwitcherLabel(
-          organization: activeOrganization,
-          user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil,
-          displayMode: displayMode
-        )
+        .buttonStyle(.plain)
+        .tint(theme.colors.primary)
       }
-      .buttonStyle(.plain)
-      .tint(theme.colors.primary)
-      .sheet(item: $presentedSheet) { sheet in
-        view(for: sheet)
+    }
+    .sheet(item: $presentedSheet) { sheet in
+      view(for: sheet)
+    }
+    .onChange(of: user?.id) { _, userId in
+      if userId == nil {
+        presentedSheet = nil
+      }
+    }
+    .onChange(of: activeOrganization?.id) { _, organizationId in
+      guard organizationId == nil else { return }
+
+      switch presentedSheet {
+      case .overview, .profile:
+        presentedSheet = nil
+      case .accountList, nil:
+        break
       }
     }
   }

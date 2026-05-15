@@ -231,11 +231,6 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
         )
       }
     }
-    .onChange(of: organization?.id) { _, organizationId in
-      if organizationId == nil {
-        dismiss()
-      }
-    }
   }
 
   private func profileContent(organization: Organization) -> some View {
