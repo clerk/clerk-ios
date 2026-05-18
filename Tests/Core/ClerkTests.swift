@@ -293,7 +293,7 @@ struct ClerkTests {
     )
     clerk.environment = .mock
     let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let handled = try await clerk.handle(callbackUrl)
 
@@ -348,7 +348,7 @@ struct ClerkTests {
     )
     clerk.environment = .mock
     let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     async let firstHandled = clerk.handle(callbackUrl)
     async let secondHandled = clerk.handle(callbackUrl)

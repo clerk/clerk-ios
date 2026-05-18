@@ -365,6 +365,7 @@ struct AuthTests {
     #expect(capturedPrepareParams.codeChallenge?.isEmpty == false)
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
+    #expect(Clerk.shared.dependencies.magicLinkStore.load()?.flowId == signIn.id)
   }
 
   @Test
@@ -416,7 +417,7 @@ struct AuthTests {
       baseURL: testBaseUrl
     )
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
     let signIn = switch result {
@@ -475,7 +476,7 @@ struct AuthTests {
       baseURL: testBaseUrl
     )
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
@@ -549,7 +550,7 @@ struct AuthTests {
       baseURL: testBaseUrl
     )
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signUp, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signUp, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
     let signUp = switch result {
@@ -607,7 +608,7 @@ struct AuthTests {
       baseURL: testBaseUrl
     )
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signUp, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signUp, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let capturedEvent = try await captureNextAuthEvent(from: clerk) {
       let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
@@ -678,8 +679,9 @@ struct AuthTests {
   }
 
   @Test
-  func handleMagicLinkCallbackPreservesPendingFlowAfterStalePkceFailure() async throws {
+  func handleMagicLinkCallbackRejectsMismatchedPendingFlowAndPreservesVerifier() async throws {
     let keychain = InMemoryKeychain()
+    let completionCalled = LockIsolated(false)
     let signInCalled = LockIsolated(false)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-stale.clerk.accounts.dev"))
@@ -708,6 +710,7 @@ struct AuthTests {
       ]
     )
     completionMock.onRequestHandler = OnRequestHandler { request in
+      completionCalled.setValue(true)
       #expect(request.urlEncodedFormBody?["flow_id"] == "flow_old")
       #expect(request.urlEncodedFormBody?["approval_token"] == "approval_old")
       #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_new")
@@ -729,18 +732,17 @@ struct AuthTests {
       baseURL: testBaseUrl
     )
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_old&approval_token=approval_old"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_new")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_new", codeVerifier: "verifier_new")
 
-    do {
-      _ = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
-      #expect(Bool(false), "Expected stale callback to fail")
-    } catch let error as ClerkAPIError {
-      #expect(error.code == "pkce_verification_failed")
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.auth.handleMagicLinkCallback(callbackUrl)
     }
 
+    #expect(completionCalled.value == false)
     #expect(signInCalled.value == false)
     #expect(activatedSessionId.value == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == true)
+    #expect(clerk.dependencies.magicLinkStore.load()?.flowId == "flow_new")
     #expect(clerk.dependencies.magicLinkStore.load()?.codeVerifier == "verifier_new")
   }
 
@@ -814,7 +816,7 @@ struct AuthTests {
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let result = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
     let signIn = switch result {
@@ -829,6 +831,58 @@ struct AuthTests {
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func completeMagicLinkDoesNotClearNewerPendingFlow() async throws {
+    let keychain = InMemoryKeychain()
+    let activatedSessionId = LockIsolated<String?>(nil)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-complete-newer.clerk.accounts.dev"))
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+
+    let signInService = MockSignInService(create: { _ in
+      completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    let clerk = makeIsolatedClerk(
+      signInService: signInService,
+      sessionService: sessionService,
+      keychain: keychain,
+      baseURL: testBaseUrl
+    )
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    var completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+        ),
+      ]
+    )
+    completionMock.onRequestHandler = OnRequestHandler { _ in
+      try! clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_new", codeVerifier: "verifier_new")
+    }
+    completionMock.register()
+
+    _ = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
+
+    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    #expect(pendingFlow.flowId == "flow_new")
+    #expect(pendingFlow.codeVerifier == "verifier_new")
+    #expect(activatedSessionId.value == "sess_123")
   }
 
   private func captureNextAuthEvent(

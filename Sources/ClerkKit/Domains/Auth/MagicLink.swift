@@ -26,19 +26,22 @@ struct PendingMagicLinkFlow: Codable, Equatable {
   }
 
   let kind: Kind
+  let flowId: String?
   let codeVerifier: String
   let createdAt: Date
   let expiresAt: Date
 
   private enum CodingKeys: String, CodingKey {
     case kind
+    case flowId
     case codeVerifier
     case createdAt
     case expiresAt
   }
 
-  init(kind: Kind, codeVerifier: String, createdAt: Date, expiresAt: Date) {
+  init(kind: Kind, flowId: String?, codeVerifier: String, createdAt: Date, expiresAt: Date) {
     self.kind = kind
+    self.flowId = flowId
     self.codeVerifier = codeVerifier
     self.createdAt = createdAt
     self.expiresAt = expiresAt
@@ -47,6 +50,7 @@ struct PendingMagicLinkFlow: Codable, Equatable {
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     kind = try container.decodeIfPresent(Kind.self, forKey: .kind) ?? .signIn
+    flowId = try container.decodeIfPresent(String.self, forKey: .flowId)
     codeVerifier = try container.decode(String.self, forKey: .codeVerifier)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     expiresAt = try container.decode(Date.self, forKey: .expiresAt)
@@ -111,10 +115,11 @@ final class MagicLinkStore {
   ///
   /// Only one pending flow is persisted at a time. Saving a new verifier
   /// replaces any previously stored pending flow.
-  func save(kind: PendingMagicLinkFlow.Kind, codeVerifier: String) throws {
+  func save(kind: PendingMagicLinkFlow.Kind, flowId: String, codeVerifier: String) throws {
     let createdAt = Date()
     let pendingFlow = PendingMagicLinkFlow(
       kind: kind,
+      flowId: flowId,
       codeVerifier: codeVerifier,
       createdAt: createdAt,
       expiresAt: createdAt.addingTimeInterval(ttl)
@@ -129,19 +134,27 @@ final class MagicLinkStore {
     }
 
     guard let pendingFlow = try? JSONDecoder.clerkDecoder.decode(PendingMagicLinkFlow.self, from: data) else {
-      clear()
+      deletePendingFlow()
       return nil
     }
 
     guard pendingFlow.expiresAt > Date() else {
-      clear()
+      deletePendingFlow()
       return nil
     }
 
     return pendingFlow
   }
 
-  func clear() {
+  func clear(flow: PendingMagicLinkFlow) {
+    guard load() == flow else {
+      return
+    }
+
+    deletePendingFlow()
+  }
+
+  private func deletePendingFlow() {
     try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
   }
 }

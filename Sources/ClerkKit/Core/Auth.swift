@@ -728,6 +728,10 @@ extension Auth {
       throw ClerkClientError(message: "No pending magic link flow was found.")
     }
 
+    if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
+      throw ClerkClientError(message: "Magic link callback does not match the pending flow.")
+    }
+
     Clerk.shared.setCallbackContinuation(nil)
 
     let request = Request<MagicLinkCompleteResponse>(
@@ -741,7 +745,7 @@ extension Auth {
     )
 
     let completionResponse = try await apiClient.send(request).value
-    magicLinkStore.clear()
+    magicLinkStore.clear(flow: pendingFlow)
 
     let result: TransferFlowResult = switch pendingFlow.kind {
     case .signIn:

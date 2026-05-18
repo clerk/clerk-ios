@@ -98,6 +98,42 @@ struct SignInTests {
     #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
     #expect(params.1.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
     #expect(params.1.codeChallenge?.isEmpty == false)
+
+    let pendingFlow = try #require(Clerk.shared.dependencies.magicLinkStore.load())
+    #expect(pendingFlow.kind == .signIn)
+    #expect(pendingFlow.flowId == signIn.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendEmailLinkDoesNotSavePendingFlowWhenPrepareFails() async throws {
+    let keychain = InMemoryKeychain()
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "test@example.com",
+      supportedFirstFactors: [
+        Factor(
+          strategy: .emailLink,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+      ]
+    )
+    let service = MockSignInService(prepareFirstFactor: { _, _ in
+      throw ClerkClientError(message: "Prepare failed.")
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signInService: service
+    )
+
+    await #expect(throws: ClerkClientError.self) {
+      try await signIn.sendEmailLink()
+    }
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
   @Test

@@ -12,23 +12,17 @@ extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
     preparedFirstFactor
-      ?? preferredEmailLinkFirstFactor
+      ?? emailLinkFactor
       ?? defaultStartingFirstFactor
   }
 
   var preparedFirstFactor: Factor? {
     guard let strategy = firstFactorVerification?.strategy else { return nil }
-    return supportedFirstFactors?.first(where: { $0.strategy == strategy })
-  }
-
-  var preferredEmailLinkFirstFactor: Factor? {
-    guard shouldPreferEmailLink,
-          let emailLinkFactor = supportedFirstFactors?.first(where: { $0.strategy == .emailLink })
-    else {
-      return nil
+    let matchingFactors = availableFirstFactors.filter { $0.strategy == strategy }
+    if let matchingFactor = matchingFactors.first(where: { $0.safeIdentifier == identifier }) {
+      return matchingFactor
     }
-
-    return emailLinkFactor
+    return matchingFactors.count == 1 ? matchingFactors[0] : nil
   }
 
   @MainActor
@@ -78,18 +72,6 @@ extension SignIn {
     } ?? sortedFactors.first
   }
 
-  var shouldPreferEmailLink: Bool {
-    guard availableFirstFactors.contains(where: { $0.strategy == .emailLink }) else {
-      return false
-    }
-
-    return identifier?.contains("@") == true
-      || availableFirstFactors.contains { factor in
-        (factor.strategy == .emailLink || factor.strategy == .emailCode)
-          && factor.safeIdentifier?.contains("@") == true
-      }
-  }
-
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
     // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
     let firstFactors = supportedFirstFactors?.filter { factor in
@@ -129,6 +111,18 @@ extension SignIn {
     } else {
       supportedFirstFactors?.first(where: \.isResetFactor)
     }
+  }
+
+  var emailLinkFactor: Factor? {
+    guard identifier?.contains("@") == true else {
+      return nil
+    }
+
+    let emailLinkFactors = availableFirstFactors.filter { $0.strategy == .emailLink }
+    if let matchingFactor = emailLinkFactors.first(where: { $0.safeIdentifier == identifier }) {
+      return matchingFactor
+    }
+    return emailLinkFactors.count == 1 ? emailLinkFactors[0] : nil
   }
 }
 
