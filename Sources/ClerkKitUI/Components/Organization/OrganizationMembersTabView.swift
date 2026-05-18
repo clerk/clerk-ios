@@ -38,7 +38,6 @@ struct OrganizationMembersTabView: View {
       OrganizationAccountPaginatedList(
         pager: dataSource.membershipsPager,
         isLoading: dataSource.isLoadingMembers,
-        emptyText: "No members found",
         onRefresh: refresh,
         onLoadMore: loadMore
       ) { membership in

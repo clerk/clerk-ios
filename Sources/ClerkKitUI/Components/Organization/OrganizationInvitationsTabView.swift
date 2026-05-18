@@ -28,7 +28,13 @@ struct OrganizationInvitationsTabView: View {
     OrganizationAccountPaginatedList(
       pager: dataSource.invitationsPager,
       isLoading: dataSource.isLoadingInvitations,
-      emptyText: "No pending invitations",
+      emptyState: {
+        ClerkEmptyStateView(
+          icon: "icon-invitation",
+          title: "No invitations sent",
+          subtitle: "Get started by inviting someone to join your organization"
+        )
+      },
       onRefresh: refresh,
       onLoadMore: loadMore
     ) { invitation in

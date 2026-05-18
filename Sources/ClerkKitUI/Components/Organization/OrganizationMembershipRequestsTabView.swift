@@ -36,7 +36,13 @@ struct OrganizationMembershipRequestsTabView: View {
     OrganizationAccountPaginatedList(
       pager: dataSource.membershipRequestsPager,
       isLoading: dataSource.isLoadingMembershipRequests,
-      emptyText: "No pending requests",
+      emptyState: {
+        ClerkEmptyStateView(
+          icon: "icon-users",
+          title: "No membership requests",
+          subtitle: "Users who request to join your organization will appear here for review"
+        )
+      },
       onRefresh: refresh,
       onLoadMore: loadMore
     ) { request in

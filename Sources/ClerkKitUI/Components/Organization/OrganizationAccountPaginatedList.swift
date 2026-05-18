@@ -7,12 +7,10 @@
 import ClerkKit
 import SwiftUI
 
-struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable, Row: View>: View {
-  @Environment(\.clerkTheme) private var theme
-
+struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable, Row: View, EmptyState: View>: View {
   let pager: OrganizationAccountListPager<Item>
   let isLoading: Bool
-  let emptyText: LocalizedStringKey
+  let emptyState: (() -> EmptyState)?
   let onRefresh: () async -> Void
   let onLoadMore: () async -> Void
   let row: (Item) -> Row
@@ -20,14 +18,29 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
   init(
     pager: OrganizationAccountListPager<Item>,
     isLoading: Bool,
-    emptyText: LocalizedStringKey,
+    onRefresh: @escaping () async -> Void,
+    onLoadMore: @escaping () async -> Void,
+    @ViewBuilder row: @escaping (Item) -> Row
+  ) where EmptyState == EmptyView {
+    self.pager = pager
+    self.isLoading = isLoading
+    emptyState = nil
+    self.onRefresh = onRefresh
+    self.onLoadMore = onLoadMore
+    self.row = row
+  }
+
+  init(
+    pager: OrganizationAccountListPager<Item>,
+    isLoading: Bool,
+    @ViewBuilder emptyState: @escaping () -> EmptyState,
     onRefresh: @escaping () async -> Void,
     onLoadMore: @escaping () async -> Void,
     @ViewBuilder row: @escaping (Item) -> Row
   ) {
     self.pager = pager
     self.isLoading = isLoading
-    self.emptyText = emptyText
+    self.emptyState = emptyState
     self.onRefresh = onRefresh
     self.onLoadMore = onLoadMore
     self.row = row
@@ -36,20 +49,18 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
   var body: some View {
     ScrollView {
       LazyVStack(spacing: 0) {
-        Divider()
-
         if isLoading, pager.items.isEmpty {
           SpinnerView()
             .frame(width: 24, height: 24)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
-        } else if pager.items.isEmpty {
-          Text(emptyText, bundle: .module)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.mutedForeground)
+        } else if pager.items.isEmpty, let emptyState {
+          emptyState()
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-        } else {
+            .containerRelativeFrame(.vertical, count: 5, span: 4, spacing: 0)
+        } else if !pager.items.isEmpty {
+          Divider()
+
           OrganizationPaginatedListSection(
             items: pager.items,
             hasNextPage: pager.hasNextPage,
