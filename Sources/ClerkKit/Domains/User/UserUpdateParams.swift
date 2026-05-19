@@ -21,8 +21,7 @@ extension User {
 
     @available(
       *, deprecated,
-      message:
-        "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
+      message: "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
     )
     public init(
       username: String? = nil,
@@ -37,7 +36,7 @@ extension User {
       self.lastName = lastName
       self.primaryEmailAddressId = primaryEmailAddressId
       self.primaryPhoneNumberId = primaryPhoneNumberId
-      self._unsafeMetadata = unsafeMetadata
+      _unsafeMetadata = unsafeMetadata
     }
 
     /// The user's username.
@@ -58,6 +57,7 @@ extension User {
     /// Backing storage for the deprecated ``unsafeMetadata`` surface. Used by the
     /// routing logic in ``User/update(_:)`` so internal reads do not trigger the
     /// deprecation warning attached to the public computed property.
+    // swiftlint:disable:next identifier_name
     var _unsafeMetadata: JSON?
 
     /// Metadata that can be read and set from the Frontend API. One common use case
@@ -65,8 +65,7 @@ extension User {
     /// User object.
     @available(
       *, deprecated,
-      message:
-        "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
+      message: "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
     )
     public var unsafeMetadata: JSON? {
       get { _unsafeMetadata }
@@ -79,6 +78,7 @@ extension User {
       case lastName
       case primaryEmailAddressId
       case primaryPhoneNumberId
+      // swiftlint:disable:next identifier_name
       case _unsafeMetadata = "unsafeMetadata"
     }
   }
@@ -93,7 +93,7 @@ extension User.UpdateParams {
     var copy = self
     copy._unsafeMetadata = nil
     guard let encoded = try? JSON(encodable: copy),
-      case let .object(obj) = encoded
+          case let .object(obj) = encoded
     else { return false }
     return !obj.isEmpty
   }

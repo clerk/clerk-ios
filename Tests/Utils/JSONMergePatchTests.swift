@@ -2,9 +2,7 @@
 import Foundation
 import Testing
 
-@Suite
 struct JSONMergePatchTests {
-
   @Test
   func addedKeysAppearVerbatim() {
     let current: JSON = ["a": 1]
@@ -112,12 +110,12 @@ struct JSONMergePatchTests {
   /// non-object patch values fully replace at that node.
   private func applyMergePatch(_ target: JSON, _ patch: JSON) -> JSON {
     guard case let .object(patchObj) = patch else { return patch }
-    var out: [String: JSON]
-    if case let .object(t) = target {
-      out = t
-    } else {
-      out = [:]
-    }
+    var out: [String: JSON] =
+      if case let .object(t) = target {
+        t
+      } else {
+        [:]
+      }
     for (key, value) in patchObj {
       if case .null = value {
         out.removeValue(forKey: key)

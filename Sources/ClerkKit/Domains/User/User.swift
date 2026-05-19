@@ -240,15 +240,14 @@ extension User {
 
     var rest = params
     rest._unsafeMetadata = nil
-    let afterPatch: User
-    if rest.hasAnyField {
-      afterPatch = try await service.update(params: rest)
-    } else {
-      afterPatch = self
-    }
+    let afterPatch: User =
+      if rest.hasAnyField {
+        try await service.update(params: rest)
+      } else {
+        self
+      }
 
-
-    let current = self.unsafeMetadata ?? .object([:])
+    let current = unsafeMetadata ?? .object([:])
     let patch = current.mergePatch(against: desired)
     if case let .object(patchObj) = patch, patchObj.isEmpty {
       return afterPatch

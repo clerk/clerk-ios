@@ -23,7 +23,7 @@ extension JSON {
   func mergePatch(against desired: JSON) -> JSON {
     if case .null = desired { return .null }
     guard case let .object(curObj) = self,
-      case let .object(desObj) = desired
+          case let .object(desObj) = desired
     else {
       return desired
     }
