@@ -9,14 +9,14 @@ import SwiftUI
 struct ClerkEmptyStateView: View {
   @Environment(\.clerkTheme) private var theme
 
-  private let icon: Icon
+  private let icon: Icon?
   private let title: LocalizedStringKey
-  private let subtitle: LocalizedStringKey
+  private let subtitle: LocalizedStringKey?
 
   init(
-    icon: Icon,
+    icon: Icon? = nil,
     title: LocalizedStringKey,
-    subtitle: LocalizedStringKey
+    subtitle: LocalizedStringKey? = nil
   ) {
     self.icon = icon
     self.title = title
@@ -25,20 +25,22 @@ struct ClerkEmptyStateView: View {
 
   var body: some View {
     VStack(spacing: 12) {
-      icon.image
-        .renderingMode(.template)
-        .resizable()
-        .scaledToFit()
-        .frame(width: icon.size, height: icon.size)
-        .foregroundStyle(theme.colors.mutedForeground)
-        .accessibilityHidden(true)
-        .frame(width: 48, height: 48)
-        .background(theme.colors.neutral.opacity(0.03))
-        .clipShape(.rect(cornerRadius: 12))
-        .overlay {
-          RoundedRectangle(cornerRadius: 12)
-            .strokeBorder(theme.colors.border, lineWidth: 1)
-        }
+      if let icon {
+        icon.image
+          .renderingMode(.template)
+          .resizable()
+          .scaledToFit()
+          .frame(width: icon.size, height: icon.size)
+          .foregroundStyle(theme.colors.mutedForeground)
+          .accessibilityHidden(true)
+          .frame(width: 48, height: 48)
+          .background(theme.colors.neutral.opacity(0.03))
+          .clipShape(.rect(cornerRadius: 12))
+          .overlay {
+            RoundedRectangle(cornerRadius: 12)
+              .strokeBorder(theme.colors.border, lineWidth: 1)
+          }
+      }
 
       VStack(spacing: 4) {
         Text(title, bundle: .module)
@@ -46,10 +48,12 @@ struct ClerkEmptyStateView: View {
           .fontWeight(.semibold)
           .foregroundStyle(theme.colors.foreground)
 
-        Text(subtitle, bundle: .module)
-          .font(theme.fonts.subheadline)
-          .foregroundStyle(theme.colors.mutedForeground)
-          .frame(maxWidth: 302)
+        if let subtitle {
+          Text(subtitle, bundle: .module)
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.mutedForeground)
+            .frame(maxWidth: 302)
+        }
       }
       .multilineTextAlignment(.center)
     }
