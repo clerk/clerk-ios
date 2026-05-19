@@ -10,15 +10,34 @@ extension User {
       firstName: String? = nil,
       lastName: String? = nil,
       primaryEmailAddressId: String? = nil,
-      primaryPhoneNumberId: String? = nil,
-      unsafeMetadata: JSON? = nil
+      primaryPhoneNumberId: String? = nil
     ) {
       self.username = username
       self.firstName = firstName
       self.lastName = lastName
       self.primaryEmailAddressId = primaryEmailAddressId
       self.primaryPhoneNumberId = primaryPhoneNumberId
-      self.unsafeMetadata = unsafeMetadata
+    }
+
+    @available(
+      *, deprecated,
+      message:
+        "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
+    )
+    public init(
+      username: String? = nil,
+      firstName: String? = nil,
+      lastName: String? = nil,
+      primaryEmailAddressId: String? = nil,
+      primaryPhoneNumberId: String? = nil,
+      unsafeMetadata: JSON?
+    ) {
+      self.username = username
+      self.firstName = firstName
+      self.lastName = lastName
+      self.primaryEmailAddressId = primaryEmailAddressId
+      self.primaryPhoneNumberId = primaryPhoneNumberId
+      self._unsafeMetadata = unsafeMetadata
     }
 
     /// The user's username.
@@ -36,10 +55,46 @@ extension User {
     /// The unique identifier for the PhoneNumber that the user has set as primary.
     public var primaryPhoneNumberId: String?
 
-    /**
-     Metadata that can be read and set from the Frontend API. One common use case for this attribute is to implement custom fields that will be attached to the User object.
-     Please note that there is also an unsafeMetadata attribute in the SignUp object. The value of that field will be automatically copied to the user's unsafe metadata once the sign up is complete.
-     */
-    public var unsafeMetadata: JSON?
+    /// Backing storage for the deprecated ``unsafeMetadata`` surface. Used by the
+    /// routing logic in ``User/update(_:)`` so internal reads do not trigger the
+    /// deprecation warning attached to the public computed property.
+    var _unsafeMetadata: JSON?
+
+    /// Metadata that can be read and set from the Frontend API. One common use case
+    /// for this attribute is to implement custom fields that will be attached to the
+    /// User object.
+    @available(
+      *, deprecated,
+      message:
+        "Use User.updateMetadata(unsafeMetadata:) for partial updates (deep merge). Passing unsafeMetadata to update(_:) is deprecated and will be removed in a future major version."
+    )
+    public var unsafeMetadata: JSON? {
+      get { _unsafeMetadata }
+      set { _unsafeMetadata = newValue }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+      case username
+      case firstName
+      case lastName
+      case primaryEmailAddressId
+      case primaryPhoneNumberId
+      case _unsafeMetadata = "unsafeMetadata"
+    }
+  }
+}
+
+extension User.UpdateParams {
+  /// True when any field other than `unsafeMetadata` would appear in the
+  /// encoded request body. Computed via the actual encoder, so new fields
+  /// added to the struct are picked up automatically without updating this
+  /// helper.
+  var hasAnyField: Bool {
+    var copy = self
+    copy._unsafeMetadata = nil
+    guard let encoded = try? JSON(encodable: copy),
+      case let .object(obj) = encoded
+    else { return false }
+    return !obj.isEmpty
   }
 }
