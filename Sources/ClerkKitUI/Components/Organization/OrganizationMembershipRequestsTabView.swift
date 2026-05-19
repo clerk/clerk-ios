@@ -38,7 +38,7 @@ struct OrganizationMembershipRequestsTabView: View {
       isLoading: dataSource.isLoadingMembershipRequests,
       emptyState: {
         ClerkEmptyStateView(
-          icon: "icon-users",
+          icon: .asset("icon-users"),
           title: "No membership requests",
           subtitle: "Users who request to join your organization will appear here for review"
         )

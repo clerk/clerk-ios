@@ -9,12 +9,12 @@ import SwiftUI
 struct ClerkEmptyStateView: View {
   @Environment(\.clerkTheme) private var theme
 
-  let icon: String
-  let title: LocalizedStringKey
-  let subtitle: LocalizedStringKey
+  private let icon: Icon
+  private let title: LocalizedStringKey
+  private let subtitle: LocalizedStringKey
 
   init(
-    icon: String,
+    icon: Icon,
     title: LocalizedStringKey,
     subtitle: LocalizedStringKey
   ) {
@@ -25,11 +25,11 @@ struct ClerkEmptyStateView: View {
 
   var body: some View {
     VStack(spacing: 12) {
-      Image(icon, bundle: .module)
+      icon.image
         .renderingMode(.template)
         .resizable()
         .scaledToFit()
-        .frame(width: 20, height: 20)
+        .frame(width: icon.size, height: icon.size)
         .foregroundStyle(theme.colors.mutedForeground)
         .accessibilityHidden(true)
         .frame(width: 48, height: 48)
@@ -54,6 +54,21 @@ struct ClerkEmptyStateView: View {
       .multilineTextAlignment(.center)
     }
     .accessibilityElement(children: .combine)
+  }
+}
+
+extension ClerkEmptyStateView {
+  struct Icon {
+    let image: Image
+    let size: CGFloat
+
+    static func asset(_ name: String, size: CGFloat = 20) -> Self {
+      .init(image: Image(name, bundle: .module), size: size)
+    }
+
+    static func system(_ name: String, size: CGFloat = 16) -> Self {
+      .init(image: Image(systemName: name), size: size)
+    }
   }
 }
 

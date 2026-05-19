@@ -38,6 +38,13 @@ struct OrganizationMembersTabView: View {
       OrganizationAccountPaginatedList(
         pager: dataSource.membershipsPager,
         isLoading: dataSource.isLoadingMembers,
+        emptyState: {
+          ClerkEmptyStateView(
+            icon: .system("magnifyingglass"),
+            title: "No members found",
+            subtitle: "No members match your search. Try a different name or email address."
+          )
+        },
         onRefresh: refresh,
         onLoadMore: loadMore
       ) { membership in

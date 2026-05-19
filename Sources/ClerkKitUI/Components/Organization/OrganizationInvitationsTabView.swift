@@ -30,7 +30,7 @@ struct OrganizationInvitationsTabView: View {
       isLoading: dataSource.isLoadingInvitations,
       emptyState: {
         ClerkEmptyStateView(
-          icon: "icon-invitation",
+          icon: .asset("icon-invitation"),
           title: "No invitations sent",
           subtitle: "Get started by inviting someone to join your organization"
         )
