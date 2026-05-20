@@ -2,7 +2,7 @@
 //  OrganizationVerifiedDomainsView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -95,23 +95,28 @@ struct OrganizationVerifiedDomainsView: View {
     .tint(theme.colors.primary)
     .background(theme.colors.muted)
     .securedByClerkFooter()
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Verified domains", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Verified domains", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
       }
-    }
-    .clerkErrorPresenting($error)
-    .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
-      view(for: presentedDomainFlow)
-    }
-    .task(id: organization?.id) {
-      await loadDomains(page: 1)
-    }
+      .clerkErrorPresenting($error)
+      .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
+        view(for: presentedDomainFlow)
+      }
+      .task(id: organization?.id) {
+        await loadDomains(page: 1)
+      }
+    #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620, minHeight: 420, maxHeight: 420, alignment: .leading)
+    #endif
   }
 
   @ViewBuilder
@@ -378,6 +383,9 @@ private struct OrganizationDomainVerificationFlowSheet: View {
       }
     }
     .environment(codeLimiter)
+    #if os(macOS)
+      .frame(minWidth: 420, maxWidth: 520)
+    #endif
   }
 }
 

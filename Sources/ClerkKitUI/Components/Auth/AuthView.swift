@@ -123,17 +123,10 @@ public struct AuthView: View {
         .toolbar {
           dismissToolbarItem
         }
-        .navigationDestination(for: Destination.self) {
-          $0.view
-            .toolbar {
-              dismissToolbarItem
-            }
-            .developmentModeBottomInset(background: .white)
-            .environment(navigation)
-            .environment(authState)
-            .environment(codeLimiter)
+        .navigationDestination(for: Destination.self) { destination in
+          destinationView(for: destination)
         }
-        .developmentModeBottomInset(background: .white)
+        .authDevelopmentModeBottomInset()
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
@@ -195,8 +188,7 @@ public struct AuthView: View {
             "isDismissible": .bool(isDismissible),
           ]
         )
-      )
-    }
+      }
   }
 }
 
@@ -213,6 +205,29 @@ extension AuthView {
         dismiss()
       }
     }
+  }
+
+  @ViewBuilder
+  private func destinationView(for destination: Destination) -> some View {
+    destination.view
+      .toolbar {
+        dismissToolbarItem
+      }
+      .authDevelopmentModeBottomInset()
+      .environment(navigation)
+      .environment(authState)
+      .environment(codeLimiter)
+  }
+}
+
+extension View {
+  @ViewBuilder
+  fileprivate func authDevelopmentModeBottomInset() -> some View {
+    #if os(iOS)
+    developmentModeBottomInset(background: .white)
+    #elseif os(macOS)
+    self
+    #endif
   }
 }
 

@@ -2,7 +2,7 @@
 //  OrganizationSwitcherLabel.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI

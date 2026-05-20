@@ -2,7 +2,7 @@
 //  OrganizationMembersView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -72,44 +72,49 @@ struct OrganizationMembersView: View {
     }
     .background(theme.colors.muted)
     .securedByClerkFooter()
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Members", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Members", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
 
-      if canManageMemberships {
-        ToolbarItem(placement: .primaryAction) {
-          Button {
-            inviteMembersIsPresented = true
-          } label: {
-            Text("Invite", bundle: .module)
+        if canManageMemberships {
+          ToolbarItem(placement: .primaryAction) {
+            Button {
+              inviteMembersIsPresented = true
+            } label: {
+              Text("Invite", bundle: .module)
+            }
+            .disabled(!canInviteMembers)
           }
-          .disabled(!canInviteMembers)
         }
       }
-    }
-    .sheet(isPresented: $inviteMembersIsPresented) {
-      NavigationStack {
-        OrganizationInviteMembersView { completion in
-          if completion == .sentInvitations, let organization {
-            await dataSource.loadInvitations(organization: organization)
+      .sheet(isPresented: $inviteMembersIsPresented) {
+        NavigationStack {
+          OrganizationInviteMembersView { completion in
+            if completion == .sentInvitations, let organization {
+              await dataSource.loadInvitations(organization: organization)
+            }
+            inviteMembersIsPresented = false
           }
-          inviteMembersIsPresented = false
         }
       }
-    }
-    .clerkErrorPresenting($dataSource.error)
-    .task(id: organization?.id) {
-      await loadInitialData()
-    }
-    .onChange(of: availableTabs) {
-      normalizeSelectedTab()
-    }
+      .clerkErrorPresenting($dataSource.error)
+      .task(id: organization?.id) {
+        await loadInitialData()
+      }
+      .onChange(of: availableTabs) {
+        normalizeSelectedTab()
+      }
+    #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620, minHeight: 420, maxHeight: 420, alignment: .leading)
+    #endif
   }
 }
 

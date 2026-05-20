@@ -2,7 +2,7 @@
 //  OrganizationProfileActionConfirmationView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -51,7 +51,9 @@ struct OrganizationProfileActionConfirmationView: View {
 
             ClerkTextField("Organization name", text: $confirmation)
               .autocorrectionDisabled()
+            #if os(iOS)
               .textInputAutocapitalization(.never)
+            #endif
               .focused($isFocused)
               .onFirstAppear {
                 isFocused = true
@@ -79,7 +81,9 @@ struct OrganizationProfileActionConfirmationView: View {
         }
         .padding(24)
       }
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -96,6 +100,9 @@ struct OrganizationProfileActionConfirmationView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
   }

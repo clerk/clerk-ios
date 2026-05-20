@@ -2,7 +2,7 @@
 //  OrganizationProfileView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -254,37 +254,42 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
     .securedByClerkFooter()
     .animation(.default, value: organization)
     .animation(.default, value: organizationMembership)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Organization", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Organization", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
 
-      if isDismissible {
-        ToolbarItem(placement: .topBarTrailing) {
-          DismissButton()
+        if isDismissible {
+          DismissToolbarItem {
+            dismiss()
+          }
         }
       }
-    }
-    .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
-      view(for: destination)
-        .environment(
-          OrganizationProfileNavigator(
-            push: navigateToCustom,
-            popToRoot: { dismissAction(.popToRoot) }
+      .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
+        view(for: destination)
+          .environment(
+            OrganizationProfileNavigator(
+              push: navigateToCustom,
+              popToRoot: { dismissAction(.popToRoot) }
+            )
           )
-        )
-        .environment(
-          OrganizationProfileBuiltInRouter(
-            push: navigateToBuiltIn,
-            dismissAction: dismissAction
+          .environment(
+            OrganizationProfileBuiltInRouter(
+              push: navigateToBuiltIn,
+              dismissAction: dismissAction
+            )
           )
-        )
-    }
+      }
+    #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

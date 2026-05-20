@@ -2,7 +2,7 @@
 //  OrganizationAddDomainView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -53,8 +53,10 @@ struct OrganizationAddDomainView: View {
             text: $domainName,
             fieldState: error == nil ? .default : .error
           )
+          #if os(iOS)
           .keyboardType(.URL)
           .textInputAutocapitalization(.never)
+          #endif
           .autocorrectionDisabled()
 
           if let error {
@@ -79,43 +81,48 @@ struct OrganizationAddDomainView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
-        }
 
-        ToolbarItem(placement: .principal) {
-          Text("Add domain", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
-      }
-      .navigationDestination(for: Destination.self) { destination in
-        switch destination {
-        case let .verifyEmailAddress(domain):
-          OrganizationDomainEmailAddressView(domain: domain) { preparedDomain, affiliationEmailAddress in
-            path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
-          }
-        case let .verifyCode(domain, affiliationEmailAddress):
-          OrganizationDomainVerifyCodeView(
-            domain: domain,
-            emailAddress: affiliationEmailAddress
-          ) {
-            onDomainChanged()
-            dismiss()
+          ToolbarItem(placement: .principal) {
+            Text("Add domain", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
         }
-      }
+        .navigationDestination(for: Destination.self) { destination in
+          switch destination {
+          case let .verifyEmailAddress(domain):
+            OrganizationDomainEmailAddressView(domain: domain) { preparedDomain, affiliationEmailAddress in
+              path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
+            }
+          case let .verifyCode(domain, affiliationEmailAddress):
+            OrganizationDomainVerifyCodeView(
+              domain: domain,
+              emailAddress: affiliationEmailAddress
+            ) {
+              onDomainChanged()
+              dismiss()
+            }
+          }
+        }
     }
     .environment(codeLimiter)
-    .onChange(of: domainName) { _, _ in
-      error = nil
-    }
+    #if os(macOS)
+      .frame(minWidth: 420, maxWidth: 520)
+    #endif
+      .onChange(of: domainName) { _, _ in
+        error = nil
+      }
   }
 
   @MainActor

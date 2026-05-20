@@ -2,7 +2,7 @@
 //  OrganizationDomainEmailAddressView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -67,22 +67,24 @@ struct OrganizationDomainEmailAddressView: View {
       .padding(24)
     }
     .presentationBackground(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Verify domain", bundle: .module)
-          .font(theme.fonts.headline)
-          .foregroundStyle(theme.colors.foreground)
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Verify domain", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
       }
-    }
-    .onChange(of: emailLocalPart) { _, newValue in
-      error = nil
+      .onChange(of: emailLocalPart) { _, newValue in
+        error = nil
 
-      if let atIndex = newValue.firstIndex(of: "@") {
-        emailLocalPart = String(newValue[..<atIndex])
+        if let atIndex = newValue.firstIndex(of: "@") {
+          emailLocalPart = String(newValue[..<atIndex])
+        }
       }
-    }
   }
 
   @MainActor
@@ -134,8 +136,10 @@ private struct OrganizationDomainEmailAddressField: View {
       HStack(spacing: 0) {
         TextField("", text: $localPart)
           .textContentType(.emailAddress)
+        #if os(iOS)
           .keyboardType(.emailAddress)
           .textInputAutocapitalization(.never)
+        #endif
           .autocorrectionDisabled()
           .focused($isFocused)
           .font(theme.fonts.body)

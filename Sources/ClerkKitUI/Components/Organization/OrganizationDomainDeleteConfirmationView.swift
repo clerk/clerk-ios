@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -54,7 +54,9 @@ struct OrganizationDomainDeleteConfirmationView: View {
         }
         .padding(24)
       }
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -71,6 +73,9 @@ struct OrganizationDomainDeleteConfirmationView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
   }

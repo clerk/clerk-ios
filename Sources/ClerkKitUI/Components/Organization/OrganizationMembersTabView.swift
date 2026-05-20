@@ -2,7 +2,7 @@
 //  OrganizationMembersTabView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -100,12 +100,14 @@ struct OrganizationMembersTabView: View {
       }
       .font(theme.fonts.body)
       .foregroundStyle(theme.colors.foreground)
-      .textInputAutocapitalization(.never)
-      .autocorrectionDisabled()
-      .submitLabel(.search)
-      .onSubmit {
-        submitSearch()
-      }
+      #if os(iOS)
+        .textInputAutocapitalization(.never)
+      #endif
+        .autocorrectionDisabled()
+        .submitLabel(.search)
+        .onSubmit {
+          submitSearch()
+        }
     }
     .padding(.horizontal, 12)
     .frame(height: 36)

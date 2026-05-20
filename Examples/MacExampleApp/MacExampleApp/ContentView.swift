@@ -65,6 +65,8 @@ struct ContentView: View {
         }
         .disabled(isRefreshing)
 
+        OrganizationSwitcher()
+
         Button("Refresh Environment") {
           Task {
             await refreshEnvironment()

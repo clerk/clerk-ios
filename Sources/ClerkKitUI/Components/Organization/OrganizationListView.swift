@@ -2,7 +2,7 @@
 //  OrganizationListView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -157,6 +157,9 @@ public struct OrganizationListView: View {
       .taskOnce {
         await fetchOrganizationResources()
       }
+      #if os(macOS)
+      .frame(minWidth: 420, maxWidth: 560, minHeight: 420, maxHeight: 420)
+      #endif
     }
   }
 
@@ -175,12 +178,15 @@ public struct OrganizationListView: View {
       }
     }
     .background(theme.colors.background)
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
-    .navigationDestination(for: Destination.self) { destination in
-      switch destination {
-      case .createOrganization:
-        createOrganizationContent
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .preGlassSolidNavBar()
+      .navigationDestination(for: Destination.self) { destination in
+        switch destination {
+        case .createOrganization:
+          createOrganizationContent
+        }
       }
     }
     .toolbar {
@@ -189,18 +195,16 @@ public struct OrganizationListView: View {
           Button("Cancel") {
             dismiss()
           }
-          .foregroundStyle(theme.colors.primary)
         }
-      }
 
-      if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
-        ToolbarItem(placement: .principal) {
-          Text(title, bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
+        if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
+          ToolbarItem(placement: .principal) {
+            Text(title, bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
+          }
         }
       }
-    }
   }
 
   private var listContent: some View {
@@ -249,7 +253,9 @@ public struct OrganizationListView: View {
     ) {
       completeCreateOrganizationFlow()
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
   }
 

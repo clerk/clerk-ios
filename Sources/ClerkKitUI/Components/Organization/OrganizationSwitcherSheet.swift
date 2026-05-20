@@ -2,7 +2,7 @@
 //  OrganizationSwitcherSheet.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -54,6 +54,7 @@ struct OrganizationSwitcherSheet: View {
 
           SecuredByClerkFooter(showBackground: false)
         }
+        #if os(iOS)
         .onGeometryChange(
           for: CGFloat.self,
           of: { proxy in
@@ -63,31 +64,46 @@ struct OrganizationSwitcherSheet: View {
             contentHeight = newValue + UITabBarController().tabBar.frame.size.height
           }
         )
+        #endif
       }
       .scrollBounceBehavior(.basedOnSize)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .preGlassDetentSheetBackground()
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            dismiss()
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .preGlassDetentSheetBackground()
+        .toolbar {
+          ToolbarItem(placement: doneToolbarPlacement) {
+            Button {
+              dismiss()
+            } label: {
+              Text("Done", bundle: .module)
+                .font(theme.fonts.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.primary)
+            }
+          }
+
+          ToolbarItem(placement: .principal) {
+            Text("Organization", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
         }
-
-        ToolbarItem(placement: .principal) {
-          Text("Organization", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
-      }
     }
+    #if os(iOS)
     .presentationDetents([.height(contentHeight)])
+    #elseif os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
+  }
+
+  private var doneToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarTrailing
+    #elseif os(macOS)
+    .confirmationAction
+    #endif
   }
 
   private var organizationRow: some View {

@@ -2,7 +2,7 @@
 //  OrganizationDomainEnrollmentModeView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -90,24 +90,31 @@ struct OrganizationDomainEnrollmentModeView: View {
         .padding(24)
       }
       .background(theme.colors.background)
-      .navigationBarTitleDisplayMode(.inline)
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
+      #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+      #endif
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
+            }
+            .foregroundStyle(theme.colors.primary)
           }
-          .foregroundStyle(theme.colors.primary)
-        }
 
-        ToolbarItem(placement: .principal) {
-          Text("Update \(domain.name)", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
+          ToolbarItem(placement: .principal) {
+            Text("Update \(domain.name)", bundle: .module)
+              .font(theme.fonts.headline)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.foreground)
+          }
         }
-      }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
+    .presentationBackground(theme.colors.background)
+    .background(theme.colors.background)
     .onChange(of: selectedMode) { _, selectedMode in
       if selectedMode != .manualInvitation {
         deletePending = false
