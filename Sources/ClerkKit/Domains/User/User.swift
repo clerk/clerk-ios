@@ -223,61 +223,48 @@ extension User {
   /// For example, if you want to use the `update(.init(firstName:))` method, you must enable the Name setting.
   /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
   ///
-  /// When `params.unsafeMetadata` is provided (deprecated), the SDK issues two
-  /// FAPI calls under the hood — one `PATCH /v1/me` for the other fields, and
-  /// one `PATCH /v1/me/metadata` carrying a computed merge patch that
-  /// reproduces *replace* semantics through the deep-merge endpoint. If the
-  /// first call fails, the metadata is never modified. Callers needing strict
-  /// atomicity should call ``update(_:)`` (fields only) and
-  /// ``updateMetadata(_:)`` separately and handle partial failures themselves.
+  /// - Important: Passing `unsafeMetadata` through ``User/UpdateParams`` is deprecated.
+  ///   When `unsafeMetadata` is provided with other profile fields, the SDK sends two
+  ///   requests: one to update profile fields and one to update metadata. These requests
+  ///   are not atomic; if the metadata request fails, profile changes may already be saved.
+  ///   Prefer ``updateMetadata(unsafeMetadata:)`` for metadata updates.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
     let service = userService
 
-    guard let desired = params._unsafeMetadata else {
+    guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
       return try await service.update(params: params)
     }
 
-    var rest = params
-    rest._unsafeMetadata = nil
-    let afterPatch: User =
-      if rest.hasAnyField {
-        try await service.update(params: rest)
+    let paramsWithoutUnsafeMetadata = params.withoutUnsafeMetadata
+    let hasProfileUpdates = paramsWithoutUnsafeMetadata.hasAnyField
+    let userAfterProfileUpdate: User =
+      if hasProfileUpdates {
+        try await service.update(params: paramsWithoutUnsafeMetadata)
       } else {
-        self
+        try await service.reload()
       }
 
-    let current = unsafeMetadata ?? .object([:])
-    let patch = current.mergePatch(against: desired)
-    if case let .object(patchObj) = patch, patchObj.isEmpty {
-      return afterPatch
+    let currentUnsafeMetadata = userAfterProfileUpdate.unsafeMetadata ?? .object([:])
+    let patch = currentUnsafeMetadata.mergePatch(against: desiredUnsafeMetadata)
+    if case let .object(patchObject) = patch, patchObject.isEmpty {
+      return userAfterProfileUpdate
     }
 
-    return try await service.updateMetadata(
-      params: User.UpdateMetadataParams(unsafeMetadata: patch)
-    )
+    return try await service.updateMetadata(params: .init(unsafeMetadata: patch))
   }
 
-  /// Updates the current user's metadata via `PATCH /v1/me/metadata` with
-  /// deep-merge semantics: keys in the patch overwrite or extend the current
-  /// `unsafeMetadata`, and any key whose value is ``JSON/null`` is removed at
-  /// any nesting level.
+  /// Updates the user's unsafe metadata.
   ///
-  /// Prefer this method over passing `unsafeMetadata` to ``update(_:)``,
-  /// which is deprecated.
-  ///
-  /// - Returns: The updated ``User``.
+  /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
   @discardableResult @MainActor
   public func updateMetadata(_ params: User.UpdateMetadataParams) async throws -> User {
     try await userService.updateMetadata(params: params)
   }
 
-  /// Convenience overload of ``updateMetadata(_:)`` that takes the
-  /// `unsafeMetadata` value directly.
+  /// Updates the user's unsafe metadata.
   ///
-  /// - Parameter unsafeMetadata: The metadata patch to merge into the current
-  ///   value. Use ``JSON/null`` for any key whose value should be removed.
-  /// - Returns: The updated ``User``.
+  /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
   @discardableResult @MainActor
   public func updateMetadata(unsafeMetadata: JSON) async throws -> User {
     try await updateMetadata(.init(unsafeMetadata: unsafeMetadata))

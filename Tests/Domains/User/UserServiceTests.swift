@@ -59,9 +59,52 @@ struct UserServiceTests {
   }
 
   @Test
-  func updateWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
+  @available(*, deprecated)
+  func updateWithUnsafeMetadataObjectUsesMetadataEndpoint() async throws {
+    let reloadRequestHandled = LockIsolated(false)
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+    let reloadURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+    let metadataURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/metadata")!
+
+    var reloadMock = try Mock(
+      url: reloadURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+
+    reloadMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      reloadRequestHandled.setValue(true)
+    }
+    reloadMock.register()
+
+    var metadataMock = try Mock(
+      url: metadataURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+
+    metadataMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
+      #expect(Self.unsafeMetadataJSON(from: request) == ["token": "some-value"])
+      #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
+      requestHandled.setValue(true)
+    }
+    metadataMock.register()
+
+    let metadata: JSON = ["token": "some-value"]
+    _ = try await User.mock.update(.init(unsafeMetadata: metadata))
+    #expect(reloadRequestHandled.value)
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateMetadataUsesMetadataEndpoint() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/metadata")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -73,15 +116,84 @@ struct UserServiceTests {
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
-      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
-      #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
+      #expect(Self.unsafeMetadataJSON(from: request) == ["token": "some-value"])
       requestHandled.setValue(true)
     }
     mock.register()
 
-    let metadata: JSON = ["token": "some-value"]
-    _ = try await Clerk.shared.dependencies.userService.update(params: .init(unsafeMetadata: metadata))
+    _ = try await Clerk.shared.dependencies.userService.updateMetadata(
+      params: .init(unsafeMetadata: ["token": "some-value"])
+    )
     #expect(requestHandled.value)
+  }
+
+  @Test
+  @available(*, deprecated)
+  func updateWithProfileFieldsAndUnsafeMetadataSplitsRequestsAndPreservesReplacementSemantics() async throws {
+    let profileRequestHandled = LockIsolated(false)
+    let metadataRequestHandled = LockIsolated(false)
+    let profileURL = URL(string: mockBaseUrl.absoluteString + "/v1/me")!
+    let metadataURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/metadata")!
+
+    var user = User.mock
+    user.unsafeMetadata = [
+      "token": "old-value",
+      "stale": true,
+      "nested": [
+        "keep": "same",
+        "remove": "old",
+      ],
+    ]
+
+    var profileMock = try Mock(
+      url: profileURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: user, client: .mock)),
+      ]
+    )
+
+    profileMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody?["first_name"] == "John")
+      #expect(request.urlEncodedFormBody?["unsafe_metadata"] == nil)
+      profileRequestHandled.setValue(true)
+    }
+    profileMock.register()
+
+    var metadataMock = try Mock(
+      url: metadataURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+
+    metadataMock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(Self.unsafeMetadataJSON(from: request) == [
+        "token": "new-value",
+        "stale": .null,
+        "nested": [
+          "added": "new",
+          "remove": .null,
+        ],
+      ])
+      metadataRequestHandled.setValue(true)
+    }
+    metadataMock.register()
+
+    _ = try await user.update(.init(
+      firstName: "John",
+      unsafeMetadata: [
+        "token": "new-value",
+        "nested": [
+          "keep": "same",
+          "added": "new",
+        ],
+      ]
+    ))
+
+    #expect(profileRequestHandled.value)
+    #expect(metadataRequestHandled.value)
   }
 
   @Test
@@ -684,5 +796,14 @@ struct UserServiceTests {
 
     _ = try await Clerk.shared.dependencies.userService.delete()
     #expect(requestHandled.value)
+  }
+
+  private static func unsafeMetadataJSON(from request: URLRequest) -> JSON? {
+    guard let unsafeMetadata = request.urlEncodedFormBody?["unsafe_metadata"],
+          let data = unsafeMetadata.data(using: .utf8)
+    else {
+      return nil
+    }
+    return try? JSONDecoder.clerkDecoder.decode(JSON.self, from: data)
   }
 }

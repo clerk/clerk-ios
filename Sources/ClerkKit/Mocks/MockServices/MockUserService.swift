@@ -94,6 +94,7 @@ package final class MockUserService: UserServiceProtocol {
   ///   - getSessions: Optional implementation of the `getSessions(user:)` method.
   ///   - reload: Optional implementation of the `reload()` method.
   ///   - update: Optional implementation of the `update(params:)` method.
+  ///   - updateMetadata: Optional implementation of the `updateMetadata(params:)` method.
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
   ///   - createEmailAddress: Optional implementation of the `createEmailAddress(emailAddress:)` method.
   ///   - createPhoneNumber: Optional implementation of the `createPhoneNumber(phoneNumber:)` method.

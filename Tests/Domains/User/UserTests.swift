@@ -53,6 +53,176 @@ struct UserTests {
   }
 
   @Test
+  func updateMetadataUsesUserServiceUpdateMetadata() async throws {
+    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
+    let service = MockUserService(updateMetadata: { params in
+      captured.setValue(params)
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await User.mock.updateMetadata(unsafeMetadata: ["token": "some-value"])
+
+    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+  }
+
+  @Test
+  @available(*, deprecated)
+  func updateWithIdenticalUnsafeMetadataReloadsAndDoesNotCallUpdateMetadata() async throws {
+    let reloadCalls = LockIsolated(0)
+    let updateCalls = LockIsolated(0)
+    let metadataCalls = LockIsolated(0)
+    let service = MockUserService(
+      reload: {
+        reloadCalls.withValue { $0 += 1 }
+        var user = User.mock
+        user.unsafeMetadata = ["token": "some-value"]
+        return user
+      },
+      update: { _ in
+        updateCalls.withValue { $0 += 1 }
+        return .mock
+      },
+      updateMetadata: { _ in
+        metadataCalls.withValue { $0 += 1 }
+        return .mock
+      }
+    )
+
+    configureService(service)
+
+    var user = User.mock
+    user.unsafeMetadata = ["token": "some-value"]
+
+    _ = try await user.update(.init(unsafeMetadata: ["token": "some-value"]))
+
+    #expect(reloadCalls.value == 1)
+    #expect(updateCalls.value == 0)
+    #expect(metadataCalls.value == 0)
+  }
+
+  @Test
+  @available(*, deprecated)
+  func metadataOnlyDeprecatedUpdateUsesReloadedUnsafeMetadataForReplacementPatch() async throws {
+    let reloadCalls = LockIsolated(0)
+    let updateCalls = LockIsolated(0)
+    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
+    let service = MockUserService(
+      reload: {
+        reloadCalls.withValue { $0 += 1 }
+        var user = User.mock
+        user.unsafeMetadata = [
+          "token": "old-value",
+          "serverOnly": true,
+          "nested": [
+            "keep": "same",
+            "remove": "old",
+          ],
+        ]
+        return user
+      },
+      update: { _ in
+        updateCalls.withValue { $0 += 1 }
+        return .mock
+      },
+      updateMetadata: { params in
+        captured.setValue(params)
+        return .mock
+      }
+    )
+
+    configureService(service)
+
+    var user = User.mock
+    user.unsafeMetadata = ["token": "stale-local-value"]
+
+    _ = try await user.update(.init(unsafeMetadata: [
+      "token": "new-value",
+      "nested": [
+        "keep": "same",
+        "added": "new",
+      ],
+    ]))
+
+    #expect(reloadCalls.value == 1)
+    #expect(updateCalls.value == 0)
+    #expect(captured.value?.unsafeMetadata == [
+      "token": "new-value",
+      "serverOnly": .null,
+      "nested": [
+        "added": "new",
+        "remove": .null,
+      ],
+    ])
+  }
+
+  @Test
+  @available(*, deprecated)
+  func metadataOnlyDeprecatedUpdateTreatsReloadedNilUnsafeMetadataAsEmpty() async throws {
+    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
+    let service = MockUserService(
+      reload: {
+        var user = User.mock
+        user.unsafeMetadata = nil
+        return user
+      },
+      updateMetadata: { params in
+        captured.setValue(params)
+        return .mock
+      }
+    )
+
+    configureService(service)
+
+    var user = User.mock
+    user.unsafeMetadata = ["staleLocal": true]
+
+    _ = try await user.update(.init(unsafeMetadata: ["token": "some-value"]))
+
+    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+  }
+
+  @Test
+  @available(*, deprecated)
+  func profileAndDeprecatedMetadataUpdateTreatsProfileResponseNilUnsafeMetadataAsEmpty() async throws {
+    let reloadCalls = LockIsolated(0)
+    let updateCalls = LockIsolated(0)
+    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
+    let service = MockUserService(
+      reload: {
+        reloadCalls.withValue { $0 += 1 }
+        return .mock
+      },
+      update: { params in
+        updateCalls.withValue { $0 += 1 }
+        #expect(params.firstName == "John")
+        var user = User.mock
+        user.unsafeMetadata = nil
+        return user
+      },
+      updateMetadata: { params in
+        captured.setValue(params)
+        return .mock
+      }
+    )
+
+    configureService(service)
+
+    var user = User.mock
+    user.unsafeMetadata = ["staleLocal": true]
+
+    _ = try await user.update(.init(
+      firstName: "John",
+      unsafeMetadata: ["token": "some-value"]
+    ))
+
+    #expect(reloadCalls.value == 0)
+    #expect(updateCalls.value == 1)
+    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+  }
+
+  @Test
   func createBackupCodesUsesUserServiceCreateBackupCodes() async throws {
     let called = LockIsolated(false)
     let service = MockUserService(createBackupCodes: {

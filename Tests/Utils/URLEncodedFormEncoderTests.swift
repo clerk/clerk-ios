@@ -8,6 +8,26 @@ import Testing
 
 @Suite(.serialized)
 struct URLEncodedFormEncoderTests {
+  @Test
+  func clerkFormMiddlewarePreservesNestedNullsInStringifiedMetadata() async throws {
+    let url = try #require(URL(string: "https://example.com/v1/me/metadata"))
+    var request = URLRequest(url: url)
+    request.httpMethod = "PATCH"
+    request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try JSONEncoder.clerkEncoder.encode(
+      User.UpdateMetadataParams(unsafeMetadata: ["kept": "yes", "removed": .null])
+    )
+
+    try await ClerkURLEncodedFormEncoderMiddleware().prepare(&request)
+
+    let unsafeMetadata = try #require(request.urlEncodedFormBody?["unsafe_metadata"])
+    #expect(unsafeMetadata.contains("\"kept\":\"yes\""))
+    #expect(unsafeMetadata.contains("\"removed\":null"))
+
+    let unsafeMetadataJSON = try JSONDecoder.clerkDecoder.decode(JSON.self, from: Data(unsafeMetadata.utf8))
+    #expect(unsafeMetadataJSON == ["kept": "yes", "removed": .null])
+  }
+
   // MARK: - ArrayEncoding Tests
 
   @Test
