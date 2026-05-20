@@ -79,6 +79,54 @@ struct ClerkResponseClientStateTests {
     #expect(Clerk.shared.lastClientServerFetchDate == serverDate)
   }
 
+  @Test
+  func organizationReturnsActiveSessionOrganization() {
+    configureClerkForTesting()
+    var organization = Organization.mock
+    organization.id = "org-active"
+    organization.name = "Active Organization"
+
+    var membership = OrganizationMembership.mockWithUserData
+    membership.id = "orgmem-active"
+    membership.organization = organization
+
+    var user = User.mock
+    user.organizationMemberships = [membership]
+
+    var session = Session.mock
+    session.id = "session-active"
+    session.lastActiveOrganizationId = organization.id
+    session.user = user
+
+    var client = Client.mock
+    client.sessions = [session]
+    client.lastActiveSessionId = session.id
+
+    Clerk.shared.applyResponseClient(client)
+
+    #expect(Clerk.shared.organization?.id == organization.id)
+    #expect(Clerk.shared.organization?.name == "Active Organization")
+    #expect(Clerk.shared.organizationMembership?.id == membership.id)
+  }
+
+  @Test
+  func organizationReturnsNilWhenSessionHasNoActiveOrganization() {
+    configureClerkForTesting()
+    var session = Session.mock
+    session.id = "session-personal"
+    session.lastActiveOrganizationId = nil
+    session.user = .mock
+
+    var client = Client.mock
+    client.sessions = [session]
+    client.lastActiveSessionId = session.id
+
+    Clerk.shared.applyResponseClient(client)
+
+    #expect(Clerk.shared.organization == nil)
+    #expect(Clerk.shared.organizationMembership == nil)
+  }
+
   // MARK: - Watch Sync (Authoritative / Phone → Watch)
 
   @Test

@@ -479,4 +479,20 @@ struct AuthTests {
     #expect(params.0 == "sess_test123")
     #expect(params.1 == scenario.organizationId)
   }
+
+  @Test
+  func setActiveUsesNilOrganizationIdByDefault() async throws {
+    let activeParams = LockIsolated<(String, String?)?>(nil)
+    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
+      activeParams.setValue((sessionId, organizationId))
+    })
+
+    configureDependencies(sessionService: sessionService)
+
+    try await Clerk.shared.auth.setActive(sessionId: "sess_test123")
+
+    let params = try #require(activeParams.value)
+    #expect(params.0 == "sess_test123")
+    #expect(params.1 == nil)
+  }
 }

@@ -11,6 +11,73 @@ struct OrganizationServiceTests {
     configureClerkForTesting()
   }
 
+  enum DomainMutationAPIErrorScenario: CaseIterable {
+    case create
+    case delete
+    case prepareAffiliationVerification
+    case attemptAffiliationVerification
+    case updateEnrollmentMode
+
+    var method: Mock.HTTPMethod {
+      switch self {
+      case .delete:
+        .delete
+      case .create, .prepareAffiliationVerification, .attemptAffiliationVerification, .updateEnrollmentMode:
+        .post
+      }
+    }
+
+    func path(domain: OrganizationDomain) -> String {
+      switch self {
+      case .create:
+        "/v1/organizations/\(domain.organizationId)/domains"
+      case .delete:
+        "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)"
+      case .prepareAffiliationVerification:
+        "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/prepare_affiliation_verification"
+      case .attemptAffiliationVerification:
+        "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/attempt_affiliation_verification"
+      case .updateEnrollmentMode:
+        "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/update_enrollment_mode"
+      }
+    }
+
+    @MainActor
+    func perform(domain: OrganizationDomain) async throws {
+      switch self {
+      case .create:
+        _ = try await Clerk.shared.dependencies.organizationService.createOrganizationDomain(
+          organizationId: domain.organizationId,
+          domainName: "invalid domain"
+        )
+      case .delete:
+        _ = try await Clerk.shared.dependencies.organizationService.deleteOrganizationDomain(
+          organizationId: domain.organizationId,
+          domainId: domain.id
+        )
+      case .prepareAffiliationVerification:
+        _ = try await Clerk.shared.dependencies.organizationService.prepareOrganizationDomainAffiliationVerification(
+          organizationId: domain.organizationId,
+          domainId: domain.id,
+          affiliationEmailAddress: "invalid-email"
+        )
+      case .attemptAffiliationVerification:
+        _ = try await Clerk.shared.dependencies.organizationService.attemptOrganizationDomainAffiliationVerification(
+          organizationId: domain.organizationId,
+          domainId: domain.id,
+          code: "000000"
+        )
+      case .updateEnrollmentMode:
+        _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+          organizationId: domain.organizationId,
+          domainId: domain.id,
+          enrollmentMode: "invalid_mode",
+          deletePending: nil
+        )
+      }
+    }
+  }
+
   @Test
   func createOrganization() async throws {
     let requestHandled = LockIsolated(false)
@@ -60,6 +127,30 @@ struct OrganizationServiceTests {
   }
 
   @Test
+  func getOrganization() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.getOrganization(organizationId: organization.id)
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func updateOrganization() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -86,6 +177,83 @@ struct OrganizationServiceTests {
       slug: "new-slug"
     )
     #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateOrganizationOmitsSlugWhenNil() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody!["name"] == "New Name")
+      #expect(request.urlEncodedFormBody!["slug"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+      organizationId: organization.id,
+      name: "New Name",
+      slug: nil
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateOrganizationPropagatesAPIErrors() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 422,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "form_param_format_invalid",
+                message: "Slug is invalid",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    do {
+      _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+        organizationId: organization.id,
+        name: "New Name",
+        slug: "invalid slug"
+      )
+      #expect(Bool(false), "Expected API error to be thrown")
+    } catch let error as ClerkAPIError {
+      #expect(requestHandled.value)
+      #expect(error.code == "form_param_format_invalid")
+      #expect(error.message == "Slug is invalid")
+    } catch {
+      #expect(Bool(false), "Expected ClerkAPIError, got \(error)")
+    }
   }
 
   @Test
@@ -140,6 +308,32 @@ struct OrganizationServiceTests {
   }
 
   @Test
+  func deleteOrganizationLogo() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/logo")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.deleteOrganizationLogo(
+      organizationId: organization.id
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func getOrganizationRoles() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
@@ -150,7 +344,7 @@ struct OrganizationServiceTests {
       data: [
         .get: JSONEncoder.clerkEncoder.encode(
           ClientResponse<ClerkPaginatedResponse<RoleResource>>(
-            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
+            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1, hasRoleSetMigration: true),
             client: .mock
           )
         ),
@@ -165,11 +359,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationRoles(
+    let response = try await Clerk.shared.dependencies.organizationService.getOrganizationRoles(
       organizationId: organization.id,
       initialPage: 0,
       pageSize: 10
     )
+    #expect(response.hasRoleSetMigration == true)
     #expect(requestHandled.value)
   }
 
@@ -390,7 +585,7 @@ struct OrganizationServiceTests {
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("paginated=true") == true)
+      #expect(request.url?.query?.contains("paginated") == false)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -462,6 +657,36 @@ struct OrganizationServiceTests {
     _ = try await Clerk.shared.dependencies.organizationService.inviteOrganizationMember(
       organizationId: organization.id,
       emailAddress: "user@example.com",
+      role: "org:member"
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func inviteOrganizationMembers() async throws {
+    let organization = Organization.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations/bulk")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<[OrganizationInvitation]>(response: [.mock], client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      #expect(request.urlEncodedFormBodyMultiValue!["email_address"] == ["one@example.com", "two@example.com"])
+      #expect(request.urlEncodedFormBody!["role"] == "org:member")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.inviteOrganizationMembers(
+      organizationId: organization.id,
+      emailAddresses: ["one@example.com", "two@example.com"],
       role: "org:member"
     )
     #expect(requestHandled.value)
@@ -674,6 +899,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -700,6 +926,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["affiliation_email_address"] == "user@example.com")
       requestHandled.setValue(true)
     }
@@ -728,6 +955,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["code"] == "123456")
       requestHandled.setValue(true)
     }
@@ -739,6 +967,117 @@ struct OrganizationServiceTests {
       code: "123456"
     )
     #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateOrganizationDomainEnrollmentMode() async throws {
+    let domain = OrganizationDomain.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/update_enrollment_mode")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      #expect(request.urlEncodedFormBody!["enrollment_mode"] == "automatic_invitation")
+      #expect(request.urlEncodedFormBody!["delete_pending"] == "1")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+      organizationId: domain.organizationId,
+      domainId: domain.id,
+      enrollmentMode: "automatic_invitation",
+      deletePending: true
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateOrganizationDomainEnrollmentModeOmitsDeletePendingWhenNil() async throws {
+    let domain = OrganizationDomain.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/update_enrollment_mode")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<OrganizationDomain>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      #expect(request.urlEncodedFormBody!["enrollment_mode"] == "manual_invitation")
+      #expect(request.urlEncodedFormBody!["delete_pending"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+      organizationId: domain.organizationId,
+      domainId: domain.id,
+      enrollmentMode: "manual_invitation",
+      deletePending: nil
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test(arguments: DomainMutationAPIErrorScenario.allCases)
+  func organizationDomainMutationsPropagateAPIErrors(
+    scenario: DomainMutationAPIErrorScenario
+  ) async throws {
+    let domain = OrganizationDomain.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + scenario.path(domain: domain))!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 422,
+      data: [
+        scenario.method: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "form_param_format_invalid",
+                message: "Domain request is invalid",
+                longMessage: nil,
+                meta: JSON.object(["param_name": .string("domain")]),
+                clerkTraceId: "trace_domain_error"
+              ),
+            ],
+            clerkTraceId: "trace_domain_error"
+          )
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == scenario.method.rawValue)
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    do {
+      try await scenario.perform(domain: domain)
+      #expect(Bool(false), "Expected API error to be thrown")
+    } catch let error as ClerkAPIError {
+      #expect(requestHandled.value)
+      #expect(error.code == "form_param_format_invalid")
+      #expect(error.message == "Domain request is invalid")
+      #expect(error.context?["paramName"] == "domain")
+      #expect(error.context?["traceId"] == "trace_domain_error")
+    } catch {
+      #expect(Bool(false), "Expected ClerkAPIError, got \(error)")
+    }
   }
 
   @Test
@@ -756,6 +1095,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -783,6 +1123,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -809,6 +1150,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -834,6 +1176,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -859,6 +1202,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -885,6 +1229,7 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()

@@ -60,6 +60,9 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
+  /// Custom handler for the `leaveOrganization(organizationId:)` method.
+  package nonisolated(unsafe) var leaveOrganizationHandler: ((String) async throws -> DeletedObject)?
+
   /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
   ///
   /// The closure receives the pagination arguments plus an array of suggestion status filters.
@@ -105,6 +108,7 @@ package final class MockUserService: UserServiceProtocol {
   ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
   ///     or provide a value such as `"pending"` when a test needs filtered invitations.
   ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
+  ///   - leaveOrganization: Optional implementation of the `leaveOrganization(organizationId:)` method.
   ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
   ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
   ///     The third argument accepts multiple suggestion statuses; pass `[]` to simulate an unfiltered request
@@ -142,6 +146,7 @@ package final class MockUserService: UserServiceProtocol {
     disableTotp: (() async throws -> DeletedObject)? = nil,
     getOrganizationInvitations: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
     getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
+    leaveOrganization: ((String) async throws -> DeletedObject)? = nil,
     getOrganizationSuggestions: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
     getOrganizationCreationDefaults: (() async throws -> OrganizationCreationDefaults)? = nil,
     updatePassword: ((User.UpdatePasswordParams) async throws -> User)? = nil,
@@ -162,6 +167,7 @@ package final class MockUserService: UserServiceProtocol {
     disableTotpHandler = disableTotp
     getOrganizationInvitationsHandler = getOrganizationInvitations
     getOrganizationMembershipsHandler = getOrganizationMemberships
+    leaveOrganizationHandler = leaveOrganization
     getOrganizationSuggestionsHandler = getOrganizationSuggestions
     getOrganizationCreationDefaultsHandler = getOrganizationCreationDefaults
     updatePasswordHandler = updatePassword
@@ -288,6 +294,14 @@ package final class MockUserService: UserServiceProtocol {
       return try await handler(offset, pageSize)
     }
     return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
+  }
+
+  @MainActor
+  package func leaveOrganization(organizationId: String) async throws -> DeletedObject {
+    if let handler = leaveOrganizationHandler {
+      return try await handler(organizationId)
+    }
+    return .mock
   }
 
   @MainActor

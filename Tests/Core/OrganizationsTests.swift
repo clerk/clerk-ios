@@ -28,4 +28,22 @@ struct OrganizationsTests {
     #expect(params.0 == "My Org")
     #expect(params.1 == nil)
   }
+
+  @Test
+  func getUsesOrganizationServiceGetOrganization() async throws {
+    let capturedId = LockIsolated<String?>(nil)
+    let service = MockOrganizationService(getOrganization: { organizationId in
+      capturedId.setValue(organizationId)
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      organizationService: service
+    )
+
+    _ = try await Clerk.shared.organizations.get(id: "org_123")
+
+    #expect(capturedId.value == "org_123")
+  }
 }

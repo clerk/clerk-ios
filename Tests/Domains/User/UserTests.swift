@@ -233,6 +233,21 @@ struct UserTests {
     #expect(params.1 == 10)
   }
 
+  @Test
+  func leaveOrganizationUsesUserServiceLeaveOrganization() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockUserService(leaveOrganization: { organizationId in
+      captured.setValue(organizationId)
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await User.mock.leaveOrganization(organizationId: "org_123")
+
+    #expect(captured.value == "org_123")
+  }
+
   struct OrganizationSuggestionsScenario: Codable, Equatable {
     let status: [String]
   }
