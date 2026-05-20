@@ -1,0 +1,121 @@
+name: "TEST: @clerk/expo compat gate (dispatch only)"
+
+# Validates the cross-repo dispatch + JAVASCRIPT_REPO_DISPATCH_TOKEN secret
+# end-to-end without touching the release flow. Mirrors the env + steps of
+# the expo-compat job in release-sdk.yml. Delete before merging the
+# expo-compat-gate PR.
+#
+# Hardening note: every `${{ inputs.* }}` / `${{ steps.*.outputs.* }}` /
+# `${{ github.* }}` reference is funnelled through an `env:` block on its
+# step, and the shell uses the resulting `$VAR` (double-quoted). This is
+# the GitHub-recommended pattern to avoid command injection via crafted
+# inputs / step outputs.
+
+on:
+  # workflow_dispatch can't trigger this workflow because the file isn't on
+  # the default branch yet. Use a push trigger scoped to this branch +
+  # workflow file so any commit to it fires the validation run.
+  push:
+    branches: [chris/expo-compat-gate]
+    paths: [.github/workflows/test-expo-compat-gate.yml]
+  workflow_dispatch:
+    inputs:
+      javascript_repo_ref:
+        description: "clerk/javascript ref hosting the mobile-e2e.yml workflow to dispatch"
+        required: false
+        type: string
+        default: "chris/native-component-tests"
+      clerk_ios_ref:
+        description: "clerk-ios SHA to test (defaults to this commit)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  test-dispatch:
+    name: Test dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Resolve clerk-ios ref to dispatch
+        id: ref
+        env:
+          INPUT_CLERK_IOS_REF: ${{ inputs.clerk_ios_ref }}
+          DEFAULT_SHA: ${{ github.sha }}
+        run: |
+          if [ -n "$INPUT_CLERK_IOS_REF" ]; then
+            echo "sha=$INPUT_CLERK_IOS_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$DEFAULT_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve clerk/javascript ref
+        id: jsref
+        env:
+          INPUT_JAVASCRIPT_REPO_REF: ${{ inputs.javascript_repo_ref }}
+        run: |
+          echo "ref=${INPUT_JAVASCRIPT_REPO_REF:-chris/native-component-tests}" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch mobile-e2e in clerk/javascript
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.JAVASCRIPT_REPO_DISPATCH_TOKEN }}
+          JS_REF: ${{ steps.jsref.outputs.ref }}
+          IOS_REF: ${{ steps.ref.outputs.sha }}
+        run: |
+          dispatch_time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "dispatch_time=$dispatch_time" >> "$GITHUB_OUTPUT"
+
+          gh workflow run mobile-e2e.yml \
+            -R clerk/javascript \
+            -r "$JS_REF" \
+            -f clerk_ios_ref="$IOS_REF"
+
+      - name: Resolve dispatched run id
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.JAVASCRIPT_REPO_DISPATCH_TOKEN }}
+          DISPATCH_TIME: ${{ steps.dispatch.outputs.dispatch_time }}
+        run: |
+          run_id=""
+          for i in $(seq 1 24); do
+            sleep 5
+            run_id=$(gh api \
+              "repos/clerk/javascript/actions/workflows/mobile-e2e.yml/runs?event=workflow_dispatch&created=%3E${DISPATCH_TIME}" \
+              --jq '.workflow_runs | sort_by(.created_at) | .[-1].id // empty')
+            if [ -n "$run_id" ]; then
+              echo "Found dispatched run: $run_id"
+              break
+            fi
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::Could not find dispatched mobile-e2e run in clerk/javascript within 2 minutes"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "run_url=https://github.com/clerk/javascript/actions/runs/$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Link to dispatched run in job summary
+        env:
+          RUN_URL: ${{ steps.resolve.outputs.run_url }}
+          IOS_REF: ${{ steps.ref.outputs.sha }}
+          JS_REF: ${{ steps.jsref.outputs.ref }}
+        run: |
+          {
+            echo "## Test dispatch — @clerk/expo compat gate"
+            echo ""
+            echo "Dispatched: $RUN_URL"
+            echo ""
+            echo "clerk-ios ref:        \`$IOS_REF\`"
+            echo "clerk/javascript ref: \`$JS_REF\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait for dispatched run to complete
+        env:
+          GH_TOKEN: ${{ secrets.JAVASCRIPT_REPO_DISPATCH_TOKEN }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        run: |
+          gh run watch "$RUN_ID" \
+            -R clerk/javascript \
+            --exit-status
