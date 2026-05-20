@@ -1,0 +1,13 @@
+[mcp_servers.XcodeBuildMCP]
+args = [
+    "-y",
+    "xcodebuildmcp@latest",
+]
+command = "npx"
+
+[mcp_servers.sosumi]
+args = [
+    "-y",
+    "sosumi-mcp@latest",
+]
+command = "npx"
