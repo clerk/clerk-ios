@@ -144,14 +144,6 @@ jobs:
         if: ${{ !inputs.run_integration_tests }}
         run: echo "E2EHost tests run only when run_integration_tests is true."
 
-      - name: List E2E key names
-        if: inputs.run_integration_tests
-        env:
-          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
-        run: |
-          set +x
-          printf '%s\n' "$CLERK_TEST_KEYS_JSON" | jq -r 'keys | sort | .[]'
-
       - name: Setup E2E test keys
         if: inputs.run_integration_tests
         env:
@@ -167,6 +159,35 @@ jobs:
           printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
           chmod 600 .keys.json
           echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+
+      - name: Validate E2E test keys
+        if: inputs.run_integration_tests
+        env:
+          CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
+        run: |
+          set -euo pipefail
+
+          required_keys="$(printf '%s\n' \
+            "with-email-codes" \
+            "with-session-tasks-setup-mfa" \
+            "$CLERK_E2E_KEY_NAME" \
+            | sort -u)"
+
+          missing=0
+          while IFS= read -r key_name; do
+            if ! jq -e --arg key_name "$key_name" '.[$key_name].pk | strings | select(length > 0)' .keys.json > /dev/null; then
+              echo "::error::Missing $key_name.pk in CLERK_TEST_KEYS_JSON."
+              missing=1
+            fi
+          done <<< "$required_keys"
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Add the missing key to 1Password, then sync GitHub with:"
+            echo "  make sync-test-keys-to-github"
+            exit 1
+          fi
+
+          echo "✅ Required E2E test keys are configured"
 
       - name: Run E2EHost tests
         if: inputs.run_integration_tests

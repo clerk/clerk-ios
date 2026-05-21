@@ -202,6 +202,11 @@ make fetch-test-keys
 make test-e2e
 ```
 
+If CI is missing a named test key, add it to the 1Password item, then sync the GitHub Actions snapshot:
+```bash
+make sync-test-keys-to-github
+```
+
 You can also provide a key directly:
 ```bash
 CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e

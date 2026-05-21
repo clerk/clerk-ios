@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -13,6 +13,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make setup         - Install tools/hooks and configure Xcode file headers"
 	@echo "  make fetch-test-keys - Fetch integration test keys from 1Password (optional, for Clerk employees; auto-installs CLI if needed)"
+	@echo "  make sync-test-keys-to-github - Fetch test keys and sync them to the CLERK_TEST_KEYS_JSON GitHub Actions secret"
 	@echo "  make format        - Format all Swift files using SwiftFormat"
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
 	@echo "  make lint          - Run SwiftLint to check code quality"
@@ -115,6 +116,10 @@ install-1password-cli:
 # Automatically installs 1Password CLI if not present
 fetch-test-keys: install-1password-cli create-env
 	@./scripts/fetch-1password-secrets.sh
+
+# Sync the 1Password-backed .keys.json snapshot into GitHub Actions.
+sync-test-keys-to-github: fetch-test-keys
+	@./scripts/sync-test-keys-to-github.sh
 
 # Format all Swift files
 format:
