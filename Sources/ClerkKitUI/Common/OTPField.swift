@@ -58,12 +58,17 @@ struct OTPField: View {
       code = String(newValue.prefix(numberOfInputs))
       if previousCode == code { return }
 
-      if code.count == numberOfInputs {
-        fieldState = .default
-        Task { await onCodeEntry(code) }
-      } else if code.isEmpty {
+      if code.isEmpty {
         fieldState = .default
       }
+    }
+    .task(id: code) {
+      guard code.count == numberOfInputs else {
+        return
+      }
+
+      fieldState = .default
+      await onCodeEntry(code)
     }
     .onChange(
       of: fieldState,

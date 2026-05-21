@@ -112,7 +112,9 @@ struct E2EHostView: View {
     }
 
     cleanupOnLaunchDidStart = true
-    _ = try? await user.delete()
+    if await (try? user.delete()) != nil {
+      try? await clerk.auth.signOut()
+    }
     cleanupOnLaunchDidComplete = true
   }
 }
