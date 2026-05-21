@@ -3,7 +3,7 @@ name: "TEST: @clerk/expo compat gate (dispatch only)"
 # Validates the cross-repo dispatch + JAVASCRIPT_REPO_DISPATCH_TOKEN secret
 # end-to-end without touching the release flow. Mirrors the env + steps of
 # the expo-compat job in release-sdk.yml. Delete before merging the
-# expo-compat-gate PR. (sequence: after-sean-feedback-1779377789)
+# expo-compat-gate PR. (sequence: after-coldstart-fix-1779382670)
 #
 # Hardening note: every `${{ inputs.* }}` / `${{ steps.*.outputs.* }}` /
 # `${{ github.* }}` reference is funnelled through an `env:` block on its
