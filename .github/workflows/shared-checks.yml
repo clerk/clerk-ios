@@ -144,6 +144,14 @@ jobs:
         if: ${{ !inputs.run_integration_tests }}
         run: echo "E2EHost tests run only when run_integration_tests is true."
 
+      - name: List E2E key names
+        if: inputs.run_integration_tests
+        env:
+          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
+        run: |
+          set +x
+          printf '%s\n' "$CLERK_TEST_KEYS_JSON" | jq -r 'keys | sort | .[]'
+
       - name: Setup E2E test keys
         if: inputs.run_integration_tests
         env:
