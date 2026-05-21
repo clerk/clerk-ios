@@ -113,6 +113,13 @@ struct SocialButton: View {
         .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
+    // Make sure the button announces itself to screen readers (and to
+    // accessibility-tree-driven test harnesses like Maestro) even when
+    // `ViewThatFits` collapses the label down to just the provider icon.
+    // Without this, the narrow-layout icon-only variant is fully unlabeled
+    // for VoiceOver — users hear "Button" with no provider context — and
+    // the only way to interact with it from a UI test is by coordinate.
+    .accessibilityLabel(Text("Sign in with \(provider.name)", bundle: .module))
   }
 }
 
