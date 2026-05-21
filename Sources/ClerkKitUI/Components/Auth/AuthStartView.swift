@@ -224,7 +224,8 @@ extension AuthStartView {
         ClerkTextField(
           emailOrUsernamePlaceholder,
           text: $authState.authStartIdentifier,
-          fieldState: fieldError != nil ? .error : .default
+          fieldState: fieldError != nil ? .error : .default,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
         .keyboardType(.emailAddress)
@@ -255,6 +256,7 @@ extension AuthStartView {
     }
     .buttonStyle(.primary())
     .disabled(continueIsDisabled)
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.continueButton)
     .simultaneousGesture(TapGesture())
   }
 

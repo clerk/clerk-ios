@@ -14,6 +14,7 @@ struct OTPField: View {
   var numberOfInputs: Int = 6
   @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
+  var accessibilityIdentifier: String = ""
   var onCodeEntry: (String) async -> Void
 
   enum FieldState {
@@ -47,6 +48,7 @@ struct OTPField: View {
         .focused($isFocused)
         .textContentType(.oneTimeCode)
         .keyboardType(.numberPad)
+        .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
         .tint(.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

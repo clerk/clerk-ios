@@ -79,6 +79,7 @@ After running `make setup`, you're ready to start developing!
 - `make check` - Run both format-check and lint (for CI)
 - `make test` - Run `ClerkKitTests` on macOS
 - `make test-ui` - Run `ClerkKitUITests` on iOS Simulator
+- `make test-e2e` - Run E2EHost tests on iOS Simulator
 - `make test-integration` - Run only integration tests (requires `.keys.json` file; Clerk employees only)
 - `make fetch-test-keys` - Fetch integration test keys from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
@@ -120,7 +121,7 @@ SwiftLint checks for:
 
 ## Testing
 
-This project uses **Swift Testing** (not XCTest) for all tests. Tests are organized into two categories:
+This project uses **Swift Testing** for package unit and integration tests, and **XCTest/XCUITest** for app-level E2E UI automation. Tests are organized into three categories:
 
 ### Unit and UI Tests
 
@@ -190,6 +191,42 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - If `make fetch-test-keys` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
 - Integration tests may be slower than unit tests due to real network calls
 - Some tests may be flaky due to network conditions - consider retrying
+
+### E2EHost Tests
+
+E2E tests live in `Examples/E2EHost/` and run a dedicated SwiftUI test host app on an iOS Simulator with XCUITest. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, these tests use the same Clerk test instance as the `with-email-codes` integration tests.
+
+**Running E2E tests (Clerk employees only):**
+```bash
+make fetch-test-keys
+make test-e2e
+```
+
+You can also provide a key directly:
+```bash
+CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e
+```
+
+To run against a different named test instance from `.keys.json`:
+```bash
+CLERK_E2E_KEY_NAME=with-session-tasks-setup-mfa make test-e2e
+```
+If omitted, `CLERK_E2E_KEY_NAME` defaults to `with-email-codes`.
+Session-task examples include `with-session-tasks`, `with-session-tasks-reset-password`, and `with-session-tasks-setup-mfa`.
+
+To choose a specific simulator:
+```bash
+IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
+```
+
+**Requirements:**
+- Network access
+- Valid publishable key in `.keys.json` for `CLERK_E2E_KEY_NAME` or `CLERK_E2E_PUBLISHABLE_KEY`
+- iOS Simulator available through `xcrun simctl`
+
+The test runner writes its result bundle to `build/reports/E2EHost.xcresult`. In CI, this bundle is uploaded on failure. AI tools may help draft page objects, test flows, and accessibility ID changes, but generated tests must use the approved accessibility identifiers and be reviewed like production code. Maestro can be useful for exploratory mobile QA, but XCUITest is the release-gating E2E layer.
+
+E2E cleanup uses the normal host-level delete-account control when possible. If a failure leaves the test inside an auth sheet or pending session-task screen, teardown relaunches `E2EHost` with the same keychain service and an E2E-only cleanup-on-launch flag so the app can delete the restored user without exposing a visible cleanup button.
 
 ## Releasing (Maintainers)
 

@@ -1,8 +1,9 @@
-.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration help create-env install-1password-cli fetch-test-keys update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 IOS_SIMULATOR_DESTINATION ?=
+CLERK_E2E_KEY_NAME ?= with-email-codes
 
 
 # Default target
@@ -19,6 +20,8 @@ help:
 	@echo "  make check         - Run both format-check and lint (for CI)"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
+	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
+	@echo "      CLERK_E2E_KEY_NAME=with-session-tasks-setup-mfa make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
@@ -184,6 +187,47 @@ test-ui:
 	echo "Using simulator destination: $$destination"; \
 	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
+
+# Run E2EHost tests on iOS Simulator
+test-e2e:
+	@echo "Running E2EHost tests on iOS Simulator..."
+	@mkdir -p build/reports
+	@key_name="$(CLERK_E2E_KEY_NAME)"; \
+	if [ -z "$$key_name" ]; then \
+		key_name="with-email-codes"; \
+	fi; \
+	publishable_key="$${CLERK_E2E_PUBLISHABLE_KEY:-}"; \
+	if [ -z "$$publishable_key" ] && [ -f .keys.json ]; then \
+		publishable_key="$$(/usr/bin/plutil -extract "$$key_name.pk" raw -o - .keys.json 2>/dev/null || true)"; \
+	fi; \
+	if [ -z "$$publishable_key" ]; then \
+		echo "❌ Unable to find a publishable key for E2EHost tests."; \
+		echo "   Set CLERK_E2E_PUBLISHABLE_KEY or configure '$$key_name.pk' in .keys.json."; \
+		exit 1; \
+	fi; \
+	echo "Using E2E test key: $$key_name"; \
+	destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -z "$$destination" ]; then \
+		available_devices="$$(xcrun simctl list devices available)"; \
+		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$$/\2/p' | head -n1)"; \
+		if [ -n "$$simulator_id" ]; then \
+			destination="platform=iOS Simulator,id=$$simulator_id"; \
+		fi; \
+	fi; \
+	if [ -z "$$destination" ]; then \
+		echo "❌ Unable to find an available iPhone simulator for E2EHostE2ETests."; \
+		echo "   Set IOS_SIMULATOR_DESTINATION explicitly and rerun make test-e2e."; \
+		exit 1; \
+	fi; \
+	echo "Using simulator destination: $$destination"; \
+	rm -rf build/reports/E2EHost.xcresult; \
+	printf '%s' "$$publishable_key" > build/reports/E2EHostPublishableKey.txt; \
+	printf '%s' "$$key_name" > build/reports/E2EHostPublishableKeyName.txt; \
+	chmod 600 build/reports/E2EHostPublishableKey.txt; \
+	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
+	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -only-testing:E2EHostE2ETests -resultBundlePath build/reports/E2EHost.xcresult
+	@echo "✅ E2EHost tests completed!"
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)

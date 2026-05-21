@@ -10,10 +10,24 @@
 		8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
 		8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
 		8FATLANTIS001E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS002E3A648E00831B13 /* Atlantis */; };
+		8FE2E2F12E90000000000011 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
+		8FE2E2F22E90000000000012 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		8FE2E2EC2E9000000000000C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8FC2FE002E3A5C32001E5953 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8FE2E2F72E90000000000017;
+			remoteInfo = E2EHost;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		8FE2E2F02E90000000000010 /* E2EHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = E2EHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FC2FE082E3A5C32001E5953 /* Quickstart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quickstart.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FE2E2E22E90000000000002 /* E2EHostE2ETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = E2EHostE2ETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -35,6 +49,18 @@
 			path = Quickstart;
 			sourceTree = "<group>";
 		};
+		8FE2E2F32E90000000000013 /* E2EHost */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = E2EHost;
+			path = ../E2EHost/E2EHost;
+			sourceTree = "<group>";
+		};
+		8FE2E2E32E90000000000003 /* E2EHostE2ETests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = E2EHostE2ETests;
+			path = ../E2EHost/E2EHostE2ETests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +74,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FE2E2F52E90000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FE2E2F12E90000000000011 /* ClerkKit in Frameworks */,
+				8FE2E2F22E90000000000012 /* ClerkKitUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FE2E2E52E90000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -55,6 +97,8 @@
 			isa = PBXGroup;
 			children = (
 				8FC2FE0A2E3A5C32001E5953 /* Quickstart */,
+				8FE2E2F32E90000000000013 /* E2EHost */,
+				8FE2E2E32E90000000000003 /* E2EHostE2ETests */,
 				8FC2FE092E3A5C32001E5953 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -63,6 +107,8 @@
 			isa = PBXGroup;
 			children = (
 				8FC2FE082E3A5C32001E5953 /* Quickstart.app */,
+				8FE2E2F02E90000000000010 /* E2EHost.app */,
+				8FE2E2E22E90000000000002 /* E2EHostE2ETests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,6 +141,53 @@
 			productReference = 8FC2FE082E3A5C32001E5953 /* Quickstart.app */;
 			productType = "com.apple.product-type.application";
 		};
+		8FE2E2F72E90000000000017 /* E2EHost */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8FE2E2FA2E9000000000001A /* Build configuration list for PBXNativeTarget "E2EHost" */;
+			buildPhases = (
+				8FE2E2F42E90000000000014 /* Sources */,
+				8FE2E2F52E90000000000015 /* Frameworks */,
+				8FE2E2F62E90000000000016 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				8FE2E2F32E90000000000013 /* E2EHost */,
+			);
+			name = E2EHost;
+			packageProductDependencies = (
+				8F9023512E3A648E00831B13 /* ClerkKitUI */,
+				8F692CBF2E3D008D00E6E7ED /* ClerkKit */,
+			);
+			productName = E2EHost;
+			productReference = 8FE2E2F02E90000000000010 /* E2EHost.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8FE2E2E72E90000000000007 /* E2EHostE2ETests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8FE2E2EA2E9000000000000A /* Build configuration list for PBXNativeTarget "E2EHostE2ETests" */;
+			buildPhases = (
+				8FE2E2E42E90000000000004 /* Sources */,
+				8FE2E2E52E90000000000005 /* Frameworks */,
+				8FE2E2E62E90000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8FE2E2EB2E9000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8FE2E2E32E90000000000003 /* E2EHostE2ETests */,
+			);
+			name = E2EHostE2ETests;
+			packageProductDependencies = (
+			);
+			productName = E2EHostE2ETests;
+			productReference = 8FE2E2E22E90000000000002 /* E2EHostE2ETests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -107,6 +200,13 @@
 				TargetAttributes = {
 					8FC2FE072E3A5C32001E5953 = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					8FE2E2F72E90000000000017 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					8FE2E2E72E90000000000007 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 8FE2E2F72E90000000000017;
 					};
 				};
 			};
@@ -128,12 +228,28 @@
 			projectRoot = "";
 			targets = (
 				8FC2FE072E3A5C32001E5953 /* Quickstart */,
+				8FE2E2F72E90000000000017 /* E2EHost */,
+				8FE2E2E72E90000000000007 /* E2EHostE2ETests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		8FC2FE062E3A5C32001E5953 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FE2E2F62E90000000000016 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FE2E2E62E90000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -150,7 +266,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		8FE2E2F42E90000000000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FE2E2E42E90000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		8FE2E2EB2E9000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8FE2E2F72E90000000000017 /* E2EHost */;
+			targetProxy = 8FE2E2EC2E9000000000000C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8FC2FE112E3A5C33001E5953 /* Debug */ = {
@@ -353,6 +491,136 @@
 			};
 			name = Release;
 		};
+		8FE2E2F82E90000000000018 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.E2EHost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8FE2E2F92E90000000000019 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.E2EHost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8FE2E2E82E90000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.E2EHostE2ETests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = E2EHost;
+			};
+			name = Debug;
+		};
+		8FE2E2E92E90000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L8SD6SB282;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clerk.E2EHostE2ETests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = E2EHost;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -370,6 +638,24 @@
 			buildConfigurations = (
 				8FC2FE142E3A5C33001E5953 /* Debug */,
 				8FC2FE152E3A5C33001E5953 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8FE2E2FA2E9000000000001A /* Build configuration list for PBXNativeTarget "E2EHost" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FE2E2F82E90000000000018 /* Debug */,
+				8FE2E2F92E90000000000019 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8FE2E2EA2E9000000000000A /* Build configuration list for PBXNativeTarget "E2EHostE2ETests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FE2E2E82E90000000000008 /* Debug */,
+				8FE2E2E92E90000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

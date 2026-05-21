@@ -50,9 +50,10 @@ struct SignInFactorOnePasswordView: View {
               "Enter your password",
               text: $authState.signInPassword,
               isSecure: true,
-              fieldState: fieldError != nil ? .error : .default
+              fieldState: fieldError != nil ? .error : .default,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignIn.password
             )
-            .textContentType(.password)
+            .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .password)
             .textInputAutocapitalization(.never)
             .focused($isFocused)
             .onFirstAppear {
@@ -74,6 +75,7 @@ struct SignInFactorOnePasswordView: View {
           }
           .buttonStyle(.primary())
           .disabled(authState.signInPassword.isEmpty)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.continueButton)
           .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 16)

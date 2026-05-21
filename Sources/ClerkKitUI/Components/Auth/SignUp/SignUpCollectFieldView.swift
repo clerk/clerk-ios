@@ -79,9 +79,10 @@ struct SignUpCollectFieldView: View {
       ClerkTextField(
         "Choose your password",
         text: $authState.signUpPassword,
-        isSecure: true
+        isSecure: true,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.password
       )
-      .textContentType(.newPassword)
+      .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
       .hiddenTextField(
         text: $usernameForPasswordKeeper,
         textContentType: .username
@@ -135,6 +136,7 @@ struct SignUpCollectFieldView: View {
           }
           .buttonStyle(.primary())
           .disabled(continueIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.continueButton)
           .simultaneousGesture(TapGesture())
         }
 
