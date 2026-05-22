@@ -21,6 +21,8 @@ enum ClerkAccessibilityIdentifiers {
       static let code = "clerk.auth.signUp.code"
       static let password = "clerk.auth.signUp.password"
       static let continueButton = "clerk.auth.signUp.continue"
+      static let completeProfileContinueButton = "clerk.auth.signUp.completeProfile.continue"
+      static let legalAccepted = "clerk.auth.signUp.legalAccepted"
     }
 
     enum SessionTask {

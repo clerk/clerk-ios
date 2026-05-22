@@ -217,6 +217,7 @@ To run against a different named test instance from `.keys.json`:
 CLERK_E2E_KEY_NAME=with-session-tasks-setup-mfa make test-e2e
 ```
 If omitted, `CLERK_E2E_KEY_NAME` defaults to `with-email-codes`.
+OAuth legal-consent examples include `with-legal-consent`.
 Session-task examples include `with-session-tasks`, `with-session-tasks-reset-password`, and `with-session-tasks-setup-mfa`.
 
 To choose a specific simulator:

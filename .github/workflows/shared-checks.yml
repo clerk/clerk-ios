@@ -169,6 +169,7 @@ jobs:
 
           required_keys="$(printf '%s\n' \
             "with-email-codes" \
+            "with-legal-consent" \
             "with-session-tasks-setup-mfa" \
             "$CLERK_E2E_KEY_NAME" \
             | sort -u)"

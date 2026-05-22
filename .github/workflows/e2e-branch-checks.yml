@@ -10,6 +10,7 @@ on:
         default: with-email-codes
         options:
           - with-email-codes
+          - with-legal-consent
           - with-session-tasks-setup-mfa
 
 permissions:

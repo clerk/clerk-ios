@@ -16,6 +16,7 @@ private struct E2ELaunchConfiguration {
 
 final class E2EHostE2ETests: XCTestCase {
   private static let defaultPublishableKeyName = "with-email-codes"
+  private static let legalConsentPublishableKeyName = "with-legal-consent"
   private static let setupMfaPublishableKeyName = "with-session-tasks-setup-mfa"
 
   private let verificationCode = "424242"
@@ -112,6 +113,27 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
+  func testOAuthSignUpCompletesLegalConsent() throws {
+    let publishableKey = try requiredPublishableKey(named: Self.legalConsentPublishableKeyName)
+    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    app = launchApp(
+      authMode: "signUp",
+      publishableKey: publishableKey,
+      publishableKeyName: Self.legalConsentPublishableKeyName,
+      keychainService: keychainService
+    )
+    guard let signUpApp = app else { return }
+
+    openAuth(in: signUpApp)
+    completeE2EOAuthLegalConsentSignUp(in: signUpApp)
+    waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
+
+    tap(E2EIdentifier.deleteAccount, in: signUpApp)
+    waitForSignedOut(in: signUpApp)
+  }
+
   func testCleanupOnLaunchDeletesRestoredPendingUser() throws {
     let publishableKey = try requiredPublishableKey(named: Self.setupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -146,9 +168,12 @@ extension E2EHostE2ETests {
   fileprivate enum E2EIdentifier {
     static let authStartIdentifier = "clerk.auth.start.identifier"
     static let authStartContinue = "clerk.auth.start.continue"
+    static let e2eOAuthProvider = "Continue with E2E OAuth Provider"
     static let signUpCode = "clerk.auth.signUp.code"
     static let signUpPassword = "clerk.auth.signUp.password"
     static let signUpContinue = "clerk.auth.signUp.continue"
+    static let signUpCompleteProfileContinue = "clerk.auth.signUp.completeProfile.continue"
+    static let signUpLegalAccepted = "clerk.auth.signUp.legalAccepted"
     static let signInPassword = "clerk.auth.signIn.password"
     static let signInContinue = "clerk.auth.signIn.continue"
     static let signedIn = "e2e.auth.signedIn"
@@ -347,6 +372,49 @@ extension E2EHostE2ETests {
     }
 
     waitForSignedIn(in: app)
+  }
+
+  private func completeE2EOAuthLegalConsentSignUp(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let providerButton = app.buttons[E2EIdentifier.e2eOAuthProvider].firstMatch
+    XCTAssertTrue(
+      providerButton.waitForExistence(timeout: 30),
+      "Expected the E2E OAuth provider button.",
+      file: file,
+      line: line
+    )
+    providerButton.tap()
+
+    continueWebAuthenticationSessionIfNeeded(in: app)
+    let legalAccepted = app.descendants(matching: .any)[E2EIdentifier.signUpLegalAccepted]
+    XCTAssertTrue(
+      legalAccepted.waitForExistence(timeout: 60),
+      "Expected legal consent after the E2E OAuth redirect.",
+      file: file,
+      line: line
+    )
+    legalAccepted.tap()
+    tap(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
+  }
+
+  private func continueWebAuthenticationSessionIfNeeded(in app: XCUIApplication) {
+    let predicate = NSPredicate(format: "label == %@ AND enabled == true", "Continue")
+    let appContinueButton = app.buttons.matching(predicate).firstMatch
+    if appContinueButton.waitForExistence(timeout: 10) {
+      appContinueButton.tap()
+      return
+    }
+
+    let springboardContinueButton = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+      .buttons
+      .matching(predicate)
+      .firstMatch
+    if springboardContinueButton.waitForExistence(timeout: 2) {
+      springboardContinueButton.tap()
+    }
   }
 
   private func waitForSignUpCodePrepared(

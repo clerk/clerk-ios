@@ -107,6 +107,7 @@ struct SignUpCompleteProfileView: View {
           }
           .buttonStyle(.primary())
           .disabled(continueIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileContinueButton)
           .simultaneousGesture(TapGesture())
         }
 
