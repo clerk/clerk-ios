@@ -61,7 +61,7 @@ final class AuthState {
   }
 
   /// Applies identifier configuration values.
-  func configure(_ config: AuthIdentifierConfig) {
+  func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
     hasInitialValues = config.initialIdentifier != nil
 

@@ -230,6 +230,165 @@ struct SignUpServiceTests {
   }
 
   @Test
+  func createMergesPendingUnsafeMetadataWhenParamsHaveNone() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"source\":\"pending\"}")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = ["source": "pending"]
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+      emailAddress: "test@example.com"
+    ))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createPrefersExplicitUnsafeMetadataOverPending() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"source\":\"explicit\"}")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = ["source": "pending"]
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+      unsafeMetadata: ["source": "explicit"]
+    ))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createOmitsUnsafeMetadataWhenNeitherProvided() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+      emailAddress: "test@example.com"
+    ))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createWithTransferIncludesPendingUnsafeMetadata() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["transfer"] == "1")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"source\":\"pending\"}")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = ["source": "pending"]
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func createWithOAuthIncludesPendingUnsafeMetadata() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"source\":\"pending\"}")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = ["source": "pending"]
+    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+      strategy: .oauth(.google),
+      redirectUrl: expectedRedirectUrl
+    ))
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func applyingPendingUnsafeMetadataMergesWhenParamsHaveNone() {
+    let params = SignUp.CreateParams(emailAddress: "test@example.com")
+    let merged = params.applyingPendingUnsafeMetadataIfNeeded(["source": "pending"])
+    #expect(merged.unsafeMetadata == ["source": "pending"])
+    #expect(merged.emailAddress == "test@example.com")
+  }
+
+  @Test
+  func applyingPendingUnsafeMetadataPreservesExplicitValue() {
+    let params = SignUp.CreateParams(unsafeMetadata: ["source": "explicit"])
+    let merged = params.applyingPendingUnsafeMetadataIfNeeded(["source": "pending"])
+    #expect(merged.unsafeMetadata == ["source": "explicit"])
+  }
+
+  @Test
+  func applyingPendingUnsafeMetadataIsNoOpWhenPendingIsNil() {
+    let params = SignUp.CreateParams(emailAddress: "test@example.com")
+    let merged = params.applyingPendingUnsafeMetadataIfNeeded(nil)
+    #expect(merged.unsafeMetadata == nil)
+    #expect(merged.emailAddress == "test@example.com")
+  }
+
+  @Test
   func testUpdate() async throws {
     let signUp = SignUp.mock
     let requestHandled = LockIsolated(false)
@@ -281,6 +440,37 @@ struct SignUpServiceTests {
     _ = try await Clerk.shared.dependencies.signUpService.update(
       signUpId: signUp.id,
       params: .init(unsafeMetadata: ["token": "some-value"])
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updateDoesNotMergePendingUnsafeMetadata() async throws {
+    // Merging is intentionally a create-only behavior; the server already
+    // stores the metadata from the initial create.
+    let signUp = SignUp.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups/\(signUp.id)")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .patch: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "PATCH")
+      #expect(request.urlEncodedFormBody!["unsafe_metadata"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = ["source": "pending"]
+    _ = try await Clerk.shared.dependencies.signUpService.update(
+      signUpId: signUp.id,
+      params: .init(firstName: "John")
     )
     #expect(requestHandled.value)
   }

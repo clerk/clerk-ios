@@ -65,6 +65,35 @@ public struct Auth {
     Clerk.shared.client?.sessions ?? []
   }
 
+  /// Unsafe metadata to include on the next sign-up create request.
+  ///
+  /// When set, this value is automatically included on every sign-up create
+  /// request, regardless of the strategy used (email, phone, username, OAuth,
+  /// Apple, Enterprise SSO, or transfer flows). If a sign-up method accepts
+  /// `unsafeMetadata` explicitly, the explicit value is used for that call.
+  ///
+  /// The value is cleared automatically once a sign-up completes successfully
+  /// and on `Clerk.configure(...)` reconfiguration. It is **not** cleared on
+  /// sign-up failure, abandonment, or sign-in completion — set it to `nil`
+  /// explicitly when starting a flow that should not inherit a previous value.
+  ///
+  /// ```swift
+  /// // Programmatic sign-up
+  /// clerk.auth.unsafeMetadata = ["onboardingSource": "ios"]
+  /// _ = try await clerk.auth.signUp(emailAddress: "user@example.com")
+  ///
+  /// // Or attach to a sign-in that may transfer to sign-up (Apple, OAuth, SSO)
+  /// clerk.auth.unsafeMetadata = ["onboardingSource": "ios"]
+  /// _ = try await clerk.auth.signInWithApple()
+  ///
+  /// // The metadata is attached to the resulting SignUp and copied to
+  /// // User.unsafeMetadata once the sign-up completes.
+  /// ```
+  public var unsafeMetadata: JSON? {
+    get { Clerk.shared.pendingSignUpUnsafeMetadata }
+    nonmutating set { Clerk.shared.pendingSignUpUnsafeMetadata = newValue }
+  }
+
   // MARK: - Sign In Entry Points
 
   /// Creates a new sign-in attempt with the provided identifier.

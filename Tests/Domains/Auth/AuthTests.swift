@@ -433,6 +433,43 @@ struct AuthTests {
     #expect(params.ticket == "mock_ticket_value")
   }
 
+  @Test
+  func unsafeMetadataPropertyReflectsClerkPendingState() {
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.pendingSignUpUnsafeMetadata = nil
+    #expect(Clerk.shared.auth.unsafeMetadata == nil)
+
+    Clerk.shared.auth.unsafeMetadata = ["source": "ios"]
+    #expect(Clerk.shared.pendingSignUpUnsafeMetadata == ["source": "ios"])
+    #expect(Clerk.shared.auth.unsafeMetadata == ["source": "ios"])
+
+    Clerk.shared.auth.unsafeMetadata = nil
+    #expect(Clerk.shared.pendingSignUpUnsafeMetadata == nil)
+    #expect(Clerk.shared.auth.unsafeMetadata == nil)
+  }
+
+  @Test
+  func signUpRoutesThroughSignUpServiceCreateWithoutMergingPendingMetadata() async throws {
+    // Auth.signUp does not merge pending metadata itself; the merge happens
+    // inside SignUpService.create (covered in SignUpServiceTests).
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signUpService: signUpService)
+    defer { Clerk.shared.pendingSignUpUnsafeMetadata = nil }
+    Clerk.shared.auth.unsafeMetadata = ["source": "ios"]
+
+    _ = try await Clerk.shared.auth.signUp(emailAddress: "test@example.com")
+
+    let params = try #require(signUpParams.value)
+    #expect(params.emailAddress == "test@example.com")
+    #expect(params.unsafeMetadata == nil)
+    #expect(Clerk.shared.pendingSignUpUnsafeMetadata == ["source": "ios"])
+  }
+
   @Test(
     arguments: [
       SignOutScenario(sessionId: nil),

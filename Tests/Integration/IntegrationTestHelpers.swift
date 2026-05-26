@@ -91,7 +91,7 @@ func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
     clientService: ClientService(apiClient: apiClient),
     userService: UserService(apiClient: apiClient),
     signInService: SignInService(apiClient: apiClient),
-    signUpService: SignUpService(apiClient: apiClient),
+    signUpService: SignUpService(apiClient: apiClient, runtimeScope: Clerk.shared.runtimeScope),
     sessionService: SessionService(apiClient: apiClient),
     passkeyService: PasskeyService(apiClient: apiClient),
     organizationService: OrganizationService(apiClient: apiClient),

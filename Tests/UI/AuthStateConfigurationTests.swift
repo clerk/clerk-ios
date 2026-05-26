@@ -1,5 +1,6 @@
 #if os(iOS)
 
+import ClerkKit
 @testable import ClerkKitUI
 import Foundation
 import Testing
@@ -37,7 +38,7 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "seed@example.com"
     ))
 
@@ -53,7 +54,7 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "+17777770123"
     ))
 
@@ -69,7 +70,7 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       persistsIdentifiers: false
     ))
 
@@ -84,7 +85,7 @@ struct AuthStateConfigurationTests {
   func disablingPersistenceSuppressesFutureWrites() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       persistsIdentifiers: false
     ))
 
@@ -96,6 +97,21 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func equalityConsidersUnsafeMetadataField() {
+    // AuthView's onChange handlers depend on this field being part of
+    // the synthesized Equatable conformance.
+    let a = AuthConfig(unsafeMetadata: ["source": "ios"])
+    let b = AuthConfig(unsafeMetadata: ["source": "ios"])
+    let c = AuthConfig(unsafeMetadata: ["source": "android"])
+    let none = AuthConfig()
+
+    #expect(a == b)
+    #expect(a != c)
+    #expect(a != none)
+    #expect(none == AuthConfig())
+  }
+
+  @Test
   func disablingPersistenceWithInitialEmailShowsButDoesNotStore() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
@@ -103,7 +119,7 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "seed@example.com",
       persistsIdentifiers: false
     ))

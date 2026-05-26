@@ -71,8 +71,8 @@ public struct AuthView: View {
   /// Form field state for auth views.
   @State private var authState: AuthState
 
-  /// Configuration values for identifier pre-filling and persistence.
-  private let config: AuthIdentifierConfig
+  /// Configuration values applied via view modifiers.
+  private let config: AuthConfig
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -106,13 +106,13 @@ public struct AuthView: View {
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
-    config = AuthIdentifierConfig()
+    config = AuthConfig()
   }
 
   private init(
     mode: Mode,
     isDismissable: Bool,
-    config: AuthIdentifierConfig
+    config: AuthConfig
   ) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
@@ -196,6 +196,19 @@ public struct AuthView: View {
     .onChange(of: config, initial: true) { _, newConfig in
       authState.configure(newConfig)
     }
+    .onChange(of: config.unsafeMetadata, initial: true) { _, newMetadata in
+      if let newMetadata {
+        clerk.auth.unsafeMetadata = newMetadata
+      }
+    }
+    .onDisappear {
+      // Only clear if our pushed value is still current, so we don't clobber
+      // a value the developer set directly after we presented.
+      guard let pushed = config.unsafeMetadata else { return }
+      if clerk.auth.unsafeMetadata == pushed {
+        clerk.auth.unsafeMetadata = nil
+      }
+    }
     .taskOnce {
       await clerk.telemetry.record(
         TelemetryEvents.viewDidAppear(
@@ -243,6 +256,20 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+  }
+
+  /// Attaches unsafe metadata to any sign-up initiated from this view.
+  ///
+  /// The metadata is applied through ``Clerk/Auth/unsafeMetadata`` and is
+  /// included on every sign-up create request regardless of strategy. It is
+  /// cleared automatically when the sign-up completes.
+  ///
+  /// - Parameter metadata: The metadata to attach to the resulting sign-up.
+  /// - Returns: A view configured to attach the given metadata.
+  public func unsafeMetadata(_ metadata: JSON) -> AuthView {
+    var config = config
+    config.unsafeMetadata = metadata
     return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 }

@@ -100,7 +100,7 @@ final class DependencyContainer: Dependencies {
     clientService = ClientService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
-    signUpService = SignUpService(apiClient: apiClient)
+    signUpService = SignUpService(apiClient: apiClient, runtimeScope: runtimeScope)
     sessionService = SessionService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)

@@ -23,19 +23,23 @@ protocol SignUpServiceProtocol: Sendable {
 
 final class SignUpService: SignUpServiceProtocol {
   private let apiClient: APIClient
+  private let runtimeScope: ClerkRuntimeScope
 
-  init(apiClient: APIClient) {
+  init(apiClient: APIClient, runtimeScope: ClerkRuntimeScope) {
     self.apiClient = apiClient
+    self.runtimeScope = runtimeScope
   }
 
   // MARK: - Create
 
   @MainActor
   func create(params: SignUp.CreateParams) async throws -> SignUp {
+    let pendingMetadata = try runtimeScope.withCurrentClerk { $0.pendingSignUpUnsafeMetadata }
+    let effectiveParams = params.applyingPendingUnsafeMetadataIfNeeded(pendingMetadata)
     let request = Request<ClientResponse<SignUp>>(
       path: "/v1/client/sign_ups",
       method: .post,
-      body: params
+      body: effectiveParams
     )
 
     return try await apiClient.send(request).value.response

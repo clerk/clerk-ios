@@ -186,6 +186,16 @@ public final class Clerk {
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
 
+  /// Pending unsafe metadata applied to the next sign-up create call.
+  ///
+  /// Set via ``Auth/unsafeMetadata``. Cleared automatically when a sign-up
+  /// completes successfully, and reset on reconfiguration.
+  ///
+  /// Not observed: this is request-staging state read at sign-up construction
+  /// time, not view state. Changes should not invalidate any SwiftUI view.
+  @ObservationIgnored
+  var pendingSignUpUnsafeMetadata: JSON?
+
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
@@ -471,6 +481,7 @@ extension Clerk {
     client = nil
     environment = nil
     sessionsByUserId = [:]
+    pendingSignUpUnsafeMetadata = nil
     await WebAuthentication.cancelCurrentSession()
 
     #if canImport(AuthenticationServices) && !os(watchOS)

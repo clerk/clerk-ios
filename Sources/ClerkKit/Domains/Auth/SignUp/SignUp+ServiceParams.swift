@@ -14,7 +14,7 @@ extension SignUp {
     let firstName: String?
     let lastName: String?
     let username: String?
-    let unsafeMetadata: JSON?
+    var unsafeMetadata: JSON?
     let legalAccepted: Bool?
     let redirectUrl: String?
     let ticket: String?
@@ -83,5 +83,17 @@ extension SignUp {
     init(rotatingTokenNonce: String? = nil) {
       self.rotatingTokenNonce = rotatingTokenNonce
     }
+  }
+}
+
+extension SignUp.CreateParams {
+  /// Returns a copy with `unsafeMetadata` set to `pending` when the caller did
+  /// not supply an explicit value. Used by `SignUpService.create` to apply
+  /// ``Clerk/pendingSignUpUnsafeMetadata`` to outgoing sign-up requests.
+  func applyingPendingUnsafeMetadataIfNeeded(_ pending: JSON?) -> Self {
+    guard unsafeMetadata == nil, let pending else { return self }
+    var copy = self
+    copy.unsafeMetadata = pending
+    return copy
   }
 }

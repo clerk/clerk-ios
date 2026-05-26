@@ -37,7 +37,7 @@ func setupMockAPIClient() {
     clientService: ClientService(apiClient: mockAPIClient),
     userService: UserService(apiClient: mockAPIClient),
     signInService: SignInService(apiClient: mockAPIClient),
-    signUpService: SignUpService(apiClient: mockAPIClient),
+    signUpService: SignUpService(apiClient: mockAPIClient, runtimeScope: Clerk.shared.runtimeScope),
     sessionService: SessionService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),

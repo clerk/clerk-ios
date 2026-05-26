@@ -23,6 +23,7 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
          signUp.status == .complete
       {
         try await runtimeScope.withCurrentClerk {
+          $0.pendingSignUpUnsafeMetadata = nil
           $0.auth.send(.signUpCompleted(signUp: signUp))
         }
       }
@@ -39,6 +40,7 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
          session.status == .removed
       {
         try await runtimeScope.withCurrentClerk {
+          $0.pendingSignUpUnsafeMetadata = nil
           $0.auth.send(.signedOut(session: session))
         }
       }

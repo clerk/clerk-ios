@@ -76,6 +76,83 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   }
 
   @Test
+  func validateClearsPendingUnsafeMetadataOnSignUpCompleted() async throws {
+    let clerk = Clerk()
+    defer { clerk.pendingSignUpUnsafeMetadata = nil }
+    clerk.pendingSignUpUnsafeMetadata = ["source": "test"]
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        signUpResponse,
+        data: signUpResponseData(object: "sign_up_attempt", status: "complete"),
+        for: signUpRequest
+      )
+    }
+
+    let event = try #require(capturedEvent)
+    guard case .signUpCompleted = event else {
+      Issue.record("Expected signUpCompleted event but received \(String(describing: event))")
+      return
+    }
+    #expect(clerk.pendingSignUpUnsafeMetadata == nil)
+  }
+
+  @Test
+  func validateDoesNotClearPendingUnsafeMetadataForIncompleteSignUp() async throws {
+    let clerk = Clerk()
+    defer { clerk.pendingSignUpUnsafeMetadata = nil }
+    clerk.pendingSignUpUnsafeMetadata = ["source": "test"]
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+
+    _ = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        signUpResponse,
+        data: signUpResponseData(object: "sign_up_attempt", status: "missing_requirements"),
+        for: signUpRequest
+      )
+    }
+
+    #expect(clerk.pendingSignUpUnsafeMetadata == ["source": "test"])
+  }
+
+  @Test
+  func validateClearsPendingUnsafeMetadataOnSignedOut() async throws {
+    let clerk = Clerk()
+    defer { clerk.pendingSignUpUnsafeMetadata = nil }
+    clerk.pendingSignUpUnsafeMetadata = ["source": "test"]
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+
+    _ = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        sessionRemovalResponse,
+        data: sessionResponseData(object: "session", status: "removed"),
+        for: sessionRemovalRequest
+      )
+    }
+
+    #expect(clerk.pendingSignUpUnsafeMetadata == nil)
+  }
+
+  @Test
+  func validateDoesNotClearPendingUnsafeMetadataOnSignInCompleted() async throws {
+    let clerk = Clerk()
+    defer { clerk.pendingSignUpUnsafeMetadata = nil }
+    clerk.pendingSignUpUnsafeMetadata = ["source": "test"]
+    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+
+    _ = try await captureNextAuthEvent(from: clerk) {
+      try await middleware.validate(
+        signInResponse,
+        data: signInResponseData(object: "sign_in_attempt", status: "complete"),
+        for: signInRequest
+      )
+    }
+
+    #expect(clerk.pendingSignUpUnsafeMetadata == ["source": "test"])
+  }
+
+  @Test
   func validateEmitsSignedOutForRemovedSessionResponse() async throws {
     let clerk = Clerk()
     let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
