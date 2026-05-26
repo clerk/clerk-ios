@@ -173,6 +173,7 @@ jobs:
             "auth-multi-methods" \
             "auth-phone-code" \
             "auth-username-password-user-model" \
+            "session-task-choose-organization" \
             "session-task-setup-mfa" \
             "with-email-codes" \
             "$CLERK_E2E_KEY_NAME" \

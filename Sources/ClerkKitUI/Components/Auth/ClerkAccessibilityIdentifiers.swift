@@ -64,6 +64,21 @@ enum ClerkAccessibilityIdentifiers {
       }
     }
   }
+
+  enum Organization {
+    enum AccountList {
+      static let createOrganizationButton = "clerk.organization.accountList.createOrganization"
+      static let acceptedInvitationButton = "clerk.organization.accountList.invitation.accepted"
+      static let invitationJoinButton = "clerk.organization.accountList.invitation.join"
+      static let membershipButton = "clerk.organization.accountList.membership"
+    }
+
+    enum ProfileForm {
+      static let name = "clerk.organization.profileForm.name"
+      static let slug = "clerk.organization.profileForm.slug"
+      static let submitButton = "clerk.organization.profileForm.submit"
+    }
+  }
 }
 
 #endif

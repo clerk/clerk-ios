@@ -152,14 +152,19 @@ extension OrganizationProfileFormView {
         .padding(.bottom, 24)
 
       VStack(spacing: 16) {
-        ClerkTextField("Organization name", text: $organizationName)
+        ClerkTextField(
+          "Organization name",
+          text: $organizationName,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Organization.ProfileForm.name
+        )
 
         if slugEnabled {
           VStack(alignment: .leading, spacing: 8) {
             ClerkTextField(
               "Slug",
               text: $slug,
-              fieldState: slugValidationError == nil ? .default : .error
+              fieldState: slugValidationError == nil ? .default : .error,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.Organization.ProfileForm.slug
             )
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
@@ -183,6 +188,7 @@ extension OrganizationProfileFormView {
       }
       .buttonStyle(.primary())
       .disabled(trimmedOrganizationName.isEmpty || imageIsLoading)
+      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.ProfileForm.submitButton)
 
       if !isUpdateMode {
         Spacer().frame(height: 32)

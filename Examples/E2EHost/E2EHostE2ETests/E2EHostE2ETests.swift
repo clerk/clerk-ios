@@ -35,6 +35,8 @@ final class E2EHostE2ETests: XCTestCase {
   private static let usernameUserModelPublishableKeyName = "auth-username-password-user-model"
   private static let legalConsentPublishableKeyName = "auth-legal-consent"
   private static let sessionTaskSetupMfaPublishableKeyName = "session-task-setup-mfa"
+  private static let sessionTaskChooseOrganizationPublishableKeyName = "session-task-choose-organization"
+  private static let defaultChooseOrganizationEmailDomain = "clerk.dev"
 
   private let verificationCode = "424242"
   private let testPassword = "ClerkIOS2026E2ETestPassword9!"
@@ -400,6 +402,60 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
+  func testSessionTaskChooseOrganizationSignUpAcceptsInvitationAndSelectsOrganization() throws {
+    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
+    let email = Self.makeUniqueChooseOrganizationTestEmail()
+    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    app = launchApp(
+      authMode: "signUp",
+      publishableKey: publishableKey,
+      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
+      keychainService: keychainService
+    )
+    guard let signUpApp = app else { return }
+
+    openAuth(in: signUpApp)
+    completeEmailCodeSignUp(email: email, in: signUpApp)
+    waitForSignedIn(in: signUpApp)
+    waitForSessionPending(in: signUpApp)
+    assertPendingTasksContain("choose-organization", in: signUpApp)
+    dismissSavePasswordPromptIfPresent(in: signUpApp)
+
+    completeChooseOrganizationByAcceptingInvitation(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
+
+    tap(E2EIdentifier.deleteAccount, in: signUpApp)
+    waitForSignedOut(in: signUpApp)
+  }
+
+  func testSessionTaskChooseOrganizationSignUpCreatesOrganization() throws {
+    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
+    let email = Self.makeUniqueChooseOrganizationTestEmail()
+    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    app = launchApp(
+      authMode: "signUp",
+      publishableKey: publishableKey,
+      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
+      keychainService: keychainService
+    )
+    guard let signUpApp = app else { return }
+
+    openAuth(in: signUpApp)
+    completeEmailCodeSignUp(email: email, in: signUpApp)
+    waitForSignedIn(in: signUpApp)
+    waitForSessionPending(in: signUpApp)
+    assertPendingTasksContain("choose-organization", in: signUpApp)
+    dismissSavePasswordPromptIfPresent(in: signUpApp)
+
+    completeChooseOrganizationByCreatingOrganization(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
+
+    tap(E2EIdentifier.deleteAccount, in: signUpApp)
+    waitForSignedOut(in: signUpApp)
+  }
+
   func testInAppCleanupDeletesPendingUser() throws {
     let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -471,6 +527,10 @@ extension E2EHostE2ETests {
     static let totpContinue = "clerk.auth.sessionTask.totp.continue"
     static let totpCode = "clerk.auth.sessionTask.totp.code"
     static let backupCodesContinue = "clerk.auth.sessionTask.backupCodes.continue"
+    static let chooseOrganizationCreateOrganization = "clerk.organization.accountList.createOrganization"
+    static let chooseOrganizationAcceptedInvitation = "clerk.organization.accountList.invitation.accepted"
+    static let chooseOrganizationInvitationJoin = "clerk.organization.accountList.invitation.join"
+    static let organizationProfileSubmit = "clerk.organization.profileForm.submit"
   }
 
   fileprivate enum TOTPError: Error {
@@ -480,6 +540,13 @@ extension E2EHostE2ETests {
   fileprivate static func makeUniqueTestEmail() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     return "clerk_ios_e2e+clerk_test_\(suffix)@example.com"
+  }
+
+  fileprivate static func makeUniqueChooseOrganizationTestEmail() -> String {
+    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    let domain = normalized(ProcessInfo.processInfo.environment["CLERK_E2E_CHOOSE_ORG_EMAIL_DOMAIN"])
+      ?? defaultChooseOrganizationEmailDomain
+    return "clerk_ios_e2e+clerk_test_\(suffix)@\(domain)"
   }
 
   fileprivate static func makeUniqueTestPhoneNumber() -> String {
@@ -905,15 +972,97 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    let element = inputElement(withIdentifier: E2EIdentifier.authStartPhoneNumber, in: app)
+    let element = focusedPhoneNumberInput(in: app, file: file, line: line)
+    let digits = phoneNumber.filter(\.isWholeNumber)
+
+    for offset in digits.indices {
+      let digit = digits[offset]
+      app.typeText(String(digit))
+
+      let expectedPrefix = String(digits[...offset])
+      XCTAssertTrue(
+        waitForPhoneNumberDigits(in: element, toHavePrefix: expectedPrefix, timeout: 2),
+        "Expected phone number input to contain '\(expectedPrefix)'. Actual value: '\(phoneNumberInputValue(in: element))'.",
+        file: file,
+        line: line
+      )
+    }
+
     XCTAssertTrue(
-      element.waitForExistence(timeout: 30),
+      waitForPhoneNumberDigits(in: element, toEqual: digits, timeout: 5),
+      "Expected phone number input to contain '\(digits)' before continuing. Actual value: '\(phoneNumberInputValue(in: element))'.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func focusedPhoneNumberInput(
+    in app: XCUIApplication,
+    file: StaticString,
+    line: UInt
+  ) -> XCUIElement {
+    let container = app.descendants(matching: .any)[E2EIdentifier.authStartPhoneNumber]
+    XCTAssertTrue(
+      container.waitForExistence(timeout: 30),
       "Expected phone number input.",
       file: file,
       line: line
     )
-    element.tap()
-    app.typeText(phoneNumber)
+    container.tap()
+
+    let textField = app.textFields[E2EIdentifier.authStartPhoneNumber].firstMatch
+    XCTAssertTrue(
+      textField.waitForExistence(timeout: 10),
+      "Expected focused phone number text field.",
+      file: file,
+      line: line
+    )
+    return textField
+  }
+
+  private func waitForPhoneNumberDigits(
+    in element: XCUIElement,
+    toHavePrefix expectedPrefix: String,
+    timeout: TimeInterval
+  ) -> Bool {
+    waitForPhoneNumberDigits(in: element, timeout: timeout) { digits in
+      digits.hasPrefix(expectedPrefix)
+    }
+  }
+
+  private func waitForPhoneNumberDigits(
+    in element: XCUIElement,
+    toEqual expectedDigits: String,
+    timeout: TimeInterval
+  ) -> Bool {
+    waitForPhoneNumberDigits(in: element, timeout: timeout) { digits in
+      digits == expectedDigits
+    }
+  }
+
+  private func waitForPhoneNumberDigits(
+    in element: XCUIElement,
+    timeout: TimeInterval,
+    matches: (String) -> Bool
+  ) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      if matches(phoneNumberDigits(in: element)) {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    }
+
+    return matches(phoneNumberDigits(in: element))
+  }
+
+  private func phoneNumberDigits(in element: XCUIElement) -> String {
+    phoneNumberInputValue(in: element).filter(\.isWholeNumber)
+  }
+
+  private func phoneNumberInputValue(in element: XCUIElement) -> String {
+    element.value as? String ?? ""
   }
 
   private func inputElement(withIdentifier identifier: String, in app: XCUIApplication) -> XCUIElement {
@@ -939,6 +1088,29 @@ extension E2EHostE2ETests {
     let element = app.descendants(matching: .any)[identifier]
     XCTAssertTrue(element.waitForExistence(timeout: 30), "Expected tappable element '\(identifier)'.", file: file, line: line)
     element.tap()
+  }
+
+  private func tapWhenEnabled(
+    _ identifier: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval = 30,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let element = app.descendants(matching: .any)[identifier]
+    XCTAssertTrue(
+      waitForElementEnabled(element, timeout: timeout),
+      "Expected enabled tappable element '\(identifier)'.",
+      file: file,
+      line: line
+    )
+    element.tap()
+  }
+
+  private func waitForElementEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+    let predicate = NSPredicate(format: "exists == true AND enabled == true")
+    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
   }
 
   private func waitForSignedIn(
@@ -1090,6 +1262,24 @@ extension E2EHostE2ETests {
     if backupCodesContinue.waitForExistence(timeout: 10) {
       backupCodesContinue.tap()
     }
+  }
+
+  private func completeChooseOrganizationByAcceptingInvitation(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    tapWhenEnabled(E2EIdentifier.chooseOrganizationInvitationJoin, in: app, file: file, line: line)
+    tapWhenEnabled(E2EIdentifier.chooseOrganizationAcceptedInvitation, in: app, timeout: 45, file: file, line: line)
+  }
+
+  private func completeChooseOrganizationByCreatingOrganization(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    tapWhenEnabled(E2EIdentifier.chooseOrganizationCreateOrganization, in: app, file: file, line: line)
+    tapWhenEnabled(E2EIdentifier.organizationProfileSubmit, in: app, timeout: 60, file: file, line: line)
   }
 
   private func waitForStableTOTPWindow() {
