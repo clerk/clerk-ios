@@ -139,7 +139,7 @@ final class E2EHostE2ETests: XCTestCase {
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
     tap(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
-    enterText(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
     waitForSignedIn(in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp)
 
@@ -274,7 +274,7 @@ final class E2EHostE2ETests: XCTestCase {
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
     tap(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
-    enterText(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
     waitForSignedIn(in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp)
 
@@ -504,7 +504,7 @@ final class E2EHostE2ETests: XCTestCase {
     tapWhenHittable(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
     waitForSignInCodePrepared(in: signInApp)
-    enterText(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
     waitForSignedIn(in: signInApp)
     waitForSessionPending(in: signInApp)
     assertPendingTasksContain("reset-password", in: signInApp)
@@ -824,7 +824,7 @@ extension E2EHostE2ETests {
     enterText(email, into: E2EIdentifier.authStartIdentifier, in: app)
     tap(E2EIdentifier.authStartContinue, in: app)
     waitForSignUpCodePrepared(in: app)
-    enterText(verificationCode, into: E2EIdentifier.signUpCode, in: app)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completePasswordCollectionIfNeeded(in: app)
   }
 
@@ -833,7 +833,7 @@ extension E2EHostE2ETests {
     enterPhoneNumber(phoneNumber, in: app)
     tap(E2EIdentifier.authStartContinue, in: app)
     waitForSignUpCodePrepared(in: app)
-    enterText(verificationCode, into: E2EIdentifier.signUpCode, in: app)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completeMissingEmailAddressIfNeeded(email: email, in: app)
     completePasswordCollectionIfNeeded(in: app)
   }
@@ -866,7 +866,7 @@ extension E2EHostE2ETests {
     enterText(email, into: E2EIdentifier.signUpEmailAddress, in: app)
     tap(E2EIdentifier.signUpContinue, in: app)
     waitForSignUpCodePrepared(in: app)
-    enterText(verificationCode, into: E2EIdentifier.signUpCode, in: app)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
   }
 
   private func completePhoneCodeSignIn(
@@ -877,14 +877,14 @@ extension E2EHostE2ETests {
     let codeField = app.descendants(matching: .any)[E2EIdentifier.signInCode]
     if codeField.waitForExistence(timeout: 10) {
       waitForSignInCodePrepared(in: app, file: file, line: line)
-      enterText(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+      enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
       return
     }
 
     tap(E2EIdentifier.signInUseAnotherMethod, in: app, file: file, line: line)
     tap(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
     waitForSignInCodePrepared(in: app, file: file, line: line)
-    enterText(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
   }
 
   private func switchToPhoneNumberIdentifier(
@@ -1081,6 +1081,37 @@ extension E2EHostE2ETests {
     app.typeText(text)
   }
 
+  private func enterVerificationCode(
+    _ code: String,
+    into identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let element = inputElement(withIdentifier: identifier, in: app)
+    XCTAssertTrue(element.waitForExistence(timeout: 30), "Expected verification code input '\(identifier)'.", file: file, line: line)
+    element.tap()
+
+    for offset in code.indices {
+      app.typeText(String(code[offset]))
+
+      let expectedPrefix = String(code[...offset])
+      let isCompleteCode = expectedPrefix.count == code.count
+      let valueMatches = waitForInputValue(
+        in: element,
+        toHavePrefix: expectedPrefix,
+        timeout: 2,
+        allowDisappearance: isCompleteCode
+      )
+      XCTAssertTrue(
+        valueMatches,
+        "Expected verification code input to contain '\(expectedPrefix)'. Actual value: '\(inputValue(in: element))'.",
+        file: file,
+        line: line
+      )
+    }
+  }
+
   private func enterPhoneNumber(
     _ phoneNumber: String,
     into identifier: String = E2EIdentifier.authStartPhoneNumber,
@@ -1177,6 +1208,32 @@ extension E2EHostE2ETests {
     }
 
     return matches(phoneNumberDigits(in: element))
+  }
+
+  private func waitForInputValue(
+    in element: XCUIElement,
+    toHavePrefix expectedPrefix: String,
+    timeout: TimeInterval,
+    allowDisappearance: Bool = false
+  ) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      if allowDisappearance, !element.exists {
+        return true
+      }
+
+      if inputValue(in: element).hasPrefix(expectedPrefix) {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    }
+
+    return (allowDisappearance && !element.exists) || inputValue(in: element).hasPrefix(expectedPrefix)
+  }
+
+  private func inputValue(in element: XCUIElement) -> String {
+    element.value as? String ?? ""
   }
 
   private func phoneNumberDigits(in element: XCUIElement) -> String {
@@ -1402,7 +1459,7 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.totpContinue, in: app, file: file, line: line)
     waitForStableTOTPWindow()
     let code = try Self.currentTOTPCode(secret: secret)
-    enterText(code, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
+    enterVerificationCode(code, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
 
     continueBackupCodesIfPresent(in: app)
   }
@@ -1422,7 +1479,7 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
-    enterText(verificationCode, into: E2EIdentifier.smsCode, in: app, file: file, line: line)
+    enterVerificationCode(verificationCode, into: E2EIdentifier.smsCode, in: app, file: file, line: line)
 
     continueBackupCodesIfPresent(in: app)
   }
