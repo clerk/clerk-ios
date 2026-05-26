@@ -178,11 +178,13 @@ struct UserProfileChangePasswordView: View {
 
   private var signOutOfOtherDevicesView: some View {
     VStack(spacing: 8) {
-      Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
-        .font(theme.fonts.body)
-        .foregroundStyle(theme.colors.foreground)
-        .tint(theme.colors.primary)
-        .frame(minHeight: 22)
+      Toggle(isOn: $signOutOfOtherSessions) {
+        Text("Sign out of all other devices", bundle: .module)
+      }
+      .font(theme.fonts.body)
+      .foregroundStyle(theme.colors.foreground)
+      .tint(theme.colors.primary)
+      .frame(minHeight: 22)
 
       Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
         .font(theme.fonts.subheadline)
