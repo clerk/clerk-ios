@@ -123,7 +123,7 @@ jobs:
   test-e2e:
     name: Run E2EHost tests on iOS
     needs: format-and-lint
-    runs-on: blacksmith-6vcpu-macos-15
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
