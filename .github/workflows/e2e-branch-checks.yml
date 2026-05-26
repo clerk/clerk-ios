@@ -15,6 +15,7 @@ on:
           - auth-phone-code
           - auth-username-password-user-model
           - session-task-choose-organization
+          - session-task-reset-password
           - session-task-setup-mfa
           - with-email-codes
 

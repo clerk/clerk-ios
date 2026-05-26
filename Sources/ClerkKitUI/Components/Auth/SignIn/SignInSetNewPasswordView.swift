@@ -66,6 +66,7 @@ struct SignInSetNewPasswordView: View {
           .textContentType(.newPassword)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
           .focused($focusedField, equals: .new)
           .hiddenTextField(text: $identifier, textContentType: .username)
           .onFirstAppear {
@@ -85,6 +86,7 @@ struct SignInSetNewPasswordView: View {
             .textContentType(.newPassword)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.confirmPassword)
             .focused($focusedField, equals: .confirm)
 
             if let fieldError {
@@ -117,6 +119,7 @@ struct SignInSetNewPasswordView: View {
           }
           .buttonStyle(.primary())
           .disabled(resetButtonIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.submitButton)
           .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 32)

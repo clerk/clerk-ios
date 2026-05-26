@@ -31,8 +31,8 @@ if [ ! -f "$KEYS_FILE" ]; then
   exit 1
 fi
 
-if ! jq -e 'type == "object" and all(.[]; (.pk | type == "string" and length > 0))' "$KEYS_FILE" > /dev/null; then
-  echo "❌ Error: .keys.json must be an object of entries shaped like { \"pk\": \"pk_test_...\" }."
+if ! jq -e 'type == "object" and all(.[]; (.pk | type == "string" and length > 0) and (.sk == null or (.sk | type == "string")))' "$KEYS_FILE" > /dev/null; then
+  echo "❌ Error: .keys.json must be an object of entries shaped like { \"pk\": \"pk_test_...\" } with optional \"sk\" values."
   exit 1
 fi
 

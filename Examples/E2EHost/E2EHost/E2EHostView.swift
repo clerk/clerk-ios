@@ -50,6 +50,11 @@ struct E2EHostView: View {
       Text("Signed in")
         .accessibilityIdentifier(E2EIdentifiers.Auth.signedIn)
 
+      if let userID = clerk.user?.id {
+        Text(userID)
+          .accessibilityIdentifier(E2EIdentifiers.Auth.userID)
+      }
+
       sessionState
 
       Button("Sign out") {

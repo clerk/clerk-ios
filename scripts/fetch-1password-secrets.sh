@@ -48,8 +48,17 @@ for secret_path in "${OP_SECRET_PATHS[@]}"; do
     continue
   fi
 
-  # Copy the entire structure but only include pk (publishable key) in each sub-object.
-  if ! jq 'with_entries(.value = {pk: .value.pk})' "$raw_file" > "$sanitized_file" 2>/dev/null; then
+  # Copy only the values the test harness understands. Most fixtures only need a publishable
+  # key, while server-precondition tests can opt in to a secret key.
+  if ! jq '
+    with_entries(
+      .value = {
+        pk: .value.pk,
+        sk: (.value.sk // .value.secret_key // .value.secretKey)
+      }
+      | .value |= with_entries(select(.value != null))
+    )
+  ' "$raw_file" > "$sanitized_file" 2>/dev/null; then
     echo "❌ Error: Could not parse 1Password data as JSON."
     echo ""
     echo "   The 1Password secret at this path appears to be in an unexpected format:"

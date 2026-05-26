@@ -62,6 +62,12 @@ enum ClerkAccessibilityIdentifiers {
       enum BackupCodes {
         static let continueButton = "clerk.auth.sessionTask.backupCodes.continue"
       }
+
+      enum ResetPassword {
+        static let newPassword = "clerk.auth.sessionTask.resetPassword.newPassword"
+        static let confirmPassword = "clerk.auth.sessionTask.resetPassword.confirmPassword"
+        static let submitButton = "clerk.auth.sessionTask.resetPassword.submit"
+      }
     }
   }
 

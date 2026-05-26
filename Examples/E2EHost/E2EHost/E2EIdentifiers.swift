@@ -11,6 +11,7 @@ enum E2EIdentifiers {
     static let sessionPending = "e2e.auth.sessionPending"
     static let sessionStatus = "e2e.auth.sessionStatus"
     static let pendingTasks = "e2e.auth.pendingTasks"
+    static let userID = "e2e.auth.userID"
     static let cleanupComplete = "e2e.auth.cleanupComplete"
     static let e2eOAuthConnected = "e2e.auth.e2eOAuthConnected"
     static let connectE2EOAuthProvider = "e2e.auth.connectE2EOAuthProvider"

@@ -30,6 +30,13 @@ if [ ! -f "$KEYS_FILE" ]; then
   "session-task-setup-mfa": {
     "pk": ""
   },
+  "session-task-choose-organization": {
+    "pk": ""
+  },
+  "session-task-reset-password": {
+    "pk": "",
+    "sk": ""
+  },
   "with-email-codes": {
     "pk": ""
   }

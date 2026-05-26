@@ -36,6 +36,7 @@ final class E2EHostE2ETests: XCTestCase {
   private static let legalConsentPublishableKeyName = "auth-legal-consent"
   private static let sessionTaskSetupMfaPublishableKeyName = "session-task-setup-mfa"
   private static let sessionTaskChooseOrganizationPublishableKeyName = "session-task-choose-organization"
+  private static let sessionTaskResetPasswordPublishableKeyName = "session-task-reset-password"
   private static let defaultChooseOrganizationEmailDomain = "clerk.dev"
 
   private let verificationCode = "424242"
@@ -456,6 +457,67 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
+  func testSessionTaskResetPasswordSignInCompletesPasswordReset() throws {
+    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
+    let secretKey = try requiredSecretKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
+    let email = Self.makeUniqueTestEmail()
+    let newPassword = Self.makeUniqueTestPassword()
+    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    app = launchApp(
+      authMode: "signUp",
+      publishableKey: publishableKey,
+      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
+      keychainService: keychainService
+    )
+    guard let signUpApp = app else { return }
+
+    openAuth(in: signUpApp)
+    completeEmailCodeSignUp(email: email, in: signUpApp)
+    waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
+    dismissSavePasswordPromptIfPresent(in: signUpApp)
+    let userID = try currentUserID(in: signUpApp)
+
+    tap(E2EIdentifier.signOut, in: signUpApp)
+    waitForSignedOut(in: signUpApp)
+    signUpApp.terminate()
+
+    try setUserPasswordCompromised(userID: userID, publishableKey: publishableKey, secretKey: secretKey)
+
+    app = launchApp(
+      authMode: "signIn",
+      publishableKey: publishableKey,
+      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
+      keychainService: keychainService
+    )
+    guard let signInApp = app else { return }
+
+    openAuth(in: signInApp)
+    enterText(email, into: E2EIdentifier.authStartIdentifier, in: signInApp)
+    tap(E2EIdentifier.authStartContinue, in: signInApp)
+    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
+    tap(E2EIdentifier.signInContinue, in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp)
+    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
+    tapWhenHittable(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
+    waitForSignInCodePrepared(in: signInApp)
+    enterText(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
+    waitForSignedIn(in: signInApp)
+    waitForSessionPending(in: signInApp)
+    assertPendingTasksContain("reset-password", in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp)
+
+    completeResetPasswordSessionTask(newPassword: newPassword, in: signInApp)
+    waitForSessionActive(in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp)
+
+    tap(E2EIdentifier.deleteAccount, in: signInApp)
+    waitForSignedOut(in: signInApp)
+  }
+
   func testInAppCleanupDeletesPendingUser() throws {
     let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -513,6 +575,7 @@ extension E2EHostE2ETests {
     static let sessionPending = "e2e.auth.sessionPending"
     static let sessionStatus = "e2e.auth.sessionStatus"
     static let pendingTasks = "e2e.auth.pendingTasks"
+    static let userID = "e2e.auth.userID"
     static let cleanupComplete = "e2e.auth.cleanupComplete"
     static let e2eOAuthConnected = "e2e.auth.e2eOAuthConnected"
     static let connectE2EOAuthProvider = "e2e.auth.connectE2EOAuthProvider"
@@ -531,6 +594,18 @@ extension E2EHostE2ETests {
     static let chooseOrganizationAcceptedInvitation = "clerk.organization.accountList.invitation.accepted"
     static let chooseOrganizationInvitationJoin = "clerk.organization.accountList.invitation.join"
     static let organizationProfileSubmit = "clerk.organization.profileForm.submit"
+    static let resetPasswordNewPassword = "clerk.auth.sessionTask.resetPassword.newPassword"
+    static let resetPasswordConfirmPassword = "clerk.auth.sessionTask.resetPassword.confirmPassword"
+    static let resetPasswordSubmit = "clerk.auth.sessionTask.resetPassword.submit"
+  }
+
+  fileprivate struct BackendAPIError: Error, CustomStringConvertible {
+    let statusCode: Int
+    let responseBody: String
+
+    var description: String {
+      "Backend API request failed with status \(statusCode): \(responseBody)"
+    }
   }
 
   fileprivate enum TOTPError: Error {
@@ -559,6 +634,11 @@ extension E2EHostE2ETests {
     return "clerk_ios_e2e_\(suffix)"
   }
 
+  fileprivate static func makeUniqueTestPassword() -> String {
+    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)
+    return "ClerkIOS2026E2ENewPassword9!\(suffix)"
+  }
+
   private func requiredPublishableKey(named keyName: String) throws -> String {
     let environment = ProcessInfo.processInfo.environment
     let selectedKeyName = Self.publishableKeyName(environment: environment)
@@ -577,6 +657,21 @@ extension E2EHostE2ETests {
     }
 
     throw XCTSkip("Configure '\(keyName).pk' in .keys.json.")
+  }
+
+  private func requiredSecretKey(named keyName: String) throws -> String {
+    let environment = ProcessInfo.processInfo.environment
+    let selectedKeyName = Self.publishableKeyName(environment: environment)
+
+    if selectedKeyName == keyName, let secretKey = Self.normalized(environment["CLERK_E2E_SECRET_KEY"]) {
+      return secretKey
+    }
+
+    if let secretKey = Self.secretKeyFromKeysFile(keyName: keyName) {
+      return secretKey
+    }
+
+    throw XCTSkip("Configure '\(keyName).sk' in .keys.json.")
   }
 
   private static func publishableKeyName(environment: [String: String]) -> String {
@@ -637,6 +732,26 @@ extension E2EHostE2ETests {
     }
 
     return publishableKey
+  }
+
+  private static func secretKeyFromKeysFile(
+    keyName: String,
+    sourceFilePath: String = #filePath
+  ) -> String? {
+    let keysURL = repositoryRoot(sourceFilePath: sourceFilePath)
+      .appendingPathComponent(".keys.json")
+
+    guard
+      let data = try? Data(contentsOf: keysURL),
+      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let instance = json[keyName] as? [String: Any]
+    else {
+      return nil
+    }
+
+    return normalized(instance["sk"] as? String)
+      ?? normalized(instance["secret_key"] as? String)
+      ?? normalized(instance["secretKey"] as? String)
   }
 
   private static func repositoryRoot(sourceFilePath: String) -> URL {
@@ -968,11 +1083,12 @@ extension E2EHostE2ETests {
 
   private func enterPhoneNumber(
     _ phoneNumber: String,
+    into identifier: String = E2EIdentifier.authStartPhoneNumber,
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    let element = focusedPhoneNumberInput(in: app, file: file, line: line)
+    let element = focusedPhoneNumberInput(withIdentifier: identifier, in: app, file: file, line: line)
     let digits = phoneNumber.filter(\.isWholeNumber)
 
     for offset in digits.indices {
@@ -997,11 +1113,18 @@ extension E2EHostE2ETests {
   }
 
   private func focusedPhoneNumberInput(
+    withIdentifier identifier: String,
     in app: XCUIApplication,
     file: StaticString,
     line: UInt
   ) -> XCUIElement {
-    let container = app.descendants(matching: .any)[E2EIdentifier.authStartPhoneNumber]
+    let textField = app.textFields[identifier].firstMatch
+    if textField.waitForExistence(timeout: 2) {
+      textField.tap()
+      return textField
+    }
+
+    let container = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     XCTAssertTrue(
       container.waitForExistence(timeout: 30),
       "Expected phone number input.",
@@ -1010,7 +1133,6 @@ extension E2EHostE2ETests {
     )
     container.tap()
 
-    let textField = app.textFields[E2EIdentifier.authStartPhoneNumber].firstMatch
     XCTAssertTrue(
       textField.waitForExistence(timeout: 10),
       "Expected focused phone number text field.",
@@ -1107,8 +1229,31 @@ extension E2EHostE2ETests {
     element.tap()
   }
 
+  private func tapWhenHittable(
+    _ identifier: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval = 30,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let element = app.descendants(matching: .any)[identifier]
+    XCTAssertTrue(
+      waitForElementHittable(element, timeout: timeout),
+      "Expected hittable tappable element '\(identifier)'.",
+      file: file,
+      line: line
+    )
+    element.tap()
+  }
+
   private func waitForElementEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
     let predicate = NSPredicate(format: "exists == true AND enabled == true")
+    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+  }
+
+  private func waitForElementHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
+    let predicate = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
     let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
     return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
   }
@@ -1200,17 +1345,42 @@ extension E2EHostE2ETests {
   }
 
   private func dismissSavePasswordPromptIfPresent(in app: XCUIApplication, timeout: TimeInterval = 5) {
-    guard app.buttons["Not Now"].firstMatch.waitForExistence(timeout: timeout) else { return }
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let notNowButtons = [
+      app.buttons["Not Now"].firstMatch,
+      springboard.buttons["Not Now"].firstMatch,
+    ]
+    guard let initialNotNowButton = waitForExistingElement(in: notNowButtons, timeout: timeout) else { return }
 
+    var notNowButton = initialNotNowButton
     for _ in 0 ..< 3 {
-      let notNowButton = app.buttons["Not Now"].firstMatch
-      guard notNowButton.exists else { return }
+      if !notNowButton.exists {
+        guard let existingNotNowButton = waitForExistingElement(in: notNowButtons, timeout: 0.5) else { return }
+        notNowButton = existingNotNowButton
+      }
+      guard notNowButton.isHittable else {
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        continue
+      }
 
       notNowButton.tap()
       if notNowButton.waitForNonExistence(timeout: 2) {
         return
       }
     }
+  }
+
+  private func waitForExistingElement(in elements: [XCUIElement], timeout: TimeInterval) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+    repeat {
+      if let element = elements.first(where: \.exists) {
+        return element
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    return elements.first(where: \.exists)
   }
 
   private func completeAuthenticatorAppSetup(
@@ -1244,7 +1414,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     tap(E2EIdentifier.setupMfaSmsCode, in: app, file: file, line: line)
-    enterText(phoneNumber, into: E2EIdentifier.smsPhoneNumber, in: app, file: file, line: line)
+    enterPhoneNumber(phoneNumber, into: E2EIdentifier.smsPhoneNumber, in: app, file: file, line: line)
     tap(E2EIdentifier.smsContinue, in: app, file: file, line: line)
     waitForCodePrepared(
       in: app,
@@ -1280,6 +1450,162 @@ extension E2EHostE2ETests {
   ) {
     tapWhenEnabled(E2EIdentifier.chooseOrganizationCreateOrganization, in: app, file: file, line: line)
     tapWhenEnabled(E2EIdentifier.organizationProfileSubmit, in: app, timeout: 60, file: file, line: line)
+  }
+
+  private func completeResetPasswordSessionTask(
+    newPassword: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    enterText(newPassword, into: E2EIdentifier.resetPasswordNewPassword, in: app, file: file, line: line)
+    enterText(newPassword, into: E2EIdentifier.resetPasswordConfirmPassword, in: app, file: file, line: line)
+    tapWhenEnabled(E2EIdentifier.resetPasswordSubmit, in: app, timeout: 30, file: file, line: line)
+  }
+
+  private func currentUserID(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws -> String {
+    let element = app.staticTexts[E2EIdentifier.userID]
+    XCTAssertTrue(
+      element.waitForExistence(timeout: 30),
+      "Expected the E2EHost user ID.",
+      file: file,
+      line: line
+    )
+
+    return try XCTUnwrap(
+      Self.normalized(element.label),
+      "Expected the E2EHost user ID to be non-empty.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func setUserPasswordCompromised(
+    userID: String,
+    publishableKey: String,
+    secretKey: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws {
+    let url = Self.backendAPIBaseURL(publishableKey: publishableKey)
+      .appendingPathComponent("v1")
+      .appendingPathComponent("users")
+      .appendingPathComponent(userID)
+      .appendingPathComponent("password")
+      .appendingPathComponent("set_compromised")
+
+    try performBackendAPIPost(
+      url: url,
+      secretKey: secretKey,
+      body: ["revoke_all_sessions": false],
+      file: file,
+      line: line
+    )
+  }
+
+  private func performBackendAPIPost(
+    url: URL,
+    secretKey: String,
+    body: [String: Any],
+    file: StaticString,
+    line: UInt
+  ) throws {
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(secretKey)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("2026-05-12", forHTTPHeaderField: "Clerk-API-Version")
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+    let expectation = expectation(description: "Backend API request")
+    var result: Result<(HTTPURLResponse, Data), Error>?
+    URLSession.shared.dataTask(with: request) { data, response, error in
+      if let error {
+        result = .failure(error)
+      } else if let httpResponse = response as? HTTPURLResponse {
+        result = .success((httpResponse, data ?? Data()))
+      } else {
+        result = .failure(URLError(.badServerResponse))
+      }
+
+      expectation.fulfill()
+    }.resume()
+
+    wait(for: [expectation], timeout: 30)
+
+    let (response, data) = try XCTUnwrap(
+      result,
+      "Expected Backend API request to complete.",
+      file: file,
+      line: line
+    ).get()
+
+    guard (200 ..< 300).contains(response.statusCode) else {
+      let responseBody = String(data: data, encoding: .utf8) ?? ""
+      throw BackendAPIError(statusCode: response.statusCode, responseBody: responseBody)
+    }
+  }
+
+  private static func backendAPIBaseURL(publishableKey: String) -> URL {
+    let rawValue = normalized(ProcessInfo.processInfo.environment["CLERK_E2E_BACKEND_API_URL"])
+      ?? inferredBackendAPIBaseURLString(publishableKey: publishableKey)
+    var url = URL(string: rawValue.trimmingCharacters(in: CharacterSet(charactersIn: "/")))!
+
+    if url.path == "/v1" {
+      url.deleteLastPathComponent()
+    }
+
+    return url
+  }
+
+  private static func inferredBackendAPIBaseURLString(publishableKey: String) -> String {
+    guard let frontendAPIHost = frontendAPIHost(from: publishableKey) else {
+      return "https://api.clerk.com"
+    }
+
+    if frontendAPIHost.contains("accountsstage") || frontendAPIHost.contains("clerkstage") {
+      return "https://api.clerkstage.dev"
+    }
+
+    if frontendAPIHost.contains("lclclerk") {
+      return "https://api.lclclerk.com"
+    }
+
+    return "https://api.clerk.com"
+  }
+
+  private static func frontendAPIHost(from publishableKey: String) -> String? {
+    let parts = publishableKey.split(separator: "_", maxSplits: 2, omittingEmptySubsequences: false)
+    guard parts.count == 3 else {
+      return nil
+    }
+
+    var encoded = String(parts[2])
+    if encoded.hasSuffix("$") {
+      encoded.removeLast()
+    }
+
+    encoded = encoded
+      .replacingOccurrences(of: "-", with: "+")
+      .replacingOccurrences(of: "_", with: "/")
+
+    let padding = encoded.count % 4
+    if padding != 0 {
+      encoded += String(repeating: "=", count: 4 - padding)
+    }
+
+    guard
+      let data = Data(base64Encoded: encoded),
+      let decoded = String(data: data, encoding: .utf8)
+    else {
+      return nil
+    }
+
+    return decoded.trimmingCharacters(in: CharacterSet(charactersIn: "$"))
   }
 
   private func waitForStableTOTPWindow() {

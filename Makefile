@@ -205,6 +205,10 @@ test-e2e:
 	if [ -z "$$publishable_key" ] && [ -f .keys.json ]; then \
 		publishable_key="$$(/usr/bin/plutil -extract "$$key_name.pk" raw -o - .keys.json 2>/dev/null || true)"; \
 	fi; \
+	secret_key="$${CLERK_E2E_SECRET_KEY:-}"; \
+	if [ -z "$$secret_key" ] && [ -f .keys.json ]; then \
+		secret_key="$$(/usr/bin/plutil -extract "$$key_name.sk" raw -o - .keys.json 2>/dev/null || true)"; \
+	fi; \
 	if [ -z "$$publishable_key" ]; then \
 		echo "❌ Unable to find a publishable key for E2EHost tests."; \
 		echo "   Set CLERK_E2E_PUBLISHABLE_KEY or configure '$$key_name.pk' in .keys.json."; \
@@ -231,7 +235,7 @@ test-e2e:
 	chmod 600 build/reports/E2EHostPublishableKey.txt; \
 	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -only-testing:E2EHostE2ETests -resultBundlePath build/reports/E2EHost.xcresult
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -only-testing:E2EHostE2ETests -resultBundlePath build/reports/E2EHost.xcresult
 	@echo "✅ E2EHost tests completed!"
 
 # Run only integration tests
