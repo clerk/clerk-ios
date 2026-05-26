@@ -1,5 +1,5 @@
 //
-//  OrganizationSwitcherOverviewView.swift
+//  OrganizationSwitcherSheet.swift
 //
 
 #if os(iOS)
@@ -7,18 +7,82 @@
 import ClerkKit
 import SwiftUI
 
-struct OrganizationSwitcherOverviewView: View {
+/// A sheet that shows the active organization with actions to manage it or switch accounts.
+///
+/// `OrganizationSwitcherSheet` renders only the active organization overview. When using this
+/// view directly, present ``OrganizationProfileView`` and ``OrganizationListView`` from the
+/// action callbacks.
+///
+/// ```swift
+/// struct OrganizationActionsView: View {
+///   @Environment(Clerk.self) private var clerk
+///   @State private var presentedSheet: PresentedSheet?
+///
+///   var body: some View {
+///     Button("Organization") {
+///       if let organization = clerk.organization {
+///         presentedSheet = .overview(organization)
+///       }
+///     }
+///     .sheet(item: $presentedSheet) { sheet in
+///       switch sheet {
+///       case let .overview(organization):
+///         OrganizationSwitcherSheet(
+///           organization: organization,
+///           roleName: clerk.organizationMembership?.roleName,
+///           onManage: { presentedSheet = .profile },
+///           onSwitchAccount: { presentedSheet = .accountList }
+///         )
+///       case .accountList:
+///         OrganizationListView()
+///       case .profile:
+///         OrganizationProfileView()
+///       }
+///     }
+///   }
+///
+///   enum PresentedSheet: Hashable, Identifiable {
+///     case overview(Organization)
+///     case accountList
+///     case profile
+///
+///     var id: Self {
+///       self
+///     }
+///   }
+/// }
+/// ```
+public struct OrganizationSwitcherSheet: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  let organization: Organization
-  let roleName: String?
-  let onManage: () -> Void
-  let onSwitchAccount: () -> Void
+  private let organization: Organization
+  private let roleName: String?
+  private let onManage: () -> Void
+  private let onSwitchAccount: () -> Void
 
   @State private var contentHeight: CGFloat = 220
 
-  var body: some View {
+  /// Creates an organization switcher sheet.
+  ///
+  /// - Parameters:
+  ///   - organization: The active organization to display.
+  ///   - roleName: The current user's role name in the active organization.
+  ///   - onManage: Called when the manage action is selected.
+  ///   - onSwitchAccount: Called when the switch account action is selected.
+  public init(
+    organization: Organization,
+    roleName: String?,
+    onManage: @escaping () -> Void,
+    onSwitchAccount: @escaping () -> Void
+  ) {
+    self.organization = organization
+    self.roleName = roleName
+    self.onManage = onManage
+    self.onSwitchAccount = onSwitchAccount
+  }
+
+  public var body: some View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 0) {
@@ -110,7 +174,7 @@ struct OrganizationSwitcherOverviewView: View {
 }
 
 #Preview("Organization Overview") {
-  OrganizationSwitcherOverviewView(
+  OrganizationSwitcherSheet(
     organization: .mock,
     roleName: "Admin",
     onManage: {},
