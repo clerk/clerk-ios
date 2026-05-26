@@ -13,8 +13,8 @@ struct E2EHostView: View {
   let configuration: E2EConfiguration
 
   @State private var authViewIsPresented = false
-  @State private var cleanupOnLaunchDidComplete = false
-  @State private var cleanupOnLaunchDidStart = false
+  @State private var cleanupDidComplete = false
+  @State private var e2eOAuthProviderDidConnect = false
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
@@ -30,8 +30,8 @@ struct E2EHostView: View {
 
       e2eControls
     }
-    .task(id: clerk.user?.id) {
-      await cleanupAccountOnLaunchIfNeeded()
+    .onReceive(NotificationCenter.default.publisher(for: .e2eCleanupAccountRequested)) { _ in
+      cleanupAccount()
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView(mode: configuration.authMode)
@@ -41,7 +41,7 @@ struct E2EHostView: View {
 
   @ViewBuilder
   private var e2eControls: some View {
-    if cleanupOnLaunchDidComplete {
+    if cleanupDidComplete {
       Text("Cleanup complete")
         .accessibilityIdentifier(E2EIdentifiers.Auth.cleanupComplete)
     }
@@ -57,10 +57,22 @@ struct E2EHostView: View {
       }
       .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
 
-      Button("Delete account", role: .destructive) {
-        deleteAccount()
+      if clerk.session?.status == .active {
+        if e2eOAuthProviderDidConnect {
+          Text("E2E OAuth connected")
+            .accessibilityIdentifier(E2EIdentifiers.Auth.e2eOAuthConnected)
+        }
+
+        Button("Connect E2E OAuth Provider") {
+          connectE2EOAuthProvider()
+        }
+        .accessibilityIdentifier(E2EIdentifiers.Auth.connectE2EOAuthProvider)
+
+        Button("Delete account", role: .destructive) {
+          deleteAccount()
+        }
+        .accessibilityIdentifier(E2EIdentifiers.Auth.deleteAccount)
       }
-      .accessibilityIdentifier(E2EIdentifiers.Auth.deleteAccount)
     } else {
       Text("Signed out")
         .accessibilityIdentifier(E2EIdentifiers.Auth.signedOut)
@@ -100,22 +112,47 @@ struct E2EHostView: View {
   }
 
   private func deleteAccount() {
-    Task {
-      _ = try? await clerk.user?.delete()
+    Task { @MainActor in
+      await deleteCurrentAccountIfPresent()
     }
   }
 
+  private func cleanupAccount() {
+    Task { @MainActor in
+      guard await deleteCurrentAccountIfPresent() else { return }
+      cleanupDidComplete = true
+    }
+  }
+
+  @discardableResult
   @MainActor
-  private func cleanupAccountOnLaunchIfNeeded() async {
-    guard configuration.cleanupOnLaunch, !cleanupOnLaunchDidStart, let user = clerk.user else {
-      return
+  private func deleteCurrentAccountIfPresent() async -> Bool {
+    guard let user = clerk.user else {
+      authViewIsPresented = false
+      return true
     }
 
-    cleanupOnLaunchDidStart = true
-    if await (try? user.delete()) != nil {
-      try? await clerk.auth.signOut()
+    guard await (try? user.delete()) != nil else {
+      return false
     }
-    cleanupOnLaunchDidComplete = true
+
+    try? await clerk.auth.signOut()
+    authViewIsPresented = false
+    return true
+  }
+
+  private func connectE2EOAuthProvider() {
+    Task { @MainActor in
+      guard let user = clerk.user else { return }
+
+      do {
+        let account = try await user.createExternalAccount(provider: .custom("oauth_custom_e2e_oauth_provider"))
+        try await account.reauthorize()
+        e2eOAuthProviderDidConnect = true
+      } catch {
+        print("Failed to connect E2E OAuth provider: \(error)")
+      }
+    }
   }
 }
 

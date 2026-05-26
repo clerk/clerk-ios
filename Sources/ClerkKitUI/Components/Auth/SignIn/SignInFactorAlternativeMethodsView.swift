@@ -127,6 +127,9 @@ struct SignInFactorAlternativeMethodsView: View {
                 }
               }
               .buttonStyle(.secondary())
+              .accessibilityIdentifier(
+                ClerkAccessibilityIdentifiers.Auth.SignIn.alternativeMethodButton(strategy: factor.strategy.rawValue)
+              )
               .simultaneousGesture(TapGesture())
             }
           }

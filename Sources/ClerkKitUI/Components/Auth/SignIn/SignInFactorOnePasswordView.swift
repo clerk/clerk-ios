@@ -91,6 +91,7 @@ struct SignInFactorOnePasswordView: View {
             Text("Use another method", bundle: .module)
               .frame(maxWidth: .infinity)
           }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.useAnotherMethodButton)
 
           Rectangle()
             .foregroundStyle(theme.colors.border)

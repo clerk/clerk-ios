@@ -3,7 +3,7 @@
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 IOS_SIMULATOR_DESTINATION ?=
-CLERK_E2E_KEY_NAME ?= with-email-codes
+CLERK_E2E_KEY_NAME ?= auth-email-code-password
 
 
 # Default target
@@ -22,7 +22,7 @@ help:
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
-	@echo "      CLERK_E2E_KEY_NAME=with-session-tasks-setup-mfa make test-e2e"
+	@echo "      CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
@@ -199,7 +199,7 @@ test-e2e:
 	@mkdir -p build/reports
 	@key_name="$(CLERK_E2E_KEY_NAME)"; \
 	if [ -z "$$key_name" ]; then \
-		key_name="with-email-codes"; \
+		key_name="auth-email-code-password"; \
 	fi; \
 	publishable_key="$${CLERK_E2E_PUBLISHABLE_KEY:-}"; \
 	if [ -z "$$publishable_key" ] && [ -f .keys.json ]; then \

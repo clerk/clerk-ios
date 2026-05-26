@@ -166,7 +166,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 3. If `make fetch-test-keys` doesn't work, you can manually add the key to `.keys.json`:
    ```json
    {
-     "with-email-codes": {
+     "auth-email-code-password": {
        "pk": "pk_test_..."
      }
    }
@@ -178,7 +178,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - The `.keys.json` file created by `make setup` will remain empty, which is expected
 
 **How it works:**
-- The `.keys.json` file is automatically created by `make setup` with a blank `with-email-codes.pk` entry
+- The `.keys.json` file is automatically created by `make setup` with blank baseline E2E key entries such as `auth-email-code-password.pk`, `auth-legal-consent.pk`, `auth-multi-methods.pk`, `auth-phone-code.pk`, `auth-username-password-user-model.pk`, `session-task-setup-mfa.pk`, and `with-email-codes.pk`
 - Clerk employees can run `make fetch-test-keys` to populate it from 1Password (only includes `pk` values)
 - Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
 - Tests read keys directly from `.keys.json` file
@@ -194,7 +194,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 ### E2EHost Tests
 
-E2E tests live in `Examples/E2EHost/` and run a dedicated SwiftUI test host app on an iOS Simulator with XCUITest. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, these tests use the same Clerk test instance as the `with-email-codes` integration tests.
+E2E tests live in `Examples/E2EHost/` and run a dedicated SwiftUI test host app on an iOS Simulator with XCUITest. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, these tests use the `auth-email-code-password` mobile integration test instance.
 
 **Running E2E tests (Clerk employees only):**
 ```bash
@@ -214,11 +214,16 @@ CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e
 
 To run against a different named test instance from `.keys.json`:
 ```bash
-CLERK_E2E_KEY_NAME=with-session-tasks-setup-mfa make test-e2e
+CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e
 ```
-If omitted, `CLERK_E2E_KEY_NAME` defaults to `with-email-codes`.
-OAuth legal-consent examples include `with-legal-consent`.
-Session-task examples include `with-session-tasks`, `with-session-tasks-reset-password`, and `with-session-tasks-setup-mfa`.
+If omitted, `CLERK_E2E_KEY_NAME` defaults to `auth-email-code-password`.
+Mobile auth examples include `auth-legal-consent`, `auth-multi-methods`, `auth-phone-code`, and `auth-username-password-user-model`.
+Session-task examples include `session-task-setup-mfa`, `with-session-tasks`, and `with-session-tasks-reset-password`.
+
+The linked custom OAuth E2EHost test is opt-in while its provider fixture is being stabilized:
+```bash
+CLERK_E2E_ENABLE_LINKED_OAUTH=1 make test-e2e
+```
 
 To choose a specific simulator:
 ```bash
@@ -232,7 +237,7 @@ IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
 
 The test runner writes its result bundle to `build/reports/E2EHost.xcresult`. In CI, this bundle is uploaded on failure. AI tools may help draft page objects, test flows, and accessibility ID changes, but generated tests must use the approved accessibility identifiers and be reviewed like production code. Maestro can be useful for exploratory mobile QA, but XCUITest is the release-gating E2E layer.
 
-E2E cleanup uses the normal host-level delete-account control when possible. If a failure leaves the test inside an auth sheet or pending session-task screen, teardown relaunches `E2EHost` with the same keychain service and an E2E-only cleanup-on-launch flag so the app can delete the restored user without exposing a visible cleanup button.
+E2E cleanup uses the normal host-level delete-account control when possible. If a failure leaves the test inside an auth sheet or pending session-task screen, teardown sends an E2E-only in-app cleanup notification so the app can delete the current user without exposing a visible cleanup button.
 
 ## Releasing (Maintainers)
 

@@ -11,18 +11,15 @@ struct E2EConfiguration {
   let publishableKey: String
   let authMode: AuthView.Mode
   let keychainService: String?
-  let cleanupOnLaunch: Bool
 
   init(
     publishableKey: String,
     authMode: AuthView.Mode,
-    keychainService: String?,
-    cleanupOnLaunch: Bool
+    keychainService: String?
   ) {
     self.publishableKey = publishableKey
     self.authMode = authMode
     self.keychainService = keychainService
-    self.cleanupOnLaunch = cleanupOnLaunch
   }
 
   init(processInfo: ProcessInfo = .processInfo) {
@@ -33,7 +30,6 @@ struct E2EConfiguration {
       ?? ""
     authMode = Self.authMode(from: environment["CLERK_E2E_AUTH_MODE"])
     keychainService = Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
-    cleanupOnLaunch = environment["CLERK_E2E_CLEANUP_ON_LAUNCH"] == "1"
   }
 
   var clerkOptions: Clerk.Options {
@@ -67,7 +63,6 @@ extension E2EConfiguration {
   static let mock = E2EConfiguration(
     publishableKey: "",
     authMode: .signInOrUp,
-    keychainService: nil,
-    cleanupOnLaunch: false
+    keychainService: nil
   )
 }

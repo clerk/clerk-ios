@@ -19,7 +19,7 @@ if ! command -v gh > /dev/null 2>&1; then
   exit 1
 fi
 
-if ! gh auth status -h github.com > /dev/null 2>&1; then
+if ! gh auth status -h github.com --active > /dev/null 2>&1; then
   echo "❌ Error: GitHub CLI is not authenticated for github.com."
   echo "   Run: gh auth login -h github.com"
   exit 1

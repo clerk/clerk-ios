@@ -84,15 +84,18 @@ struct ClerkPhoneNumberField: View {
   let titleKey: LocalizedStringKey
   @Binding var text: String
   let fieldState: FieldState
+  let accessibilityIdentifier: String
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
-    fieldState: FieldState = .default
+    fieldState: FieldState = .default,
+    accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.fieldState = fieldState
+    self.accessibilityIdentifier = accessibilityIdentifier
   }
 
   var isFocusedOrFilled: Bool {
@@ -209,6 +212,7 @@ struct ClerkPhoneNumberField: View {
           .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
           .animation(.default, value: isFocusedOrFilled)
       }
+      .accessibilityIdentifier(accessibilityIdentifier)
     }
     .padding(.horizontal, 6)
     .padding(.vertical, 6)

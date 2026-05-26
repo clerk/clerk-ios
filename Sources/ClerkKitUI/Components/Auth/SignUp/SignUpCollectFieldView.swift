@@ -66,7 +66,8 @@ struct SignUpCollectFieldView: View {
     case .emailAddress:
       ClerkTextField(
         "Enter your email",
-        text: $authState.signUpEmailAddress
+        text: $authState.signUpEmailAddress,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.emailAddress
       )
       .textContentType(.emailAddress)
       .keyboardType(.emailAddress)
@@ -93,7 +94,8 @@ struct SignUpCollectFieldView: View {
     case .username:
       ClerkTextField(
         "Choose your username",
-        text: $authState.signUpUsername
+        text: $authState.signUpUsername,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.username
       )
       .textContentType(.username)
     }

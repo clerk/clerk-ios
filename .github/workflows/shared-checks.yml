@@ -12,7 +12,7 @@ on:
         description: Named .keys.json publishable key used by E2EHost tests
         required: false
         type: string
-        default: with-email-codes
+        default: auth-email-code-password
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -168,9 +168,13 @@ jobs:
           set -euo pipefail
 
           required_keys="$(printf '%s\n' \
+            "auth-email-code-password" \
+            "auth-legal-consent" \
+            "auth-multi-methods" \
+            "auth-phone-code" \
+            "auth-username-password-user-model" \
+            "session-task-setup-mfa" \
             "with-email-codes" \
-            "with-legal-consent" \
-            "with-session-tasks-setup-mfa" \
             "$CLERK_E2E_KEY_NAME" \
             | sort -u)"
 

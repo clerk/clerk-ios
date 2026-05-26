@@ -7,20 +7,36 @@
 
 enum ClerkAccessibilityIdentifiers {
   enum Auth {
+    static func socialProviderButton(strategy: String) -> String {
+      "clerk.auth.socialProvider.\(strategy)"
+    }
+
     enum Start {
       static let identifier = "clerk.auth.start.identifier"
+      static let phoneNumber = "clerk.auth.start.phoneNumber"
       static let continueButton = "clerk.auth.start.continue"
+      static let identifierSwitcherButton = "clerk.auth.start.identifierSwitcher"
     }
 
     enum SignIn {
+      static let code = "clerk.auth.signIn.code"
       static let password = "clerk.auth.signIn.password"
       static let continueButton = "clerk.auth.signIn.continue"
+      static let useAnotherMethodButton = "clerk.auth.signIn.useAnotherMethod"
+
+      static func alternativeMethodButton(strategy: String) -> String {
+        "clerk.auth.signIn.alternativeMethod.\(strategy)"
+      }
     }
 
     enum SignUp {
       static let code = "clerk.auth.signUp.code"
+      static let emailAddress = "clerk.auth.signUp.emailAddress"
+      static let username = "clerk.auth.signUp.username"
       static let password = "clerk.auth.signUp.password"
       static let continueButton = "clerk.auth.signUp.continue"
+      static let completeProfileFirstName = "clerk.auth.signUp.completeProfile.firstName"
+      static let completeProfileLastName = "clerk.auth.signUp.completeProfile.lastName"
       static let completeProfileContinueButton = "clerk.auth.signUp.completeProfile.continue"
       static let legalAccepted = "clerk.auth.signUp.legalAccepted"
     }
@@ -29,6 +45,12 @@ enum ClerkAccessibilityIdentifiers {
       enum SetupMfa {
         static let smsCode = "clerk.auth.sessionTask.setupMfa.smsCode"
         static let authenticatorApp = "clerk.auth.sessionTask.setupMfa.authenticatorApp"
+      }
+
+      enum Sms {
+        static let phoneNumber = "clerk.auth.sessionTask.sms.phoneNumber"
+        static let continueButton = "clerk.auth.sessionTask.sms.continue"
+        static let code = "clerk.auth.sessionTask.sms.code"
       }
 
       enum Totp {

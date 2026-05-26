@@ -66,22 +66,30 @@ struct SignUpCompleteProfileView: View {
           if firstOrLastNameIsMissing {
             HStack(spacing: 24) {
               if fieldIsMissing(.firstName) {
-                ClerkTextField("First name", text: $authState.signUpFirstName)
-                  .textContentType(.givenName)
-                  .focused($focused, equals: .firstName)
-                  .submitLabel(submitLabelFor(.firstName))
-                  .onChange(of: authState.signUpFirstName) {
-                    updateFocusIfNeeded()
-                  }
+                ClerkTextField(
+                  "First name",
+                  text: $authState.signUpFirstName,
+                  accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileFirstName
+                )
+                .textContentType(.givenName)
+                .focused($focused, equals: .firstName)
+                .submitLabel(submitLabelFor(.firstName))
+                .onChange(of: authState.signUpFirstName) {
+                  updateFocusIfNeeded()
+                }
               }
               if fieldIsMissing(.lastName) {
-                ClerkTextField("Last name", text: $authState.signUpLastName)
-                  .textContentType(.familyName)
-                  .focused($focused, equals: .lastName)
-                  .submitLabel(submitLabelFor(.lastName))
-                  .onChange(of: authState.signUpLastName) {
-                    updateFocusIfNeeded()
-                  }
+                ClerkTextField(
+                  "Last name",
+                  text: $authState.signUpLastName,
+                  accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileLastName
+                )
+                .textContentType(.familyName)
+                .focused($focused, equals: .lastName)
+                .submitLabel(submitLabelFor(.lastName))
+                .onChange(of: authState.signUpLastName) {
+                  updateFocusIfNeeded()
+                }
               }
             }
             .autocorrectionDisabled()
