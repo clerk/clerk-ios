@@ -56,9 +56,9 @@ struct UserProfileUpdateProfileView: View {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
-                #if os(iOS)
+              #if os(iOS)
                 .textInputAutocapitalization(.never)
-                #endif
+              #endif
             }
 
             if environment?.firstNameIsEnabled == true {
@@ -88,9 +88,9 @@ struct UserProfileUpdateProfileView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
         #if os(iOS)
-        .padding(.top, 60)
+          .padding(.top, 60)
         #elseif os(macOS)
-        .padding(.top, 24)
+          .padding(.top, 24)
         #endif
       }
       .clerkErrorPresenting($error)
@@ -207,42 +207,6 @@ struct UserProfileUpdateProfileView: View {
     }
   }
 
-  private var editableFields: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      if environment?.usernameIsEnabled == true {
-        ClerkTextField("Username", text: $username)
-          .textContentType(.username)
-          .autocorrectionDisabled()
-        #if os(iOS)
-          .textInputAutocapitalization(.never)
-        #endif
-      }
-
-      if environment?.firstNameIsEnabled == true {
-        ClerkTextField("First name", text: $firstName)
-          .textContentType(.givenName)
-      }
-
-      if environment?.lastNameIsEnabled == true {
-        ClerkTextField("Last name", text: $lastName)
-          .textContentType(.familyName)
-      }
-    }
-  }
-
-  private var saveButton: some View {
-    AsyncButton {
-      await save()
-    } label: { isRunning in
-      Text("Save", bundle: .module)
-        .frame(maxWidth: .infinity)
-        .overlayProgressView(isActive: isRunning) {
-          SpinnerView(color: theme.colors.primaryForeground)
-        }
-    }
-    .buttonStyle(.primary())
-  }
-
   @ViewBuilder
   private var menuContent: some View {
     Button("Choose from photo library") {
@@ -288,7 +252,7 @@ extension UserProfileUpdateProfileView {
     #endif
   }
 
-  func save() async {
+  private func save() async {
     do {
       try await user.update(
         .init(
@@ -302,14 +266,6 @@ extension UserProfileUpdateProfileView {
       self.error = error
       ClerkLogger.error("Failed to update user profile", error: error)
     }
-  }
-
-  private var updateParams: User.UpdateParams {
-    .init(
-      username: environment?.usernameIsEnabled == true ? username : nil,
-      firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
-      lastName: environment?.lastNameIsEnabled == true ? lastName : nil
-    )
   }
 }
 

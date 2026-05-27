@@ -130,9 +130,7 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    #if os(iOS)
-      .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
-    #endif
+    .interactiveDismissDisabled(disablesInteractiveDismissal)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -188,7 +186,8 @@ public struct AuthView: View {
             "isDismissible": .bool(isDismissible),
           ]
         )
-      }
+      )
+    }
   }
 }
 
@@ -196,6 +195,10 @@ extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissible && !navigation.hasSessionTaskStartInPath
+  }
+
+  private var disablesInteractiveDismissal: Bool {
+    navigation.hasSessionTaskStartInPath && clerk.session?.status != .active
   }
 
   @ToolbarContentBuilder

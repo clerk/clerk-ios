@@ -9,9 +9,9 @@ This example demonstrates how to:
 - Configure Clerk in a native macOS SwiftUI app
 - Inspect current Clerk environment, client, session, and user state
 - Trigger environment and client refreshes from a native macOS app
-- Keep a ready-to-run macOS target in place while `ClerkKitUI` macOS support is added
+- Exercise ClerkKitUI prebuilt auth, user profile, user button, and organization flows on native macOS
 
-`ClerkKitUI` is still linked into the example project, but the current prebuilt views such as `AuthView` and `UserButton` are iOS-only.
+`ClerkKitUI` is linked into the example project so the shared prebuilt views can be validated in a native macOS app.
 
 ## Setup
 

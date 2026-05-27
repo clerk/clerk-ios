@@ -19,7 +19,7 @@ struct ContentView: View {
       Text("Mac Example App")
         .font(.largeTitle.weight(.semibold))
 
-      Text("A native macOS harness for validating Clerk package behavior while macOS support is being built out.")
+      Text("A native macOS harness for validating Clerk package behavior across signed-out, signed-in, and organization flows.")
         .foregroundStyle(.secondary)
         .frame(maxWidth: 520, alignment: .leading)
 
@@ -49,7 +49,7 @@ struct ContentView: View {
           statusRow("Visible Providers", visibleProviderNames)
           statusRow("Passkey Button", showsPasskeyButton ? "Available" : "Unavailable")
 
-          Text("Use this section to exercise the remaining macOS flows called out in the support plan.")
+          Text("Use this section to exercise auth modes, provider visibility, passkeys, and session-task routing.")
             .foregroundStyle(.secondary)
             .frame(maxWidth: 520, alignment: .leading)
         }
@@ -94,7 +94,7 @@ struct ContentView: View {
           .foregroundStyle(.red)
           .frame(maxWidth: 520, alignment: .leading)
       } else {
-        Text("`AuthView()`, `UserButton()`, and `UserProfileView()` now have minimal macOS implementations. The broader signed-in security and account-management UI is still iOS-only.")
+        Text("`AuthView()`, `UserButton()`, `UserProfileView()`, and organization prebuilt views are available here for native macOS validation.")
           .foregroundStyle(.secondary)
           .frame(maxWidth: 520, alignment: .leading)
       }
