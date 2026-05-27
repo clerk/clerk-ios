@@ -458,12 +458,54 @@ struct UserServiceTests {
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
-      #expect(request.url?.query?.contains("status=pending") == true)
+      let queryItems = request.url.flatMap {
+        URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
+      }
+      let statuses = queryItems?.filter { $0.name == "status" }.compactMap(\.value) ?? []
+      #expect(statuses.isEmpty)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(offset: 0, pageSize: 10, status: "pending")
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(offset: 0, pageSize: 10, status: [])
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func getOrganizationInvitationsWithStatuses() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/organization_invitations")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>(
+            response: ClerkPaginatedResponse(data: [.mock], totalCount: 1),
+            client: .mock
+          )
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "GET")
+      #expect(request.url?.query?.contains("offset=0") == true)
+      #expect(request.url?.query?.contains("limit=10") == true)
+      let queryItems = request.url.flatMap {
+        URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
+      }
+      let statuses = queryItems?.filter { $0.name == "status" }.compactMap(\.value) ?? []
+      #expect(statuses == ["pending", "accepted"])
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(
+      offset: 0,
+      pageSize: 10,
+      status: ["pending", "accepted"]
+    )
     #expect(requestHandled.value)
   }
 
