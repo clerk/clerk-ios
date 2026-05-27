@@ -159,7 +159,7 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   private func view(for sheet: PresentedSheet) -> some View {
     switch sheet {
     case let .overview(organization):
-      OrganizationSwitcherOverviewView(
+      OrganizationSwitcherSheet(
         organization: organization,
         roleName: activeMembership?.roleName,
         onManage: {
