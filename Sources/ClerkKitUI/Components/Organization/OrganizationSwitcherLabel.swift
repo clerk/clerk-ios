@@ -14,7 +14,7 @@ struct OrganizationSwitcherLabel: View {
   let organization: Organization?
   let user: User?
   let displayMode: OrganizationSwitcherDisplayMode
-  @ScaledMetric(wrappedValue: 1, relativeTo: .body) private var textScale: CGFloat
+  @ScaledMetric(wrappedValue: 1, relativeTo: .title3) private var textScale: CGFloat
 
   init(
     organization: Organization?,
@@ -29,7 +29,7 @@ struct OrganizationSwitcherLabel: View {
   var body: some View {
     Label {
       Text(verbatim: title)
-        .font(.system(size: metrics.fontSize, weight: .bold))
+        .font(.system(size: metrics.fontSize, weight: .semibold))
         .foregroundStyle(theme.colors.foreground)
         .lineLimit(1)
         .truncationMode(.tail)
@@ -87,13 +87,14 @@ struct OrganizationSwitcherLabel: View {
 
   private var metrics: OrganizationSwitcherLabelMetrics {
     let baseSize = max(1, displayMode.size)
+    let scale = baseSize / OrganizationSwitcherLabelDefaults.baseSize
 
     return OrganizationSwitcherLabelMetrics(
       avatarSize: baseSize,
-      spacing: baseSize / 3,
-      fontSize: baseSize * 0.78 * textScale,
-      chevronFrameSize: baseSize * 2 / 3,
-      chevronSize: baseSize / 3,
+      spacing: OrganizationSwitcherLabelDefaults.spacing * scale,
+      fontSize: OrganizationSwitcherLabelDefaults.fontSize * scale * textScale,
+      chevronFrameSize: OrganizationSwitcherLabelDefaults.chevronFrameSize * scale,
+      chevronSize: OrganizationSwitcherLabelDefaults.chevronSize * scale,
       minimumTapTarget: max(44, baseSize)
     )
   }
@@ -107,6 +108,14 @@ struct OrganizationSwitcherLabel: View {
       String(localized: "Select organization", bundle: .module)
     }
   }
+}
+
+private enum OrganizationSwitcherLabelDefaults {
+  static let baseSize: CGFloat = 36
+  static let spacing: CGFloat = 8
+  static let fontSize: CGFloat = 20
+  static let chevronFrameSize: CGFloat = 24
+  static let chevronSize: CGFloat = 12
 }
 
 private struct OrganizationSwitcherTriggerLabelStyle: LabelStyle {
