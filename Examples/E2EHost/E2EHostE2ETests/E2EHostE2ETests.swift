@@ -1334,15 +1334,16 @@ extension E2EHostE2ETests {
 
       let expectedPrefix = String(code[...offset])
       let isCompleteCode = expectedPrefix.count == code.count
+      guard !isCompleteCode else { return }
+
       let valueMatches = waitForInputValue(
         in: element,
         toHavePrefix: expectedPrefix,
-        timeout: 2,
-        allowDisappearance: isCompleteCode
+        timeout: 2
       )
       XCTAssertTrue(
         valueMatches,
-        "Expected verification code input to contain '\(expectedPrefix)'. Actual value: '\(inputValue(in: element))'.",
+        "Expected verification code input to contain '\(expectedPrefix)'.",
         file: file,
         line: line
       )
@@ -1488,14 +1489,11 @@ extension E2EHostE2ETests {
   private func waitForInputValue(
     in element: XCUIElement,
     toHavePrefix expectedPrefix: String,
-    timeout: TimeInterval,
-    allowDisappearance: Bool = false
+    timeout: TimeInterval
   ) -> Bool {
     let deadline = Date().addingTimeInterval(timeout)
     while Date() < deadline {
-      if allowDisappearance, !element.exists {
-        return true
-      }
+      guard element.exists else { return false }
 
       if inputValue(in: element).hasPrefix(expectedPrefix) {
         return true
@@ -1504,7 +1502,9 @@ extension E2EHostE2ETests {
       RunLoop.current.run(until: Date().addingTimeInterval(0.05))
     }
 
-    return (allowDisappearance && !element.exists) || inputValue(in: element).hasPrefix(expectedPrefix)
+    guard element.exists else { return false }
+
+    return inputValue(in: element).hasPrefix(expectedPrefix)
   }
 
   private func inputValue(in element: XCUIElement) -> String {
