@@ -62,7 +62,7 @@ struct UserProfileExternalAccountRow: View {
         }
 
         if let error = externalAccount.verification?.error {
-          ErrorText(error: error, alignment: .leading)
+          ErrorText(text: verificationErrorText(for: error), alignment: .leading)
             .font(theme.fonts.footnote)
         }
       }
@@ -129,6 +129,21 @@ struct UserProfileExternalAccountRow: View {
 }
 
 extension UserProfileExternalAccountRow {
+  private static let reconnectableVerificationErrorCodes: Set<String> = [
+    "external_account_missing_refresh_token",
+    "oauth_fetch_user_error",
+    "oauth_token_exchange_error",
+    "external_account_email_address_verification_required",
+  ]
+
+  private func verificationErrorText(for error: ClerkAPIError) -> Text {
+    if Self.reconnectableVerificationErrorCodes.contains(error.code) {
+      return Text("This account has been disconnected.", bundle: .module)
+    }
+
+    return Text(verbatim: error.localizedDescription)
+  }
+
   private func reconnect() async {
     guard let user else { return }
 
