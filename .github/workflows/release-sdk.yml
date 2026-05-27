@@ -105,11 +105,13 @@ jobs:
       always()
       && needs.checks.result == 'success'
       && !(inputs.skip_expo_compat == true)
-    # Release gate: dispatches the mobile-e2e.yml workflow in clerk/javascript
-    # against this commit and waits for it to finish. The dispatched run is
-    # the single source of truth for the @clerk/expo native test pipeline —
-    # keeping the implementation there avoids duplicating the build/Maestro
-    # steps in two repos and prevents drift.
+    # Non-blocking canary: dispatches the mobile-e2e.yml workflow in
+    # clerk/javascript against this commit and waits for it to finish. The
+    # dispatched run is the single source of truth for the @clerk/expo native
+    # test pipeline — keeping the implementation there avoids duplicating the
+    # build/Maestro steps in two repos and prevents drift. This job does NOT
+    # gate `publish` (see that job's comment); a failure here is an early
+    # warning, not a release blocker.
     #
     # Requires the JAVASCRIPT_REPO_DISPATCH_TOKEN secret on this repo: a PAT
     # or GitHub App token with actions:write on clerk/javascript. iOS doesn't
@@ -117,9 +119,11 @@ jobs:
     # ref (the receiver patches packages/expo/app.plugin.js to use
     # `kind: revision` + this commit's SHA).
     #
-    # Emergency override: maintainers can skip this gate by setting
-    # skip_expo_compat=true AND providing skip_reason on workflow_dispatch.
-    # The skip is recorded permanently in the Actions run log.
+    # Skip firing the canary entirely (e.g. a hotfix release where the Expo
+    # suite is known-irrelevant) by setting skip_expo_compat=true AND providing
+    # skip_reason on workflow_dispatch. Since the canary no longer blocks
+    # publish, this only suppresses the early-warning run; the skip is recorded
+    # permanently in the Actions run log.
     env:
       JAVASCRIPT_REPO_REF: "main"
     steps:
@@ -188,18 +192,14 @@ jobs:
 
   publish:
     name: Bump, tag, and publish release
-    needs: [checks, expo-compat, log-skip]
-    # Publish when:
-    #   - checks succeeded, AND
-    #   - expo-compat succeeded, OR the gate was explicitly skipped via
-    #     workflow_dispatch with skip_expo_compat=true and a reason.
-    if: |
-      always()
-      && needs.checks.result == 'success'
-      && (
-        needs.expo-compat.result == 'success'
-        || (inputs.skip_expo_compat == true && needs.log-skip.result == 'success')
-      )
+    needs: [checks]
+    # Publish is gated ONLY on checks. The expo-compat job is a non-blocking
+    # canary (see its comment): it fires the @clerk/expo Maestro suite against
+    # this commit and reports pass/fail, but it deliberately does NOT block the
+    # release — @clerk/expo pins specific native versions, so a new clerk-ios
+    # release can't break existing Expo consumers. A red expo-compat job is an
+    # early warning that the bridge needs fixing before Expo bumps its pin.
+    if: needs.checks.result == 'success'
     runs-on: macos-latest
     env:
       RELEASE_VERSION: ${{ inputs.version }}
