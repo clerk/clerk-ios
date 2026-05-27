@@ -167,6 +167,21 @@ extension UserProfileRow {
       "Sign out"
     }
   }
+
+  var accessibilityIdentifier: String {
+    switch self {
+    case .manageAccount:
+      ClerkAccessibilityIdentifiers.UserProfile.Row.manageAccount
+    case .security:
+      ClerkAccessibilityIdentifiers.UserProfile.Row.security
+    case .switchAccount:
+      ClerkAccessibilityIdentifiers.UserProfile.Row.switchAccount
+    case .addAccount:
+      ClerkAccessibilityIdentifiers.UserProfile.Row.addAccount
+    case .signOut:
+      ClerkAccessibilityIdentifiers.UserProfile.Row.signOut
+    }
+  }
 }
 
 #endif

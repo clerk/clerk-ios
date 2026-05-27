@@ -64,6 +64,7 @@ struct UserProfileMfaAddSmsView: View {
                 )
               }
               .buttonStyle(.pressedBackground)
+              .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsPhoneNumberRow)
             }
           }
 
@@ -84,6 +85,7 @@ struct UserProfileMfaAddSmsView: View {
           }
           .buttonStyle(.primary())
           .disabled(selectedPhoneNumber == nil)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsContinue)
 
           Button {
             addPhoneNumberIsPresented = true
@@ -98,6 +100,7 @@ struct UserProfileMfaAddSmsView: View {
               )
             )
           )
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsAddPhone)
         }
         .padding(24)
         .clerkErrorPresenting($error)

@@ -6,6 +6,75 @@
 #if os(iOS)
 
 enum ClerkAccessibilityIdentifiers {
+  static let dismissButton = "clerk.dismissButton"
+
+  enum UserButton {
+    static let profileButton = "clerk.userButton.profile"
+  }
+
+  enum AccountSwitcher {
+    static func sessionButton(userID: String) -> String {
+      "clerk.accountSwitcher.session.\(userID)"
+    }
+
+    static let addAccountButton = "clerk.accountSwitcher.addAccount"
+    static let signOutAllButton = "clerk.accountSwitcher.signOutAll"
+    static let doneButton = "clerk.accountSwitcher.done"
+  }
+
+  enum UserProfile {
+    static func currentUser(userID: String) -> String {
+      "clerk.userProfile.currentUser.\(userID)"
+    }
+
+    enum Row {
+      static let manageAccount = "clerk.userProfile.row.manageAccount"
+      static let security = "clerk.userProfile.row.security"
+      static let switchAccount = "clerk.userProfile.row.switchAccount"
+      static let addAccount = "clerk.userProfile.row.addAccount"
+      static let signOut = "clerk.userProfile.row.signOut"
+    }
+
+    enum Security {
+      static let changePassword = "clerk.userProfile.security.changePassword"
+      static let addMfa = "clerk.userProfile.security.addMfa"
+      static let deleteAccount = "clerk.userProfile.security.deleteAccount"
+    }
+
+    enum ChangePassword {
+      static let currentPassword = "clerk.userProfile.changePassword.currentPassword"
+      static let nextButton = "clerk.userProfile.changePassword.next"
+      static let newPassword = "clerk.userProfile.changePassword.newPassword"
+      static let confirmPassword = "clerk.userProfile.changePassword.confirmPassword"
+      static let saveButton = "clerk.userProfile.changePassword.save"
+    }
+
+    enum Phone {
+      static let phoneNumber = "clerk.userProfile.phone.phoneNumber"
+      static let continueButton = "clerk.userProfile.phone.continue"
+    }
+
+    enum Mfa {
+      static let smsCode = "clerk.userProfile.mfa.smsCode"
+      static let authenticatorApp = "clerk.userProfile.mfa.authenticatorApp"
+      static let smsPhoneNumberRow = "clerk.userProfile.mfa.sms.phoneNumber"
+      static let smsContinue = "clerk.userProfile.mfa.sms.continue"
+      static let smsAddPhone = "clerk.userProfile.mfa.sms.addPhone"
+      static let totpSecret = "clerk.userProfile.mfa.totp.secret"
+      static let totpContinue = "clerk.userProfile.mfa.totp.continue"
+      static let verificationCode = "clerk.userProfile.mfa.verificationCode"
+    }
+
+    enum BackupCodes {
+      static let doneButton = "clerk.userProfile.backupCodes.done"
+    }
+
+    enum DeleteAccount {
+      static let confirmation = "clerk.userProfile.deleteAccount.confirmation"
+      static let confirmButton = "clerk.userProfile.deleteAccount.confirm"
+    }
+  }
+
   enum Auth {
     static func socialProviderButton(strategy: String) -> String {
       "clerk.auth.socialProvider.\(strategy)"

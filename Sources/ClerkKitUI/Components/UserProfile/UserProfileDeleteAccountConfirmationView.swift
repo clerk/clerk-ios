@@ -38,13 +38,17 @@ struct UserProfileDeleteAccountConfirmationView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(spacing: 4) {
-            ClerkTextField("Type \"DELETE\" to continue", text: $deleteAccount)
-              .autocorrectionDisabled()
-              .textInputAutocapitalization(.characters)
-              .focused($isFocused)
-              .onFirstAppear {
-                isFocused = true
-              }
+            ClerkTextField(
+              "Type \"DELETE\" to continue",
+              text: $deleteAccount,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.DeleteAccount.confirmation
+            )
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.characters)
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
             if let error {
               ErrorText(error: error, alignment: .leading)
@@ -65,6 +69,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
           }
           .buttonStyle(.negative())
           .disabled(buttonIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.DeleteAccount.confirmButton)
         }
         .padding(24)
       }

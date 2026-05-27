@@ -95,6 +95,7 @@ struct UserButtonAccountSwitcher: View {
                     .frame(height: 1)
                     .foregroundStyle(theme.colors.border)
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.sessionButton(userID: user.id))
                 .buttonStyle(.pressedBackground)
                 .disabled(clerk.session?.id == session.id)
                 .simultaneousGesture(TapGesture())
@@ -112,6 +113,7 @@ struct UserButtonAccountSwitcher: View {
                 .frame(height: 1)
                 .foregroundStyle(theme.colors.border)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.addAccountButton)
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
 
@@ -126,6 +128,7 @@ struct UserButtonAccountSwitcher: View {
                 .frame(height: 1)
                 .foregroundStyle(theme.colors.border)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.signOutAllButton)
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
           }
@@ -155,6 +158,7 @@ struct UserButtonAccountSwitcher: View {
               .fontWeight(.semibold)
               .foregroundStyle(theme.colors.primary)
           }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
         }
 
         ToolbarItem(placement: .principal) {

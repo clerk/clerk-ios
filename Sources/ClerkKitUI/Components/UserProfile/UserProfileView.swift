@@ -298,6 +298,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
               updateProfileIsPresented = true
             }
           )
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.currentUser(userID: user.id))
 
           VStack(spacing: 48) {
             section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
@@ -473,6 +474,7 @@ extension UserProfileView {
         await signOut(sessionId: sessionId)
       }
     }
+    .accessibilityIdentifier(rowType.accessibilityIdentifier)
   }
 
   fileprivate func row(

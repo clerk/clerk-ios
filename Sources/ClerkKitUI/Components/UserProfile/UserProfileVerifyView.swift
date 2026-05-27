@@ -128,7 +128,8 @@ struct UserProfileVerifyView: View {
         OTPField(
           code: $code,
           fieldState: $otpFieldState,
-          isFocused: $otpFieldIsFocused
+          isFocused: $otpFieldIsFocused,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Mfa.verificationCode
         ) { _ in
           await attempt()
         }

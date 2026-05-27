@@ -74,6 +74,7 @@ struct BackupCodesView: View {
             .fontWeight(.semibold)
             .foregroundStyle(theme.colors.primary)
         }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }
 
       ToolbarItem(placement: .principal) {
