@@ -176,7 +176,6 @@ jobs:
             "session-task-choose-organization" \
             "session-task-reset-password" \
             "session-task-setup-mfa" \
-            "with-email-codes" \
             "$CLERK_E2E_KEY_NAME" \
             | sort -u)"
 
