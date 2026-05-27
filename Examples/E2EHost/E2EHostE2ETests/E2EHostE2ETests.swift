@@ -1540,7 +1540,11 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     let element = app.descendants(matching: .any)[identifier]
-    XCTAssertTrue(element.waitForExistence(timeout: 30), "Expected tappable element '\(identifier)'.", file: file, line: line)
+    guard waitForElementHittable(element, timeout: 30) else {
+      XCTFail("Expected tappable element '\(identifier)' to become hittable.", file: file, line: line)
+      return
+    }
+
     element.tap()
   }
 
@@ -1558,6 +1562,21 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
+    element.tap()
+  }
+
+  private func tapWhenEnabled(
+    matchingIdentifierPrefix identifierPrefix: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval = 30,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    guard let element = waitForHittableElement(matchingIdentifierPrefix: identifierPrefix, in: app, timeout: timeout) else {
+      XCTFail("Expected enabled tappable element with identifier prefix '\(identifierPrefix)'.", file: file, line: line)
+      return
+    }
+
     element.tap()
   }
 
@@ -1637,6 +1656,31 @@ extension E2EHostE2ETests {
       .matching(identifier: identifier)
       .allElementsBoundByIndex
       .first { $0.exists && $0.isHittable }
+  }
+
+  private func waitForHittableElement(
+    matchingIdentifierPrefix identifierPrefix: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if let element = hittableElement(matchingIdentifierPrefix: identifierPrefix, in: app) {
+        return element
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return hittableElement(matchingIdentifierPrefix: identifierPrefix, in: app)
+  }
+
+  private func hittableElement(matchingIdentifierPrefix identifierPrefix: String, in app: XCUIApplication) -> XCUIElement? {
+    app.descendants(matching: .any)
+      .matching(NSPredicate(format: "identifier BEGINSWITH %@", identifierPrefix))
+      .allElementsBoundByIndex
+      .first { $0.exists && $0.isEnabled && $0.isHittable }
   }
 
   private func scrollUp(in app: XCUIApplication) {
@@ -1870,7 +1914,7 @@ extension E2EHostE2ETests {
       line: line
     )
     enterVerificationCode(verificationCode, into: E2EIdentifier.userProfileMfaVerificationCode, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaSmsPhoneNumber, in: app, timeout: 45, file: file, line: line)
+    tapWhenEnabled(matchingIdentifierPrefix: E2EIdentifier.userProfileMfaSmsPhoneNumber, in: app, timeout: 45, file: file, line: line)
     tapWhenEnabled(E2EIdentifier.userProfileMfaSmsContinue, in: app, timeout: 45, file: file, line: line)
 
     continueUserProfileBackupCodesIfPresent(in: app)
@@ -2069,7 +2113,11 @@ extension E2EHostE2ETests {
   private static func backendAPIBaseURL(publishableKey: String) -> URL {
     let rawValue = normalized(ProcessInfo.processInfo.environment["CLERK_E2E_BACKEND_API_URL"])
       ?? inferredBackendAPIBaseURLString(publishableKey: publishableKey)
-    var url = URL(string: rawValue.trimmingCharacters(in: CharacterSet(charactersIn: "/")))!
+    let trimmed = rawValue.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    guard var url = URL(string: trimmed) else {
+      XCTFail("Invalid CLERK_E2E_BACKEND_API_URL: '\(rawValue)'")
+      return URL(string: inferredBackendAPIBaseURLString(publishableKey: publishableKey))!
+    }
 
     if url.path == "/v1" {
       url.deleteLastPathComponent()

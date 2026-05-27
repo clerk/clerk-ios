@@ -126,7 +126,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
 
       - name: Verify macOS and Xcode version
         run: |
@@ -134,7 +136,7 @@ jobs:
           xcodebuild -version
 
       - name: Cache Swift dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: .build
           key: swiftpm-e2e-${{ hashFiles('Package.resolved') }}
@@ -210,7 +212,7 @@ jobs:
 
       - name: Upload E2EHost result bundle
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: E2EHost.xcresult
           path: build/reports/E2EHost.xcresult

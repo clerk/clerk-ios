@@ -179,7 +179,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 **How it works:**
 - The `.keys.json` file is automatically created by `make setup` with blank baseline E2E key entries such as `auth-email-code-password.pk`, `auth-legal-consent.pk`, `auth-multi-methods.pk`, `auth-phone-code.pk`, `auth-username-password-user-model.pk`, `session-task-setup-mfa.pk`, and `with-email-codes.pk`
-- Clerk employees can run `make fetch-test-keys` to populate it from 1Password (only includes `pk` values)
+- Clerk employees can run `make fetch-test-keys` to populate it from 1Password via `scripts/fetch-1password-secrets.sh`; fetched entries may include both `pk` and optional `sk` values, such as reset-password fixtures, so do not strip `sk` values from `.keys.json`
 - Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
 - Tests read keys directly from `.keys.json` file
 - In the maintainer-only **Release SDK** workflow, the `.keys.json` content is provided via `CLERK_TEST_KEYS_JSON` GitHub Actions secret (written to `.keys.json` before tests run)
@@ -218,7 +218,7 @@ CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e
 ```
 If omitted, `CLERK_E2E_KEY_NAME` defaults to `auth-email-code-password`.
 Mobile auth examples include `auth-legal-consent`, `auth-multi-methods`, `auth-phone-code`, and `auth-username-password-user-model`.
-Session-task examples include `session-task-setup-mfa`, `with-session-tasks`, and `with-session-tasks-reset-password`.
+Session-task examples include `session-task-setup-mfa`, `session-task-choose-organization`, and `session-task-reset-password`.
 
 The linked custom OAuth E2EHost test is opt-in while its provider fixture is being stabilized:
 ```bash

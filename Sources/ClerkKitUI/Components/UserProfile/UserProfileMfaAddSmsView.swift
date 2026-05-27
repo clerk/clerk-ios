@@ -64,7 +64,7 @@ struct UserProfileMfaAddSmsView: View {
                 )
               }
               .buttonStyle(.pressedBackground)
-              .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsPhoneNumberRow)
+              .accessibilityIdentifier("\(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsPhoneNumberRow)-\(phoneNumber.id)")
             }
           }
 
