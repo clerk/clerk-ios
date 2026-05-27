@@ -47,7 +47,7 @@ final class OrganizationAccountListDataSource {
 
     do {
       async let fetchedMemberships = user.getOrganizationMemberships(page: 1, pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: "pending")
+      async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: ["pending"])
       async let fetchedSuggestions = user.getOrganizationSuggestions(page: 1, pageSize: pageSize, status: ["pending", "accepted"])
       async let fetchedDefaults = fetchCreationDefaults(user: user, isEnabled: includeCreationDefaults)
 
@@ -85,7 +85,7 @@ final class OrganizationAccountListDataSource {
     defer { invitationsPager.isLoadingMore = false }
 
     do {
-      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: "pending")
+      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: ["pending"])
       invitationsPager.append(result)
     } catch {
       self.error = error

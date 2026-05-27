@@ -10,7 +10,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let membershipCalls = LockIsolated<[(offset: Int, pageSize: Int)]>([])
-    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: String?)]>([])
+    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
     let suggestionCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
     let defaultsCalled = LockIsolated(false)
     let defaults = organizationCreationDefaults()
@@ -53,7 +53,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     let invitationCall = try XCTUnwrap(invitationCalls.value.first)
     XCTAssertEqual(invitationCall.offset, 0)
     XCTAssertEqual(invitationCall.pageSize, 3)
-    XCTAssertEqual(invitationCall.status, "pending")
+    XCTAssertEqual(invitationCall.status, ["pending"])
 
     let suggestionCall = try XCTUnwrap(suggestionCalls.value.first)
     XCTAssertEqual(suggestionCall.offset, 0)
@@ -236,7 +236,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   func testAcceptInvitationKeepsAcceptedRowAndUsesPendingOffsetForNextPage() async throws {
     configureClerkForTesting()
 
-    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: String?)]>([])
+    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
     let userService = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
       invitationCalls.withValue { $0.append((offset, pageSize, status)) }
       return ClerkPaginatedResponse(
@@ -270,7 +270,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     let invitationCall = try XCTUnwrap(invitationCalls.value.first)
     XCTAssertEqual(invitationCall.offset, 1)
     XCTAssertEqual(invitationCall.pageSize, 2)
-    XCTAssertEqual(invitationCall.status, "pending")
+    XCTAssertEqual(invitationCall.status, ["pending"])
     XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
     XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending", "pending"])
     XCTAssertEqual(model.invitationsPager.offset, 2)

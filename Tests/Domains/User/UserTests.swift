@@ -200,7 +200,7 @@ struct UserTests {
 
   @Test
   func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
-    let captured = LockIsolated<(Int, Int, String?)?>(nil)
+    let captured = LockIsolated<(Int, Int, [String])?>(nil)
     let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
@@ -208,12 +208,12 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: "pending")
+    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: ["pending", "accepted"])
 
     let params = try #require(captured.value)
     #expect(params.0 == 10)
     #expect(params.1 == 10)
-    #expect(params.2 == "pending")
+    #expect(params.2 == ["pending", "accepted"])
   }
 
   @Test

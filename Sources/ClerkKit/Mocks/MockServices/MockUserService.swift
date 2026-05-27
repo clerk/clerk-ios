@@ -52,10 +52,10 @@ package final class MockUserService: UserServiceProtocol {
 
   /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:)` method.
   ///
-  /// The closure receives the pagination arguments plus an optional invitation status filter.
-  /// Pass `nil` in tests to simulate no status filter, or a status value such as `"pending"`
-  /// to mirror filtered invitation requests.
-  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
+  /// The closure receives the pagination arguments plus an array of invitation status filters.
+  /// Pass `[]` in tests to simulate no status filter, or include one or more values such as
+  /// `["pending", "accepted"]` to mirror filtered invitation requests.
+  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
   /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
@@ -104,9 +104,9 @@ package final class MockUserService: UserServiceProtocol {
   ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
   ///   - disableTotp: Optional implementation of the `disableTotp()` method.
   ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:)` method
-  ///     with signature `((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
-  ///     The third argument is an optional invitation status filter; pass `nil` to simulate an unfiltered request
-  ///     or provide a value such as `"pending"` when a test needs filtered invitations.
+  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
+  ///     The third argument accepts multiple invitation statuses; pass `[]` to simulate an unfiltered request
+  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered invitations.
   ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
   ///   - leaveOrganization: Optional implementation of the `leaveOrganization(organizationId:)` method.
   ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
@@ -144,7 +144,7 @@ package final class MockUserService: UserServiceProtocol {
     createTotp: (() async throws -> TOTPResource)? = nil,
     verifyTotp: ((String) async throws -> TOTPResource)? = nil,
     disableTotp: (() async throws -> DeletedObject)? = nil,
-    getOrganizationInvitations: ((Int, Int, String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
+    getOrganizationInvitations: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)? = nil,
     getOrganizationMemberships: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
     leaveOrganization: ((String) async throws -> DeletedObject)? = nil,
     getOrganizationSuggestions: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)? = nil,
@@ -281,7 +281,7 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+  package func getOrganizationInvitations(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
       return try await handler(offset, pageSize, status)
     }
