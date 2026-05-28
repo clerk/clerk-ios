@@ -52,6 +52,15 @@ extension ClerkTheme {
     /// The color used for muted backgrounds.
     public var muted: Color
 
+    /// The background fill for secondary buttons, including the social / SSO
+    /// buttons on the sign-in and sign-up views.
+    ///
+    /// This is intentionally separate from ``background`` so that customizing
+    /// the page `background` (e.g. a saturated brand color) does not bleed into
+    /// the buttons and destroy their contrast. Defaults to the standard
+    /// adaptive surface (light/dark); override it to control button contrast.
+    public var secondaryButton: Color
+
     /// The base shadow color used in the views.
     public var shadow: Color
 
@@ -59,6 +68,9 @@ extension ClerkTheme {
 
     /// A pressed-state variant of `primary`.
     public var primaryPressed: Color
+
+    /// A pressed-state variant of `secondaryButton`.
+    public var secondaryButtonPressed: Color
 
     /// The base border color used in the views.
     public var border: Color
@@ -117,6 +129,7 @@ extension ClerkTheme {
       neutral: Color = Self.defaultNeutralColor,
       ring: Color = Self.defaultRingColor,
       muted: Color = Self.defaultMutedColor,
+      secondaryButton: Color = Self.defaultSecondaryButtonColor,
       shadow: Color = Self.defaultShadowColor,
       border: Color = Self.defaultBorderColor
     ) {
@@ -133,10 +146,12 @@ extension ClerkTheme {
       self.neutral = neutral
       self.ring = ring
       self.muted = muted
+      self.secondaryButton = secondaryButton
       self.shadow = shadow
 
       // Derived tokens
       primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
+      secondaryButtonPressed = secondaryButton.isDark ? secondaryButton.lighten(by: 0.06) : secondaryButton.darken(by: 0.06)
       self.border = border.opacity(0.06)
       buttonBorder = border.opacity(0.08)
       inputBorder = border.opacity(0.11)
@@ -168,6 +183,10 @@ extension ClerkTheme.Colors {
   public static let defaultNeutralColor = Color(.neutral)
   public static let defaultRingColor = Color(.neutral)
   public static let defaultMutedColor = Color(.muted)
+  /// The standard adaptive surface used for secondary buttons. Resolves to the
+  /// default light/dark `background` asset, so secondary buttons keep a sensible
+  /// contrasting surface even when a custom page `background` is supplied.
+  public static let defaultSecondaryButtonColor = Color(.background)
   public static let defaultShadowColor = Color(.neutral)
   public static let defaultBorderColor = Color(.neutral)
 

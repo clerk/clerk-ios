@@ -47,19 +47,22 @@ struct SecondaryButtonStyle: ButtonStyle {
   func backgroundColor(
     configuration: Configuration
   ) -> Color {
+    // Secondary buttons (including social / SSO buttons) fill with the
+    // dedicated `secondaryButton` surface rather than the page `background`,
+    // so a custom page background doesn't bleed in and kill the contrast.
     switch config.emphasis {
     case .none:
       configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
+        ? theme.colors.secondaryButtonPressed
+        : theme.colors.secondaryButton
     case .low:
       configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
+        ? theme.colors.secondaryButtonPressed
+        : theme.colors.secondaryButton
     case .high:
       configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
+        ? theme.colors.secondaryButtonPressed
+        : theme.colors.secondaryButton
     }
   }
 
