@@ -115,7 +115,7 @@ struct OrganizationVerifiedDomainsView: View {
         await loadDomains(page: 1)
       }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, minHeight: 420, maxHeight: 420, alignment: .leading)
+      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 
@@ -199,6 +199,7 @@ private struct OrganizationVerifiedDomainRow: View {
       ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
+    .menuIndicator(.hidden)
   }
 }
 

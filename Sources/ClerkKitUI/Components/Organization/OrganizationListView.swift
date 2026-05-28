@@ -158,7 +158,7 @@ public struct OrganizationListView: View {
         await fetchOrganizationResources()
       }
       #if os(macOS)
-      .frame(minWidth: 420, maxWidth: 560, minHeight: 420, maxHeight: 420)
+      .frame(width: 560, height: 620, alignment: .topLeading)
       #endif
     }
   }

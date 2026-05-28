@@ -179,6 +179,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
                   )
               }
           }
+          #if os(macOS)
+          .frame(
+            width: isDismissable ? 560 : nil,
+            height: isDismissable ? 620 : nil,
+            alignment: .topLeading
+          )
+          #endif
         } else {
           profileContent(user: user)
         }

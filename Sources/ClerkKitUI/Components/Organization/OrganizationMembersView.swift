@@ -60,6 +60,14 @@ struct OrganizationMembersView: View {
     return membersCount + pendingInvitationsCount < organization.maxAllowedMemberships
   }
 
+  private var inviteToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .primaryAction
+    #elseif os(macOS)
+    .confirmationAction
+    #endif
+  }
+
   var body: some View {
     @Bindable var dataSource = dataSource
 
@@ -85,7 +93,7 @@ struct OrganizationMembersView: View {
         }
 
         if canManageMemberships {
-          ToolbarItem(placement: .primaryAction) {
+          ToolbarItem(placement: inviteToolbarPlacement) {
             Button {
               inviteMembersIsPresented = true
             } label: {
@@ -113,7 +121,7 @@ struct OrganizationMembersView: View {
         normalizeSelectedTab()
       }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, minHeight: 420, maxHeight: 420, alignment: .leading)
+      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }
