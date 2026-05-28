@@ -21,7 +21,6 @@ struct AuthStartView: View {
 
   // MARK: - State
 
-  @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var lastUsedAuth: LastUsedAuth?
@@ -41,6 +40,10 @@ struct AuthStartView: View {
   var phoneNumberIsEnabled: Bool {
     clerk.environment?.enabledFirstFactorAttributes
       .contains("phone_number") ?? false
+  }
+
+  var phoneNumberFieldIsActive: Bool {
+    authState.authStartPhoneNumberFieldIsActive
   }
 
   var showIdentifierField: Bool {
@@ -181,9 +184,9 @@ struct AuthStartView: View {
         lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
       }
       if authState.hasInitialValues {
-        phoneNumberFieldIsActive = shouldStartOnPhoneNumber
+        authState.authStartPhoneNumberFieldIsActive = shouldStartOnPhoneNumber
       } else if shouldStartOnPhoneNumber {
-        phoneNumberFieldIsActive = true
+        authState.authStartPhoneNumberFieldIsActive = true
       }
     }
   }
@@ -264,7 +267,7 @@ extension AuthStartView {
   private var identifierSwitcherButton: some View {
     Button {
       withAnimation(.default.speed(2)) {
-        phoneNumberFieldIsActive.toggle()
+        authState.authStartPhoneNumberFieldIsActive.toggle()
       }
     } label: {
       Text(identifierSwitcherString, bundle: .module)
