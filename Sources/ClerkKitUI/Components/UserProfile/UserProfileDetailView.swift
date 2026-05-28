@@ -76,75 +76,72 @@ struct UserProfileDetailView: View {
   var body: some View {
     ZStack {
       if let user {
-        VStack(spacing: 0) {
-          ScrollView {
-            LazyVStack(spacing: 0) {
-              if showEmailSection {
-                Section {
-                  Group {
-                    ForEach(sortedEmails) { emailAddress in
-                      UserProfileEmailRow(emailAddress: emailAddress)
-                    }
+        ScrollView {
+          LazyVStack(spacing: 0) {
+            if showEmailSection {
+              Section {
+                Group {
+                  ForEach(sortedEmails) { emailAddress in
+                    UserProfileEmailRow(emailAddress: emailAddress)
+                  }
 
-                    if canAddEmailAddress {
-                      UserProfileButtonRow(text: "Add email address") {
-                        addEmailAddressDestination = .add
-                      }
+                  if canAddEmailAddress {
+                    UserProfileButtonRow(text: "Add email address") {
+                      addEmailAddressDestination = .add
                     }
                   }
-                  .background(theme.colors.background)
-
-                } header: {
-                  UserProfileSectionHeader(text: "EMAIL ADDRESSES")
                 }
-              }
+                .background(theme.colors.background)
 
-              if showPhoneNumberSection {
-                Section {
-                  Group {
-                    ForEach(sortedPhoneNumbers) { phoneNumber in
-                      UserProfilePhoneRow(phoneNumber: phoneNumber)
-                    }
-
-                    if canAddPhoneNumber {
-                      UserProfileButtonRow(text: "Add phone number") {
-                        addPhoneNumberDestination = .add
-                      }
-                    }
-                  }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "PHONE NUMBERS")
-                }
-              }
-
-              if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
-                Section {
-                  Group {
-                    ForEach(sortedExternalAccounts) { externalAccount in
-                      UserProfileExternalAccountRow(externalAccount: externalAccount)
-                    }
-
-                    if !user.unconnectedProviders.isEmpty {
-                      UserProfileButtonRow(text: "Connect account") {
-                        addConnectedAccountIsPresented = true
-                      }
-                    }
-                  }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
-                }
+              } header: {
+                UserProfileSectionHeader(text: "EMAIL ADDRESSES")
               }
             }
-            .animation(.default, value: sortedEmails)
-            .animation(.default, value: sortedPhoneNumbers)
-            .animation(.default, value: sortedExternalAccounts)
-          }
-          .background(theme.colors.muted)
 
-          SecuredByClerkFooter()
+            if showPhoneNumberSection {
+              Section {
+                Group {
+                  ForEach(sortedPhoneNumbers) { phoneNumber in
+                    UserProfilePhoneRow(phoneNumber: phoneNumber)
+                  }
+
+                  if canAddPhoneNumber {
+                    UserProfileButtonRow(text: "Add phone number") {
+                      addPhoneNumberDestination = .add
+                    }
+                  }
+                }
+                .background(theme.colors.background)
+              } header: {
+                UserProfileSectionHeader(text: "PHONE NUMBERS")
+              }
+            }
+
+            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+              Section {
+                Group {
+                  ForEach(sortedExternalAccounts) { externalAccount in
+                    UserProfileExternalAccountRow(externalAccount: externalAccount)
+                  }
+
+                  if !user.unconnectedProviders.isEmpty {
+                    UserProfileButtonRow(text: "Connect account") {
+                      addConnectedAccountIsPresented = true
+                    }
+                  }
+                }
+                .background(theme.colors.background)
+              } header: {
+                UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
+              }
+            }
+          }
+          .animation(.default, value: sortedEmails)
+          .animation(.default, value: sortedPhoneNumbers)
+          .animation(.default, value: sortedExternalAccounts)
         }
+        .background(theme.colors.muted)
+        .securedByClerkFooter()
       }
     }
     .toolbar {

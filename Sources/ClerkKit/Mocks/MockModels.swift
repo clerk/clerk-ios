@@ -973,6 +973,7 @@ extension Clerk.Environment.DisplayConfig {
       applicationName: "Acme Co",
       preferredSignInStrategy: .otp,
       supportEmail: "support@example.com",
+      showDevmodeWarning: false,
       branded: true,
       logoImageUrl: "",
       homeUrl: "",

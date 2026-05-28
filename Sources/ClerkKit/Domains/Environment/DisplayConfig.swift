@@ -11,6 +11,7 @@ extension Clerk.Environment {
     public var applicationName: String
     public var preferredSignInStrategy: PreferredSignInStrategy
     public var supportEmail: String?
+    public var showDevmodeWarning: Bool
     public var branded: Bool
     public var logoImageUrl: String
     public var homeUrl: String

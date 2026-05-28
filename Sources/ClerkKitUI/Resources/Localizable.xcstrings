@@ -6883,6 +6883,8 @@
         }
       }
     },
+    "Development mode" : {
+    },
     "Desktop device" : {
       "localizations" : {
         "ar" : {

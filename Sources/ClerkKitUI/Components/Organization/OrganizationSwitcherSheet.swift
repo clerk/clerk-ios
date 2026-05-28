@@ -53,6 +53,7 @@ import SwiftUI
 /// }
 /// ```
 public struct OrganizationSwitcherSheet: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
@@ -62,6 +63,10 @@ public struct OrganizationSwitcherSheet: View {
   private let onSwitchAccount: () -> Void
 
   @State private var contentHeight: CGFloat = 220
+
+  private var showsFooter: Bool {
+    clerk.shouldShowDevelopmentModeWarning || clerk.environment?.displayConfig.branded == true
+  }
 
   /// Creates an organization switcher sheet.
   ///
@@ -105,29 +110,17 @@ public struct OrganizationSwitcherSheet: View {
           .buttonStyle(.pressedBackground)
           Divider()
 
-          SecuredByClerkView()
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button {
-              dismiss()
-            } label: {
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary)
-            }
-          }
+          if showsFooter {
+            VStack(spacing: 9) {
+              SecuredByClerkView()
 
-          ToolbarItem(placement: .principal) {
-            Text("Organization", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+              if clerk.shouldShowDevelopmentModeWarning {
+                DevelopmentModeFooterView()
+              }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
           }
         }
         .onGeometryChange(
@@ -141,6 +134,27 @@ public struct OrganizationSwitcherSheet: View {
         )
       }
       .scrollBounceBehavior(.basedOnSize)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            dismiss()
+          } label: {
+            Text("Done", bundle: .module)
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.primary)
+          }
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text("Organization", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
     .presentationDetents([.height(contentHeight)])
   }

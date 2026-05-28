@@ -35,69 +35,66 @@ struct OrganizationVerifiedDomainsView: View {
   }
 
   var body: some View {
-    VStack(spacing: 0) {
-      ScrollView {
-        LazyVStack(spacing: 0) {
-          Divider()
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        Divider()
 
-          if isLoadingDomains, domainsPager.items.isEmpty {
-            SpinnerView()
-              .frame(width: 24, height: 24)
+        if isLoadingDomains, domainsPager.items.isEmpty {
+          SpinnerView()
+            .frame(width: 24, height: 24)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
+        } else {
+          if domainsPager.items.isEmpty, !canManageDomains {
+            Text("No verified domains", bundle: .module)
+              .font(theme.fonts.body)
+              .foregroundStyle(theme.colors.mutedForeground)
               .frame(maxWidth: .infinity)
               .padding(.vertical, 32)
           } else {
-            if domainsPager.items.isEmpty, !canManageDomains {
-              Text("No verified domains", bundle: .module)
-                .font(theme.fonts.body)
-                .foregroundStyle(theme.colors.mutedForeground)
+            OrganizationPaginatedListSection(
+              items: domainsPager.items,
+              hasNextPage: domainsPager.hasNextPage,
+              onLoadMore: loadMoreDomains
+            ) { domain in
+              OrganizationVerifiedDomainRow(
+                domain: domain,
+                canManageDomains: canManageDomains,
+                onVerify: {
+                  presentedDomainFlow = .verify(domain)
+                },
+                onManage: {
+                  presentedDomainFlow = .enrollmentMode(domain)
+                },
+                onDelete: {
+                  presentedDomainFlow = .delete(domain)
+                }
+              )
+            }
+
+            if domainsPager.isLoadingMore {
+              SpinnerView()
+                .frame(width: 24, height: 24)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
-            } else {
-              OrganizationPaginatedListSection(
-                items: domainsPager.items,
-                hasNextPage: domainsPager.hasNextPage,
-                onLoadMore: loadMoreDomains
-              ) { domain in
-                OrganizationVerifiedDomainRow(
-                  domain: domain,
-                  canManageDomains: canManageDomains,
-                  onVerify: {
-                    presentedDomainFlow = .verify(domain)
-                  },
-                  onManage: {
-                    presentedDomainFlow = .enrollmentMode(domain)
-                  },
-                  onDelete: {
-                    presentedDomainFlow = .delete(domain)
-                  }
-                )
-              }
-
-              if domainsPager.isLoadingMore {
-                SpinnerView()
-                  .frame(width: 24, height: 24)
-                  .frame(maxWidth: .infinity)
-                  .padding(.vertical, 16)
-              }
+                .padding(.vertical, 16)
             }
+          }
 
-            if canManageDomains {
-              OrganizationAddDomainRow {
-                presentedDomainFlow = .add
-              }
-              Divider()
+          if canManageDomains {
+            OrganizationAddDomainRow {
+              presentedDomainFlow = .add
             }
+            Divider()
           }
         }
       }
-      .refreshable {
-        await loadDomains(page: 1)
-      }
-
-      SecuredByClerkFooter()
+    }
+    .refreshable {
+      await loadDomains(page: 1)
     }
     .tint(theme.colors.primary)
     .background(theme.colors.muted)
+    .securedByClerkFooter()
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
     .toolbar {

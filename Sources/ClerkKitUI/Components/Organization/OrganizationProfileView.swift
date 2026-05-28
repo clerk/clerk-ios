@@ -234,27 +234,24 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   }
 
   private func profileContent(organization: Organization) -> some View {
-    VStack(spacing: 0) {
-      ScrollView {
-        LazyVStack(spacing: 0) {
-          OrganizationProfileHeaderView(
-            organization: organization,
-            showsUpdateProfile: showsUpdateProfile,
-            onUpdateProfile: {
-              updateProfileIsPresented = true
-            }
-          )
-
-          VStack(spacing: 48) {
-            section(rows: renderedRows(builtInRows: profileRows, in: .profile))
-            section(rows: renderedRows(builtInRows: actionRows, in: .actions))
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        OrganizationProfileHeaderView(
+          organization: organization,
+          showsUpdateProfile: showsUpdateProfile,
+          onUpdateProfile: {
+            updateProfileIsPresented = true
           }
+        )
+
+        VStack(spacing: 48) {
+          section(rows: renderedRows(builtInRows: profileRows, in: .profile))
+          section(rows: renderedRows(builtInRows: actionRows, in: .actions))
         }
       }
-      .background(theme.colors.muted)
-
-      SecuredByClerkFooter()
     }
+    .background(theme.colors.muted)
+    .securedByClerkFooter()
     .animation(.default, value: organization)
     .animation(.default, value: organizationMembership)
     .navigationBarTitleDisplayMode(.inline)

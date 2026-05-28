@@ -289,27 +289,24 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   private func profileContent(user: User) -> some View {
-    VStack(spacing: 0) {
-      ScrollView {
-        LazyVStack(spacing: 0) {
-          UserProfileHeaderView(
-            user: user,
-            onUpdateProfile: {
-              updateProfileIsPresented = true
-            }
-          )
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.currentUser(userID: user.id))
-
-          VStack(spacing: 48) {
-            section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
-            section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        UserProfileHeaderView(
+          user: user,
+          onUpdateProfile: {
+            updateProfileIsPresented = true
           }
+        )
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.currentUser(userID: user.id))
+
+        VStack(spacing: 48) {
+          section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
+          section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
         }
       }
-      .background(theme.colors.muted)
-
-      SecuredByClerkFooter()
     }
+    .background(theme.colors.muted)
+    .securedByClerkFooter()
     .animation(.default, value: user)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
