@@ -95,14 +95,16 @@ struct SignInSetNewPasswordView: View {
             }
           }
 
-          Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.foreground)
-            .tint(theme.colors.primary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(theme.colors.muted)
-            .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+          Toggle(isOn: $signOutOfOtherDevices) {
+            Text("Sign out of all other devices", bundle: .module)
+          }
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.foreground)
+          .tint(theme.colors.primary)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(theme.colors.muted)
+          .clipShape(.rect(cornerRadius: theme.design.borderRadius))
 
           AsyncButton {
             await setNewPassword()
