@@ -24,16 +24,41 @@ package final class MockSessionService: SessionServiceProtocol {
   /// Custom handler for the `fetchToken(sessionId:template:)` method.
   package nonisolated(unsafe) var fetchTokenHandler: ((String, String?) async throws -> TokenResource?)?
 
-  package init(
+  /// Custom handler for `startVerification`.
+  nonisolated(unsafe) var startVerificationHandler: ((String, Session.StartVerificationParams) async throws -> SessionVerification)?
+
+  /// Custom handler for `prepareFirstFactorVerification`.
+  nonisolated(unsafe) var prepareFirstFactorVerificationHandler: ((String, Session.PrepareFirstFactorVerificationParams) async throws -> SessionVerification)?
+
+  /// Custom handler for `attemptFirstFactorVerification`.
+  nonisolated(unsafe) var attemptFirstFactorVerificationHandler: ((String, Session.AttemptFirstFactorVerificationParams) async throws -> SessionVerification)?
+
+  /// Custom handler for `prepareSecondFactorVerification`.
+  nonisolated(unsafe) var prepareSecondFactorVerificationHandler: ((String, Session.PrepareSecondFactorVerificationParams) async throws -> SessionVerification)?
+
+  /// Custom handler for `attemptSecondFactorVerification`.
+  nonisolated(unsafe) var attemptSecondFactorVerificationHandler: ((String, Session.AttemptSecondFactorVerificationParams) async throws -> SessionVerification)?
+
+  init(
     revoke: ((String) async throws -> Session)? = nil,
     signOut: ((String?) async throws -> Void)? = nil,
     setActive: ((String, String?) async throws -> Void)? = nil,
-    fetchToken: ((String, String?) async throws -> TokenResource?)? = nil
+    fetchToken: ((String, String?) async throws -> TokenResource?)? = nil,
+    startVerification: ((String, Session.StartVerificationParams) async throws -> SessionVerification)? = nil,
+    prepareFirstFactorVerification: ((String, Session.PrepareFirstFactorVerificationParams) async throws -> SessionVerification)? = nil,
+    attemptFirstFactorVerification: ((String, Session.AttemptFirstFactorVerificationParams) async throws -> SessionVerification)? = nil,
+    prepareSecondFactorVerification: ((String, Session.PrepareSecondFactorVerificationParams) async throws -> SessionVerification)? = nil,
+    attemptSecondFactorVerification: ((String, Session.AttemptSecondFactorVerificationParams) async throws -> SessionVerification)? = nil
   ) {
     revokeHandler = revoke
     signOutHandler = signOut
     setActiveHandler = setActive
     fetchTokenHandler = fetchToken
+    startVerificationHandler = startVerification
+    prepareFirstFactorVerificationHandler = prepareFirstFactorVerification
+    attemptFirstFactorVerificationHandler = attemptFirstFactorVerification
+    prepareSecondFactorVerificationHandler = prepareSecondFactorVerification
+    attemptSecondFactorVerificationHandler = attemptSecondFactorVerification
   }
 
   @MainActor
@@ -66,5 +91,60 @@ package final class MockSessionService: SessionServiceProtocol {
     }
 
     return .mock
+  }
+
+  @MainActor
+  func startVerification(
+    sessionId: String,
+    params: Session.StartVerificationParams
+  ) async throws -> SessionVerification {
+    if let handler = startVerificationHandler {
+      return try await handler(sessionId, params)
+    }
+    return .mockNeedsFirstFactor
+  }
+
+  @MainActor
+  func prepareFirstFactorVerification(
+    sessionId: String,
+    params: Session.PrepareFirstFactorVerificationParams
+  ) async throws -> SessionVerification {
+    if let handler = prepareFirstFactorVerificationHandler {
+      return try await handler(sessionId, params)
+    }
+    return .mockNeedsFirstFactor
+  }
+
+  @MainActor
+  func attemptFirstFactorVerification(
+    sessionId: String,
+    params: Session.AttemptFirstFactorVerificationParams
+  ) async throws -> SessionVerification {
+    if let handler = attemptFirstFactorVerificationHandler {
+      return try await handler(sessionId, params)
+    }
+    return .mockComplete
+  }
+
+  @MainActor
+  func prepareSecondFactorVerification(
+    sessionId: String,
+    params: Session.PrepareSecondFactorVerificationParams
+  ) async throws -> SessionVerification {
+    if let handler = prepareSecondFactorVerificationHandler {
+      return try await handler(sessionId, params)
+    }
+    return .mockNeedsSecondFactor
+  }
+
+  @MainActor
+  func attemptSecondFactorVerification(
+    sessionId: String,
+    params: Session.AttemptSecondFactorVerificationParams
+  ) async throws -> SessionVerification {
+    if let handler = attemptSecondFactorVerificationHandler {
+      return try await handler(sessionId, params)
+    }
+    return .mockComplete
   }
 }
