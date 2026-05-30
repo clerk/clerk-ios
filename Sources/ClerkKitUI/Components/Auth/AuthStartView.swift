@@ -55,6 +55,14 @@ struct AuthStartView: View {
     !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
   }
 
+  var phoneNumberInputIsActive: Bool {
+    phoneNumberIsEnabled && (phoneNumberFieldIsActive || !(emailIsEnabled || usernameIsEnabled))
+  }
+
+  var activeIdentifier: String {
+    phoneNumberInputIsActive ? authState.authStartPhoneNumber : authState.authStartIdentifier
+  }
+
   var shouldStartOnPhoneNumber: Bool {
     guard phoneNumberIsEnabled else { return false }
 
@@ -67,14 +75,6 @@ struct AuthStartView: View {
     }
 
     return false
-  }
-
-  var continueIsDisabled: Bool {
-    if phoneNumberFieldIsActive {
-      authState.authStartPhoneNumber.isEmpty
-    } else {
-      authState.authStartIdentifier.isEmpty
-    }
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -211,7 +211,7 @@ extension AuthStartView {
   private var identifierField: some View {
     @Bindable var authState = authState
 
-    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+    if phoneNumberInputIsActive {
       ClerkPhoneNumberField(
         "Enter your phone number",
         text: $authState.authStartPhoneNumber,
@@ -256,7 +256,7 @@ extension AuthStartView {
       ContinueButtonLabelView(isActive: isRunning)
     }
     .buttonStyle(.primary())
-    .disabled(continueIsDisabled)
+    .disabled(activeIdentifier.isEmpty)
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.continueButton)
     .simultaneousGesture(TapGesture())
   }
@@ -320,14 +320,10 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      let identifier = phoneNumberFieldIsActive && phoneNumberIsEnabled
-        ? authState.authStartPhoneNumber
-        : authState.authStartIdentifier
-
       // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
-      let signIn = try await clerk.auth.signIn(identifier)
+      let signIn = try await clerk.auth.signIn(activeIdentifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
         let result = try await signIn.authenticateWithEnterpriseSSO(transferable: authState.transferable)
@@ -357,7 +353,7 @@ extension AuthStartView {
   }
 
   private func signUpParams() async throws -> SignUp {
-    if phoneNumberFieldIsActive {
+    if phoneNumberInputIsActive {
       try await clerk.auth.signUp(phoneNumber: authState.authStartPhoneNumber)
     } else if authState.authStartIdentifier.isEmailAddress {
       try await clerk.auth.signUp(emailAddress: authState.authStartIdentifier)
@@ -376,7 +372,7 @@ extension AuthStartView {
   }
 
   private func storeIdentifierType() {
-    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+    if phoneNumberInputIsActive {
       authState.storeLastUsedIdentifierType(.phone)
     } else if authState.authStartIdentifier.isEmailAddress {
       authState.storeLastUsedIdentifierType(.email)
