@@ -179,7 +179,7 @@ extension OrganizationDomain {
   ///
   /// This is a required step to complete the registration of a domain under an organization, as the administrator should be verified as a person affiliated with that domain.
   ///
-  /// Make sure that an ``OrganizationDomain`` object already exists before calling this method by first calling ``prepareAffiliationVerification(affiliationEmailAddress:)``.
+  /// Affiliation verification must be prepared for this domain before calling this method. Call ``prepareAffiliationVerification(affiliationEmailAddress:)`` first to issue a verification code.
   ///
   /// - Parameter code: The one-time code sent to the user as part of this verification step.
   /// - Returns: The verified ``OrganizationDomain`` object.
