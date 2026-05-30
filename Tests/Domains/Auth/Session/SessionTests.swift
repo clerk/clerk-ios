@@ -155,4 +155,27 @@ struct SessionTests {
     #expect(capturedCode.value == "123456")
     #expect(verification.status == .complete)
   }
+
+  @Test
+  func verifyWithBackupCodeCallsAttemptSecondFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedCode.setValue(params.code)
+      return .mockComplete
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.verifyWithBackupCode(code: "abcdef")
+
+    #expect(capturedStrategy.value == .backupCode)
+    #expect(capturedCode.value == "abcdef")
+    #expect(verification.status == .complete)
+  }
 }
