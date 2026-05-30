@@ -12,21 +12,17 @@ struct SecuredByClerkView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  private var showsSecuredByClerk: Bool {
-    clerk.environment?.displayConfig.branded == true
-  }
-
   var body: some View {
-    if showsSecuredByClerk {
+    if clerk.environment?.displayConfig.branded == true {
       HStack(spacing: 6) {
         Text("Secured by", bundle: .module)
         Image("clerk-logo", bundle: .module)
-          .accessibilityHidden(true)
       }
       .font(theme.fonts.footnote.weight(.medium))
       .foregroundStyle(theme.colors.mutedForeground)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(Text("Secured by", bundle: .module) + Text(verbatim: " Clerk"))
+      .transition(.blurReplace.animation(.default))
+    } else {
+      EmptyView()
     }
   }
 }
@@ -34,6 +30,8 @@ struct SecuredByClerkView: View {
 struct SecuredByClerkFooter: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+
+  private let showBackground: Bool
 
   private var showsFooter: Bool {
     clerk.shouldShowDevelopmentModeWarning || showsSecuredByClerk
@@ -43,13 +41,17 @@ struct SecuredByClerkFooter: View {
     clerk.environment?.displayConfig.branded == true
   }
 
+  init(showBackground: Bool = true) {
+    self.showBackground = showBackground
+  }
+
   var body: some View {
     if showsFooter {
       VStack(spacing: 9) {
         SecuredByClerkView()
 
         if clerk.shouldShowDevelopmentModeWarning {
-          DevelopmentModeFooterView()
+          DevelopmentModeView()
         }
       }
       .padding(.horizontal, 16)
@@ -57,15 +59,14 @@ struct SecuredByClerkFooter: View {
       .padding(.bottom, clerk.shouldShowDevelopmentModeWarning ? 0 : 16)
       .frame(maxWidth: .infinity)
       .background {
-        Group {
+        if showBackground {
           if clerk.shouldShowDevelopmentModeWarning {
             DevelopmentModeBackgroundView(background: .gray)
+              .ignoresSafeArea(.container, edges: .bottom)
           } else {
             theme.colors.muted
           }
         }
-        .ignoresSafeArea(.container, edges: .bottom)
-        .allowsHitTesting(false)
       }
       .overlay(alignment: .top) {
         Rectangle()

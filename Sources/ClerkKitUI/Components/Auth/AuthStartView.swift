@@ -141,36 +141,34 @@ struct AuthStartView: View {
 
     ScrollView {
       VStack(spacing: 0) {
-        VStack(spacing: 0) {
-          AppLogoView()
-            .frame(maxHeight: 44)
-            .padding(.bottom, 24)
+        AppLogoView()
+          .frame(maxHeight: 44)
+          .padding(.bottom, 24)
 
-          headerSection
+        headerSection
 
-          VStack(spacing: 24) {
-            if showIdentifierField {
-              identifierInputSection
+        VStack(spacing: 24) {
+          if showIdentifierField {
+            identifierInputSection
 
-              continueButton
+            continueButton
 
-              if showIdentifierSwitcher {
-                identifierSwitcherButton
-              }
+            if showIdentifierSwitcher {
+              identifierSwitcherButton
             }
-
-            if showOrDivider {
-              TextDivider(string: "or")
-            }
-
-            socialButtonsSection
           }
-          .padding(.bottom, 32)
+
+          if showOrDivider {
+            TextDivider(string: "or")
+          }
+
+          socialButtonsSection
         }
-        .padding(16)
+        .padding(.bottom, 32)
 
         SecuredByClerkView()
       }
+      .padding(16)
     }
     .developmentModeBottomInset(background: .white)
     .scrollDismissesKeyboard(.interactively)

@@ -17,10 +17,4 @@ struct DevelopmentModeView: View {
   }
 }
 
-struct DevelopmentModeFooterView: View {
-  var body: some View {
-    DevelopmentModeView()
-  }
-}
-
 #endif

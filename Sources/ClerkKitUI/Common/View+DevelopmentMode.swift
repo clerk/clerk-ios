@@ -32,7 +32,6 @@ private struct DevelopmentModeBottomInsetModifier: ViewModifier {
               DevelopmentModeBackgroundView(background: background)
                 .ignoresSafeArea(.container, edges: .bottom)
             }
-            .allowsHitTesting(false)
             .accessibilityElement(children: .combine)
         }
       }

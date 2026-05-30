@@ -32,7 +32,6 @@ struct DevelopmentModeBackgroundView: View {
         .frame(width: proxy.size.width, height: proxy.size.height)
         .clipped()
     }
-    .allowsHitTesting(false)
     .accessibilityHidden(true)
   }
 }

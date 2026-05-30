@@ -53,7 +53,6 @@ import SwiftUI
 /// }
 /// ```
 public struct OrganizationSwitcherSheet: View {
-  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
@@ -63,10 +62,6 @@ public struct OrganizationSwitcherSheet: View {
   private let onSwitchAccount: () -> Void
 
   @State private var contentHeight: CGFloat = 220
-
-  private var showsFooter: Bool {
-    clerk.shouldShowDevelopmentModeWarning || clerk.environment?.displayConfig.branded == true
-  }
 
   /// Creates an organization switcher sheet.
   ///
@@ -110,18 +105,7 @@ public struct OrganizationSwitcherSheet: View {
           .buttonStyle(.pressedBackground)
           Divider()
 
-          if showsFooter {
-            VStack(spacing: 9) {
-              SecuredByClerkView()
-
-              if clerk.shouldShowDevelopmentModeWarning {
-                DevelopmentModeFooterView()
-              }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .combine)
-          }
+          SecuredByClerkFooter(showBackground: false)
         }
         .onGeometryChange(
           for: CGFloat.self,
