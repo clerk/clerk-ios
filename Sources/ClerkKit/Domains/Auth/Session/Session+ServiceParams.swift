@@ -15,22 +15,19 @@ extension Session {
     let phoneNumberId: String?
     let enterpriseConnectionId: String?
     let redirectUrl: String?
-    let `default`: Bool?
 
     init(
       strategy: FactorStrategy,
       emailAddressId: String? = nil,
       phoneNumberId: String? = nil,
       enterpriseConnectionId: String? = nil,
-      redirectUrl: String? = nil,
-      default: Bool? = nil
+      redirectUrl: String? = nil
     ) {
       self.strategy = strategy
       self.emailAddressId = emailAddressId
       self.phoneNumberId = phoneNumberId
       self.enterpriseConnectionId = enterpriseConnectionId
       self.redirectUrl = redirectUrl
-      self.default = `default`
     }
   }
 

@@ -30,7 +30,7 @@ extension Session {
 
   /// Prepares the first factor of an in-session reverification flow.
   ///
-  /// For strategies that do not require preparation (for example `password` or `passkey`'s
+  /// For strategies that do not require preparation (for example `password`'s
   /// `attempt` step) you can skip this call and go straight to ``attemptFirstFactorVerification(strategy:code:password:publicKeyCredential:)``.
   @discardableResult @MainActor
   public func prepareFirstFactorVerification(
@@ -38,8 +38,7 @@ extension Session {
     emailAddressId: String? = nil,
     phoneNumberId: String? = nil,
     enterpriseConnectionId: String? = nil,
-    redirectUrl: String? = nil,
-    default: Bool? = nil
+    redirectUrl: String? = nil
   ) async throws -> SessionVerification {
     try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
       sessionId: id,
@@ -48,8 +47,7 @@ extension Session {
         emailAddressId: emailAddressId,
         phoneNumberId: phoneNumberId,
         enterpriseConnectionId: enterpriseConnectionId,
-        redirectUrl: redirectUrl,
-        default: `default`
+        redirectUrl: redirectUrl
       )
     )
   }

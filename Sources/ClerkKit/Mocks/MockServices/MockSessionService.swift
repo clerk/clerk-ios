@@ -24,19 +24,19 @@ package final class MockSessionService: SessionServiceProtocol {
   /// Custom handler for the `fetchToken(sessionId:template:)` method.
   package nonisolated(unsafe) var fetchTokenHandler: ((String, String?) async throws -> TokenResource?)?
 
-  /// Custom handler for `startVerification`.
+  /// Custom handler for the `startVerification(sessionId:params:)` method.
   nonisolated(unsafe) var startVerificationHandler: ((String, Session.StartVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for `prepareFirstFactorVerification`.
+  /// Custom handler for the `prepareFirstFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var prepareFirstFactorVerificationHandler: ((String, Session.PrepareFirstFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for `attemptFirstFactorVerification`.
+  /// Custom handler for the `attemptFirstFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var attemptFirstFactorVerificationHandler: ((String, Session.AttemptFirstFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for `prepareSecondFactorVerification`.
+  /// Custom handler for the `prepareSecondFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var prepareSecondFactorVerificationHandler: ((String, Session.PrepareSecondFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for `attemptSecondFactorVerification`.
+  /// Custom handler for the `attemptSecondFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var attemptSecondFactorVerificationHandler: ((String, Session.AttemptSecondFactorVerificationParams) async throws -> SessionVerification)?
 
   init(

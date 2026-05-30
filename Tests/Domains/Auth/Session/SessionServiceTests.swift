@@ -362,6 +362,48 @@ struct SessionServiceTests {
   }
 
   @Test
+  func prepareFirstFactorVerificationEnterpriseSSO() async throws {
+    let session = Session.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(
+      string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/verify/prepare_first_factor"
+    )!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<SessionVerification>(response: .mockNeedsFirstFactor, client: .mock)
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { request in
+      #expect(request.httpMethod == "POST")
+      let body = request.urlEncodedFormBody!
+      #expect(body["strategy"] == "enterprise_sso")
+      #expect(body["email_address_id"] == "idn_email")
+      #expect(body["enterprise_connection_id"] == "econn_123")
+      #expect(body["redirect_url"] == "myapp://callback")
+      #expect(body["default"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+      sessionId: session.id,
+      params: .init(
+        strategy: .enterpriseSSO,
+        emailAddressId: "idn_email",
+        enterpriseConnectionId: "econn_123",
+        redirectUrl: "myapp://callback"
+      )
+    )
+
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func attemptFirstFactorVerificationPasskey() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
