@@ -215,7 +215,8 @@ extension AuthStartView {
       ClerkPhoneNumberField(
         "Enter your phone number",
         text: $authState.authStartPhoneNumber,
-        fieldState: fieldError != nil ? .error : .default
+        fieldState: fieldError != nil ? .error : .default,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.phoneNumber
       )
       .transition(.blurReplace)
       .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsPhoneBadge ?? false)
@@ -224,7 +225,8 @@ extension AuthStartView {
         ClerkTextField(
           emailOrUsernamePlaceholder,
           text: $authState.authStartIdentifier,
-          fieldState: fieldError != nil ? .error : .default
+          fieldState: fieldError != nil ? .error : .default,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
         .keyboardType(.emailAddress)
@@ -255,6 +257,7 @@ extension AuthStartView {
     }
     .buttonStyle(.primary())
     .disabled(continueIsDisabled)
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.continueButton)
     .simultaneousGesture(TapGesture())
   }
 
@@ -268,6 +271,7 @@ extension AuthStartView {
         .id(phoneNumberFieldIsActive)
     }
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.identifierSwitcherButton)
     .simultaneousGesture(TapGesture())
   }
 

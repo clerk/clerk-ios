@@ -64,6 +64,7 @@ struct SessionTaskMfaSetupView: View {
             } label: {
               StrategyOptionButton(iconName: "icon-phone", text: "SMS code")
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.SetupMfa.smsCode)
             .buttonStyle(.secondary())
           }
 
@@ -74,6 +75,7 @@ struct SessionTaskMfaSetupView: View {
               StrategyOptionButton(iconName: "icon-key", text: "Authenticator application")
                 .overlayProgressView(isActive: isRunning)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.SetupMfa.authenticatorApp)
             .buttonStyle(.secondary())
           }
         }

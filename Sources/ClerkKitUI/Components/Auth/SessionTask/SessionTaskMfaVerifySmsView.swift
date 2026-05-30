@@ -60,7 +60,8 @@ struct SessionTaskMfaVerifySmsView: View {
         OTPField(
           code: $code,
           fieldState: $otpFieldState,
-          isFocused: $otpFieldIsFocused
+          isFocused: $otpFieldIsFocused,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.code
         ) { _ in
           await attempt()
         }

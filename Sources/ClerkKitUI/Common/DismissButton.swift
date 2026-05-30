@@ -12,7 +12,16 @@ struct DismissButton: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.colorScheme) private var colorScheme
 
+  var accessibilityIdentifier: String
   var action: (() -> Void)?
+
+  init(
+    accessibilityIdentifier: String = ClerkAccessibilityIdentifiers.dismissButton,
+    action: (() -> Void)? = nil
+  ) {
+    self.accessibilityIdentifier = accessibilityIdentifier
+    self.action = action
+  }
 
   var secondaryPaletteStyle: AnyShapeStyle {
     if #available(iOS 26.0, *) {
@@ -38,6 +47,8 @@ struct DismissButton: View {
         .frame(width: 30, height: 30)
         .brightness(colorScheme == .light ? -0.05 : 0.05)
     }
+    .accessibilityIdentifier(accessibilityIdentifier)
+    .accessibilityLabel(Text("Close", bundle: .module))
   }
 }
 

@@ -14,6 +14,7 @@ struct OTPField: View {
   var numberOfInputs: Int = 6
   @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
+  var accessibilityIdentifier: String = ""
   var onCodeEntry: (String) async -> Void
 
   enum FieldState {
@@ -47,6 +48,7 @@ struct OTPField: View {
         .focused($isFocused)
         .textContentType(.oneTimeCode)
         .keyboardType(.numberPad)
+        .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
         .tint(.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,12 +58,17 @@ struct OTPField: View {
       code = String(newValue.prefix(numberOfInputs))
       if previousCode == code { return }
 
-      if code.count == numberOfInputs {
-        fieldState = .default
-        Task { await onCodeEntry(code) }
-      } else if code.isEmpty {
+      if code.isEmpty {
         fieldState = .default
       }
+    }
+    .task(id: code) {
+      guard code.count == numberOfInputs else {
+        return
+      }
+
+      fieldState = .default
+      await onCodeEntry(code)
     }
     .onChange(
       of: fieldState,

@@ -54,7 +54,10 @@ struct UserProfileMfaAddTotpView: View {
               .foregroundStyle(theme.colors.mutedForeground)
 
             VStack(spacing: 12) {
-              CopyableTextView(text: secret)
+              CopyableTextView(
+                text: secret,
+                accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Mfa.totpSecret
+              )
 
               Button {
                 copyToClipboard(secret)
@@ -98,6 +101,7 @@ struct UserProfileMfaAddTotpView: View {
             ContinueButtonLabelView()
           }
           .buttonStyle(.primary())
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.totpContinue)
         }
         .padding(24)
       }

@@ -32,7 +32,8 @@ struct SessionTaskMfaVerifyTotpView: View {
         OTPField(
           code: $code,
           fieldState: $otpFieldState,
-          isFocused: $otpFieldIsFocused
+          isFocused: $otpFieldIsFocused,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Totp.code
         ) { _ in
           await attempt()
         }

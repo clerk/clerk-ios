@@ -87,7 +87,12 @@ struct SignUpCodeView: View {
         }
 
         VStack(spacing: 24) {
-          OTPField(code: $code, fieldState: $otpFieldState, isFocused: $otpFieldIsFocused) { _ in
+          OTPField(
+            code: $code,
+            fieldState: $otpFieldState,
+            isFocused: $otpFieldIsFocused,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.code
+          ) { _ in
             await attempt()
           }
           .onAppear {

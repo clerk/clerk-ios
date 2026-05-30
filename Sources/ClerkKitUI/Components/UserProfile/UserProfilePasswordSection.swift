@@ -43,6 +43,7 @@ struct UserProfilePasswordSection: View {
       .background(theme.colors.background)
       .buttonStyle(.pressedBackground)
       .simultaneousGesture(TapGesture())
+      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.changePassword)
     } header: {
       UserProfileSectionHeader(text: "PASSWORD")
     }

@@ -66,7 +66,8 @@ struct SignUpCollectFieldView: View {
     case .emailAddress:
       ClerkTextField(
         "Enter your email",
-        text: $authState.signUpEmailAddress
+        text: $authState.signUpEmailAddress,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.emailAddress
       )
       .textContentType(.emailAddress)
       .keyboardType(.emailAddress)
@@ -79,9 +80,10 @@ struct SignUpCollectFieldView: View {
       ClerkTextField(
         "Choose your password",
         text: $authState.signUpPassword,
-        isSecure: true
+        isSecure: true,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.password
       )
-      .textContentType(.newPassword)
+      .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
       .hiddenTextField(
         text: $usernameForPasswordKeeper,
         textContentType: .username
@@ -92,7 +94,8 @@ struct SignUpCollectFieldView: View {
     case .username:
       ClerkTextField(
         "Choose your username",
-        text: $authState.signUpUsername
+        text: $authState.signUpUsername,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.username
       )
       .textContentType(.username)
     }
@@ -135,6 +138,7 @@ struct SignUpCollectFieldView: View {
           }
           .buttonStyle(.primary())
           .disabled(continueIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.continueButton)
           .simultaneousGesture(TapGesture())
         }
 

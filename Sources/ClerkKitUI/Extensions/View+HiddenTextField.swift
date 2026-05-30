@@ -18,16 +18,20 @@ struct HiddenTextFieldModifier: ViewModifier {
   let isSecure: Bool
 
   func body(content: Content) -> some View {
-    content
-      .background {
-        field
-          .textContentType(textContentType)
-          .opacity(0.00001)
-          .offset(y: -100)
-          .disabled(true)
-          .accessibilityHidden(true)
-          .allowsHitTesting(false)
-      }
+    if ClerkE2EEnvironment.isEnabled {
+      content
+    } else {
+      content
+        .background {
+          field
+            .textContentType(textContentType)
+            .opacity(0.00001)
+            .offset(y: -100)
+            .disabled(true)
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
+        }
+    }
   }
 
   @ViewBuilder

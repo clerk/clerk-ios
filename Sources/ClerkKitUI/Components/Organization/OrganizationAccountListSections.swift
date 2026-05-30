@@ -105,6 +105,7 @@ struct OrganizationAccountListSections: View {
           OrganizationCreateRow()
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.AccountList.createOrganizationButton)
         Divider()
       }
     }
@@ -160,6 +161,7 @@ private struct OrganizationAccountMembershipRow: View {
       }
     }
     .buttonStyle(.plain)
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.AccountList.membershipButton)
   }
 }
 
@@ -188,6 +190,7 @@ private struct OrganizationAccountInvitationRow: View {
         )
       }
       .buttonStyle(.plain)
+      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.AccountList.acceptedInvitationButton)
     } else {
       OrganizationRow(
         name: invitation.publicOrganizationData.name,
@@ -199,6 +202,7 @@ private struct OrganizationAccountInvitationRow: View {
           PillButtonLabelView("Join", isLoading: isRunning)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.AccountList.invitationJoinButton)
       }
     }
   }

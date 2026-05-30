@@ -38,7 +38,10 @@ struct SessionTaskMfaTotpView: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
 
-            CopyableTextView(text: secret)
+            CopyableTextView(
+              text: secret,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Totp.secret
+            )
 
             Button {
               UIPasteboard.general.string = secret
@@ -60,6 +63,7 @@ struct SessionTaskMfaTotpView: View {
         } label: {
           ContinueButtonLabelView()
         }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.Totp.continueButton)
         .buttonStyle(.primary())
         .padding(.bottom, 32)
 

@@ -71,9 +71,14 @@ struct UserProfileChangePasswordView: View {
           .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
           .multilineTextAlignment(.leading)
 
-        ClerkTextField("Current password", text: $currentPassword, isSecure: true)
-          .textContentType(.password)
-          .focused($focusedField, equals: .currentPassword)
+        ClerkTextField(
+          "Current password",
+          text: $currentPassword,
+          isSecure: true,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.currentPassword
+        )
+        .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .password)
+        .focused($focusedField, equals: .currentPassword)
 
         Button {
           path.append(Destination.updatePassword)
@@ -83,6 +88,7 @@ struct UserProfileChangePasswordView: View {
         }
         .buttonStyle(.primary())
         .disabled(nextIsDisabled)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.nextButton)
       }
       .padding(24)
     }
@@ -111,14 +117,24 @@ struct UserProfileChangePasswordView: View {
     ScrollView {
       VStack(spacing: 24) {
         Group {
-          ClerkTextField("New password", text: $newPassword, isSecure: true)
-            .textContentType(.newPassword)
-            .focused($focusedField, equals: .newPassword)
-            .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+          ClerkTextField(
+            "New password",
+            text: $newPassword,
+            isSecure: true,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.newPassword
+          )
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
+          .focused($focusedField, equals: .newPassword)
+          .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
 
-          ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
-            .textContentType(.newPassword)
-            .focused($focusedField, equals: .confirmNewPassword)
+          ClerkTextField(
+            "Confirm password",
+            text: $confirmNewPassword,
+            isSecure: true,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.confirmPassword
+          )
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
+          .focused($focusedField, equals: .confirmNewPassword)
         }
         .autocorrectionDisabled()
         .textInputAutocapitalization(.never)
@@ -136,6 +152,7 @@ struct UserProfileChangePasswordView: View {
         }
         .buttonStyle(.primary())
         .disabled(saveIsDisabled)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.saveButton)
       }
       .padding(24)
     }

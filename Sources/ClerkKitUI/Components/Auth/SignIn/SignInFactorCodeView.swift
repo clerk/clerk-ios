@@ -121,7 +121,8 @@ extension SignInFactorCodeView {
     OTPField(
       code: $code,
       fieldState: $otpFieldState,
-      isFocused: $otpFieldIsFocused
+      isFocused: $otpFieldIsFocused,
+      accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignIn.code
     ) { _ in
       await attempt()
     }
@@ -167,6 +168,7 @@ extension SignInFactorCodeView {
         )
       )
     )
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.useAnotherMethodButton)
     .simultaneousGesture(TapGesture())
   }
 }

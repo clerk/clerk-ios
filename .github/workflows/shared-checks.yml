@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      e2e_key_name:
+        description: Named .keys.json publishable key used by E2EHost tests
+        required: false
+        type: string
+        default: auth-email-code-password
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -115,9 +120,113 @@ jobs:
       - name: Run ClerkKitUI tests
         run: make test-ui
 
+  test-e2e:
+    name: Run E2EHost tests on iOS
+    needs: format-and-lint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Swift dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .build
+          key: swiftpm-e2e-${{ hashFiles('Package.resolved') }}
+          restore-keys: swiftpm-e2e-
+
+      - name: Skip E2E tests
+        if: ${{ !inputs.run_integration_tests }}
+        run: echo "E2EHost tests run only when run_integration_tests is true."
+
+      - name: Setup E2E test keys
+        if: inputs.run_integration_tests
+        env:
+          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
+        run: |
+          set +x
+          if [ -z "$CLERK_TEST_KEYS_JSON" ]; then
+            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
+            echo "   Please configure CLERK_TEST_KEYS_JSON secret in repository settings"
+            exit 1
+          fi
+
+          printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
+          chmod 600 .keys.json
+          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+
+      - name: Validate E2E test keys
+        if: inputs.run_integration_tests
+        env:
+          CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
+        run: |
+          set -euo pipefail
+
+          required_keys="$(printf '%s\n' \
+            "auth-email-code-password" \
+            "auth-legal-consent" \
+            "auth-multi-methods" \
+            "auth-phone-code" \
+            "auth-username-password-user-model" \
+            "session-task-choose-organization" \
+            "session-task-reset-password" \
+            "session-task-setup-mfa" \
+            "$CLERK_E2E_KEY_NAME" \
+            | sort -u)"
+
+          missing=0
+          while IFS= read -r key_name; do
+            if ! jq -e --arg key_name "$key_name" '.[$key_name].pk | strings | select(length > 0)' .keys.json > /dev/null; then
+              echo "::error::Missing $key_name.pk in CLERK_TEST_KEYS_JSON."
+              missing=1
+            fi
+          done <<< "$required_keys"
+
+          if ! jq -e '.["session-task-reset-password"].sk | strings | select(length > 0)' .keys.json > /dev/null; then
+            echo "::error::Missing session-task-reset-password.sk in CLERK_TEST_KEYS_JSON."
+            missing=1
+          fi
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Add the missing key to 1Password, then sync GitHub with:"
+            echo "  make sync-test-keys-to-github"
+            exit 1
+          fi
+
+          echo "✅ Required E2E test keys are configured"
+
+      - name: Run E2EHost tests
+        if: inputs.run_integration_tests
+        env:
+          CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
+        run: |
+          set -euo pipefail
+          make test-e2e
+
+      - name: Upload E2EHost result bundle
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: E2EHost.xcresult
+          path: build/reports/E2EHost.xcresult
+          if-no-files-found: ignore
+
+      - name: Cleanup E2E test keys
+        if: always() && inputs.run_integration_tests
+        run: |
+          rm -f .keys.json
+          echo "✅ Cleaned up .keys.json"
+
   build:
     name: Build ${{ matrix.platform }}
-    needs: [test, test-ui]
+    needs: [test, test-ui, test-e2e]
     runs-on: macos-latest
     strategy:
       matrix:

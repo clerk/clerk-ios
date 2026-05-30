@@ -64,7 +64,10 @@ struct UserProfileMfaSection: View {
           }
         }
 
-        UserProfileButtonRow(text: "Add two-step verification") {
+        UserProfileButtonRow(
+          text: "Add two-step verification",
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Security.addMfa
+        ) {
           navigation.chooseMfaTypeIsPresented = true
         }
       }

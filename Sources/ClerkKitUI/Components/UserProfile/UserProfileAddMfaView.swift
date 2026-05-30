@@ -79,6 +79,7 @@ struct UserProfileAddMfaView: View {
                 } label: {
                   UserProfileRowView(icon: "icon-phone", text: "SMS code")
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsCode)
               }
 
               if environment?.mfaAuthenticatorAppIsEnabled == true, user?.totpEnabled != true {
@@ -88,6 +89,7 @@ struct UserProfileAddMfaView: View {
                   UserProfileRowView(icon: "icon-key", text: "Authenticator application")
                     .overlayProgressView(isActive: isRunning)
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.authenticatorApp)
               }
             }
             .overlay(alignment: .bottom) {

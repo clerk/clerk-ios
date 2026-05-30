@@ -113,6 +113,7 @@ struct SocialButton: View {
         .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.socialProviderButton(strategy: provider.strategy))
   }
 }
 

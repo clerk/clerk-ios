@@ -119,6 +119,7 @@ struct SessionTaskBackupCodesView: View {
           }
           .frame(maxWidth: .infinity)
         }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.BackupCodes.continueButton)
         .buttonStyle(.primary())
         .padding(.bottom, 32)
 

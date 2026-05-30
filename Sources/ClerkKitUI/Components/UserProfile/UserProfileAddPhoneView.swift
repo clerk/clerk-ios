@@ -49,13 +49,17 @@ struct UserProfileAddPhoneView: View {
             .fixedSize(horizontal: false, vertical: true)
 
           VStack(spacing: 4) {
-            ClerkPhoneNumberField("Enter your phone number", text: $phoneNumber)
-              .textContentType(.telephoneNumber)
-              .keyboardType(.numberPad)
-              .focused($isFocused)
-              .onFirstAppear {
-                isFocused = true
-              }
+            ClerkPhoneNumberField(
+              "Enter your phone number",
+              text: $phoneNumber,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Phone.phoneNumber
+            )
+            .textContentType(.telephoneNumber)
+            .keyboardType(.numberPad)
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
             if let error {
               ErrorText(error: error, alignment: .leading)
@@ -80,6 +84,7 @@ struct UserProfileAddPhoneView: View {
             }
           }
           .buttonStyle(.primary())
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Phone.continueButton)
         }
         .padding(24)
       }
