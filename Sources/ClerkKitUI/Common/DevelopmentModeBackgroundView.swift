@@ -1,25 +1,11 @@
 //
-//  DevelopmentModeBackground.swift
+//  DevelopmentModeBackgroundView.swift
 //  Clerk
 //
 
 #if os(iOS)
 
 import SwiftUI
-
-enum DevelopmentModeBackground {
-  case white
-  case gray
-
-  var imageName: String {
-    switch self {
-    case .white:
-      "dev-mode-background-white"
-    case .gray:
-      "dev-mode-background-gray"
-    }
-  }
-}
 
 struct DevelopmentModeBackgroundView: View {
   let background: DevelopmentModeBackground
@@ -33,6 +19,20 @@ struct DevelopmentModeBackgroundView: View {
         .clipped()
     }
     .accessibilityHidden(true)
+  }
+}
+
+enum DevelopmentModeBackground {
+  case white
+  case gray
+
+  var imageName: String {
+    switch self {
+    case .white:
+      "dev-mode-background-white"
+    case .gray:
+      "dev-mode-background-gray"
+    }
   }
 }
 
