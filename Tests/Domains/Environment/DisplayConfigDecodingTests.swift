@@ -25,6 +25,15 @@ struct DisplayConfigDecodingTests {
   }
 
   @Test
+  func showDevmodeWarningDefaultsFalseWhenMissing() throws {
+    let data = displayConfigJSON()
+
+    let displayConfig = try decoder.decode(Clerk.Environment.DisplayConfig.self, from: data)
+
+    #expect(displayConfig.showDevmodeWarning == false)
+  }
+
+  @Test
   func showDevmodeWarningEncodesBackendKey() throws {
     var displayConfig = Clerk.Environment.DisplayConfig.mock
     displayConfig.showDevmodeWarning = true
@@ -35,19 +44,22 @@ struct DisplayConfigDecodingTests {
     #expect(json.contains("\"show_devmode_warning\":true"))
   }
 
-  private func displayConfigJSON(showDevmodeWarning: Bool) -> Data {
-    let fields = [
+  private func displayConfigJSON(showDevmodeWarning: Bool? = nil) -> Data {
+    var fields = [
       "\"instance_environment_type\": \"development\"",
       "\"application_name\": \"Acme Co\"",
       "\"preferred_sign_in_strategy\": \"otp\"",
       "\"support_email\": \"support@example.com\"",
-      "\"show_devmode_warning\": \(showDevmodeWarning)",
       "\"branded\": true",
       "\"logo_image_url\": \"\"",
       "\"home_url\": \"\"",
       "\"privacy_policy_url\": \"privacy\"",
       "\"terms_url\": \"terms\"",
     ]
+
+    if let showDevmodeWarning {
+      fields.append("\"show_devmode_warning\": \(showDevmodeWarning)")
+    }
 
     return Data("{ \(fields.joined(separator: ", ")) }".utf8)
   }

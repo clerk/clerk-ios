@@ -170,7 +170,6 @@ struct AuthStartView: View {
       }
       .padding(16)
     }
-    .developmentModeBottomInset(background: .white)
     .scrollDismissesKeyboard(.interactively)
     .clerkErrorPresenting($generalError)
     .background(theme.colors.background)
