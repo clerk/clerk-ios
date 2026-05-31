@@ -196,9 +196,13 @@ public struct AuthView: View {
     .onChange(of: config, initial: true) { _, newConfig in
       authState.configure(newConfig)
     }
-    .onChange(of: config.unsafeMetadata, initial: true) { _, newMetadata in
+    .onChange(of: config.unsafeMetadata, initial: true) { oldMetadata, newMetadata in
       if let newMetadata {
         clerk.auth.unsafeMetadata = newMetadata
+      } else if let oldMetadata, clerk.auth.unsafeMetadata == oldMetadata {
+        // Only clear if our pushed value is still current, so we don't
+        // clobber a value the developer set directly.
+        clerk.auth.unsafeMetadata = nil
       }
     }
     .onDisappear {

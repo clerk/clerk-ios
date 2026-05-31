@@ -73,7 +73,7 @@ public struct Auth {
   /// `unsafeMetadata` explicitly, the explicit value is used for that call.
   ///
   /// The value is cleared automatically once a sign-up completes successfully
-  /// and on `Clerk.configure(...)` reconfiguration. It is **not** cleared on
+  /// and on `Clerk.reconfigure(...)`. It is **not** cleared on
   /// sign-up failure, abandonment, or sign-in completion — set it to `nil`
   /// explicitly when starting a flow that should not inherit a previous value.
   ///
