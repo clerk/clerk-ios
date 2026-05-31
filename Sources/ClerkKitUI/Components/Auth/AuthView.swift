@@ -104,9 +104,7 @@ public struct AuthView: View {
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: AuthState(mode: mode))
-    self.isDismissable = isDismissable
-    config = AuthConfig()
+    self.init(mode: mode, isDismissable: isDismissable, config: AuthConfig())
   }
 
   private init(
@@ -114,7 +112,7 @@ public struct AuthView: View {
     isDismissable: Bool,
     config: AuthConfig
   ) {
-    _authState = State(initialValue: AuthState(mode: mode))
+    _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissable = isDismissable
     self.config = config
   }
@@ -193,7 +191,7 @@ public struct AuthView: View {
         navigation.path = []
       }
     }
-    .onChange(of: config, initial: true) { _, newConfig in
+    .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
     }
     .taskOnce {

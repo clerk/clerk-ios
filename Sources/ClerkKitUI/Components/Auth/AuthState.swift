@@ -29,11 +29,16 @@ final class AuthState {
 
   private let userDefaults: UserDefaults
 
-  init(mode: AuthView.Mode = .signInOrUp, userDefaults: UserDefaults = .standard) {
+  init(
+    mode: AuthView.Mode = .signInOrUp,
+    config: AuthConfig = AuthConfig(),
+    userDefaults: UserDefaults = .standard
+  ) {
     self.mode = mode
     self.userDefaults = userDefaults
     authStartIdentifier = userDefaults.string(forKey: Self.identifierStorageKey) ?? ""
     authStartPhoneNumber = userDefaults.string(forKey: Self.phoneNumberStorageKey) ?? ""
+    configure(config)
   }
 
   /// Whether this UI flow should allow transfer from sign-in to sign-up.

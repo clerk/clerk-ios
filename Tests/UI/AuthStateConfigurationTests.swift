@@ -127,6 +127,33 @@ struct AuthStateConfigurationTests {
     #expect(authState.unsafeMetadata == metadata)
   }
 
+  @Test
+  func configurationCanBeAppliedDuringInitialization() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
+    let metadata: JSON = ["plan": "pro"]
+
+    let authState = AuthState(
+      config: AuthConfig(
+        initialIdentifier: "seed@example.com",
+        persistsIdentifiers: false,
+        unsafeMetadata: metadata
+      ),
+      userDefaults: defaults
+    )
+
+    #expect(authState.authStartIdentifier == "seed@example.com")
+    #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(authState.persistsIdentifiers == false)
+    #expect(authState.hasInitialValues == true)
+    #expect(authState.unsafeMetadata == metadata)
+    #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
+    #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
+  }
+
   private func makeUserDefaults() -> UserDefaults {
     let suiteName = "AuthStateConfigurationTests.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suiteName)!
