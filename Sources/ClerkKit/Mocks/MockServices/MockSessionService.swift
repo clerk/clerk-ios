@@ -39,6 +39,25 @@ package final class MockSessionService: SessionServiceProtocol {
   /// Custom handler for the `attemptSecondFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var attemptSecondFactorVerificationHandler: ((String, Session.AttemptSecondFactorVerificationParams) async throws -> SessionVerification)?
 
+  package convenience init(
+    revoke: ((String) async throws -> Session)? = nil,
+    signOut: ((String?) async throws -> Void)? = nil,
+    setActive: ((String, String?) async throws -> Void)? = nil,
+    fetchToken: ((String, String?) async throws -> TokenResource?)? = nil
+  ) {
+    self.init(
+      revoke: revoke,
+      signOut: signOut,
+      setActive: setActive,
+      fetchToken: fetchToken,
+      startVerification: nil,
+      prepareFirstFactorVerification: nil,
+      attemptFirstFactorVerification: nil,
+      prepareSecondFactorVerification: nil,
+      attemptSecondFactorVerification: nil
+    )
+  }
+
   init(
     revoke: ((String) async throws -> Session)? = nil,
     signOut: ((String?) async throws -> Void)? = nil,
