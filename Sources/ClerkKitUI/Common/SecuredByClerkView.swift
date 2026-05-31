@@ -60,12 +60,14 @@ struct SecuredByClerkFooter: View {
       .frame(maxWidth: .infinity)
       .background {
         if showBackground {
-          if clerk.shouldShowDevelopmentModeWarning {
-            DevelopmentModeBackgroundView(background: .gray)
-              .ignoresSafeArea(.container, edges: .bottom)
-          } else {
-            theme.colors.muted
+          Group {
+            if clerk.shouldShowDevelopmentModeWarning {
+              DevelopmentModeBackgroundView(background: .gray)
+            } else {
+              theme.colors.muted
+            }
           }
+          .ignoresSafeArea(.container, edges: .bottom)
         }
       }
       .overlay(alignment: .top) {
