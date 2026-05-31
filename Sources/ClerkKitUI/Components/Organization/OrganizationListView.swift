@@ -200,38 +200,35 @@ public struct OrganizationListView: View {
   }
 
   private var listContent: some View {
-    VStack(spacing: 0) {
-      ScrollView {
-        VStack(spacing: 32) {
-          if let subtitle {
-            Text(subtitle, bundle: .module)
-              .font(theme.fonts.subheadline)
-              .foregroundStyle(theme.colors.mutedForeground)
-              .multilineTextAlignment(.center)
-              .fixedSize(horizontal: false, vertical: true)
-              .padding(.horizontal, 16)
-          }
-
-          OrganizationAccountListSections(
-            accountList: accountList,
-            mode: .accountSwitcher(showsPersonalAccount: shouldShowPersonalAccount),
-            onSelection: { selection in
-              switch selection {
-              case .personalAccount:
-                Task { await selectPersonalAccount() }
-              case .organization(let id):
-                Task { await selectOrganization(id: id) }
-              }
-            },
-            onCreateOrganization: navigateToCreateOrganization
-          )
-          .disabled(isSelectingAccount)
+    ScrollView {
+      VStack(spacing: 32) {
+        if let subtitle {
+          Text(subtitle, bundle: .module)
+            .font(theme.fonts.subheadline)
+            .foregroundStyle(theme.colors.mutedForeground)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 16)
         }
-        .padding(.top, 16)
-      }
 
-      SecuredByClerkFooter()
+        OrganizationAccountListSections(
+          accountList: accountList,
+          mode: .accountSwitcher(showsPersonalAccount: shouldShowPersonalAccount),
+          onSelection: { selection in
+            switch selection {
+            case .personalAccount:
+              Task { await selectPersonalAccount() }
+            case .organization(let id):
+              Task { await selectOrganization(id: id) }
+            }
+          },
+          onCreateOrganization: navigateToCreateOrganization
+        )
+        .disabled(isSelectingAccount)
+      }
+      .padding(.top, 16)
     }
+    .securedByClerkFooter()
   }
 
   private var createOrganizationContent: some View {

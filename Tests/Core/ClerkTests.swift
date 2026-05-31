@@ -198,6 +198,43 @@ struct ClerkTests {
     #expect(Clerk.shared.isLoaded == false)
   }
 
+  // MARK: - Development Mode Warning Tests
+
+  @Test
+  func shouldShowDevelopmentModeWarningReturnsFalseWhenEnvironmentIsMissing() {
+    Clerk.shared.environment = nil
+
+    #expect(Clerk.shared.shouldShowDevelopmentModeWarning == false)
+  }
+
+  @Test
+  func shouldShowDevelopmentModeWarningReturnsFalseWhenFlagIsDisabled() {
+    Clerk.shared.environment = environment(showDevmodeWarning: false, type: .development)
+
+    #expect(Clerk.shared.shouldShowDevelopmentModeWarning == false)
+  }
+
+  @Test
+  func shouldShowDevelopmentModeWarningReturnsFalseForProductionEnvironment() {
+    Clerk.shared.environment = environment(showDevmodeWarning: true, type: .production)
+
+    #expect(Clerk.shared.shouldShowDevelopmentModeWarning == false)
+  }
+
+  @Test
+  func shouldShowDevelopmentModeWarningReturnsTrueForDevelopmentEnvironment() {
+    Clerk.shared.environment = environment(showDevmodeWarning: true, type: .development)
+
+    #expect(Clerk.shared.shouldShowDevelopmentModeWarning == true)
+  }
+
+  @Test
+  func shouldShowDevelopmentModeWarningReturnsTrueForUnknownNonProductionEnvironment() {
+    Clerk.shared.environment = environment(showDevmodeWarning: true, type: .unknown("staging"))
+
+    #expect(Clerk.shared.shouldShowDevelopmentModeWarning == true)
+  }
+
   // MARK: - Current / Active Session Tests
 
   @Test
@@ -224,5 +261,15 @@ struct ClerkTests {
     )
 
     #expect(Clerk.shared.user?.id == User.mock.id)
+  }
+
+  private func environment(
+    showDevmodeWarning: Bool,
+    type: InstanceEnvironmentType
+  ) -> Clerk.Environment {
+    var environment = Clerk.Environment.mock
+    environment.displayConfig.showDevmodeWarning = showDevmodeWarning
+    environment.displayConfig.instanceEnvironmentType = type
+    return environment
   }
 }

@@ -142,10 +142,12 @@ public struct AuthView: View {
                 }
               }
             }
+            .developmentModeBottomInset(background: .white)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
+        .developmentModeBottomInset(background: .white)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)

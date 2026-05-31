@@ -103,32 +103,8 @@ public struct OrganizationSwitcherSheet: View {
             UserProfileRowView(icon: "icon-switch", text: "Switch account")
           }
           .buttonStyle(.pressedBackground)
-          Divider()
 
-          SecuredByClerkView()
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            Button {
-              dismiss()
-            } label: {
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary)
-            }
-          }
-
-          ToolbarItem(placement: .principal) {
-            Text("Organization", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+          SecuredByClerkFooter(showBackground: false)
         }
         .onGeometryChange(
           for: CGFloat.self,
@@ -141,6 +117,27 @@ public struct OrganizationSwitcherSheet: View {
         )
       }
       .scrollBounceBehavior(.basedOnSize)
+      .navigationBarTitleDisplayMode(.inline)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            dismiss()
+          } label: {
+            Text("Done", bundle: .module)
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.primary)
+          }
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text("Organization", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
     .presentationDetents([.height(contentHeight)])
   }

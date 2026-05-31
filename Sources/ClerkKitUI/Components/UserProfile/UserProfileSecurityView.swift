@@ -26,7 +26,7 @@ struct UserProfileSecurityView: View {
   var body: some View {
     @Bindable var navigation = navigation
 
-    VStack(spacing: 0) {
+    Group {
       if let user {
         ScrollView {
           VStack(spacing: 0) {
@@ -58,9 +58,8 @@ struct UserProfileSecurityView: View {
         }
         .background(theme.colors.muted)
       }
-
-      SecuredByClerkFooter()
     }
+    .securedByClerkFooter()
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .principal) {

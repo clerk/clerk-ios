@@ -47,6 +47,12 @@ public final class Clerk {
     dependencies.configurationManager.instanceType
   }
 
+  /// Whether ClerkKitUI should show the development mode warning.
+  public var shouldShowDevelopmentModeWarning: Bool {
+    guard let displayConfig = environment?.displayConfig else { return false }
+    return displayConfig.showDevmodeWarning && displayConfig.instanceEnvironmentType != .production
+  }
+
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
