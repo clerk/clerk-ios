@@ -103,7 +103,6 @@ public struct OrganizationSwitcherSheet: View {
             UserProfileRowView(icon: "icon-switch", text: "Switch account")
           }
           .buttonStyle(.pressedBackground)
-          Divider()
 
           SecuredByClerkFooter(showBackground: false)
         }

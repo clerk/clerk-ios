@@ -71,6 +71,7 @@ struct OrganizationMembersView: View {
       membersContent
     }
     .background(theme.colors.muted)
+    .securedByClerkFooter()
     .navigationBarTitleDisplayMode(.inline)
     .preGlassSolidNavBar()
     .toolbar {
