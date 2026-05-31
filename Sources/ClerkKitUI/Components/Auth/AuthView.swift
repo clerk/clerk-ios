@@ -71,8 +71,8 @@ public struct AuthView: View {
   /// Form field state for auth views.
   @State private var authState: AuthState
 
-  /// Configuration values for identifier pre-filling and persistence.
-  private let config: AuthIdentifierConfig
+  /// Configuration values for the auth flow.
+  private let config: AuthConfig
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -106,13 +106,13 @@ public struct AuthView: View {
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
-    config = AuthIdentifierConfig()
+    config = AuthConfig()
   }
 
   private init(
     mode: Mode,
     isDismissable: Bool,
-    config: AuthIdentifierConfig
+    config: AuthConfig
   ) {
     _authState = State(initialValue: AuthState(mode: mode))
     self.isDismissable = isDismissable
@@ -243,6 +243,19 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+  }
+
+  /// Sets unsafe metadata to attach when this auth flow creates a sign-up.
+  ///
+  /// This value is scoped to this `AuthView` instance and is only sent with sign-up creation
+  /// requests, including sign-in flows that transfer to sign-up.
+  ///
+  /// - Parameter metadata: The unsafe metadata to attach to created users.
+  /// - Returns: A view with the unsafe metadata configured.
+  public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
+    var config = config
+    config.unsafeMetadata = metadata
     return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 }

@@ -332,6 +332,7 @@ struct SignInTests {
 
   @Test
   func handleTransferFlowCreatesSignUpWhenTransferable() async throws {
+    let metadata: JSON = ["plan": "pro"]
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
@@ -343,7 +344,10 @@ struct SignInTests {
 
     configureServices(signUpService: signUpService)
 
-    let result = try await signIn.handleTransferFlow(transferable: true)
+    let result = try await signIn.handleTransferFlow(
+      transferable: true,
+      unsafeMetadata: metadata
+    )
 
     switch result {
     case .signUp:
@@ -354,6 +358,7 @@ struct SignInTests {
 
     let params = try #require(captured.value)
     #expect(params.transfer == true)
+    #expect(params.unsafeMetadata == metadata)
   }
 
   @Test
@@ -449,6 +454,7 @@ struct SignInTests {
 
   @Test
   func completeEnterpriseSSOTransfersToSignUpWithoutNonce() async throws {
+    let metadata: JSON = ["plan": "pro"]
     let signIn = SignIn.mock
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
@@ -468,7 +474,10 @@ struct SignInTests {
     configureServices(signInService: signInService, signUpService: signUpService)
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
-    let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
+    let result = try await signIn.completeEnterpriseSSO(
+      callbackURL: callbackURL,
+      unsafeMetadata: metadata
+    )
 
     let getParams = try #require(getCaptured.value)
     #expect(getParams.0 == signIn.id)
@@ -476,6 +485,7 @@ struct SignInTests {
 
     let createParams = try #require(createCaptured.value)
     #expect(createParams.transfer == true)
+    #expect(createParams.unsafeMetadata == metadata)
 
     switch result {
     case .signUp(let signUp):

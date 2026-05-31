@@ -1,5 +1,6 @@
 #if os(iOS)
 
+@testable import ClerkKit
 @testable import ClerkKitUI
 import Foundation
 import Testing
@@ -37,7 +38,7 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "seed@example.com"
     ))
 
@@ -53,7 +54,7 @@ struct AuthStateConfigurationTests {
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "+17777770123"
     ))
 
@@ -69,7 +70,7 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       persistsIdentifiers: false
     ))
 
@@ -84,7 +85,7 @@ struct AuthStateConfigurationTests {
   func disablingPersistenceSuppressesFutureWrites() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       persistsIdentifiers: false
     ))
 
@@ -103,7 +104,7 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "seed@example.com",
       persistsIdentifiers: false
     ))
@@ -113,6 +114,17 @@ struct AuthStateConfigurationTests {
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
+  }
+
+  @Test
+  func configurationStoresUnsafeMetadata() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    let metadata: JSON = ["plan": "pro"]
+
+    authState.configure(AuthConfig(unsafeMetadata: metadata))
+
+    #expect(authState.unsafeMetadata == metadata)
   }
 
   private func makeUserDefaults() -> UserDefaults {

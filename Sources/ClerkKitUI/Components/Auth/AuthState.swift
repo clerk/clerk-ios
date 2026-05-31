@@ -24,6 +24,9 @@ final class AuthState {
   /// Whether the configure method received any initial values.
   private(set) var hasInitialValues: Bool = false
 
+  /// Unsafe metadata to attach if the current UI flow creates a sign-up.
+  private(set) var unsafeMetadata: JSON?
+
   private let userDefaults: UserDefaults
 
   init(mode: AuthView.Mode = .signInOrUp, userDefaults: UserDefaults = .standard) {
@@ -60,10 +63,11 @@ final class AuthState {
     }
   }
 
-  /// Applies identifier configuration values.
-  func configure(_ config: AuthIdentifierConfig) {
+  /// Applies auth flow configuration values.
+  func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
     hasInitialValues = config.initialIdentifier != nil
+    unsafeMetadata = config.unsafeMetadata
 
     if !config.persistsIdentifiers {
       userDefaults.removeObject(forKey: Self.identifierStorageKey)
