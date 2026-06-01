@@ -1558,7 +1558,7 @@ extension E2EHostE2ETests {
     app.descendants(matching: .any)
       .matching(identifier: identifier)
       .allElementsBoundByIndex
-      .first { $0.exists && $0.isHittable }
+      .first { $0.exists && $0.isEnabled && $0.isHittable }
   }
 
   private func waitForHittableElement(
