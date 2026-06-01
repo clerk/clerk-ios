@@ -138,6 +138,49 @@ extension Session {
   }
 }
 
+// MARK: SessionVerification
+
+extension SessionVerification {
+  public static var mockNeedsFirstFactor: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .needsFirstFactor,
+      level: .firstFactor,
+      session: .mock,
+      supportedFirstFactors: [.mockPassword, .mockPasskey],
+      supportedSecondFactors: nil,
+      firstFactorVerification: .mockPasskeyUnverifiedVerification,
+      secondFactorVerification: nil
+    )
+  }
+
+  public static var mockNeedsSecondFactor: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .needsSecondFactor,
+      level: .secondFactor,
+      session: .mock,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: [.mockTotp],
+      firstFactorVerification: nil,
+      secondFactorVerification: .mockTotpUnverifiedVerification
+    )
+  }
+
+  public static var mockComplete: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .complete,
+      level: .firstFactor,
+      session: .mock,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: .mockPasskeyVerifiedVerification,
+      secondFactorVerification: nil
+    )
+  }
+}
+
 // MARK: SignIn
 
 extension SignIn {

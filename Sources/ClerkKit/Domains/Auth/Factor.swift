@@ -18,25 +18,40 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
   /// The ID of the Web3 wallet that will be used to sign a message.
   public var web3WalletId: String?
 
+  /// The ID of the enterprise connection that will be used for SSO.
+  public var enterpriseConnectionId: String?
+
+  /// The display name of the enterprise connection that will be used for SSO.
+  public var enterpriseConnectionName: String?
+
   /// The safe identifier of the factor.
   public var safeIdentifier: String?
 
   /// Whether the factor is the primary factor.
   public var primary: Bool?
 
+  /// Whether the factor is the default second factor.
+  public var `default`: Bool?
+
   public init(
     strategy: FactorStrategy,
     emailAddressId: String? = nil,
     phoneNumberId: String? = nil,
     web3WalletId: String? = nil,
+    enterpriseConnectionId: String? = nil,
+    enterpriseConnectionName: String? = nil,
     safeIdentifier: String? = nil,
-    primary: Bool? = nil
+    primary: Bool? = nil,
+    default: Bool? = nil
   ) {
     self.strategy = strategy
     self.emailAddressId = emailAddressId
     self.phoneNumberId = phoneNumberId
     self.web3WalletId = web3WalletId
+    self.enterpriseConnectionId = enterpriseConnectionId
+    self.enterpriseConnectionName = enterpriseConnectionName
     self.safeIdentifier = safeIdentifier
     self.primary = primary
+    self.default = `default`
   }
 }
