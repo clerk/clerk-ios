@@ -166,15 +166,21 @@ extension SignIn {
   ///   - callbackURL: The callback URL your app received after the user completed enterprise SSO.
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if completing enterprise SSO fails.
   @discardableResult
   @MainActor
   public func completeEnterpriseSSO(
     callbackURL: URL,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await handleRedirectCallbackUrl(callbackURL, transferable: transferable)
+    try await handleRedirectCallbackUrl(
+      callbackURL,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -211,13 +217,15 @@ extension SignIn {
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
   @MainActor
   public func authenticateWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
@@ -226,7 +234,10 @@ extension SignIn {
     }
 
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
-    let result = try await signIn.handleTransferFlow(transferable: transferable)
+    let result = try await signIn.handleTransferFlow(
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
     }
@@ -343,13 +354,15 @@ extension SignIn {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the enterprise SSO flow fails.
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
@@ -370,7 +383,11 @@ extension SignIn {
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: transferable)
+    return try await signIn.handleRedirectCallbackUrl(
+      callbackUrl,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
 
   /// Authenticates with OAuth using the specified provider.
@@ -384,6 +401,7 @@ extension SignIn {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
@@ -391,7 +409,8 @@ extension SignIn {
   public func authenticateWithOAuth(
     provider: OAuthProvider,
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.prepareFirstFactor(
       signInId: id,
@@ -412,7 +431,11 @@ extension SignIn {
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
     )
     let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(callbackUrl, transferable: transferable)
+    return try await signIn.handleRedirectCallbackUrl(
+      callbackUrl,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -533,7 +556,11 @@ extension SignIn {
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
-  func handleRedirectCallbackUrl(_ url: URL, transferable: Bool = true) async throws -> TransferFlowResult {
+  func handleRedirectCallbackUrl(
+    _ url: URL,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignIn = try await reload(rotatingTokenNonce: nonce)
       if let error = updatedSignIn.firstFactorVerification?.error {
@@ -543,7 +570,10 @@ extension SignIn {
     } else {
       // transfer flow
       let signIn = try await reload()
-      let result = try await signIn.handleTransferFlow(transferable: transferable)
+      let result = try await signIn.handleTransferFlow(
+        transferable: transferable,
+        unsafeMetadata: unsafeMetadata
+      )
       switch result {
       case .signIn(let signIn):
         if let error = signIn.firstFactorVerification?.error {
@@ -562,10 +592,16 @@ extension SignIn {
 
   /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
-  func handleTransferFlow(transferable: Bool = true) async throws -> TransferFlowResult {
+  func handleTransferFlow(
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
       let signUpService: any SignUpServiceProtocol = Clerk.shared.dependencies.signUpService
-      let signUp = try await signUpService.create(params: .init(transfer: true))
+      let signUp = try await signUpService.create(params: .init(
+        unsafeMetadata: unsafeMetadata,
+        transfer: true
+      ))
       return .signUp(signUp)
     } else {
       return .signIn(self)

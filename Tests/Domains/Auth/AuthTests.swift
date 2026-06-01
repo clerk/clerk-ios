@@ -179,6 +179,34 @@ struct AuthTests {
   }
 
   @Test
+  func signInWithIdTokenTransfersUnsafeMetadataToSignUp() async throws {
+    let metadata: JSON = ["plan": "pro"]
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(status: .transferable)
+
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { _ in
+      signIn
+    })
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signInService: signInService, signUpService: signUpService)
+
+    _ = try await Clerk.shared.auth.signInWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      unsafeMetadata: metadata
+    )
+
+    let params = try #require(signUpParams.value)
+    #expect(params.transfer == true)
+    #expect(params.unsafeMetadata == metadata)
+  }
+
+  @Test
   func signInWithIdTokenThrowsWhenTransferableButDisallowed() async throws {
     let signUpCalled = LockIsolated(false)
     let didThrow = LockIsolated(false)
@@ -282,6 +310,7 @@ struct AuthTests {
 
   @Test
   func signUpWithOAuthUsesSignUpServiceCreate() async throws {
+    let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -296,7 +325,10 @@ struct AuthTests {
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
     do {
-      _ = try await Clerk.shared.auth.signUpWithOAuth(provider: .google)
+      _ = try await Clerk.shared.auth.signUpWithOAuth(
+        provider: .google,
+        unsafeMetadata: metadata
+      )
     } catch {
       // Expected to fail in unit tests due to missing external verification data.
     }
@@ -304,10 +336,12 @@ struct AuthTests {
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
     #expect(params.strategy?.rawValue == OAuthProvider.google.strategy)
+    #expect(params.unsafeMetadata == metadata)
   }
 
   @Test
   func signUpWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
+    let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -322,7 +356,10 @@ struct AuthTests {
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
     do {
-      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(
+        emailAddress: "user@enterprise.com",
+        unsafeMetadata: metadata
+      )
     } catch {
       // Expected to fail in unit tests due to missing external verification data.
     }
@@ -330,10 +367,12 @@ struct AuthTests {
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
     #expect(params.emailAddress == "user@enterprise.com")
+    #expect(params.unsafeMetadata == metadata)
   }
 
   @Test
   func signUpWithIdTokenUsesSignUpServiceCreate() async throws {
+    let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signInService = MockSignInService(create: { _ in
@@ -347,12 +386,17 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
-    _ = try await Clerk.shared.auth.signUpWithIdToken("mock_id_token", provider: .apple)
+    _ = try await Clerk.shared.auth.signUpWithIdToken(
+      "mock_id_token",
+      provider: .apple,
+      unsafeMetadata: metadata
+    )
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
     #expect(params.strategy?.rawValue == IDTokenProvider.apple.strategy)
     #expect(params.token == "mock_id_token")
+    #expect(params.unsafeMetadata == metadata)
   }
 
   @Test
@@ -419,6 +463,7 @@ struct AuthTests {
 
   @Test
   func signUpWithTicketUsesSignUpServiceCreate() async throws {
+    let metadata: JSON = ["plan": "pro"]
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let signUpService = MockSignUpService(create: { params in
       signUpParams.setValue(params)
@@ -427,10 +472,14 @@ struct AuthTests {
 
     configureDependencies(signUpService: signUpService)
 
-    _ = try await Clerk.shared.auth.signUpWithTicket("mock_ticket_value")
+    _ = try await Clerk.shared.auth.signUpWithTicket(
+      "mock_ticket_value",
+      unsafeMetadata: metadata
+    )
 
     let params = try #require(signUpParams.value)
     #expect(params.ticket == "mock_ticket_value")
+    #expect(params.unsafeMetadata == metadata)
   }
 
   @Test(

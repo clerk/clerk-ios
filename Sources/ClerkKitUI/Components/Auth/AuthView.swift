@@ -71,8 +71,8 @@ public struct AuthView: View {
   /// Form field state for auth views.
   @State private var authState: AuthState
 
-  /// Configuration values for identifier pre-filling and persistence.
-  private let config: AuthIdentifierConfig
+  /// Configuration values for the auth flow.
+  private let config: AuthConfig
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -104,17 +104,15 @@ public struct AuthView: View {
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: AuthState(mode: mode))
-    self.isDismissable = isDismissable
-    config = AuthIdentifierConfig()
+    self.init(mode: mode, isDismissable: isDismissable, config: AuthConfig())
   }
 
   private init(
     mode: Mode,
     isDismissable: Bool,
-    config: AuthIdentifierConfig
+    config: AuthConfig
   ) {
-    _authState = State(initialValue: AuthState(mode: mode))
+    _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissable = isDismissable
     self.config = config
   }
@@ -195,7 +193,7 @@ public struct AuthView: View {
         navigation.path = []
       }
     }
-    .onChange(of: config, initial: true) { _, newConfig in
+    .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
     }
     .taskOnce {
@@ -245,6 +243,19 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+  }
+
+  /// Sets unsafe metadata to attach when this auth flow creates a sign-up.
+  ///
+  /// This value is scoped to this `AuthView` instance and is only sent with sign-up creation
+  /// requests, including sign-in flows that transfer to sign-up.
+  ///
+  /// - Parameter metadata: The unsafe metadata to attach to created users.
+  /// - Returns: A view with the unsafe metadata configured.
+  public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
+    var config = config
+    config.unsafeMetadata = metadata
     return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
   }
 }

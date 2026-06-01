@@ -123,6 +123,7 @@ public struct Auth {
   //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
@@ -130,7 +131,8 @@ public struct Auth {
   public func signInWithOAuth(
     provider: OAuthProvider,
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: .oauth(provider),
@@ -139,7 +141,8 @@ public struct Auth {
     return try await signIn.authenticateWithOAuth(
       provider: provider,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -151,13 +154,22 @@ public struct Auth {
   //   - provider: The ID token provider (e.g., `.apple`).
   //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, transferable: Bool = true) async throws -> TransferFlowResult {
+  public func signInWithIdToken(
+    _ idToken: String,
+    provider: IDTokenProvider,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
-    let result = try await signIn.handleTransferFlow(transferable: transferable)
+    let result = try await signIn.handleTransferFlow(
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
     }
@@ -177,12 +189,14 @@ public struct Auth {
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
   public func signInWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let requestedScopes = Self.normalizedAppleScopes(
       requestedScopes,
@@ -199,11 +213,15 @@ public struct Auth {
         idToken,
         provider: .apple,
         firstName: credential.fullName?.givenName,
-        lastName: credential.fullName?.familyName
+        lastName: credential.fullName?.familyName,
+        unsafeMetadata: unsafeMetadata
       )
     } else {
       let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
-      let result = try await signIn.handleTransferFlow(transferable: transferable)
+      let result = try await signIn.handleTransferFlow(
+        transferable: transferable,
+        unsafeMetadata: unsafeMetadata
+      )
       if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
         throw error
       }
@@ -250,7 +268,7 @@ public struct Auth {
   /// such as launching the user's default browser. After this returns, read
   /// ``Verification/externalVerificationRedirectUrl`` from
   /// ``SignIn/firstFactorVerification`` to obtain the URL to open, then complete the flow
-  /// with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)`` after your app
+  /// with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:unsafeMetadata:)`` after your app
   /// receives the callback URL.
   ///
   /// - Parameters:
@@ -288,13 +306,15 @@ public struct Auth {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
@@ -303,7 +323,8 @@ public struct Auth {
     ))
     return try await signIn.authenticateWithEnterpriseSSO(
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -365,11 +386,17 @@ public struct Auth {
   /// - Parameters:
   ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
-  public func signUpWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func signUpWithOAuth(
+    provider: OAuthProvider,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
+      unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
@@ -398,12 +425,19 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
-  public func signUpWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+  public func signUpWithApple(
+    requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     // Delegate to the sign-in implementation which already handles the transfer flow.
-    try await signInWithApple(requestedScopes: requestedScopes)
+    try await signInWithApple(
+      requestedScopes: requestedScopes,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -414,14 +448,22 @@ public struct Auth {
   //   - provider: The ID token provider (e.g., `.apple`).
   //   - firstName: The user's first name (optional).
   //   - lastName: The user's last name (optional).
+  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signUpWithIdToken(_ idToken: String, provider: IDTokenProvider, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
+  public func signUpWithIdToken(
+    _ idToken: String,
+    provider: IDTokenProvider,
+    firstName: String? = nil,
+    lastName: String? = nil,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       firstName: firstName,
       lastName: lastName,
+      unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       token: idToken
     ))
@@ -434,13 +476,19 @@ public struct Auth {
   // - Parameters:
   //   - emailAddress: The user's enterprise email address.
   //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signUpWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func signUpWithEnterpriseSSO(
+    emailAddress: String,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       emailAddress: emailAddress,
+      unsafeMetadata: unsafeMetadata,
       strategy: .enterpriseSSO,
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
@@ -464,12 +512,15 @@ public struct Auth {
 
   /// Signs up with a ticket generated from the Backend API.
   ///
-  /// - Parameter ticket: The ticket string from the Backend API.
+  /// - Parameters:
+  ///   - ticket: The ticket string from the Backend API.
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `SignUp` object representing the sign-up attempt.
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
-  public func signUpWithTicket(_ ticket: String) async throws -> SignUp {
+  public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
     try await signUpService.create(params: .init(
+      unsafeMetadata: unsafeMetadata,
       ticket: ticket,
       strategy: .ticket
     ))

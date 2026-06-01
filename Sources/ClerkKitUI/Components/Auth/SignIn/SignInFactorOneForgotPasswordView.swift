@@ -155,9 +155,16 @@ extension SignInFactorOneForgotPasswordView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple(transferable: authState.transferable)
+          try await signIn.authenticateWithApple(
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
         } else {
-          try await signIn.authenticateWithOAuth(provider: provider, transferable: authState.transferable)
+          try await signIn.authenticateWithOAuth(
+            provider: provider,
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
         }
 
       switch result {

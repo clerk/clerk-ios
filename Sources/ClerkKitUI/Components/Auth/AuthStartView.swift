@@ -278,7 +278,11 @@ extension AuthStartView {
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
       if let lastUsedProvider = lastUsedAuth?.socialProvider {
-        SocialButton(provider: lastUsedProvider, transferable: authState.transferable) { result in
+        SocialButton(
+          provider: lastUsedProvider,
+          transferable: authState.transferable,
+          unsafeMetadata: authState.unsafeMetadata
+        ) { result in
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
@@ -290,7 +294,11 @@ extension AuthStartView {
       if !socialProvidersMinusLastUsed.isEmpty {
         SocialButtonLayout {
           ForEach(socialProvidersMinusLastUsed) { provider in
-            SocialButton(provider: provider, transferable: authState.transferable) { result in
+            SocialButton(
+              provider: provider,
+              transferable: authState.transferable,
+              unsafeMetadata: authState.unsafeMetadata
+            ) { result in
               handleTransferFlowResult(result)
             } onError: { error in
               generalError = error
@@ -326,7 +334,10 @@ extension AuthStartView {
       let signIn = try await clerk.auth.signIn(activeIdentifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO(transferable: authState.transferable)
+        let result = try await signIn.authenticateWithEnterpriseSSO(
+          transferable: authState.transferable,
+          unsafeMetadata: authState.unsafeMetadata
+        )
         handleTransferFlowResult(result)
         return
       }
@@ -354,11 +365,20 @@ extension AuthStartView {
 
   private func signUpParams() async throws -> SignUp {
     if phoneNumberInputIsActive {
-      try await clerk.auth.signUp(phoneNumber: authState.authStartPhoneNumber)
+      try await clerk.auth.signUp(
+        phoneNumber: authState.authStartPhoneNumber,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     } else if authState.authStartIdentifier.isEmailAddress {
-      try await clerk.auth.signUp(emailAddress: authState.authStartIdentifier)
+      try await clerk.auth.signUp(
+        emailAddress: authState.authStartIdentifier,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     } else {
-      try await clerk.auth.signUp(username: authState.authStartIdentifier)
+      try await clerk.auth.signUp(
+        username: authState.authStartIdentifier,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     }
   }
 

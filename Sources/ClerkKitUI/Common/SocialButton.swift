@@ -15,6 +15,7 @@ struct SocialButton: View {
 
   let provider: OAuthProvider
   let transferable: Bool
+  let unsafeMetadata: JSON?
   var action: (() async -> Void)?
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
@@ -64,30 +65,36 @@ struct SocialButton: View {
 
   init(
     provider: OAuthProvider,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
+    self.unsafeMetadata = unsafeMetadata
   }
 
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
+    unsafeMetadata: JSON? = nil,
     action: (() async -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
+    self.unsafeMetadata = unsafeMetadata
     self.action = action
   }
 
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
+    unsafeMetadata: JSON? = nil,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
     onError: ((Error) -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
+    self.unsafeMetadata = unsafeMetadata
     self.onSuccess = onSuccess
     self.onError = onError
   }
@@ -120,9 +127,16 @@ struct SocialButton: View {
 extension SocialButton {
   func defaultAction() async throws {
     let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple(transferable: transferable)
+      try await clerk.auth.signInWithApple(
+        transferable: transferable,
+        unsafeMetadata: unsafeMetadata
+      )
     } else {
-      try await clerk.auth.signInWithOAuth(provider: provider, transferable: transferable)
+      try await clerk.auth.signInWithOAuth(
+        provider: provider,
+        transferable: transferable,
+        unsafeMetadata: unsafeMetadata
+      )
     }
     onSuccess?(result)
   }
