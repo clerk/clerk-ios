@@ -79,32 +79,11 @@ extension View {
 
 private struct SecuredByClerkFooterModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
-  @State private var footerHeight: CGFloat = 0
 
   func body(content: Content) -> some View {
     content
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        if clerk.shouldShowSecuredByClerkFooter {
-          Color.clear
-            .frame(height: footerHeight)
-            .allowsHitTesting(false)
-        }
-      }
-      .overlay {
-        if clerk.shouldShowSecuredByClerkFooter {
-          VStack(spacing: 0) {
-            Spacer(minLength: 0)
-
-            SecuredByClerkFooter()
-              .onGeometryChange(for: CGFloat.self) { geometry in
-                geometry.size.height
-              } action: { newValue in
-                footerHeight = newValue
-              }
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-          .ignoresSafeArea(.keyboard, edges: .bottom)
-        }
+      .bottomTrackedFooter(isPresented: clerk.shouldShowSecuredByClerkFooter) {
+        SecuredByClerkFooter()
       }
   }
 }
