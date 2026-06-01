@@ -12,11 +12,13 @@ struct AuthStateConfigurationTests {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(true, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
 
     #expect(authState.authStartIdentifier == "stored@example.com")
     #expect(authState.authStartPhoneNumber == "15555550100")
+    #expect(authState.authStartPhoneNumberFieldIsActive)
   }
 
   @Test
@@ -26,9 +28,11 @@ struct AuthStateConfigurationTests {
 
     authState.authStartIdentifier = "edited@example.com"
     authState.authStartPhoneNumber = "16666660123"
+    authState.authStartPhoneNumberFieldIsActive = true
 
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == "edited@example.com")
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == "16666660123")
+    #expect(defaults.bool(forKey: AuthState.phoneNumberFieldIsActiveStorageKey))
   }
 
   @Test
@@ -36,6 +40,7 @@ struct AuthStateConfigurationTests {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(true, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthConfig(
@@ -44,7 +49,9 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == "seed@example.com")
+    #expect(!defaults.bool(forKey: AuthState.phoneNumberFieldIsActiveStorageKey))
   }
 
   @Test
@@ -52,6 +59,7 @@ struct AuthStateConfigurationTests {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(false, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
 
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthConfig(
@@ -60,6 +68,8 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartPhoneNumber == "+17777770123")
     #expect(authState.authStartIdentifier.isEmpty)
+    #expect(authState.authStartPhoneNumberFieldIsActive)
+    #expect(defaults.bool(forKey: AuthState.phoneNumberFieldIsActiveStorageKey))
   }
 
   @Test
@@ -67,6 +77,7 @@ struct AuthStateConfigurationTests {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(true, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
     LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
@@ -76,8 +87,10 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifier.isEmpty)
     #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
   }
 
@@ -91,9 +104,11 @@ struct AuthStateConfigurationTests {
 
     authState.authStartIdentifier = "new@example.com"
     authState.authStartPhoneNumber = "19999990123"
+    authState.authStartPhoneNumberFieldIsActive = true
 
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
   }
 
   @Test
@@ -101,6 +116,7 @@ struct AuthStateConfigurationTests {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(true, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
     LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
@@ -111,8 +127,33 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
+  }
+
+  @Test
+  func disablingPersistenceWithInitialPhoneNumberShowsButDoesNotStore() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(false, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
+    LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "+17777770123",
+      persistsIdentifiers: false
+    ))
+
+    #expect(authState.authStartPhoneNumber == "+17777770123")
+    #expect(authState.authStartIdentifier.isEmpty)
+    #expect(authState.authStartPhoneNumberFieldIsActive)
+    #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
+    #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
   }
 

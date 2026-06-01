@@ -38,6 +38,7 @@ final class AuthState {
     self.userDefaults = userDefaults
     authStartIdentifier = userDefaults.string(forKey: Self.identifierStorageKey) ?? ""
     authStartPhoneNumber = userDefaults.string(forKey: Self.phoneNumberStorageKey) ?? ""
+    authStartPhoneNumberFieldIsActive = userDefaults.bool(forKey: Self.phoneNumberFieldIsActiveStorageKey)
     configure(config)
   }
 
@@ -68,6 +69,14 @@ final class AuthState {
     }
   }
 
+  var authStartPhoneNumberFieldIsActive = false {
+    didSet {
+      if persistsIdentifiers {
+        userDefaults.set(authStartPhoneNumberFieldIsActive, forKey: Self.phoneNumberFieldIsActiveStorageKey)
+      }
+    }
+  }
+
   /// Applies auth flow configuration values.
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
@@ -77,20 +86,24 @@ final class AuthState {
     if !config.persistsIdentifiers {
       userDefaults.removeObject(forKey: Self.identifierStorageKey)
       userDefaults.removeObject(forKey: Self.phoneNumberStorageKey)
+      userDefaults.removeObject(forKey: Self.phoneNumberFieldIsActiveStorageKey)
       LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
     }
 
     if let identifier = config.initialIdentifier {
       if identifier.looksLikePhoneNumber {
+        authStartPhoneNumberFieldIsActive = true
         authStartPhoneNumber = identifier
         authStartIdentifier = ""
       } else {
+        authStartPhoneNumberFieldIsActive = false
         authStartIdentifier = identifier
         authStartPhoneNumber = ""
       }
     } else if !config.persistsIdentifiers {
       authStartIdentifier = ""
       authStartPhoneNumber = ""
+      authStartPhoneNumberFieldIsActive = false
     }
   }
 
@@ -118,6 +131,7 @@ final class AuthState {
 extension AuthState {
   static let identifierStorageKey = "authStartIdentifier"
   static let phoneNumberStorageKey = "authStartPhoneNumber"
+  static let phoneNumberFieldIsActiveStorageKey = "authStartPhoneNumberFieldIsActive"
 }
 
 #endif
