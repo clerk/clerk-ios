@@ -136,7 +136,7 @@ struct AuthStateConfigurationTests {
     LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
 
     let authState = AuthState(userDefaults: defaults)
-    authState.configure(AuthIdentifierConfig(
+    authState.configure(AuthConfig(
       initialIdentifier: "+17777770123",
       persistsIdentifiers: false
     ))
