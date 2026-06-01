@@ -314,52 +314,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signInApp)
   }
 
-  func testMultiMethodsEmailSignUpThenLinkedE2EOAuthSignInViaUseAnotherMethod() throws {
-    try skipLinkedE2EOAuthUnlessEnabled()
-
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    connectE2EOAuthProvider(in: signUpApp)
-
-    tap(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    tapE2EOAuthProvider(in: signInApp)
-    continueWebAuthenticationSessionIfNeeded(in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
   func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
     let publishableKey = try requiredPublishableKey(named: Self.phonePublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -719,8 +673,6 @@ extension E2EHostE2ETests {
     static let authStartPhoneNumber = "clerk.auth.start.phoneNumber"
     static let authStartContinue = "clerk.auth.start.continue"
     static let authStartIdentifierSwitcher = "clerk.auth.start.identifierSwitcher"
-    static let e2eOAuthProvider = "clerk.auth.socialProvider.oauth_custom_e2e_oauth_provider"
-    static let e2eOAuthProviderName = "E2E OAuth Provider"
     static let signUpCode = "clerk.auth.signUp.code"
     static let signUpEmailAddress = "clerk.auth.signUp.emailAddress"
     static let signUpUsername = "clerk.auth.signUp.username"
@@ -744,8 +696,6 @@ extension E2EHostE2ETests {
     static let pendingTasks = "e2e.auth.pendingTasks"
     static let userID = "e2e.auth.userID"
     static let cleanupComplete = "e2e.auth.cleanupComplete"
-    static let e2eOAuthConnected = "e2e.auth.e2eOAuthConnected"
-    static let connectE2EOAuthProvider = "e2e.auth.connectE2EOAuthProvider"
     static let signOut = "e2e.auth.signOut"
     static let deleteAccount = "e2e.auth.deleteAccount"
     static let dismissButton = "clerk.dismissButton"
@@ -1202,67 +1152,6 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
   }
 
-  private func connectE2EOAuthProvider(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    tap(E2EIdentifier.connectE2EOAuthProvider, in: app, file: file, line: line)
-    continueWebAuthenticationSessionIfNeeded(in: app)
-    XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.e2eOAuthConnected].waitForExistence(timeout: 45),
-      "Expected the E2E OAuth provider to connect to the signed-in user.",
-      file: file,
-      line: line
-    )
-  }
-
-  private func tapE2EOAuthProvider(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    let providerButton = app.buttons[E2EIdentifier.e2eOAuthProvider].firstMatch
-    if providerButton.waitForExistence(timeout: 5) {
-      providerButton.tap()
-      return
-    }
-
-    let providerNameButton = app.buttons.matching(
-      NSPredicate(format: "label CONTAINS[c] %@", E2EIdentifier.e2eOAuthProviderName)
-    ).firstMatch
-    XCTAssertTrue(
-      providerNameButton.waitForExistence(timeout: 30),
-      "Expected the E2E OAuth provider button.",
-      file: file,
-      line: line
-    )
-    providerNameButton.tap()
-  }
-
-  private func skipLinkedE2EOAuthUnlessEnabled() throws {
-    guard ProcessInfo.processInfo.environment["CLERK_E2E_ENABLE_LINKED_OAUTH"] == "1" else {
-      throw XCTSkip("Linked E2E OAuth is opt-in until the auth-multi-methods provider auto-redirect is stable.")
-    }
-  }
-
-  private func continueWebAuthenticationSessionIfNeeded(in app: XCUIApplication) {
-    let predicate = NSPredicate(format: "label == %@ AND enabled == true", "Continue")
-    let appContinueButton = app.buttons.matching(predicate).firstMatch
-    if appContinueButton.waitForExistence(timeout: 10) {
-      appContinueButton.tap()
-      return
-    }
-
-    let springboardContinueButton = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-      .buttons
-      .matching(predicate)
-      .firstMatch
-    if springboardContinueButton.waitForExistence(timeout: 2) {
-      springboardContinueButton.tap()
-    }
-  }
-
   private func waitForSignUpCodePrepared(
     in app: XCUIApplication,
     file: StaticString = #filePath,
@@ -1631,6 +1520,20 @@ extension E2EHostE2ETests {
     }
 
     element.tap()
+  }
+
+  private func dismissKeyboardIfPresent(in app: XCUIApplication) {
+    let keyboard = app.keyboards.firstMatch
+    guard keyboard.waitForExistence(timeout: 1) else { return }
+
+    let doneButton = keyboard.buttons["Done"].firstMatch
+    if doneButton.waitForExistence(timeout: 1), doneButton.isHittable {
+      doneButton.tap()
+    } else {
+      app.typeText("\n")
+    }
+
+    _ = keyboard.waitForNonExistence(timeout: 2)
   }
 
   private func waitForHittableElement(
@@ -2020,7 +1923,8 @@ extension E2EHostE2ETests {
   ) {
     enterText(newPassword, into: E2EIdentifier.resetPasswordNewPassword, in: app, file: file, line: line)
     enterText(newPassword, into: E2EIdentifier.resetPasswordConfirmPassword, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.resetPasswordSubmit, in: app, timeout: 30, file: file, line: line)
+    dismissKeyboardIfPresent(in: app)
+    tapWhenHittableAfterScrolling(E2EIdentifier.resetPasswordSubmit, in: app, timeout: 30, file: file, line: line)
   }
 
   private func currentUserID(

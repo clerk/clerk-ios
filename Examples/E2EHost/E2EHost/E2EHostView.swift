@@ -14,7 +14,6 @@ struct E2EHostView: View {
 
   @State private var authViewIsPresented = false
   @State private var cleanupDidComplete = false
-  @State private var e2eOAuthProviderDidConnect = false
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
@@ -63,16 +62,6 @@ struct E2EHostView: View {
       .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
 
       if clerk.session?.status == .active {
-        if e2eOAuthProviderDidConnect {
-          Text("E2E OAuth connected")
-            .accessibilityIdentifier(E2EIdentifiers.Auth.e2eOAuthConnected)
-        }
-
-        Button("Connect E2E OAuth Provider") {
-          connectE2EOAuthProvider()
-        }
-        .accessibilityIdentifier(E2EIdentifiers.Auth.connectE2EOAuthProvider)
-
         Button("Delete account", role: .destructive) {
           deleteAccount()
         }
@@ -144,20 +133,6 @@ struct E2EHostView: View {
     try? await clerk.auth.signOut()
     authViewIsPresented = false
     return true
-  }
-
-  private func connectE2EOAuthProvider() {
-    Task { @MainActor in
-      guard let user = clerk.user else { return }
-
-      do {
-        let account = try await user.createExternalAccount(provider: .custom("oauth_custom_e2e_oauth_provider"))
-        try await account.reauthorize()
-        e2eOAuthProviderDidConnect = true
-      } catch {
-        print("Failed to connect E2E OAuth provider: \(error)")
-      }
-    }
   }
 }
 
