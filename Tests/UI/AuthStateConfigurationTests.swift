@@ -128,6 +128,28 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func disablingPersistenceWithInitialPhoneNumberShowsButDoesNotStore() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(false, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
+    LastUsedAuth.storeIdentifierType(.email, userDefaults: defaults)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthIdentifierConfig(
+      initialIdentifier: "+17777770123",
+      persistsIdentifiers: false
+    ))
+
+    #expect(authState.authStartPhoneNumber == "+17777770123")
+    #expect(authState.authStartIdentifier.isEmpty)
+    #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
+    #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
+    #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
+  }
+
+  @Test
   func configurationStoresUnsafeMetadata() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
