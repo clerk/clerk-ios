@@ -92,9 +92,11 @@ final class AuthState {
 
     if let identifier = config.initialIdentifier {
       if identifier.looksLikePhoneNumber {
+        authStartPhoneNumberFieldIsActive = true
         authStartPhoneNumber = identifier
         authStartIdentifier = ""
       } else {
+        authStartPhoneNumberFieldIsActive = false
         authStartIdentifier = identifier
         authStartPhoneNumber = ""
       }
