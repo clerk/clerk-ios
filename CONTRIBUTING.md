@@ -220,11 +220,6 @@ If omitted, `CLERK_E2E_KEY_NAME` defaults to `auth-email-code-password`.
 Mobile auth examples include `auth-legal-consent`, `auth-multi-methods`, `auth-phone-code`, and `auth-username-password-user-model`.
 Session-task examples include `session-task-setup-mfa`, `session-task-choose-organization`, and `session-task-reset-password`.
 
-The linked custom OAuth E2EHost test is opt-in while its provider fixture is being stabilized:
-```bash
-CLERK_E2E_ENABLE_LINKED_OAUTH=1 make test-e2e
-```
-
 To choose a specific simulator:
 ```bash
 IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
