@@ -33,20 +33,12 @@ struct SecuredByClerkFooter: View {
 
   private let showBackground: Bool
 
-  private var showsFooter: Bool {
-    clerk.shouldShowDevelopmentModeWarning || showsSecuredByClerk
-  }
-
-  private var showsSecuredByClerk: Bool {
-    clerk.environment?.displayConfig.branded == true
-  }
-
   init(showBackground: Bool = true) {
     self.showBackground = showBackground
   }
 
   var body: some View {
-    if showsFooter {
+    if clerk.shouldShowSecuredByClerkFooter {
       VStack(spacing: 9) {
         SecuredByClerkView()
 
@@ -86,11 +78,19 @@ extension View {
 }
 
 private struct SecuredByClerkFooterModifier: ViewModifier {
+  @Environment(Clerk.self) private var clerk
+
   func body(content: Content) -> some View {
     content
-      .safeAreaInset(edge: .bottom, spacing: 0) {
+      .bottomTrackedFooter(isPresented: clerk.shouldShowSecuredByClerkFooter) {
         SecuredByClerkFooter()
       }
+  }
+}
+
+extension Clerk {
+  fileprivate var shouldShowSecuredByClerkFooter: Bool {
+    shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
   }
 }
 

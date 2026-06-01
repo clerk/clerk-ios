@@ -23,17 +23,14 @@ private struct DevelopmentModeBottomInsetModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .safeAreaInset(edge: .bottom, spacing: 0) {
-        if clerk.shouldShowDevelopmentModeWarning {
-          DevelopmentModeView()
-            .padding(.top, 16)
-            .frame(maxWidth: .infinity)
-            .background {
-              DevelopmentModeBackgroundView(background: background)
-                .ignoresSafeArea(.container, edges: .bottom)
-            }
-            .accessibilityElement(children: .combine)
-        }
+      .bottomTrackedFooter(isPresented: clerk.shouldShowDevelopmentModeWarning) {
+        DevelopmentModeView()
+          .padding(.top, 16)
+          .frame(maxWidth: .infinity)
+          .background {
+            DevelopmentModeBackgroundView(background: background)
+              .ignoresSafeArea(.container, edges: .bottom)
+          }
       }
   }
 }
