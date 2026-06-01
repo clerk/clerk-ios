@@ -1,0 +1,62 @@
+name: Notify Slack of release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify Slack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
+            exit 0
+          fi
+
+          release_url="$RELEASE_URL"
+          if [ -z "$release_url" ]; then
+            release_url="https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg release_url "$release_url" \
+            '{
+              text: "Clerk iOS SDK \($tag) has been released",
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: "*Clerk iOS SDK \($tag) has been released*"
+                  }
+                },
+                {
+                  type: "context",
+                  elements: [
+                    {
+                      type: "mrkdwn",
+                      text: "<\($release_url)|View the GitHub release>"
+                    }
+                  ]
+                }
+              ]
+            }')
+
+          curl --fail-with-body \
+            --request POST \
+            --header "Content-type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
