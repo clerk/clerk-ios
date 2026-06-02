@@ -44,17 +44,21 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// Pass `onManageOrganization` or `onCreateOrganization` to route those actions
-/// to app-owned screens instead of the default Clerk UI.
-public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
+/// With a custom trigger label:
+///
+/// ```swift
+/// OrganizationSwitcher {
+///   Text("Switch account")
+/// }
+/// ```
+public struct OrganizationSwitcher<Route: Hashable, LabelContent: View, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   private let hidePersonal: Bool
   private let displayMode: OrganizationSwitcherDisplayMode
   private let skipInvitationScreen: Bool
-  private let onManageOrganization: (@MainActor (OrganizationMembership) -> Void)?
-  private let onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?
+  private let customLabel: (() -> LabelContent)?
   private let customRows: [OrganizationProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
@@ -92,25 +96,39 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   ///   - displayMode: The visual presentation for the switcher trigger.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
-  ///   - onManageOrganization: A callback invoked when the manage organization action
-  ///     is selected. When provided, the switcher closes its sheet and calls this callback
-  ///     instead of presenting the default ``OrganizationProfileView``.
-  ///   - onCreateOrganization: A callback invoked when the create organization action
-  ///     is selected. When provided, the switcher closes its sheet and calls this callback
-  ///     instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     displayMode: OrganizationSwitcherDisplayMode = .normal,
-    skipInvitationScreen: Bool = false,
-    onManageOrganization: (@MainActor (OrganizationMembership) -> Void)? = nil,
-    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil
-  ) where Route == Never, Destination == EmptyView {
+    skipInvitationScreen: Bool = false
+  ) where Route == Never, LabelContent == EmptyView, Destination == EmptyView {
     self.init(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
-      onManageOrganization: onManageOrganization,
-      onCreateOrganization: onCreateOrganization,
+      customLabel: nil,
+      customRows: [],
+      customDestination: nil
+    )
+  }
+
+  /// Creates a new organization switcher with a custom trigger label.
+  ///
+  /// - Parameters:
+  ///   - hidePersonal: Whether the personal account option should be hidden even when
+  ///     personal account selection is allowed.
+  ///   - skipInvitationScreen: Whether creating an organization should skip the
+  ///     post-create invite step.
+  ///   - label: The custom content shown inside the switcher button.
+  public init(
+    hidePersonal: Bool = false,
+    skipInvitationScreen: Bool = false,
+    @ViewBuilder label: @escaping () -> LabelContent
+  ) where Route == Never, Destination == EmptyView {
+    self.init(
+      hidePersonal: hidePersonal,
+      displayMode: .normal,
+      skipInvitationScreen: skipInvitationScreen,
+      customLabel: label,
       customRows: [],
       customDestination: nil
     )
@@ -120,16 +138,14 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
     hidePersonal: Bool,
     displayMode: OrganizationSwitcherDisplayMode,
     skipInvitationScreen: Bool,
-    onManageOrganization: (@MainActor (OrganizationMembership) -> Void)?,
-    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?,
+    customLabel: (() -> LabelContent)?,
     customRows: [OrganizationProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.hidePersonal = hidePersonal
     self.displayMode = displayMode
     self.skipInvitationScreen = skipInvitationScreen
-    self.onManageOrganization = onManageOrganization
-    self.onCreateOrganization = onCreateOrganization
+    self.customLabel = customLabel
     self.customRows = customRows
     self.customDestination = customDestination
   }
@@ -144,11 +160,15 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
             presentedSheet = .accountList
           }
         } label: {
-          OrganizationSwitcherLabel(
-            organization: activeOrganization,
-            user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil,
-            displayMode: displayMode
-          )
+          if let customLabel {
+            customLabel()
+          } else {
+            OrganizationSwitcherLabel(
+              organization: activeOrganization,
+              user: activeOrganization == nil && shouldShowPersonalAccount ? user : nil,
+              displayMode: displayMode
+            )
+          }
         }
         .buttonStyle(.plain)
         .tint(theme.colors.primary)
@@ -182,7 +202,7 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
         organization: organization,
         roleName: activeMembership?.roleName,
         onManageOrganization: {
-          handleManageOrganization()
+          presentedSheet = .profile
         },
         onSwitchAccount: {
           presentedSheet = .accountList
@@ -192,7 +212,6 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       OrganizationListView(
         hidePersonal: hidePersonal,
         skipInvitationScreen: skipInvitationScreen,
-        onCreateOrganization: onCreateOrganization == nil ? nil : handleCreateOrganization,
         title: "Switch account",
         subtitle: nil
       )
@@ -205,41 +224,18 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       )
     }
   }
-
-  @MainActor
-  private func handleManageOrganization() {
-    guard let onManageOrganization else {
-      presentedSheet = .profile
-      return
-    }
-
-    guard let activeMembership else {
-      presentedSheet = .profile
-      return
-    }
-
-    presentedSheet = nil
-    onManageOrganization(activeMembership)
-  }
-
-  @MainActor
-  private func handleCreateOrganization(creationDefaults: OrganizationCreationDefaults?) {
-    presentedSheet = nil
-    onCreateOrganization?(creationDefaults)
-  }
 }
 
 extension OrganizationSwitcher {
   /// Replaces the custom rows shown in the presented organization profile.
   public func organizationProfileRows(
     _ rows: [OrganizationProfileCustomRow<Route>]
-  ) -> OrganizationSwitcher<Route, Destination> {
-    OrganizationSwitcher<Route, Destination>(
+  ) -> OrganizationSwitcher<Route, LabelContent, Destination> {
+    OrganizationSwitcher<Route, LabelContent, Destination>(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
-      onManageOrganization: onManageOrganization,
-      onCreateOrganization: onCreateOrganization,
+      customLabel: customLabel,
       customRows: rows,
       customDestination: customDestination
     )
@@ -250,13 +246,12 @@ extension OrganizationSwitcher where Destination == EmptyView {
   /// Sets the custom destination builder used by custom rows in the presented organization profile.
   public func organizationProfileDestination<NewDestination: View>(
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
-  ) -> OrganizationSwitcher<Route, NewDestination> {
-    OrganizationSwitcher<Route, NewDestination>(
+  ) -> OrganizationSwitcher<Route, LabelContent, NewDestination> {
+    OrganizationSwitcher<Route, LabelContent, NewDestination>(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
-      onManageOrganization: onManageOrganization,
-      onCreateOrganization: onCreateOrganization,
+      customLabel: customLabel,
       customRows: customRows,
       customDestination: destination
     )
@@ -267,13 +262,12 @@ extension OrganizationSwitcher where Route == Never, Destination == EmptyView {
   /// Sets the custom rows shown in the presented organization profile.
   public func organizationProfileRows<NewRoute: Hashable>(
     _ rows: [OrganizationProfileCustomRow<NewRoute>]
-  ) -> OrganizationSwitcher<NewRoute, EmptyView> {
-    OrganizationSwitcher<NewRoute, EmptyView>(
+  ) -> OrganizationSwitcher<NewRoute, LabelContent, EmptyView> {
+    OrganizationSwitcher<NewRoute, LabelContent, EmptyView>(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
-      onManageOrganization: onManageOrganization,
-      onCreateOrganization: onCreateOrganization,
+      customLabel: customLabel,
       customRows: rows,
       customDestination: nil
     )
@@ -283,13 +277,12 @@ extension OrganizationSwitcher where Route == Never, Destination == EmptyView {
   public func organizationProfileDestination<NewRoute: Hashable, NewDestination: View>(
     for _: NewRoute.Type = NewRoute.self,
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
-  ) -> OrganizationSwitcher<NewRoute, NewDestination> {
-    OrganizationSwitcher<NewRoute, NewDestination>(
+  ) -> OrganizationSwitcher<NewRoute, LabelContent, NewDestination> {
+    OrganizationSwitcher<NewRoute, LabelContent, NewDestination>(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
-      onManageOrganization: onManageOrganization,
-      onCreateOrganization: onCreateOrganization,
+      customLabel: customLabel,
       customRows: [],
       customDestination: destination
     )
