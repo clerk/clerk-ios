@@ -1205,6 +1205,7 @@ extension E2EHostE2ETests {
   ) {
     guard tapInput(identifier, in: app, file: file, line: line) else { return }
     app.typeText(text)
+    dismissKeyboardTutorialIfPresent()
   }
 
   private func enterVerificationCode(
@@ -1731,6 +1732,18 @@ extension E2EHostE2ETests {
         return
       }
     }
+  }
+
+  private func dismissKeyboardTutorialIfPresent() {
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let tutorialMessage = springboard.staticTexts
+      .matching(NSPredicate(format: "label CONTAINS %@", "Speed up your typing"))
+      .firstMatch
+    let continueButton = springboard.buttons["Continue"].firstMatch
+    guard tutorialMessage.waitForExistence(timeout: 0.3), waitForElementHittable(continueButton, timeout: 2) else { return }
+
+    continueButton.tap()
+    _ = continueButton.waitForNonExistence(timeout: 2)
   }
 
   private func waitForExistingElement(in elements: [XCUIElement], timeout: TimeInterval) -> XCUIElement? {
