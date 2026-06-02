@@ -89,6 +89,10 @@ public struct OrganizationListView: View {
       && user?.createOrganizationEnabled == true
   }
 
+  private var shouldShowContentHeader: Bool {
+    subtitle != nil
+  }
+
   /// Creates a new organization list view.
   ///
   /// - Parameters:
@@ -189,7 +193,7 @@ public struct OrganizationListView: View {
         }
       }
 
-      if !accountList.isLoading, !shouldStartCreateOrganizationFlow {
+      if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
         ToolbarItem(placement: .principal) {
           Text(title, bundle: .module)
             .font(theme.fonts.headline)
@@ -202,13 +206,8 @@ public struct OrganizationListView: View {
   private var listContent: some View {
     ScrollView {
       VStack(spacing: 32) {
-        if let subtitle {
-          Text(subtitle, bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.mutedForeground)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 16)
+        if shouldShowContentHeader {
+          accountListHeader
         }
 
         OrganizationAccountListSections(
@@ -229,6 +228,18 @@ public struct OrganizationListView: View {
       .padding(.top, 16)
     }
     .securedByClerkFooter()
+  }
+
+  private var accountListHeader: some View {
+    VStack(spacing: 8) {
+      HeaderView(style: .title, text: title)
+
+      if let subtitle {
+        HeaderView(style: .subtitle, text: subtitle)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+    .padding(.horizontal, 16)
   }
 
   private var createOrganizationContent: some View {
@@ -291,10 +302,11 @@ public struct OrganizationListView: View {
   }
 
   private func completeCreateOrganizationFlow() {
-    if isDismissable || shouldStartCreateOrganizationFlow {
+    if isDismissable {
       dismiss()
     } else {
       popCreateOrganizationFlow()
+      Task { await fetchOrganizationResources() }
     }
   }
 
