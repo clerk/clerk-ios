@@ -491,6 +491,7 @@ final class E2EHostE2ETests: XCTestCase {
 
     try completeAuthenticatorAppSetup(in: signUpApp)
     waitForSessionActive(in: signUpApp)
+    dismissAuthSheetIfNeeded(in: signUpApp)
 
     tap(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
@@ -519,6 +520,7 @@ final class E2EHostE2ETests: XCTestCase {
 
     completeSmsCodeMfaSetup(phoneNumber: phoneNumber, in: signUpApp)
     waitForSessionActive(in: signUpApp)
+    dismissAuthSheetIfNeeded(in: signUpApp)
 
     tap(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
@@ -1224,7 +1226,7 @@ extension E2EHostE2ETests {
     )
     XCTAssertTrue(
       waitForInputValue(in: input, toHaveSuffix: identifier, timeout: 5),
-      "Expected auth start identifier input to contain '\(identifier)'. Actual value: '\(inputValue(in: input))'.",
+      "Expected auth start identifier input to have suffix '\(identifier)'. Actual value: '\(inputValue(in: input))'.",
       file: file,
       line: line
     )
@@ -1913,7 +1915,7 @@ extension E2EHostE2ETests {
     let code = try Self.currentTOTPCode(secret: secret)
     enterVerificationCode(code, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
 
-    continueBackupCodesIfPresent(in: app)
+    continueBackupCodesIfPresent(in: app, file: file, line: line)
   }
 
   private func completeSmsCodeMfaSetup(
@@ -1933,14 +1935,43 @@ extension E2EHostE2ETests {
     )
     enterVerificationCode(verificationCode, into: E2EIdentifier.smsCode, in: app, file: file, line: line)
 
-    continueBackupCodesIfPresent(in: app)
+    continueBackupCodesIfPresent(in: app, file: file, line: line)
   }
 
-  private func continueBackupCodesIfPresent(in app: XCUIApplication) {
+  private func continueBackupCodesIfPresent(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
     let backupCodesContinue = app.descendants(matching: .any)[E2EIdentifier.backupCodesContinue]
     if backupCodesContinue.waitForExistence(timeout: 10) {
-      backupCodesContinue.tap()
+      tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
     }
+  }
+
+  private func dismissAuthSheetIfNeeded(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    if hittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app) != nil {
+      return
+    }
+
+    if let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) {
+      dismissButton.tap()
+    } else {
+      let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+      let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
+      start.press(forDuration: 0.1, thenDragTo: end)
+    }
+
+    XCTAssertNotNil(
+      waitForHittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app, timeout: 10),
+      "Expected the auth sheet to dismiss after completing the session task.",
+      file: file,
+      line: line
+    )
   }
 
   private func completeChooseOrganizationByAcceptingInvitation(
