@@ -92,7 +92,7 @@ final class E2EHostE2ETests: XCTestCase {
     guard let signInApp = app else { return }
 
     openAuth(in: signInApp)
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: signInApp)
+    enterAuthStartIdentifier(email, in: signInApp)
     tap(E2EIdentifier.authStartContinue, in: signInApp)
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
@@ -301,7 +301,7 @@ final class E2EHostE2ETests: XCTestCase {
     guard let signInApp = app else { return }
 
     openAuth(in: signInApp)
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: signInApp)
+    enterAuthStartIdentifier(email, in: signInApp)
     tap(E2EIdentifier.authStartContinue, in: signInApp)
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
     tap(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
@@ -434,7 +434,7 @@ final class E2EHostE2ETests: XCTestCase {
     guard let signInApp = app else { return }
 
     openAuth(in: signInApp)
-    enterText(username, into: E2EIdentifier.authStartIdentifier, in: signInApp)
+    enterAuthStartIdentifier(username, in: signInApp)
     tap(E2EIdentifier.authStartContinue, in: signInApp)
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
@@ -615,7 +615,7 @@ final class E2EHostE2ETests: XCTestCase {
     guard let signInApp = app else { return }
 
     openAuth(in: signInApp)
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: signInApp)
+    enterAuthStartIdentifier(email, in: signInApp)
     tap(E2EIdentifier.authStartContinue, in: signInApp)
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
@@ -1003,7 +1003,7 @@ extension E2EHostE2ETests {
   }
 
   private func completeEmailCodeSignUp(email: String, in app: XCUIApplication) {
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: app)
+    enterAuthStartIdentifier(email, in: app)
     tap(E2EIdentifier.authStartContinue, in: app)
     waitForSignUpCodePrepared(in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
@@ -1011,7 +1011,7 @@ extension E2EHostE2ETests {
   }
 
   private func completePasswordSignIn(email: String, in app: XCUIApplication) {
-    enterText(email, into: E2EIdentifier.authStartIdentifier, in: app)
+    enterAuthStartIdentifier(email, in: app)
     tap(E2EIdentifier.authStartContinue, in: app)
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: app)
     tap(E2EIdentifier.signInContinue, in: app)
@@ -1028,7 +1028,7 @@ extension E2EHostE2ETests {
   }
 
   private func completeUsernamePasswordUserModelSignUp(username: String, in app: XCUIApplication) {
-    enterText(username, into: E2EIdentifier.authStartIdentifier, in: app)
+    enterAuthStartIdentifier(username, in: app)
     tap(E2EIdentifier.authStartContinue, in: app)
     completeUsernameCollectionIfNeeded(username: username, in: app)
     completePasswordCollectionIfNeeded(in: app)
@@ -1205,6 +1205,31 @@ extension E2EHostE2ETests {
   ) {
     guard tapInput(identifier, in: app, file: file, line: line) else { return }
     app.typeText(text)
+  }
+
+  private func enterAuthStartIdentifier(
+    _ identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    enterText(identifier, into: E2EIdentifier.authStartIdentifier, in: app, file: file, line: line)
+
+    let input = app.textFields[E2EIdentifier.authStartIdentifier].firstMatch
+    XCTAssertTrue(
+      input.waitForExistence(timeout: 5),
+      "Expected focused auth start identifier input.",
+      file: file,
+      line: line
+    )
+    XCTAssertTrue(
+      waitForInputValue(in: input, toHaveSuffix: identifier, timeout: 5),
+      "Expected auth start identifier input to contain '\(identifier)'. Actual value: '\(inputValue(in: input))'.",
+      file: file,
+      line: line
+    )
+
+    dismissKeyboardIfPresent(in: app)
   }
 
   private func enterVerificationCode(
@@ -1394,6 +1419,27 @@ extension E2EHostE2ETests {
     guard element.exists else { return false }
 
     return inputValue(in: element).hasPrefix(expectedPrefix)
+  }
+
+  private func waitForInputValue(
+    in element: XCUIElement,
+    toHaveSuffix expectedSuffix: String,
+    timeout: TimeInterval
+  ) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      guard element.exists else { return false }
+
+      if inputValue(in: element).hasSuffix(expectedSuffix) {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+    }
+
+    guard element.exists else { return false }
+
+    return inputValue(in: element).hasSuffix(expectedSuffix)
   }
 
   private func inputValue(in element: XCUIElement) -> String {
