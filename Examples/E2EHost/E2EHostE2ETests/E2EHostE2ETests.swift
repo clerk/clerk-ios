@@ -1740,7 +1740,7 @@ extension E2EHostE2ETests {
       .matching(NSPredicate(format: "label CONTAINS %@", "Speed up your typing"))
       .firstMatch
     let continueButton = springboard.buttons["Continue"].firstMatch
-    guard tutorialMessage.waitForExistence(timeout: 0.3), continueButton.isHittable else { return }
+    guard tutorialMessage.waitForExistence(timeout: 0.3), waitForElementHittable(continueButton, timeout: 2) else { return }
 
     continueButton.tap()
     _ = continueButton.waitForNonExistence(timeout: 2)
