@@ -113,7 +113,9 @@ extension OrganizationProfileActionConfirmationView {
         try await organization.destroy()
       }
 
-      builtInRouter.dismiss(.exitOrganizationProfile)
+      if clerk.organization == nil {
+        builtInRouter.dismiss(.exitOrganizationProfile)
+      }
       dismiss()
     } catch {
       self.error = error
