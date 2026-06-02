@@ -44,7 +44,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// Provide `onManageOrganization` or `onCreateOrganization` to route those actions
+/// Pass `onManageOrganization` or `onCreateOrganization` to route those actions
 /// to app-owned screens instead of the default Clerk UI.
 public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
@@ -92,10 +92,12 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   ///   - displayMode: The visual presentation for the switcher trigger.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
-  ///   - onManageOrganization: Optional callback called when the manage organization
-  ///     action is selected. When provided, the default organization profile is not shown.
-  ///   - onCreateOrganization: Optional callback called when the create organization
-  ///     action is selected. When provided, the default create organization flow is not shown.
+  ///   - onManageOrganization: A callback invoked when the manage organization action
+  ///     is selected. When provided, the switcher closes its sheet and calls this callback
+  ///     instead of presenting the default ``OrganizationProfileView``.
+  ///   - onCreateOrganization: A callback invoked when the create organization action
+  ///     is selected. When provided, the switcher closes its sheet and calls this callback
+  ///     instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     displayMode: OrganizationSwitcherDisplayMode = .normal,
@@ -179,7 +181,7 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       OrganizationSwitcherSheet(
         organization: organization,
         roleName: activeMembership?.roleName,
-        onManage: {
+        onManageOrganization: {
           handleManageOrganization()
         },
         onSwitchAccount: {

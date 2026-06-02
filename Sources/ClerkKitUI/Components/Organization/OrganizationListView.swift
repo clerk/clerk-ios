@@ -106,9 +106,9 @@ public struct OrganizationListView: View {
   ///     a parent path when the view is hosted inside your own `NavigationStack`.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
-  ///   - onCreateOrganization: Optional callback called when the create organization
-  ///     action is selected. When provided, the callback receives the latest creation
-  ///     defaults and the default create organization flow is not shown.
+  ///   - onCreateOrganization: A callback invoked when the create organization row is
+  ///     selected. When provided, the list calls this callback with the latest creation
+  ///     defaults instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     isDismissable: Bool = true,

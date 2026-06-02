@@ -30,7 +30,7 @@ import SwiftUI
 ///         OrganizationSwitcherSheet(
 ///           organization: organization,
 ///           roleName: clerk.organizationMembership?.roleName,
-///           onManage: { presentedSheet = .profile },
+///           onManageOrganization: { presentedSheet = .profile },
 ///           onSwitchAccount: { presentedSheet = .accountList }
 ///         )
 ///       case .accountList:
@@ -58,7 +58,7 @@ public struct OrganizationSwitcherSheet: View {
 
   private let organization: Organization
   private let roleName: String?
-  private let onManage: () -> Void
+  private let onManageOrganization: () -> Void
   private let onSwitchAccount: () -> Void
 
   @State private var contentHeight: CGFloat = 220
@@ -68,17 +68,17 @@ public struct OrganizationSwitcherSheet: View {
   /// - Parameters:
   ///   - organization: The active organization to display.
   ///   - roleName: The current user's role name in the active organization.
-  ///   - onManage: Called when the manage action is selected.
+  ///   - onManageOrganization: Called when the manage organization action is selected.
   ///   - onSwitchAccount: Called when the switch account action is selected.
   public init(
     organization: Organization,
     roleName: String?,
-    onManage: @escaping () -> Void,
+    onManageOrganization: @escaping () -> Void,
     onSwitchAccount: @escaping () -> Void
   ) {
     self.organization = organization
     self.roleName = roleName
-    self.onManage = onManage
+    self.onManageOrganization = onManageOrganization
     self.onSwitchAccount = onSwitchAccount
   }
 
@@ -90,7 +90,7 @@ public struct OrganizationSwitcherSheet: View {
           Divider()
 
           Button {
-            onManage()
+            onManageOrganization()
           } label: {
             UserProfileRowView(icon: "icon-cog", text: "Manage")
           }
@@ -174,7 +174,7 @@ public struct OrganizationSwitcherSheet: View {
   OrganizationSwitcherSheet(
     organization: .mock,
     roleName: "Admin",
-    onManage: {},
+    onManageOrganization: {},
     onSwitchAccount: {}
   )
   .environment(\.clerkTheme, .clerk)
