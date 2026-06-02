@@ -222,6 +222,17 @@ test-e2e:
 	destination="$(IOS_SIMULATOR_DESTINATION)"; \
 	if [ -n "$$destination" ]; then \
 		simulator_id="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)id=([0-9A-F-]{36})(,.*|$$).*/\2/p')"; \
+		if [ -z "$$simulator_id" ]; then \
+			simulator_name="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)name=([^,]+)(,.*|$$).*/\2/p')"; \
+			if [ -n "$$simulator_name" ]; then \
+				simulator_id="$$(xcrun simctl list devices available -j | ruby -rjson -e 'target = ARGV.fetch(0).downcase; candidates = []; JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|; version = runtime[/SimRuntime[.]iOS-(.*)$$/, 1]; next unless version; version_parts = version.split("-").map(&:to_i); devices.each do |device|; next unless device["isAvailable"] && device["name"].downcase == target; candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]; end; end; selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }; puts selected[2] if selected' "$$simulator_name")"; \
+				if [ -z "$$simulator_id" ]; then \
+					echo "❌ Unable to find an available iOS simulator named '$$simulator_name'."; \
+					exit 1; \
+				fi; \
+				destination="platform=iOS Simulator,id=$$simulator_id"; \
+			fi; \
+		fi; \
 	fi; \
 	if [ -z "$$destination" ]; then \
 		available_devices="$$(xcrun simctl list devices available)"; \
