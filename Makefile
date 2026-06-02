@@ -237,9 +237,11 @@ test-e2e:
 	mkdir -p "$$(dirname "$$result_bundle_path")"; \
 	only_testing="$(E2E_ONLY_TESTING)"; \
 	only_testing_flags=""; \
+	set -f; \
 	for test_identifier in $$only_testing; do \
 		only_testing_flags="$$only_testing_flags -only-testing:$$test_identifier"; \
 	done; \
+	set +f; \
 	if [ -z "$$only_testing_flags" ]; then \
 		echo "❌ E2E_ONLY_TESTING must contain at least one test identifier."; \
 		exit 1; \
