@@ -121,9 +121,44 @@ jobs:
         run: make test-ui
 
   test-e2e:
-    name: Run E2EHost tests on iOS
+    name: Run E2EHost tests on iOS (${{ matrix.shard }})
     needs: format-and-lint
+    if: inputs.run_integration_tests
     runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: auth-email
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpThenPasswordSignIn()
+              E2EHostE2ETests/E2EHostE2ETests/testMultiMethodsEmailSignUpThenEmailCodeSignInViaUseAnotherMethod()
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpCompletesRequiredLegalConsent()
+          - shard: auth-phone
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpThenPhoneCodeSignIn()
+              E2EHostE2ETests/E2EHostE2ETests/testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod()
+          - shard: auth-username-cleanup
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testUsernamePasswordSignUpThenUsernamePasswordSignInWithRequiredUserModelFields()
+              E2EHostE2ETests/E2EHostE2ETests/testInAppCleanupDeletesPendingUser()
+          - shard: user-profile-security
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityChangesPassword()
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithAuthenticatorApp()
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithSmsCode()
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityDeletesAccount()
+          - shard: session-tasks
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup()
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup()
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskChooseOrganizationSignUpAcceptsInvitationAndSelectsOrganization()
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskChooseOrganizationSignUpCreatesOrganization()
+          - shard: account-reset
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileAddsAccountThenSwitchesAccounts()
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskResetPasswordSignInCompletesPasswordReset()
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -142,12 +177,7 @@ jobs:
           key: swiftpm-e2e-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-e2e-
 
-      - name: Skip E2E tests
-        if: ${{ !inputs.run_integration_tests }}
-        run: echo "E2EHost tests run only when run_integration_tests is true."
-
       - name: Setup E2E test keys
-        if: inputs.run_integration_tests
         env:
           CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
         run: |
@@ -163,7 +193,6 @@ jobs:
           echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
 
       - name: Validate E2E test keys
-        if: inputs.run_integration_tests
         env:
           CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
         run: |
@@ -203,30 +232,52 @@ jobs:
           echo "✅ Required E2E test keys are configured"
 
       - name: Run E2EHost tests
-        if: inputs.run_integration_tests
         env:
           CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
+          E2E_ONLY_TESTING: ${{ matrix.only_testing }}
+          E2E_RESULT_BUNDLE_PATH: build/reports/E2EHost-${{ matrix.shard }}.xcresult
         run: |
           set -euo pipefail
           make test-e2e
+
+      - name: Summarize E2EHost timings
+        if: always()
+        env:
+          E2E_RESULT_BUNDLE_PATH: build/reports/E2EHost-${{ matrix.shard }}.xcresult
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "$E2E_RESULT_BUNDLE_PATH" ]; then
+            echo "No E2EHost result bundle found at $E2E_RESULT_BUNDLE_PATH."
+            exit 0
+          fi
+
+          {
+            echo "### E2EHost timings (${{ matrix.shard }})"
+            echo
+            echo "| Test | Result | Duration |"
+            echo "| --- | --- | ---: |"
+            xcrun xcresulttool get test-results tests --path "$E2E_RESULT_BUNDLE_PATH" --format json \
+              | jq -r '.. | objects | select(.nodeType? == "Test Case") | "| `\(.name)` | \(.result // "") | \(((.durationInSeconds // 0) * 10 | round / 10))s |"'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload E2EHost result bundle
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: E2EHost.xcresult
-          path: build/reports/E2EHost.xcresult
+          name: E2EHost-${{ matrix.shard }}.xcresult
+          path: build/reports/E2EHost-${{ matrix.shard }}.xcresult
           if-no-files-found: ignore
 
       - name: Cleanup E2E test keys
-        if: always() && inputs.run_integration_tests
+        if: always()
         run: |
           rm -f .keys.json
           echo "✅ Cleaned up .keys.json"
 
   build:
     name: Build ${{ matrix.platform }}
-    needs: [test, test-ui, test-e2e]
+    needs: [test, test-ui]
     runs-on: macos-latest
     strategy:
       matrix:

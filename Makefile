@@ -4,6 +4,8 @@ SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 IOS_SIMULATOR_DESTINATION ?=
 CLERK_E2E_KEY_NAME ?= auth-email-code-password
+E2E_ONLY_TESTING ?= E2EHostE2ETests
+E2E_RESULT_BUNDLE_PATH ?= build/reports/E2EHost.xcresult
 
 
 # Default target
@@ -23,6 +25,7 @@ help:
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
 	@echo "      CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e"
+	@echo "      E2E_ONLY_TESTING='E2EHostE2ETests/E2EHostE2ETests/testName()' make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
 	@echo "  make update-swiftformat - Update pinned SwiftFormat to the latest release"
@@ -229,13 +232,26 @@ test-e2e:
 		exit 1; \
 	fi; \
 	echo "Using simulator destination: $$destination"; \
-	rm -rf build/reports/E2EHost.xcresult; \
+	result_bundle_path="$(E2E_RESULT_BUNDLE_PATH)"; \
+	rm -rf "$$result_bundle_path"; \
+	mkdir -p "$$(dirname "$$result_bundle_path")"; \
+	only_testing="$(E2E_ONLY_TESTING)"; \
+	only_testing_flags=""; \
+	set -f; \
+	for test_identifier in $$only_testing; do \
+		only_testing_flags="$$only_testing_flags -only-testing:$$test_identifier"; \
+	done; \
+	set +f; \
+	if [ -z "$$only_testing_flags" ]; then \
+		echo "❌ E2E_ONLY_TESTING must contain at least one test identifier."; \
+		exit 1; \
+	fi; \
 	printf '%s' "$$publishable_key" > build/reports/E2EHostPublishableKey.txt; \
 	printf '%s' "$$key_name" > build/reports/E2EHostPublishableKeyName.txt; \
 	chmod 600 build/reports/E2EHostPublishableKey.txt; \
 	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -only-testing:E2EHostE2ETests -resultBundlePath build/reports/E2EHost.xcresult
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path"
 	@echo "✅ E2EHost tests completed!"
 
 # Run only integration tests
