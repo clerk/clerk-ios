@@ -1205,7 +1205,6 @@ extension E2EHostE2ETests {
   ) {
     guard tapInput(identifier, in: app, file: file, line: line) else { return }
     app.typeText(text)
-    dismissKeyboardTutorialIfPresent()
   }
 
   private func enterVerificationCode(
@@ -1430,7 +1429,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     let element = app.descendants(matching: .any)[identifier]
-    guard waitForElementHittableWhileDismissingKeyboardTutorial(element, timeout: 30) else {
+    guard waitForElementHittable(element, timeout: 30) else {
       XCTFail("Expected tappable element '\(identifier)' to become hittable.", file: file, line: line)
       return
     }
@@ -1607,23 +1606,6 @@ extension E2EHostE2ETests {
     return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
   }
 
-  private func waitForElementHittableWhileDismissingKeyboardTutorial(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-    let deadline = Date().addingTimeInterval(timeout)
-    repeat {
-      let elementTimeout = min(2, max(0, deadline.timeIntervalSinceNow))
-      if elementTimeout > 0, waitForElementHittable(element, timeout: elementTimeout) {
-        return true
-      }
-
-      let tutorialTimeout = min(1, max(0, deadline.timeIntervalSinceNow))
-      if tutorialTimeout > 0 {
-        dismissKeyboardTutorialIfPresent(timeout: tutorialTimeout)
-      }
-    } while Date() < deadline
-
-    return element.exists && element.isEnabled && element.isHittable
-  }
-
   private func waitForSignedIn(
     in app: XCUIApplication,
     file: StaticString = #filePath,
@@ -1749,18 +1731,6 @@ extension E2EHostE2ETests {
         return
       }
     }
-  }
-
-  private func dismissKeyboardTutorialIfPresent(timeout: TimeInterval = 0.3) {
-    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-    let tutorialMessage = springboard.staticTexts
-      .matching(NSPredicate(format: "label CONTAINS %@", "Speed up your typing"))
-      .firstMatch
-    let continueButton = springboard.buttons["Continue"].firstMatch
-    guard tutorialMessage.waitForExistence(timeout: timeout), waitForElementHittable(continueButton, timeout: 2) else { return }
-
-    continueButton.tap()
-    _ = continueButton.waitForNonExistence(timeout: 2)
   }
 
   private func waitForExistingElement(in elements: [XCUIElement], timeout: TimeInterval) -> XCUIElement? {

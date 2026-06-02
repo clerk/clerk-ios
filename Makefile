@@ -218,7 +218,11 @@ test-e2e:
 		exit 1; \
 	fi; \
 	echo "Using E2E test key: $$key_name"; \
+	simulator_id=""; \
 	destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -n "$$destination" ]; then \
+		simulator_id="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)id=([0-9A-F-]{36})(,.*|$$).*/\2/p')"; \
+	fi; \
 	if [ -z "$$destination" ]; then \
 		available_devices="$$(xcrun simctl list devices available)"; \
 		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$$/\2/p' | head -n1)"; \
@@ -232,6 +236,14 @@ test-e2e:
 		exit 1; \
 	fi; \
 	echo "Using simulator destination: $$destination"; \
+	if [ -n "$$simulator_id" ]; then \
+		echo "Preparing simulator keyboard preferences..."; \
+		xcrun simctl boot "$$simulator_id" >/dev/null 2>&1 || true; \
+		xcrun simctl bootstatus "$$simulator_id" -b >/dev/null; \
+		xcrun simctl spawn "$$simulator_id" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES; \
+	else \
+		echo "Skipping simulator keyboard preference setup; destination does not include an explicit simulator id."; \
+	fi; \
 	result_bundle_path="$(E2E_RESULT_BUNDLE_PATH)"; \
 	rm -rf "$$result_bundle_path"; \
 	mkdir -p "$$(dirname "$$result_bundle_path")"; \
