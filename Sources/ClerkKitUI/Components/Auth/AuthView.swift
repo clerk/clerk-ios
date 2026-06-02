@@ -64,7 +64,7 @@ import SwiftUI
 public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  @Environment(\.dismiss) private var swiftUIDismiss
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
 
@@ -94,6 +94,9 @@ public struct AuthView: View {
 
   let isDismissable: Bool
 
+  /// Lets the Expo wrapper observe SwiftUI-initiated dismissals and update its presented state.
+  private let onDismiss: (() -> Void)?
+
   /// Creates a new authentication view.
   ///
   /// - Parameters:
@@ -103,18 +106,25 @@ public struct AuthView: View {
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    self.init(mode: mode, isDismissable: isDismissable, config: AuthConfig())
+  ///   - onDismiss: Called when the view requests dismissal.
+  public init(
+    mode: Mode = .signInOrUp,
+    isDismissable: Bool = true,
+    onDismiss: (() -> Void)? = nil
+  ) {
+    self.init(mode: mode, isDismissable: isDismissable, config: AuthConfig(), onDismiss: onDismiss)
   }
 
   private init(
     mode: Mode,
     isDismissable: Bool,
-    config: AuthConfig
+    config: AuthConfig,
+    onDismiss: (() -> Void)?
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissable = isDismissable
     self.config = config
+    self.onDismiss = onDismiss
   }
 
   public var body: some View {
@@ -124,7 +134,7 @@ public struct AuthView: View {
           if showDismissButton {
             ToolbarItem(placement: .topBarTrailing) {
               DismissButton {
-                dismiss()
+                dismissAuthView()
               }
             }
           }
@@ -135,7 +145,7 @@ public struct AuthView: View {
               if showDismissButton {
                 ToolbarItem(placement: .topBarTrailing) {
                   DismissButton {
-                    dismiss()
+                    dismissAuthView()
                   }
                 }
               }
@@ -169,7 +179,7 @@ public struct AuthView: View {
           let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
           let sessionSwitched = oldValue?.id != newValue?.id
           if becameActive, isDismissable, !isHandlingSessionTask || sessionSwitched {
-            dismiss()
+            dismissAuthView()
           }
         default:
           break
@@ -179,7 +189,7 @@ public struct AuthView: View {
     .onChange(of: navigation.allTasksComplete) { _, isComplete in
       guard isComplete else { return }
       if isDismissable {
-        dismiss()
+        dismissAuthView()
       }
     }
     .onChange(of: clerk.session?.tasks) { _, _ in
@@ -188,7 +198,7 @@ public struct AuthView: View {
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
       if isDismissable {
-        dismiss()
+        dismissAuthView()
       } else {
         navigation.path = []
       }
@@ -215,6 +225,11 @@ extension AuthView {
   private var showDismissButton: Bool {
     isDismissable && !navigation.hasSessionTaskStartInPath
   }
+
+  private func dismissAuthView() {
+    onDismiss?()
+    swiftUIDismiss()
+  }
 }
 
 // MARK: - View Modifiers
@@ -230,7 +245,7 @@ extension AuthView {
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
     config.initialIdentifier = identifier
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config, onDismiss: onDismiss)
   }
 
   /// Controls whether auth identifier values are persisted between sessions.
@@ -243,7 +258,7 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config, onDismiss: onDismiss)
   }
 
   /// Sets unsafe metadata to attach when this auth flow creates a sign-up.
@@ -256,7 +271,7 @@ extension AuthView {
   public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
     var config = config
     config.unsafeMetadata = metadata
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config, onDismiss: onDismiss)
   }
 }
 

@@ -19,6 +19,15 @@ opt_in_rules:
   - vertical_parameter_alignment_on_call
   - yoda_condition
 
+custom_rules:
+  auth_view_dismiss_auth_view:
+    included:
+      - Sources/ClerkKitUI/Components/Auth/AuthView.swift
+    name: "Use dismissAuthView"
+    regex: "(?m)^\\s*(?:self\\.)?dismiss\\(\\)"
+    message: "Use dismissAuthView() so Expo onDismiss is called before SwiftUI dismissal."
+    severity: error
+
 # Paths to ignore
 excluded:
   - Examples
