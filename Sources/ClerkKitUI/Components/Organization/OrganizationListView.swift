@@ -58,7 +58,6 @@ public struct OrganizationListView: View {
   private let hidePersonal: Bool
   private let isDismissable: Bool
   private let skipInvitationScreen: Bool
-  private let onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?
   private let navigationPath: Binding<NavigationPath>?
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
@@ -88,7 +87,6 @@ public struct OrganizationListView: View {
       && !accountList.hasExistingResources
       && !shouldShowPersonalAccount
       && user?.createOrganizationEnabled == true
-      && onCreateOrganization == nil
   }
 
   private var shouldShowContentHeader: Bool {
@@ -106,22 +104,17 @@ public struct OrganizationListView: View {
   ///     a parent path when the view is hosted inside your own `NavigationStack`.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
-  ///   - onCreateOrganization: A callback invoked when the create organization row is
-  ///     selected. When provided, the list calls this callback with the latest creation
-  ///     defaults instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
-    skipInvitationScreen: Bool = false,
-    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil
+    skipInvitationScreen: Bool = false
   ) {
     self.init(
       hidePersonal: hidePersonal,
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       skipInvitationScreen: skipInvitationScreen,
-      onCreateOrganization: onCreateOrganization,
       title: "Choose an account",
       subtitle: "Select the account with which you wish to continue."
     )
@@ -132,14 +125,12 @@ public struct OrganizationListView: View {
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
     skipInvitationScreen: Bool = false,
-    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil,
     title: LocalizedStringKey,
     subtitle: LocalizedStringKey?
   ) {
     self.hidePersonal = hidePersonal
     self.isDismissable = isDismissable
     self.skipInvitationScreen = skipInvitationScreen
-    self.onCreateOrganization = onCreateOrganization
     self.navigationPath = navigationPath
     self.title = title
     self.subtitle = subtitle
@@ -298,11 +289,6 @@ public struct OrganizationListView: View {
   }
 
   private func navigateToCreateOrganization() {
-    if let onCreateOrganization {
-      onCreateOrganization(accountList.creationDefaults)
-      return
-    }
-
     if let navigationPath {
       navigationPath.wrappedValue.append(Destination.createOrganization)
     } else {
