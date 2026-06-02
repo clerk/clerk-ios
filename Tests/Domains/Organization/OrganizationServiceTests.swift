@@ -586,6 +586,11 @@ struct OrganizationServiceTests {
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
       #expect(request.url?.query?.contains("paginated") == false)
+      let queryItems = request.url.flatMap {
+        URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
+      }
+      let statuses = queryItems?.filter { $0.name == "status" }.compactMap(\.value) ?? []
+      #expect(statuses.isEmpty)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -594,13 +599,13 @@ struct OrganizationServiceTests {
       organizationId: organization.id,
       initialPage: 0,
       pageSize: 10,
-      status: nil
+      status: []
     )
     #expect(requestHandled.value)
   }
 
   @Test
-  func getOrganizationInvitationsWithStatus() async throws {
+  func getOrganizationInvitationsWithStatuses() async throws {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/invitations")!
@@ -619,7 +624,11 @@ struct OrganizationServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { request in
       #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("status=pending") == true)
+      let queryItems = request.url.flatMap {
+        URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
+      }
+      let statuses = queryItems?.filter { $0.name == "status" }.compactMap(\.value) ?? []
+      #expect(statuses == ["pending", "accepted"])
       requestHandled.setValue(true)
     }
     mock.register()
@@ -628,7 +637,7 @@ struct OrganizationServiceTests {
       organizationId: organization.id,
       initialPage: 0,
       pageSize: 10,
-      status: "pending"
+      status: ["pending", "accepted"]
     )
     #expect(requestHandled.value)
   }

@@ -142,7 +142,7 @@ final class OrganizationMembersDataSource {
     defer { isLoadingInvitations = false }
 
     do {
-      let page = try await organization.getInvitations(page: 1, pageSize: pageSize, status: "pending")
+      let page = try await organization.getInvitations(page: 1, pageSize: pageSize, status: ["pending"])
       invitationsPager.replace(with: page)
     } catch {
       guard !error.isCancellationError else { return }
@@ -162,7 +162,7 @@ final class OrganizationMembersDataSource {
       let page = try await organization.getInvitations(
         offset: invitationsPager.offset,
         pageSize: pageSize,
-        status: "pending"
+        status: ["pending"]
       )
       invitationsPager.append(page)
     } catch {

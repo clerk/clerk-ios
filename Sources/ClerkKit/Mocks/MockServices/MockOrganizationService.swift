@@ -46,7 +46,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   package nonisolated(unsafe) var removeOrganizationMemberHandler: ((String, String) async throws -> OrganizationMembership)?
 
   /// Custom handler for the `getOrganizationInvitations(organizationId:initialPage:pageSize:status:)` method.
-  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)?
+  package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((String, Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)?
 
   /// Custom handler for the `inviteOrganizationMember(organizationId:emailAddress:role:)` method.
   package nonisolated(unsafe) var inviteOrganizationMemberHandler: ((String, String, String) async throws -> OrganizationInvitation)?
@@ -108,7 +108,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     addOrganizationMember: ((String, String, String) async throws -> OrganizationMembership)? = nil,
     updateOrganizationMember: ((String, String, String) async throws -> OrganizationMembership)? = nil,
     removeOrganizationMember: ((String, String) async throws -> OrganizationMembership)? = nil,
-    getOrganizationInvitations: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)? = nil,
+    getOrganizationInvitations: ((String, Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)? = nil,
     inviteOrganizationMember: ((String, String, String) async throws -> OrganizationInvitation)? = nil,
     inviteOrganizationMembers: ((String, [String], String) async throws -> [OrganizationInvitation])? = nil,
     createOrganizationDomain: ((String, String) async throws -> OrganizationDomain)? = nil,
@@ -247,7 +247,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+  package func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     if let handler = getOrganizationInvitationsHandler {
       return try await handler(organizationId, initialPage, pageSize, status)
     }
