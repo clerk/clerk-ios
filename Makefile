@@ -218,10 +218,29 @@ test-e2e:
 		exit 1; \
 	fi; \
 	echo "Using E2E test key: $$key_name"; \
+	simulator_id=""; \
 	destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -n "$$destination" ]; then \
+		simulator_id="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)id=([0-9A-Fa-f-]{36})(,.*|$$).*/\2/p')"; \
+		if [ -z "$$simulator_id" ]; then \
+			simulator_name="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)name=([^,]+)(,.*|$$).*/\2/p')"; \
+			if [ -n "$$simulator_name" ]; then \
+				if ! command -v ruby >/dev/null; then \
+					echo "❌ ruby is required to resolve IOS_SIMULATOR_DESTINATION name=$$simulator_name."; \
+					exit 1; \
+				fi; \
+				simulator_id="$$(xcrun simctl list devices available -j | ruby -rjson -e 'target = ARGV.fetch(0).downcase; candidates = []; JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|; version = runtime[/SimRuntime[.]iOS-(.*)$$/, 1]; next unless version; version_parts = version.split("-").map(&:to_i); devices.each do |device|; next unless device["isAvailable"] && device["name"].downcase == target; candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]; end; end; selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }; puts selected[2] if selected' "$$simulator_name")"; \
+				if [ -z "$$simulator_id" ]; then \
+					echo "❌ Unable to find an available iOS simulator named '$$simulator_name'."; \
+					exit 1; \
+				fi; \
+				destination="platform=iOS Simulator,id=$$simulator_id"; \
+			fi; \
+		fi; \
+	fi; \
 	if [ -z "$$destination" ]; then \
 		available_devices="$$(xcrun simctl list devices available)"; \
-		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$$/\2/p' | head -n1)"; \
+		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-Fa-f-]{36})\) \(.*$$/\2/p' | head -n1)"; \
 		if [ -n "$$simulator_id" ]; then \
 			destination="platform=iOS Simulator,id=$$simulator_id"; \
 		fi; \
@@ -232,6 +251,14 @@ test-e2e:
 		exit 1; \
 	fi; \
 	echo "Using simulator destination: $$destination"; \
+	if [ -n "$$simulator_id" ]; then \
+		echo "Preparing simulator keyboard preferences..."; \
+		xcrun simctl boot "$$simulator_id" >/dev/null 2>&1 || true; \
+		xcrun simctl bootstatus "$$simulator_id" -b >/dev/null; \
+		xcrun simctl spawn "$$simulator_id" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES; \
+	else \
+		echo "Skipping simulator keyboard preference setup; destination does not include an explicit simulator id."; \
+	fi; \
 	result_bundle_path="$(E2E_RESULT_BUNDLE_PATH)"; \
 	rm -rf "$$result_bundle_path"; \
 	mkdir -p "$$(dirname "$$result_bundle_path")"; \
