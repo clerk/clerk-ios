@@ -10,7 +10,7 @@ permissions:
 jobs:
   notify:
     name: Notify Slack
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Notify Slack
         env:
