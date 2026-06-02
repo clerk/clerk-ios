@@ -58,6 +58,7 @@ public struct OrganizationListView: View {
   private let hidePersonal: Bool
   private let isDismissable: Bool
   private let skipInvitationScreen: Bool
+  private let onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?
   private let navigationPath: Binding<NavigationPath>?
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
@@ -87,6 +88,11 @@ public struct OrganizationListView: View {
       && !accountList.hasExistingResources
       && !shouldShowPersonalAccount
       && user?.createOrganizationEnabled == true
+      && onCreateOrganization == nil
+  }
+
+  private var shouldShowContentHeader: Bool {
+    subtitle != nil
   }
 
   /// Creates a new organization list view.
@@ -100,17 +106,22 @@ public struct OrganizationListView: View {
   ///     a parent path when the view is hosted inside your own `NavigationStack`.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
+  ///   - onCreateOrganization: A callback invoked when the create organization row is
+  ///     selected. When provided, the list calls this callback with the latest creation
+  ///     defaults instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
-    skipInvitationScreen: Bool = false
+    skipInvitationScreen: Bool = false,
+    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil
   ) {
     self.init(
       hidePersonal: hidePersonal,
       isDismissable: isDismissable,
       navigationPath: navigationPath,
       skipInvitationScreen: skipInvitationScreen,
+      onCreateOrganization: onCreateOrganization,
       title: "Choose an account",
       subtitle: "Select the account with which you wish to continue."
     )
@@ -121,12 +132,14 @@ public struct OrganizationListView: View {
     isDismissable: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
     skipInvitationScreen: Bool = false,
+    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil,
     title: LocalizedStringKey,
     subtitle: LocalizedStringKey?
   ) {
     self.hidePersonal = hidePersonal
     self.isDismissable = isDismissable
     self.skipInvitationScreen = skipInvitationScreen
+    self.onCreateOrganization = onCreateOrganization
     self.navigationPath = navigationPath
     self.title = title
     self.subtitle = subtitle
@@ -189,7 +202,7 @@ public struct OrganizationListView: View {
         }
       }
 
-      if !accountList.isLoading, !shouldStartCreateOrganizationFlow {
+      if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
         ToolbarItem(placement: .principal) {
           Text(title, bundle: .module)
             .font(theme.fonts.headline)
@@ -202,13 +215,8 @@ public struct OrganizationListView: View {
   private var listContent: some View {
     ScrollView {
       VStack(spacing: 32) {
-        if let subtitle {
-          Text(subtitle, bundle: .module)
-            .font(theme.fonts.subheadline)
-            .foregroundStyle(theme.colors.mutedForeground)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 16)
+        if shouldShowContentHeader {
+          accountListHeader
         }
 
         OrganizationAccountListSections(
@@ -229,6 +237,18 @@ public struct OrganizationListView: View {
       .padding(.top, 16)
     }
     .securedByClerkFooter()
+  }
+
+  private var accountListHeader: some View {
+    VStack(spacing: 8) {
+      HeaderView(style: .title, text: title)
+
+      if let subtitle {
+        HeaderView(style: .subtitle, text: subtitle)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+    .padding(.horizontal, 16)
   }
 
   private var createOrganizationContent: some View {
@@ -278,6 +298,11 @@ public struct OrganizationListView: View {
   }
 
   private func navigateToCreateOrganization() {
+    if let onCreateOrganization {
+      onCreateOrganization(accountList.creationDefaults)
+      return
+    }
+
     if let navigationPath {
       navigationPath.wrappedValue.append(Destination.createOrganization)
     } else {
@@ -291,10 +316,11 @@ public struct OrganizationListView: View {
   }
 
   private func completeCreateOrganizationFlow() {
-    if isDismissable || shouldStartCreateOrganizationFlow {
+    if isDismissable {
       dismiss()
     } else {
       popCreateOrganizationFlow()
+      Task { await fetchOrganizationResources() }
     }
   }
 

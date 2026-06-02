@@ -43,6 +43,9 @@ import SwiftUI
 ///   }
 /// }
 /// ```
+///
+/// Pass `onManageOrganization` or `onCreateOrganization` to route those actions
+/// to app-owned screens instead of the default Clerk UI.
 public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -50,6 +53,8 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   private let hidePersonal: Bool
   private let displayMode: OrganizationSwitcherDisplayMode
   private let skipInvitationScreen: Bool
+  private let onManageOrganization: (@MainActor (OrganizationMembership) -> Void)?
+  private let onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?
   private let customRows: [OrganizationProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
 
@@ -87,15 +92,25 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
   ///   - displayMode: The visual presentation for the switcher trigger.
   ///   - skipInvitationScreen: Whether creating an organization should skip the
   ///     post-create invite step.
+  ///   - onManageOrganization: A callback invoked when the manage organization action
+  ///     is selected. When provided, the switcher closes its sheet and calls this callback
+  ///     instead of presenting the default ``OrganizationProfileView``.
+  ///   - onCreateOrganization: A callback invoked when the create organization action
+  ///     is selected. When provided, the switcher closes its sheet and calls this callback
+  ///     instead of presenting the default create organization flow.
   public init(
     hidePersonal: Bool = false,
     displayMode: OrganizationSwitcherDisplayMode = .normal,
-    skipInvitationScreen: Bool = false
+    skipInvitationScreen: Bool = false,
+    onManageOrganization: (@MainActor (OrganizationMembership) -> Void)? = nil,
+    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)? = nil
   ) where Route == Never, Destination == EmptyView {
     self.init(
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
+      onManageOrganization: onManageOrganization,
+      onCreateOrganization: onCreateOrganization,
       customRows: [],
       customDestination: nil
     )
@@ -105,12 +120,16 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
     hidePersonal: Bool,
     displayMode: OrganizationSwitcherDisplayMode,
     skipInvitationScreen: Bool,
+    onManageOrganization: (@MainActor (OrganizationMembership) -> Void)?,
+    onCreateOrganization: (@MainActor (OrganizationCreationDefaults?) -> Void)?,
     customRows: [OrganizationProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
     self.hidePersonal = hidePersonal
     self.displayMode = displayMode
     self.skipInvitationScreen = skipInvitationScreen
+    self.onManageOrganization = onManageOrganization
+    self.onCreateOrganization = onCreateOrganization
     self.customRows = customRows
     self.customDestination = customDestination
   }
@@ -162,8 +181,8 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       OrganizationSwitcherSheet(
         organization: organization,
         roleName: activeMembership?.roleName,
-        onManage: {
-          presentedSheet = .profile
+        onManageOrganization: {
+          handleManageOrganization()
         },
         onSwitchAccount: {
           presentedSheet = .accountList
@@ -173,6 +192,7 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       OrganizationListView(
         hidePersonal: hidePersonal,
         skipInvitationScreen: skipInvitationScreen,
+        onCreateOrganization: onCreateOrganization == nil ? nil : handleCreateOrganization,
         title: "Switch account",
         subtitle: nil
       )
@@ -185,6 +205,28 @@ public struct OrganizationSwitcher<Route: Hashable, Destination: View>: View {
       )
     }
   }
+
+  @MainActor
+  private func handleManageOrganization() {
+    guard let onManageOrganization else {
+      presentedSheet = .profile
+      return
+    }
+
+    guard let activeMembership else {
+      presentedSheet = .profile
+      return
+    }
+
+    presentedSheet = nil
+    onManageOrganization(activeMembership)
+  }
+
+  @MainActor
+  private func handleCreateOrganization(creationDefaults: OrganizationCreationDefaults?) {
+    presentedSheet = nil
+    onCreateOrganization?(creationDefaults)
+  }
 }
 
 extension OrganizationSwitcher {
@@ -196,6 +238,8 @@ extension OrganizationSwitcher {
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
+      onManageOrganization: onManageOrganization,
+      onCreateOrganization: onCreateOrganization,
       customRows: rows,
       customDestination: customDestination
     )
@@ -211,6 +255,8 @@ extension OrganizationSwitcher where Destination == EmptyView {
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
+      onManageOrganization: onManageOrganization,
+      onCreateOrganization: onCreateOrganization,
       customRows: customRows,
       customDestination: destination
     )
@@ -226,6 +272,8 @@ extension OrganizationSwitcher where Route == Never, Destination == EmptyView {
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
+      onManageOrganization: onManageOrganization,
+      onCreateOrganization: onCreateOrganization,
       customRows: rows,
       customDestination: nil
     )
@@ -240,6 +288,8 @@ extension OrganizationSwitcher where Route == Never, Destination == EmptyView {
       hidePersonal: hidePersonal,
       displayMode: displayMode,
       skipInvitationScreen: skipInvitationScreen,
+      onManageOrganization: onManageOrganization,
+      onCreateOrganization: onCreateOrganization,
       customRows: [],
       customDestination: destination
     )

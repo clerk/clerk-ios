@@ -53,6 +53,7 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
           .ignoresSafeArea(.keyboard, edges: .bottom)
+          .allowsHitTesting(false)
         }
       }
   }
