@@ -245,7 +245,7 @@ extension Organization {
   /// - Parameters:
   ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The status an invitation can have.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
   ///
   /// - Returns:
   ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
@@ -253,7 +253,7 @@ extension Organization {
   public func getInvitations(
     page: Int = 1,
     pageSize: Int = 20,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await getInvitations(
       offset: offset(forPage: page, pageSize: pageSize),
@@ -267,7 +267,7 @@ extension Organization {
   /// - Parameters:
   ///   - offset: The number of items to skip before returning results.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned.
-  ///   - status: The status an invitation can have.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
   ///
   /// - Returns:
   ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
@@ -275,7 +275,7 @@ extension Organization {
   package func getInvitations(
     offset: Int,
     pageSize: Int = 10,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await organizationService.getOrganizationInvitations(
       organizationId: id,

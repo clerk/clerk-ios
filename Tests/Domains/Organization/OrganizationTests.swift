@@ -23,7 +23,7 @@ struct OrganizationTests {
   }
 
   struct InvitationsScenario: Codable, Equatable {
-    let status: String?
+    let status: [String]
   }
 
   struct DomainsScenario: Codable, Equatable {
@@ -308,15 +308,15 @@ struct OrganizationTests {
 
   @Test(
     arguments: [
-      InvitationsScenario(status: nil),
-      InvitationsScenario(status: "pending"),
+      InvitationsScenario(status: []),
+      InvitationsScenario(status: ["pending", "accepted"]),
     ]
   )
   func getOrganizationInvitationsUsesOrganizationServiceGetOrganizationInvitations(
     scenario: InvitationsScenario
   ) async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let captured = LockIsolated<(String, Int, Int, [String])?>(nil)
     let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
       captured.setValue((organizationId, initialPage, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
@@ -340,7 +340,7 @@ struct OrganizationTests {
   @Test
   func getOrganizationInvitationsWithOffsetUsesOrganizationServiceGetOrganizationInvitations() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
+    let captured = LockIsolated<(String, Int, Int, [String])?>(nil)
     let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
       captured.setValue((organizationId, initialPage, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
@@ -351,14 +351,14 @@ struct OrganizationTests {
     _ = try await organization.getInvitations(
       offset: 30,
       pageSize: 10,
-      status: "pending"
+      status: ["pending"]
     )
 
     let params = try #require(captured.value)
     #expect(params.0 == organization.id)
     #expect(params.1 == 30)
     #expect(params.2 == 10)
-    #expect(params.3 == "pending")
+    #expect(params.3 == ["pending"])
   }
 
   @Test

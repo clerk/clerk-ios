@@ -17,7 +17,7 @@ protocol OrganizationServiceProtocol: Sendable {
   @MainActor func addOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership
   @MainActor func updateOrganizationMember(organizationId: String, userId: String, role: String) async throws -> OrganizationMembership
   @MainActor func removeOrganizationMember(organizationId: String, userId: String) async throws -> OrganizationMembership
-  @MainActor func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
+  @MainActor func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
   @MainActor func inviteOrganizationMember(organizationId: String, emailAddress: String, role: String) async throws -> OrganizationInvitation
   @MainActor func inviteOrganizationMembers(organizationId: String, emailAddresses: [String], role: String) async throws -> [OrganizationInvitation]
   @MainActor func createOrganizationDomain(organizationId: String, domainName: String) async throws -> OrganizationDomain
@@ -209,16 +209,14 @@ final class OrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+  func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     var queryParams: [(String, String?)] = [
       ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
     ]
 
-    if let status {
-      queryParams.append(("status", value: status))
-    }
+    queryParams += status.map { ("status", $0 as String?) }
 
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
       path: "/v1/organizations/\(organizationId)/invitations",
