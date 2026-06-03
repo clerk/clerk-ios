@@ -18,6 +18,10 @@ public enum AuthEvent: Sendable {
   case signedOut(session: Session)
   /// The current account was deleted.
   case accountDeleted
+  /// The client changed.
+  ///
+  /// This event is emitted whenever the current client value changes, including nested client properties.
+  case clientChanged(oldValue: Client?, newValue: Client?)
   /// The current session changed.
   ///
   /// This event is emitted whenever the current session changes, including:

@@ -493,6 +493,10 @@ struct ClerkReconfigureTests {
     let stream = Clerk.shared.auth.events
     let eventTask = Task { @MainActor in
       for await event in stream {
+        guard case .sessionChanged = event else {
+          continue
+        }
+
         events.withValue { $0.append(event) }
         if events.value.count >= 2 {
           break
