@@ -80,7 +80,7 @@ struct ClerkClientChangedEventTests {
   }
 }
 
-private struct ClientChangedValues: Equatable, Sendable {
+private struct ClientChangedValues: Equatable {
   let oldValue: Client?
   let newValue: Client?
 }
