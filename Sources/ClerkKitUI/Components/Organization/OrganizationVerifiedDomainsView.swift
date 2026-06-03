@@ -96,26 +96,26 @@ struct OrganizationVerifiedDomainsView: View {
     .background(theme.colors.muted)
     .securedByClerkFooter()
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Verified domains", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Verified domains", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .clerkErrorPresenting($error)
-      .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
-        view(for: presentedDomainFlow)
-      }
-      .task(id: organization?.id) {
-        await loadDomains(page: 1)
-      }
+    }
+    .clerkErrorPresenting($error)
+    .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
+      view(for: presentedDomainFlow)
+    }
+    .task(id: organization?.id) {
+      await loadDomains(page: 1)
+    }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 
@@ -385,7 +385,7 @@ private struct OrganizationDomainVerificationFlowSheet: View {
     }
     .environment(codeLimiter)
     #if os(macOS)
-      .frame(minWidth: 420, maxWidth: 520)
+    .frame(minWidth: 420, maxWidth: 520)
     #endif
   }
 }

@@ -68,28 +68,28 @@ struct OrganizationSwitcherSheet: View {
       }
       .scrollBounceBehavior(.basedOnSize)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: doneToolbarPlacement) {
-            Button {
-              dismiss()
-            } label: {
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary)
-            }
-          }
-
-          ToolbarItem(placement: .principal) {
-            Text("Organization", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
+      .toolbar {
+        ToolbarItem(placement: doneToolbarPlacement) {
+          Button {
+            dismiss()
+          } label: {
+            Text("Done", bundle: .module)
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.primary)
           }
         }
+
+        ToolbarItem(placement: .principal) {
+          Text("Organization", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
     #if os(iOS)
     .presentationDetents([.height(contentHeight)])

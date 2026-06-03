@@ -103,19 +103,19 @@ struct OrganizationDomainVerifyCodeView: View {
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Verify domain", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Verify domain", bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .taskOnce {
-        codeLimiter.recordCodeSent(for: emailAddress)
-      }
+    }
+    .taskOnce {
+      codeLimiter.recordCodeSent(for: emailAddress)
+    }
   }
 
   @MainActor

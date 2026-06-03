@@ -78,7 +78,7 @@ struct UserProfileMfaSection: View {
     .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
       UserProfileAddMfaView(contentHeight: $addMfaHeight)
       #if os(iOS)
-        .presentationDetents([.height(addMfaHeight)])
+      .presentationDetents([.height(addMfaHeight)])
       #endif
     }
   }

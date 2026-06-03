@@ -105,23 +105,23 @@ struct UserProfileMfaAddSmsView: View {
         .padding(24)
         .clerkErrorPresenting($error)
         #if os(iOS)
-          .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
-          .preGlassSolidNavBar()
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              Button("Cancel") {
-                dismiss()
-              }
-              .foregroundStyle(theme.colors.primary)
+        .preGlassSolidNavBar()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
             }
-
-            ToolbarItem(placement: .principal) {
-              Text("Add SMS code verification", bundle: .module)
-                .font(theme.fonts.headline)
-                .foregroundStyle(theme.colors.foreground)
-            }
+            .foregroundStyle(theme.colors.primary)
           }
+
+          ToolbarItem(placement: .principal) {
+            Text("Add SMS code verification", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
+          }
+        }
       }
       .navigationDestination(for: Destination.self) {
         $0.view
@@ -133,11 +133,11 @@ struct UserProfileMfaAddSmsView: View {
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
     #if os(iOS)
-      .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
+    .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
     #endif
-      .sheet(isPresented: $addPhoneNumberIsPresented) {
-        UserProfileAddPhoneView()
-      }
+    .sheet(isPresented: $addPhoneNumberIsPresented) {
+      UserProfileAddPhoneView()
+    }
   }
 }
 

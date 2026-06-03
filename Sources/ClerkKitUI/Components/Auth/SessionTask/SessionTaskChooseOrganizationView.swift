@@ -26,9 +26,9 @@ struct SessionTaskChooseOrganizationView: View {
       if !accountList.isLoading, !accountList.hasExistingResources, user?.createOrganizationEnabled == false {
         GetHelpView(context: .sessionTask(.organizationRequired))
           .navigationBarBackButtonHidden()
-        #if os(iOS)
+          #if os(iOS)
           .navigationBarTitleDisplayMode(.inline)
-        #endif
+          #endif
           .preGlassSolidNavBar()
           .toolbar {
             UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
@@ -48,12 +48,12 @@ struct SessionTaskChooseOrganizationView: View {
         .background(theme.colors.background)
         .navigationBarBackButtonHidden()
         #if os(iOS)
-          .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
-          .preGlassSolidNavBar()
-          .toolbar {
-            UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
-          }
+        .preGlassSolidNavBar()
+        .toolbar {
+          UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+        }
       }
     }
     .clerkErrorPresenting($accountList.error, onDismiss: { _ in

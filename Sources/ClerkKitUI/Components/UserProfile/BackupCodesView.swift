@@ -60,34 +60,34 @@ struct BackupCodesView: View {
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
-      .navigationBarBackButtonHidden()
+    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarBackButtonHidden()
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: doneToolbarPlacement) {
-          Button {
-            switch mfaType {
-            case .phoneCode, .authenticatorApp:
-              navigation.presentedAddMfaType = nil
-            case .backupCodes:
-              dismiss()
-            }
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: doneToolbarPlacement) {
+        Button {
+          switch mfaType {
+          case .phoneCode, .authenticatorApp:
+            navigation.presentedAddMfaType = nil
+          case .backupCodes:
+            dismiss()
           }
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
+        } label: {
+          Text("Done", bundle: .module)
+            .font(theme.fonts.body)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.primary)
         }
-
-        ToolbarItem(placement: .principal) {
-          Text("Backup codes", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }
+
+      ToolbarItem(placement: .principal) {
+        Text("Backup codes", bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
+      }
+    }
   }
 }
 

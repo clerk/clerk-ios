@@ -51,22 +51,22 @@ struct UserProfileAddEmailView: View {
           VStack(spacing: 4) {
             ClerkTextField("Enter your email", text: $email)
               .textContentType(.emailAddress)
-            #if os(iOS)
+              #if os(iOS)
               .keyboardType(.emailAddress)
               .textInputAutocapitalization(.never)
-            #endif
+              #endif
               .autocorrectionDisabled()
               .focused($isFocused)
               .onFirstAppear {
                 isFocused = true
               }
 
-            if let error {
-              ErrorText(error: error, alignment: .leading)
-                .font(theme.fonts.subheadline)
-                .transition(.blurReplace.animation(.default))
-                .id(error.localizedDescription)
-            }
+              if let error {
+                ErrorText(error: error, alignment: .leading)
+                  .font(theme.fonts.subheadline)
+                  .transition(.blurReplace.animation(.default))
+                  .id(error.localizedDescription)
+              }
           }
 
           AsyncButton {
@@ -89,38 +89,38 @@ struct UserProfileAddEmailView: View {
       }
       .presentationBackground(theme.colors.background)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
+        }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add email address", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+        ToolbarItem(placement: .principal) {
+          Text("Add email address", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
         }
-        .navigationDestination(for: Destination.self) {
-          switch $0 {
-          case let .verify(email):
-            UserProfileVerifyView(
-              mode: .email(email)
-            ) { _ in
-              dismiss()
-            } customDismiss: {
-              dismiss()
-            }
-          case .add:
-            EmptyView() // should never be hit, .add should never be added to path
-              .task { dismiss() }
+      }
+      .navigationDestination(for: Destination.self) {
+        switch $0 {
+        case let .verify(email):
+          UserProfileVerifyView(
+            mode: .email(email)
+          ) { _ in
+            dismiss()
+          } customDismiss: {
+            dismiss()
           }
+        case .add:
+          EmptyView() // should never be hit, .add should never be added to path
+            .task { dismiss() }
         }
+      }
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620)

@@ -165,7 +165,7 @@ struct UserProfileDetailView: View {
     .sheet(isPresented: $addConnectedAccountIsPresented) {
       UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
       #if os(iOS)
-        .presentationDetents([.height(connectAccountSheetHeight)])
+      .presentationDetents([.height(connectAccountSheetHeight)])
       #endif
     }
     .task {

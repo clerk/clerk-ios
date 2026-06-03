@@ -177,31 +177,31 @@ struct UserProfileVerifyView: View {
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
-      .navigationBarBackButtonHidden(hasCancelAction)
+    .navigationBarTitleDisplayMode(.inline)
+    .navigationBarBackButtonHidden(hasCancelAction)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        if hasCancelAction {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+    .preGlassSolidNavBar()
+    .toolbar {
+      if hasCancelAction {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
         }
+      }
 
-        ToolbarItem(placement: .principal) {
-          Text(titleKey, bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
+      ToolbarItem(placement: .principal) {
+        Text(titleKey, bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .taskOnce {
-        if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
-          await prepare()
-        }
+    }
+    .taskOnce {
+      if showResend, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
+        await prepare()
       }
+    }
   }
 }
 

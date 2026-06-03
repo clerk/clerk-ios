@@ -114,30 +114,30 @@ struct UserProfileAddMfaView: View {
         .padding(.top, 24)
         .clerkErrorPresenting($error)
         #if os(iOS)
-          .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
-          .preGlassSolidNavBar()
-          .preGlassDetentSheetBackground()
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              Button("Cancel") {
-                dismiss()
-              }
-              .foregroundStyle(theme.colors.primary)
+        .preGlassSolidNavBar()
+        .preGlassDetentSheetBackground()
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") {
+              dismiss()
             }
+            .foregroundStyle(theme.colors.primary)
+          }
 
-            ToolbarItem(placement: .principal) {
-              Text("Add two-step verification", bundle: .module)
-                .font(theme.fonts.headline)
-                .foregroundStyle(theme.colors.foreground)
-            }
+          ToolbarItem(placement: .principal) {
+            Text("Add two-step verification", bundle: .module)
+              .font(theme.fonts.headline)
+              .foregroundStyle(theme.colors.foreground)
           }
+        }
         #if os(iOS)
-          .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.height
-          } action: { newValue in
-            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-          }
+        .onGeometryChange(for: CGFloat.self) { proxy in
+          proxy.size.height
+        } action: { newValue in
+          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
+        }
         #endif
       }
       #if os(macOS)

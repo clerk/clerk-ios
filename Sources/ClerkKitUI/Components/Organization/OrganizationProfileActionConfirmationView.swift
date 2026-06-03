@@ -51,20 +51,20 @@ struct OrganizationProfileActionConfirmationView: View {
 
             ClerkTextField("Organization name", text: $confirmation)
               .autocorrectionDisabled()
-            #if os(iOS)
+              #if os(iOS)
               .textInputAutocapitalization(.never)
-            #endif
+              #endif
               .focused($isFocused)
               .onFirstAppear {
                 isFocused = true
               }
 
-            if let error {
-              ErrorText(error: error, alignment: .leading)
-                .font(theme.fonts.subheadline)
-                .transition(.blurReplace.animation(.default))
-                .id(error.localizedDescription)
-            }
+              if let error {
+                ErrorText(error: error, alignment: .leading)
+                  .font(theme.fonts.subheadline)
+                  .transition(.blurReplace.animation(.default))
+                  .id(error.localizedDescription)
+              }
           }
 
           AsyncButton {

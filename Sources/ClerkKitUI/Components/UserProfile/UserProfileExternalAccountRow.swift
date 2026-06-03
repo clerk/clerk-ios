@@ -68,9 +68,9 @@ struct UserProfileExternalAccountRow: View {
         if let error = externalAccount.verification?.error {
           ErrorText(text: verificationErrorText(for: error), alignment: .leading)
           #if os(iOS)
-            .font(theme.fonts.footnote)
+          .font(theme.fonts.footnote)
           #elseif os(macOS)
-            .fixedSize(horizontal: false, vertical: true)
+          .fixedSize(horizontal: false, vertical: true)
           #endif
         }
       }

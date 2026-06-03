@@ -7,7 +7,7 @@
 
 import Foundation
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
@@ -95,6 +95,7 @@ final class LifecycleManager {
   }
 }
 
+#if !os(watchOS)
 extension LifecycleManager {
   private static var willEnterForegroundNotification: Notification.Name {
     #if os(macOS)
@@ -112,3 +113,4 @@ extension LifecycleManager {
     #endif
   }
 }
+#endif

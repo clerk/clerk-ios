@@ -82,47 +82,47 @@ struct OrganizationAddDomainView: View {
       }
       .presentationBackground(theme.colors.background)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
+        }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add domain", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+        ToolbarItem(placement: .principal) {
+          Text("Add domain", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
+      .navigationDestination(for: Destination.self) { destination in
+        switch destination {
+        case let .verifyEmailAddress(domain):
+          OrganizationDomainEmailAddressView(domain: domain) { preparedDomain, affiliationEmailAddress in
+            path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
+          }
+        case let .verifyCode(domain, affiliationEmailAddress):
+          OrganizationDomainVerifyCodeView(
+            domain: domain,
+            emailAddress: affiliationEmailAddress
+          ) {
+            onDomainChanged()
+            dismiss()
           }
         }
-        .navigationDestination(for: Destination.self) { destination in
-          switch destination {
-          case let .verifyEmailAddress(domain):
-            OrganizationDomainEmailAddressView(domain: domain) { preparedDomain, affiliationEmailAddress in
-              path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
-            }
-          case let .verifyCode(domain, affiliationEmailAddress):
-            OrganizationDomainVerifyCodeView(
-              domain: domain,
-              emailAddress: affiliationEmailAddress
-            ) {
-              onDomainChanged()
-              dismiss()
-            }
-          }
-        }
+      }
     }
     .environment(codeLimiter)
     #if os(macOS)
-      .frame(minWidth: 420, maxWidth: 520)
+    .frame(minWidth: 420, maxWidth: 520)
     #endif
-      .onChange(of: domainName) { _, _ in
-        error = nil
-      }
+    .onChange(of: domainName) { _, _ in
+      error = nil
+    }
   }
 
   @MainActor

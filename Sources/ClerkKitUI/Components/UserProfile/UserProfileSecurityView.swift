@@ -63,30 +63,30 @@ struct UserProfileSecurityView: View {
     }
     .securedByClerkFooter()
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Security", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Security", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
-      .clerkErrorPresenting($error)
-      .task {
-        _ = try? await user?.getSessions()
-      }
-      .task {
-        _ = try? await clerk.refreshClient()
-      }
-      .sheet(item: $navigation.presentedAddMfaType) {
-        $0.view
-      }
+    }
+    .presentationBackground(theme.colors.background)
+    .background(theme.colors.background)
+    .clerkErrorPresenting($error)
+    .task {
+      _ = try? await user?.getSessions()
+    }
+    .task {
+      _ = try? await clerk.refreshClient()
+    }
+    .sheet(item: $navigation.presentedAddMfaType) {
+      $0.view
+    }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }

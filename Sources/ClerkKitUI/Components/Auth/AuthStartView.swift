@@ -235,10 +235,10 @@ extension AuthStartView {
         )
         .textContentType(.username)
         #if os(iOS)
-          .keyboardType(.emailAddress)
-          .textInputAutocapitalization(.never)
+        .keyboardType(.emailAddress)
+        .textInputAutocapitalization(.never)
         #endif
-          .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
+        .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
       }
       .transition(.blurReplace)
     }

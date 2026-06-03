@@ -45,12 +45,12 @@ struct UserProfileDeleteAccountConfirmationView: View {
             )
             .autocorrectionDisabled()
             #if os(iOS)
-              .textInputAutocapitalization(.characters)
+            .textInputAutocapitalization(.characters)
             #endif
-              .focused($isFocused)
-              .onFirstAppear {
-                isFocused = true
-              }
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
             if let error {
               ErrorText(error: error, alignment: .leading)

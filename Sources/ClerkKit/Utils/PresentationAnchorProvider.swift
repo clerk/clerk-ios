@@ -2,7 +2,7 @@
 //  PresentationAnchorProvider.swift
 //
 
-#if canImport(AuthenticationServices)
+#if canImport(AuthenticationServices) && !os(watchOS) && (canImport(UIKit) || canImport(AppKit))
 
 import AuthenticationServices
 
@@ -23,8 +23,6 @@ enum PresentationAnchorProvider {
         ?? NSApplication.shared.mainWindow
         ?? NSApplication.shared.windows.first
         ?? ASPresentationAnchor()
-    #else
-    return ASPresentationAnchor()
     #endif
   }
 }

@@ -5,4 +5,4 @@
 --extension-acl on-declarations
 --disable preferKeyPath
 --disable hoistPatternLet
---ifdef no-indent
+--ifdef preserve

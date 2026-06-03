@@ -30,9 +30,9 @@ struct ClerkErrorViewModifier: ViewModifier {
           if let error {
             ErrorView(error: error, action: actionProvider?(error))
               .padding()
-            #if os(iOS)
+              #if os(iOS)
               .contentSizingDetent()
-            #endif
+              #endif
           }
         }
       )

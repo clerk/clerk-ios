@@ -101,13 +101,13 @@ struct OrganizationMembersTabView: View {
       .font(theme.fonts.body)
       .foregroundStyle(theme.colors.foreground)
       #if os(iOS)
-        .textInputAutocapitalization(.never)
+      .textInputAutocapitalization(.never)
       #endif
-        .autocorrectionDisabled()
-        .submitLabel(.search)
-        .onSubmit {
-          submitSearch()
-        }
+      .autocorrectionDisabled()
+      .submitLabel(.search)
+      .onSubmit {
+        submitSearch()
+      }
     }
     .padding(.horizontal, 12)
     .frame(height: 36)

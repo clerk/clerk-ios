@@ -56,9 +56,9 @@ struct UserProfileUpdateProfileView: View {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
-              #if os(iOS)
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
-              #endif
+                #endif
             }
 
             if environment?.firstNameIsEnabled == true {
@@ -88,57 +88,57 @@ struct UserProfileUpdateProfileView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
         #if os(iOS)
-          .padding(.top, 60)
+        .padding(.top, 60)
         #elseif os(macOS)
-          .padding(.top, 24)
+        .padding(.top, 24)
         #endif
       }
       .clerkErrorPresenting($error)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
+        }
 
-          ToolbarItem(placement: .principal) {
-            Text("Edit profile", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
+        ToolbarItem(placement: .principal) {
+          Text("Edit profile", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
+      .photosPicker(
+        isPresented: $photosPickerIsPresented,
+        selection: $photosPickerItem,
+        matching: .images
+      )
+      .onChange(of: photosPickerItem) { _, item in
+        guard let item else { return }
+
+        Task {
+          imageIsLoading = true
+
+          do {
+            guard
+              let data = try await item.loadTransferable(type: Data.self),
+              let resizedData = resizedImageData(from: data)
+            else {
+              throw ClerkClientError(message: "There was an error loading the image from the photos library.")
+            }
+
+            try await user.setProfileImage(imageData: resizedData)
+          } catch {
+            self.error = error
+            ClerkLogger.error("Failed to set profile image", error: error)
+            imageIsLoading = false
           }
         }
-        .photosPicker(
-          isPresented: $photosPickerIsPresented,
-          selection: $photosPickerItem,
-          matching: .images
-        )
-        .onChange(of: photosPickerItem) { _, item in
-          guard let item else { return }
-
-          Task {
-            imageIsLoading = true
-
-            do {
-              guard
-                let data = try await item.loadTransferable(type: Data.self),
-                let resizedData = resizedImageData(from: data)
-              else {
-                throw ClerkClientError(message: "There was an error loading the image from the photos library.")
-              }
-
-              try await user.setProfileImage(imageData: resizedData)
-            } catch {
-              self.error = error
-              ClerkLogger.error("Failed to set profile image", error: error)
-              imageIsLoading = false
-            }
-          }
-        }
+      }
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)

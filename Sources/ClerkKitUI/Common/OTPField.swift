@@ -47,11 +47,11 @@ struct OTPField: View {
       TextField("", text: $code)
         .focused($isFocused)
         .textContentType(.oneTimeCode)
-      #if os(iOS)
+        #if os(iOS)
         .keyboardType(.numberPad)
-      #elseif os(macOS)
+        #elseif os(macOS)
         .textFieldStyle(.plain)
-      #endif
+        #endif
         .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
         .tint(.clear)

@@ -197,9 +197,9 @@ struct ClerkPhoneNumberField: View {
             TextField("", text: $displayText)
               .focused($isFocused)
               .textContentType(.telephoneNumber)
-            #if os(iOS)
+              #if os(iOS)
               .keyboardType(.numberPad)
-            #endif
+              #endif
               .tint(theme.colors.primary)
               .animation(.default.delay(0.2)) {
                 $0.opacity(isFocusedOrFilled ? 1 : 0)

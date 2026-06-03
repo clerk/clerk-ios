@@ -319,15 +319,15 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     .securedByClerkFooter()
     .animation(.default, value: user)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Account", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Account", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
+      }
 
         if isDismissible {
           DismissToolbarItem {
@@ -335,26 +335,27 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           }
         }
       }
-      .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
-        view(for: destination)
-          .environment(sheetNavigation)
-          .environment(codeLimiter)
-          .environment(
-            UserProfileNavigator(
-              push: navigateToCustom,
-              popToRoot: { dismissAction(.popToRoot) }
-            )
+    }
+    .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
+      view(for: destination)
+        .environment(sheetNavigation)
+        .environment(codeLimiter)
+        .environment(
+          UserProfileNavigator(
+            push: navigateToCustom,
+            popToRoot: { dismissAction(.popToRoot) }
           )
-          .environment(
-            UserProfileBuiltInRouter(
-              push: navigateToBuiltIn,
-              dismissAction: dismissAction
-            )
+        )
+        .environment(
+          UserProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
           )
-          .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
-      }
+        )
+        .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
+    }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }

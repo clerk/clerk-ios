@@ -102,26 +102,26 @@ struct UserProfileMfaAddTotpView: View {
       }
       .clerkErrorPresenting($error)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
+        }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add authenticator application", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+        ToolbarItem(placement: .principal) {
+          Text("Add authenticator application", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
         }
-        .navigationDestination(for: Destination.self) {
-          viewForDestination($0)
-        }
+      }
+      .navigationDestination(for: Destination.self) {
+        viewForDestination($0)
+      }
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620)

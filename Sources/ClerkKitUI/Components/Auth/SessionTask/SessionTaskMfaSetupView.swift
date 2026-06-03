@@ -87,13 +87,13 @@ struct SessionTaskMfaSetupView: View {
     }
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
-      }
-      .clerkErrorPresenting($error)
+    .preGlassSolidNavBar()
+    .toolbar {
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+    }
+    .clerkErrorPresenting($error)
   }
 
   private func createTotp() async {

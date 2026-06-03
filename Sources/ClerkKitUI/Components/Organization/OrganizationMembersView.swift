@@ -81,47 +81,47 @@ struct OrganizationMembersView: View {
     .background(theme.colors.muted)
     .securedByClerkFooter()
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Members", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Members", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
+      }
 
-        if canManageMemberships {
-          ToolbarItem(placement: inviteToolbarPlacement) {
-            Button {
-              inviteMembersIsPresented = true
-            } label: {
-              Text("Invite", bundle: .module)
-            }
-            .disabled(!canInviteMembers)
+      if canManageMemberships {
+        ToolbarItem(placement: inviteToolbarPlacement) {
+          Button {
+            inviteMembersIsPresented = true
+          } label: {
+            Text("Invite", bundle: .module)
           }
+          .disabled(!canInviteMembers)
         }
       }
-      .sheet(isPresented: $inviteMembersIsPresented) {
-        NavigationStack {
-          OrganizationInviteMembersView { completion in
-            if completion == .sentInvitations, let organization {
-              await dataSource.loadInvitations(organization: organization)
-            }
-            inviteMembersIsPresented = false
+    }
+    .sheet(isPresented: $inviteMembersIsPresented) {
+      NavigationStack {
+        OrganizationInviteMembersView { completion in
+          if completion == .sentInvitations, let organization {
+            await dataSource.loadInvitations(organization: organization)
           }
+          inviteMembersIsPresented = false
         }
       }
-      .clerkErrorPresenting($dataSource.error)
-      .task(id: organization?.id) {
-        await loadInitialData()
-      }
-      .onChange(of: availableTabs) {
-        normalizeSelectedTab()
-      }
+    }
+    .clerkErrorPresenting($dataSource.error)
+    .task(id: organization?.id) {
+      await loadInitialData()
+    }
+    .onChange(of: availableTabs) {
+      normalizeSelectedTab()
+    }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }

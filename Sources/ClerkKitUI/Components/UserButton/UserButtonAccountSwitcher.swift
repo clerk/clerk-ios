@@ -151,29 +151,29 @@ struct UserButtonAccountSwitcher: View {
       .animation(.default, value: sessions)
       .clerkErrorPresenting($error)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: doneToolbarPlacement) {
-            Button {
-              dismiss()
-            } label: {
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary)
-            }
-            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
+      .preGlassSolidNavBar()
+      .preGlassDetentSheetBackground()
+      .toolbar {
+        ToolbarItem(placement: doneToolbarPlacement) {
+          Button {
+            dismiss()
+          } label: {
+            Text("Done", bundle: .module)
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.primary)
           }
-
-          ToolbarItem(placement: .principal) {
-            Text("Switch account", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
         }
+
+        ToolbarItem(placement: .principal) {
+          Text("Switch account", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)

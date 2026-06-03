@@ -179,14 +179,13 @@ public struct OrganizationListView: View {
     }
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .navigationDestination(for: Destination.self) { destination in
-        switch destination {
-        case .createOrganization:
-          createOrganizationContent
-        }
+    .preGlassSolidNavBar()
+    .navigationDestination(for: Destination.self) { destination in
+      switch destination {
+      case .createOrganization:
+        createOrganizationContent
       }
     }
     .toolbar {
@@ -195,16 +194,18 @@ public struct OrganizationListView: View {
           Button("Cancel") {
             dismiss()
           }
-        }
-
-        if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
-          ToolbarItem(placement: .principal) {
-            Text(title, bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+          .foregroundStyle(theme.colors.primary)
         }
       }
+
+      if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
+        ToolbarItem(placement: .principal) {
+          Text(title, bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
+    }
   }
 
   private var listContent: some View {

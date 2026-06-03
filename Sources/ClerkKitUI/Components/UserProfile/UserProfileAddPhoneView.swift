@@ -56,12 +56,12 @@ struct UserProfileAddPhoneView: View {
             )
             .textContentType(.telephoneNumber)
             #if os(iOS)
-              .keyboardType(.numberPad)
+            .keyboardType(.numberPad)
             #endif
-              .focused($isFocused)
-              .onFirstAppear {
-                isFocused = true
-              }
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
             if let error {
               ErrorText(error: error, alignment: .leading)
@@ -92,38 +92,38 @@ struct UserProfileAddPhoneView: View {
       }
       .presentationBackground(theme.colors.background)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
+          .foregroundStyle(theme.colors.primary)
+        }
 
-          ToolbarItem(placement: .principal) {
-            Text("Add phone number", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
+        ToolbarItem(placement: .principal) {
+          Text("Add phone number", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
         }
-        .navigationDestination(for: Destination.self) {
-          switch $0 {
-          case let .verify(phoneNumber):
-            UserProfileVerifyView(
-              mode: .phone(phoneNumber)
-            ) { _ in
-              dismiss()
-            } customDismiss: {
-              dismiss()
-            }
-          case .add:
-            EmptyView() // should never be hit, .add should never be added to path
-              .task { dismiss() }
+      }
+      .navigationDestination(for: Destination.self) {
+        switch $0 {
+        case let .verify(phoneNumber):
+          UserProfileVerifyView(
+            mode: .phone(phoneNumber)
+          ) { _ in
+            dismiss()
+          } customDismiss: {
+            dismiss()
           }
+        case .add:
+          EmptyView() // should never be hit, .add should never be added to path
+            .task { dismiss() }
         }
+      }
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620)

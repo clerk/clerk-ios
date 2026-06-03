@@ -74,14 +74,14 @@ struct SessionTaskMfaTotpView: View {
     }
     .background(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #elseif os(macOS)
-      .macOSBackButton()
+    .macOSBackButton()
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
-      }
+    .preGlassSolidNavBar()
+    .toolbar {
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+    }
   }
 }
 

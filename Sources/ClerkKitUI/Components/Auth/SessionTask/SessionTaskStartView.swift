@@ -18,20 +18,20 @@ struct SessionTaskStartView: View {
     case .resetPassword:
       SignInSetNewPasswordView(mode: .sessionTask)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
-        }
+      .preGlassSolidNavBar()
+      .toolbar {
+        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+      }
     case .chooseOrganization:
       SessionTaskChooseOrganizationView()
     case .unknown:
       GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
-      #if os(iOS)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-      #endif
+        #endif
         .preGlassSolidNavBar()
         .toolbar {
           UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)

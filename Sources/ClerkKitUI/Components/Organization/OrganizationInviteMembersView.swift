@@ -56,41 +56,41 @@ struct OrganizationInviteMembersView: View {
     }
     .presentationBackground(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: cancellationPlacement) {
-          Button {
-            Task {
-              await complete(.cancelled)
-            }
-          } label: {
-            Text(cancellationTitle, bundle: .module)
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: cancellationPlacement) {
+        Button {
+          Task {
+            await complete(.cancelled)
           }
-          .foregroundStyle(theme.colors.primary)
+        } label: {
+          Text(cancellationTitle, bundle: .module)
         }
+        .foregroundStyle(theme.colors.primary)
+      }
 
-        ToolbarItem(placement: .principal) {
-          Text("Invite new members", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
+      ToolbarItem(placement: .principal) {
+        Text("Invite new members", bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .onChange(of: emailAddresses) { _, _ in
-        error = nil
-      }
-      .onChange(of: selectedRoleKey) { _, _ in
-        error = nil
-      }
-      .onChange(of: roleOptions.map(\.key), initial: true) { _, _ in
-        selectDefaultRoleIfNeeded()
-      }
-      .task(id: clerk.organization?.id) {
-        await loadRoles()
-      }
+    }
+    .onChange(of: emailAddresses) { _, _ in
+      error = nil
+    }
+    .onChange(of: selectedRoleKey) { _, _ in
+      error = nil
+    }
+    .onChange(of: roleOptions.map(\.key), initial: true) { _, _ in
+      selectDefaultRoleIfNeeded()
+    }
+    .task(id: clerk.organization?.id) {
+      await loadRoles()
+    }
     #if os(macOS)
-      .frame(minWidth: 420, maxWidth: 520)
+    .frame(minWidth: 420, maxWidth: 520)
     #endif
   }
 
@@ -305,10 +305,10 @@ private struct OrganizationInviteEmailAddressField: View {
           .foregroundStyle(theme.colors.inputForeground)
           .tint(theme.colors.primary)
           .textContentType(.emailAddress)
-        #if os(iOS)
+          #if os(iOS)
           .keyboardType(.emailAddress)
           .textInputAutocapitalization(.never)
-        #endif
+          #endif
           .autocorrectionDisabled()
           .focused($emailFieldIsFocused)
           .frame(minWidth: 24, minHeight: 24, alignment: .leading)

@@ -71,7 +71,7 @@ struct SignUpCollectFieldView: View {
       )
       .textContentType(.emailAddress)
       #if os(iOS)
-        .keyboardType(.emailAddress)
+      .keyboardType(.emailAddress)
       #endif
     case .phoneNumber:
       ClerkPhoneNumberField(
@@ -127,23 +127,23 @@ struct SignUpCollectFieldView: View {
         VStack(spacing: 24) {
           textField
             .autocorrectionDisabled()
-          #if os(iOS)
+            #if os(iOS)
             .textInputAutocapitalization(.never)
-          #endif
+            #endif
             .focused($isFocused)
             .onAppear {
               isFocused = true
             }
 
-          AsyncButton {
-            await updateSignUp()
-          } label: { isRunning in
-            ContinueButtonLabelView(isActive: isRunning)
-          }
-          .buttonStyle(.primary())
-          .disabled(continueIsDisabled)
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.continueButton)
-          .simultaneousGesture(TapGesture())
+            AsyncButton {
+              await updateSignUp()
+            } label: { isRunning in
+              ContinueButtonLabelView(isActive: isRunning)
+            }
+            .buttonStyle(.primary())
+            .disabled(continueIsDisabled)
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.continueButton)
+            .simultaneousGesture(TapGesture())
         }
 
         SecuredByClerkView()

@@ -58,7 +58,7 @@ struct UserProfileAddConnectedAccountView: View {
           if let error {
             ErrorText(error: error, alignment: .leading)
             #if os(macOS)
-              .fixedSize(horizontal: false, vertical: true)
+            .fixedSize(horizontal: false, vertical: true)
             #endif
           }
         }
@@ -66,14 +66,14 @@ struct UserProfileAddConnectedAccountView: View {
         .background(theme.colors.background)
         .clerkErrorPresenting($error)
         #if os(iOS)
-          .navigationBarTitleDisplayMode(.inline)
-          .preGlassSolidNavBar()
-          .preGlassDetentSheetBackground()
-          .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.height
-          } action: { newValue in
-            contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-          }
+        .navigationBarTitleDisplayMode(.inline)
+        .preGlassSolidNavBar()
+        .preGlassDetentSheetBackground()
+        .onGeometryChange(for: CGFloat.self) { proxy in
+          proxy.size.height
+        } action: { newValue in
+          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
+        }
         #endif
       }
       .scrollBounceBehavior(.basedOnSize)
@@ -124,11 +124,11 @@ extension UserProfileAddConnectedAccountView {
 #Preview {
   UserProfileAddConnectedAccountView(contentHeight: .constant(300))
   #if os(iOS)
-    .clerkPreview()
+  .clerkPreview()
   #elseif os(macOS)
-    .environment(Clerk.preview())
+  .environment(Clerk.preview())
   #endif
-    .environment(\.clerkTheme, .clerk)
+  .environment(\.clerkTheme, .clerk)
 }
 
 #endif

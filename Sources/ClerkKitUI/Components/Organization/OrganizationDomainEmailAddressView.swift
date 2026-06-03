@@ -68,23 +68,23 @@ struct OrganizationDomainEmailAddressView: View {
     }
     .presentationBackground(theme.colors.background)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Verify domain", bundle: .module)
-            .font(theme.fonts.headline)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Verify domain", bundle: .module)
+          .font(theme.fonts.headline)
+          .foregroundStyle(theme.colors.foreground)
       }
-      .onChange(of: emailLocalPart) { _, newValue in
-        error = nil
+    }
+    .onChange(of: emailLocalPart) { _, newValue in
+      error = nil
 
-        if let atIndex = newValue.firstIndex(of: "@") {
-          emailLocalPart = String(newValue[..<atIndex])
-        }
+      if let atIndex = newValue.firstIndex(of: "@") {
+        emailLocalPart = String(newValue[..<atIndex])
       }
+    }
   }
 
   @MainActor
@@ -136,10 +136,10 @@ private struct OrganizationDomainEmailAddressField: View {
       HStack(spacing: 0) {
         TextField("", text: $localPart)
           .textContentType(.emailAddress)
-        #if os(iOS)
+          #if os(iOS)
           .keyboardType(.emailAddress)
           .textInputAutocapitalization(.never)
-        #endif
+          #endif
           .autocorrectionDisabled()
           .focused($isFocused)
           .font(theme.fonts.body)
@@ -147,10 +147,10 @@ private struct OrganizationDomainEmailAddressField: View {
           .tint(theme.colors.primary)
           .lineLimit(1)
 
-        Text(verbatim: "@\(domainName)")
-          .lineLimit(1)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.mutedForeground)
+          Text(verbatim: "@\(domainName)")
+            .lineLimit(1)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.mutedForeground)
       }
       .frame(minHeight: 22)
     }

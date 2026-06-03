@@ -91,24 +91,24 @@ struct OrganizationDomainEnrollmentModeView: View {
       }
       .background(theme.colors.background)
       #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+      .navigationBarTitleDisplayMode(.inline)
       #endif
-        .preGlassSolidNavBar()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+      .preGlassSolidNavBar()
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
           }
-
-          ToolbarItem(placement: .principal) {
-            Text("Update \(domain.name)", bundle: .module)
-              .font(theme.fonts.headline)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.foreground)
-          }
+          .foregroundStyle(theme.colors.primary)
         }
+
+        ToolbarItem(placement: .principal) {
+          Text("Update \(domain.name)", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)

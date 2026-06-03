@@ -20,14 +20,14 @@ struct SessionTaskCreateOrganizationView: View {
     }
     .navigationBarBackButtonHidden(!showBackButton)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
-      }
+    .preGlassSolidNavBar()
+    .toolbar {
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+    }
     #if os(macOS)
-      .macOSBackButton(hidden: !showBackButton)
+    .macOSBackButton(hidden: !showBackButton)
     #endif
   }
 }

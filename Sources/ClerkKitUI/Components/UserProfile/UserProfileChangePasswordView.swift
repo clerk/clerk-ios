@@ -143,7 +143,7 @@ struct UserProfileChangePasswordView: View {
         }
         .autocorrectionDisabled()
         #if os(iOS)
-          .textInputAutocapitalization(.never)
+        .textInputAutocapitalization(.never)
         #endif
 
         signOutOfOtherDevicesView

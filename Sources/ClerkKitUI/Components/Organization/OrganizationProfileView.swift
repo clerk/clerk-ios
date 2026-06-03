@@ -262,16 +262,16 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
     .animation(.default, value: organization)
     .animation(.default, value: organizationMembership)
     #if os(iOS)
-      .navigationBarTitleDisplayMode(.inline)
+    .navigationBarTitleDisplayMode(.inline)
     #endif
-      .preGlassSolidNavBar()
-      .toolbar {
-        ToolbarItem(placement: .principal) {
-          Text("Organization", bundle: .module)
-            .font(theme.fonts.headline)
-            .fontWeight(.semibold)
-            .foregroundStyle(theme.colors.foreground)
-        }
+    .preGlassSolidNavBar()
+    .toolbar {
+      ToolbarItem(placement: .principal) {
+        Text("Organization", bundle: .module)
+          .font(theme.fonts.headline)
+          .fontWeight(.semibold)
+          .foregroundStyle(theme.colors.foreground)
+      }
 
         if isDismissible {
           DismissToolbarItem {
@@ -279,23 +279,24 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           }
         }
       }
-      .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
-        view(for: destination)
-          .environment(
-            OrganizationProfileNavigator(
-              push: navigateToCustom,
-              popToRoot: { dismissAction(.popToRoot) }
-            )
+    }
+    .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
+      view(for: destination)
+        .environment(
+          OrganizationProfileNavigator(
+            push: navigateToCustom,
+            popToRoot: { dismissAction(.popToRoot) }
           )
-          .environment(
-            OrganizationProfileBuiltInRouter(
-              push: navigateToBuiltIn,
-              dismissAction: dismissAction
-            )
+        )
+        .environment(
+          OrganizationProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
           )
-      }
+        )
+    }
     #if os(macOS)
-      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
   }
 }
