@@ -335,24 +335,24 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           }
         }
       }
-    .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
-      view(for: destination)
-        .environment(sheetNavigation)
-        .environment(codeLimiter)
-        .environment(
-          UserProfileNavigator(
-            push: navigateToCustom,
-            popToRoot: { dismissAction(.popToRoot) }
+      .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
+        view(for: destination)
+          .environment(sheetNavigation)
+          .environment(codeLimiter)
+          .environment(
+            UserProfileNavigator(
+              push: navigateToCustom,
+              popToRoot: { dismissAction(.popToRoot) }
+            )
           )
-        )
-        .environment(
-          UserProfileBuiltInRouter(
-            push: navigateToBuiltIn,
-            dismissAction: dismissAction
+          .environment(
+            UserProfileBuiltInRouter(
+              push: navigateToBuiltIn,
+              dismissAction: dismissAction
+            )
           )
-        )
-        .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
-    }
+          .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
+      }
     #if os(macOS)
       .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
@@ -659,9 +659,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
-  #if os(iOS)
     .environment(AuthState())
-  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -710,9 +708,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
-  #if os(iOS)
     .environment(AuthState())
-  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -737,9 +733,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
-  #if os(iOS)
     .environment(AuthState())
-  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
@@ -766,9 +760,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         }
       }
     )
-  #if os(iOS)
     .environment(AuthState())
-  #endif
     .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }

@@ -7,14 +7,14 @@
 import SwiftUI
 
 struct MacOSBackButton: View {
-  @Environment(AuthNavigation.self) private var navigation
+  @Environment(\.dismiss) private var dismiss
   @Environment(\.clerkTheme) private var theme
   @Environment(\.colorScheme) private var colorScheme
 
   var body: some View {
     HStack {
       Button {
-        navigation.path.removeLast()
+        dismiss()
       } label: {
         Image(systemName: "chevron.left")
           .font(.system(size: 13, weight: .semibold))

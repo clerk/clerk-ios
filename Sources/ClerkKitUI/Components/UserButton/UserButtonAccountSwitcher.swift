@@ -156,7 +156,17 @@ struct UserButtonAccountSwitcher: View {
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
-          doneToolbarItem
+          ToolbarItem(placement: doneToolbarPlacement) {
+            Button {
+              dismiss()
+            } label: {
+              Text("Done", bundle: .module)
+                .font(theme.fonts.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.primary)
+            }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
+          }
 
           ToolbarItem(placement: .principal) {
             Text("Switch account", bundle: .module)
@@ -172,21 +182,6 @@ struct UserButtonAccountSwitcher: View {
 }
 
 extension UserButtonAccountSwitcher {
-  @ToolbarContentBuilder
-  private var doneToolbarItem: some ToolbarContent {
-    ToolbarItem(placement: doneToolbarPlacement) {
-      Button {
-        dismiss()
-      } label: {
-        Text("Done", bundle: .module)
-          .font(theme.fonts.body)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.primary)
-      }
-      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
-    }
-  }
-
   private var doneToolbarPlacement: ToolbarItemPlacement {
     #if os(iOS)
     .topBarTrailing

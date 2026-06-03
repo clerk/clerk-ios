@@ -141,6 +141,10 @@ extension SessionTaskBackupCodesView {
   private var sessionTaskToolbarItem: some ToolbarContent {
     if navigation.nextPendingSessionTask(from: clerk.session) != nil {
       UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+    } else {
+      DismissToolbarItem {
+        navigation.handleSessionTaskCompletion(session: clerk.session)
+      }
     }
   }
 }

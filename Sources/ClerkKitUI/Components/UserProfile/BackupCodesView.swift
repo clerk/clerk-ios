@@ -65,7 +65,22 @@ struct BackupCodesView: View {
     #endif
       .preGlassSolidNavBar()
       .toolbar {
-        doneToolbarItem
+        ToolbarItem(placement: doneToolbarPlacement) {
+          Button {
+            switch mfaType {
+            case .phoneCode, .authenticatorApp:
+              navigation.presentedAddMfaType = nil
+            case .backupCodes:
+              dismiss()
+            }
+          } label: {
+            Text("Done", bundle: .module)
+              .font(theme.fonts.body)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.primary)
+          }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Backup codes", bundle: .module)
@@ -77,36 +92,12 @@ struct BackupCodesView: View {
 }
 
 extension BackupCodesView {
-  @ToolbarContentBuilder
-  private var doneToolbarItem: some ToolbarContent {
-    ToolbarItem(placement: doneToolbarPlacement) {
-      Button {
-        done()
-      } label: {
-        Text("Done", bundle: .module)
-          .font(theme.fonts.body)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.primary)
-      }
-      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
-    }
-  }
-
   private var doneToolbarPlacement: ToolbarItemPlacement {
     #if os(iOS)
     .topBarTrailing
     #elseif os(macOS)
     .confirmationAction
     #endif
-  }
-
-  private func done() {
-    switch mfaType {
-    case .phoneCode, .authenticatorApp:
-      navigation.presentedAddMfaType = nil
-    case .backupCodes:
-      dismiss()
-    }
   }
 }
 

@@ -16,7 +16,9 @@ struct MacExampleApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView()
+        .prefetchClerkImages()
         .environment(Clerk.shared)
+        .atlantisProxy()
     }
   }
 }

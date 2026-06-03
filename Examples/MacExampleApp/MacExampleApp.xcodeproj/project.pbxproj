@@ -9,15 +9,29 @@
 /* Begin PBXBuildFile section */
 		9A1000012F60000000000001 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9A1000112F60000000000001 /* ClerkKit */; };
 		9A1000022F60000000000001 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 9A1000122F60000000000001 /* ClerkKitUI */; };
+		9A1000152F60000000000001 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 9A1000162F60000000000001 /* Atlantis */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		9A1000032F60000000000001 /* MacExampleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacExampleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9A1000182F60000000000001 /* Exceptions for "MacExampleApp" folder in "MacExampleApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9A1000082F60000000000001 /* MacExampleApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9A1000042F60000000000001 /* MacExampleApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9A1000182F60000000000001 /* Exceptions for "MacExampleApp" folder in "MacExampleApp" target */,
+			);
 			path = MacExampleApp;
 			sourceTree = "<group>";
 		};
@@ -30,6 +44,7 @@
 			files = (
 				9A1000012F60000000000001 /* ClerkKit in Frameworks */,
 				9A1000022F60000000000001 /* ClerkKitUI in Frameworks */,
+				9A1000152F60000000000001 /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,6 +89,7 @@
 			packageProductDependencies = (
 				9A1000112F60000000000001 /* ClerkKit */,
 				9A1000122F60000000000001 /* ClerkKitUI */,
+				9A1000162F60000000000001 /* Atlantis */,
 			);
 			productName = MacExampleApp;
 			productReference = 9A1000032F60000000000001 /* MacExampleApp.app */;
@@ -105,6 +121,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */,
+				9A1000172F60000000000001 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9A1000072F60000000000001 /* Products */;
@@ -265,6 +282,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MacExampleApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
@@ -294,6 +312,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MacExampleApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
@@ -341,6 +360,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		9A1000172F60000000000001 /* XCRemoteSwiftPackageReference "atlantis" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ProxymanApp/atlantis";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		9A1000112F60000000000001 /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -351,6 +381,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */;
 			productName = ClerkKitUI;
+		};
+		9A1000162F60000000000001 /* Atlantis */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A1000172F60000000000001 /* XCRemoteSwiftPackageReference "atlantis" */;
+			productName = Atlantis;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

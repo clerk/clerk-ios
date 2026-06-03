@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 
@@ -74,3 +76,5 @@ extension User {
     phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
   }
 }
+
+#endif

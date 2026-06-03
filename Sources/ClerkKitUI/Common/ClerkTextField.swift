@@ -41,20 +41,6 @@ struct ClerkTextField: View {
     self.accessibilityIdentifier = accessibilityIdentifier
   }
 
-  init(
-    _ title: String,
-    text: Binding<String>,
-    isSecure: Bool = false,
-    fieldState: FieldState = .default,
-    accessibilityIdentifier: String = ""
-  ) {
-    titleKey = LocalizedStringKey(title)
-    _text = text
-    self.isSecure = isSecure
-    self.fieldState = fieldState
-    self.accessibilityIdentifier = accessibilityIdentifier
-  }
-
   var isFocusedOrFilled: Bool {
     focused != nil || !text.isEmpty
   }

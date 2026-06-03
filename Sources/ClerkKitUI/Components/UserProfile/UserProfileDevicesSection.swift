@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import SwiftUI
 
@@ -47,3 +49,5 @@ struct UserProfileDevicesSection: View {
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
+
+#endif

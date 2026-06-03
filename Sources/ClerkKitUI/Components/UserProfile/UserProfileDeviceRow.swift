@@ -21,10 +21,6 @@ struct UserProfileDeviceRow: View {
     clerk.user
   }
 
-  private var errorMessage: String? {
-    error?.localizedDescription
-  }
-
   var body: some View {
     HStack(spacing: 16) {
       HStack(alignment: .top) {

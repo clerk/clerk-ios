@@ -123,10 +123,17 @@ public struct AuthView: View {
         .toolbar {
           dismissToolbarItem
         }
-        .navigationDestination(for: Destination.self) { destination in
-          destinationView(for: destination)
+        .navigationDestination(for: Destination.self) {
+          $0.view
+            .toolbar {
+              dismissToolbarItem
+            }
+            .developmentModeBottomInset(background: .white)
+            .environment(navigation)
+            .environment(authState)
+            .environment(codeLimiter)
         }
-        .authDevelopmentModeBottomInset()
+        .developmentModeBottomInset(background: .white)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
@@ -174,7 +181,7 @@ public struct AuthView: View {
         navigation.path = []
       }
     }
-    .onChange(of: config, initial: true) { _, newConfig in
+    .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
     }
     .taskOnce {
@@ -208,29 +215,6 @@ extension AuthView {
         dismiss()
       }
     }
-  }
-
-  @ViewBuilder
-  private func destinationView(for destination: Destination) -> some View {
-    destination.view
-      .toolbar {
-        dismissToolbarItem
-      }
-      .authDevelopmentModeBottomInset()
-      .environment(navigation)
-      .environment(authState)
-      .environment(codeLimiter)
-  }
-}
-
-extension View {
-  @ViewBuilder
-  fileprivate func authDevelopmentModeBottomInset() -> some View {
-    #if os(iOS)
-    developmentModeBottomInset(background: .white)
-    #elseif os(macOS)
-    self
-    #endif
   }
 }
 

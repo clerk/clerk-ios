@@ -29,34 +29,8 @@ struct UserProfileSecurityView: View {
 
   var body: some View {
     @Bindable var navigation = navigation
-    securityContent
-    #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        titleView
-      }
-    }
-    .presentationBackground(theme.colors.background)
-    .background(theme.colors.background)
-    .clerkErrorPresenting($error)
-    .task {
-      _ = try? await user?.getSessions()
-    }
-    .task {
-      _ = try? await clerk.refreshClient()
-    }
-    .sheet(item: $navigation.presentedAddMfaType) {
-      $0.view
-    }
-    #if os(macOS)
-    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
-    #endif
-  }
 
-  private var securityContent: some View {
-    VStack(spacing: 0) {
+    Group {
       if let user {
         ScrollView {
           VStack(spacing: 0) {
@@ -86,16 +60,34 @@ struct UserProfileSecurityView: View {
         }
         .background(theme.colors.muted)
       }
-
-      SecuredByClerkFooter()
     }
-  }
-
-  private var titleView: some View {
-    Text("Security", bundle: .module)
-      .font(theme.fonts.headline)
-      .fontWeight(.semibold)
-      .foregroundStyle(theme.colors.foreground)
+    .securedByClerkFooter()
+    #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+    #endif
+      .toolbar {
+        ToolbarItem(placement: .principal) {
+          Text("Security", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
+      .presentationBackground(theme.colors.background)
+      .background(theme.colors.background)
+      .clerkErrorPresenting($error)
+      .task {
+        _ = try? await user?.getSessions()
+      }
+      .task {
+        _ = try? await clerk.refreshClient()
+      }
+      .sheet(item: $navigation.presentedAddMfaType) {
+        $0.view
+      }
+    #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

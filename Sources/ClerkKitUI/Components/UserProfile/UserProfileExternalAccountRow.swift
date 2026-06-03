@@ -25,10 +25,6 @@ struct UserProfileExternalAccountRow: View {
 
   let externalAccount: ExternalAccount
 
-  private var displayedError: Error? {
-    externalAccount.verification?.error ?? error
-  }
-
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
@@ -69,17 +65,14 @@ struct UserProfileExternalAccountRow: View {
             .frame(minHeight: 22)
         }
 
-        #if os(iOS)
         if let error = externalAccount.verification?.error {
           ErrorText(text: verificationErrorText(for: error), alignment: .leading)
+          #if os(iOS)
             .font(theme.fonts.footnote)
-        }
-        #elseif os(macOS)
-        if let displayedError {
-          ErrorText(error: displayedError, alignment: .leading)
+          #elseif os(macOS)
             .fixedSize(horizontal: false, vertical: true)
+          #endif
         }
-        #endif
       }
 
       Spacer()
@@ -160,14 +153,6 @@ extension UserProfileExternalAccountRow {
     return Text(verbatim: error.localizedDescription)
   }
 
-  private var actionsLabel: some View {
-    Image("icon-three-dots-vertical", bundle: .module)
-      .resizable()
-      .scaledToFit()
-      .foregroundStyle(theme.colors.mutedForeground)
-      .frame(width: 20, height: 20)
-  }
-
   private func reconnect() async {
     guard let user else { return }
 
@@ -195,9 +180,6 @@ extension UserProfileExternalAccountRow {
         )
       }
       try await account.reauthorize()
-      #if os(macOS)
-      _ = try? await clerk.refreshClient()
-      #endif
     } catch {
       if error.isUserCancelledError { return }
       self.error = error
@@ -210,9 +192,6 @@ extension UserProfileExternalAccountRow {
 
     do {
       try await resource?.deleteAction()
-      #if os(macOS)
-      _ = try? await clerk.refreshClient()
-      #endif
     } catch {
       self.error = error
       ClerkLogger.error("Failed to remove external account resource", error: error)

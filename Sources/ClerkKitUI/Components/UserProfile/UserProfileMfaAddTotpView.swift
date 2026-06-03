@@ -31,7 +31,7 @@ struct UserProfileMfaAddTotpView: View {
         if let backupCodes {
           path.append(Destination.backupCodes(backupCodes))
         } else {
-          closeFlow()
+          navigation.presentedAddMfaType = nil
         }
       }
     case let .backupCodes(backupCodes):
@@ -128,12 +128,6 @@ struct UserProfileMfaAddTotpView: View {
     #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
-  }
-}
-
-extension UserProfileMfaAddTotpView {
-  private func closeFlow() {
-    navigation.presentedAddMfaType = nil
   }
 }
 
