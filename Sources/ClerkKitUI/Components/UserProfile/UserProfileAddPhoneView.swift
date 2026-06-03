@@ -58,10 +58,10 @@ struct UserProfileAddPhoneView: View {
             #if os(iOS)
               .keyboardType(.numberPad)
             #endif
-            .focused($isFocused)
-            .onFirstAppear {
-              isFocused = true
-            }
+              .focused($isFocused)
+              .onFirstAppear {
+                isFocused = true
+              }
 
             if let error {
               ErrorText(error: error, alignment: .leading)

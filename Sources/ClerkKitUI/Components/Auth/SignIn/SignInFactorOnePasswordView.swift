@@ -55,12 +55,12 @@ struct SignInFactorOnePasswordView: View {
             )
             .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .password)
             #if os(iOS)
-            .textInputAutocapitalization(.never)
+              .textInputAutocapitalization(.never)
             #endif
-            .focused($isFocused)
-            .onFirstAppear {
-              isFocused = true
-            }
+              .focused($isFocused)
+              .onFirstAppear {
+                isFocused = true
+              }
 
             if let fieldError {
               ErrorText(error: fieldError, alignment: .leading)

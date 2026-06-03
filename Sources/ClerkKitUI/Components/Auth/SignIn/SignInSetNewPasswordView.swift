@@ -65,18 +65,18 @@ struct SignInSetNewPasswordView: View {
           )
           .textContentType(.newPassword)
           #if os(iOS)
-          .textInputAutocapitalization(.never)
+            .textInputAutocapitalization(.never)
           #endif
-          .autocorrectionDisabled()
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
-          .focused($focusedField, equals: .new)
-          .hiddenTextField(text: $identifier, textContentType: .username)
-          .onFirstAppear {
-            focusedField = .new
+            .autocorrectionDisabled()
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
+            .focused($focusedField, equals: .new)
+            .hiddenTextField(text: $identifier, textContentType: .username)
+            .onFirstAppear {
+              focusedField = .new
 
-            // Keep a local copy because sign-in identifier can be cleared after reset completion.
-            identifier = initialIdentifier
-          }
+              // Keep a local copy because sign-in identifier can be cleared after reset completion.
+              identifier = initialIdentifier
+            }
 
           VStack(spacing: 8) {
             ClerkTextField(
@@ -87,11 +87,11 @@ struct SignInSetNewPasswordView: View {
             )
             .textContentType(.newPassword)
             #if os(iOS)
-            .textInputAutocapitalization(.never)
+              .textInputAutocapitalization(.never)
             #endif
-            .autocorrectionDisabled()
-            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.confirmPassword)
-            .focused($focusedField, equals: .confirm)
+              .autocorrectionDisabled()
+              .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.confirmPassword)
+              .focused($focusedField, equals: .confirm)
 
             if let fieldError {
               ErrorText(error: fieldError, alignment: .leading)

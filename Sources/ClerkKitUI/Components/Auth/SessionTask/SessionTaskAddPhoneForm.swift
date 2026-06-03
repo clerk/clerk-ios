@@ -41,12 +41,12 @@ struct SessionTaskAddPhoneForm: View {
           )
           .textContentType(.telephoneNumber)
           #if os(iOS)
-          .keyboardType(.numberPad)
+            .keyboardType(.numberPad)
           #endif
-          .focused($isFocused)
-          .onFirstAppear {
-            isFocused = true
-          }
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
           if let error {
             ErrorText(error: error, alignment: .leading)
