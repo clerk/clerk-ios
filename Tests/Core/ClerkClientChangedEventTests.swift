@@ -9,22 +9,24 @@ struct ClerkClientChangedEventTests {
   @Test
   func settingDifferentClientEmitsClientChangedEvent() async throws {
     let clerk = Clerk()
+    let client = Client.mock
 
     let event = try await captureNextClientChangedEvent(from: clerk) {
-      clerk.client = .mock
+      clerk.client = client
     }
 
     #expect(event?.oldValue == nil)
-    #expect(event?.newValue == .mock)
+    #expect(event?.newValue == client)
   }
 
   @Test
   func settingEquivalentClientDoesNotEmitClientChangedEvent() async throws {
     let clerk = Clerk()
-    clerk.client = .mock
+    let client = Client.mock
+    clerk.client = client
 
     let event = try await captureNextClientChangedEvent(from: clerk) {
-      clerk.client = .mock
+      clerk.client = client
     }
 
     #expect(event == nil)
@@ -33,13 +35,14 @@ struct ClerkClientChangedEventTests {
   @Test
   func mutatingNestedClientPropertyEmitsClientChangedEvent() async throws {
     let clerk = Clerk()
-    clerk.client = .mock
+    let client = Client.mock
+    clerk.client = client
 
     let event = try await captureNextClientChangedEvent(from: clerk) {
       clerk.client?.sessions[0].user?.firstName = "Updated"
     }
 
-    #expect(event?.oldValue?.sessions[0].user?.firstName == User.mock.firstName)
+    #expect(event?.oldValue?.sessions[0].user?.firstName == client.sessions[0].user?.firstName)
     #expect(event?.newValue?.sessions[0].user?.firstName == "Updated")
   }
 
