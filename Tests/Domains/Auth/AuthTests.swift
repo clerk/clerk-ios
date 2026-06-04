@@ -24,12 +24,14 @@ struct AuthTests {
     options: Clerk.Options = .init()
   ) {
     configureClerkForTesting()
+    let apiClient = createMockAPIClient(baseURL: baseURL)
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(baseURL: baseURL),
+      apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
       signUpService: signUpService,
-      sessionService: sessionService
+      sessionService: sessionService,
+      magicLinkService: MagicLinkService(apiClient: apiClient)
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -49,12 +51,14 @@ struct AuthTests {
   ) -> Clerk {
     Clerk.shared.setCallbackContinuation(nil)
     let clerk = Clerk()
+    let apiClient = createMockAPIClient(baseURL: baseURL)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(baseURL: baseURL),
+      apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
       signUpService: signUpService,
-      sessionService: sessionService
+      sessionService: sessionService,
+      magicLinkService: MagicLinkService(apiClient: apiClient)
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager

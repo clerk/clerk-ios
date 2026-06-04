@@ -14,8 +14,8 @@ import Foundation
 /// This is a lightweight facade that namespaces auth-related methods - it holds no state itself.
 @MainActor
 public struct Auth {
-  private let apiClient: APIClient
   private let magicLinkStore: MagicLinkStore
+  private let magicLinkService: MagicLinkServiceProtocol
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
@@ -23,21 +23,55 @@ public struct Auth {
   private let urlHandlingCoordinator: URLHandlingCoordinator
 
   init(
-    apiClient: APIClient,
     magicLinkStore: MagicLinkStore,
+    magicLinkService: MagicLinkServiceProtocol,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
-    self.apiClient = apiClient
     self.magicLinkStore = magicLinkStore
+    self.magicLinkService = magicLinkService
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
+  }
+
+  /// The current sign-in attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignIn` stored on the current client.
+  /// Useful for continuing identifier-first flows or multi-step verifications.
+  ///
+  /// ```swift
+  /// if let signIn = clerk.auth.currentSignIn {
+  ///   // Continue the flow with the existing SignIn instance
+  ///   _ = try await signIn.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignIn: SignIn? {
+    Clerk.shared.client?.signIn
+  }
+
+  /// The current sign-up attempt, if any.
+  ///
+  /// This mirrors the in-progress `SignUp` stored on the current client.
+  ///
+  /// ```swift
+  /// if let signUp = clerk.auth.currentSignUp {
+  ///   // Continue the flow with the existing SignUp instance
+  ///   _ = try await signUp.sendEmailCode()
+  /// }
+  /// ```
+  public var currentSignUp: SignUp? {
+    Clerk.shared.client?.signUp
+  }
+
+  /// The sessions on the current client.
+  public var sessions: [Session] {
+    Clerk.shared.client?.sessions ?? []
   }
 
   // MARK: - Sign In Entry Points
@@ -522,42 +556,6 @@ public struct Auth {
 }
 
 extension Auth {
-  /// The current sign-in attempt, if any.
-  ///
-  /// This mirrors the in-progress `SignIn` stored on the current client.
-  /// Useful for continuing identifier-first flows or multi-step verifications.
-  ///
-  /// ```swift
-  /// if let signIn = clerk.auth.currentSignIn {
-  ///   // Continue the flow with the existing SignIn instance
-  ///   _ = try await signIn.sendEmailCode()
-  /// }
-  /// ```
-  public var currentSignIn: SignIn? {
-    Clerk.shared.client?.signIn
-  }
-
-  /// The current sign-up attempt, if any.
-  ///
-  /// This mirrors the in-progress `SignUp` stored on the current client.
-  ///
-  /// ```swift
-  /// if let signUp = clerk.auth.currentSignUp {
-  ///   // Continue the flow with the existing SignUp instance
-  ///   _ = try await signUp.sendEmailCode()
-  /// }
-  /// ```
-  public var currentSignUp: SignUp? {
-    Clerk.shared.client?.signUp
-  }
-
-  /// The sessions on the current client.
-  public var sessions: [Session] {
-    Clerk.shared.client?.sessions ?? []
-  }
-}
-
-extension Auth {
   // MARK: - Session Management
 
   /// Signs out the active user.
@@ -734,19 +732,15 @@ extension Auth {
 
     Clerk.shared.setCallbackContinuation(nil)
 
-    let request = Request<ClientResponse<MagicLinkCompleteResponse>>(
-      path: "/v1/client/magic_links/complete",
-      method: .post,
-      body: MagicLinkCompleteParams(
-        flowId: resolvedFlowId,
-        approvalToken: resolvedApprovalToken,
-        codeVerifier: pendingFlow.codeVerifier
-      )
+    let params = MagicLinkCompleteParams(
+      flowId: resolvedFlowId,
+      approvalToken: resolvedApprovalToken,
+      codeVerifier: pendingFlow.codeVerifier
     )
 
     let completionResponse: MagicLinkCompleteResponse
     do {
-      completionResponse = try await apiClient.send(request).value.response
+      completionResponse = try await magicLinkService.complete(params: params)
     } catch {
       if MagicLinkTerminalError.contains(error) {
         magicLinkStore.clear(flow: pendingFlow)

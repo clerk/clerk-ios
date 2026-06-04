@@ -37,6 +37,9 @@ protocol Dependencies: AnyObject {
   /// Service for session-related operations.
   var sessionService: SessionServiceProtocol { get }
 
+  /// Service for native magic-link operations.
+  var magicLinkService: MagicLinkServiceProtocol { get }
+
   /// Service for passkey operations.
   var passkeyService: PasskeyServiceProtocol { get }
 
