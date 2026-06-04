@@ -217,7 +217,7 @@ public struct OrganizationSwitcher<Route: Hashable, LabelContent: View, Destinat
       )
     case .profile:
       OrganizationProfileView(
-        isDismissable: true,
+        isDismissible: true,
         navigationPath: nil,
         customRows: customRows,
         customDestination: customDestination

@@ -20,7 +20,7 @@ import SwiftUI
 ///
 /// ## Usage
 ///
-/// As a dismissable sheet:
+/// As a dismissible sheet:
 ///
 /// ```swift
 /// struct AccountPickerButton: View {
@@ -45,7 +45,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     NavigationStack(path: $path) {
-///       OrganizationListView(isDismissable: false, navigationPath: $path)
+///       OrganizationListView(isDismissible: false, navigationPath: $path)
 ///     }
 ///   }
 /// }
@@ -56,7 +56,7 @@ public struct OrganizationListView: View {
   @Environment(\.dismiss) private var dismiss
 
   private let hidePersonal: Bool
-  private let isDismissable: Bool
+  private let isDismissible: Bool
   private let skipInvitationScreen: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let title: LocalizedStringKey
@@ -98,7 +98,7 @@ public struct OrganizationListView: View {
   /// - Parameters:
   ///   - hidePersonal: Whether the personal account row should be hidden even when
   ///     personal account selection is allowed.
-  ///   - isDismissable: Whether the view can dismiss itself after account selection and
+  ///   - isDismissible: Whether the view can dismiss itself after account selection and
   ///     show a dismiss button.
   ///   - navigationPath: An optional parent navigation path for embedded usage. Pass
   ///     a parent path when the view is hosted inside your own `NavigationStack`.
@@ -106,13 +106,13 @@ public struct OrganizationListView: View {
   ///     post-create invite step.
   public init(
     hidePersonal: Bool = false,
-    isDismissable: Bool = true,
+    isDismissible: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
     skipInvitationScreen: Bool = false
   ) {
     self.init(
       hidePersonal: hidePersonal,
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       skipInvitationScreen: skipInvitationScreen,
       title: "Choose an account",
@@ -122,14 +122,14 @@ public struct OrganizationListView: View {
 
   init(
     hidePersonal: Bool = false,
-    isDismissable: Bool = true,
+    isDismissible: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil,
     skipInvitationScreen: Bool = false,
     title: LocalizedStringKey,
     subtitle: LocalizedStringKey?
   ) {
     self.hidePersonal = hidePersonal
-    self.isDismissable = isDismissable
+    self.isDismissible = isDismissible
     self.skipInvitationScreen = skipInvitationScreen
     self.navigationPath = navigationPath
     self.title = title
@@ -184,7 +184,7 @@ public struct OrganizationListView: View {
       }
     }
     .toolbar {
-      if isDismissable {
+      if isDismissible {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
             dismiss()
@@ -297,12 +297,12 @@ public struct OrganizationListView: View {
   }
 
   private func dismissIfNeeded() {
-    guard isDismissable else { return }
+    guard isDismissible else { return }
     dismiss()
   }
 
   private func completeCreateOrganizationFlow() {
-    if isDismissable {
+    if isDismissible {
       dismiss()
     } else {
       popCreateOrganizationFlow()
