@@ -76,6 +76,5 @@ let package = Package(
         .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
-  ],
-  swiftLanguageModes: [.v5]
+  ]
 )
