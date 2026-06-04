@@ -92,7 +92,7 @@ This project uses **SwiftFormat** for code formatting. The configuration is stor
 - **Indentation**: 2 spaces
 - **Line length**: 1000 characters (very permissive)
 - **Line breaks**: LF (Unix-style)
-- **Swift version**: 5.10
+- **SwiftFormat parser version**: 5.10
 
 ### Xcode Indentation Settings
 

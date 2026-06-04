@@ -39,6 +39,11 @@ jobs:
           ./.tools/bin/swiftformat --version
           ./.tools/bin/swiftlint version
 
+      - name: Check version consistency
+        run: |
+          set -euo pipefail
+          ./scripts/check-version-consistency.sh
+
       - name: Check formatting and linting
         run: |
           set -euo pipefail
