@@ -156,7 +156,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       switch sheet {
       case .userProfile:
         UserProfileView(
-          isDismissable: true,
+          isDismissible: true,
           navigationPath: nil,
           customRows: customRows,
           customDestination: customDestination,

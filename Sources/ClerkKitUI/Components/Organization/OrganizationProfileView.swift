@@ -20,7 +20,7 @@ import SwiftUI
 ///
 /// ## Usage
 ///
-/// As a dismissable sheet:
+/// As a dismissible sheet:
 ///
 /// ```swift
 /// struct OrganizationSettingsButton: View {
@@ -45,7 +45,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     NavigationStack(path: $path) {
-///       OrganizationProfileView(isDismissable: false, navigationPath: $path)
+///       OrganizationProfileView(isDismissible: false, navigationPath: $path)
 ///     }
 ///   }
 /// }
@@ -88,7 +88,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  private let isDismissable: Bool
+  private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [OrganizationProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
@@ -144,12 +144,12 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   }
 
   init(
-    isDismissable: Bool,
+    isDismissible: Bool,
     navigationPath: Binding<NavigationPath>?,
     customRows: [OrganizationProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?
   ) {
-    self.isDismissable = isDismissable
+    self.isDismissible = isDismissible
     self.navigationPath = navigationPath
     self.customRows = customRows
     self.customDestination = customDestination
@@ -158,17 +158,17 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   /// Creates a new organization profile view.
   ///
   /// - Parameters:
-  ///   - isDismissable: Whether the view can be dismissed by the user. When `true`,
+  ///   - isDismissible: Whether the view can be dismissed by the user. When `true`,
   ///     a dismiss button appears in the navigation bar. When `false`, no dismiss
   ///     button is shown.
   ///   - navigationPath: An optional parent navigation path for embedded usage. Pass
   ///     a parent path when the view is hosted inside your own `NavigationStack`.
   public init(
-    isDismissable: Bool = true,
+    isDismissible: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil
   ) where Route == Never, Destination == EmptyView {
     self.init(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: [],
       customDestination: nil
@@ -264,7 +264,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           .foregroundStyle(theme.colors.foreground)
       }
 
-      if isDismissable {
+      if isDismissible {
         ToolbarItem(placement: .topBarTrailing) {
           DismissButton()
         }
@@ -296,7 +296,7 @@ extension OrganizationProfileView {
     _ rows: [OrganizationProfileCustomRow<Route>]
   ) -> OrganizationProfileView<Route, Destination> {
     OrganizationProfileView<Route, Destination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: customDestination
@@ -314,7 +314,7 @@ extension OrganizationProfileView where Destination == EmptyView {
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> OrganizationProfileView<Route, NewDestination> {
     OrganizationProfileView<Route, NewDestination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: customRows,
       customDestination: destination
@@ -328,7 +328,7 @@ extension OrganizationProfileView where Route == Never, Destination == EmptyView
     _ rows: [OrganizationProfileCustomRow<NewRoute>]
   ) -> OrganizationProfileView<NewRoute, EmptyView> {
     OrganizationProfileView<NewRoute, EmptyView>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: nil
@@ -345,7 +345,7 @@ extension OrganizationProfileView where Route == Never, Destination == EmptyView
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
   ) -> OrganizationProfileView<NewRoute, NewDestination> {
     OrganizationProfileView<NewRoute, NewDestination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: [],
       customDestination: destination
