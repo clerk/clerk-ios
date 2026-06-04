@@ -259,6 +259,52 @@ struct SessionTests {
   }
 
   @Test
+  func startEnterpriseSSOUsesDefaultRedirectUrl() async throws {
+    let defaultRedirectUrl = "myapp://default-callback"
+    let options = Clerk.Options(
+      redirectConfig: .init(
+        redirectUrl: defaultRedirectUrl,
+        callbackUrlScheme: "myapp"
+      )
+    )
+
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedEmailAddressId = LockIsolated<String?>(nil)
+    let capturedEnterpriseConnectionId = LockIsolated<String?>(nil)
+    let capturedRedirectUrl = LockIsolated<String?>(nil)
+    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedEmailAddressId.setValue(params.emailAddressId)
+      capturedEnterpriseConnectionId.setValue(params.enterpriseConnectionId)
+      capturedRedirectUrl.setValue(params.redirectUrl)
+      return .mockNeedsFirstFactor
+    })
+
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: options
+    )
+    Clerk.shared.dependencies = dependencies
+    defer { configureClerkForTesting() }
+
+    let verification = try await session.startEnterpriseSSO(
+      emailAddressId: "idn_email",
+      enterpriseConnectionId: "econn_123"
+    )
+
+    #expect(capturedStrategy.value == .enterpriseSSO)
+    #expect(capturedEmailAddressId.value == "idn_email")
+    #expect(capturedEnterpriseConnectionId.value == "econn_123")
+    #expect(capturedRedirectUrl.value == defaultRedirectUrl)
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
   func sendMfaPhoneCodeCallsPrepareSecondFactor() async throws {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
