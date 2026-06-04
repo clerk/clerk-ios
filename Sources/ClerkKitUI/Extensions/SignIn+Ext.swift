@@ -12,7 +12,6 @@ extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
     preparedFirstFactor
-      ?? emailLinkFactor
       ?? defaultStartingFirstFactor
   }
 
@@ -54,7 +53,7 @@ extension SignIn {
     }
 
     let sortedFactors = availableFirstFactors.sorted(using: Factor.passwordPrefComparator)
-    return availableFirstFactors.first { factor in
+    return sortedFactors.first { factor in
       factor.safeIdentifier == identifier
     } ?? sortedFactors.first
   }
@@ -111,18 +110,6 @@ extension SignIn {
     } else {
       supportedFirstFactors?.first(where: \.isResetFactor)
     }
-  }
-
-  var emailLinkFactor: Factor? {
-    guard identifier?.contains("@") == true else {
-      return nil
-    }
-
-    let emailLinkFactors = availableFirstFactors.filter { $0.strategy == .emailLink }
-    if let matchingFactor = emailLinkFactors.first(where: { $0.safeIdentifier == identifier }) {
-      return matchingFactor
-    }
-    return emailLinkFactors.count == 1 ? emailLinkFactors[0] : nil
   }
 }
 

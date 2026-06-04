@@ -57,7 +57,7 @@ struct SignInFactorSelectionTests {
   }
 
   @Test
-  func startingFirstFactorPrefersEmailLinkForEmailIdentifierWhenPasswordIsPreferred() {
+  func startingFirstFactorPrefersPasswordWhenPasswordIsPreferred() {
     var environment = Clerk.Environment.mock
     environment.displayConfig.preferredSignInStrategy = .password
     Clerk.shared.environment = environment
@@ -73,11 +73,11 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .emailLink)
+    #expect(signIn.startingFirstFactor?.strategy == .password)
   }
 
   @Test
-  func startingFirstFactorChoosesEmailLinkMatchingEmailIdentity() {
+  func startingFirstFactorChoosesMatchingEmailLinkWhenPasswordIsPreferredAndPasswordIsUnavailable() {
     var environment = Clerk.Environment.mock
     environment.displayConfig.preferredSignInStrategy = .password
     Clerk.shared.environment = environment
@@ -100,10 +100,6 @@ struct SignInFactorSelectionTests {
         Factor(
           strategy: .emailLink,
           emailAddressId: "ema_123",
-          safeIdentifier: "user@example.com"
-        ),
-        Factor(
-          strategy: .password,
           safeIdentifier: "user@example.com"
         ),
       ]

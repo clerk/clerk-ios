@@ -287,12 +287,14 @@ struct ClerkTests {
       activatedSessionId.setValue(sessionId)
     })
 
+    let apiClient = createMockAPIClient(baseURL: testBaseUrl)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(baseURL: testBaseUrl),
+      apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
-      sessionService: sessionService
+      sessionService: sessionService,
+      magicLinkService: MagicLinkService(apiClient: apiClient)
     )
     clerk.environment = .mock
     let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
@@ -345,12 +347,14 @@ struct ClerkTests {
       activatedSessionId.setValue(sessionId)
     })
 
+    let apiClient = createMockAPIClient(baseURL: testBaseUrl)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(baseURL: testBaseUrl),
+      apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
-      sessionService: sessionService
+      sessionService: sessionService,
+      magicLinkService: MagicLinkService(apiClient: apiClient)
     )
     clerk.environment = .mock
     let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))

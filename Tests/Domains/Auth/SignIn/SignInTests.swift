@@ -88,6 +88,7 @@ struct SignInTests {
       keychain: keychain,
       signInService: service
     )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
     _ = try await signIn.sendEmailLink()
 
@@ -99,7 +100,7 @@ struct SignInTests {
     #expect(params.1.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
     #expect(params.1.codeChallenge?.isEmpty == false)
 
-    let pendingFlow = try #require(Clerk.shared.dependencies.magicLinkStore.load())
+    let pendingFlow = try #require(magicLinkStore.load())
     #expect(pendingFlow.kind == .signIn)
     #expect(pendingFlow.flowId == signIn.id)
     #expect(pendingFlow.codeVerifier.isEmpty == false)
@@ -129,11 +130,12 @@ struct SignInTests {
       keychain: keychain,
       signInService: service
     )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
     await #expect(throws: ClerkClientError.self) {
       try await signIn.sendEmailLink()
     }
-    let pendingFlow = try #require(Clerk.shared.dependencies.magicLinkStore.load())
+    let pendingFlow = try #require(magicLinkStore.load())
     #expect(pendingFlow.kind == .signIn)
     #expect(pendingFlow.flowId == signIn.id)
     #expect(pendingFlow.codeVerifier.isEmpty == false)
