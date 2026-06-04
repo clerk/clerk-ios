@@ -30,11 +30,13 @@ expect_equal() {
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version_file="$repo_root/Sources/ClerkKit/Utils/Version.swift"
+package_file="$repo_root/Package.swift"
 readme_file="$repo_root/README.md"
 contributing_file="$repo_root/CONTRIBUTING.md"
 swiftformat_file="$repo_root/.swiftformat"
 
 sdk_version="$(sed -nE 's/.*sdkVersion: String = "([^"]+)".*/\1/p' "$version_file")"
+package_swift_tools="$(sed -nE 's/^\/\/ swift-tools-version: ?([0-9]+(\.[0-9]+)?)$/\1/p' "$package_file")"
 readme_xcode="$(sed -nE 's/^- Xcode ([0-9]+)\+$/\1/p' "$readme_file")"
 contributing_xcode="$(sed -nE 's/^- macOS with Xcode ([0-9]+)\+ installed$/\1/p' "$contributing_file")"
 readme_swift="$(sed -nE 's/^- Swift ([0-9]+(\.[0-9]+)?)\+$/\1/p' "$readme_file")"
@@ -43,6 +45,7 @@ contributing_swiftformat="$(sed -nE 's/^- \*\*SwiftFormat parser version\*\*: ([
 swiftformat_swift="$(sed -nE 's/^--swiftversion ([0-9]+(\.[0-9]+)?)$/\1/p' "$swiftformat_file")"
 
 require_value "Clerk.sdkVersion in $version_file" "$sdk_version"
+require_value "Swift tools version in $package_file" "$package_swift_tools"
 require_value "Xcode requirement in $readme_file" "$readme_xcode"
 require_value "Xcode requirement in $contributing_file" "$contributing_xcode"
 require_value "Swift requirement in $readme_file" "$readme_swift"
@@ -56,6 +59,7 @@ fi
 
 expect_equal "README/CONTRIBUTING Xcode requirement" "$readme_xcode" "$contributing_xcode"
 expect_equal "README/CONTRIBUTING Swift requirement" "$readme_swift" "$contributing_swift"
+expect_equal "README/Package.swift Swift tools version" "$readme_swift" "$package_swift_tools"
 expect_equal "CONTRIBUTING/.swiftformat SwiftFormat parser version" "$swiftformat_swift" "$contributing_swiftformat"
 
 expected_runner_prefix="macos-$readme_xcode"

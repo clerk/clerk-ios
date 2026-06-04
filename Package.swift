@@ -1,4 +1,4 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -30,7 +30,7 @@ let package = Package(
       dependencies: [],
       path: "Sources/ClerkKit",
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency"),
+        .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
     .target(
@@ -46,7 +46,7 @@ let package = Package(
         .process("Resources"),
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency"),
+        .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
     .testTarget(
@@ -62,7 +62,7 @@ let package = Package(
         "UI",
       ],
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency"),
+        .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
     .testTarget(
@@ -73,8 +73,9 @@ let package = Package(
       ],
       path: "Tests/UI",
       swiftSettings: [
-        .enableExperimentalFeature("StrictConcurrency"),
+        .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
-  ]
+  ],
+  swiftLanguageModes: [.v5]
 )
