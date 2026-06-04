@@ -28,8 +28,8 @@ After running `make setup`, you're ready to start developing!
 
 ### Prerequisites
 
-- macOS with Xcode 16+ installed
-- Swift 5.10+
+- macOS with Xcode 26+ installed
+- Swift 6.2+
 - Git
 
 ## Development Workflow

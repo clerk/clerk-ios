@@ -64,7 +64,7 @@ jobs:
   publish:
     name: Bump, tag, and publish release
     needs: checks
-    runs-on: macos-latest
+    runs-on: macos-26
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 

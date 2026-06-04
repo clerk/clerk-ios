@@ -27,8 +27,8 @@ The Clerk iOS SDK gives you access to prebuilt SwiftUI views, observable state m
 
 ### Requirements
 - iOS 17+ / Mac Catalyst 17+ / macOS 14+ / tvOS 17+ / watchOS 10+ / visionOS 1+
-- Xcode 16+
-- Swift 5.10+
+- Xcode 26+
+- Swift 6.2+
 
 ### Swift Package Manager
 

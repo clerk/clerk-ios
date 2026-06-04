@@ -23,7 +23,7 @@ permissions:
 jobs:
   format-and-lint:
     name: Check formatting and linting
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
   test:
     name: Run ClerkKit tests on macOS
     needs: format-and-lint
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
   test-ui:
     name: Run ClerkKitUI tests on iOS
     needs: format-and-lint
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -124,7 +124,7 @@ jobs:
     name: Run E2EHost tests on iOS (${{ matrix.shard }})
     needs: format-and-lint
     if: inputs.run_integration_tests
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -278,7 +278,7 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     needs: [test, test-ui]
-    runs-on: macos-latest
+    runs-on: macos-26
     strategy:
       matrix:
         platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
