@@ -73,7 +73,7 @@ struct SignUpTests {
   }
 
   @Test
-  func sendEmailLinkDoesNotSavePendingFlowWhenPrepareFails() async throws {
+  func sendEmailLinkSavesPendingFlowBeforePrepare() async throws {
     let keychain = InMemoryKeychain()
     let signUp = SignUp.mock
     let service = MockSignUpService(prepareVerification: { _, _ in
@@ -89,7 +89,31 @@ struct SignUpTests {
     await #expect(throws: ClerkClientError.self) {
       try await signUp.sendEmailLink()
     }
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+    let pendingFlow = try #require(Clerk.shared.dependencies.magicLinkStore.load())
+    #expect(pendingFlow.kind == .signUp)
+    #expect(pendingFlow.flowId == signUp.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails() async throws {
+    let prepareWasCalled = LockIsolated(false)
+    let signUp = SignUp.mock
+    let service = MockSignUpService(prepareVerification: { _, _ in
+      prepareWasCalled.setValue(true)
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: SetFailingKeychain(),
+      signUpService: service
+    )
+
+    await #expect(throws: SetFailingKeychain.Failure.self) {
+      try await signUp.sendEmailLink()
+    }
+    #expect(prepareWasCalled.value == false)
   }
 
   @Test

@@ -140,8 +140,9 @@ extension SignIn {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
+    try magicLinkStore.save(kind: .signIn, flowId: id, codeVerifier: pkcePair.verifier)
 
-    let preparedSignIn = try await signInService.prepareFirstFactor(
+    return try await signInService.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .emailLink,
@@ -151,8 +152,6 @@ extension SignIn {
         codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
       )
     )
-    try magicLinkStore.save(kind: .signIn, flowId: id, codeVerifier: pkcePair.verifier)
-    return preparedSignIn
   }
 
   /// Sends a verification code to the specified phone number.

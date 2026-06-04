@@ -39,10 +39,12 @@ enum ClerkURLRoute: Hashable {
       return false
     }
 
-    if expected.isHTTPRedirect {
+    let expectedHost = normalizedHost(expected.host)
+    let expectedPath = normalizedPath(expected.path)
+    if expectedHost != nil || !expectedPath.isEmpty {
       guard
-        normalizedHost(actual.host) == normalizedHost(expected.host),
-        normalizedPath(actual.path) == normalizedPath(expected.path)
+        normalizedHost(actual.host) == expectedHost,
+        normalizedPath(actual.path) == expectedPath
       else {
         return false
       }
@@ -67,16 +69,5 @@ enum ClerkURLRoute: Hashable {
     }
 
     return path
-  }
-}
-
-extension URLComponents {
-  fileprivate var isHTTPRedirect: Bool {
-    switch scheme?.lowercased() {
-    case "http", "https":
-      true
-    default:
-      false
-    }
   }
 }

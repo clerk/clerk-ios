@@ -174,8 +174,9 @@ extension SignUp {
     }
 
     let pkcePair = try MagicLinkPKCE.generatePair()
+    try magicLinkStore.save(kind: .signUp, flowId: id, codeVerifier: pkcePair.verifier)
 
-    let preparedSignUp = try await signUpService.prepareVerification(
+    return try await signUpService.prepareVerification(
       signUpId: id,
       params: .init(
         strategy: .emailLink,
@@ -185,8 +186,6 @@ extension SignUp {
         codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
       )
     )
-    try magicLinkStore.save(kind: .signUp, flowId: id, codeVerifier: pkcePair.verifier)
-    return preparedSignUp
   }
 
   /// Sends a verification code to the email address.

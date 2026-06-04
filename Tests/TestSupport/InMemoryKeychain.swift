@@ -31,3 +31,23 @@ final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
     return items[key] != nil
   }
 }
+
+final class SetFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case set
+  }
+
+  func set(_: Data, forKey _: String) throws {
+    throw Failure.set
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    nil
+  }
+
+  func deleteItem(forKey _: String) throws {}
+
+  func hasItem(forKey _: String) throws -> Bool {
+    false
+  }
+}

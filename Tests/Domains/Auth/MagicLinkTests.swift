@@ -44,12 +44,10 @@ struct MagicLinkTests {
   @Test(arguments: [
     "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123",
     "com.clerk.Quickstart://callback/?flow_id=flow_123&approval_token=approval_123",
-    "com.clerk.Quickstart:/callback?flow_id=flow_123&approval_token=approval_123",
-    "com.clerk.Quickstart://wrong?flow_id=flow_123&approval_token=approval_123",
     "com.clerk.Quickstart://callback#flow_id=flow_123&approval_token=approval_123",
   ])
   @MainActor
-  func routeMatcherAcceptsEquivalentCustomSchemeCallbacks(_ callbackUrl: String) throws {
+  func routeMatcherAcceptsConfiguredCustomSchemeCallbacks(_ callbackUrl: String) throws {
     let url = try #require(URL(string: callbackUrl))
 
     let route = try ClerkURLRoute(url: url)
@@ -61,6 +59,20 @@ struct MagicLinkTests {
 
     #expect(flowId == "flow_123")
     #expect(approvalToken == "approval_123")
+  }
+
+  @Test(arguments: [
+    "com.clerk.Quickstart:/callback?flow_id=flow_123&approval_token=approval_123",
+    "com.clerk.Quickstart://wrong?flow_id=flow_123&approval_token=approval_123",
+    "com.clerk.Quickstart://callback/extra?flow_id=flow_123&approval_token=approval_123",
+  ])
+  @MainActor
+  func routeMatcherRejectsDifferentCustomSchemeEndpoint(_ callbackUrl: String) throws {
+    let url = try #require(URL(string: callbackUrl))
+
+    let route = try ClerkURLRoute(url: url)
+
+    #expect(route == nil)
   }
 
   @Test
