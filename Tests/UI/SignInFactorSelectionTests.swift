@@ -57,6 +57,29 @@ struct SignInFactorSelectionTests {
   }
 
   @Test
+  func startingFirstFactorDoesNotMatchMissingIdentifierToMissingSafeIdentifier() {
+    var environment = Clerk.Environment.mock
+    environment.displayConfig.preferredSignInStrategy = .otp
+    Clerk.shared.environment = environment
+
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: nil,
+      supportedFirstFactors: [
+        Factor(strategy: .password),
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "ema_123",
+          safeIdentifier: "user@example.com"
+        ),
+      ]
+    )
+
+    #expect(signIn.startingFirstFactor?.strategy == .emailCode)
+  }
+
+  @Test
   func startingFirstFactorPrefersPasswordWhenPasswordIsPreferred() {
     var environment = Clerk.Environment.mock
     environment.displayConfig.preferredSignInStrategy = .password

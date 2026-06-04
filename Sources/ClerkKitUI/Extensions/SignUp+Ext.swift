@@ -19,12 +19,10 @@ extension SignUp {
 
   @MainActor
   var emailVerificationStrategy: FactorStrategy {
-    // Check if there's an active verification with a strategy
     if let strategy = emailVerification?.strategy {
       return strategy
     }
 
-    // Fall back to environment user settings
     if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
        verifications.contains(FactorStrategy.emailLink.rawValue)
     {

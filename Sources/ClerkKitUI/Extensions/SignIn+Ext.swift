@@ -18,7 +18,9 @@ extension SignIn {
   var preparedFirstFactor: Factor? {
     guard let strategy = firstFactorVerification?.strategy else { return nil }
     let matchingFactors = availableFirstFactors.filter { $0.strategy == strategy }
-    if let matchingFactor = matchingFactors.first(where: { $0.safeIdentifier == identifier }) {
+    if let identifier,
+       let matchingFactor = matchingFactors.first(where: { $0.safeIdentifier == identifier })
+    {
       return matchingFactor
     }
     return matchingFactors.count == 1 ? matchingFactors[0] : nil
@@ -53,9 +55,12 @@ extension SignIn {
     }
 
     let sortedFactors = availableFirstFactors.sorted(using: Factor.passwordPrefComparator)
-    return sortedFactors.first { factor in
-      factor.safeIdentifier == identifier
-    } ?? sortedFactors.first
+    if let identifier,
+       let matchingFactor = sortedFactors.first(where: { $0.safeIdentifier == identifier })
+    {
+      return matchingFactor
+    }
+    return sortedFactors.first
   }
 
   var factorWhenOtpIsPreferred: Factor? {
@@ -66,9 +71,12 @@ extension SignIn {
     }
 
     let sortedFactors = availableFirstFactors.sorted(using: Factor.otpPrefComparator)
-    return sortedFactors.first { factor in
-      factor.safeIdentifier == identifier
-    } ?? sortedFactors.first
+    if let identifier,
+       let matchingFactor = sortedFactors.first(where: { $0.safeIdentifier == identifier })
+    {
+      return matchingFactor
+    }
+    return sortedFactors.first
   }
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
