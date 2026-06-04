@@ -316,7 +316,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
     }
     .background(theme.colors.muted)
-    .securedByClerkFooter()
+    .securedByClerkFooter(macOSDismissAction: isDismissable ? { dismiss() } : nil)
     .animation(.default, value: user)
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
@@ -329,12 +329,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           .foregroundStyle(theme.colors.foreground)
       }
 
-        if isDismissible {
-          DismissToolbarItem {
-            dismiss()
-          }
+      #if os(iOS)
+      if isDismissible {
+        DismissToolbarItem {
+          dismiss()
         }
       }
+      #endif
     }
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)

@@ -20,5 +20,6 @@ struct MacExampleApp: App {
         .environment(Clerk.shared)
         .atlantisProxy()
     }
+    .defaultSize(width: 1100, height: 800)
   }
 }

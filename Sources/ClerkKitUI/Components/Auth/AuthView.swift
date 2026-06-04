@@ -120,20 +120,24 @@ public struct AuthView: View {
   public var body: some View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
+        #if os(iOS)
         .toolbar {
           dismissToolbarItem
         }
+        #endif
         .navigationDestination(for: Destination.self) {
           $0.view
+            #if os(iOS)
             .toolbar {
               dismissToolbarItem
             }
-            .developmentModeBottomInset(background: .white)
+            #endif
+            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
-        .developmentModeBottomInset(background: .white)
+        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)

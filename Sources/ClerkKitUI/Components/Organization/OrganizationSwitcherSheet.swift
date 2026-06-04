@@ -52,7 +52,12 @@ struct OrganizationSwitcherSheet: View {
           }
           .buttonStyle(.pressedBackground)
 
-          SecuredByClerkFooter(showBackground: false)
+          SecuredByClerkFooter(
+            showBackground: false,
+            macOSDismissAction: {
+              dismiss()
+            }
+          )
         }
         #if os(iOS)
         .onGeometryChange(
@@ -73,7 +78,8 @@ struct OrganizationSwitcherSheet: View {
       .preGlassSolidNavBar()
       .preGlassDetentSheetBackground()
       .toolbar {
-        ToolbarItem(placement: doneToolbarPlacement) {
+        #if os(iOS)
+        ToolbarItem(placement: .topBarTrailing) {
           Button {
             dismiss()
           } label: {
@@ -83,6 +89,7 @@ struct OrganizationSwitcherSheet: View {
               .foregroundStyle(theme.colors.primary)
           }
         }
+        #endif
 
         ToolbarItem(placement: .principal) {
           Text("Organization", bundle: .module)
@@ -95,14 +102,6 @@ struct OrganizationSwitcherSheet: View {
     .presentationDetents([.height(contentHeight)])
     #elseif os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
-    #endif
-  }
-
-  private var doneToolbarPlacement: ToolbarItemPlacement {
-    #if os(iOS)
-    .topBarTrailing
-    #elseif os(macOS)
-    .confirmationAction
     #endif
   }
 

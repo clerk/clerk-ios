@@ -178,6 +178,7 @@ public struct OrganizationListView: View {
       }
     }
     .background(theme.colors.background)
+    .securedByClerkFooter(macOSDismissAction: isDismissable ? { dismiss() } : nil)
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     #endif
@@ -189,6 +190,7 @@ public struct OrganizationListView: View {
       }
     }
     .toolbar {
+      #if os(iOS)
       if isDismissible {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
@@ -197,6 +199,7 @@ public struct OrganizationListView: View {
           .foregroundStyle(theme.colors.primary)
         }
       }
+      #endif
 
       if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
         ToolbarItem(placement: .principal) {
@@ -232,7 +235,6 @@ public struct OrganizationListView: View {
       }
       .padding(.top, 16)
     }
-    .securedByClerkFooter()
   }
 
   private var accountListHeader: some View {
@@ -259,9 +261,11 @@ public struct OrganizationListView: View {
     #endif
     .preGlassSolidNavBar()
   }
+}
 
-  // MARK: - Actions
+// MARK: - Actions
 
+extension OrganizationListView {
   private func fetchOrganizationResources() async {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
     await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
