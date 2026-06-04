@@ -23,7 +23,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
@@ -46,7 +46,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
@@ -79,7 +79,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["active_organization_id"] == "")
@@ -112,7 +112,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["active_organization_id"] == organizationId)
@@ -147,7 +147,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["active_organization_id"] == "")
@@ -185,7 +185,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { _ in
+    mock.onRequestHandler = OnRequestHandler { @Sendable _ in
       requestHandled.setValue(true)
     }
     mock.register()
@@ -229,7 +229,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
@@ -262,7 +262,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
@@ -286,7 +286,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
@@ -311,7 +311,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["level"] == "first_factor")
@@ -345,7 +345,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["strategy"] == "passkey")
@@ -378,7 +378,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["strategy"] == "enterprise_sso")
@@ -420,7 +420,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["strategy"] == "passkey")
@@ -455,7 +455,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       let body = request.urlEncodedFormBody!
       #expect(body["strategy"] == "totp")
@@ -486,7 +486,7 @@ struct SessionServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }

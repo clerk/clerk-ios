@@ -90,7 +90,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["name"] == "My Org")
       #expect(request.urlEncodedFormBody!["slug"] == nil)
@@ -114,7 +114,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["name"] == "My Org")
       #expect(request.urlEncodedFormBody!["slug"] == "my-org")
@@ -139,7 +139,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -163,7 +163,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["name"] == "New Name")
       #expect(request.urlEncodedFormBody!["slug"] == "new-slug")
@@ -192,7 +192,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["name"] == "New Name")
       #expect(request.urlEncodedFormBody!["slug"] == nil)
@@ -234,7 +234,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       requestHandled.setValue(true)
     }
@@ -269,7 +269,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
@@ -293,7 +293,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PUT")
       #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
       requestHandled.setValue(true)
@@ -320,7 +320,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -351,7 +351,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
@@ -386,7 +386,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
@@ -423,7 +423,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("query=test") == true)
       requestHandled.setValue(true)
@@ -458,7 +458,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       let queryString = request.url?.query ?? ""
       #expect(queryString.contains("role") == true)
@@ -489,7 +489,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["user_id"] == "user123")
       #expect(request.urlEncodedFormBody!["role"] == "org:member")
@@ -520,7 +520,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["role"] == "org:admin")
       requestHandled.setValue(true)
@@ -550,7 +550,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
@@ -581,7 +581,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
@@ -622,7 +622,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       let queryItems = request.url.flatMap {
         URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems
@@ -655,7 +655,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["email_address"] == "user@example.com")
       #expect(request.urlEncodedFormBody!["role"] == "org:member")
@@ -684,7 +684,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBodyMultiValue!["email_address"] == ["one@example.com", "two@example.com"])
@@ -714,7 +714,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["name"] == "example.com")
       requestHandled.setValue(true)
@@ -746,7 +746,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
@@ -781,7 +781,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("enrollment_mode=automatic") == true)
       requestHandled.setValue(true)
@@ -811,7 +811,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
@@ -842,7 +842,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("offset=0") == true)
       #expect(request.url?.query?.contains("limit=10") == true)
@@ -877,7 +877,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("status=pending") == true)
       requestHandled.setValue(true)
@@ -906,7 +906,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -933,7 +933,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["affiliation_email_address"] == "user@example.com")
@@ -962,7 +962,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["code"] == "123456")
@@ -991,7 +991,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["enrollment_mode"] == "automatic_invitation")
@@ -1022,7 +1022,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       #expect(request.urlEncodedFormBody!["enrollment_mode"] == "manual_invitation")
@@ -1068,7 +1068,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == scenario.method.rawValue)
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1102,7 +1102,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1130,7 +1130,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1157,7 +1157,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1183,7 +1183,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1209,7 +1209,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
@@ -1236,7 +1236,7 @@ struct OrganizationServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)

@@ -76,8 +76,9 @@ struct ClerkReconfigureTests {
       Issue.record("Expected ClerkInitializationError, got \(error)")
     }
 
+    let dependenciesUnchanged = Clerk.shared.dependencies === originalDependencies
     #expect(Clerk.shared === original)
-    #expect((Clerk.shared.dependencies as AnyObject) === (originalDependencies as AnyObject))
+    #expect(dependenciesUnchanged)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "old-device-token")
     #expect(Clerk.shared.client?.id == originalClient.id)
     #expect(Clerk.shared.session?.id == originalClient.currentSession?.id)
@@ -196,9 +197,10 @@ struct ClerkReconfigureTests {
       Issue.record("Expected ClerkClientError, got \(error)")
     }
 
+    let dependenciesUnchanged = Clerk.shared.dependencies === previousDependencies
     #expect(Clerk.shared === original)
     #expect(Clerk.shared.configurationEpoch == previousEpoch)
-    #expect((Clerk.shared.dependencies as AnyObject) === (previousDependencies as AnyObject))
+    #expect(dependenciesUnchanged)
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)
   }

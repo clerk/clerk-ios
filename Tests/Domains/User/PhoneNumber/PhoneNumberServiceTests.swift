@@ -23,7 +23,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["phone_number"] == "+1234567890")
       requestHandled.setValue(true)
@@ -47,7 +47,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
@@ -70,7 +70,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       requestHandled.setValue(true)
@@ -94,7 +94,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
       requestHandled.setValue(true)
@@ -121,7 +121,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["default_second_factor"] == "1")
       requestHandled.setValue(true)
@@ -145,7 +145,7 @@ struct PhoneNumberServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["reserved_for_second_factor"] == "1")
       requestHandled.setValue(true)

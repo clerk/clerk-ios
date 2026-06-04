@@ -23,7 +23,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
       #expect(request.allHTTPHeaderFields?["clerk-api-version"] == Clerk.apiVersion)
       #expect(request.allHTTPHeaderFields?["x-ios-sdk-version"] == Clerk.sdkVersion)
@@ -53,7 +53,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       let queryString = request.url?.query ?? ""
       #expect(queryString.contains("_is_native=true") == true, "Expected _is_native=true query parameter to be present")
@@ -82,7 +82,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
@@ -109,7 +109,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["key"] == "value")
       requestHandled.setValue(true)
@@ -142,7 +142,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/json")
       #expect(request.jsonBody?["unsafe_metadata"]?["token"]?.stringValue == "some-value")
@@ -173,7 +173,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["key"] == "value")
       requestHandled.setValue(true)
@@ -202,7 +202,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }
@@ -229,7 +229,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       let queryString = request.url?.query ?? ""
       #expect(queryString.contains("param1=value1") == true)
@@ -267,7 +267,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
       requestHandled.setValue(true)
@@ -301,7 +301,7 @@ struct ClerkAPIClientTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
