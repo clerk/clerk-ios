@@ -163,10 +163,14 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           customDestination: customDestination,
           oauthConfig: userProfileOAuthConfig
         )
+        #if os(iOS)
         .presentationDragIndicator(.visible)
+        #endif
       case .sessionTaskAuth:
         AuthView()
+          #if os(iOS)
           .presentationDragIndicator(.visible)
+          #endif
       case .signOut:
         UserButtonSignOutView()
           .contentSizingDetent()

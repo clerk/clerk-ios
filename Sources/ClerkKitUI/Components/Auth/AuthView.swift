@@ -141,6 +141,13 @@ public struct AuthView: View {
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
+    #if os(macOS)
+    .frame(
+      width: isDismissable ? 560 : nil,
+      height: isDismissable ? 620 : nil,
+      alignment: .topLeading
+    )
+    #endif
     .interactiveDismissDisabled(disablesInteractiveDismissal)
     .tint(theme.colors.primary)
     .environment(navigation)
