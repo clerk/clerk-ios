@@ -111,6 +111,98 @@ struct SessionTests {
   }
 
   @Test
+  func sendEmailCodeCallsPrepareFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedEmailAddressId = LockIsolated<String?>(nil)
+    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedEmailAddressId.setValue(params.emailAddressId)
+      return .mockNeedsFirstFactor
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.sendEmailCode(emailAddressId: "idn_email")
+
+    #expect(capturedStrategy.value == .emailCode)
+    #expect(capturedEmailAddressId.value == "idn_email")
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
+  func sendPhoneCodeCallsPrepareFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedPhoneNumberId = LockIsolated<String?>(nil)
+    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedPhoneNumberId.setValue(params.phoneNumberId)
+      return .mockNeedsFirstFactor
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.sendPhoneCode(phoneNumberId: "idn_phone")
+
+    #expect(capturedStrategy.value == .phoneCode)
+    #expect(capturedPhoneNumberId.value == "idn_phone")
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
+  func verifyWithEmailCodeCallsAttemptFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let service = MockSessionService(attemptFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedCode.setValue(params.code)
+      return .mockComplete
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.verifyWithEmailCode(code: "123456")
+
+    #expect(capturedStrategy.value == .emailCode)
+    #expect(capturedCode.value == "123456")
+    #expect(verification.status == .complete)
+  }
+
+  @Test
+  func verifyWithPhoneCodeCallsAttemptFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let service = MockSessionService(attemptFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedCode.setValue(params.code)
+      return .mockComplete
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.verifyWithPhoneCode(code: "123456")
+
+    #expect(capturedStrategy.value == .phoneCode)
+    #expect(capturedCode.value == "123456")
+    #expect(verification.status == .complete)
+  }
+
+  @Test
   func verifyWithPasswordCallsAttemptFirstFactor() async throws {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
@@ -130,6 +222,85 @@ struct SessionTests {
 
     #expect(capturedStrategy.value == .password)
     #expect(capturedPassword.value == "hunter2")
+    #expect(verification.status == .complete)
+  }
+
+  @Test
+  func startEnterpriseSSOCallsPrepareFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedEmailAddressId = LockIsolated<String?>(nil)
+    let capturedEnterpriseConnectionId = LockIsolated<String?>(nil)
+    let capturedRedirectUrl = LockIsolated<String?>(nil)
+    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedEmailAddressId.setValue(params.emailAddressId)
+      capturedEnterpriseConnectionId.setValue(params.enterpriseConnectionId)
+      capturedRedirectUrl.setValue(params.redirectUrl)
+      return .mockNeedsFirstFactor
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.startEnterpriseSSO(
+      emailAddressId: "idn_email",
+      enterpriseConnectionId: "econn_123",
+      redirectUrl: "myapp://callback"
+    )
+
+    #expect(capturedStrategy.value == .enterpriseSSO)
+    #expect(capturedEmailAddressId.value == "idn_email")
+    #expect(capturedEnterpriseConnectionId.value == "econn_123")
+    #expect(capturedRedirectUrl.value == "myapp://callback")
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
+  func sendMfaPhoneCodeCallsPrepareSecondFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedPhoneNumberId = LockIsolated<String?>(nil)
+    let service = MockSessionService(prepareSecondFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedPhoneNumberId.setValue(params.phoneNumberId)
+      return .mockNeedsSecondFactor
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.sendMfaPhoneCode(phoneNumberId: "idn_phone")
+
+    #expect(capturedStrategy.value == .phoneCode)
+    #expect(capturedPhoneNumberId.value == "idn_phone")
+    #expect(verification.status == .needsSecondFactor)
+  }
+
+  @Test
+  func verifyWithMfaPhoneCodeCallsAttemptSecondFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedCode.setValue(params.code)
+      return .mockComplete
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.verifyWithMfaPhoneCode(code: "123456")
+
+    #expect(capturedStrategy.value == .phoneCode)
+    #expect(capturedCode.value == "123456")
     #expect(verification.status == .complete)
   }
 

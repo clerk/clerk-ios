@@ -7,8 +7,9 @@ import Foundation
 /// Represents the state of an in-session reverification (step-up) flow.
 ///
 /// Use ``Session/startVerification(level:)`` to begin a reverification, then complete it
-/// with the appropriate first- and/or second-factor methods (for example,
-/// ``Session/verifyWithPasskey()``). When the verification completes successfully the
+/// with the appropriate first- or second-factor convenience method (for example,
+/// ``Session/verifyWithPassword(_:)``, ``Session/verifyWithPasskey()``, or
+/// ``Session/verifyWithTOTP(code:)``). When the verification completes successfully the
 /// associated session's first-factor age is refreshed, allowing subsequent calls that
 /// require step-up to succeed without forcing the user to sign out and back in.
 public struct SessionVerification: Codable, Equatable, Sendable {
