@@ -116,34 +116,6 @@ public final class Clerk {
     organizationMembership?.organization
   }
 
-  /// A host-facing signal that auth UI presentation may be required.
-  ///
-  /// This reflects durable SDK state rather than a transient event, allowing hosts to
-  /// react on first render after cold start as well as during normal runtime.
-  ///
-  /// Hosts should use this as a presentation trigger, not as a source of truth for
-  /// whether their sheet or full-screen cover is currently visible.
-  public enum AuthPresentationRequirement: Equatable, Sendable {
-    /// A recovered sign-in or sign-up flow can continue in auth UI.
-    case continuation
-
-    /// The current session has pending session tasks that should be handled in auth UI.
-    case sessionTasks
-  }
-
-  /// The current auth presentation requirement, if any.
-  package var authPresentationRequirement: AuthPresentationRequirement? {
-    if pendingAuthResult?.needsContinuation == true {
-      return .continuation
-    }
-
-    if session?.pendingTasks.isEmpty == false {
-      return .sessionTasks
-    }
-
-    return nil
-  }
-
   /// A dictionary of a user's active sessions on all devices.
   public internal(set) var sessionsByUserId: [String: [Session]] = [:]
 
@@ -527,11 +499,6 @@ extension Clerk {
 
     try await auth.handle(route)
     return true
-  }
-
-  @discardableResult
-  func handle(_ route: ClerkURLRoute, using auth: Auth) async throws -> SignIn {
-    try await auth.handle(route)
   }
 
   @MainActor
