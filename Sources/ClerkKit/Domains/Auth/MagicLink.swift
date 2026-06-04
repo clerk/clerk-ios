@@ -19,6 +19,29 @@ struct MagicLinkCompleteResponse: Codable, Equatable {
   let ticket: String
 }
 
+enum MagicLinkTerminalError {
+  private static let codes: Set<String> = [
+    "approval_token_consumed",
+    "approval_token_expired",
+    "approval_token_invalid",
+    "pkce_verification_failed",
+    "flow_not_approved",
+  ]
+
+  static func contains(_ error: Error) -> Bool {
+    guard let apiError = error as? ClerkAPIError else {
+      return false
+    }
+
+    if codes.contains(apiError.code) {
+      return true
+    }
+
+    return apiError.code == "form_param_value_invalid"
+      && apiError.context?["paramName"] == "flow_id"
+  }
+}
+
 struct PendingMagicLinkFlow: Codable, Equatable {
   enum Kind: String, Codable, Equatable {
     case signIn

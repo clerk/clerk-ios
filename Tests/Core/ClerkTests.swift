@@ -257,7 +257,10 @@ struct ClerkTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -318,7 +321,10 @@ struct ClerkTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )

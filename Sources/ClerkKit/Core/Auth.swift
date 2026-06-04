@@ -734,7 +734,7 @@ extension Auth {
 
     Clerk.shared.setCallbackContinuation(nil)
 
-    let request = Request<MagicLinkCompleteResponse>(
+    let request = Request<ClientResponse<MagicLinkCompleteResponse>>(
       path: "/v1/client/magic_links/complete",
       method: .post,
       body: MagicLinkCompleteParams(
@@ -744,7 +744,15 @@ extension Auth {
       )
     )
 
-    let completionResponse = try await apiClient.send(request).value
+    let completionResponse: MagicLinkCompleteResponse
+    do {
+      completionResponse = try await apiClient.send(request).value.response
+    } catch {
+      if MagicLinkTerminalError.contains(error) {
+        magicLinkStore.clear(flow: pendingFlow)
+      }
+      throw error
+    }
     magicLinkStore.clear(flow: pendingFlow)
 
     let result: TransferFlowResult = switch pendingFlow.kind {

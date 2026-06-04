@@ -383,7 +383,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -449,7 +452,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -520,7 +526,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -583,7 +592,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -784,7 +796,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
@@ -834,6 +849,110 @@ struct AuthTests {
   }
 
   @Test
+  func completeMagicLinkClearsPendingFlowOnTerminalCompletionFailure() async throws {
+    let keychain = InMemoryKeychain()
+    let signInCalled = LockIsolated(false)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-complete-terminal.clerk.accounts.dev"))
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    let completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 422,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "approval_token_expired",
+                message: "The approval token has expired.",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+    completionMock.register()
+
+    let signInService = MockSignInService(create: { _ in
+      signInCalled.setValue(true)
+      return .mock
+    })
+
+    let clerk = makeIsolatedClerk(
+      signInService: signInService,
+      keychain: keychain,
+      baseURL: testBaseUrl
+    )
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
+    }
+
+    #expect(signInCalled.value == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func completeMagicLinkPreservesPendingFlowOnRetryableCompletionFailure() async throws {
+    let keychain = InMemoryKeychain()
+    let signInCalled = LockIsolated(false)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-complete-retryable.clerk.accounts.dev"))
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    let completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 500,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "server_error",
+                message: "Try again.",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+    completionMock.register()
+
+    let signInService = MockSignInService(create: { _ in
+      signInCalled.setValue(true)
+      return .mock
+    })
+
+    let clerk = makeIsolatedClerk(
+      signInService: signInService,
+      keychain: keychain,
+      baseURL: testBaseUrl
+    )
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
+    }
+
+    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    #expect(signInCalled.value == false)
+    #expect(pendingFlow.flowId == "flow_123")
+    #expect(pendingFlow.codeVerifier == "verifier_123")
+  }
+
+  @Test
   func completeMagicLinkDoesNotClearNewerPendingFlow() async throws {
     let keychain = InMemoryKeychain()
     let activatedSessionId = LockIsolated<String?>(nil)
@@ -868,7 +987,10 @@ struct AuthTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")
+          ClientResponse(
+            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            client: .mock
+          )
         ),
       ]
     )
