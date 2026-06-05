@@ -77,7 +77,9 @@ struct BackupCodesView: View {
           Text("Done", bundle: .module)
             .font(theme.fonts.body)
             .fontWeight(.semibold)
+            #if os(iOS)
             .foregroundStyle(theme.colors.primary)
+            #endif
         }
         .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }

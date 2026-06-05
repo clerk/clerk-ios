@@ -90,7 +90,7 @@ struct OrganizationInviteMembersView: View {
       await loadRoles()
     }
     #if os(macOS)
-    .frame(minWidth: 420, maxWidth: 520)
+    .frame(minWidth: 420, maxWidth: 520, minHeight: 320)
     #endif
   }
 
@@ -181,6 +181,7 @@ struct OrganizationInviteMembersView: View {
         }
         .tint(theme.colors.primary)
         .disabled(roleOptions.isEmpty || hasRoleSetMigration)
+        .menuIndicator(.hidden)
       }
 
       if roleOptions.isEmpty {
