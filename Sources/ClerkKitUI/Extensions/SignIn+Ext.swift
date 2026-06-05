@@ -11,23 +11,6 @@ import Foundation
 extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
-    preparedFirstFactor
-      ?? defaultStartingFirstFactor
-  }
-
-  var preparedFirstFactor: Factor? {
-    guard let strategy = firstFactorVerification?.strategy else { return nil }
-    let matchingFactors = availableFirstFactors.filter { $0.strategy == strategy }
-    if let identifier,
-       let matchingFactor = matchingFactors.first(where: { $0.safeIdentifier == identifier })
-    {
-      return matchingFactor
-    }
-    return matchingFactors.count == 1 ? matchingFactors[0] : nil
-  }
-
-  @MainActor
-  var defaultStartingFirstFactor: Factor? {
     let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
     return preferredSignInStrategy == .password
       ? factorWhenPasswordIsPreferred

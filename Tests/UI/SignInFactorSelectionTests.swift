@@ -11,13 +11,17 @@ struct SignInFactorSelectionTests {
   }
 
   @Test
-  func startingFirstFactorPrefersPreparedVerificationStrategy() {
+  func startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() {
+    var environment = Clerk.Environment.mock
+    environment.displayConfig.preferredSignInStrategy = .password
+    Clerk.shared.environment = environment
+
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
       identifier: "user@example.com",
       supportedFirstFactors: [
-        .mockEmailLink,
+        .mockPassword,
         .mockEmailCode,
       ],
       firstFactorVerification: Verification(
@@ -26,34 +30,7 @@ struct SignInFactorSelectionTests {
       )
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .emailCode)
-  }
-
-  @Test
-  func startingFirstFactorMatchesPreparedVerificationByIdentifierWhenStrategiesRepeat() {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsFirstFactor,
-      identifier: "second@example.com",
-      supportedFirstFactors: [
-        Factor(
-          strategy: .emailCode,
-          emailAddressId: "ema_first",
-          safeIdentifier: "first@example.com"
-        ),
-        Factor(
-          strategy: .emailCode,
-          emailAddressId: "ema_second",
-          safeIdentifier: "second@example.com"
-        ),
-      ],
-      firstFactorVerification: Verification(
-        status: .unverified,
-        strategy: .emailCode
-      )
-    )
-
-    #expect(signIn.startingFirstFactor?.emailAddressId == "ema_second")
+    #expect(signIn.startingFirstFactor?.strategy == .password)
   }
 
   @Test
