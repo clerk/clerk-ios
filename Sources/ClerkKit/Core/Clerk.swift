@@ -493,7 +493,7 @@ extension Clerk {
   /// ```
   @discardableResult
   public func handle(_ url: URL) async throws -> Bool {
-    guard let route = try ClerkURLRoute(url: url) else {
+    guard let route = try ClerkURLRoute(url: url, redirectUrl: options.redirectConfig.redirectUrl) else {
       return false
     }
 

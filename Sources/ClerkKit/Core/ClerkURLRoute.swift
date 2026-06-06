@@ -8,11 +8,10 @@ import Foundation
 enum ClerkURLRoute: Hashable {
   case magicLink(flowId: String, approvalToken: String)
 
-  @MainActor
-  init?(url: URL) throws {
+  init?(url: URL, redirectUrl: String) throws {
     if Self.matches(
       url,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      redirectUrl: redirectUrl,
       requiredParams: MagicLinkCallback.requiredParams
     ) {
       let callback = try MagicLinkCallback(url: url)

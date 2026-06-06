@@ -673,35 +673,6 @@ extension Auth {
 }
 
 extension Auth {
-  /// Returns whether a URL looks like a native magic-link callback.
-  ///
-  /// Magic-link callbacks include `flow_id` and `approval_token` in the query string.
-  func canHandleMagicLinkCallback(_ url: URL) -> Bool {
-    guard case .magicLink = try? ClerkURLRoute(url: url) else {
-      return false
-    }
-
-    return true
-  }
-
-  /// Handles a native magic-link callback and completes the pending auth flow using the stored PKCE verifier.
-  ///
-  /// - Parameter url: The callback URL opened by the app.
-  /// - Returns: The completed `SignIn` or `SignUp` flow result.
-  /// - Throws: An error if the callback is invalid or completion fails.
-  @discardableResult
-  public func handleMagicLinkCallback(_ url: URL) async throws -> TransferFlowResult {
-    guard canHandleMagicLinkCallback(url) else {
-      throw ClerkClientError(message: "Magic link callback does not match the configured redirect URL.")
-    }
-
-    let callback = try MagicLinkCallback(url: url)
-    return try await handle(.magicLink(
-      flowId: callback.flowId,
-      approvalToken: callback.approvalToken
-    ))
-  }
-
   /// Completes a pending native magic-link flow using callback values from the deep link.
   ///
   /// - Parameters:

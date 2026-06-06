@@ -296,8 +296,16 @@ struct ClerkTests {
       sessionService: sessionService,
       magicLinkService: MagicLinkService(apiClient: apiClient)
     )
+    try (#require(clerk.dependencies as? MockDependencyContainer))
+      .configurationManager
+      .configure(
+        publishableKey: testPublishableKey,
+        options: .init(
+          redirectConfig: .init(redirectUrl: "com.clerk.isolated://callback")
+        )
+      )
     clerk.environment = .mock
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     let handled = try await clerk.handle(callbackUrl)
@@ -356,8 +364,16 @@ struct ClerkTests {
       sessionService: sessionService,
       magicLinkService: MagicLinkService(apiClient: apiClient)
     )
+    try (#require(clerk.dependencies as? MockDependencyContainer))
+      .configurationManager
+      .configure(
+        publishableKey: testPublishableKey,
+        options: .init(
+          redirectConfig: .init(redirectUrl: "com.clerk.isolated://callback")
+        )
+      )
     clerk.environment = .mock
-    let callbackUrl = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
 
     async let firstHandled = clerk.handle(callbackUrl)
@@ -369,6 +385,26 @@ struct ClerkTests {
     #expect(second == true)
     #expect(createCallCount.value == 1)
     #expect(activatedSessionId.value == "sess_123")
+  }
+
+  @Test
+  func handleReturnsFalseForMismatchedMagicLinkCallbackOrigin() async throws {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient())
+    try (#require(clerk.dependencies as? MockDependencyContainer))
+      .configurationManager
+      .configure(
+        publishableKey: testPublishableKey,
+        options: .init(
+          redirectConfig: .init(redirectUrl: "com.clerk.isolated://callback")
+        )
+      )
+
+    let callbackUrl = try #require(URL(string: "com.clerk.shared://callback?flow_id=flow_123&approval_token=approval_123"))
+
+    let handled = try await clerk.handle(callbackUrl)
+
+    #expect(handled == false)
   }
 
   // MARK: - Development Mode Warning Tests

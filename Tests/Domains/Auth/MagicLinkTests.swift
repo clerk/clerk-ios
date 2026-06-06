@@ -2,21 +2,11 @@
 import Foundation
 import Testing
 
+private let magicLinkRedirectUrl = "com.clerk.Quickstart://callback"
+
 @MainActor
 @Suite(.serialized)
 struct MagicLinkTests {
-  init() {
-    configureClerkForTesting()
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(
-        publishableKey: testPublishableKey,
-        options: .init(
-          redirectConfig: .init(redirectUrl: "com.clerk.Quickstart://callback")
-        )
-      )
-  }
-
   @Test
   func parsesFlowIdAndApprovalTokenFromQuery() throws {
     let url = try #require(URL(string: "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123"))
@@ -50,7 +40,7 @@ struct MagicLinkTests {
   func routeMatcherAcceptsConfiguredCustomSchemeCallbacks(_ callbackUrl: String) throws {
     let url = try #require(URL(string: callbackUrl))
 
-    let route = try ClerkURLRoute(url: url)
+    let route = try ClerkURLRoute(url: url, redirectUrl: magicLinkRedirectUrl)
 
     guard case .magicLink(let flowId, let approvalToken) = route else {
       Issue.record("Expected magic link route")
@@ -70,7 +60,7 @@ struct MagicLinkTests {
   func routeMatcherRejectsDifferentCustomSchemeEndpoint(_ callbackUrl: String) throws {
     let url = try #require(URL(string: callbackUrl))
 
-    let route = try ClerkURLRoute(url: url)
+    let route = try ClerkURLRoute(url: url, redirectUrl: magicLinkRedirectUrl)
 
     #expect(route == nil)
   }
@@ -80,7 +70,7 @@ struct MagicLinkTests {
   func routeMatcherRejectsDifferentCustomScheme() throws {
     let url = try #require(URL(string: "com.clerk.Other://callback?flow_id=flow_123&approval_token=approval_123"))
 
-    let route = try ClerkURLRoute(url: url)
+    let route = try ClerkURLRoute(url: url, redirectUrl: magicLinkRedirectUrl)
 
     #expect(route == nil)
   }
