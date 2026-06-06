@@ -7,8 +7,10 @@
 
 import Foundation
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
 /// Protocol defining callbacks for app lifecycle events.
@@ -54,15 +56,17 @@ final class LifecycleManager {
   /// This method sets up notification observers for foreground and background transitions.
   /// If observers are already active, existing tasks are cancelled before creating new ones.
   func startObserving() {
-    #if !os(watchOS) && !os(macOS)
-
     // Cancel existing tasks if they exist (switching instances)
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
+    #if os(watchOS)
+    return
+    #else
+
     willEnterForegroundTask = Task {
       for await _ in NotificationCenter.default.notifications(
-        named: UIApplication.willEnterForegroundNotification
+        named: Self.willEnterForegroundNotification
       ).map({ _ in () }) {
         await handler.onWillEnterForeground()
       }
@@ -70,7 +74,7 @@ final class LifecycleManager {
 
     didEnterBackgroundTask = Task {
       for await _ in NotificationCenter.default.notifications(
-        named: UIApplication.didEnterBackgroundNotification
+        named: Self.didEnterBackgroundNotification
       ).map({ _ in () }) {
         await handler.onDidEnterBackground()
       }
@@ -90,3 +94,23 @@ final class LifecycleManager {
     didEnterBackgroundTask = nil
   }
 }
+
+#if !os(watchOS)
+extension LifecycleManager {
+  private static var willEnterForegroundNotification: Notification.Name {
+    #if os(macOS)
+    NSApplication.didBecomeActiveNotification
+    #else
+    UIApplication.willEnterForegroundNotification
+    #endif
+  }
+
+  private static var didEnterBackgroundNotification: Notification.Name {
+    #if os(macOS)
+    NSApplication.didResignActiveNotification
+    #else
+    UIApplication.didEnterBackgroundNotification
+    #endif
+  }
+}
+#endif

@@ -2,7 +2,7 @@
 //  OrganizationMembersView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -60,6 +60,14 @@ struct OrganizationMembersView: View {
     return membersCount + pendingInvitationsCount < organization.maxAllowedMemberships
   }
 
+  private var inviteToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .primaryAction
+    #elseif os(macOS)
+    .confirmationAction
+    #endif
+  }
+
   var body: some View {
     @Bindable var dataSource = dataSource
 
@@ -72,7 +80,9 @@ struct OrganizationMembersView: View {
     }
     .background(theme.colors.muted)
     .securedByClerkFooter()
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .principal) {
@@ -83,7 +93,7 @@ struct OrganizationMembersView: View {
       }
 
       if canManageMemberships {
-        ToolbarItem(placement: .primaryAction) {
+        ToolbarItem(placement: inviteToolbarPlacement) {
           Button {
             inviteMembersIsPresented = true
           } label: {
@@ -110,6 +120,9 @@ struct OrganizationMembersView: View {
     .onChange(of: availableTabs) {
       normalizeSelectedTab()
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

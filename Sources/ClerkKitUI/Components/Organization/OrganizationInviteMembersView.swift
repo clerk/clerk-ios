@@ -2,7 +2,7 @@
 //  OrganizationInviteMembersView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -55,7 +55,9 @@ struct OrganizationInviteMembersView: View {
       }
     }
     .presentationBackground(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: cancellationPlacement) {
@@ -87,6 +89,9 @@ struct OrganizationInviteMembersView: View {
     .task(id: clerk.organization?.id) {
       await loadRoles()
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520, minHeight: 320)
+    #endif
   }
 
   private var emailField: some View {
@@ -176,6 +181,7 @@ struct OrganizationInviteMembersView: View {
         }
         .tint(theme.colors.primary)
         .disabled(roleOptions.isEmpty || hasRoleSetMigration)
+        .menuIndicator(.hidden)
       }
 
       if roleOptions.isEmpty {
@@ -300,9 +306,11 @@ private struct OrganizationInviteEmailAddressField: View {
           .foregroundStyle(theme.colors.inputForeground)
           .tint(theme.colors.primary)
           .textContentType(.emailAddress)
+          #if os(iOS)
           .keyboardType(.emailAddress)
-          .autocorrectionDisabled()
           .textInputAutocapitalization(.never)
+          #endif
+          .autocorrectionDisabled()
           .focused($emailFieldIsFocused)
           .frame(minWidth: 24, minHeight: 24, alignment: .leading)
           .onSubmit {

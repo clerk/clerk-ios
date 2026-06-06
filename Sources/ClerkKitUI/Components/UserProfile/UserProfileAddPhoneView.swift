@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -27,7 +27,7 @@ struct UserProfileAddPhoneView: View {
     }
   }
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -55,7 +55,9 @@ struct UserProfileAddPhoneView: View {
               accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Phone.phoneNumber
             )
             .textContentType(.telephoneNumber)
+            #if os(iOS)
             .keyboardType(.numberPad)
+            #endif
             .focused($isFocused)
             .onFirstAppear {
               isFocused = true
@@ -89,7 +91,9 @@ struct UserProfileAddPhoneView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -121,11 +125,14 @@ struct UserProfileAddPhoneView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 
 extension UserProfileAddPhoneView {
-  func addPhoneNumber() async {
+  private func addPhoneNumber() async {
     guard let user else { return }
 
     do {
@@ -140,6 +147,7 @@ extension UserProfileAddPhoneView {
 
 #Preview {
   UserProfileAddPhoneView()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

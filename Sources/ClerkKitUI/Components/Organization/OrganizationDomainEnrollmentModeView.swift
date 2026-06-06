@@ -2,7 +2,7 @@
 //  OrganizationDomainEnrollmentModeView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -90,7 +90,9 @@ struct OrganizationDomainEnrollmentModeView: View {
         .padding(24)
       }
       .background(theme.colors.background)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -108,6 +110,11 @@ struct OrganizationDomainEnrollmentModeView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
+    .presentationBackground(theme.colors.background)
+    .background(theme.colors.background)
     .onChange(of: selectedMode) { _, selectedMode in
       if selectedMode != .manualInvitation {
         deletePending = false

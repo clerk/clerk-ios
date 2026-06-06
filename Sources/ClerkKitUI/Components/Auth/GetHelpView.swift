@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -11,6 +11,7 @@ import SwiftUI
 struct GetHelpView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.openURL) private var openURL
 
   let context: Context
 
@@ -81,7 +82,7 @@ extension GetHelpView {
     let urlString = "mailto:\(emailAddress)"
 
     if let url = URL(string: urlString) {
-      UIApplication.shared.open(url)
+      openURL(url)
     }
   }
 }

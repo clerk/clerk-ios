@@ -2,7 +2,7 @@
 //  SessionTaskBackupCodesView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -91,7 +91,7 @@ struct SessionTaskBackupCodesView: View {
             .buttonStyle(.secondary())
 
             Button {
-              UIPasteboard.general.string = backupCodes.joined(separator: ", ")
+              copyToClipboard(backupCodes.joined(separator: ", "))
             } label: {
               Text("Copy to clipboard", bundle: .module)
                 .frame(maxWidth: .infinity)
@@ -131,14 +131,19 @@ struct SessionTaskBackupCodesView: View {
     .navigationBarBackButtonHidden()
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        if navigation.nextPendingSessionTask(from: clerk.session) != nil {
-          UserButton(presentationContext: .sessionTaskToolbar)
-        } else {
-          DismissButton {
-            navigation.handleSessionTaskCompletion(session: clerk.session)
-          }
-        }
+      sessionTaskToolbarItem
+    }
+  }
+}
+
+extension SessionTaskBackupCodesView {
+  @ToolbarContentBuilder
+  private var sessionTaskToolbarItem: some ToolbarContent {
+    if navigation.nextPendingSessionTask(from: clerk.session) != nil {
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
+    } else {
+      DismissToolbarItem {
+        navigation.handleSessionTaskCompletion(session: clerk.session)
       }
     }
   }

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -120,36 +120,35 @@ public struct AuthView: View {
   public var body: some View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
+        #if os(iOS)
         .toolbar {
-          if showDismissButton {
-            ToolbarItem(placement: .topBarTrailing) {
-              DismissButton {
-                dismiss()
-              }
-            }
-          }
+          dismissToolbarItem
         }
+        #endif
         .navigationDestination(for: Destination.self) {
           $0.view
+            #if os(iOS)
             .toolbar {
-              if showDismissButton {
-                ToolbarItem(placement: .topBarTrailing) {
-                  DismissButton {
-                    dismiss()
-                  }
-                }
-              }
+              dismissToolbarItem
             }
-            .developmentModeBottomInset(background: .white)
+            #endif
+            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
-        .developmentModeBottomInset(background: .white)
+        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
+    #if os(macOS)
+    .frame(
+      width: isDismissible ? 560 : nil,
+      height: isDismissible ? 620 : nil,
+      alignment: .topLeading
+    )
+    #endif
+    .interactiveDismissDisabled(disablesInteractiveDismissal)
     .tint(theme.colors.primary)
     .environment(navigation)
     .environment(authState)
@@ -214,6 +213,19 @@ extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissible && !navigation.hasSessionTaskStartInPath
+  }
+
+  private var disablesInteractiveDismissal: Bool {
+    navigation.hasSessionTaskStartInPath && clerk.session?.status != .active
+  }
+
+  @ToolbarContentBuilder
+  private var dismissToolbarItem: some ToolbarContent {
+    if showDismissButton {
+      DismissToolbarItem {
+        dismiss()
+      }
+    }
   }
 }
 

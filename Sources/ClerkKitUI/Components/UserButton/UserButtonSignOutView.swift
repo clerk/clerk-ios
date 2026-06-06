@@ -2,7 +2,7 @@
 //  UserButtonSignOutView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -17,6 +17,15 @@ struct UserButtonSignOutView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      #if os(macOS)
+      HStack {
+        Spacer()
+        DismissButton()
+      }
+      .padding(.horizontal, 24)
+      .padding(.bottom, 8)
+      #endif
+
       if let user = clerk.user {
         UserPreviewView(user: user)
           .frame(maxWidth: .infinity, alignment: .leading)

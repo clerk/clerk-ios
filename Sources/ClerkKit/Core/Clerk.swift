@@ -517,6 +517,12 @@ extension Clerk: LifecycleEventHandling {
     // Sync authentication state to watch app if enabled
     watchConnectivityCoordinator?.sync()
 
+    #if os(macOS)
+    if await WebAuthentication.consumePendingForegroundRefreshSuppression() {
+      return
+    }
+    #endif
+
     // Refresh client and environment concurrently
     taskCoordinator?.task { [weak self] in
       guard let self else { return }

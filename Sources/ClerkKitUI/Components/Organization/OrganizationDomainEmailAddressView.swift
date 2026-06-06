@@ -2,7 +2,7 @@
 //  OrganizationDomainEmailAddressView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -67,7 +67,9 @@ struct OrganizationDomainEmailAddressView: View {
       .padding(24)
     }
     .presentationBackground(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .principal) {
@@ -134,8 +136,10 @@ private struct OrganizationDomainEmailAddressField: View {
       HStack(spacing: 0) {
         TextField("", text: $localPart)
           .textContentType(.emailAddress)
+          #if os(iOS)
           .keyboardType(.emailAddress)
           .textInputAutocapitalization(.never)
+          #endif
           .autocorrectionDisabled()
           .focused($isFocused)
           .font(theme.fonts.body)
@@ -143,10 +147,10 @@ private struct OrganizationDomainEmailAddressField: View {
           .tint(theme.colors.primary)
           .lineLimit(1)
 
-        Text(verbatim: "@\(domainName)")
-          .lineLimit(1)
-          .font(theme.fonts.body)
-          .foregroundStyle(theme.colors.mutedForeground)
+          Text(verbatim: "@\(domainName)")
+            .lineLimit(1)
+            .font(theme.fonts.body)
+            .foregroundStyle(theme.colors.mutedForeground)
       }
       .frame(minHeight: 22)
     }

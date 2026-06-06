@@ -2,7 +2,7 @@
 //  OrganizationDomainVerifyCodeView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -102,7 +102,9 @@ struct OrganizationDomainVerifyCodeView: View {
     .clerkErrorPresenting($error)
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .principal) {

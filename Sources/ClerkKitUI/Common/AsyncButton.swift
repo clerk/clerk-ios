@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -53,6 +53,7 @@ extension AsyncButton {
 }
 
 #Preview {
+  #if os(iOS)
   VStack(spacing: 20) {
     AsyncButton {
       do {
@@ -84,6 +85,7 @@ extension AsyncButton {
     }
   }
   .padding()
+  #endif
 }
 
 #endif

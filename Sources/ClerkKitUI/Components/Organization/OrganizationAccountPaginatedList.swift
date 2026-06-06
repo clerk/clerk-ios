@@ -2,7 +2,7 @@
 //  OrganizationAccountPaginatedList.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -80,6 +80,9 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
     .refreshable {
       await onRefresh()
     }
+    #if os(macOS)
+    .frame(minHeight: 260)
+    #endif
   }
 }
 

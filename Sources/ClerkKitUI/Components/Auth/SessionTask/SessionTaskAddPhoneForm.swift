@@ -2,7 +2,7 @@
 //  SessionTaskAddPhoneForm.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -40,7 +40,9 @@ struct SessionTaskAddPhoneForm: View {
             accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.phoneNumber
           )
           .textContentType(.telephoneNumber)
+          #if os(iOS)
           .keyboardType(.numberPad)
+          #endif
           .focused($isFocused)
           .onFirstAppear {
             isFocused = true

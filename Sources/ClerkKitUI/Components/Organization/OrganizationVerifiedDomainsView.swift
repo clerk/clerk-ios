@@ -2,7 +2,7 @@
 //  OrganizationVerifiedDomainsView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -95,7 +95,9 @@ struct OrganizationVerifiedDomainsView: View {
     .tint(theme.colors.primary)
     .background(theme.colors.muted)
     .securedByClerkFooter()
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .principal) {
@@ -112,6 +114,9 @@ struct OrganizationVerifiedDomainsView: View {
     .task(id: organization?.id) {
       await loadDomains(page: 1)
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 
   @ViewBuilder
@@ -194,6 +199,7 @@ private struct OrganizationVerifiedDomainRow: View {
       ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
+    .menuIndicator(.hidden)
   }
 }
 
@@ -378,6 +384,9 @@ private struct OrganizationDomainVerificationFlowSheet: View {
       }
     }
     .environment(codeLimiter)
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
   }
 }
 

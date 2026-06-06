@@ -3,11 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
 struct ContentSizingDetentModifier: ViewModifier {
+  #if os(iOS)
   @State private var sheetHeight: CGFloat?
 
   private var detents: Set<PresentationDetent> {
@@ -17,8 +18,10 @@ struct ContentSizingDetentModifier: ViewModifier {
       [.medium]
     }
   }
+  #endif
 
   func body(content: Content) -> some View {
+    #if os(iOS)
     content
       .onGeometryChange(for: CGFloat.self) { geometry in
         geometry.size.height
@@ -27,6 +30,9 @@ struct ContentSizingDetentModifier: ViewModifier {
       }
       .presentationDetents(detents)
       .presentationDragIndicator(.visible)
+    #elseif os(macOS)
+    content
+    #endif
   }
 }
 

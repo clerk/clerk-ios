@@ -2,7 +2,7 @@
 //  OrganizationProfileUpdateProfileView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -22,7 +22,9 @@ struct OrganizationProfileUpdateProfileView: View {
       OrganizationProfileFormView(
         organization: organization
       )
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -39,6 +41,9 @@ struct OrganizationProfileUpdateProfileView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }

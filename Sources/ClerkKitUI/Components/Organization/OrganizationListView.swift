@@ -2,7 +2,7 @@
 //  OrganizationListView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -157,6 +157,9 @@ public struct OrganizationListView: View {
       .taskOnce {
         await fetchOrganizationResources()
       }
+      #if os(macOS)
+      .frame(width: 560, height: 620, alignment: .topLeading)
+      #endif
     }
   }
 
@@ -175,7 +178,10 @@ public struct OrganizationListView: View {
       }
     }
     .background(theme.colors.background)
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .navigationDestination(for: Destination.self) { destination in
       switch destination {
@@ -184,6 +190,7 @@ public struct OrganizationListView: View {
       }
     }
     .toolbar {
+      #if os(iOS)
       if isDismissible {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
@@ -192,6 +199,7 @@ public struct OrganizationListView: View {
           .foregroundStyle(theme.colors.primary)
         }
       }
+      #endif
 
       if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
         ToolbarItem(placement: .principal) {
@@ -227,7 +235,6 @@ public struct OrganizationListView: View {
       }
       .padding(.top, 16)
     }
-    .securedByClerkFooter()
   }
 
   private var accountListHeader: some View {
@@ -249,12 +256,16 @@ public struct OrganizationListView: View {
     ) {
       completeCreateOrganizationFlow()
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
   }
+}
 
-  // MARK: - Actions
+// MARK: - Actions
 
+extension OrganizationListView {
   private func fetchOrganizationResources() async {
     let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
     await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)

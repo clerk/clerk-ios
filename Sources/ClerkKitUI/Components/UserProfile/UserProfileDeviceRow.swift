@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -12,14 +12,14 @@ struct UserProfileDeviceRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
+  let session: Session
+
   @State private var isLoading = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
-
-  let session: Session
 
   var body: some View {
     HStack(spacing: 16) {
@@ -70,6 +70,7 @@ struct UserProfileDeviceRow: View {
           ThreeDotsMenuLabel()
         }
         .frame(width: 30, height: 30)
+        .menuIndicator(.hidden)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -87,7 +88,8 @@ struct UserProfileDeviceRow: View {
 }
 
 extension UserProfileDeviceRow {
-  func signOutOfDevice() async {
+  @MainActor
+  private func signOutOfDevice() async {
     do {
       try await session.revoke()
       try await user?.getSessions()

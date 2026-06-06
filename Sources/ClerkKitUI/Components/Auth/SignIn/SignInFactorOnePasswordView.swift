@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -54,7 +54,9 @@ struct SignInFactorOnePasswordView: View {
               accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignIn.password
             )
             .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .password)
+            #if os(iOS)
             .textInputAutocapitalization(.never)
+            #endif
             .focused($isFocused)
             .onFirstAppear {
               isFocused = true

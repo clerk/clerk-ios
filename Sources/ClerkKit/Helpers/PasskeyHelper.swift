@@ -199,11 +199,7 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
 extension PasskeyHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
-    #if os(iOS)
-    UIApplication.shared.windows.first(where: { $0.isKeyWindow }) ?? ASPresentationAnchor()
-    #else
-    ASPresentationAnchor()
-    #endif
+    PresentationAnchorProvider.current
   }
 }
 

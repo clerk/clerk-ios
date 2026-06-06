@@ -3,7 +3,10 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
+#if os(macOS)
+import AppKit
+#endif
 import SwiftUI
 
 extension EnvironmentValues {
@@ -16,9 +19,12 @@ extension EnvironmentValues {
 /// Create a custom environment key
 private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
   @MainActor static let defaultValue: @MainActor () -> Void = {
-    DispatchQueue.main.async {
-      _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
+    #if os(iOS)
+    _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    #elseif os(macOS)
+    let window = NSApp.keyWindow ?? NSApp.mainWindow
+    _ = window?.makeFirstResponder(nil)
+    #endif
   }
 }
 #endif

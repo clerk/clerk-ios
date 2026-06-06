@@ -5,10 +5,9 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 /// A comprehensive user profile view that displays user information and account management options.
@@ -180,6 +179,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
                   )
               }
           }
+          #if os(macOS)
+          .frame(
+            width: isDismissible ? 560 : nil,
+            height: isDismissible ? 620 : nil,
+            alignment: .topLeading
+          )
+          #endif
         } else {
           profileContent(user: user)
         }
@@ -192,8 +198,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+        #if os(iOS)
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
+        #elseif os(macOS)
+        UserButtonAccountSwitcher()
+        #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
@@ -306,9 +316,11 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
     }
     .background(theme.colors.muted)
-    .securedByClerkFooter()
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
     .animation(.default, value: user)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Account", bundle: .module)
@@ -317,11 +329,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           .foregroundStyle(theme.colors.foreground)
       }
 
+      #if os(iOS)
       if isDismissible {
-        ToolbarItem(placement: .topBarTrailing) {
-          DismissButton()
+        DismissToolbarItem {
+          dismiss()
         }
       }
+      #endif
     }
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
@@ -341,6 +355,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         )
         .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

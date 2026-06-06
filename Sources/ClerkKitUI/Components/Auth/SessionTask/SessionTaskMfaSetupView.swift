@@ -2,7 +2,7 @@
 //  SessionTaskMfaSetupView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -86,12 +86,12 @@ struct SessionTaskMfaSetupView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
     .clerkErrorPresenting($error)
   }

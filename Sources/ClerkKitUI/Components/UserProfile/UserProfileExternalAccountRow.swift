@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -19,7 +19,7 @@ struct UserProfileExternalAccountRow: View {
   @State private var isLoading = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -50,6 +50,8 @@ struct UserProfileExternalAccountRow: View {
             Text(externalAccount.oauthProvider.name)
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
+              .lineLimit(1)
+              .truncationMode(.tail)
               .frame(minHeight: 20)
           }
         }
@@ -58,12 +60,18 @@ struct UserProfileExternalAccountRow: View {
           Text(externalAccount.emailAddress)
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.foreground)
+            .lineLimit(1)
+            .truncationMode(.middle)
             .frame(minHeight: 22)
         }
 
         if let error = externalAccount.verification?.error {
           ErrorText(text: verificationErrorText(for: error), alignment: .leading)
-            .font(theme.fonts.footnote)
+          #if os(iOS)
+          .font(theme.fonts.footnote)
+          #elseif os(macOS)
+          .fixedSize(horizontal: false, vertical: true)
+          #endif
         }
       }
 
@@ -90,6 +98,7 @@ struct UserProfileExternalAccountRow: View {
         ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
+      .menuIndicator(.hidden)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)
@@ -172,6 +181,7 @@ extension UserProfileExternalAccountRow {
       }
       try await account.reauthorize()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)
     }
@@ -190,7 +200,13 @@ extension UserProfileExternalAccountRow {
 }
 
 #Preview {
+  #if os(iOS)
   UserProfileExternalAccountRow(externalAccount: .mockVerified)
+  #elseif os(macOS)
+  UserProfileExternalAccountRow(externalAccount: .mockVerified)
+    .environment(Clerk.preview())
+    .padding()
+  #endif
 }
 
 #endif

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -15,11 +15,11 @@ struct UserProfileMfaSection: View {
 
   @State private var addMfaHeight: CGFloat = 400
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
-  var mfaPhoneNumbers: [PhoneNumber] {
+  private var mfaPhoneNumbers: [PhoneNumber] {
     (user?.phoneNumbers ?? [])
       .filter { phoneNumber in
         phoneNumber.reservedForSecondFactor
@@ -77,7 +77,9 @@ struct UserProfileMfaSection: View {
     }
     .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
       UserProfileAddMfaView(contentHeight: $addMfaHeight)
-        .presentationDetents([.height(addMfaHeight)])
+      #if os(iOS)
+      .presentationDetents([.height(addMfaHeight)])
+      #endif
     }
   }
 }

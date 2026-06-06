@@ -2,7 +2,7 @@
 //  OrganizationProfileView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -198,6 +198,13 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
                     )
                 }
             }
+            #if os(macOS)
+            .frame(
+              width: isDismissible ? 560 : nil,
+              height: isDismissible ? 620 : nil,
+              alignment: .topLeading
+            )
+            #endif
           } else {
             profileContent(organization: organization)
           }
@@ -251,10 +258,12 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
       }
     }
     .background(theme.colors.muted)
-    .securedByClerkFooter()
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
     .animation(.default, value: organization)
     .animation(.default, value: organizationMembership)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .principal) {
@@ -264,11 +273,13 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           .foregroundStyle(theme.colors.foreground)
       }
 
+      #if os(iOS)
       if isDismissible {
-        ToolbarItem(placement: .topBarTrailing) {
-          DismissButton()
+        DismissToolbarItem {
+          dismiss()
         }
       }
+      #endif
     }
     .navigationDestination(for: OrganizationProfileBuiltInDestination.self) { destination in
       view(for: destination)
@@ -285,6 +296,9 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           )
         )
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

@@ -2,7 +2,7 @@
 //  OrganizationAddDomainView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -53,8 +53,10 @@ struct OrganizationAddDomainView: View {
             text: $domainName,
             fieldState: error == nil ? .default : .error
           )
+          #if os(iOS)
           .keyboardType(.URL)
           .textInputAutocapitalization(.never)
+          #endif
           .autocorrectionDisabled()
 
           if let error {
@@ -79,7 +81,9 @@ struct OrganizationAddDomainView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -113,6 +117,9 @@ struct OrganizationAddDomainView: View {
       }
     }
     .environment(codeLimiter)
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .onChange(of: domainName) { _, _ in
       error = nil
     }

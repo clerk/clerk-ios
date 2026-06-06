@@ -1,5 +1,3 @@
-#if os(iOS)
-
 @testable import ClerkKit
 @testable import ClerkKitUI
 import Testing
@@ -34,5 +32,3 @@ struct AuthNavigationTests {
     return session
   }
 }
-
-#endif

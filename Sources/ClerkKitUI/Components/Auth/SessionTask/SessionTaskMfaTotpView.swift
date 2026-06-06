@@ -2,7 +2,7 @@
 //  SessionTaskMfaTotpView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -44,7 +44,7 @@ struct SessionTaskMfaTotpView: View {
             )
 
             Button {
-              UIPasteboard.general.string = secret
+              copyToClipboard(secret)
             } label: {
               HStack(spacing: 6) {
                 Image("icon-clipboard", bundle: .module)
@@ -73,12 +73,14 @@ struct SessionTaskMfaTotpView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #elseif os(macOS)
+    .macOSBackButton()
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
   }
 }

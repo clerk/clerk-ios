@@ -2,7 +2,7 @@
 //  OrganizationMembersRows.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -137,6 +137,7 @@ struct OrganizationMemberRow: View {
       ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
+    .menuIndicator(.hidden)
   }
 }
 
@@ -195,6 +196,7 @@ struct OrganizationInvitationRow: View {
       ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
+    .menuIndicator(.hidden)
   }
 }
 
@@ -277,6 +279,7 @@ struct OrganizationMembershipRequestRow: View {
       ThreeDotsMenuLabel()
     }
     .frame(width: 30, height: 30)
+    .menuIndicator(.hidden)
   }
 }
 

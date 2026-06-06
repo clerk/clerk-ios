@@ -3,10 +3,13 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
-import SafariServices
 import SwiftUI
+import WebKit
+
+#if os(iOS)
+import SafariServices
 
 struct SafariView: UIViewControllerRepresentable {
   let url: URL
@@ -19,6 +22,25 @@ struct SafariView: UIViewControllerRepresentable {
     // No updates needed as URL doesn't change after creation
   }
 }
+
+#elseif os(macOS)
+
+struct SafariView: NSViewRepresentable {
+  let url: URL
+
+  func makeNSView(context _: Context) -> WKWebView {
+    let webView = WKWebView()
+    webView.load(URLRequest(url: url))
+    return webView
+  }
+
+  func updateNSView(_ webView: WKWebView, context _: Context) {
+    guard webView.url != url else { return }
+    webView.load(URLRequest(url: url))
+  }
+}
+
+#endif
 
 struct SafariSheetItem: Identifiable {
   let id = UUID()

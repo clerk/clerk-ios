@@ -4,6 +4,7 @@ This directory contains example projects demonstrating how to use the Clerk Swif
 
 ## Available Examples
 
+- **MacExampleApp** - Native macOS harness for validating Clerk flows without Mac Catalyst
 - **Quickstart** - Demonstrates how to use the Prebuilt Clerk Views
 - **WatchExampleApp** - Sync authentication state from iOS to a companion Apple Watch app
 

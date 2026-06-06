@@ -3,10 +3,9 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 struct UserProfileDetailView: View {
@@ -152,7 +151,9 @@ struct UserProfileDetailView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     .sheet(item: $addEmailAddressDestination) {
@@ -163,11 +164,16 @@ struct UserProfileDetailView: View {
     }
     .sheet(isPresented: $addConnectedAccountIsPresented) {
       UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
-        .presentationDetents([.height(connectAccountSheetHeight)])
+      #if os(iOS)
+      .presentationDetents([.height(connectAccountSheetHeight)])
+      #endif
     }
     .task {
       _ = try? await clerk.refreshClient()
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 
