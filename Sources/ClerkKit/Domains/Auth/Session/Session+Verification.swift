@@ -28,74 +28,31 @@ extension Session {
     )
   }
 
-  /// Prepares the first factor of an in-session reverification flow.
-  ///
-  /// For strategies that do not require preparation (for example `password`'s
-  /// `attempt` step) you can skip this call and go straight to ``attemptFirstFactorVerification(strategy:code:password:publicKeyCredential:)``.
+  // MARK: - First factor verification
+
+  /// Sends a verification code to the email address for first-factor reverification.
   @discardableResult @MainActor
-  public func prepareFirstFactorVerification(
-    strategy: FactorStrategy,
-    emailAddressId: String? = nil,
-    phoneNumberId: String? = nil,
-    enterpriseConnectionId: String? = nil,
-    redirectUrl: String? = nil
-  ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
-      sessionId: id,
-      params: .init(
-        strategy: strategy,
-        emailAddressId: emailAddressId,
-        phoneNumberId: phoneNumberId,
-        enterpriseConnectionId: enterpriseConnectionId,
-        redirectUrl: redirectUrl
-      )
-    )
+  public func sendEmailCode(emailAddressId: String) async throws -> SessionVerification {
+    try await prepareFirstFactorVerification(strategy: .emailCode, emailAddressId: emailAddressId)
   }
 
-  /// Attempts the first factor of an in-session reverification flow.
+  /// Sends a verification code to the phone number for first-factor reverification.
   @discardableResult @MainActor
-  public func attemptFirstFactorVerification(
-    strategy: FactorStrategy,
-    code: String? = nil,
-    password: String? = nil,
-    publicKeyCredential: String? = nil
-  ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
-      sessionId: id,
-      params: .init(
-        strategy: strategy,
-        code: code,
-        password: password,
-        publicKeyCredential: publicKeyCredential
-      )
-    )
+  public func sendPhoneCode(phoneNumberId: String) async throws -> SessionVerification {
+    try await prepareFirstFactorVerification(strategy: .phoneCode, phoneNumberId: phoneNumberId)
   }
 
-  /// Prepares the second factor of an in-session reverification flow.
+  /// Verifies the current session with an email code.
   @discardableResult @MainActor
-  public func prepareSecondFactorVerification(
-    strategy: FactorStrategy,
-    phoneNumberId: String? = nil
-  ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareSecondFactorVerification(
-      sessionId: id,
-      params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
-    )
+  public func verifyWithEmailCode(code: String) async throws -> SessionVerification {
+    try await attemptFirstFactorVerification(strategy: .emailCode, code: code)
   }
 
-  /// Attempts the second factor of an in-session reverification flow.
+  /// Verifies the current session with a phone code as a first factor.
   @discardableResult @MainActor
-  public func attemptSecondFactorVerification(
-    strategy: FactorStrategy,
-    code: String
-  ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
-      sessionId: id,
-      params: .init(strategy: strategy, code: code)
-    )
+  public func verifyWithPhoneCode(code: String) async throws -> SessionVerification {
+    try await attemptFirstFactorVerification(strategy: .phoneCode, code: code)
   }
-
-  // MARK: - Convenience strategies
 
   /// Verifies the current session by asking the user to re-enter their password.
   @discardableResult @MainActor
@@ -103,16 +60,19 @@ extension Session {
     try await attemptFirstFactorVerification(strategy: .password, password: password)
   }
 
-  /// Verifies the current session with a TOTP code.
+  /// Starts Enterprise SSO for first-factor reverification.
   @discardableResult @MainActor
-  public func verifyWithTOTP(code: String) async throws -> SessionVerification {
-    try await attemptSecondFactorVerification(strategy: .totp, code: code)
-  }
-
-  /// Verifies the current session with a backup code.
-  @discardableResult @MainActor
-  public func verifyWithBackupCode(code: String) async throws -> SessionVerification {
-    try await attemptSecondFactorVerification(strategy: .backupCode, code: code)
+  public func startEnterpriseSSO(
+    emailAddressId: String? = nil,
+    enterpriseConnectionId: String? = nil,
+    redirectUrl: String? = nil
+  ) async throws -> SessionVerification {
+    try await prepareFirstFactorVerification(
+      strategy: .enterpriseSSO,
+      emailAddressId: emailAddressId,
+      enterpriseConnectionId: enterpriseConnectionId,
+      redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
+    )
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -172,4 +132,96 @@ extension Session {
     )
   }
   #endif
+
+  // MARK: - Second factor verification
+
+  /// Sends an MFA code to the phone number for second-factor reverification.
+  @discardableResult @MainActor
+  public func sendMfaPhoneCode(phoneNumberId: String) async throws -> SessionVerification {
+    try await prepareSecondFactorVerification(strategy: .phoneCode, phoneNumberId: phoneNumberId)
+  }
+
+  /// Verifies the current session with a phone code as a second factor.
+  @discardableResult @MainActor
+  public func verifyWithMfaPhoneCode(code: String) async throws -> SessionVerification {
+    try await attemptSecondFactorVerification(strategy: .phoneCode, code: code)
+  }
+
+  /// Verifies the current session with a TOTP code.
+  @discardableResult @MainActor
+  public func verifyWithTOTP(code: String) async throws -> SessionVerification {
+    try await attemptSecondFactorVerification(strategy: .totp, code: code)
+  }
+
+  /// Verifies the current session with a backup code.
+  @discardableResult @MainActor
+  public func verifyWithBackupCode(code: String) async throws -> SessionVerification {
+    try await attemptSecondFactorVerification(strategy: .backupCode, code: code)
+  }
+
+  // MARK: - Internal helpers
+
+  /// Prepares the first factor of an in-session reverification flow.
+  @discardableResult @MainActor
+  func prepareFirstFactorVerification(
+    strategy: FactorStrategy,
+    emailAddressId: String? = nil,
+    phoneNumberId: String? = nil,
+    enterpriseConnectionId: String? = nil,
+    redirectUrl: String? = nil
+  ) async throws -> SessionVerification {
+    try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+      sessionId: id,
+      params: .init(
+        strategy: strategy,
+        emailAddressId: emailAddressId,
+        phoneNumberId: phoneNumberId,
+        enterpriseConnectionId: enterpriseConnectionId,
+        redirectUrl: redirectUrl
+      )
+    )
+  }
+
+  /// Attempts the first factor of an in-session reverification flow.
+  @discardableResult @MainActor
+  func attemptFirstFactorVerification(
+    strategy: FactorStrategy,
+    code: String? = nil,
+    password: String? = nil,
+    publicKeyCredential: String? = nil
+  ) async throws -> SessionVerification {
+    try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
+      sessionId: id,
+      params: .init(
+        strategy: strategy,
+        code: code,
+        password: password,
+        publicKeyCredential: publicKeyCredential
+      )
+    )
+  }
+
+  /// Prepares the second factor of an in-session reverification flow.
+  @discardableResult @MainActor
+  func prepareSecondFactorVerification(
+    strategy: FactorStrategy,
+    phoneNumberId: String? = nil
+  ) async throws -> SessionVerification {
+    try await Clerk.shared.dependencies.sessionService.prepareSecondFactorVerification(
+      sessionId: id,
+      params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
+    )
+  }
+
+  /// Attempts the second factor of an in-session reverification flow.
+  @discardableResult @MainActor
+  func attemptSecondFactorVerification(
+    strategy: FactorStrategy,
+    code: String
+  ) async throws -> SessionVerification {
+    try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
+      sessionId: id,
+      params: .init(strategy: strategy, code: code)
+    )
+  }
 }
