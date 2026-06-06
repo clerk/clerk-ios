@@ -200,8 +200,8 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
             }
             #if os(macOS)
             .frame(
-              width: isDismissable ? 560 : nil,
-              height: isDismissable ? 620 : nil,
+              width: isDismissible ? 560 : nil,
+              height: isDismissible ? 620 : nil,
               alignment: .topLeading
             )
             #endif
@@ -258,7 +258,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
       }
     }
     .background(theme.colors.muted)
-    .securedByClerkFooter(macOSDismissAction: isDismissable ? { dismiss() } : nil)
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
     .animation(.default, value: organization)
     .animation(.default, value: organizationMembership)
     #if os(iOS)

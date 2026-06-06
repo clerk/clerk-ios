@@ -178,7 +178,7 @@ public struct OrganizationListView: View {
       }
     }
     .background(theme.colors.background)
-    .securedByClerkFooter(macOSDismissAction: isDismissable ? { dismiss() } : nil)
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     #endif

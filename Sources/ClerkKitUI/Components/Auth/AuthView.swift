@@ -143,8 +143,8 @@ public struct AuthView: View {
     .presentationBackground(theme.colors.background)
     #if os(macOS)
     .frame(
-      width: isDismissable ? 560 : nil,
-      height: isDismissable ? 620 : nil,
+      width: isDismissible ? 560 : nil,
+      height: isDismissible ? 620 : nil,
       alignment: .topLeading
     )
     #endif
