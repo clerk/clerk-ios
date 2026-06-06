@@ -6,7 +6,7 @@
 import Foundation
 
 protocol MagicLinkServiceProtocol: Sendable {
-  @MainActor func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResponse
+  @MainActor func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResult
 }
 
 final class MagicLinkService: MagicLinkServiceProtocol {
@@ -17,8 +17,8 @@ final class MagicLinkService: MagicLinkServiceProtocol {
   }
 
   @MainActor
-  func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResponse {
-    let request = Request<ClientResponse<MagicLinkCompleteResponse>>(
+  func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResult {
+    let request = Request<ClientResponse<MagicLinkCompleteResult>>(
       path: "/v1/client/magic_links/complete",
       method: .post,
       body: params

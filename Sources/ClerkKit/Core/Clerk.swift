@@ -678,7 +678,8 @@ extension Clerk {
   func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil, serverDate: Date? = nil) {
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
-         responseSequence <= lastAppliedClientResponseSequence
+         responseSequence <= lastAppliedClientResponseSequence,
+         !responseIsNewerThanCurrent(incoming, serverDate: serverDate)
       {
         ClerkLogger.debug(
           "Ignoring stale client response. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
@@ -686,13 +687,29 @@ extension Clerk {
         return
       }
 
-      lastAppliedClientResponseSequence = responseSequence
+      lastAppliedClientResponseSequence = max(lastAppliedClientResponseSequence ?? responseSequence, responseSequence)
     }
 
     if let serverDate {
       lastClientServerFetchDate = serverDate
     }
     client = incoming
+  }
+
+  private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
+    guard let serverDate, let lastClientServerFetchDate else {
+      return false
+    }
+
+    if serverDate > lastClientServerFetchDate {
+      return true
+    }
+
+    guard serverDate == lastClientServerFetchDate, let incoming, let client else {
+      return false
+    }
+
+    return incoming.updatedAt > client.updatedAt
   }
 
   func applyWatchSyncedClient(

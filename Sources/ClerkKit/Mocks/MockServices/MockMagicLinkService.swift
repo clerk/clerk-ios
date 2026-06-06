@@ -7,19 +7,19 @@ import Foundation
 
 /// Mock implementation of `MagicLinkServiceProtocol` for testing and previews.
 package final class MockMagicLinkService: MagicLinkServiceProtocol {
-  private let completeHandler: (@Sendable (MagicLinkCompleteParams) async throws -> MagicLinkCompleteResponse)?
+  private let completeHandler: (@Sendable (MagicLinkCompleteParams) async throws -> MagicLinkCompleteResult)?
 
   init(
-    complete: (@Sendable (MagicLinkCompleteParams) async throws -> MagicLinkCompleteResponse)? = nil
+    complete: (@Sendable (MagicLinkCompleteParams) async throws -> MagicLinkCompleteResult)? = nil
   ) {
     completeHandler = complete
   }
 
   @MainActor
-  func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResponse {
+  func complete(params: MagicLinkCompleteParams) async throws -> MagicLinkCompleteResult {
     if let completeHandler {
       return try await completeHandler(params)
     }
-    return MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_mock")
+    return .ticket(MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_mock"))
   }
 }

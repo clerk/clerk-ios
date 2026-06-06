@@ -738,9 +738,9 @@ extension Auth {
       codeVerifier: pendingFlow.codeVerifier
     )
 
-    let completionResponse: MagicLinkCompleteResponse
+    let completionResult: MagicLinkCompleteResult
     do {
-      completionResponse = try await magicLinkService.complete(params: params)
+      completionResult = try await magicLinkService.complete(params: params)
     } catch {
       if MagicLinkTerminalError.contains(error) {
         magicLinkStore.clear(flow: pendingFlow)
@@ -749,15 +749,26 @@ extension Auth {
     }
     magicLinkStore.clear(flow: pendingFlow)
 
-    let result: TransferFlowResult = switch pendingFlow.kind {
+    let result: TransferFlowResult
+    switch pendingFlow.kind {
     case .signIn:
-      try await .signIn(signInWithTicket(completionResponse.ticket))
-    case .signUp:
-      try await .signUp(signUpWithTicket(completionResponse.ticket))
-    }
+      guard case .ticket(let completionResponse) = completionResult else {
+        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.")
+      }
 
-    if let sessionId = result.createdSessionId {
-      try await activateSession(sessionId: sessionId)
+      let signIn = try await signInWithTicket(completionResponse.ticket)
+      result = .signIn(signIn)
+
+      if let sessionId = signIn.createdSessionId {
+        try await activateSession(sessionId: sessionId)
+      }
+
+    case .signUp:
+      guard case .signUp(let signUp) = completionResult else {
+        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.")
+      }
+
+      result = .signUp(signUp)
     }
 
     if result.needsContinuation {

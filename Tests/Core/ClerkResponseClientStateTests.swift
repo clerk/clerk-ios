@@ -57,6 +57,64 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
+  func applyResponseClientAcceptsOlderResponseSequenceWhenServerDateIsNewer() async throws {
+    let clerk = makeIsolatedClerk()
+    let refreshedBeforeCompletion = client(id: "client-current", signUpId: "sign-up-pending", updatedAt: 3000)
+    var completed = client(id: "client-current", updatedAt: 4000, lastActiveSessionId: "session-pending")
+    var pendingSession = Session.mock
+    pendingSession.id = "session-pending"
+    pendingSession.status = .pending
+    pendingSession.tasks = [.chooseOrganization]
+    completed.sessions = [pendingSession]
+
+    clerk.client = nil
+    clerk.applyResponseClient(
+      refreshedBeforeCompletion,
+      responseSequence: 2,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    let event = try await captureNextAuthEvent(from: clerk) {
+      clerk.applyResponseClient(
+        completed,
+        responseSequence: 1,
+        serverDate: Date(timeIntervalSince1970: 101)
+      )
+    }
+
+    #expect(clerk.client?.currentSession?.id == "session-pending")
+    #expect(clerk.client?.currentSession?.tasks == [.chooseOrganization])
+
+    guard case .sessionChanged(let oldValue, let newValue) = event else {
+      Issue.record("Expected sessionChanged but received \(String(describing: event))")
+      return
+    }
+
+    #expect(oldValue == nil)
+    #expect(newValue?.id == "session-pending")
+  }
+
+  @Test
+  func applyResponseClientAcceptsOlderResponseSequenceWhenServerDateTiesAndClientUpdatedAtIsNewer() {
+    let clerk = makeIsolatedClerk()
+    let refreshedBeforeCompletion = client(id: "client-current", signUpId: "sign-up-pending", updatedAt: 3000)
+    var completed = client(id: "client-current", updatedAt: 4000, lastActiveSessionId: "session-pending")
+    var pendingSession = Session.mock
+    pendingSession.id = "session-pending"
+    pendingSession.status = .pending
+    pendingSession.tasks = [.chooseOrganization]
+    completed.sessions = [pendingSession]
+    let serverDate = Date(timeIntervalSince1970: 100)
+
+    clerk.client = nil
+    clerk.applyResponseClient(refreshedBeforeCompletion, responseSequence: 2, serverDate: serverDate)
+    clerk.applyResponseClient(completed, responseSequence: 1, serverDate: serverDate)
+
+    #expect(clerk.client?.currentSession?.id == "session-pending")
+    #expect(clerk.client?.currentSession?.tasks == [.chooseOrganization])
+  }
+
+  @Test
   func applyResponseClientNilIgnoresOlderResponseSequence() {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)

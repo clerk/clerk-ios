@@ -515,7 +515,7 @@ struct AuthTests {
   }
 
   @Test
-  func handleMagicLinkCallbackUsesSignUpTicketPath() async throws {
+  func handleMagicLinkCallbackRejectsTicketResponseForSignUpFlow() async throws {
     let keychain = InMemoryKeychain()
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
@@ -539,17 +539,13 @@ struct AuthTests {
     )
     completionMock.register()
 
-    var completedSignUp = SignUp.mock
-    completedSignUp.status = .complete
-    completedSignUp.createdSessionId = "sess_123"
-
     let signInService = MockSignInService(create: { params in
       signInParams.setValue(params)
       return .mock
     })
     let signUpService = MockSignUpService(create: { params in
       signUpParams.setValue(params)
-      return completedSignUp
+      return .mock
     })
     let sessionService = MockSessionService(setActive: { sessionId, _ in
       activatedSessionId.setValue(sessionId)
@@ -565,29 +561,49 @@ struct AuthTests {
     let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
     try clerk.dependencies.magicLinkStore.save(kind: .signUp, flowId: "flow_123", codeVerifier: "verifier_123")
 
-    let result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
-    let signUp = switch result {
-    case .signUp(let signUp):
-      signUp
-    case .signIn:
-      Issue.record("Expected sign-up result for sign-up magic link callback.")
-      throw ClerkClientError(message: "Expected sign-up result.")
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.auth.handleMagicLinkCallback(callbackUrl)
     }
 
     #expect(signInParams.value == nil)
-    #expect(signUpParams.value?.ticket == "ticket_123")
-    #expect(signUp.createdSessionId == "sess_123")
-    #expect(activatedSessionId.value == "sess_123")
+    #expect(signUpParams.value == nil)
+    #expect(activatedSessionId.value == nil)
     #expect(Clerk.shared.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
 
   @Test
-  func handleMagicLinkCallbackEmitsContinuationEventForIncompleteSignUp() async throws {
+  func handleMagicLinkCallbackUsesCompletedSignUpResponse() async throws {
     let keychain = InMemoryKeychain()
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
-    let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup-continuation.clerk.accounts.dev"))
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup-response.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var pendingSignUp = SignUp.mock
+    pendingSignUp.id = "sign_up_123"
+    pendingSignUp.status = .missingRequirements
+    pendingSignUp.unverifiedFields = [.emailAddress]
+
+    var completedSignUp = pendingSignUp
+    completedSignUp.status = .complete
+    completedSignUp.missingFields = []
+    completedSignUp.unverifiedFields = []
+    completedSignUp.createdSessionId = "sess_123"
+    completedSignUp.createdUserId = "user_123"
+
+    var pendingSession = Session.mock
+    pendingSession.id = "sess_123"
+    pendingSession.status = .pending
+
+    let syncedClient = Client(
+      id: "client_123",
+      signIn: nil,
+      signUp: nil,
+      sessions: [pendingSession],
+      lastActiveSessionId: pendingSession.id,
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_891)
+    )
 
     let completionMock = try Mock(
       url: completionUrl,
@@ -597,7 +613,91 @@ struct AuthTests {
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse(
-            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
+            response: completedSignUp,
+            client: syncedClient
+          )
+        ),
+      ]
+    )
+    completionMock.register()
+
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    configureDependencies(
+      signUpService: signUpService,
+      sessionService: sessionService,
+      keychain: keychain,
+      baseURL: testBaseUrl
+    )
+    let clerk = Clerk.shared
+    clerk.client = Client(
+      id: "client_123",
+      signIn: nil,
+      signUp: pendingSignUp,
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    try clerk.dependencies.magicLinkStore.save(kind: .signUp, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    var result: TransferFlowResult?
+    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
+      result = try await clerk.auth.handleMagicLinkCallback(callbackUrl)
+    }
+
+    let signUp = switch try #require(result) {
+    case .signUp(let signUp):
+      signUp
+    case .signIn:
+      Issue.record("Expected sign-up result for sign-up magic link callback.")
+      throw ClerkClientError(message: "Expected sign-up result.")
+    }
+
+    #expect(signUpParams.value == nil)
+    #expect(activatedSessionId.value == nil)
+    #expect(signUp.id == "sign_up_123")
+    #expect(signUp.status == .complete)
+    #expect(signUp.createdSessionId == "sess_123")
+    #expect(clerk.client?.currentSession?.id == "sess_123")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+
+    let event = try #require(capturedEvent)
+    switch event {
+    case .sessionChanged(let oldValue, let newValue):
+      #expect(oldValue == nil)
+      #expect(newValue?.id == "sess_123")
+    default:
+      Issue.record("Expected sessionChanged event but received \(String(describing: event))")
+    }
+  }
+
+  @Test
+  func handleMagicLinkCallbackEmitsContinuationEventForIncompleteSignUp() async throws {
+    let keychain = InMemoryKeychain()
+    let activatedSessionId = LockIsolated<String?>(nil)
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup-continuation.clerk.accounts.dev"))
+    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+
+    var resumableSignUp = SignUp.mock
+    resumableSignUp.status = .missingRequirements
+    resumableSignUp.createdSessionId = nil
+
+    let completionMock = try Mock(
+      url: completionUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse(
+            response: resumableSignUp,
             client: .mock
           )
         ),
@@ -605,20 +705,11 @@ struct AuthTests {
     )
     completionMock.register()
 
-    var resumableSignUp = SignUp.mock
-    resumableSignUp.status = .missingRequirements
-    resumableSignUp.createdSessionId = nil
-
-    let signUpService = MockSignUpService(create: { params in
-      #expect(params.ticket == "ticket_123")
-      return resumableSignUp
-    })
     let sessionService = MockSessionService(setActive: { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     })
 
     let clerk = makeIsolatedClerk(
-      signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl

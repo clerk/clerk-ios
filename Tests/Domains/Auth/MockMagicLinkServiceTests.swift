@@ -10,7 +10,7 @@ struct MockMagicLinkServiceTests {
       #expect(params.approvalToken == "approval_custom")
       #expect(params.codeVerifier == "verifier_custom")
 
-      return MagicLinkCompleteResponse(flowId: "flow_custom", ticket: "ticket_custom")
+      return .ticket(MagicLinkCompleteResponse(flowId: "flow_custom", ticket: "ticket_custom"))
     }
 
     let response = try await service.complete(
@@ -21,6 +21,6 @@ struct MockMagicLinkServiceTests {
       )
     )
 
-    #expect(response == MagicLinkCompleteResponse(flowId: "flow_custom", ticket: "ticket_custom"))
+    #expect(response == .ticket(MagicLinkCompleteResponse(flowId: "flow_custom", ticket: "ticket_custom")))
   }
 }

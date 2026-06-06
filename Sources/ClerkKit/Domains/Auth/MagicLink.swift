@@ -19,6 +19,29 @@ struct MagicLinkCompleteResponse: Codable, Equatable {
   let ticket: String
 }
 
+enum MagicLinkCompleteResult: Codable, Equatable {
+  case ticket(MagicLinkCompleteResponse)
+  case signUp(SignUp)
+
+  init(from decoder: Decoder) throws {
+    if let signUp = try? SignUp(from: decoder) {
+      self = .signUp(signUp)
+      return
+    }
+
+    self = try .ticket(MagicLinkCompleteResponse(from: decoder))
+  }
+
+  func encode(to encoder: Encoder) throws {
+    switch self {
+    case .ticket(let response):
+      try response.encode(to: encoder)
+    case .signUp(let signUp):
+      try signUp.encode(to: encoder)
+    }
+  }
+}
+
 enum MagicLinkTerminalError {
   private static let codes: Set<String> = [
     "approval_token_consumed",
