@@ -19,6 +19,7 @@ struct MacExampleApp: App {
         .prefetchClerkImages()
         .environment(Clerk.shared)
         .atlantisProxy()
+        .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
     }
     .defaultSize(width: 1100, height: 800)
   }
