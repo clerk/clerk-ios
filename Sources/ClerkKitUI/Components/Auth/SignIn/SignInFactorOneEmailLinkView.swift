@@ -3,16 +3,16 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
-import UIKit
 
 struct EmailLinkVerificationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
+  @Environment(\.openURL) private var openURL
 
   @State private var deliveryState = DeliveryState.idle
   @State private var error: Error?
@@ -240,8 +240,8 @@ extension EmailLinkVerificationView {
       return
     }
 
-    UIApplication.shared.open(url, options: [:]) { success in
-      if !success {
+    openURL(url) { accepted in
+      if !accepted {
         Task { @MainActor in
           error = ClerkClientError(message: "No email app is available on this device.")
         }

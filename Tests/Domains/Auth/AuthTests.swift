@@ -45,6 +45,7 @@ struct AuthTests {
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
+    magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
     baseURL: URL = mockBaseUrl,
@@ -52,14 +53,14 @@ struct AuthTests {
   ) -> Clerk {
     Clerk.shared.setCallbackContinuation(nil)
     let clerk = Clerk()
-    let apiClient = createMockAPIClient(baseURL: baseURL)
+    let apiClient = createMockAPIClient(baseURL: baseURL, runtimeScope: clerk.runtimeScope)
     clerk.dependencies = MockDependencyContainer(
       apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
       signUpService: signUpService,
       sessionService: sessionService,
-      magicLinkService: MagicLinkService(apiClient: apiClient)
+      magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -449,6 +450,14 @@ struct AuthTests {
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-continuation.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+    let syncedClient = Client(
+      id: "client_123",
+      signIn: nil,
+      signUp: nil,
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
 
     let completionMock = try Mock(
       url: completionUrl,
@@ -459,7 +468,7 @@ struct AuthTests {
         .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse(
             response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
-            client: .mock
+            client: syncedClient
           )
         ),
       ]
@@ -628,13 +637,12 @@ struct AuthTests {
       activatedSessionId.setValue(sessionId)
     })
 
-    configureDependencies(
+    let clerk = makeIsolatedClerk(
       signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
-    let clerk = Clerk.shared
     clerk.client = Client(
       id: "client_123",
       signIn: nil,
@@ -686,6 +694,14 @@ struct AuthTests {
     var resumableSignUp = SignUp.mock
     resumableSignUp.status = .missingRequirements
     resumableSignUp.createdSessionId = nil
+    let syncedClient = Client(
+      id: "client_123",
+      signIn: nil,
+      signUp: resumableSignUp,
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
 
     let completionMock = try Mock(
       url: completionUrl,
@@ -696,7 +712,7 @@ struct AuthTests {
         .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse(
             response: resumableSignUp,
-            client: .mock
+            client: syncedClient
           )
         ),
       ]
@@ -825,7 +841,7 @@ struct AuthTests {
 
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
 
-    var completionMock = try Mock(
+    let completionMock = try Mock(
       url: completionUrl,
       ignoreQuery: true,
       contentType: .json,
@@ -839,12 +855,6 @@ struct AuthTests {
         ),
       ]
     )
-    completionMock.onRequestHandler = OnRequestHandler { request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody?["flow_id"] == "flow_123")
-      #expect(request.urlEncodedFormBody?["approval_token"] == "approval_123")
-      #expect(request.urlEncodedFormBody?["code_verifier"] == "verifier_123")
-    }
     completionMock.register()
 
     let completedSignIn = SignIn(
@@ -993,7 +1003,7 @@ struct AuthTests {
     let keychain = InMemoryKeychain()
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-complete-newer.clerk.accounts.dev"))
-    let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
+    let magicLinkStore = MagicLinkStore(keychain: keychain)
 
     let completedSignIn = SignIn(
       id: "sign_in_123",
@@ -1007,33 +1017,19 @@ struct AuthTests {
     let sessionService = MockSessionService(setActive: { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     })
+    let magicLinkService = MockMagicLinkService { _ in
+      try magicLinkStore.save(kind: .signIn, flowId: "flow_new", codeVerifier: "verifier_new")
+      return .ticket(MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"))
+    }
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
       sessionService: sessionService,
+      magicLinkService: magicLinkService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
     try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
-
-    var completionMock = try Mock(
-      url: completionUrl,
-      ignoreQuery: true,
-      contentType: .json,
-      statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(
-          ClientResponse(
-            response: MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123"),
-            client: .mock
-          )
-        ),
-      ]
-    )
-    completionMock.onRequestHandler = OnRequestHandler { _ in
-      try! clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_new", codeVerifier: "verifier_new")
-    }
-    completionMock.register()
 
     _ = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
 

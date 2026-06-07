@@ -292,7 +292,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_link")
       #expect(request.urlEncodedFormBody!["email_address_id"] == "ema_123")
