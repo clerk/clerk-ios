@@ -18,6 +18,7 @@ struct AuthTests {
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
+    magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
     baseURL: URL = mockBaseUrl,
@@ -31,7 +32,7 @@ struct AuthTests {
       signInService: signInService,
       signUpService: signUpService,
       sessionService: sessionService,
-      magicLinkService: MagicLinkService(apiClient: apiClient)
+      magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -370,6 +371,76 @@ struct AuthTests {
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
     #expect(Clerk.shared.dependencies.magicLinkStore.load()?.flowId == signIn.id)
+  }
+
+  @Test
+  func completeMagicLinkWithCallbackURLCompletesPendingFlowAndActivatesSession() async throws {
+    let keychain = InMemoryKeychain()
+    let completeParams = LockIsolated<MagicLinkCompleteParams?>(nil)
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let activatedSessionId = LockIsolated<String?>(nil)
+
+    let magicLinkService = MockMagicLinkService { params in
+      completeParams.setValue(params)
+      return .ticket(MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_123"))
+    }
+    let completedSignIn = SignIn(
+      id: "sign_in_123",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
+      return completedSignIn
+    })
+    let sessionService = MockSessionService(setActive: { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    })
+
+    configureDependencies(
+      signInService: signInService,
+      sessionService: sessionService,
+      magicLinkService: magicLinkService,
+      keychain: keychain
+    )
+    let clerk = Clerk.shared
+    let callbackURL = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    let result = try await clerk.auth.completeMagicLink(callbackURL: callbackURL)
+    let signIn = switch result {
+    case .signIn(let signIn):
+      signIn
+    case .signUp:
+      Issue.record("Expected sign-in result for sign-in magic link completion.")
+      throw ClerkClientError(message: "Expected sign-in result.")
+    }
+
+    #expect(signIn.createdSessionId == "sess_123")
+    #expect(completeParams.value?.flowId == "flow_123")
+    #expect(completeParams.value?.approvalToken == "approval_123")
+    #expect(completeParams.value?.codeVerifier == "verifier_123")
+    #expect(signInParams.value?.ticket == "ticket_123")
+    #expect(activatedSessionId.value == "sess_123")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func completeMagicLinkWithCallbackURLRejectsMissingCallbackParams() async throws {
+    let completeCalled = LockIsolated(false)
+    let magicLinkService = MockMagicLinkService { params in
+      completeCalled.setValue(true)
+      return .ticket(MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_123"))
+    }
+
+    configureDependencies(magicLinkService: magicLinkService)
+    let callbackURL = try #require(URL(string: "\(Clerk.shared.options.redirectConfig.redirectUrl)?flow_id=flow_123"))
+
+    await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.completeMagicLink(callbackURL: callbackURL)
+    }
+
+    #expect(completeCalled.value == false)
   }
 
   @Test

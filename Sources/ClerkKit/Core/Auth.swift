@@ -673,6 +673,21 @@ extension Auth {
 }
 
 extension Auth {
+  /// Completes a pending native magic-link flow using the callback URL opened by the app.
+  ///
+  /// - Parameter callbackURL: The callback URL containing `flow_id` and `approval_token`.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
+  /// - Throws: An error if the callback URL is missing required magic-link parameters or completion fails.
+  @discardableResult
+  public func completeMagicLink(callbackURL: URL) async throws -> TransferFlowResult {
+    let callback = try MagicLinkCallback(url: callbackURL)
+
+    return try await completeMagicLink(
+      flowId: callback.flowId,
+      approvalToken: callback.approvalToken
+    )
+  }
+
   /// Completes a pending native magic-link flow using callback values from the deep link.
   ///
   /// - Parameters:
