@@ -8,30 +8,40 @@
 import SwiftUI
 
 struct DevelopmentModeBackgroundView: View {
+  @Environment(\.clerkTheme) private var theme
+
   let background: DevelopmentModeBackground
 
   var body: some View {
-    GeometryReader { proxy in
-      Image(background.imageName, bundle: .module)
-        .resizable()
-        .scaledToFill()
-        .frame(width: proxy.size.width, height: proxy.size.height)
-        .clipped()
+    if let imageName = background.imageName {
+      GeometryReader { proxy in
+        Image(imageName, bundle: .module)
+          .resizable()
+          .scaledToFill()
+          .frame(width: proxy.size.width, height: proxy.size.height)
+          .clipped()
+      }
+      .accessibilityHidden(true)
+    } else {
+      theme.colors.background
+        .accessibilityHidden(true)
     }
-    .accessibilityHidden(true)
   }
 }
 
 enum DevelopmentModeBackground {
   case white
   case gray
+  case themed
 
-  var imageName: String {
+  var imageName: String? {
     switch self {
     case .white:
       "dev-mode-background-white"
     case .gray:
       "dev-mode-background-gray"
+    case .themed:
+      nil
     }
   }
 }

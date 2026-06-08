@@ -27,11 +27,15 @@ struct SecondaryButtonStyle: ButtonStyle {
     case .none:
       configuration.isPressed
         ? theme.colors.foreground
-        : theme.colors.mutedForeground
+        : theme.colors.secondaryButtonForeground
     case .low:
-      theme.colors.foreground
+      configuration.isPressed
+        ? theme.colors.foreground
+        : theme.colors.secondaryButtonForeground
     case .high:
-      theme.colors.foreground
+      configuration.isPressed
+        ? theme.colors.foreground
+        : theme.colors.secondaryButtonForeground
     }
   }
 
@@ -51,15 +55,15 @@ struct SecondaryButtonStyle: ButtonStyle {
     case .none:
       configuration.isPressed
         ? theme.colors.muted
-        : theme.colors.background
+        : theme.colors.secondaryButton
     case .low:
       configuration.isPressed
         ? theme.colors.muted
-        : theme.colors.background
+        : theme.colors.secondaryButton
     case .high:
       configuration.isPressed
         ? theme.colors.muted
-        : theme.colors.background
+        : theme.colors.secondaryButton
     }
   }
 

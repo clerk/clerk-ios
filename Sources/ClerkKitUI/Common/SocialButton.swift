@@ -28,7 +28,7 @@ struct SocialButton: View {
     }
     .lineLimit(1)
     .font(theme.fonts.body)
-    .foregroundStyle(theme.colors.foreground)
+    .foregroundStyle(theme.colors.secondaryButtonForeground)
   }
 
   private var providerLabel: some View {
@@ -45,7 +45,7 @@ struct SocialButton: View {
             Text("Continue with \(provider.name)", bundle: .module)
               .lineLimit(1)
               .font(theme.fonts.body)
-              .foregroundStyle(theme.colors.foreground)
+              .foregroundStyle(theme.colors.secondaryButtonForeground)
           }
 
           ProviderIconView(

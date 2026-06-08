@@ -10,7 +10,7 @@ import SwiftUI
 
 extension View {
   func authFooter(
-    developmentModeBackground: DevelopmentModeBackground = .white,
+    developmentModeBackground: DevelopmentModeBackground = .themed,
     macOSDismissAction: (() -> Void)? = nil
   ) -> some View {
     modifier(
