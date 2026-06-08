@@ -13,6 +13,7 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
   // Standard strategies
   case password
   case emailCode
+  case emailLink
   case phoneCode
   case passkey
   case totp
@@ -43,6 +44,8 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
       "password"
     case .emailCode:
       "email_code"
+    case .emailLink:
+      "email_link"
     case .phoneCode:
       "phone_code"
     case .passkey:
@@ -77,6 +80,8 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
       self = .password
     case "email_code":
       self = .emailCode
+    case "email_link":
+      self = .emailLink
     case "phone_code":
       self = .phoneCode
     case "passkey":
@@ -137,6 +142,7 @@ extension FactorStrategy {
   /// Strategies that use email as the identifier
   package static let emailStrategies: [FactorStrategy] = [
     .emailCode,
+    .emailLink,
     .password,
     .resetPasswordEmailCode,
   ]

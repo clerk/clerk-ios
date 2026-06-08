@@ -24,6 +24,18 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func decodeClientFromErrorMetaClientField() throws {
+    let expectedClient = client(id: "meta-client-field", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(ErrorMetaClientEnvelope(
+      errors: [.mock],
+      meta: .init(client: expectedClient)
+    ))
+
+    let decodedClient = ClerkClientSyncResponseMiddleware.decodeClient(from: data)
+    #expect(decodedClient?.id == expectedClient.id)
+  }
+
+  @Test
   func decodeClientReturnsNilWhenClientCannotBeDecoded() throws {
     let data = try #require("{}".data(using: .utf8))
 
@@ -80,6 +92,30 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateAppliesClientFromErrorMetaClientEnvelope() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let expectedClient = client(id: "error-meta-client", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(ErrorMetaClientEnvelope(
+      errors: [.mock],
+      meta: .init(client: expectedClient)
+    ))
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ups/sign_up_123/attempt_verification"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 400,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    let request = URLRequest(url: url)
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.client?.id == expectedClient.id)
+  }
+
+  @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -120,4 +156,13 @@ private struct ClientEnvelope<Response: Codable>: Codable {
 private struct ClientOnlyEnvelope: Codable {
   let response: Client
   let client: Client?
+}
+
+private struct ErrorMetaClientEnvelope: Codable {
+  let errors: [ClerkAPIError]
+  let meta: Meta
+
+  struct Meta: Codable {
+    let client: Client
+  }
 }

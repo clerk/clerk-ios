@@ -15,7 +15,7 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 6)
+    #expect(allCases.count == 7)
 
     // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
@@ -24,6 +24,7 @@ struct ClerkKeychainKeyTests {
     #expect(allCases.contains(.clerkDeviceToken))
     #expect(allCases.contains(.clerkDeviceTokenSynced))
     #expect(allCases.contains(.attestKeyId))
+    #expect(allCases.contains(.pendingMagicLinkFlow))
   }
 
   @Test
@@ -34,5 +35,6 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.clerkDeviceToken.rawValue == "clerkDeviceToken")
     #expect(ClerkKeychainKey.clerkDeviceTokenSynced.rawValue == "clerkDeviceTokenSynced")
     #expect(ClerkKeychainKey.attestKeyId.rawValue == "AttestKeyId")
+    #expect(ClerkKeychainKey.pendingMagicLinkFlow.rawValue == "pendingMagicLinkFlow")
   }
 }

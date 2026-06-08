@@ -41,6 +41,84 @@ struct SignUpTests {
   }
 
   @Test
+  func sendEmailLinkUsesSignUpServicePrepareVerification() async throws {
+    let keychain = InMemoryKeychain()
+    let signUp = SignUp.mock
+    let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)
+    let service = MockSignUpService(prepareVerification: { id, params in
+      captured.setValue((id, params))
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signUpService: service
+    )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+
+    _ = try await signUp.sendEmailLink()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signUp.id)
+    #expect(params.1.strategy == .emailLink)
+    #expect(params.1.emailAddressId == nil)
+    #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.1.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
+    #expect(params.1.codeChallenge?.isEmpty == false)
+
+    let pendingFlow = try #require(magicLinkStore.load())
+    #expect(pendingFlow.kind == .signUp)
+    #expect(pendingFlow.flowId == signUp.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendEmailLinkSavesPendingFlowBeforePrepare() async throws {
+    let keychain = InMemoryKeychain()
+    let signUp = SignUp.mock
+    let service = MockSignUpService(prepareVerification: { _, _ in
+      throw ClerkClientError(message: "Prepare failed.")
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      signUpService: service
+    )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+
+    await #expect(throws: ClerkClientError.self) {
+      try await signUp.sendEmailLink()
+    }
+    let pendingFlow = try #require(magicLinkStore.load())
+    #expect(pendingFlow.kind == .signUp)
+    #expect(pendingFlow.flowId == signUp.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails() async throws {
+    let prepareWasCalled = LockIsolated(false)
+    let signUp = SignUp.mock
+    let service = MockSignUpService(prepareVerification: { _, _ in
+      prepareWasCalled.setValue(true)
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: SetFailingKeychain(),
+      signUpService: service
+    )
+
+    await #expect(throws: SetFailingKeychain.Failure.self) {
+      try await signUp.sendEmailLink()
+    }
+    #expect(prepareWasCalled.value == false)
+  }
+
+  @Test
   func sendEmailCodeUsesSignUpServicePrepareVerification() async throws {
     let signUp = SignUp.mock
     let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)

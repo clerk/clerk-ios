@@ -39,6 +39,7 @@ func setupMockAPIClient() {
     signInService: SignInService(apiClient: mockAPIClient),
     signUpService: SignUpService(apiClient: mockAPIClient),
     sessionService: SessionService(apiClient: mockAPIClient),
+    magicLinkService: MagicLinkService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     environmentService: EnvironmentService(apiClient: mockAPIClient),
@@ -50,9 +51,12 @@ func setupMockAPIClient() {
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
 @MainActor
-func createMockAPIClient(runtimeScope: ClerkRuntimeScope? = nil) -> APIClient {
+func createMockAPIClient(
+  baseURL: URL = mockBaseUrl,
+  runtimeScope: ClerkRuntimeScope? = nil
+) -> APIClient {
   let runtimeScope = runtimeScope ?? Clerk.shared.runtimeScope
-  return APIClient(baseURL: mockBaseUrl, runtimeScope: runtimeScope) { @Sendable configuration in
+  return APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
     configuration.pipeline = .clerkDefault(runtimeScope: runtimeScope)
     configuration.decoder = .clerkDecoder
     configuration.encoder = .clerkEncoder

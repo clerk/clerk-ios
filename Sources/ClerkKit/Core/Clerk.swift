@@ -191,6 +191,10 @@ public final class Clerk {
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
+  /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
+  private let urlHandlingCoordinator = URLHandlingCoordinator()
+  /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
+  package private(set) var callbackContinuation: TransferFlowResult?
 
   /// The main entry point for all authentication operations.
   ///
@@ -198,11 +202,18 @@ public final class Clerk {
   /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
     Auth(
+      magicLinkStore: dependencies.magicLinkStore,
+      magicLinkService: dependencies.magicLinkService,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
-      eventEmitter: authEventEmitter
+      eventEmitter: authEventEmitter,
+      urlHandlingCoordinator: urlHandlingCoordinator
     )
+  }
+
+  package func setCallbackContinuation(_ result: TransferFlowResult?) {
+    callbackContinuation = result
   }
 
   /// The main entry point for organization operations.
@@ -469,6 +480,27 @@ extension Clerk {
     maximumDelay: .seconds(5)
   )
 
+  /// Handles an incoming URL, routing it to the appropriate handler.
+  ///
+  /// If the URL matches a known Clerk callback (e.g. a magic link), it will
+  /// be processed automatically and this method returns `true`. Unrecognized
+  /// URLs are ignored and this method returns `false`.
+  ///
+  /// ```swift
+  /// .onOpenURL { url in
+  ///   Task { try? await clerk.handle(url) }
+  /// }
+  /// ```
+  @discardableResult
+  public func handle(_ url: URL) async throws -> Bool {
+    guard let route = try ClerkURLRoute(url: url, redirectUrl: options.redirectConfig.redirectUrl) else {
+      return false
+    }
+
+    try await auth.handle(route)
+    return true
+  }
+
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
     await SessionTokenFetcher.shared.reset()
@@ -646,7 +678,8 @@ extension Clerk {
   func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil, serverDate: Date? = nil) {
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
-         responseSequence <= lastAppliedClientResponseSequence
+         responseSequence <= lastAppliedClientResponseSequence,
+         !responseIsNewerThanCurrent(incoming, serverDate: serverDate)
       {
         ClerkLogger.debug(
           "Ignoring stale client response. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
@@ -654,13 +687,29 @@ extension Clerk {
         return
       }
 
-      lastAppliedClientResponseSequence = responseSequence
+      lastAppliedClientResponseSequence = max(lastAppliedClientResponseSequence ?? responseSequence, responseSequence)
     }
 
     if let serverDate {
       lastClientServerFetchDate = serverDate
     }
     client = incoming
+  }
+
+  private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
+    guard let serverDate, let lastClientServerFetchDate else {
+      return false
+    }
+
+    if serverDate > lastClientServerFetchDate {
+      return true
+    }
+
+    guard serverDate == lastClientServerFetchDate, let incoming, let client else {
+      return false
+    }
+
+    return incoming.updatedAt > client.updatedAt
   }
 
   func applyWatchSyncedClient(
@@ -739,6 +788,7 @@ extension Clerk {
     invalidAuthRefreshTask = nil
     watchSyncRefreshTask?.cancel()
     watchSyncRefreshTask = nil
+    urlHandlingCoordinator.cancelAll()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
@@ -752,6 +802,7 @@ extension Clerk {
     watchSyncRefreshTask?.cancel()
     await watchSyncRefreshTask?.value
     watchSyncRefreshTask = nil
+    urlHandlingCoordinator.cancelAll()
 
     // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
     // from enqueuing new writes during the drain.
@@ -767,6 +818,7 @@ extension Clerk {
     if finishAuthEventStreams {
       authEventEmitter.finish()
     }
+    callbackContinuation = nil
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
   }

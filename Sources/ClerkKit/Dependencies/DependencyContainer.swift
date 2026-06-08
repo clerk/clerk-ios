@@ -25,12 +25,17 @@ final class DependencyContainer: Dependencies {
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
   let sessionService: SessionServiceProtocol
+  let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let environmentService: EnvironmentServiceProtocol
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
+
+  // MARK: - Magic Link
+
+  let magicLinkStore: MagicLinkStore
 
   // MARK: - Logging
 
@@ -79,6 +84,8 @@ final class DependencyContainer: Dependencies {
       .appendingResponseMiddleware(options.middleware.response)
     keychain = Self.makeKeychainStorage(config: options.keychainConfig)
 
+    magicLinkStore = MagicLinkStore(keychain: keychain)
+
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
     apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
@@ -102,6 +109,7 @@ final class DependencyContainer: Dependencies {
     signInService = SignInService(apiClient: apiClient)
     signUpService = SignUpService(apiClient: apiClient)
     sessionService = SessionService(apiClient: apiClient)
+    magicLinkService = MagicLinkService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     environmentService = EnvironmentService(apiClient: apiClient)

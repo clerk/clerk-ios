@@ -89,3 +89,14 @@ extension SignIn {
     }
   }
 }
+
+extension SignIn.Status {
+  var needsContinuation: Bool {
+    switch self {
+    case .needsIdentifier, .needsFirstFactor, .needsSecondFactor, .needsNewPassword, .needsClientTrust:
+      true
+    case .complete, .unknown:
+      false
+    }
+  }
+}

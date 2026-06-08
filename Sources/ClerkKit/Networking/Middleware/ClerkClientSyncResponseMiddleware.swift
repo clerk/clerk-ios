@@ -33,7 +33,11 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       let client: Client?
 
       enum CodingKeys: String, CodingKey {
-        case response, client
+        case response, client, meta
+      }
+
+      enum MetaCodingKeys: String, CodingKey {
+        case client
       }
 
       init(from decoder: Decoder) throws {
@@ -46,6 +50,13 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
 
         if let clientClient = try? container?.decode(Client.self, forKey: .client) {
           client = clientClient
+          return
+        }
+
+        if let metaContainer = try? container?.nestedContainer(keyedBy: MetaCodingKeys.self, forKey: .meta),
+           let metaClient = try? metaContainer.decode(Client.self, forKey: .client)
+        {
+          client = metaClient
           return
         }
 

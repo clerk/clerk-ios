@@ -37,6 +37,9 @@ protocol Dependencies: AnyObject {
   /// Service for session-related operations.
   var sessionService: SessionServiceProtocol { get }
 
+  /// Service for native magic-link operations.
+  var magicLinkService: MagicLinkServiceProtocol { get }
+
   /// Service for passkey operations.
   var passkeyService: PasskeyServiceProtocol { get }
 
@@ -57,6 +60,9 @@ protocol Dependencies: AnyObject {
 
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }
+
+  /// Store for pending native magic-link PKCE state.
+  var magicLinkStore: MagicLinkStore { get }
 
   /// Manages logging of session status changes.
   var sessionStatusLogger: SessionStatusLogger { get }

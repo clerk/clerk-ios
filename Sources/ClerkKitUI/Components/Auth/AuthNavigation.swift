@@ -137,7 +137,11 @@ final class AuthNavigation {
         path = []
         return
       }
-      path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      if signUp.emailVerificationStrategy == .emailLink {
+        path.append(AuthView.Destination.signUpEmailLink)
+      } else {
+        path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      }
     case .phoneNumber:
       guard let phoneNumber = signUp.phoneNumber else {
         path = []
