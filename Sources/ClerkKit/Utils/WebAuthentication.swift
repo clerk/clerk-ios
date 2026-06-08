@@ -71,7 +71,7 @@ final class WebAuthentication: NSObject {
         let session = ASWebAuthenticationSession(
           url: url,
           callbackURLScheme: Clerk.shared.options.redirectConfig.callbackUrlScheme,
-          completionHandler: { url, error in
+          completionHandler: { @Sendable url, error in
             Task {
               #if os(macOS)
               await WebAuthentication.lifecycleRefreshManager.markPendingForegroundRefreshSuppression()
