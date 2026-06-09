@@ -27,6 +27,9 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
+  #if os(iOS)
+  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
+  #endif
 
   // MARK: - Configuration
 
@@ -58,7 +61,7 @@ struct AuthStartView: View {
   }
 
   var showOrDivider: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
+    hasSocialProviders && showIdentifierField
   }
 
   var phoneNumberInputIsActive: Bool {
@@ -157,6 +160,30 @@ struct AuthStartView: View {
     return LastUsedAuth(environment: clerk.environment)
   }
 
+  private var hasSocialProviders: Bool {
+    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
+  }
+
+  #if os(iOS)
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    clerk.environment?.authConfig.nativeSettings.trustedDeviceSignInEnabled == true
+  }
+
+  private var shouldShowTrustedDeviceSignIn: Bool {
+    authState.mode != .signUp && trustedDeviceAvailability?.isAvailable == true
+  }
+
+  private var trustedDeviceAvailabilityRefreshState: TrustedDeviceAvailabilityRefreshState {
+    guard trustedDeviceFeatureIsEnabled else {
+      return .disabled
+    }
+    guard clerk.session?.status == .active, let sessionID = clerk.session?.id else {
+      return .signedOut
+    }
+    return .signedIn(activeSessionID: sessionID)
+  }
+  #endif
+
   // MARK: - Display Strings
 
   private var titleString: LocalizedStringKey {
@@ -222,6 +249,16 @@ struct AuthStartView: View {
         headerSection
 
         VStack(spacing: 24) {
+          #if os(iOS)
+          if shouldShowTrustedDeviceSignIn {
+            trustedDeviceSignInButton
+
+            if showIdentifierField || hasSocialProviders {
+              TextDivider(string: "or")
+            }
+          }
+          #endif
+
           if showIdentifierField {
             identifierInputSection
 
@@ -280,8 +317,21 @@ struct AuthStartView: View {
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
+    #if os(iOS)
+    .task(id: trustedDeviceAvailabilityRefreshState) {
+      await refreshTrustedDeviceAvailability()
+    }
+    #endif
   }
 }
+
+#if os(iOS)
+private enum TrustedDeviceAvailabilityRefreshState: Equatable {
+  case disabled
+  case signedOut
+  case signedIn(activeSessionID: String)
+}
+#endif
 
 // MARK: - Subviews
 
@@ -374,6 +424,15 @@ extension AuthStartView {
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.identifierSwitcherButton)
     .simultaneousGesture(TapGesture())
   }
+
+  #if os(iOS)
+  private var trustedDeviceSignInButton: some View {
+    TrustedDeviceSignInButton {
+      await signInWithTrustedDevice()
+    }
+    .simultaneousGesture(TapGesture())
+  }
+  #endif
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
@@ -640,6 +699,33 @@ extension AuthStartView {
       false
     }
   }
+
+  #if os(iOS)
+  private func refreshTrustedDeviceAvailability() async {
+    guard authState.mode != .signUp, trustedDeviceFeatureIsEnabled else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    trustedDeviceAvailability = try? await clerk.trustedDevices.availability()
+  }
+
+  private func signInWithTrustedDevice() async {
+    generalError = nil
+
+    do {
+      let signIn = try await clerk.trustedDevices.signIn()
+      navigation.setToStepForStatus(signIn: signIn)
+    } catch {
+      if error.isUserCancelledError {
+        return
+      }
+
+      generalError = error
+      await refreshTrustedDeviceAvailability()
+    }
+  }
+  #endif
 }
 
 #Preview {

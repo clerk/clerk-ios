@@ -41,6 +41,16 @@ extension Clerk {
 
   @MainActor
   static func clearAllKeychainItems(in keychain: any KeychainStorage) {
+    do {
+      try TrustedDeviceLocalCredentialStore(keychain: keychain)
+        .deleteAllLocalCredentials(keyManager: TrustedDeviceKeyManager())
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete trusted-device local credentials. This is non-critical."
+      )
+    }
+
     // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases {
       do {
@@ -58,6 +68,17 @@ extension Clerk {
   @MainActor
   static func clearAllKeychainItemsStrictly(in keychain: any KeychainStorage) throws {
     var failures: [String] = []
+
+    do {
+      try TrustedDeviceLocalCredentialStore(keychain: keychain)
+        .deleteAllLocalCredentials(keyManager: TrustedDeviceKeyManager())
+    } catch {
+      failures.append(ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete trusted-device local credentials during Clerk reconfiguration."
+      )
+    }
 
     for key in ClerkKeychainKey.allCases {
       do {

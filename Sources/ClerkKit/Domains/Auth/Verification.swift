@@ -27,6 +27,9 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
   /// The nonce pertaining to the verification.
   public var nonce: String?
 
+  /// The challenge payload for trusted-device sign-in verifications.
+  public var trustedDeviceChallenge: TrustedDeviceChallenge?
+
   public init(
     status: Verification.Status? = nil,
     strategy: FactorStrategy? = nil,
@@ -34,7 +37,8 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
     expireAt: Date? = nil,
     error: ClerkAPIError? = nil,
     externalVerificationRedirectUrl: String? = nil,
-    nonce: String? = nil
+    nonce: String? = nil,
+    trustedDeviceChallenge: TrustedDeviceChallenge? = nil
   ) {
     self.status = status
     self.strategy = strategy
@@ -43,6 +47,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
     self.error = error
     self.externalVerificationRedirectUrl = externalVerificationRedirectUrl
     self.nonce = nonce
+    self.trustedDeviceChallenge = trustedDeviceChallenge
   }
 
   /// The state of the verification.
