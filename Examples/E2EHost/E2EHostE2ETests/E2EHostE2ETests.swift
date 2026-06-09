@@ -742,6 +742,7 @@ extension E2EHostE2ETests {
     static let resetPasswordNewPassword = "clerk.auth.sessionTask.resetPassword.newPassword"
     static let resetPasswordConfirmPassword = "clerk.auth.sessionTask.resetPassword.confirmPassword"
     static let resetPasswordSubmit = "clerk.auth.sessionTask.resetPassword.submit"
+    static let requestTimedOutErrorMessage = "The request timed out."
 
     static func userProfileCurrentUser(userID: String) -> String {
       "clerk.userProfile.currentUser.\(userID)"
@@ -750,6 +751,12 @@ extension E2EHostE2ETests {
     static func accountSwitcherSession(userID: String) -> String {
       "clerk.accountSwitcher.session.\(userID)"
     }
+  }
+
+  private enum CodePreparationResult: Equatable {
+    case prepared
+    case requestTimedOut
+    case timedOut
   }
 
   fileprivate struct BackendAPIError: Error, CustomStringConvertible {
@@ -968,9 +975,53 @@ extension E2EHostE2ETests {
   }
 
   private func openAuth(in app: XCUIApplication) {
-    let signInButton = app.buttons["Sign in"].firstMatch
-    XCTAssertTrue(signInButton.waitForExistence(timeout: 20), "Expected the E2EHost sign-in button.")
-    signInButton.tap()
+    let maxAttempts = 2
+
+    for attempt in 1 ... maxAttempts {
+      let signInButton = app.buttons["Sign in"].firstMatch
+      guard signInButton.waitForExistence(timeout: 20) else {
+        XCTFail("Expected the E2EHost sign-in button.")
+        return
+      }
+
+      signInButton.tap()
+
+      if waitForAuthStartInput(in: app, timeout: 30) {
+        return
+      }
+
+      guard attempt < maxAttempts else {
+        XCTFail("Expected AuthView to render an auth start input.")
+        return
+      }
+
+      dismissAuthIfPresent(in: app)
+    }
+  }
+
+  private func waitForAuthStartInput(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let identifierInput = app.descendants(matching: .any)[E2EIdentifier.authStartIdentifier]
+    let phoneNumberInput = app.descendants(matching: .any)[E2EIdentifier.authStartPhoneNumber]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if identifierInput.exists || phoneNumberInput.exists {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return identifierInput.exists || phoneNumberInput.exists
+  }
+
+  private func dismissAuthIfPresent(in app: XCUIApplication) {
+    guard let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) else {
+      return
+    }
+
+    dismissButton.tap()
+    _ = app.buttons["Sign in"].firstMatch.waitForExistence(timeout: 5)
   }
 
   private func openUserProfileRoot(
@@ -1006,8 +1057,7 @@ extension E2EHostE2ETests {
 
   private func completeEmailCodeSignUp(email: String, in app: XCUIApplication) {
     enterAuthStartIdentifier(email, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    waitForSignUpCodePrepared(in: app)
+    prepareEmailCodeSignUp(in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completePasswordCollectionIfNeeded(in: app)
   }
@@ -1186,16 +1236,103 @@ extension E2EHostE2ETests {
     file: StaticString,
     line: UInt
   ) {
-    let resendCooldown = app.buttons.matching(
-      NSPredicate(format: "label CONTAINS %@", "Resend (")
-    ).firstMatch
+    let result = waitForCodePreparationResult(in: app, timeout: 30)
+    guard result != .prepared else { return }
 
-    XCTAssertTrue(
-      resendCooldown.waitForExistence(timeout: 30),
-      message,
+    XCTFail(
+      codePreparationFailureMessage(message, result: result),
       file: file,
       line: line
     )
+  }
+
+  private func prepareEmailCodeSignUp(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+    let message = "Expected sign-up code preparation to finish before entering the verification code."
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+      waitForAuthStartRequestTimedOutErrorToClear(in: app)
+
+      let result = waitForCodePreparationResult(in: app, timeout: 30)
+      switch result {
+      case .prepared:
+        return
+      case .requestTimedOut where attempt < maxAttempts:
+        continue
+      case .requestTimedOut, .timedOut:
+        XCTFail(
+          codePreparationFailureMessage(message, result: result),
+          file: file,
+          line: line
+        )
+        return
+      }
+    }
+  }
+
+  private func waitForCodePreparationResult(
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> CodePreparationResult {
+    let resendCooldown = app.buttons.matching(
+      NSPredicate(format: "label CONTAINS %@", "Resend (")
+    ).firstMatch
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if resendCooldown.exists {
+        return .prepared
+      }
+
+      if timeoutError.exists {
+        return .requestTimedOut
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if resendCooldown.exists {
+      return .prepared
+    }
+
+    if timeoutError.exists {
+      return .requestTimedOut
+    }
+
+    return .timedOut
+  }
+
+  private func codePreparationFailureMessage(
+    _ message: String,
+    result: CodePreparationResult
+  ) -> String {
+    switch result {
+    case .prepared:
+      message
+    case .requestTimedOut:
+      "\(message) Auth start showed '\(E2EIdentifier.requestTimedOutErrorMessage)' after retrying."
+    case .timedOut:
+      message
+    }
+  }
+
+  private func authStartRequestTimedOutError(in app: XCUIApplication) -> XCUIElement {
+    app.staticTexts.matching(
+      NSPredicate(format: "label == %@", E2EIdentifier.requestTimedOutErrorMessage)
+    ).firstMatch
+  }
+
+  private func waitForAuthStartRequestTimedOutErrorToClear(in app: XCUIApplication) {
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    guard timeoutError.exists else { return }
+
+    _ = timeoutError.waitForNonExistence(timeout: 5)
   }
 
   private func enterText(
