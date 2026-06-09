@@ -237,6 +237,16 @@ public final class Clerk {
     Organizations(organizationService: dependencies.organizationService)
   }
 
+  /// The main entry point for trusted-device credential operations.
+  public var trustedDevices: TrustedDevices {
+    TrustedDevices(
+      trustedDeviceService: dependencies.trustedDeviceService,
+      signInService: dependencies.signInService,
+      keyManager: dependencies.trustedDeviceKeyManager,
+      credentialStore: dependencies.trustedDeviceCredentialStore
+    )
+  }
+
   /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration

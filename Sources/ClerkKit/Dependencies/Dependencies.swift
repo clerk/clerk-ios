@@ -19,6 +19,12 @@ protocol Dependencies: AnyObject {
   /// The keychain storage for secure data persistence.
   var keychain: any KeychainStorage { get }
 
+  /// Manager for local trusted-device private keys.
+  var trustedDeviceKeyManager: any TrustedDeviceKeyManagerProtocol { get }
+
+  /// Store for local trusted-device credential metadata.
+  var trustedDeviceCredentialStore: any TrustedDeviceLocalCredentialStoreProtocol { get }
+
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
@@ -42,6 +48,9 @@ protocol Dependencies: AnyObject {
 
   /// Service for passkey operations.
   var passkeyService: PasskeyServiceProtocol { get }
+
+  /// Service for trusted-device operations.
+  var trustedDeviceService: TrustedDeviceServiceProtocol { get }
 
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }

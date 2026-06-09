@@ -95,6 +95,7 @@ func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
     sessionService: SessionService(apiClient: apiClient),
     magicLinkService: MagicLinkService(apiClient: apiClient),
     passkeyService: PasskeyService(apiClient: apiClient),
+    trustedDeviceService: TrustedDeviceService(apiClient: apiClient),
     organizationService: OrganizationService(apiClient: apiClient),
     environmentService: EnvironmentService(apiClient: apiClient),
     emailAddressService: EmailAddressService(apiClient: apiClient),

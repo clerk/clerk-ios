@@ -148,6 +148,33 @@ struct SignInServiceTests {
   }
 
   @Test
+  func createWithTrustedDevice() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody?["strategy"] == "trusted_device")
+      #expect(request.urlEncodedFormBody?["trusted_device_id"] == "tdc_123")
+      #expect(request.urlEncodedFormBody?["locale"] != nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signInService.create(
+      params: .init(strategy: .trustedDevice, trustedDeviceId: "tdc_123")
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func createWithTicket() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
@@ -482,6 +509,43 @@ struct SignInServiceTests {
     _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func attemptFirstFactorTrustedDevice() async throws {
+    let signIn = SignIn.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody?["strategy"] == "trusted_device")
+      #expect(request.urlEncodedFormBody?["trusted_device_id"] == "tdc_123")
+      #expect(request.urlEncodedFormBody?["client_data"] == "{\"challenge_id\":\"tdch_123\"}")
+      #expect(request.urlEncodedFormBody?["signature"] == "mock_signature")
+      #expect(request.urlEncodedFormBody?["algorithm"] == "ES256")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+      signInId: signIn.id,
+      params: .init(
+        strategy: .trustedDevice,
+        trustedDeviceId: "tdc_123",
+        clientData: "{\"challenge_id\":\"tdch_123\"}",
+        signature: "mock_signature",
+        algorithm: .es256
+      )
     )
     #expect(requestHandled.value)
   }
