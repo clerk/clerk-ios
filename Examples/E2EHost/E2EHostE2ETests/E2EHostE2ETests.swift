@@ -79,7 +79,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -288,7 +288,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -333,7 +333,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -376,7 +376,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -421,7 +421,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -602,7 +602,7 @@ final class E2EHostE2ETests: XCTestCase {
     dismissSavePasswordPromptIfPresent(in: signUpApp)
     let userID = try currentUserID(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -1430,11 +1430,14 @@ extension E2EHostE2ETests {
 
     let deadline = Date().addingTimeInterval(30)
     repeat {
-      if tapConcreteInput(withIdentifier: identifier, in: app), waitForTextInputFocus(in: app, timeout: 2) {
+      if let concreteInput = tapConcreteInput(withIdentifier: identifier, in: app),
+         waitForTextInputFocus(on: concreteInput, timeout: 2)
+      {
         return true
       }
 
-      if tapFallbackInputTarget(withIdentifier: identifier, in: app), waitForTextInputFocus(in: app, timeout: 2) {
+      dismissKeyboardIfPresent(in: app)
+      if tapFallbackInputTarget(withIdentifier: identifier, in: app), waitForAnyTextInputFocus(in: app, timeout: 2) {
         return true
       }
 
@@ -1446,9 +1449,9 @@ extension E2EHostE2ETests {
     return false
   }
 
-  private func tapConcreteInput(withIdentifier identifier: String, in app: XCUIApplication) -> Bool {
+  private func tapConcreteInput(withIdentifier identifier: String, in app: XCUIApplication) -> XCUIElement? {
     guard let element = concreteInputElement(withIdentifier: identifier, in: app, timeout: 1) else {
-      return false
+      return nil
     }
 
     if element.isHittable {
@@ -1456,10 +1459,10 @@ extension E2EHostE2ETests {
     } else if !element.frame.isEmpty {
       tapAppCoordinate(CGPoint(x: element.frame.midX, y: element.frame.midY), in: app)
     } else {
-      return false
+      return nil
     }
 
-    return true
+    return element
   }
 
   private func tapFallbackInputTarget(withIdentifier identifier: String, in app: XCUIApplication) -> Bool {
@@ -1469,7 +1472,7 @@ extension E2EHostE2ETests {
       .filter { $0.exists && !$0.frame.isEmpty }
 
     if let label = matchingElements.first(where: { $0.elementType == .staticText }) {
-      tapAppCoordinate(CGPoint(x: app.frame.midX, y: label.frame.midY + 24), in: app)
+      tapAppCoordinate(CGPoint(x: label.frame.midX, y: label.frame.midY + 24), in: app)
       return true
     }
 
@@ -1699,7 +1702,22 @@ extension E2EHostE2ETests {
     return nil
   }
 
-  private func waitForTextInputFocus(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+  private func waitForTextInputFocus(on element: XCUIElement, timeout: TimeInterval) -> Bool {
+    let focusPredicate = NSPredicate(format: "hasKeyboardFocus == true")
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if element.exists, focusPredicate.evaluate(with: element) {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    return element.exists && focusPredicate.evaluate(with: element)
+  }
+
+  private func waitForAnyTextInputFocus(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
     let focusedElement = app.descendants(matching: .any)
       .matching(NSPredicate(format: "hasKeyboardFocus == true"))
       .firstMatch
@@ -1808,17 +1826,26 @@ extension E2EHostE2ETests {
   ) {
     if let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 3) {
       element.tap()
+    } else {
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 10, recoverByReactivatingApp: true)
+
+      guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
+        XCTFail("Expected hittable sign-in alternative method '\(identifier)'.", file: file, line: line)
+        return
+      }
+
+      element.tap()
+    }
+
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+    if app.descendants(matching: .any)[E2EIdentifier.signInCode].waitForExistence(timeout: 2) {
       return
     }
 
-    dismissSavePasswordPromptIfPresent(in: app, timeout: 10, recoverByReactivatingApp: true)
-
-    guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
-      XCTFail("Expected hittable sign-in alternative method '\(identifier)'.", file: file, line: line)
-      return
+    if let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 2) {
+      element.tap()
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
     }
-
-    element.tap()
   }
 
   private func tapWhenHittableAfterScrolling(
@@ -2049,6 +2076,7 @@ extension E2EHostE2ETests {
     timeout: TimeInterval = 5,
     recoverByReactivatingApp: Bool = false
   ) {
+    var observedPrompt = false
     let promptApplications = [
       app,
       XCUIApplication(bundleIdentifier: "com.apple.springboard"),
@@ -2058,11 +2086,13 @@ extension E2EHostE2ETests {
 
     repeat {
       if let notNowButton = notNowButtons.first(where: { $0.exists && $0.isHittable }) {
+        observedPrompt = true
         notNowButton.tap()
         if notNowButton.waitForNonExistence(timeout: 2) {
           return
         }
       } else if let notNowButton = notNowButtons.first(where: { $0.exists && !$0.frame.isEmpty }) {
+        observedPrompt = true
         tapAppCoordinate(CGPoint(x: notNowButton.frame.midX, y: notNowButton.frame.midY), in: app)
         if notNowButton.waitForNonExistence(timeout: 2) {
           return
@@ -2073,7 +2103,7 @@ extension E2EHostE2ETests {
       }
     } while Date() < deadline
 
-    if recoverByReactivatingApp {
+    if recoverByReactivatingApp, observedPrompt {
       XCUIDevice.shared.press(.home)
       app.activate()
       _ = app.wait(for: .runningForeground, timeout: 5)
