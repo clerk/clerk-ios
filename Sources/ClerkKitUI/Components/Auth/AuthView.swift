@@ -105,7 +105,8 @@ public struct AuthView: View {
   ///   - isDismissible: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
-  ///     button is shown. Defaults to `true`.
+  ///     button is shown. Interactive presentation dismissal is always disabled.
+  ///     Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
     self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
   }
@@ -151,7 +152,7 @@ public struct AuthView: View {
       alignment: .topLeading
     )
     #endif
-    .interactiveDismissDisabled(disablesInteractiveDismissal)
+    .interactiveDismissDisabled()
     .tint(theme.colors.primary)
     .clerkErrorPresenting($error)
     .environment(navigation)
@@ -233,10 +234,6 @@ extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissible && !navigation.hasSessionTaskStartInPath
-  }
-
-  private var disablesInteractiveDismissal: Bool {
-    navigation.hasSessionTaskStartInPath && clerk.session?.status != .active
   }
 
   @ToolbarContentBuilder
