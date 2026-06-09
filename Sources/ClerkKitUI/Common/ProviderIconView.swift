@@ -9,7 +9,7 @@ import ClerkKit
 import SwiftUI
 
 struct ProviderIconView: View {
-  @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.clerkTheme) private var theme
 
   let provider: OAuthProvider
   let image: Image
@@ -20,7 +20,7 @@ struct ProviderIconView: View {
       return foregroundColor
     }
 
-    return colorScheme == .dark ? .white : .black
+    return theme.colors.secondaryButtonForeground
   }
 
   var body: some View {

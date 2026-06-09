@@ -52,8 +52,11 @@ extension ClerkTheme {
     /// The color used for muted backgrounds.
     public var muted: Color
 
-    /// The fill color for secondary buttons, including social and SSO buttons.
-    public var secondaryButton: Color
+    /// The background color for secondary buttons, including social and SSO buttons.
+    public var secondaryButtonBackground: Color
+
+    /// The color used for text and tintable icons on secondary buttons.
+    public var secondaryButtonForeground: Color
 
     /// The base shadow color used in the views.
     public var shadow: Color
@@ -68,9 +71,6 @@ extension ClerkTheme {
 
     /// A slightly stronger border color for buttons.
     public var buttonBorder: Color
-
-    /// A foreground color that contrasts with secondary button backgrounds.
-    public var secondaryButtonForeground: Color
 
     /// The default border color for input fields.
     public var inputBorder: Color
@@ -123,7 +123,8 @@ extension ClerkTheme {
       neutral: Color = Self.defaultNeutralColor,
       ring: Color = Self.defaultRingColor,
       muted: Color = Self.defaultMutedColor,
-      secondaryButton: Color = Self.defaultSecondaryButtonColor,
+      secondaryButtonBackground: Color = Self.defaultSecondaryButtonBackgroundColor,
+      secondaryButtonForeground: Color? = nil,
       shadow: Color = Self.defaultShadowColor,
       border: Color = Self.defaultBorderColor
     ) {
@@ -140,17 +141,20 @@ extension ClerkTheme {
       self.neutral = neutral
       self.ring = ring
       self.muted = muted
-      self.secondaryButton = secondaryButton
+      self.secondaryButtonBackground = secondaryButtonBackground
+      self.secondaryButtonForeground =
+        secondaryButtonForeground
+        ?? (
+          secondaryButtonBackground.isDark
+            ? Self.defaultDarkSecondaryTextColor
+            : Self.defaultLightSecondaryTextColor
+        )
       self.shadow = shadow
 
       // Derived tokens
       primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
       self.border = border.opacity(0.06)
       buttonBorder = border.opacity(0.08)
-      secondaryButtonForeground =
-        secondaryButton.isDark
-        ? Self.defaultDarkSecondaryTextColor
-        : Self.defaultLightSecondaryTextColor
       inputBorder = border.opacity(0.11)
       inputBorderFocused = ring.opacity(0.28)
       dangerInputBorder = danger.opacity(0.53)
@@ -180,7 +184,7 @@ extension ClerkTheme.Colors {
   public static let defaultNeutralColor = Color(.neutral)
   public static let defaultRingColor = Color(.neutral)
   public static let defaultMutedColor = Color(.muted)
-  public static let defaultSecondaryButtonColor = Color(.background)
+  public static let defaultSecondaryButtonBackgroundColor = Color(.background)
   static let defaultLightSecondaryTextColor = Color(red: 47.0 / 255.0, green: 48.0 / 255.0, blue: 55.0 / 255.0)
   static let defaultDarkSecondaryTextColor = Color.white
   public static let defaultShadowColor = Color(.neutral)
@@ -202,7 +206,7 @@ extension ClerkTheme.Colors {
       neutral: defaultNeutralColor,
       ring: defaultRingColor,
       muted: defaultMutedColor,
-      secondaryButton: defaultSecondaryButtonColor,
+      secondaryButtonBackground: defaultSecondaryButtonBackgroundColor,
       shadow: defaultShadowColor,
       border: defaultBorderColor
     )
