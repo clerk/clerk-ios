@@ -431,6 +431,64 @@ extension Passkey {
   }
 }
 
+// MARK: TrustedDevice
+
+extension TrustedDevice {
+  public static var mock: TrustedDevice {
+    TrustedDevice(
+      id: "tdc_123",
+      platform: .iOS,
+      appIdentifier: "com.clerk.example",
+      name: "Sean's iPhone",
+      algorithm: .es256,
+      status: .active,
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      lastUsedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+  }
+}
+
+// MARK: TrustedDeviceChallenge
+
+extension TrustedDeviceChallenge {
+  public static var mock: TrustedDeviceChallenge {
+    TrustedDeviceChallenge(
+      challenge: "mock_challenge",
+      challengeId: "tdch_123",
+      trustedDeviceId: "tdc_123",
+      clientData: "{\"challenge_id\":\"tdch_123\"}",
+      expiresAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      algorithm: .es256
+    )
+  }
+}
+
+// MARK: TrustedDeviceLocalKey
+
+extension TrustedDeviceLocalKey {
+  package static var mock: TrustedDeviceLocalKey {
+    TrustedDeviceLocalKey(
+      localKeyId: "tdlk_mock",
+      publicKeyJWK: "{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"x\",\"y\":\"y\",\"alg\":\"ES256\"}"
+    )
+  }
+}
+
+// MARK: TrustedDeviceLocalCredential
+
+extension TrustedDeviceLocalCredential {
+  package static var mock: TrustedDeviceLocalCredential {
+    TrustedDeviceLocalCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_mock",
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+  }
+}
+
 // MARK: TokenResource
 
 extension TokenResource {

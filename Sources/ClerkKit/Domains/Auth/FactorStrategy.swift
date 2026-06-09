@@ -16,6 +16,7 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
   case emailLink
   case phoneCode
   case passkey
+  case trustedDevice
   case totp
   case backupCode
   case ticket
@@ -50,6 +51,8 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
       "phone_code"
     case .passkey:
       "passkey"
+    case .trustedDevice:
+      "trusted_device"
     case .totp:
       "totp"
     case .backupCode:
@@ -86,6 +89,8 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
       self = .phoneCode
     case "passkey":
       self = .passkey
+    case "trusted_device":
+      self = .trustedDevice
     case "totp":
       self = .totp
     case "backup_code":

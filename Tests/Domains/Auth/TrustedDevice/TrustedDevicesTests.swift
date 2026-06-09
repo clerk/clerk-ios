@@ -1,0 +1,628 @@
+@testable import ClerkKit
+import ConcurrencyExtras
+import Foundation
+import Testing
+
+@MainActor
+@Suite(.serialized)
+struct TrustedDevicesTests {
+  init() {
+    configureClerkForTesting()
+  }
+
+  @Test
+  func listUsesTrustedDeviceService() async throws {
+    let called = LockIsolated(false)
+    let service = MockTrustedDeviceService(list: {
+      called.setValue(true)
+      return [.mock]
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      trustedDeviceService: service
+    )
+
+    let trustedDevices = try await Clerk.shared.trustedDevices.list()
+
+    #expect(called.value == true)
+    #expect(trustedDevices == [.mock])
+  }
+
+  @Test
+  func revokeUsesTrustedDeviceService() async throws {
+    let capturedTrustedDeviceId = LockIsolated<String?>(nil)
+    let service = MockTrustedDeviceService(revoke: { trustedDeviceId in
+      capturedTrustedDeviceId.setValue(trustedDeviceId)
+      return .mock
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      trustedDeviceService: service
+    )
+
+    let trustedDevice = try await Clerk.shared.trustedDevices.revoke(id: "tdc_123")
+
+    #expect(capturedTrustedDeviceId.value == "tdc_123")
+    #expect(trustedDevice == .mock)
+  }
+
+  @Test
+  func availabilityReturnsAvailableLocalCredentialWithoutActiveSession() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let setup = try makeTrustedDevicesWithLocalCredential()
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == true)
+    #expect(availability.unavailableReason == nil)
+  }
+
+  @Test
+  func availabilityReturnsAvailableWithMultipleLocalCredentials() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let setup = makeTrustedDevices()
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_old",
+      localKeyId: "tdlk_old",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_new",
+      localKeyId: "tdlk_new",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == true)
+  }
+
+  @Test
+  func availabilityReconcilesServerCredentialWhenSessionIsActive() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(list: { [.mock] })
+    )
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == true)
+  }
+
+  @Test
+  func availabilitySkipsStaleNewerCredentialWhenSignedIn() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        [trustedDevice(id: "tdc_old", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+      }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_old",
+      localKeyId: "tdlk_old",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_new",
+      localKeyId: "tdlk_new",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == true)
+    #expect(deletedLocalKeyIds.value == ["tdlk_new"])
+    #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
+  }
+
+  @Test
+  func availabilityDoesNotReconcileServerCredentialWhenSessionIsExpired() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = Client(
+      id: "client_expired",
+      sessions: [.mockExpired],
+      lastActiveSessionId: Session.mockExpired.id,
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        Issue.record("Expired sessions should not trigger authenticated trusted-device list.")
+        return []
+      })
+    )
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == true)
+  }
+
+  @Test
+  func availabilityReturnsFeatureDisabledWhenNativeSettingIsOff() async throws {
+    Clerk.shared.environment = .mock
+    Clerk.shared.client = .mockSignedOut
+    let setup = try makeTrustedDevicesWithLocalCredential()
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == false)
+    #expect(availability.unavailableReason == .nativeAPIDisabled)
+  }
+
+  @Test
+  func availabilityDeletesMetadataWhenLocalKeyIsMissing() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      keyManager: MockTrustedDeviceKeyManager(hasKey: { _ in false })
+    )
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == false)
+    #expect(availability.unavailableReason == .localKeyMissing)
+    #expect(try setup.credentialStore.all().isEmpty)
+  }
+
+  @Test
+  func availabilityDeletesMetadataWhenServerCredentialIsMissing() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(list: { [] }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == false)
+    #expect(availability.unavailableReason == .serverCredentialMissing)
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try setup.credentialStore.all().isEmpty)
+  }
+
+  @Test
+  func enrollCreatesKeyPreparesChallengeAttemptsAndPersistsMetadata() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let preparedParams = LockIsolated<TrustedDevice.PrepareEnrollmentParams?>(nil)
+    let attemptedParams = LockIsolated<TrustedDevice.AttemptEnrollmentParams?>(nil)
+    let trustedDeviceService = MockTrustedDeviceService(
+      prepareEnrollment: { params in
+        preparedParams.setValue(params)
+        return .mock
+      },
+      attemptEnrollment: { params in
+        attemptedParams.setValue(params)
+        return .mock
+      }
+    )
+    let keyManager = MockTrustedDeviceKeyManager(sign: { clientData, localKeyId, _ in
+      #expect(clientData == TrustedDeviceChallenge.mock.clientData)
+      #expect(localKeyId == TrustedDeviceLocalKey.mock.localKeyId)
+      return .init(clientData: clientData, signature: "enrollment_signature")
+    })
+    let setup = makeTrustedDevices(
+      trustedDeviceService: trustedDeviceService,
+      keyManager: keyManager
+    )
+
+    let trustedDevice = try await setup.trustedDevices.enroll(name: "Sean's iPhone")
+
+    #expect(trustedDevice == .mock)
+    #expect(preparedParams.value?.appIdentifier == "com.clerk.example")
+    #expect(preparedParams.value?.name == "Sean's iPhone")
+    #expect(preparedParams.value?.publicKeyJWK == TrustedDeviceLocalKey.mock.publicKeyJWK)
+    #expect(attemptedParams.value?.signature == "enrollment_signature")
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == .mock)
+  }
+
+  @Test
+  func enrollDeletesGeneratedKeyWhenAttemptFails() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let trustedDeviceService = MockTrustedDeviceService(
+      prepareEnrollment: { _ in .mock },
+      attemptEnrollment: { _ in throw ClerkClientError(message: "Attempt failed") }
+    )
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+    let setup = makeTrustedDevices(
+      trustedDeviceService: trustedDeviceService,
+      keyManager: keyManager
+    )
+
+    do {
+      _ = try await setup.trustedDevices.enroll()
+      Issue.record("Expected enrollment to fail.")
+    } catch {
+      #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+      #expect(try setup.credentialStore.all().isEmpty)
+    }
+  }
+
+  @Test
+  func enrollRequiresActiveSession() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let setup = makeTrustedDevices()
+
+    do {
+      _ = try await setup.trustedDevices.enroll()
+      Issue.record("Expected enrollment to require an active session.")
+    } catch let error as ClerkClientError {
+      #expect(error.message?.contains("active Clerk session") == true)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
+  @Test
+  func revokeDeletesLocalCredentialAfterServerRevoke() async throws {
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in .mock }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+
+    let trustedDevice = try await setup.trustedDevices.revoke(id: "tdc_123")
+
+    #expect(trustedDevice == .mock)
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+  }
+
+  @Test
+  func signInUsesCreateChallengeAndAttemptsFirstFactor() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let capturedAttempt = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let signInService = MockSignInService(
+      create: { params in
+        capturedCreateParams.setValue(params)
+        return .mockTrustedDeviceChallenge
+      },
+      attemptFirstFactor: { signInId, params in
+        capturedAttempt.setValue((signInId, params))
+        return .mockTrustedDeviceComplete
+      }
+    )
+    let keyManager = MockTrustedDeviceKeyManager(sign: { clientData, localKeyId, _ in
+      #expect(clientData == trustedDeviceChallengeClientData)
+      #expect(localKeyId == "tdlk_mock")
+      return .init(clientData: clientData, signature: "sign_in_signature")
+    })
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      signInService: signInService,
+      keyManager: keyManager
+    )
+
+    let signIn = try await setup.trustedDevices.signIn()
+
+    #expect(signIn == .mockTrustedDeviceComplete)
+    #expect(capturedCreateParams.value?.strategy == .trustedDevice)
+    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_123")
+    #expect(capturedAttempt.value?.0 == "si_trusted_device")
+    #expect(capturedAttempt.value?.1.strategy == .trustedDevice)
+    #expect(capturedAttempt.value?.1.trustedDeviceId == "tdc_123")
+    #expect(capturedAttempt.value?.1.clientData == trustedDeviceChallengeClientData)
+    #expect(capturedAttempt.value?.1.signature == "sign_in_signature")
+    #expect(capturedAttempt.value?.1.algorithm == .es256)
+  }
+
+  @Test
+  func signInUsesNewestLocalCredentialWhenNoIdIsProvided() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let setup = makeTrustedDevices(signInService: MockSignInService(
+      create: { params in
+        capturedCreateParams.setValue(params)
+        return .mockTrustedDeviceChallenge
+      },
+      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_old",
+      localKeyId: "tdlk_old",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_new",
+      localKeyId: "tdlk_new",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    _ = try await setup.trustedDevices.signIn()
+
+    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_new")
+  }
+
+  @Test
+  func signInDeletesLocalCredentialWhenCreateReportsTrustedDeviceMissing() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let attemptWasCalled = LockIsolated(false)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      signInService: MockSignInService(
+        create: { _ in throw missingTrustedDeviceCredentialError() },
+        attemptFirstFactor: { _, _ in
+          attemptWasCalled.setValue(true)
+          return .mockTrustedDeviceComplete
+        }
+      ),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+
+    do {
+      _ = try await setup.trustedDevices.signIn()
+      Issue.record("Expected trusted-device sign-in to fail.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
+      #expect(attemptWasCalled.value == false)
+      #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+      #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
+  @Test
+  func signInDeletesLocalCredentialWhenAttemptReportsTrustedDeviceMissing() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      signInService: MockSignInService(
+        create: { _ in .mockTrustedDeviceChallenge },
+        attemptFirstFactor: { _, _ in throw missingTrustedDeviceCredentialError() }
+      ),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+
+    do {
+      _ = try await setup.trustedDevices.signIn()
+      Issue.record("Expected trusted-device sign-in to fail.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
+      #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+      #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
+  @Test
+  func signInKeepsLocalCredentialWhenCreateFailsForUnrelatedAPIError() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      signInService: MockSignInService(
+        create: { _ in throw missingTrustedDeviceCredentialError(paramName: "identifier") }
+      ),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+
+    do {
+      _ = try await setup.trustedDevices.signIn()
+      Issue.record("Expected trusted-device sign-in to fail.")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "form_resource_not_found")
+      #expect(deletedLocalKeyIds.value.isEmpty)
+      #expect(try setup.credentialStore.credential(id: "tdc_123") == .mock)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
+  @Test
+  func signInSkipsStaleNewerCredentialWhenSignedIn() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        [trustedDevice(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+      }),
+      signInService: MockSignInService(
+        create: { params in
+          capturedCreateParams.setValue(params)
+          return .mockTrustedDeviceChallenge
+        },
+        attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      ),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_old",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_new",
+      localKeyId: "tdlk_new",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    _ = try await setup.trustedDevices.signIn()
+
+    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_123")
+    #expect(deletedLocalKeyIds.value == ["tdlk_new"])
+    #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
+  }
+
+  @Test
+  func signInRequiresCreateToReturnTrustedDeviceChallenge() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let prepareWasCalled = LockIsolated(false)
+    let signInService = MockSignInService(
+      create: { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) },
+      prepareFirstFactor: { _, _ in
+        prepareWasCalled.setValue(true)
+        return .mockTrustedDeviceChallenge
+      },
+      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+    )
+    let setup = try makeTrustedDevicesWithLocalCredential(signInService: signInService)
+
+    do {
+      _ = try await setup.trustedDevices.signIn(id: "tdc_123")
+      Issue.record("Expected sign-in to fail when create does not return a trusted-device challenge.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Trusted-device sign-in did not return a challenge.")
+      #expect(prepareWasCalled.value == false)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+}
+
+private let trustedDeviceChallengeClientData = "{\"challenge_id\":\"tdch_123\"}"
+private let trustedDeviceChallenge = TrustedDeviceChallenge(
+  challenge: "challenge",
+  challengeId: "tdch_123",
+  trustedDeviceId: "tdc_123",
+  clientData: trustedDeviceChallengeClientData,
+  expiresAt: Date(timeIntervalSince1970: 1_710_000_000),
+  algorithm: .es256
+)
+
+private func enabledTrustedDeviceEnvironment() -> Clerk.Environment {
+  var environment = Clerk.Environment.mock
+  environment.authConfig.nativeSettings = .init(
+    apiEnabled: true,
+    trustedDeviceSignInEnabled: true
+  )
+  return environment
+}
+
+private func localCredential(
+  id: String,
+  localKeyId: String,
+  createdAt: Date
+) -> TrustedDeviceLocalCredential {
+  TrustedDeviceLocalCredential(
+    id: id,
+    localKeyId: localKeyId,
+    appIdentifier: "com.clerk.example",
+    createdAt: createdAt,
+    updatedAt: createdAt
+  )
+}
+
+private func trustedDevice(
+  id: String,
+  createdAt: Date
+) -> TrustedDevice {
+  TrustedDevice(
+    id: id,
+    platform: .iOS,
+    appIdentifier: "com.clerk.example",
+    name: nil,
+    algorithm: .es256,
+    status: .active,
+    createdAt: createdAt,
+    updatedAt: createdAt
+  )
+}
+
+private func missingTrustedDeviceCredentialError(
+  paramName: String = "trusted_device_id"
+) -> ClerkAPIError {
+  ClerkAPIError(
+    code: "form_resource_not_found",
+    message: "is missing",
+    longMessage: "The resource associated with the supplied trusted_device_id was not found.",
+    meta: ["param_name": .string(paramName)],
+    clerkTraceId: "trace_123"
+  )
+}
+
+@MainActor
+private func makeTrustedDevicesWithLocalCredential(
+  trustedDeviceService: TrustedDeviceServiceProtocol = MockTrustedDeviceService(),
+  signInService: SignInServiceProtocol = MockSignInService(),
+  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager()
+) throws -> (
+  trustedDevices: TrustedDevices,
+  credentialStore: TrustedDeviceLocalCredentialStore
+) {
+  let setup = makeTrustedDevices(
+    trustedDeviceService: trustedDeviceService,
+    signInService: signInService,
+    keyManager: keyManager
+  )
+  try setup.credentialStore.save(.mock)
+  return setup
+}
+
+@MainActor
+private func makeTrustedDevices(
+  trustedDeviceService: TrustedDeviceServiceProtocol = MockTrustedDeviceService(),
+  signInService: SignInServiceProtocol = MockSignInService(),
+  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager()
+) -> (
+  trustedDevices: TrustedDevices,
+  credentialStore: TrustedDeviceLocalCredentialStore
+) {
+  let credentialStore = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+  let trustedDevices = TrustedDevices(
+    trustedDeviceService: trustedDeviceService,
+    signInService: signInService,
+    keyManager: keyManager,
+    credentialStore: credentialStore,
+    appIdentifierProvider: { "com.clerk.example" }
+  )
+  return (trustedDevices, credentialStore)
+}
+
+extension SignIn {
+  static var mockTrustedDeviceChallenge: SignIn {
+    SignIn(
+      id: "si_trusted_device",
+      status: .needsIdentifier,
+      firstFactorVerification: .init(
+        status: .unverified,
+        strategy: .trustedDevice,
+        trustedDeviceChallenge: trustedDeviceChallenge
+      )
+    )
+  }
+
+  static var mockTrustedDeviceComplete: SignIn {
+    SignIn(
+      id: "si_trusted_device",
+      status: .complete,
+      createdSessionId: "sess_123"
+    )
+  }
+}
