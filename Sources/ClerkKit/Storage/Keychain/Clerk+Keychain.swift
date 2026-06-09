@@ -502,6 +502,16 @@ extension Clerk {
     preserving preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted],
     configuration: ClerkLogger.Configuration? = nil
   ) {
+    do {
+      try TrustedDeviceLocalCredentialStore(keychain: keychain)
+        .deleteAllLocalCredentials(keyManager: TrustedDeviceKeyManager())
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete trusted-device local credentials. This is non-critical.",
+        configuration: configuration
+      )
+    }
     // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases where !preservedKeys.contains(key) {
       do {
@@ -567,6 +577,18 @@ extension Clerk {
     configuration: ClerkLogger.Configuration? = nil
   ) throws {
     var failures: [String] = []
+
+    do {
+      try TrustedDeviceLocalCredentialStore(keychain: keychain)
+        .deleteAllLocalCredentials(keyManager: TrustedDeviceKeyManager())
+    } catch {
+      failures.append(ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete trusted-device local credentials during Clerk reconfiguration.",
+        configuration: configuration
+      )
+    }
 
     for key in ClerkKeychainKey.allCases where !preservedKeys.contains(key) {
       do {

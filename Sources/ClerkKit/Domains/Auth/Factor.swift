@@ -18,6 +18,9 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
   /// The ID of the Web3 wallet that will be used to sign a message.
   public var web3WalletId: String?
 
+  /// The ID of the trusted-device credential that will be used to sign a challenge.
+  public var trustedDeviceId: String?
+
   /// The ID of the enterprise connection that will be used for SSO.
   public var enterpriseConnectionId: String?
 
@@ -38,6 +41,7 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     emailAddressId: String? = nil,
     phoneNumberId: String? = nil,
     web3WalletId: String? = nil,
+    trustedDeviceId: String? = nil,
     enterpriseConnectionId: String? = nil,
     enterpriseConnectionName: String? = nil,
     safeIdentifier: String? = nil,
@@ -48,6 +52,7 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     self.emailAddressId = emailAddressId
     self.phoneNumberId = phoneNumberId
     self.web3WalletId = web3WalletId
+    self.trustedDeviceId = trustedDeviceId
     self.enterpriseConnectionId = enterpriseConnectionId
     self.enterpriseConnectionName = enterpriseConnectionName
     self.safeIdentifier = safeIdentifier
