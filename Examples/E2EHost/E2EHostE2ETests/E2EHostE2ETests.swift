@@ -1200,8 +1200,9 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
-    legalAccepted.tap()
-    tap(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
+    tapWhenHittable(E2EIdentifier.signUpLegalAccepted, in: app, file: file, line: line)
+    tapWhenEnabled(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
   }
 
   private func waitForSignUpCodePrepared(
@@ -1898,37 +1899,18 @@ extension E2EHostE2ETests {
       app.buttons["Not Now"].firstMatch,
       springboard.buttons["Not Now"].firstMatch,
     ]
-    guard let initialNotNowButton = waitForExistingElement(in: notNowButtons, timeout: timeout) else { return }
+    let deadline = Date().addingTimeInterval(timeout)
 
-    var notNowButton = initialNotNowButton
-    for _ in 0 ..< 3 {
-      if !notNowButton.exists {
-        guard let existingNotNowButton = waitForExistingElement(in: notNowButtons, timeout: 0.5) else { return }
-        notNowButton = existingNotNowButton
-      }
-      guard notNowButton.isHittable else {
+    repeat {
+      guard let notNowButton = notNowButtons.first(where: { $0.exists && $0.isHittable }) else {
         RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         continue
       }
-
       notNowButton.tap()
       if notNowButton.waitForNonExistence(timeout: 2) {
         return
       }
-    }
-  }
-
-  private func waitForExistingElement(in elements: [XCUIElement], timeout: TimeInterval) -> XCUIElement? {
-    let deadline = Date().addingTimeInterval(timeout)
-    repeat {
-      if let element = elements.first(where: \.exists) {
-        return element
-      }
-
-      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
     } while Date() < deadline
-
-    return elements.first(where: \.exists)
   }
 
   private func completeUserProfilePasswordChange(
@@ -1942,6 +1924,8 @@ extension E2EHostE2ETests {
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordNext, in: app, file: file, line: line)
     enterText(newPassword, into: E2EIdentifier.userProfileChangePasswordNewPassword, in: app, file: file, line: line)
     enterText(newPassword, into: E2EIdentifier.userProfileChangePasswordConfirmPassword, in: app, file: file, line: line)
+    dismissKeyboardIfPresent(in: app)
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordSave, in: app, timeout: 45, file: file, line: line)
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
 
