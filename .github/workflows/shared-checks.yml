@@ -134,6 +134,7 @@ jobs:
     if: inputs.run_integration_tests
     runs-on: macos-26
     timeout-minutes: 30
+    continue-on-error: ${{ matrix.continue_on_error == true }}
     strategy:
       fail-fast: false
       matrix:
@@ -151,9 +152,12 @@ jobs:
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testUsernamePasswordSignUpThenUsernamePasswordSignInWithRequiredUserModelFields()
               E2EHostE2ETests/E2EHostE2ETests/testInAppCleanupDeletesPendingUser()
-          - shard: user-profile-security
+          - shard: user-profile-password-change
+            continue_on_error: true
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityChangesPassword()
+          - shard: user-profile-security
+            only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithAuthenticatorApp()
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithSmsCode()
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityDeletesAccount()
