@@ -1224,6 +1224,7 @@ extension E2EHostE2ETests {
   ) {
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.signUpCode,
       message: "Expected sign-up code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -1237,6 +1238,7 @@ extension E2EHostE2ETests {
   ) {
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.signInCode,
       message: "Expected sign-in code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -1245,11 +1247,16 @@ extension E2EHostE2ETests {
 
   private func waitForCodePrepared(
     in app: XCUIApplication,
+    codeInputIdentifier: String,
     message: String,
     file: StaticString,
     line: UInt
   ) {
-    let result = waitForCodePreparationResult(in: app, timeout: 30)
+    let result = waitForCodePreparationResult(
+      in: app,
+      codeInputIdentifier: codeInputIdentifier,
+      timeout: 30
+    )
     guard result != .prepared else { return }
 
     XCTFail(
@@ -1271,7 +1278,11 @@ extension E2EHostE2ETests {
       tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
       waitForAuthStartRequestTimedOutErrorToClear(in: app)
 
-      let result = waitForCodePreparationResult(in: app, timeout: 30)
+      let result = waitForCodePreparationResult(
+        in: app,
+        codeInputIdentifier: E2EIdentifier.signUpCode,
+        timeout: 30
+      )
       switch result {
       case .prepared:
         return
@@ -1290,8 +1301,10 @@ extension E2EHostE2ETests {
 
   private func waitForCodePreparationResult(
     in app: XCUIApplication,
+    codeInputIdentifier: String,
     timeout: TimeInterval
   ) -> CodePreparationResult {
+    let codeInput = app.descendants(matching: .any)[codeInputIdentifier]
     let resendCooldown = app.buttons.matching(
       NSPredicate(format: "label CONTAINS %@", "Resend (")
     ).firstMatch
@@ -1299,6 +1312,10 @@ extension E2EHostE2ETests {
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
+      if codeInput.exists {
+        return .prepared
+      }
+
       if resendCooldown.exists {
         return .prepared
       }
@@ -1309,6 +1326,10 @@ extension E2EHostE2ETests {
 
       RunLoop.current.run(until: Date().addingTimeInterval(0.25))
     } while Date() < deadline
+
+    if codeInput.exists {
+      return .prepared
+    }
 
     if resendCooldown.exists {
       return .prepared
@@ -2178,6 +2199,7 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.userProfilePhoneContinue, in: app, file: file, line: line)
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.userProfileMfaVerificationCode,
       message: "Expected user-profile phone verification code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -2247,6 +2269,7 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.smsContinue, in: app, file: file, line: line)
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.smsCode,
       message: "Expected setup-MFA SMS code preparation to finish before entering the verification code.",
       file: file,
       line: line
