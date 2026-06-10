@@ -16,6 +16,7 @@ struct SocialButton: View {
   let provider: OAuthProvider
   let transferable: Bool
   let unsafeMetadata: JSON?
+  let showsTitle: Bool
   var action: (() async -> Void)?
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
@@ -23,7 +24,10 @@ struct SocialButton: View {
 
   private var fallbackProviderText: some View {
     ViewThatFits(in: .horizontal) {
-      Text("Continue with \(provider.name)", bundle: .module)
+      if showsTitle {
+        Text("Continue with \(provider.name)", bundle: .module)
+      }
+
       Text(provider.name)
     }
     .lineLimit(1)
@@ -35,17 +39,19 @@ struct SocialButton: View {
     LazyImage(url: provider.iconImageUrl) { state in
       if let image = state.image {
         ViewThatFits(in: .horizontal) {
-          HStack(spacing: 12) {
-            ProviderIconView(
-              provider: provider,
-              image: image
-            )
-            .frame(width: 21, height: 21)
+          if showsTitle {
+            HStack(spacing: 12) {
+              ProviderIconView(
+                provider: provider,
+                image: image
+              )
+              .frame(width: 21, height: 21)
 
-            Text("Continue with \(provider.name)", bundle: .module)
-              .lineLimit(1)
-              .font(theme.fonts.body)
-              .foregroundStyle(theme.colors.foreground)
+              Text("Continue with \(provider.name)", bundle: .module)
+                .lineLimit(1)
+                .font(theme.fonts.body)
+                .foregroundStyle(theme.colors.foreground)
+            }
           }
 
           ProviderIconView(
@@ -66,22 +72,26 @@ struct SocialButton: View {
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    unsafeMetadata: JSON? = nil,
+    showsTitle: Bool = true
   ) {
     self.provider = provider
     self.transferable = transferable
     self.unsafeMetadata = unsafeMetadata
+    self.showsTitle = showsTitle
   }
 
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil,
+    showsTitle: Bool = true,
     action: (() async -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
     self.unsafeMetadata = unsafeMetadata
+    self.showsTitle = showsTitle
     self.action = action
   }
 
@@ -89,12 +99,14 @@ struct SocialButton: View {
     provider: OAuthProvider,
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil,
+    showsTitle: Bool = true,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
     onError: ((Error) -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
     self.unsafeMetadata = unsafeMetadata
+    self.showsTitle = showsTitle
     self.onSuccess = onSuccess
     self.onError = onError
   }
@@ -120,6 +132,7 @@ struct SocialButton: View {
         .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
+    .accessibilityLabel(Text("Continue with \(provider.name)", bundle: .module))
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.socialProviderButton(strategy: provider.strategy))
   }
 }
@@ -147,9 +160,9 @@ extension SocialButton {
     SocialButton(provider: .google)
 
     HStack {
-      SocialButton(provider: .apple)
-      SocialButton(provider: .google)
-      SocialButton(provider: .slack)
+      SocialButton(provider: .apple, showsTitle: false)
+      SocialButton(provider: .google, showsTitle: false)
+      SocialButton(provider: .slack, showsTitle: false)
     }
   }
   .padding()
