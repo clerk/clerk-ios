@@ -53,12 +53,12 @@ jobs:
 
       - name: Verify JavaScript repo token
         env:
-          JAVASCRIPT_RELEASE_PR_TOKEN: ${{ secrets.JAVASCRIPT_RELEASE_PR_TOKEN }}
+          OPEN_EXPO_PR_GH_TOKEN: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
         run: |
           set -euo pipefail
 
-          if [ -z "$JAVASCRIPT_RELEASE_PR_TOKEN" ]; then
-            echo "JAVASCRIPT_RELEASE_PR_TOKEN must be configured with clerk/javascript contents and pull request write access."
+          if [ -z "$OPEN_EXPO_PR_GH_TOKEN" ]; then
+            echo "OPEN_EXPO_PR_GH_TOKEN must be configured with clerk/javascript contents and pull request write access."
             echo "Use a token that authenticates as clerk-cookie so the generated PR author is clerk-cookie."
             exit 1
           fi
@@ -69,7 +69,7 @@ jobs:
           repository: ${{ env.JAVASCRIPT_REPO }}
           ref: main
           path: javascript
-          token: ${{ secrets.JAVASCRIPT_RELEASE_PR_TOKEN }}
+          token: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
 
       - name: Update @clerk/expo iOS SDK pin
         id: update
@@ -130,7 +130,7 @@ jobs:
         if: steps.update.outputs.should_open == 'true'
         working-directory: javascript
         env:
-          GH_TOKEN: ${{ secrets.JAVASCRIPT_RELEASE_PR_TOKEN }}
+          GH_TOKEN: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
           BRANCH_NAME: ${{ steps.version.outputs.branch_name }}
           IOS_VERSION: ${{ steps.version.outputs.ios_version }}
           RELEASE_URL: ${{ steps.version.outputs.release_url }}
