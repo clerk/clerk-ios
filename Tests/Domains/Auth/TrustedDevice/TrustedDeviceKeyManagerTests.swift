@@ -6,12 +6,7 @@ import Testing
 struct TrustedDeviceKeyManagerTests {
   @Test
   func privateKeyAttributesUseSecureEnclaveBiometricGate() throws {
-    let accessControl = try #require(SecAccessControlCreateWithFlags(
-      kCFAllocatorDefault,
-      kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
-      [.privateKeyUsage, .biometryCurrentSet],
-      nil
-    ))
+    let accessControl = try TrustedDeviceKeyManager.makeAccessControl()
 
     let attributes = TrustedDeviceKeyManager.makePrivateKeyAttributes(
       localKeyId: "tdlk_123",
@@ -29,6 +24,22 @@ struct TrustedDeviceKeyManagerTests {
         Data("dev.clerk.trusted_device.tdlk_123".utf8)
     )
     #expect(privateKeyAttributes[kSecAttrAccessControl as String] != nil)
+  }
+
+  @Test
+  func accessControlFlagsMatchTrustedDevicePolicies() {
+    #expect(TrustedDeviceKeyManager.accessControlFlags(for: .biometryCurrentSet) == [
+      .privateKeyUsage,
+      .biometryCurrentSet,
+    ])
+    #expect(TrustedDeviceKeyManager.accessControlFlags(for: .biometryAny) == [
+      .privateKeyUsage,
+      .biometryAny,
+    ])
+    #expect(TrustedDeviceKeyManager.accessControlFlags(for: .biometryOrDevicePasscode) == [
+      .privateKeyUsage,
+      .userPresence,
+    ])
   }
 
   @Test

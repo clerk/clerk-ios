@@ -10,31 +10,79 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   package let id: String
   package let localKeyId: String
   package let appIdentifier: String
+  package let identifierHint: String?
+  package let policy: TrustedDevicePolicy
   package let createdAt: Date
   package let updatedAt: Date
+
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case localKeyId
+    case appIdentifier
+    case identifierHint
+    case policy
+    case createdAt
+    case updatedAt
+  }
 
   package init(
     id: String,
     localKeyId: String,
     appIdentifier: String,
+    identifierHint: String? = nil,
+    policy: TrustedDevicePolicy = .biometryCurrentSet,
     createdAt: Date,
     updatedAt: Date
   ) {
     self.id = id
     self.localKeyId = localKeyId
     self.appIdentifier = appIdentifier
+    self.identifierHint = Self.normalizedIdentifierHint(identifierHint)
+    self.policy = policy
     self.createdAt = createdAt
     self.updatedAt = updatedAt
   }
 
-  package init(trustedDevice: TrustedDevice, localKey: TrustedDeviceLocalKey) {
+  package init(
+    trustedDevice: TrustedDevice,
+    localKey: TrustedDeviceLocalKey,
+    identifierHint: String? = nil
+  ) {
     self.init(
       id: trustedDevice.id,
       localKeyId: localKey.localKeyId,
       appIdentifier: trustedDevice.appIdentifier,
+      identifierHint: identifierHint,
+      policy: localKey.policy,
       createdAt: trustedDevice.createdAt,
       updatedAt: trustedDevice.updatedAt
     )
+  }
+
+  package init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(String.self, forKey: .id)
+    localKeyId = try container.decode(String.self, forKey: .localKeyId)
+    appIdentifier = try container.decode(String.self, forKey: .appIdentifier)
+    identifierHint = try Self.normalizedIdentifierHint(container.decodeIfPresent(String.self, forKey: .identifierHint))
+    policy = try container.decodeIfPresent(TrustedDevicePolicy.self, forKey: .policy) ?? .biometryCurrentSet
+    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+  }
+
+  package func matches(identifierHint: String?) -> Bool {
+    guard let normalizedIdentifierHint = Self.normalizedIdentifierHint(identifierHint) else {
+      return true
+    }
+    return self.identifierHint == normalizedIdentifierHint
+  }
+
+  private static func normalizedIdentifierHint(_ identifierHint: String?) -> String? {
+    guard let identifierHint else {
+      return nil
+    }
+    let normalized = identifierHint.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    return normalized.isEmpty ? nil : normalized
   }
 }
 
