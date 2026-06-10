@@ -759,6 +759,12 @@ extension E2EHostE2ETests {
     case timedOut
   }
 
+  private enum SavePasswordPromptDismissalResult {
+    case notFound
+    case dismissed
+    case stillVisible
+  }
+
   fileprivate struct BackendAPIError: Error, CustomStringConvertible {
     let statusCode: Int
     let responseBody: String
@@ -1035,7 +1041,7 @@ extension E2EHostE2ETests {
   private func relaunchSignedOutApp(_ app: XCUIApplication) {
     app.terminate()
     app.launch()
-    _ = app.staticTexts[E2EIdentifier.signedOut].waitForExistence(timeout: 30)
+    _ = waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30)
   }
 
   private func openUserProfileRoot(
@@ -1763,8 +1769,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    let element = app.descendants(matching: .any)[identifier]
-    guard waitForElementHittable(element, timeout: 30) else {
+    guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
       XCTFail("Expected tappable element '\(identifier)' to become hittable.", file: file, line: line)
       return
     }
@@ -1780,12 +1785,17 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     let element = app.descendants(matching: .any)[identifier]
-    XCTAssertTrue(
-      waitForElementEnabled(element, timeout: timeout),
-      "Expected enabled tappable element '\(identifier)'.",
-      file: file,
-      line: line
-    )
+    guard waitForElementEnabled(element, in: app, timeout: timeout) else {
+      XCTFail("Expected enabled tappable element '\(identifier)'.", file: file, line: line)
+      return
+    }
+
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+    guard waitForElementEnabled(element, in: app, timeout: 5) else {
+      XCTFail("Expected enabled tappable element '\(identifier)' after dismissing blocking system UI.", file: file, line: line)
+      return
+    }
+
     element.tap()
   }
 
@@ -1825,7 +1835,13 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    if let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 3) {
+    if waitForHittableElement(withIdentifier: identifier, in: app, timeout: 3) != nil {
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+      guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
+        XCTFail("Expected hittable tappable element '\(identifier)'.", file: file, line: line)
+        return
+      }
+
       element.tap()
       return
     }
@@ -1889,6 +1905,7 @@ extension E2EHostE2ETests {
           return
         }
 
+        dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
         RunLoop.current.run(until: Date().addingTimeInterval(0.5))
       }
 
@@ -1934,6 +1951,7 @@ extension E2EHostE2ETests {
         return element
       }
 
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
       RunLoop.current.run(until: Date().addingTimeInterval(0.25))
     } while Date() < deadline
 
@@ -1959,6 +1977,7 @@ extension E2EHostE2ETests {
         return element
       }
 
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
       RunLoop.current.run(until: Date().addingTimeInterval(0.25))
     } while Date() < deadline
 
@@ -1980,16 +1999,19 @@ extension E2EHostE2ETests {
     }
   }
 
-  private func waitForElementEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-    let predicate = NSPredicate(format: "exists == true AND enabled == true")
-    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
-  }
+  private func waitForElementEnabled(_ element: XCUIElement, in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
 
-  private func waitForElementHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-    let predicate = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
-    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    repeat {
+      if element.exists, element.isEnabled {
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return element.exists && element.isEnabled
   }
 
   private func waitForSignedIn(
@@ -1998,7 +2020,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.signedIn].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.signedIn, in: app, timeout: 45),
       "Expected the E2EHost signed-in state.",
       file: file,
       line: line
@@ -2011,7 +2033,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.signedOut].waitForExistence(timeout: 30),
+      waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30),
       "Expected the E2EHost signed-out state.",
       file: file,
       line: line
@@ -2024,7 +2046,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.sessionPending].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.sessionPending, in: app, timeout: 45),
       "Expected the E2EHost pending-session state.",
       file: file,
       line: line
@@ -2037,11 +2059,37 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.sessionActive].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.sessionActive, in: app, timeout: 45),
       "Expected the E2EHost active-session state.",
       file: file,
       line: line
     )
+  }
+
+  private func waitForStateIndicator(
+    _ identifier: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> Bool {
+    let indicator = app.staticTexts[identifier]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if indicator.exists {
+        dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if indicator.exists {
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      return true
+    }
+
+    return false
   }
 
   private func waitForUserProfileCurrentUser(
@@ -2099,37 +2147,58 @@ extension E2EHostE2ETests {
     recoverByReactivatingApp: Bool = false
   ) {
     var observedPrompt = false
-    let promptApplications = [
-      app,
-      XCUIApplication(bundleIdentifier: "com.apple.springboard"),
-    ]
-    let notNowButtons = promptApplications.map { $0.buttons["Not Now"].firstMatch }
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
-      if let notNowButton = notNowButtons.first(where: { $0.exists && $0.isHittable }) {
+      switch dismissVisibleSavePasswordPrompt(in: app) {
+      case .dismissed:
+        return
+      case .stillVisible:
         observedPrompt = true
-        notNowButton.tap()
-        if notNowButton.waitForNonExistence(timeout: 2) {
-          return
-        }
-      } else if let notNowButton = notNowButtons.first(where: { $0.exists && !$0.frame.isEmpty }) {
-        observedPrompt = true
-        tapAppCoordinate(CGPoint(x: notNowButton.frame.midX, y: notNowButton.frame.midY), in: app)
-        if notNowButton.waitForNonExistence(timeout: 2) {
-          return
-        }
-      } else {
+      case .notFound:
         RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-        continue
       }
     } while Date() < deadline
 
     if recoverByReactivatingApp, observedPrompt {
-      XCUIDevice.shared.press(.home)
-      app.activate()
-      _ = app.wait(for: .runningForeground, timeout: 5)
+      recoverFromSavePasswordPromptDismissal(in: app)
     }
+  }
+
+  private func dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in app: XCUIApplication) {
+    if dismissVisibleSavePasswordPrompt(in: app) == .stillVisible {
+      recoverFromSavePasswordPromptDismissal(in: app)
+    }
+  }
+
+  private func dismissVisibleSavePasswordPrompt(in app: XCUIApplication) -> SavePasswordPromptDismissalResult {
+    let notNowButtons = savePasswordPromptNotNowButtons(in: app)
+
+    if let notNowButton = notNowButtons.first(where: { $0.exists && $0.isHittable }) {
+      notNowButton.tap()
+      return notNowButton.waitForNonExistence(timeout: 2) ? .dismissed : .stillVisible
+    }
+
+    if let notNowButton = notNowButtons.first(where: { $0.exists && !$0.frame.isEmpty }) {
+      tapAppCoordinate(CGPoint(x: notNowButton.frame.midX, y: notNowButton.frame.midY), in: app)
+      return notNowButton.waitForNonExistence(timeout: 2) ? .dismissed : .stillVisible
+    }
+
+    return .notFound
+  }
+
+  private func savePasswordPromptNotNowButtons(in app: XCUIApplication) -> [XCUIElement] {
+    [
+      app,
+      XCUIApplication(bundleIdentifier: "com.apple.springboard"),
+    ]
+    .map { $0.buttons["Not Now"].firstMatch }
+  }
+
+  private func recoverFromSavePasswordPromptDismissal(in app: XCUIApplication) {
+    XCUIDevice.shared.press(.home)
+    app.activate()
+    _ = app.wait(for: .runningForeground, timeout: 5)
   }
 
   private func completeUserProfilePasswordChange(
