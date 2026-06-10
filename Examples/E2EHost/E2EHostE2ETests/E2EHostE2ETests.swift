@@ -2279,8 +2279,8 @@ extension E2EHostE2ETests {
 
   private func savePasswordPromptNotNowButtons(in app: XCUIApplication) -> [XCUIElement] {
     [
-      app,
       XCUIApplication(bundleIdentifier: "com.apple.springboard"),
+      app,
     ]
     .map { $0.buttons["Not Now"].firstMatch }
   }
