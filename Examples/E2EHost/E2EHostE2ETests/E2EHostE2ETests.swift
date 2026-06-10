@@ -391,8 +391,7 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signInApp)
     switchToPhoneNumberIdentifier(in: signInApp)
     enterPhoneNumber(phoneNumber, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
+    submitPhoneSignInAndTapUseAnotherMethod(phoneNumber: phoneNumber, in: signInApp)
     tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
@@ -1049,14 +1048,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    tapWhenHittable(E2EIdentifier.userButtonProfile, in: app, file: file, line: line)
-
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityRow].waitForExistence(timeout: 45),
-      "Expected the user profile root screen.",
-      file: file,
-      line: line
-    )
+    openUserProfileRootScreen(in: app, file: file, line: line)
   }
 
   private func openUserProfileSecurity(
@@ -1064,7 +1056,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    tapWhenHittable(E2EIdentifier.userButtonProfile, in: app, file: file, line: line)
+    openUserProfileRootScreen(in: app, file: file, line: line)
     tapWhenHittable(E2EIdentifier.userProfileSecurityRow, in: app, file: file, line: line)
 
     XCTAssertTrue(
@@ -1073,6 +1065,56 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
+  }
+
+  private func openUserProfileRootScreen(
+    in app: XCUIApplication,
+    file: StaticString,
+    line: UInt
+  ) {
+    let profileRoot = app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityRow]
+    let maxAttempts = 3
+
+    for attempt in 1 ... maxAttempts {
+      if waitForUserProfileRoot(profileRoot, in: app, timeout: 1) {
+        return
+      }
+
+      guard let profileButton = waitForHittableElement(withIdentifier: E2EIdentifier.userButtonProfile, in: app, timeout: 30) else {
+        if waitForUserProfileRoot(profileRoot, in: app, timeout: 15) {
+          return
+        }
+
+        XCTFail("Expected hittable user profile button.", file: file, line: line)
+        return
+      }
+
+      profileButton.tap()
+
+      if waitForUserProfileRoot(profileRoot, in: app, timeout: 15) {
+        return
+      }
+
+      guard attempt < maxAttempts else { break }
+      _ = waitForStateIndicator(E2EIdentifier.sessionActive, in: app, timeout: 10)
+    }
+
+    XCTFail("Expected the user profile root screen.", file: file, line: line)
+  }
+
+  private func waitForUserProfileRoot(_ profileRoot: XCUIElement, in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if profileRoot.exists {
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return profileRoot.exists
   }
 
   private func completeEmailCodeSignUp(email: String, in app: XCUIApplication) {
@@ -1146,6 +1188,37 @@ extension E2EHostE2ETests {
     tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
     waitForSignInCodePrepared(in: app, file: file, line: line)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+  }
+
+  private func submitPhoneSignInAndTapUseAnotherMethod(
+    phoneNumber: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+
+      if let useAnotherMethod = waitForHittableElement(
+        withIdentifier: E2EIdentifier.signInUseAnotherMethod,
+        in: app,
+        timeout: 45
+      ) {
+        useAnotherMethod.tap()
+        return
+      }
+
+      guard attempt < maxAttempts else { break }
+
+      dismissAuthIfPresent(in: app)
+      openAuth(in: app, file: file, line: line)
+      switchToPhoneNumberIdentifier(in: app, file: file, line: line)
+      enterPhoneNumber(phoneNumber, in: app, file: file, line: line)
+    }
+
+    XCTFail("Expected sign-in alternative methods after submitting the phone number.", file: file, line: line)
   }
 
   private func switchToPhoneNumberIdentifier(
