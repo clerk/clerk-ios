@@ -7,36 +7,48 @@ import Foundation
 
 package final class MockTrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   package nonisolated(unsafe) var isSupportedValue: Bool
-  package nonisolated(unsafe) var createKeyHandler: (() throws -> TrustedDeviceLocalKey)?
+  package nonisolated(unsafe) var isSupportedForPolicyHandler: ((TrustedDevicePolicy) -> Bool)?
+  package nonisolated(unsafe) var createKeyHandler: ((TrustedDevicePolicy) throws -> TrustedDeviceLocalKey)?
   package nonisolated(unsafe) var signHandler: ((String, String, String?) throws -> TrustedDeviceKeySignature)?
   package nonisolated(unsafe) var hasKeyHandler: ((String) throws -> Bool)?
   package nonisolated(unsafe) var deleteKeyHandler: ((String) throws -> Void)?
 
   package init(
     isSupported: Bool = true,
+    isSupportedForPolicy: ((TrustedDevicePolicy) -> Bool)? = nil,
     createKey: (() throws -> TrustedDeviceLocalKey)? = nil,
+    createKeyWithPolicy: ((TrustedDevicePolicy) throws -> TrustedDeviceLocalKey)? = nil,
     sign: ((String, String, String?) throws -> TrustedDeviceKeySignature)? = nil,
     hasKey: ((String) throws -> Bool)? = nil,
     deleteKey: ((String) throws -> Void)? = nil
   ) {
     isSupportedValue = isSupported
-    createKeyHandler = createKey
+    isSupportedForPolicyHandler = isSupportedForPolicy
+    if let createKeyWithPolicy {
+      createKeyHandler = createKeyWithPolicy
+    } else if let createKey {
+      createKeyHandler = { _ in try createKey() }
+    }
     signHandler = sign
     hasKeyHandler = hasKey
     deleteKeyHandler = deleteKey
   }
 
   @MainActor
-  package var isSupported: Bool {
-    isSupportedValue
+  package func isSupported(policy: TrustedDevicePolicy) -> Bool {
+    isSupportedForPolicyHandler?(policy) ?? isSupportedValue
   }
 
   @MainActor
-  package func createKey() throws -> TrustedDeviceLocalKey {
+  package func createKey(policy: TrustedDevicePolicy) throws -> TrustedDeviceLocalKey {
     if let createKeyHandler {
-      return try createKeyHandler()
+      return try createKeyHandler(policy)
     }
-    return .mock
+    return .init(
+      localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
+      publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+      policy: policy
+    )
   }
 
   @MainActor

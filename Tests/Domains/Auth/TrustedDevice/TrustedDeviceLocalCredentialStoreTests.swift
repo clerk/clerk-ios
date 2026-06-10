@@ -46,14 +46,62 @@ struct TrustedDeviceLocalCredentialStoreTests {
 
   @Test
   func localCredentialCanBeBuiltFromServerCredentialAndLocalKey() {
+    let localKey = TrustedDeviceLocalKey(
+      localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
+      publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+      policy: .biometryOrDevicePasscode
+    )
     let credential = TrustedDeviceLocalCredential(
       trustedDevice: .mock,
-      localKey: .mock
+      localKey: localKey,
+      identifierHint: "  Sean@Example.COM  "
     )
 
     #expect(credential.id == TrustedDevice.mock.id)
     #expect(credential.localKeyId == TrustedDeviceLocalKey.mock.localKeyId)
     #expect(credential.appIdentifier == TrustedDevice.mock.appIdentifier)
+    #expect(credential.identifierHint == "sean@example.com")
+    #expect(credential.policy == .biometryOrDevicePasscode)
+  }
+
+  @Test
+  func emptyIdentifierHintIsNotPersisted() {
+    let credential = TrustedDeviceLocalCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_mock",
+      appIdentifier: "com.clerk.example",
+      identifierHint: "   ",
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+
+    #expect(credential.identifierHint == nil)
+    #expect(credential.matches(identifierHint: nil))
+    #expect(!credential.matches(identifierHint: "sean@example.com"))
+  }
+
+  @Test
+  func legacyCredentialMetadataDefaultsToBiometryCurrentSetPolicy() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [{
+          "id": "tdc_123",
+          "localKeyId": "tdlk_mock",
+          "appIdentifier": "com.clerk.example",
+          "createdAt": 1234567890000,
+          "updatedAt": 1234567890000
+        }]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let credential = try #require(try store.credential(id: "tdc_123"))
+
+    #expect(credential.policy == .biometryCurrentSet)
+    #expect(credential.identifierHint == nil)
   }
 
   @Test
