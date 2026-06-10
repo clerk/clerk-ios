@@ -11,6 +11,16 @@ import Security
 
 extension TrustedDeviceKeyManagerProtocol {
   @MainActor
+  var isSupported: Bool {
+    isSupported(policy: .biometryCurrentSet)
+  }
+
+  @MainActor
+  func createKey() throws -> TrustedDeviceLocalKey {
+    try createKey(policy: .biometryCurrentSet)
+  }
+
+  @MainActor
   func sign(clientData: String, localKeyId: String) throws -> TrustedDeviceKeySignature {
     try sign(clientData: clientData, localKeyId: localKeyId, localizedReason: nil)
   }
@@ -20,25 +30,25 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   private static let applicationTagPrefix = "dev.clerk.trusted_device"
 
   @MainActor
-  var isSupported: Bool {
+  func isSupported(policy: TrustedDevicePolicy) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
     let context = LAContext()
     var error: NSError?
-    return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+    return context.canEvaluatePolicy(Self.localAuthenticationPolicy(for: policy), error: &error)
     #else
     return false
     #endif
   }
 
   @MainActor
-  func createKey() throws -> TrustedDeviceLocalKey {
+  func createKey(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> TrustedDeviceLocalKey {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    guard isSupported else {
+    guard isSupported(policy: policy) else {
       throw TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
     }
 
     let localKeyId = Self.makeLocalKeyId()
-    let accessControl = try Self.makeAccessControl()
+    let accessControl = try Self.makeAccessControl(policy: policy)
     let attributes = Self.makePrivateKeyAttributes(localKeyId: localKeyId, accessControl: accessControl)
 
     var error: Unmanaged<CFError>?
@@ -47,7 +57,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     }
 
     let publicKeyJWK = try Self.publicKeyJWK(for: privateKey)
-    return TrustedDeviceLocalKey(localKeyId: localKeyId, publicKeyJWK: publicKeyJWK)
+    return TrustedDeviceLocalKey(localKeyId: localKeyId, publicKeyJWK: publicKeyJWK, policy: policy)
     #else
     throw TrustedDeviceKeyManagerError.unsupportedPlatform
     #endif
@@ -145,12 +155,23 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     "tdlk_" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
   }
 
-  private static func makeAccessControl() throws -> SecAccessControl {
+  package static func accessControlFlags(for policy: TrustedDevicePolicy) -> SecAccessControlCreateFlags {
+    switch policy {
+    case .biometryCurrentSet:
+      [.privateKeyUsage, .biometryCurrentSet]
+    case .biometryAny:
+      [.privateKeyUsage, .biometryAny]
+    case .biometryOrDevicePasscode:
+      [.privateKeyUsage, .userPresence]
+    }
+  }
+
+  package static func makeAccessControl(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> SecAccessControl {
     var error: Unmanaged<CFError>?
     guard let accessControl = SecAccessControlCreateWithFlags(
       kCFAllocatorDefault,
       kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
-      [.privateKeyUsage, .biometryCurrentSet],
+      accessControlFlags(for: policy),
       &error
     ) else {
       throw TrustedDeviceKeyManagerError.keyGenerationFailed(errorMessage(from: error))
@@ -230,6 +251,15 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return try publicKeyJWK(fromX963Representation: representation)
   }
 
+  #if canImport(LocalAuthentication)
+  private static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
+    switch policy {
+    case .biometryCurrentSet, .biometryAny, .biometryOrDevicePasscode:
+      .deviceOwnerAuthenticationWithBiometrics
+    }
+  }
+  #endif
+
   private static func applicationTag(localKeyId: String) -> Data {
     Data("\(applicationTagPrefix).\(localKeyId)".utf8)
   }
@@ -247,15 +277,18 @@ package struct TrustedDeviceLocalKey: Equatable {
   package let localKeyId: String
   package let publicKeyJWK: String
   package let algorithm: TrustedDevice.Algorithm
+  package let policy: TrustedDevicePolicy
 
   package init(
     localKeyId: String,
     publicKeyJWK: String,
-    algorithm: TrustedDevice.Algorithm = .es256
+    algorithm: TrustedDevice.Algorithm = .es256,
+    policy: TrustedDevicePolicy = .biometryCurrentSet
   ) {
     self.localKeyId = localKeyId
     self.publicKeyJWK = publicKeyJWK
     self.algorithm = algorithm
+    self.policy = policy
   }
 }
 
@@ -319,9 +352,8 @@ public enum TrustedDeviceKeyManagerError: Error, Equatable, LocalizedError, Send
 }
 
 package protocol TrustedDeviceKeyManagerProtocol: Sendable {
-  @MainActor var isSupported: Bool { get }
-
-  @MainActor func createKey() throws -> TrustedDeviceLocalKey
+  @MainActor func isSupported(policy: TrustedDevicePolicy) -> Bool
+  @MainActor func createKey(policy: TrustedDevicePolicy) throws -> TrustedDeviceLocalKey
   @MainActor func sign(
     clientData: String,
     localKeyId: String,

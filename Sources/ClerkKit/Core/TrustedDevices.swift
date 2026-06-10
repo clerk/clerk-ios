@@ -40,8 +40,11 @@ public struct TrustedDevices {
   /// When a Clerk session is active, this also reconciles the local credential with the server.
   /// Without an active session, this reports whether the local biometric-gated credential can
   /// be used to start trusted-device sign-in.
-  public func availability(id: String? = nil) async throws -> TrustedDeviceAvailability {
-    switch try await selectedLocalCredential(id: id) {
+  public func availability(
+    id: String? = nil,
+    identifierHint: String? = nil
+  ) async throws -> TrustedDeviceAvailability {
+    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint) {
     case .available:
       .available
     case let .unavailable(reason):
@@ -52,8 +55,18 @@ public struct TrustedDevices {
   /// Enrolls the current app installation as a biometric trusted device.
   ///
   /// This requires an active Clerk session. The generated private key stays on the device.
+  /// - Parameters:
+  ///   - name: A human-readable device name stored with the trusted-device credential.
+  ///   - identifierHint: A local-only user identifier hint for selecting this credential later.
+  ///   - reason: The reason shown in the system biometric prompt.
+  ///   - policy: The local authentication policy used to protect the generated private key.
   @discardableResult
-  public func enroll(name: String? = nil) async throws -> TrustedDevice {
+  public func enroll(
+    name: String? = nil,
+    identifierHint: String? = nil,
+    reason: String? = nil,
+    policy: TrustedDevicePolicy = .biometryCurrentSet
+  ) async throws -> TrustedDevice {
     guard Clerk.shared.session?.status == .active else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without an active Clerk session.")
     }
@@ -63,7 +76,7 @@ public struct TrustedDevices {
       throw ClerkClientError(message: "Unable to enroll a trusted device without a bundle identifier.")
     }
 
-    let localKey = try keyManager.createKey()
+    let localKey = try keyManager.createKey(policy: policy)
     do {
       let challenge = try await trustedDeviceService.prepareEnrollment(params: .init(
         appIdentifier: appIdentifier,
@@ -73,7 +86,7 @@ public struct TrustedDevices {
       let signature = try keyManager.sign(
         clientData: challenge.clientData,
         localKeyId: localKey.localKeyId,
-        localizedReason: "Use biometrics to enroll this device with Clerk."
+        localizedReason: reason ?? "Use biometrics to enroll this device."
       )
       let trustedDevice = try await trustedDeviceService.attemptEnrollment(params: .init(
         appIdentifier: appIdentifier,
@@ -82,7 +95,11 @@ public struct TrustedDevices {
         clientData: signature.clientData,
         signature: signature.signature
       ))
-      try await saveLocalCredential(trustedDevice: trustedDevice, localKey: localKey)
+      try await saveLocalCredential(
+        trustedDevice: trustedDevice,
+        localKey: localKey,
+        identifierHint: identifierHint
+      )
       return trustedDevice
     } catch {
       try? keyManager.deleteKey(localKeyId: localKey.localKeyId)
@@ -101,10 +118,19 @@ public struct TrustedDevices {
   }
 
   /// Signs in with a locally enrolled biometric trusted-device credential.
+  ///
+  /// - Parameters:
+  ///   - id: The trusted-device credential ID to use. When omitted, the newest local credential is selected.
+  ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
+  ///   - reason: The reason shown in the system biometric prompt.
   @discardableResult
-  public func signIn(id: String? = nil) async throws -> SignIn {
+  public func signIn(
+    id: String? = nil,
+    identifierHint: String? = nil,
+    reason: String? = nil
+  ) async throws -> SignIn {
     let localCredential: TrustedDeviceLocalCredential
-    switch try await selectedLocalCredential(id: id) {
+    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint) {
     case let .available(credential):
       localCredential = credential
     case .unavailable:
@@ -128,7 +154,7 @@ public struct TrustedDevices {
     let signature = try keyManager.sign(
       clientData: challenge.clientData,
       localKeyId: localCredential.localKeyId,
-      localizedReason: "Use biometrics to sign in with Clerk."
+      localizedReason: reason ?? "Use biometrics to sign in."
     )
 
     do {
@@ -182,33 +208,37 @@ public struct TrustedDevices {
     case unavailable(TrustedDeviceAvailability.UnavailableReason)
   }
 
-  private func selectedLocalCredential(id: String?) async throws -> LocalCredentialSelection {
+  private func selectedLocalCredential(
+    id: String?,
+    identifierHint: String?
+  ) async throws -> LocalCredentialSelection {
     if let unavailableReason = trustedDeviceFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
 
-    guard keyManager.isSupported else {
-      return .unavailable(.biometricAuthenticationUnavailable)
-    }
-
-    let localCredentials = try candidateLocalCredentials(id: id)
+    let localCredentials = try candidateLocalCredentials(id: id, identifierHint: identifierHint)
     guard !localCredentials.isEmpty else {
       return .unavailable(.noLocalCredential)
     }
 
     let credentialsWithKeys = try localCredentialsWithExistingKeys(from: localCredentials)
-    guard let firstCredentialWithKey = credentialsWithKeys.first else {
+    guard !credentialsWithKeys.isEmpty else {
       return .unavailable(.localKeyMissing)
     }
 
+    let supportedCredentials = credentialsWithKeys.filter { keyManager.isSupported(policy: $0.policy) }
+    guard let firstSupportedCredential = supportedCredentials.first else {
+      return .unavailable(.biometricAuthenticationUnavailable)
+    }
+
     guard Clerk.shared.session?.status == .active else {
-      return .available(firstCredentialWithKey)
+      return .available(firstSupportedCredential)
     }
 
     let trustedDevices = try await trustedDeviceService.list()
     var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
 
-    for credential in credentialsWithKeys {
+    for credential in supportedCredentials {
       guard let trustedDevice = trustedDevices.first(where: { $0.id == credential.id }) else {
         try deleteLocalCredential(credential)
         firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
@@ -227,11 +257,15 @@ public struct TrustedDevices {
     return .unavailable(firstUnavailableReason ?? .serverCredentialMissing)
   }
 
-  private func candidateLocalCredentials(id: String?) throws -> [TrustedDeviceLocalCredential] {
-    let credentials = try credentialStore.all()
+  private func candidateLocalCredentials(
+    id: String?,
+    identifierHint: String?
+  ) throws -> [TrustedDeviceLocalCredential] {
+    var credentials = try credentialStore.all()
     if let id {
-      return credentials.filter { $0.id == id }
+      credentials = credentials.filter { $0.id == id }
     }
+    credentials = credentials.filter { $0.matches(identifierHint: identifierHint) }
     return credentials.sorted { lhs, rhs in
       if lhs.createdAt != rhs.createdAt {
         return lhs.createdAt > rhs.createdAt
@@ -274,10 +308,15 @@ public struct TrustedDevices {
 
   private func saveLocalCredential(
     trustedDevice: TrustedDevice,
-    localKey: TrustedDeviceLocalKey
+    localKey: TrustedDeviceLocalKey,
+    identifierHint: String?
   ) async throws {
     do {
-      try credentialStore.save(.init(trustedDevice: trustedDevice, localKey: localKey))
+      try credentialStore.save(.init(
+        trustedDevice: trustedDevice,
+        localKey: localKey,
+        identifierHint: identifierHint
+      ))
     } catch {
       _ = try? await trustedDeviceService.revoke(trustedDeviceId: trustedDevice.id)
       throw error
