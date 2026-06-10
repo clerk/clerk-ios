@@ -173,14 +173,19 @@ struct AuthStartView: View {
     authState.mode != .signUp && trustedDeviceAvailability?.isAvailable == true
   }
 
+  private var trustedDeviceIdentifierHint: String? {
+    let trimmedIdentifier = activeIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmedIdentifier.isEmpty ? nil : trimmedIdentifier
+  }
+
   private var trustedDeviceAvailabilityRefreshState: TrustedDeviceAvailabilityRefreshState {
     guard trustedDeviceFeatureIsEnabled else {
       return .disabled
     }
     guard clerk.session?.status == .active, let sessionID = clerk.session?.id else {
-      return .signedOut
+      return .signedOut(identifierHint: trustedDeviceIdentifierHint)
     }
-    return .signedIn(activeSessionID: sessionID)
+    return .signedIn(activeSessionID: sessionID, identifierHint: trustedDeviceIdentifierHint)
   }
   #endif
 
@@ -328,8 +333,8 @@ struct AuthStartView: View {
 #if os(iOS)
 private enum TrustedDeviceAvailabilityRefreshState: Equatable {
   case disabled
-  case signedOut
-  case signedIn(activeSessionID: String)
+  case signedOut(identifierHint: String?)
+  case signedIn(activeSessionID: String, identifierHint: String?)
 }
 #endif
 
@@ -707,14 +712,18 @@ extension AuthStartView {
       return
     }
 
-    trustedDeviceAvailability = try? await clerk.trustedDevices.availability()
+    trustedDeviceAvailability = try? await clerk.trustedDevices.availability(
+      identifierHint: trustedDeviceIdentifierHint
+    )
   }
 
   private func signInWithTrustedDevice() async {
     generalError = nil
 
     do {
-      let signIn = try await clerk.trustedDevices.signIn()
+      let signIn = try await clerk.trustedDevices.signIn(
+        identifierHint: trustedDeviceIdentifierHint
+      )
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
       if error.isUserCancelledError {
