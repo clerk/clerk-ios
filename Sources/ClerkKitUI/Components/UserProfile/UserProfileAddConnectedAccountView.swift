@@ -49,7 +49,10 @@ struct UserProfileAddConnectedAccountView: View {
 
           SocialButtonLayout {
             ForEach(unconnectedProviders) { provider in
-              SocialButton(provider: provider) {
+              SocialButton(
+                provider: provider,
+                showsTitle: unconnectedProviders.count == 1
+              ) {
                 await connectExternalAccount(provider: provider)
               }
             }

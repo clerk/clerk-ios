@@ -304,7 +304,8 @@ extension AuthStartView {
             SocialButton(
               provider: provider,
               transferable: authState.transferable,
-              unsafeMetadata: authState.unsafeMetadata
+              unsafeMetadata: authState.unsafeMetadata,
+              showsTitle: socialProvidersMinusLastUsed.count == 1
             ) { result in
               handleTransferFlowResult(result)
             } onError: { error in
