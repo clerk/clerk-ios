@@ -152,7 +152,6 @@ public struct AuthView: View {
       alignment: .topLeading
     )
     #endif
-    .interactiveDismissDisabled()
     .tint(theme.colors.primary)
     .clerkErrorPresenting($error)
     .environment(navigation)
