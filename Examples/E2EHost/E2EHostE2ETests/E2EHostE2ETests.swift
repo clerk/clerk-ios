@@ -623,6 +623,7 @@ final class E2EHostE2ETests: XCTestCase {
     tap(E2EIdentifier.signInContinue, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp)
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 5, recoverByReactivatingApp: true)
     tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
     waitForSignInCodePrepared(in: signInApp)
