@@ -97,6 +97,17 @@ import SwiftUI
 ///
 /// Custom destination views can access programmatic navigation through
 /// ``UserProfileNavigator`` when needed.
+///
+/// With a host-owned navigation header:
+///
+/// ```swift
+/// @State private var userProfileNavigation = UserProfileNavigationController()
+///
+/// UserProfileView(
+///   isDismissible: false,
+///   navigationController: userProfileNavigation
+/// )
+/// ```
 public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -104,14 +115,20 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
 
   private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
+  private let navigationController: UserProfileNavigationController?
   private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
   private let oauthConfig: UserProfileOAuthConfiguration
+
+  private var usesExternalNavigationHeader: Bool {
+    navigationController != nil
+  }
 
   @State private var updateProfileIsPresented = false
   @State private var accountSwitcherHeight: CGFloat = 400
   @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
+  @State private var navigationItems: [UserProfileNavigationItem] = []
   @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
@@ -119,12 +136,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   init(
     isDismissible: Bool,
     navigationPath: Binding<NavigationPath>?,
+    navigationController: UserProfileNavigationController? = nil,
     customRows: [UserProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?,
     oauthConfig: UserProfileOAuthConfiguration
   ) {
     self.isDismissible = isDismissible
     self.navigationPath = navigationPath
+    self.navigationController = navigationController
     self.customRows = customRows
     self.customDestination = customDestination
     self.oauthConfig = oauthConfig
@@ -142,13 +161,18 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   ///   the view skips creating its own `NavigationStack` and pushes destinations onto the
   ///   parent's path instead. Use this when embedding `UserProfileView` inside your own
   ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
+  ///   - navigationController: The scoped controller that receives title and back state
+  ///   updates when the host owns the visible header. Passing this controller suppresses
+  ///   the native navigation header rendered by `UserProfileView`.
   public init(
     isDismissible: Bool = true,
-    navigationPath: Binding<NavigationPath>? = nil
+    navigationPath: Binding<NavigationPath>? = nil,
+    navigationController: UserProfileNavigationController? = nil
   ) where Route == Never, Destination == EmptyView {
     self.init(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: [],
       customDestination: nil,
       oauthConfig: .init()
@@ -163,6 +187,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             profileContent(user: user)
               .navigationDestination(for: Route.self) { route in
                 view(for: route)
+                  .userProfileNavigationHeaderStyle()
                   .environment(sheetNavigation)
                   .environment(codeLimiter)
                   .environment(
@@ -179,6 +204,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
                   )
               }
           }
+          .userProfileNavigationHeaderStyle()
           #if os(macOS)
           .frame(
             width: isDismissible ? 560 : nil,
@@ -195,6 +221,11 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       .background(theme.colors.background)
       .onFirstAppear {
         initialPathCount = navigationPath?.wrappedValue.count ?? 0
+        configureNavigationController()
+        updateNavigationController()
+      }
+      .onChange(of: currentPathCount) { _, _ in
+        syncNavigationItemsWithPath()
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
@@ -250,10 +281,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           dismissAction: dismissAction
         )
       )
+      .environment(\.userProfileUsesExternalNavigationHeader, usesExternalNavigationHeader)
+      .environment(\.userProfileNavigationController, navigationController)
     }
   }
 
   private func navigateToBuiltIn(_ destination: UserProfileBuiltInDestination) {
+    appendNavigationItem(title: destination.title)
+
     if let navigationPath {
       navigationPath.wrappedValue.append(destination)
     } else {
@@ -262,6 +297,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   private func navigateToCustom(_ route: Route) {
+    navigateToCustom(route, title: nil)
+  }
+
+  private func navigateToCustom(_ route: Route, title: LocalizedStringKey?) {
+    appendNavigationItem(title: title ?? navigationController?.title ?? "Account")
+
     if let navigationPath {
       navigationPath.wrappedValue.append(route)
     } else {
@@ -279,6 +320,75 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     } else {
       internalPath = NavigationPath()
     }
+
+    syncNavigationItemsWithPath()
+  }
+
+  private var currentPathCount: Int {
+    navigationPath?.wrappedValue.count ?? internalPath.count
+  }
+
+  private var currentProfilePathDepth: Int {
+    max(currentPathCount - initialPathCount, 0)
+  }
+
+  private func configureNavigationController() {
+    guard usesExternalNavigationHeader, let navigationController else { return }
+
+    navigationController.configure(
+      pop: popNavigationItem,
+      popToRoot: { dismissAction(.popToRoot) },
+      dismiss: { navigationController.requestDismiss() }
+    )
+  }
+
+  private func popNavigationItem() {
+    if let navigationPath {
+      guard navigationPath.wrappedValue.count > initialPathCount else {
+        navigationController?.requestDismiss()
+        return
+      }
+
+      navigationPath.wrappedValue.removeLast()
+    } else if internalPath.count > 0 {
+      internalPath.removeLast()
+    } else {
+      navigationController?.requestDismiss()
+      return
+    }
+
+    syncNavigationItemsWithPath()
+  }
+
+  private func appendNavigationItem(title: LocalizedStringKey) {
+    guard usesExternalNavigationHeader else { return }
+
+    navigationItems.append(.init(title: title))
+    updateNavigationController()
+  }
+
+  private func syncNavigationItemsWithPath() {
+    guard usesExternalNavigationHeader else { return }
+
+    let depth = currentProfilePathDepth
+
+    if depth == 0 {
+      navigationItems.removeAll()
+    } else if navigationItems.count > depth {
+      navigationItems.removeLast(navigationItems.count - depth)
+    }
+
+    updateNavigationController()
+  }
+
+  private func updateNavigationController() {
+    guard usesExternalNavigationHeader else { return }
+
+    navigationController?.update(
+      title: navigationItems.last?.title ?? "Account",
+      canGoBack: currentProfilePathDepth > 0,
+      canDismiss: true
+    )
   }
 
   private var accountBuiltInRows: [UserProfileRow] {
@@ -321,21 +431,24 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     .navigationBarTitleDisplayMode(.inline)
     #endif
     .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Account", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
-
-      #if os(iOS)
-      if isDismissible {
-        DismissToolbarItem {
-          dismiss()
+      if !usesExternalNavigationHeader {
+        ToolbarItem(placement: .principal) {
+          Text("Account", bundle: .module)
+            .font(theme.fonts.headline)
+            .fontWeight(.semibold)
+            .foregroundStyle(theme.colors.foreground)
         }
+
+        #if os(iOS)
+        if isDismissible {
+          DismissToolbarItem {
+            dismiss()
+          }
+        }
+        #endif
       }
-      #endif
     }
+    .userProfileNavigationHeaderStyle()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
         .environment(sheetNavigation)
@@ -370,6 +483,7 @@ extension UserProfileView {
     UserProfileView<Route, Destination>(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: rows,
       customDestination: customDestination,
       oauthConfig: oauthConfig
@@ -383,6 +497,7 @@ extension UserProfileView {
     UserProfileView<Route, Destination>(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: customRows,
       customDestination: customDestination,
       oauthConfig: .init(configs)
@@ -402,6 +517,7 @@ extension UserProfileView where Destination == EmptyView {
     UserProfileView<Route, NewDestination>(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: customRows,
       customDestination: destination,
       oauthConfig: oauthConfig
@@ -417,6 +533,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
     UserProfileView<NewRoute, EmptyView>(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: rows,
       customDestination: nil,
       oauthConfig: oauthConfig
@@ -435,6 +552,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
     UserProfileView<NewRoute, NewDestination>(
       isDismissible: isDismissible,
       navigationPath: navigationPath,
+      navigationController: navigationController,
       customRows: [],
       customDestination: destination,
       oauthConfig: oauthConfig
@@ -466,7 +584,7 @@ extension UserProfileView {
       builtInRowView(builtInRow)
     case .custom(let customRow, _):
       row(icon: customRow.icon, text: customRow.title, bundle: nil) {
-        navigateToCustom(customRow.route)
+        navigateToCustom(customRow.route, title: customRow.navigationTitle)
       }
     }
   }
@@ -638,6 +756,10 @@ private enum UserProfileListRow<Route: Hashable>: Identifiable {
 private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case builtIn(UserProfileRow)
   case custom(route: Route, occurrence: Int)
+}
+
+private struct UserProfileNavigationItem {
+  let title: LocalizedStringKey
 }
 
 #Preview("Dismissible") {

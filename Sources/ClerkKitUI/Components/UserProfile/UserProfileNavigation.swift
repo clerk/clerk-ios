@@ -8,6 +8,66 @@
 import Foundation
 import SwiftUI
 
+/// A scoped controller for a host-owned user profile navigation header.
+///
+/// Use this when embedding `UserProfileView` in a container that owns the visible
+/// header. Clerk still owns the profile flow, while the host can observe title and
+/// back state and call `pop()`, `popToRoot()`, or `dismiss()` from its own controls.
+@MainActor
+@Observable
+public final class UserProfileNavigationController {
+  public private(set) var title: LocalizedStringKey = "Account"
+  public private(set) var canGoBack = false
+  public private(set) var canDismiss = true
+  public private(set) var shouldDismiss = false
+
+  @ObservationIgnored private var popAction: (@MainActor () -> Void)?
+  @ObservationIgnored private var popToRootAction: (@MainActor () -> Void)?
+  @ObservationIgnored private var dismissAction: (@MainActor () -> Void)?
+
+  public init() {}
+
+  public func pop() {
+    popAction?()
+  }
+
+  public func popToRoot() {
+    popToRootAction?()
+  }
+
+  public func dismiss() {
+    dismissAction?()
+  }
+
+  public func resetDismissRequest() {
+    shouldDismiss = false
+  }
+
+  func configure(
+    pop: @escaping @MainActor () -> Void,
+    popToRoot: @escaping @MainActor () -> Void,
+    dismiss: @escaping @MainActor () -> Void
+  ) {
+    popAction = pop
+    popToRootAction = popToRoot
+    dismissAction = dismiss
+  }
+
+  func update(
+    title: LocalizedStringKey,
+    canGoBack: Bool,
+    canDismiss: Bool
+  ) {
+    self.title = title
+    self.canGoBack = canGoBack
+    self.canDismiss = canDismiss
+  }
+
+  func requestDismiss() {
+    shouldDismiss = true
+  }
+}
+
 /// Manages presentation state for the user profile flow.
 ///
 /// This class handles sheet presentation state for the user profile.
@@ -44,11 +104,11 @@ final class UserProfileSheetNavigation {
 @MainActor
 @Observable
 public final class UserProfileNavigator<Route: Hashable> {
-  private let pushRow: @MainActor (Route) -> Void
+  private let pushRow: @MainActor (Route, LocalizedStringKey?) -> Void
   private let popToRootAction: @MainActor () -> Void
 
   init(
-    push: @escaping @MainActor (Route) -> Void,
+    push: @escaping @MainActor (Route, LocalizedStringKey?) -> Void,
     popToRoot: @escaping @MainActor () -> Void
   ) {
     pushRow = push
@@ -56,7 +116,11 @@ public final class UserProfileNavigator<Route: Hashable> {
   }
 
   public func push(_ route: Route) {
-    pushRow(route)
+    pushRow(route, nil)
+  }
+
+  public func push(_ route: Route, title: LocalizedStringKey) {
+    pushRow(route, title)
   }
 
   /// Pops any pushed custom destinations and returns to the root screen of
@@ -69,6 +133,15 @@ public final class UserProfileNavigator<Route: Hashable> {
 enum UserProfileBuiltInDestination: Hashable {
   case manageAccount
   case security
+
+  var title: LocalizedStringKey {
+    switch self {
+    case .manageAccount:
+      "Manage account"
+    case .security:
+      "Security"
+    }
+  }
 }
 
 enum UserProfileDismissAction {
@@ -98,6 +171,69 @@ final class UserProfileBuiltInRouter {
 
   func dismiss(_ action: UserProfileDismissAction) {
     dismissAction(action)
+  }
+}
+
+extension EnvironmentValues {
+  @Entry var userProfileUsesExternalNavigationHeader = false
+  @Entry var userProfileNavigationController: UserProfileNavigationController?
+}
+
+private struct UserProfileNavigationTitleModifier: ViewModifier {
+  @Environment(\.clerkTheme) private var theme
+  @Environment(\.userProfileUsesExternalNavigationHeader) private var usesExternalNavigationHeader
+  @Environment(\.userProfileNavigationController) private var navigationController
+
+  let title: LocalizedStringKey
+
+  func body(content: Content) -> some View {
+    content
+      .onAppear {
+        guard usesExternalNavigationHeader else { return }
+        navigationController?.update(title: title, canGoBack: true, canDismiss: true)
+      }
+      #if os(iOS)
+      .navigationBarTitleDisplayMode(.inline)
+      #endif
+      .toolbar {
+        if !usesExternalNavigationHeader {
+          ToolbarItem(placement: .principal) {
+            Text(title, bundle: .module)
+              .font(theme.fonts.headline)
+              .fontWeight(.semibold)
+              .foregroundStyle(theme.colors.foreground)
+          }
+        }
+      }
+      .userProfileNavigationHeaderStyle()
+  }
+}
+
+extension View {
+  func userProfileNavigationTitle(_ title: LocalizedStringKey) -> some View {
+    modifier(UserProfileNavigationTitleModifier(title: title))
+  }
+
+  func userProfileNavigationHeaderStyle() -> some View {
+    modifier(UserProfileNavigationHeaderModifier())
+  }
+}
+
+private struct UserProfileNavigationHeaderModifier: ViewModifier {
+  @Environment(\.userProfileUsesExternalNavigationHeader) private var usesExternalNavigationHeader
+
+  func body(content: Content) -> some View {
+    if usesExternalNavigationHeader {
+      #if os(iOS)
+      content
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+      #else
+      content
+      #endif
+    } else {
+      content
+    }
   }
 }
 

@@ -62,17 +62,7 @@ struct UserProfileSecurityView: View {
       }
     }
     .securedByClerkFooter()
-    #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Security", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
-    }
+    .userProfileNavigationTitle("Security")
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     .clerkErrorPresenting($error)

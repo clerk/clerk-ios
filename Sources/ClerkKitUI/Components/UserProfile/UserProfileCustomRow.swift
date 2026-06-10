@@ -11,6 +11,7 @@ import SwiftUI
 public struct UserProfileCustomRow<Route: Hashable> {
   let route: Route
   let title: LocalizedStringKey
+  let navigationTitle: LocalizedStringKey
   let icon: UserProfileRowIcon
   let placement: UserProfileCustomRowPlacement
 
@@ -22,16 +23,19 @@ public struct UserProfileCustomRow<Route: Hashable> {
   /// - Parameters:
   ///   - route: The route that should be pushed when the row is tapped.
   ///   - title: The row title.
+  ///   - navigationTitle: The title to show when this row's destination is active.
   ///   - icon: The icon displayed for the row.
   ///   - placement: The insertion point relative to Clerk's built-in rows.
   public init(
     route: Route,
     title: LocalizedStringKey,
+    navigationTitle: LocalizedStringKey? = nil,
     icon: UserProfileRowIcon,
     placement: UserProfileCustomRowPlacement = .sectionEnd(.profile)
   ) {
     self.route = route
     self.title = title
+    self.navigationTitle = navigationTitle ?? title
     self.icon = icon
     self.placement = placement
   }
@@ -44,17 +48,20 @@ public struct UserProfileCustomRow<Route: Hashable> {
   /// - Parameters:
   ///   - route: The route that should be pushed when the row is tapped.
   ///   - title: The row title.
+  ///   - navigationTitle: The title to show when this row's destination is active.
   ///   - icon: The icon displayed for the row.
   ///   - placement: The insertion point relative to Clerk's built-in rows.
   public init(
     route: Route,
     title: String,
+    navigationTitle: String? = nil,
     icon: UserProfileRowIcon,
     placement: UserProfileCustomRowPlacement = .sectionEnd(.profile)
   ) {
     self.init(
       route: route,
       title: LocalizedStringKey(title),
+      navigationTitle: navigationTitle.map { LocalizedStringKey($0) },
       icon: icon,
       placement: placement
     )

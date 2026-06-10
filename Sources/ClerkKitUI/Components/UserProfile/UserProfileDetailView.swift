@@ -143,17 +143,7 @@ struct UserProfileDetailView: View {
         .securedByClerkFooter()
       }
     }
-    .toolbar {
-      ToolbarItem(placement: .principal) {
-        Text("Manage account", bundle: .module)
-          .font(theme.fonts.headline)
-          .fontWeight(.semibold)
-          .foregroundStyle(theme.colors.foreground)
-      }
-    }
-    #if os(iOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
+    .userProfileNavigationTitle("Manage account")
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     .sheet(item: $addEmailAddressDestination) {
