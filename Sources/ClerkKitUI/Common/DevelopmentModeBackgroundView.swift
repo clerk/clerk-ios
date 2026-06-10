@@ -11,14 +11,14 @@ struct DevelopmentModeBackgroundView: View {
   let background: DevelopmentModeBackground
 
   var body: some View {
-    GeometryReader { proxy in
-      Image(background.imageName, bundle: .module)
-        .resizable()
-        .scaledToFill()
-        .frame(width: proxy.size.width, height: proxy.size.height)
-        .clipped()
-    }
-    .accessibilityHidden(true)
+    Color.clear
+      .overlay(alignment: .top) {
+        Image(background.imageName, bundle: .module)
+          .resizable()
+          .scaledToFill()
+      }
+      .clipped()
+      .accessibilityHidden(true)
   }
 }
 
