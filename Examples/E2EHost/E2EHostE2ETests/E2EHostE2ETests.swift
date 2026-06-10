@@ -1007,7 +1007,9 @@ extension E2EHostE2ETests {
       dismissAuthIfPresent(in: app)
 
       if attempt.isMultiple(of: 2) {
-        relaunchSignedOutApp(app)
+        guard relaunchSignedOutApp(app, file: file, line: line) else {
+          return
+        }
       }
     }
   }
@@ -1037,10 +1039,25 @@ extension E2EHostE2ETests {
     _ = app.buttons["Sign in"].firstMatch.waitForExistence(timeout: 5)
   }
 
-  private func relaunchSignedOutApp(_ app: XCUIApplication) {
+  private func relaunchSignedOutApp(
+    _ app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) -> Bool {
     app.terminate()
     app.launch()
-    _ = waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30)
+
+    let signedOut = waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30)
+    guard signedOut else {
+      XCTFail(
+        "Expected relaunchSignedOutApp to waitForStateIndicator(\(E2EIdentifier.signedOut)) after relaunch.",
+        file: file,
+        line: line
+      )
+      return false
+    }
+
+    return true
   }
 
   private func openUserProfileRoot(
