@@ -862,7 +862,7 @@ struct UserServiceTests {
     #expect(requestHandled.value)
   }
 
-  nonisolated private static func unsafeMetadataJSON(from request: URLRequest) -> JSON? {
+  private nonisolated static func unsafeMetadataJSON(from request: URLRequest) -> JSON? {
     guard let unsafeMetadata = request.urlEncodedFormBody?["unsafe_metadata"],
           let data = unsafeMetadata.data(using: .utf8)
     else {
