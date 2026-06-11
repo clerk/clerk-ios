@@ -166,7 +166,8 @@ final class UserService: UserServiceProtocol {
     let authorization = try await manager.createPasskey(
       challenge: challenge,
       name: name,
-      userId: userId
+      userId: userId,
+      relyingPartyIdentifier: passkey.relyingPartyIdentifier
     )
 
     guard

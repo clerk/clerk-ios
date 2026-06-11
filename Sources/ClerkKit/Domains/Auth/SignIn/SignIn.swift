@@ -557,21 +557,27 @@ extension SignIn {
       throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
     }
 
+    let relyingPartyIdentifier = nonceJSON["rpId"]?.stringValue
     let manager = PasskeyHelper()
     let authorization: ASAuthorization
 
     #if os(iOS) && !targetEnvironment(macCatalyst)
     if autofill {
-      authorization = try await manager.beginAutoFillAssistedPasskeySignIn(challenge: challenge)
+      authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
+        challenge: challenge,
+        relyingPartyIdentifier: relyingPartyIdentifier
+      )
     } else {
       authorization = try await manager.signIn(
         challenge: challenge,
+        relyingPartyIdentifier: relyingPartyIdentifier,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
     }
     #else
     authorization = try await manager.signIn(
       challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
     )
     #endif

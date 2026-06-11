@@ -61,6 +61,13 @@ extension Passkey {
   var userId: Data? {
     nonceJSON?.user?.id?.stringValue?.base64URLFromBase64String().dataFromBase64URL()
   }
+
+  var relyingPartyIdentifier: String? {
+    guard let identifier = nonceJSON?.rp?.id?.stringValue, !identifier.isEmpty else {
+      return nil
+    }
+    return identifier
+  }
 }
 
 extension Passkey {

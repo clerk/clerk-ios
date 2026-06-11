@@ -98,9 +98,11 @@ extension Session {
       throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
     }
 
+    let relyingPartyIdentifier = nonceJSON["rpId"]?.stringValue
     let manager = PasskeyHelper()
     let authorization = try await manager.signIn(
       challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
     )
 
