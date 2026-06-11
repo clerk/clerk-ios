@@ -2,7 +2,7 @@
 //  SessionTaskMfaSetupView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -64,6 +64,7 @@ struct SessionTaskMfaSetupView: View {
             } label: {
               StrategyOptionButton(iconName: "icon-phone", text: "SMS code")
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.SetupMfa.smsCode)
             .buttonStyle(.secondary())
           }
 
@@ -74,6 +75,7 @@ struct SessionTaskMfaSetupView: View {
               StrategyOptionButton(iconName: "icon-key", text: "Authenticator application")
                 .overlayProgressView(isActive: isRunning)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.SetupMfa.authenticatorApp)
             .buttonStyle(.secondary())
           }
         }
@@ -84,12 +86,12 @@ struct SessionTaskMfaSetupView: View {
       .padding(16)
     }
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
     .clerkErrorPresenting($error)
   }

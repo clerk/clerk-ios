@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
@@ -12,6 +12,25 @@ extension SignUp {
   static let fieldPriority: [SignUp.Field] = [.emailAddress, .phoneNumber, .username, .password]
   static let individuallyCollectableFields: Set<SignUp.Field> = [.emailAddress, .phoneNumber, .username, .password]
   static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
+
+  var emailVerification: Verification? {
+    verifications["email_address"] ?? nil
+  }
+
+  @MainActor
+  var emailVerificationStrategy: FactorStrategy {
+    if let strategy = emailVerification?.strategy {
+      return strategy
+    }
+
+    if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
+       verifications.contains(FactorStrategy.emailLink.rawValue)
+    {
+      return .emailLink
+    }
+
+    return .emailCode
+  }
 
   var firstFieldToCollect: SignUp.Field? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first

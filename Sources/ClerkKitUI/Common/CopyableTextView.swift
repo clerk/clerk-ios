@@ -2,7 +2,7 @@
 //  CopyableTextView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -10,8 +10,14 @@ struct CopyableTextView: View {
   @Environment(\.clerkTheme) private var theme
 
   let text: String
+  var accessibilityIdentifier: String = ""
 
   var body: some View {
+    textView
+      .accessibilityIdentifier(accessibilityIdentifier)
+  }
+
+  private var textView: some View {
     Text(verbatim: text)
       .font(theme.fonts.subheadline)
       .foregroundStyle(theme.colors.foreground)

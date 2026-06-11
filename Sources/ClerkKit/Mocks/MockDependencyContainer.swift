@@ -24,6 +24,7 @@ final class MockDependencyContainer: Dependencies {
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
   let sessionService: SessionServiceProtocol
+  let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let environmentService: EnvironmentServiceProtocol
@@ -31,6 +32,7 @@ final class MockDependencyContainer: Dependencies {
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
+  let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
 
   /// Creates a dependency container with the provided API client and optional custom services.
@@ -44,6 +46,7 @@ final class MockDependencyContainer: Dependencies {
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
   ///   - signUpService: Optional custom sign-up service (defaults to MockSignUpService).
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
+  ///   - magicLinkService: Optional custom magic-link service (defaults to MockMagicLinkService).
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
   ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
@@ -59,6 +62,7 @@ final class MockDependencyContainer: Dependencies {
     signInService: (any SignInServiceProtocol)? = nil,
     signUpService: (any SignUpServiceProtocol)? = nil,
     sessionService: (any SessionServiceProtocol)? = nil,
+    magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
     environmentService: (any EnvironmentServiceProtocol)? = nil,
@@ -71,6 +75,7 @@ final class MockDependencyContainer: Dependencies {
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
+    magicLinkStore = MagicLinkStore(keychain: self.keychain)
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services
@@ -79,6 +84,7 @@ final class MockDependencyContainer: Dependencies {
     self.signInService = signInService ?? MockSignInService()
     self.signUpService = signUpService ?? MockSignUpService()
     self.sessionService = sessionService ?? MockSessionService()
+    self.magicLinkService = magicLinkService ?? MockMagicLinkService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.environmentService = environmentService ?? MockEnvironmentService()

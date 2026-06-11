@@ -2,7 +2,7 @@
 //  SessionTaskMfaSmsChooseNumberView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -39,16 +39,22 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     }
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #elseif os(macOS)
+    .macOSBackButton()
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
     .onChange(of: navigation.path) { oldPath, newPath in
       if newPath.count > oldPath.count {
         didNavigateAway = true
+      } else if newPath.count < oldPath.count, didNavigateAway {
+        // On macOS, onDisappear doesn't fire on back navigation so we reset here.
+        didNavigateAway = false
+        isSubmittingPhone = false
       }
     }
     .onDisappear {
@@ -66,8 +72,8 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         }
         .background(theme.colors.background)
         .toolbar {
-          ToolbarItem(placement: .topBarTrailing) {
-            DismissButton()
+          DismissToolbarItem {
+            addPhoneNumberIsPresented = false
           }
         }
       }

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -11,8 +11,18 @@ import SwiftUI
 struct ErrorText: View {
   @Environment(\.clerkTheme) private var theme
 
-  let error: Error
+  let text: Text
   var alignment: Alignment = .center
+
+  init(error: Error, alignment: Alignment = .center) {
+    text = Text(verbatim: error.localizedDescription)
+    self.alignment = alignment
+  }
+
+  init(text: Text, alignment: Alignment = .center) {
+    self.text = text
+    self.alignment = alignment
+  }
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -21,7 +31,7 @@ struct ErrorText: View {
         .frame(width: 16, height: 16)
         .scaledToFit()
         .offset(y: 3)
-      Text(error.localizedDescription)
+      text
         .multilineTextAlignment(.leading)
     }
     .foregroundStyle(theme.colors.danger)

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -49,38 +49,52 @@ struct UserProfileAddConnectedAccountView: View {
 
           SocialButtonLayout {
             ForEach(unconnectedProviders) { provider in
-              SocialButton(provider: provider) {
+              SocialButton(
+                provider: provider,
+                showsTitle: unconnectedProviders.count == 1
+              ) {
                 await connectExternalAccount(provider: provider)
               }
             }
           }
+
+          if let error {
+            ErrorText(error: error, alignment: .leading)
+            #if os(macOS)
+            .fixedSize(horizontal: false, vertical: true)
+            #endif
+          }
         }
         .padding(24)
+        .background(theme.colors.background)
         .clerkErrorPresenting($error)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
-        .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
-          }
-
-          ToolbarItem(placement: .principal) {
-            Text("Connect account", bundle: .module)
-              .font(theme.fonts.headline)
-              .foregroundStyle(theme.colors.foreground)
-          }
-        }
         .onGeometryChange(for: CGFloat.self) { proxy in
           proxy.size.height
         } action: { newValue in
           contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
         }
+        #endif
       }
       .scrollBounceBehavior(.basedOnSize)
+      .background(theme.colors.background)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
+
+        ToolbarItem(placement: .principal) {
+          Text("Connect account", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
     }
   }
 }
@@ -112,8 +126,12 @@ extension UserProfileAddConnectedAccountView {
 
 #Preview {
   UserProfileAddConnectedAccountView(contentHeight: .constant(300))
-    .clerkPreview()
-    .environment(\.clerkTheme, .clerk)
+  #if os(iOS)
+  .clerkPreview()
+  #elseif os(macOS)
+  .environment(Clerk.preview())
+  #endif
+  .environment(\.clerkTheme, .clerk)
 }
 
 #endif

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -64,8 +64,11 @@ struct SignInSetNewPasswordView: View {
             fieldState: fieldError != nil ? .error : .default
           )
           .textContentType(.newPassword)
+          #if os(iOS)
           .textInputAutocapitalization(.never)
+          #endif
           .autocorrectionDisabled()
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.newPassword)
           .focused($focusedField, equals: .new)
           .hiddenTextField(text: $identifier, textContentType: .username)
           .onFirstAppear {
@@ -83,8 +86,11 @@ struct SignInSetNewPasswordView: View {
               fieldState: fieldError != nil ? .error : .default
             )
             .textContentType(.newPassword)
+            #if os(iOS)
             .textInputAutocapitalization(.never)
+            #endif
             .autocorrectionDisabled()
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.confirmPassword)
             .focused($focusedField, equals: .confirm)
 
             if let fieldError {
@@ -95,14 +101,16 @@ struct SignInSetNewPasswordView: View {
             }
           }
 
-          Toggle("Sign out of all other devices", isOn: $signOutOfOtherDevices)
-            .font(theme.fonts.body)
-            .foregroundStyle(theme.colors.foreground)
-            .tint(theme.colors.primary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(theme.colors.muted)
-            .clipShape(.rect(cornerRadius: theme.design.borderRadius))
+          Toggle(isOn: $signOutOfOtherDevices) {
+            Text("Sign out of all other devices", bundle: .module)
+          }
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.foreground)
+          .tint(theme.colors.primary)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 8)
+          .background(theme.colors.muted)
+          .clipShape(.rect(cornerRadius: theme.design.borderRadius))
 
           AsyncButton {
             await setNewPassword()
@@ -117,6 +125,7 @@ struct SignInSetNewPasswordView: View {
           }
           .buttonStyle(.primary())
           .disabled(resetButtonIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.ResetPassword.submitButton)
           .simultaneousGesture(TapGesture())
         }
         .padding(.bottom, 32)

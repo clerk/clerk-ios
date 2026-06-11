@@ -5,7 +5,7 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -21,7 +21,6 @@ struct AuthStartView: View {
 
   // MARK: - State
 
-  @SceneStorage("phoneNumberFieldIsActive") private var phoneNumberFieldIsActive = false
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var lastUsedAuth: LastUsedAuth?
@@ -43,6 +42,10 @@ struct AuthStartView: View {
       .contains("phone_number") ?? false
   }
 
+  var phoneNumberFieldIsActive: Bool {
+    authState.authStartPhoneNumberFieldIsActive
+  }
+
   var showIdentifierField: Bool {
     emailIsEnabled || usernameIsEnabled || phoneNumberIsEnabled
   }
@@ -53,6 +56,14 @@ struct AuthStartView: View {
 
   var showOrDivider: Bool {
     !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
+  }
+
+  var phoneNumberInputIsActive: Bool {
+    phoneNumberIsEnabled && (phoneNumberFieldIsActive || !(emailIsEnabled || usernameIsEnabled))
+  }
+
+  var activeIdentifier: String {
+    phoneNumberInputIsActive ? authState.authStartPhoneNumber : authState.authStartIdentifier
   }
 
   var shouldStartOnPhoneNumber: Bool {
@@ -67,14 +78,6 @@ struct AuthStartView: View {
     }
 
     return false
-  }
-
-  var continueIsDisabled: Bool {
-    if phoneNumberFieldIsActive {
-      authState.authStartPhoneNumber.isEmpty
-    } else {
-      authState.authStartIdentifier.isEmpty
-    }
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -170,7 +173,9 @@ struct AuthStartView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .clerkErrorPresenting($generalError)
     .background(theme.colors.background)
     .sensoryFeedback(.error, trigger: fieldError?.localizedDescription) {
@@ -181,9 +186,9 @@ struct AuthStartView: View {
         lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
       }
       if authState.hasInitialValues {
-        phoneNumberFieldIsActive = shouldStartOnPhoneNumber
+        authState.authStartPhoneNumberFieldIsActive = shouldStartOnPhoneNumber
       } else if shouldStartOnPhoneNumber {
-        phoneNumberFieldIsActive = true
+        authState.authStartPhoneNumberFieldIsActive = true
       }
     }
   }
@@ -211,11 +216,12 @@ extension AuthStartView {
   private var identifierField: some View {
     @Bindable var authState = authState
 
-    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+    if phoneNumberInputIsActive {
       ClerkPhoneNumberField(
         "Enter your phone number",
         text: $authState.authStartPhoneNumber,
-        fieldState: fieldError != nil ? .error : .default
+        fieldState: fieldError != nil ? .error : .default,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.phoneNumber
       )
       .transition(.blurReplace)
       .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsPhoneBadge ?? false)
@@ -224,11 +230,14 @@ extension AuthStartView {
         ClerkTextField(
           emailOrUsernamePlaceholder,
           text: $authState.authStartIdentifier,
-          fieldState: fieldError != nil ? .error : .default
+          fieldState: fieldError != nil ? .error : .default,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
+        #if os(iOS)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
+        #endif
         .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsEmailUsernameBadge ?? false)
       }
       .transition(.blurReplace)
@@ -254,27 +263,33 @@ extension AuthStartView {
       ContinueButtonLabelView(isActive: isRunning)
     }
     .buttonStyle(.primary())
-    .disabled(continueIsDisabled)
+    .disabled(activeIdentifier.isEmpty)
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.continueButton)
     .simultaneousGesture(TapGesture())
   }
 
   private var identifierSwitcherButton: some View {
     Button {
       withAnimation(.default.speed(2)) {
-        phoneNumberFieldIsActive.toggle()
+        authState.authStartPhoneNumberFieldIsActive.toggle()
       }
     } label: {
       Text(identifierSwitcherString, bundle: .module)
         .id(phoneNumberFieldIsActive)
     }
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.identifierSwitcherButton)
     .simultaneousGesture(TapGesture())
   }
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
       if let lastUsedProvider = lastUsedAuth?.socialProvider {
-        SocialButton(provider: lastUsedProvider, transferable: authState.transferable) { result in
+        SocialButton(
+          provider: lastUsedProvider,
+          transferable: authState.transferable,
+          unsafeMetadata: authState.unsafeMetadata
+        ) { result in
           handleTransferFlowResult(result)
         } onError: { error in
           generalError = error
@@ -286,7 +301,12 @@ extension AuthStartView {
       if !socialProvidersMinusLastUsed.isEmpty {
         SocialButtonLayout {
           ForEach(socialProvidersMinusLastUsed) { provider in
-            SocialButton(provider: provider, transferable: authState.transferable) { result in
+            SocialButton(
+              provider: provider,
+              transferable: authState.transferable,
+              unsafeMetadata: authState.unsafeMetadata,
+              showsTitle: socialProvidersMinusLastUsed.count == 1
+            ) { result in
               handleTransferFlowResult(result)
             } onError: { error in
               generalError = error
@@ -316,17 +336,16 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      let identifier = phoneNumberFieldIsActive && phoneNumberIsEnabled
-        ? authState.authStartPhoneNumber
-        : authState.authStartIdentifier
-
       // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
-      let signIn = try await clerk.auth.signIn(identifier)
+      let signIn = try await clerk.auth.signIn(activeIdentifier)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO(transferable: authState.transferable)
+        let result = try await signIn.authenticateWithEnterpriseSSO(
+          transferable: authState.transferable,
+          unsafeMetadata: authState.unsafeMetadata
+        )
         handleTransferFlowResult(result)
         return
       }
@@ -353,12 +372,21 @@ extension AuthStartView {
   }
 
   private func signUpParams() async throws -> SignUp {
-    if phoneNumberFieldIsActive {
-      try await clerk.auth.signUp(phoneNumber: authState.authStartPhoneNumber)
+    if phoneNumberInputIsActive {
+      try await clerk.auth.signUp(
+        phoneNumber: authState.authStartPhoneNumber,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     } else if authState.authStartIdentifier.isEmailAddress {
-      try await clerk.auth.signUp(emailAddress: authState.authStartIdentifier)
+      try await clerk.auth.signUp(
+        emailAddress: authState.authStartIdentifier,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     } else {
-      try await clerk.auth.signUp(username: authState.authStartIdentifier)
+      try await clerk.auth.signUp(
+        username: authState.authStartIdentifier,
+        unsafeMetadata: authState.unsafeMetadata
+      )
     }
   }
 
@@ -372,7 +400,7 @@ extension AuthStartView {
   }
 
   private func storeIdentifierType() {
-    if phoneNumberFieldIsActive, phoneNumberIsEnabled {
+    if phoneNumberInputIsActive {
       authState.storeLastUsedIdentifierType(.phone)
     } else if authState.authStartIdentifier.isEmailAddress {
       authState.storeLastUsedIdentifierType(.email)

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -49,14 +49,16 @@ struct UserProfileUpdateProfileView: View {
     NavigationStack {
       ScrollView {
         VStack(spacing: 32) {
-          menu
+          profileImageMenu
 
           VStack(spacing: 24) {
             if usernameIsEditable {
               ClerkTextField("Username", text: $username)
                 .textContentType(.username)
                 .autocorrectionDisabled()
+                #if os(iOS)
                 .textInputAutocapitalization(.never)
+                #endif
             }
 
             if environment?.firstNameIsEnabled == true {
@@ -85,10 +87,16 @@ struct UserProfileUpdateProfileView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
+        #if os(iOS)
         .padding(.top, 60)
+        #elseif os(macOS)
+        .padding(.top, 24)
+        #endif
       }
       .clerkErrorPresenting($error)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -118,11 +126,7 @@ struct UserProfileUpdateProfileView: View {
           do {
             guard
               let data = try await item.loadTransferable(type: Data.self),
-              let uiImage = UIImage(data: data),
-              let resizedData =
-              uiImage
-                .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
-                .jpegData(compressionQuality: 0.8)
+              let resizedData = resizedImageData(from: data)
             else {
               throw ClerkClientError(message: "There was an error loading the image from the photos library.")
             }
@@ -136,11 +140,14 @@ struct UserProfileUpdateProfileView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }
 
-  private var menu: some View {
+  private var profileImageMenu: some View {
     LazyImage(url: URL(string: user.imageUrl)) { state in
       if let image = state.image {
         image
@@ -225,7 +232,27 @@ struct UserProfileUpdateProfileView: View {
 }
 
 extension UserProfileUpdateProfileView {
-  func save() async {
+  private func resizedImageData(from data: Data) -> Data? {
+    #if os(iOS)
+    guard let image = UIImage(data: data) else {
+      return nil
+    }
+
+    return image
+      .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+      .jpegData(compressionQuality: 0.8)
+    #elseif os(macOS)
+    guard let image = NSImage(data: data) else {
+      return nil
+    }
+
+    return image
+      .resizedMaintainingAspectRatio(to: .init(width: 200, height: 200))
+      .jpegData(compressionQuality: 0.8)
+    #endif
+  }
+
+  private func save() async {
     do {
       try await user.update(
         .init(
@@ -234,7 +261,6 @@ extension UserProfileUpdateProfileView {
           lastName: environment?.lastNameIsEnabled == true ? lastName : nil
         )
       )
-
       dismiss()
     } catch {
       self.error = error

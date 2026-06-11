@@ -2,7 +2,7 @@
 //  SessionTaskAddPhoneForm.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -34,13 +34,19 @@ struct SessionTaskAddPhoneForm: View {
 
       VStack(spacing: 24) {
         VStack(spacing: 4) {
-          ClerkPhoneNumberField("Enter your phone number", text: $phoneNumber)
-            .textContentType(.telephoneNumber)
-            .keyboardType(.numberPad)
-            .focused($isFocused)
-            .onFirstAppear {
-              isFocused = true
-            }
+          ClerkPhoneNumberField(
+            "Enter your phone number",
+            text: $phoneNumber,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.phoneNumber
+          )
+          .textContentType(.telephoneNumber)
+          #if os(iOS)
+          .keyboardType(.numberPad)
+          #endif
+          .focused($isFocused)
+          .onFirstAppear {
+            isFocused = true
+          }
 
           if let error {
             ErrorText(error: error, alignment: .leading)
@@ -55,6 +61,7 @@ struct SessionTaskAddPhoneForm: View {
         } label: { isRunning in
           ContinueButtonLabelView(isActive: isRunning)
         }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.continueButton)
         .buttonStyle(.primary())
       }
       .padding(.bottom, 32)

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
@@ -12,11 +12,13 @@ extension Factor {
   private static let strategySortOrderPasswordPref: [FactorStrategy] = [
     .passkey,
     .password,
+    .emailLink,
     .emailCode,
     .phoneCode,
   ]
 
   private static let strategySortOrderOtpPref: [FactorStrategy] = [
+    .emailLink,
     .emailCode,
     .phoneCode,
     .passkey,
@@ -24,6 +26,7 @@ extension Factor {
   ]
 
   private static let strategySortOrderAllStrategies: [FactorStrategy] = [
+    .emailLink,
     .emailCode,
     .phoneCode,
     .passkey,

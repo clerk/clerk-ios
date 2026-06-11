@@ -15,7 +15,7 @@ protocol SessionServiceProtocol: Sendable {
   /// Sets the active session and optionally the active organization.
   /// - Parameters:
   ///   - sessionId: The session ID to set as active.
-  ///   - organizationId: Optional organization ID to set as active in the session.
+  ///   - organizationId: Optional organization ID to set as active in the session. If nil, removes the active organization.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
 
   /// Creates a session token for the given session and optional template.
@@ -23,6 +23,36 @@ protocol SessionServiceProtocol: Sendable {
   ///   - sessionId: The session ID to generate a token for.
   ///   - template: Optional JWT template name.
   @MainActor func fetchToken(sessionId: String, template: String?) async throws -> TokenResource?
+
+  /// Starts an in-session reverification (step-up) flow.
+  @MainActor func startVerification(
+    sessionId: String,
+    params: Session.StartVerificationParams
+  ) async throws -> SessionVerification
+
+  /// Prepares the first factor of an in-session reverification flow.
+  @MainActor func prepareFirstFactorVerification(
+    sessionId: String,
+    params: Session.PrepareFirstFactorVerificationParams
+  ) async throws -> SessionVerification
+
+  /// Attempts the first factor of an in-session reverification flow.
+  @MainActor func attemptFirstFactorVerification(
+    sessionId: String,
+    params: Session.AttemptFirstFactorVerificationParams
+  ) async throws -> SessionVerification
+
+  /// Prepares the second factor of an in-session reverification flow.
+  @MainActor func prepareSecondFactorVerification(
+    sessionId: String,
+    params: Session.PrepareSecondFactorVerificationParams
+  ) async throws -> SessionVerification
+
+  /// Attempts the second factor of an in-session reverification flow.
+  @MainActor func attemptSecondFactorVerification(
+    sessionId: String,
+    params: Session.AttemptSecondFactorVerificationParams
+  ) async throws -> SessionVerification
 }
 
 final class SessionService: SessionServiceProtocol {
@@ -64,10 +94,13 @@ final class SessionService: SessionServiceProtocol {
 
   @MainActor
   func setActive(sessionId: String, organizationId: String?) async throws {
-    let request = Request<EmptyResponse>(
+    let request = Request<ClientResponse<Session>>(
       path: "/v1/client/sessions/\(sessionId)/touch",
       method: .post,
-      body: ["active_organization_id": organizationId ?? ""]
+      body: [
+        "active_organization_id": organizationId ?? "",
+        "intent": "select_org",
+      ]
     )
 
     try await apiClient.send(request)
@@ -87,5 +120,75 @@ final class SessionService: SessionServiceProtocol {
     )
 
     return try await apiClient.send(request).value
+  }
+
+  @MainActor
+  func startVerification(
+    sessionId: String,
+    params: Session.StartVerificationParams
+  ) async throws -> SessionVerification {
+    let request = Request<ClientResponse<SessionVerification>>(
+      path: "/v1/client/sessions/\(sessionId)/verify",
+      method: .post,
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func prepareFirstFactorVerification(
+    sessionId: String,
+    params: Session.PrepareFirstFactorVerificationParams
+  ) async throws -> SessionVerification {
+    let request = Request<ClientResponse<SessionVerification>>(
+      path: "/v1/client/sessions/\(sessionId)/verify/prepare_first_factor",
+      method: .post,
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func attemptFirstFactorVerification(
+    sessionId: String,
+    params: Session.AttemptFirstFactorVerificationParams
+  ) async throws -> SessionVerification {
+    let request = Request<ClientResponse<SessionVerification>>(
+      path: "/v1/client/sessions/\(sessionId)/verify/attempt_first_factor",
+      method: .post,
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func prepareSecondFactorVerification(
+    sessionId: String,
+    params: Session.PrepareSecondFactorVerificationParams
+  ) async throws -> SessionVerification {
+    let request = Request<ClientResponse<SessionVerification>>(
+      path: "/v1/client/sessions/\(sessionId)/verify/prepare_second_factor",
+      method: .post,
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func attemptSecondFactorVerification(
+    sessionId: String,
+    params: Session.AttemptSecondFactorVerificationParams
+  ) async throws -> SessionVerification {
+    let request = Request<ClientResponse<SessionVerification>>(
+      path: "/v1/client/sessions/\(sessionId)/verify/attempt_second_factor",
+      method: .post,
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
   }
 }

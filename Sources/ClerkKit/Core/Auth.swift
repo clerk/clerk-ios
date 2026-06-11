@@ -14,21 +14,30 @@ import Foundation
 /// This is a lightweight facade that namespaces auth-related methods - it holds no state itself.
 @MainActor
 public struct Auth {
+  private let magicLinkStore: MagicLinkStore
+  private let magicLinkService: MagicLinkServiceProtocol
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
   private let eventEmitter: EventEmitter<AuthEvent>
+  private let urlHandlingCoordinator: URLHandlingCoordinator
 
   init(
+    magicLinkStore: MagicLinkStore,
+    magicLinkService: MagicLinkServiceProtocol,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
-    eventEmitter: EventEmitter<AuthEvent>
+    eventEmitter: EventEmitter<AuthEvent>,
+    urlHandlingCoordinator: URLHandlingCoordinator
   ) {
+    self.magicLinkStore = magicLinkStore
+    self.magicLinkService = magicLinkService
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
     self.eventEmitter = eventEmitter
+    self.urlHandlingCoordinator = urlHandlingCoordinator
   }
 
   /// The current sign-in attempt, if any.
@@ -104,6 +113,25 @@ public struct Auth {
     try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
   }
 
+  /// Starts a native magic-link sign-in flow for an email address.
+  ///
+  /// This creates an identifier-first sign-in attempt, prepares the `email_link` first factor,
+  /// and stores the PKCE verifier locally so the callback can be completed inside the app.
+  ///
+  /// - Parameter emailAddress: The user's email address.
+  /// - Returns: A `SignIn` object with the email-link verification prepared.
+  /// - Throws: An error if the email address is invalid or email-link preparation fails.
+  @discardableResult
+  public func signInWithEmailLink(emailAddress: String) async throws -> SignIn {
+    let identifier = emailAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !identifier.isEmpty else {
+      throw ClerkClientError(message: "Email address is required.")
+    }
+
+    let signIn = try await signInService.create(params: .init(identifier: identifier))
+    return try await signIn.sendEmailLink()
+  }
+
   /// Signs in with OTP (One-Time Password) using a phone number.
   ///
   /// This method creates a sign-in attempt and automatically sends a verification code to the phone number.
@@ -123,6 +151,7 @@ public struct Auth {
   //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
@@ -130,7 +159,8 @@ public struct Auth {
   public func signInWithOAuth(
     provider: OAuthProvider,
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       strategy: .oauth(provider),
@@ -139,7 +169,8 @@ public struct Auth {
     return try await signIn.authenticateWithOAuth(
       provider: provider,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -151,13 +182,22 @@ public struct Auth {
   //   - provider: The ID token provider (e.g., `.apple`).
   //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signInWithIdToken(_ idToken: String, provider: IDTokenProvider, transferable: Bool = true) async throws -> TransferFlowResult {
+  public func signInWithIdToken(
+    _ idToken: String,
+    provider: IDTokenProvider,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
-    let result = try await signIn.handleTransferFlow(transferable: transferable)
+    let result = try await signIn.handleTransferFlow(
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
     }
@@ -177,12 +217,14 @@ public struct Auth {
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
   public func signInWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let requestedScopes = Self.normalizedAppleScopes(
       requestedScopes,
@@ -199,11 +241,15 @@ public struct Auth {
         idToken,
         provider: .apple,
         firstName: credential.fullName?.givenName,
-        lastName: credential.fullName?.familyName
+        lastName: credential.fullName?.familyName,
+        unsafeMetadata: unsafeMetadata
       )
     } else {
       let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
-      let result = try await signIn.handleTransferFlow(transferable: transferable)
+      let result = try await signIn.handleTransferFlow(
+        transferable: transferable,
+        unsafeMetadata: unsafeMetadata
+      )
       if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
         throw error
       }
@@ -250,7 +296,7 @@ public struct Auth {
   /// such as launching the user's default browser. After this returns, read
   /// ``Verification/externalVerificationRedirectUrl`` from
   /// ``SignIn/firstFactorVerification`` to obtain the URL to open, then complete the flow
-  /// with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:)`` after your app
+  /// with ``SignIn/completeEnterpriseSSO(callbackURL:transferable:unsafeMetadata:)`` after your app
   /// receives the callback URL.
   ///
   /// - Parameters:
@@ -288,13 +334,15 @@ public struct Auth {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
     prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
@@ -303,7 +351,8 @@ public struct Auth {
     ))
     return try await signIn.authenticateWithEnterpriseSSO(
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -365,11 +414,17 @@ public struct Auth {
   /// - Parameters:
   ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
-  public func signUpWithOAuth(provider: OAuthProvider, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func signUpWithOAuth(
+    provider: OAuthProvider,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
+      unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
@@ -398,12 +453,19 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
   @discardableResult
-  public func signUpWithApple(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> TransferFlowResult {
+  public func signUpWithApple(
+    requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     // Delegate to the sign-in implementation which already handles the transfer flow.
-    try await signInWithApple(requestedScopes: requestedScopes)
+    try await signInWithApple(
+      requestedScopes: requestedScopes,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -414,14 +476,22 @@ public struct Auth {
   //   - provider: The ID token provider (e.g., `.apple`).
   //   - firstName: The user's first name (optional).
   //   - lastName: The user's last name (optional).
+  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signUpWithIdToken(_ idToken: String, provider: IDTokenProvider, firstName: String? = nil, lastName: String? = nil) async throws -> TransferFlowResult {
+  public func signUpWithIdToken(
+    _ idToken: String,
+    provider: IDTokenProvider,
+    firstName: String? = nil,
+    lastName: String? = nil,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       firstName: firstName,
       lastName: lastName,
+      unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       token: idToken
     ))
@@ -434,13 +504,19 @@ public struct Auth {
   // - Parameters:
   //   - emailAddress: The user's enterprise email address.
   //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
   // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
   @discardableResult
-  public func signUpWithEnterpriseSSO(emailAddress: String, prefersEphemeralWebBrowserSession: Bool = false) async throws -> TransferFlowResult {
+  public func signUpWithEnterpriseSSO(
+    emailAddress: String,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
     let signUp = try await signUpService.create(params: .init(
       emailAddress: emailAddress,
+      unsafeMetadata: unsafeMetadata,
       strategy: .enterpriseSSO,
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))
@@ -464,17 +540,22 @@ public struct Auth {
 
   /// Signs up with a ticket generated from the Backend API.
   ///
-  /// - Parameter ticket: The ticket string from the Backend API.
+  /// - Parameters:
+  ///   - ticket: The ticket string from the Backend API.
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `SignUp` object representing the sign-up attempt.
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
-  public func signUpWithTicket(_ ticket: String) async throws -> SignUp {
+  public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
     try await signUpService.create(params: .init(
+      unsafeMetadata: unsafeMetadata,
       ticket: ticket,
       strategy: .ticket
     ))
   }
+}
 
+extension Auth {
   // MARK: - Session Management
 
   /// Signs out the active user.
@@ -523,21 +604,27 @@ public struct Auth {
   public func revokeSession(_ session: Session) async throws -> Session {
     try await sessionService.revoke(sessionId: session.id)
   }
+}
 
+extension Auth {
   // MARK: - Events
 
   /// An `AsyncStream` of authentication events.
   ///
-  /// Subscribe to this stream to receive notifications about sign-in completion, sign-up completion,
-  /// sign-out, session changes, and token refreshes.
+  /// Subscribe to this stream to receive notifications about callback-recovered sign-in/sign-up
+  /// continuation, sign-in/sign-up completion, sign-out, session changes, and token refreshes.
   ///
   /// ### Example:
   /// ```swift
   /// Task {
   ///     for await event in clerk.auth.events {
   ///         switch event {
+  ///         case .signInNeedsContinuation(let signIn):
+  ///             print("Magic-link sign in needs continuation: \(signIn)")
   ///         case .signInCompleted(let signIn):
   ///             print("Sign in completed: \(signIn)")
+  ///         case .signUpNeedsContinuation(let signUp):
+  ///             print("Magic-link sign up needs continuation: \(signUp)")
   ///         case .signUpCompleted(let signUp):
   ///             print("Sign up completed: \(signUp)")
   ///         case .signedOut(let session):
@@ -561,5 +648,132 @@ public struct Auth {
   /// This is internal to allow middleware to emit events while keeping the emitter private.
   func send(_ event: AuthEvent) {
     eventEmitter.send(event)
+  }
+
+  private func sendContinuation(for result: TransferFlowResult) {
+    Clerk.shared.setCallbackContinuation(result)
+
+    switch result {
+    case .signIn(let signIn):
+      send(.signInNeedsContinuation(signIn: signIn))
+    case .signUp(let signUp):
+      send(.signUpNeedsContinuation(signUp: signUp))
+    }
+  }
+
+  private func activateSession(sessionId: String) async throws {
+    do {
+      try await setActive(sessionId: sessionId)
+    } catch {
+      if Clerk.shared.client?.lastActiveSessionId != sessionId {
+        throw error
+      }
+    }
+  }
+}
+
+extension Auth {
+  /// Completes a pending native magic-link flow using the callback URL opened by the app.
+  ///
+  /// - Parameter callbackURL: The callback URL containing `flow_id` and `approval_token`.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
+  /// - Throws: An error if the callback URL is missing required magic-link parameters or completion fails.
+  @discardableResult
+  public func completeMagicLink(callbackURL: URL) async throws -> TransferFlowResult {
+    let callback = try MagicLinkCallback(url: callbackURL)
+
+    return try await completeMagicLink(
+      flowId: callback.flowId,
+      approvalToken: callback.approvalToken
+    )
+  }
+
+  /// Completes a pending native magic-link flow using callback values from the deep link.
+  ///
+  /// - Parameters:
+  ///   - flowId: The `flow_id` value from the callback.
+  ///   - approvalToken: The `approval_token` value from the callback.
+  /// - Returns: The completed `SignIn` or `SignUp` flow result.
+  /// - Throws: An error if no pending flow exists or completion fails.
+  @discardableResult
+  public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
+    let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
+    let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !resolvedFlowId.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing flow_id.")
+    }
+
+    guard !resolvedApprovalToken.isEmpty else {
+      throw ClerkClientError(message: "Magic link callback is missing approval_token.")
+    }
+
+    guard let pendingFlow = magicLinkStore.load() else {
+      throw ClerkClientError(message: "No pending magic link flow was found.")
+    }
+
+    if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
+      throw ClerkClientError(message: "Magic link callback does not match the pending flow.")
+    }
+
+    Clerk.shared.setCallbackContinuation(nil)
+
+    let params = MagicLinkCompleteParams(
+      flowId: resolvedFlowId,
+      approvalToken: resolvedApprovalToken,
+      codeVerifier: pendingFlow.codeVerifier
+    )
+
+    let completionResult: MagicLinkCompleteResult
+    do {
+      completionResult = try await magicLinkService.complete(params: params)
+    } catch {
+      if MagicLinkTerminalError.contains(error) {
+        magicLinkStore.clear(flow: pendingFlow)
+      }
+      throw error
+    }
+    magicLinkStore.clear(flow: pendingFlow)
+
+    let result: TransferFlowResult
+    switch pendingFlow.kind {
+    case .signIn:
+      guard case .ticket(let completionResponse) = completionResult else {
+        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.")
+      }
+
+      let signIn = try await signInWithTicket(completionResponse.ticket)
+      result = .signIn(signIn)
+
+      if let sessionId = signIn.createdSessionId {
+        try await activateSession(sessionId: sessionId)
+      }
+
+    case .signUp:
+      guard case .signUp(let signUp) = completionResult else {
+        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.")
+      }
+
+      result = .signUp(signUp)
+    }
+
+    if result.needsContinuation {
+      sendContinuation(for: result)
+    }
+
+    return result
+  }
+
+  @discardableResult
+  func handle(_ route: ClerkURLRoute) async throws -> TransferFlowResult {
+    try await urlHandlingCoordinator.handle(route) {
+      switch route {
+      case .magicLink(let flowId, let approvalToken):
+        try await completeMagicLink(
+          flowId: flowId,
+          approvalToken: approvalToken
+        )
+      }
+    }
   }
 }

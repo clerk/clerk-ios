@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -11,6 +11,7 @@ import SwiftUI
 struct UserProfileMfaRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var isConfirmingRemoval = false
   @State private var removeResource: RemoveResource?
@@ -18,7 +19,7 @@ struct UserProfileMfaRow: View {
   @State private var isLoading = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -65,7 +66,6 @@ struct UserProfileMfaRow: View {
           Text("Set as default", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
-        .onDisappear { isLoading = false }
       }
 
       Button("Remove", role: .destructive) {
@@ -114,13 +114,10 @@ struct UserProfileMfaRow: View {
       Menu {
         menuItems
       } label: {
-        Image("icon-three-dots-vertical", bundle: .module)
-          .resizable()
-          .scaledToFit()
-          .foregroundColor(theme.colors.mutedForeground)
-          .frame(width: 20, height: 20)
+        ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
+      .menuIndicator(.hidden)
     }
     .padding(.horizontal, 24)
     .padding(.vertical, 16)
@@ -158,6 +155,7 @@ struct UserProfileMfaRow: View {
     .sheet(item: $backupCodes) { backupCodes in
       NavigationStack {
         BackupCodesView(backupCodes: backupCodes.codes)
+          .environment(navigation)
       }
     }
   }

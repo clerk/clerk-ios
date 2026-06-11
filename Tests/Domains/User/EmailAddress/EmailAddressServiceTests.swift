@@ -23,7 +23,7 @@ struct EmailAddressServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
       requestHandled.setValue(true)
@@ -47,7 +47,7 @@ struct EmailAddressServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       requestHandled.setValue(true)
@@ -74,7 +74,7 @@ struct EmailAddressServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
       requestHandled.setValue(true)
@@ -101,7 +101,7 @@ struct EmailAddressServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }

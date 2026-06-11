@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -18,7 +18,7 @@ struct UserProfilePhoneRow: View {
   @State private var isConfirmingRemoval = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -93,13 +93,10 @@ struct UserProfilePhoneRow: View {
             }
           }
         } label: {
-          Image("icon-three-dots-vertical", bundle: .module)
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(theme.colors.mutedForeground)
-            .frame(width: 20, height: 20)
+          ThreeDotsMenuLabel()
         }
         .frame(width: 30, height: 30)
+        .menuIndicator(.hidden)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

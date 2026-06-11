@@ -64,7 +64,7 @@ jobs:
   publish:
     name: Bump, tag, and publish release
     needs: checks
-    runs-on: macos-latest
+    runs-on: macos-26
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 
@@ -145,8 +145,8 @@ jobs:
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "clerk-cookie"
+          git config user.email "cookie@clerk.dev"
 
           git add Sources/ClerkKit/Utils/Version.swift
 

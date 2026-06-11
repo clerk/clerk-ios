@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -58,6 +58,9 @@ struct UserProfileChangePasswordView: View {
           }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
   }
@@ -71,9 +74,14 @@ struct UserProfileChangePasswordView: View {
           .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
           .multilineTextAlignment(.leading)
 
-        ClerkTextField("Current password", text: $currentPassword, isSecure: true)
-          .textContentType(.password)
-          .focused($focusedField, equals: .currentPassword)
+        ClerkTextField(
+          "Current password",
+          text: $currentPassword,
+          isSecure: true,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.currentPassword
+        )
+        .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .password)
+        .focused($focusedField, equals: .currentPassword)
 
         Button {
           path.append(Destination.updatePassword)
@@ -83,10 +91,13 @@ struct UserProfileChangePasswordView: View {
         }
         .buttonStyle(.primary())
         .disabled(nextIsDisabled)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.nextButton)
       }
       .padding(24)
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
       ToolbarItem(placement: .cancellationAction) {
@@ -111,17 +122,29 @@ struct UserProfileChangePasswordView: View {
     ScrollView {
       VStack(spacing: 24) {
         Group {
-          ClerkTextField("New password", text: $newPassword, isSecure: true)
-            .textContentType(.newPassword)
-            .focused($focusedField, equals: .newPassword)
-            .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
+          ClerkTextField(
+            "New password",
+            text: $newPassword,
+            isSecure: true,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.newPassword
+          )
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
+          .focused($focusedField, equals: .newPassword)
+          .hiddenTextField(text: .constant(user?.usernameForPasswordKeeper ?? ""), textContentType: .username)
 
-          ClerkTextField("Confirm password", text: $confirmNewPassword, isSecure: true)
-            .textContentType(.newPassword)
-            .focused($focusedField, equals: .confirmNewPassword)
+          ClerkTextField(
+            "Confirm password",
+            text: $confirmNewPassword,
+            isSecure: true,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.confirmPassword
+          )
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
+          .focused($focusedField, equals: .confirmNewPassword)
         }
         .autocorrectionDisabled()
+        #if os(iOS)
         .textInputAutocapitalization(.never)
+        #endif
 
         signOutOfOtherDevicesView
 
@@ -136,11 +159,10 @@ struct UserProfileChangePasswordView: View {
         }
         .buttonStyle(.primary())
         .disabled(saveIsDisabled)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.ChangePassword.saveButton)
       }
       .padding(24)
     }
-    .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
     .clerkErrorPresenting(
       $error,
       action: { error in
@@ -153,6 +175,10 @@ struct UserProfileChangePasswordView: View {
         return nil
       }
     )
+    #if os(iOS)
+    .navigationBarTitleDisplayMode(.inline)
+    #endif
+    .preGlassSolidNavBar()
     .toolbar {
       if isAddingPassword {
         ToolbarItem(placement: .cancellationAction) {
@@ -178,11 +204,13 @@ struct UserProfileChangePasswordView: View {
 
   private var signOutOfOtherDevicesView: some View {
     VStack(spacing: 8) {
-      Toggle("Sign out of all other devices", isOn: $signOutOfOtherSessions)
-        .font(theme.fonts.body)
-        .foregroundStyle(theme.colors.foreground)
-        .tint(theme.colors.primary)
-        .frame(minHeight: 22)
+      Toggle(isOn: $signOutOfOtherSessions) {
+        Text("Sign out of all other devices", bundle: .module)
+      }
+      .font(theme.fonts.body)
+      .foregroundStyle(theme.colors.foreground)
+      .tint(theme.colors.primary)
+      .frame(minHeight: 22)
 
       Text("It is recommended to sign out of all other devices which may have used your old password.", bundle: .module)
         .font(theme.fonts.subheadline)

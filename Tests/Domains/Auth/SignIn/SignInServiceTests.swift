@@ -23,7 +23,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["identifier"] == "test@example.com")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
@@ -48,7 +48,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
@@ -77,7 +77,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "enterprise_sso")
       #expect(request.urlEncodedFormBody!["identifier"] == "user@enterprise.com")
@@ -107,7 +107,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
       #expect(request.urlEncodedFormBody!["token"] == "mock_id_token")
@@ -135,7 +135,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
@@ -159,7 +159,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "ticket")
       #expect(request.urlEncodedFormBody!["ticket"] == "mock_ticket_value")
@@ -187,7 +187,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["transfer"] == "1")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
@@ -212,7 +212,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
       requestHandled.setValue(true)
@@ -237,7 +237,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["password"] == "newPassword123")
       #expect(request.urlEncodedFormBody!["sign_out_of_other_sessions"] == "1")
@@ -265,7 +265,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       requestHandled.setValue(true)
@@ -275,6 +275,43 @@ struct SignInServiceTests {
     _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .emailCode)
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func prepareFirstFactorEmailLink() async throws {
+    let signIn = SignIn.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/prepare_first_factor")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["strategy"] == "email_link")
+      #expect(request.urlEncodedFormBody!["email_address_id"] == "ema_123")
+      #expect(request.urlEncodedFormBody!["redirect_uri"] == "com.clerk.Quickstart://callback")
+      #expect(request.urlEncodedFormBody!["code_challenge"] == "challenge_123")
+      #expect(request.urlEncodedFormBody!["code_challenge_method"] == "S256")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+      signInId: signIn.id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: "ema_123",
+        redirectUri: "com.clerk.Quickstart://callback",
+        codeChallenge: "challenge_123",
+        codeChallengeMethod: "S256"
+      )
     )
     #expect(requestHandled.value)
   }
@@ -292,7 +329,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       requestHandled.setValue(true)
@@ -319,7 +356,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
       requestHandled.setValue(true)
@@ -347,7 +384,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "password")
       #expect(request.urlEncodedFormBody!["password"] == "password123")
@@ -375,7 +412,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
@@ -403,7 +440,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       #expect(request.urlEncodedFormBody!["code"] == "654321")
@@ -433,7 +470,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
       #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
@@ -464,7 +501,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
       #expect(request.urlEncodedFormBody!["token"] == mockIdToken)
@@ -493,7 +530,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       requestHandled.setValue(true)
@@ -520,7 +557,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
@@ -548,7 +585,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "totp")
       #expect(request.urlEncodedFormBody!["code"] == "654321")
@@ -576,7 +613,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "backup_code")
       #expect(request.urlEncodedFormBody!["code"] == "backup123")
@@ -604,7 +641,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
@@ -630,7 +667,7 @@ struct SignInServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("rotating_token_nonce=test_nonce") == true)
       requestHandled.setValue(true)

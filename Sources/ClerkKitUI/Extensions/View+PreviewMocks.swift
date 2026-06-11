@@ -5,7 +5,7 @@
 //  Created on 2025-01-27.
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -19,6 +19,7 @@ extension View {
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
   /// - `UserProfileSheetNavigation()` for `@Environment(UserProfileSheetNavigation.self)`
+  /// - `OrganizationSheetNavigation()` for `@Environment(OrganizationSheetNavigation.self)`
   ///
   /// Note: `ClerkTheme` has a default value and doesn't need to be injected.
   ///
@@ -42,10 +43,10 @@ extension View {
 
       return AnyView(
         environment(clerk)
-          .environment(AuthState())
-          .environment(AuthNavigation())
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
+          .environment(AuthState())
+          .environment(AuthNavigation())
       )
     }
     return AnyView(self)

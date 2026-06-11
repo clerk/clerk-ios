@@ -27,4 +27,12 @@ public struct Organizations {
   public func create(name: String, slug: String? = nil) async throws -> Organization {
     try await organizationService.createOrganization(name: name, slug: slug)
   }
+
+  /// Retrieves an organization by its ID.
+  ///
+  /// - Parameter id: The organization ID.
+  /// - Returns: The requested ``Organization``.
+  public func get(id: String) async throws -> Organization {
+    try await organizationService.getOrganization(organizationId: id)
+  }
 }

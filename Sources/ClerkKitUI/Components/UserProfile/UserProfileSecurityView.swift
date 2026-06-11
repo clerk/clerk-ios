@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -12,21 +12,25 @@ struct UserProfileSecurityView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
-
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
-  var environment: Clerk.Environment? {
+  private var environment: Clerk.Environment? {
     clerk.environment
+  }
+
+  private var shouldShowDevices: Bool {
+    guard let user else { return false }
+    return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
   var body: some View {
     @Bindable var navigation = navigation
 
-    VStack(spacing: 0) {
+    Group {
       if let user {
         ScrollView {
           VStack(spacing: 0) {
@@ -42,9 +46,7 @@ struct UserProfileSecurityView: View {
               UserProfileMfaSection()
             }
 
-            if let sessions = clerk.sessionsByUserId[user.id],
-               !sessions.filter({ $0.latestActivity != nil }).isEmpty
-            {
+            if shouldShowDevices {
               UserProfileDevicesSection()
             }
 
@@ -58,10 +60,11 @@ struct UserProfileSecurityView: View {
         }
         .background(theme.colors.muted)
       }
-
-      SecuredByClerkFooter()
     }
+    .securedByClerkFooter()
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Security", bundle: .module)
@@ -82,6 +85,9 @@ struct UserProfileSecurityView: View {
     .sheet(item: $navigation.presentedAddMfaType) {
       $0.view
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 

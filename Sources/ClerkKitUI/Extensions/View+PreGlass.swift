@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import Foundation
 import SwiftUI
@@ -14,6 +14,7 @@ struct PreGlassSolidNavBarModifier: ViewModifier {
   @Environment(\.clerkTheme) private var theme
 
   func body(content: Content) -> some View {
+    #if os(iOS)
     if #available(iOS 26.0, *) {
       content
     } else {
@@ -21,6 +22,9 @@ struct PreGlassSolidNavBarModifier: ViewModifier {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(theme.colors.background, for: .navigationBar)
     }
+    #elseif os(macOS)
+    content
+    #endif
   }
 }
 
@@ -36,6 +40,7 @@ struct PreGlassDetentSheetBackgroundModifier: ViewModifier {
   @Environment(\.clerkTheme) private var theme
 
   func body(content: Content) -> some View {
+    #if os(iOS)
     if #available(iOS 26.0, *) {
       content
     } else {
@@ -43,6 +48,11 @@ struct PreGlassDetentSheetBackgroundModifier: ViewModifier {
         .background(theme.colors.background)
         .presentationBackground(theme.colors.background)
     }
+    #elseif os(macOS)
+    content
+      .background(theme.colors.background)
+      .presentationBackground(theme.colors.background)
+    #endif
   }
 }
 

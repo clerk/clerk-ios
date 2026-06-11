@@ -370,7 +370,7 @@ struct UserTests {
 
   @Test
   func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
-    let captured = LockIsolated<(Int, Int, String?)?>(nil)
+    let captured = LockIsolated<(Int, Int, [String])?>(nil)
     let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
       captured.setValue((offset, pageSize, status))
       return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
@@ -378,12 +378,12 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: "pending")
+    _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: ["pending", "accepted"])
 
     let params = try #require(captured.value)
     #expect(params.0 == 10)
     #expect(params.1 == 10)
-    #expect(params.2 == "pending")
+    #expect(params.2 == ["pending", "accepted"])
   }
 
   @Test
@@ -401,6 +401,21 @@ struct UserTests {
     let params = try #require(captured.value)
     #expect(params.0 == 20)
     #expect(params.1 == 10)
+  }
+
+  @Test
+  func leaveOrganizationUsesUserServiceLeaveOrganization() async throws {
+    let captured = LockIsolated<String?>(nil)
+    let service = MockUserService(leaveOrganization: { organizationId in
+      captured.setValue(organizationId)
+      return .mock
+    })
+
+    configureService(service)
+
+    _ = try await User.mock.leaveOrganization(organizationId: "org_123")
+
+    #expect(captured.value == "org_123")
   }
 
   struct OrganizationSuggestionsScenario: Codable, Equatable {

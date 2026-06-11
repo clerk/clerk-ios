@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -15,10 +15,9 @@ struct UserButtonAccountSwitcher: View {
   @Environment(\.dismiss) private var dismiss
 
   @Binding private var contentHeight: CGFloat
-  @State private var securedByClerkHeight: CGFloat = 0
   @State private var error: Error?
 
-  var sessions: [Session] {
+  private var sessions: [Session] {
     clerk.auth.sessions
       .sorted { lhs, rhs in
         if lhs.id == clerk.session?.id {
@@ -31,9 +30,10 @@ struct UserButtonAccountSwitcher: View {
       }
   }
 
-  func setActiveSession(_ session: Session) async {
+  @MainActor
+  private func setActiveSession(_ session: Session) async {
     do {
-      try await clerk.auth.setActive(sessionId: session.id)
+      try await clerk.auth.setActive(sessionId: session.id, organizationId: session.lastActiveOrganizationId)
       dismiss()
     } catch {
       self.error = error
@@ -41,7 +41,8 @@ struct UserButtonAccountSwitcher: View {
     }
   }
 
-  func signOutOfAllAccounts() async {
+  @MainActor
+  private func signOutOfAllAccounts() async {
     do {
       try await clerk.auth.signOut()
     } catch {
@@ -50,13 +51,15 @@ struct UserButtonAccountSwitcher: View {
     }
   }
 
-  var extraContentHeight: CGFloat {
+  #if os(iOS)
+  private var extraContentHeight: CGFloat {
     if #available(iOS 26.0, *) {
       0
     } else {
       7
     }
   }
+  #endif
 
   init(contentHeight: Binding<CGFloat> = .constant(0)) {
     _contentHeight = contentHeight
@@ -95,6 +98,7 @@ struct UserButtonAccountSwitcher: View {
                     .frame(height: 1)
                     .foregroundStyle(theme.colors.border)
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.sessionButton(userID: user.id))
                 .buttonStyle(.pressedBackground)
                 .disabled(clerk.session?.id == session.id)
                 .simultaneousGesture(TapGesture())
@@ -112,6 +116,7 @@ struct UserButtonAccountSwitcher: View {
                 .frame(height: 1)
                 .foregroundStyle(theme.colors.border)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.addAccountButton)
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
 
@@ -126,9 +131,11 @@ struct UserButtonAccountSwitcher: View {
                 .frame(height: 1)
                 .foregroundStyle(theme.colors.border)
             }
+            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.signOutAllButton)
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
           }
+          #if os(iOS)
           .onGeometryChange(
             for: CGFloat.self,
             of: { proxy in
@@ -138,16 +145,18 @@ struct UserButtonAccountSwitcher: View {
               contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
             }
           )
+          #endif
         }
-        .scrollBounceBehavior(.basedOnSize)
       }
       .animation(.default, value: sessions)
       .clerkErrorPresenting($error)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .preGlassDetentSheetBackground()
       .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: doneToolbarPlacement) {
           Button {
             dismiss()
           } label: {
@@ -156,6 +165,7 @@ struct UserButtonAccountSwitcher: View {
               .fontWeight(.semibold)
               .foregroundStyle(theme.colors.primary)
           }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
         }
 
         ToolbarItem(placement: .principal) {
@@ -165,6 +175,19 @@ struct UserButtonAccountSwitcher: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
+  }
+}
+
+extension UserButtonAccountSwitcher {
+  private var doneToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarTrailing
+    #elseif os(macOS)
+    .confirmationAction
+    #endif
   }
 }
 

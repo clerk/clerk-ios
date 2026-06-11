@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import PhoneNumberKit
 import SwiftUI
@@ -13,20 +13,24 @@ extension ClerkPhoneNumberField {
   @MainActor
   final class PhoneNumberModel {
     private let utility = PhoneNumberUtility()
-    let textField: PhoneNumberTextField
     let partialFormatter: PartialFormatter
 
-    let defaultCountry: CountryCodePickerViewController.Country
-    var currentCountry: CountryCodePickerViewController.Country {
+    let defaultCountry: ClerkPhoneCountry
+    var currentCountry: ClerkPhoneCountry {
       didSet {
         partialFormatter.defaultRegion = currentCountry.code
       }
     }
 
     init() {
-      textField = .init(utility: utility)
-      defaultCountry = .init(for: textField.defaultRegion, with: utility)!
-      currentCountry = .init(for: textField.defaultRegion, with: utility)!
+      let resolvedDefaultCountry = Self.defaultCountry(using: utility) ?? utility.allCountries.first
+
+      guard let defaultCountry = resolvedDefaultCountry else {
+        preconditionFailure("PhoneNumberKit returned no supported countries")
+      }
+
+      self.defaultCountry = defaultCountry
+      currentCountry = defaultCountry
       partialFormatter = .init(
         utility: utility,
         defaultRegion: defaultCountry.code,
@@ -34,19 +38,31 @@ extension ClerkPhoneNumberField {
       )
     }
 
-    var allCountriesExceptDefault: [CountryCodePickerViewController.Country] {
+    private static func defaultCountry(using utility: PhoneNumberUtility) -> ClerkPhoneCountry? {
+      [
+        PhoneNumberUtility.defaultRegionCode(),
+        Locale.current.region?.identifier,
+        Locale.autoupdatingCurrent.region?.identifier,
+        "US",
+      ]
+      .compactMap(\.self)
+      .compactMap { ClerkPhoneCountry(for: $0, with: utility) }
+      .first
+    }
+
+    var allCountriesExceptDefault: [ClerkPhoneCountry] {
       utility.allCountries.filter { country in
         country.code != defaultCountry.code
       }
     }
 
-    func stringForCountry(_ country: CountryCodePickerViewController.Country) -> String {
+    func stringForCountry(_ country: ClerkPhoneCountry) -> String {
       "\(country.flag) \(country.name) \(country.prefix)"
     }
 
     var exampleNumber: String {
       utility.getFormattedExampleNumber(
-        forCountry: textField.currentRegion,
+        forCountry: currentCountry.code,
         withFormat: .national,
         withPrefix: false
       ) ?? ""
@@ -84,15 +100,18 @@ struct ClerkPhoneNumberField: View {
   let titleKey: LocalizedStringKey
   @Binding var text: String
   let fieldState: FieldState
+  let accessibilityIdentifier: String
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
-    fieldState: FieldState = .default
+    fieldState: FieldState = .default,
+    accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.fieldState = fieldState
+    self.accessibilityIdentifier = accessibilityIdentifier
   }
 
   var isFocusedOrFilled: Bool {
@@ -178,7 +197,9 @@ struct ClerkPhoneNumberField: View {
             TextField("", text: $displayText)
               .focused($isFocused)
               .textContentType(.telephoneNumber)
+              #if os(iOS)
               .keyboardType(.numberPad)
+              #endif
               .tint(theme.colors.primary)
               .animation(.default.delay(0.2)) {
                 $0.opacity(isFocusedOrFilled ? 1 : 0)
@@ -209,6 +230,7 @@ struct ClerkPhoneNumberField: View {
           .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
           .animation(.default, value: isFocusedOrFilled)
       }
+      .accessibilityIdentifier(accessibilityIdentifier)
     }
     .padding(.horizontal, 6)
     .padding(.vertical, 6)

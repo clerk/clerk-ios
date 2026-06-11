@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.clerk.Quickstart.callback</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.clerk.Quickstart</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Atlantis uses Bonjour Service to discover the Proxyman app on your local network.</string>
 	<key>NSBonjourServices</key>

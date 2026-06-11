@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -14,6 +14,7 @@ struct OTPField: View {
   var numberOfInputs: Int = 6
   @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
+  var accessibilityIdentifier: String = ""
   var onCodeEntry: (String) async -> Void
 
   enum FieldState {
@@ -46,7 +47,12 @@ struct OTPField: View {
       TextField("", text: $code)
         .focused($isFocused)
         .textContentType(.oneTimeCode)
+        #if os(iOS)
         .keyboardType(.numberPad)
+        #elseif os(macOS)
+        .textFieldStyle(.plain)
+        #endif
+        .accessibilityIdentifier(accessibilityIdentifier)
         .foregroundStyle(.clear)
         .tint(.clear)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

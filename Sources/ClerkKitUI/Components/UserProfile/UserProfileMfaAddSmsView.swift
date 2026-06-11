@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import PhoneNumberKit
@@ -64,6 +64,7 @@ struct UserProfileMfaAddSmsView: View {
                 )
               }
               .buttonStyle(.pressedBackground)
+              .accessibilityIdentifier("\(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsPhoneNumberRow)-\(phoneNumber.id)")
             }
           }
 
@@ -84,6 +85,7 @@ struct UserProfileMfaAddSmsView: View {
           }
           .buttonStyle(.primary())
           .disabled(selectedPhoneNumber == nil)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsContinue)
 
           Button {
             addPhoneNumberIsPresented = true
@@ -98,10 +100,13 @@ struct UserProfileMfaAddSmsView: View {
               )
             )
           )
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsAddPhone)
         }
         .padding(24)
         .clerkErrorPresenting($error)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .preGlassSolidNavBar()
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
@@ -122,9 +127,14 @@ struct UserProfileMfaAddSmsView: View {
         $0.view
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
+    #if os(iOS)
     .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
+    #endif
     .sheet(isPresented: $addPhoneNumberIsPresented) {
       UserProfileAddPhoneView()
     }
@@ -154,17 +164,17 @@ struct AddMfaSmsRow: View {
   let phoneNumber: ClerkKit.PhoneNumber
   let isSelected: Bool
 
-  var country: CountryCodePickerViewController.Country? {
+  var country: ClerkPhoneCountry? {
     if let phoneNumber = try? utility.parse(phoneNumber.phoneNumber),
        let regionId = phoneNumber.regionID
     {
-      return CountryCodePickerViewController.Country(
+      return ClerkPhoneCountry(
         for: regionId,
         with: utility
       )
     }
 
-    return CountryCodePickerViewController.Country(
+    return ClerkPhoneCountry(
       for: "US",
       with: utility
     )

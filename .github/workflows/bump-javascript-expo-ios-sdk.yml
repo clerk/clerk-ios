@@ -1,0 +1,192 @@
+name: Bump JavaScript Expo iOS SDK
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: iOS SDK version to pin in @clerk/expo
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-javascript-expo-ios-sdk-${{ github.event.release.tag_name || inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    name: Open clerk/javascript PR
+    runs-on: ubuntu-latest
+    env:
+      JAVASCRIPT_REPO: clerk/javascript
+      RAW_IOS_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+      RELEASE_URL: ${{ github.event.release.html_url }}
+
+    steps:
+      - name: Prepare version metadata
+        id: version
+        run: |
+          set -euo pipefail
+
+          raw_version="$RAW_IOS_VERSION"
+          ios_version="${raw_version#v}"
+
+          if [[ ! "$ios_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "Invalid version: '$raw_version'. Expected SemVer, optionally prefixed with v."
+            exit 1
+          fi
+
+          if [ -z "$RELEASE_URL" ]; then
+            RELEASE_URL="https://github.com/clerk/clerk-ios/releases/tag/$raw_version"
+          fi
+
+          safe_version="$(printf '%s' "$ios_version" | tr '.' '-' | tr -cs 'A-Za-z0-9_-' '-')"
+
+          echo "ios_version=$ios_version" >> "$GITHUB_OUTPUT"
+          echo "release_url=$RELEASE_URL" >> "$GITHUB_OUTPUT"
+          echo "branch_name=automation/expo-ios-sdk-$safe_version" >> "$GITHUB_OUTPUT"
+          echo "changeset_file=expo-bump-clerk-ios-$safe_version.md" >> "$GITHUB_OUTPUT"
+
+      - name: Verify JavaScript repo token
+        env:
+          OPEN_EXPO_PR_GH_TOKEN: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$OPEN_EXPO_PR_GH_TOKEN" ]; then
+            echo "OPEN_EXPO_PR_GH_TOKEN must be configured with clerk/javascript contents and pull request write access."
+            echo "Use a token that authenticates as clerk-cookie so the generated PR author is clerk-cookie."
+            exit 1
+          fi
+
+      - name: Checkout clerk/javascript
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.JAVASCRIPT_REPO }}
+          ref: main
+          path: javascript
+          token: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
+
+      - name: Update @clerk/expo iOS SDK pin
+        id: update
+        working-directory: javascript
+        env:
+          IOS_VERSION: ${{ steps.version.outputs.ios_version }}
+          RELEASE_URL: ${{ steps.version.outputs.release_url }}
+          CHANGESET_FILE: ${{ steps.version.outputs.changeset_file }}
+        run: |
+          set -euo pipefail
+
+          plugin_file="packages/expo/app.plugin.js"
+          current_version="$(sed -nE "s/.*const CLERK_IOS_VERSION = ['\"]([^'\"]+)['\"].*/\1/p" "$plugin_file" | head -n 1)"
+
+          if [ -z "$current_version" ]; then
+            echo "Could not read CLERK_IOS_VERSION from $plugin_file"
+            exit 1
+          fi
+
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+
+          if [ "$current_version" = "$IOS_VERSION" ]; then
+            echo "@clerk/expo already pins clerk-ios $IOS_VERSION; no PR needed."
+            echo "should_open=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          node <<'NODE'
+          const fs = require('fs');
+
+          const pluginFile = 'packages/expo/app.plugin.js';
+          const iosVersion = process.env.IOS_VERSION;
+          const source = fs.readFileSync(pluginFile, 'utf8');
+          const updated = source.replace(
+            /(const CLERK_IOS_VERSION = ['"])([^'"]+)(['"])/,
+            `$1${iosVersion}$3`,
+          );
+
+          if (updated === source) {
+            throw new Error(`Failed to update CLERK_IOS_VERSION in ${pluginFile}`);
+          }
+
+          fs.writeFileSync(pluginFile, updated);
+          NODE
+
+          mkdir -p .changeset
+          cat > ".changeset/$CHANGESET_FILE" <<EOF
+          ---
+          '@clerk/expo': patch
+          ---
+
+          Bump the bundled \`clerk-ios\` SDK from \`$current_version\` to \`$IOS_VERSION\`. See the Clerk iOS release: $RELEASE_URL.
+          EOF
+
+          echo "should_open=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.update.outputs.should_open == 'true'
+        working-directory: javascript
+        env:
+          GH_TOKEN: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
+          BRANCH_NAME: ${{ steps.version.outputs.branch_name }}
+          IOS_VERSION: ${{ steps.version.outputs.ios_version }}
+          RELEASE_URL: ${{ steps.version.outputs.release_url }}
+          CHANGESET_FILE: ${{ steps.version.outputs.changeset_file }}
+          CURRENT_VERSION: ${{ steps.update.outputs.current_version }}
+          JAVASCRIPT_REPO: ${{ env.JAVASCRIPT_REPO }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "clerk-cookie"
+          git config user.email "cookie@clerk.dev"
+          git checkout -B "$BRANCH_NAME"
+          git add packages/expo/app.plugin.js ".changeset/$CHANGESET_FILE"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit; no PR needed."
+            exit 0
+          fi
+
+          git commit -m "chore(expo): bump clerk-ios to $IOS_VERSION"
+          git push --force-with-lease origin "$BRANCH_NAME"
+
+          pr_title="chore(expo): bump clerk-ios to $IOS_VERSION"
+          pr_body="$(mktemp)"
+          cat > "$pr_body" <<EOF
+          ## Description
+
+          Bumps the bundled \`clerk-ios\` SDK in \`@clerk/expo\` from \`$CURRENT_VERSION\` to \`$IOS_VERSION\`.
+
+          Release: $RELEASE_URL
+
+          ## Checklist
+
+          - JavaScript repo CI will run on the PR.
+          - Not applicable: JSDoc comments or documentation updates.
+
+          ## Type of change
+
+          Refactoring / dependency upgrade / documentation
+          EOF
+
+          existing_pr="$(gh pr list \
+            --repo "$JAVASCRIPT_REPO" \
+            --head "$BRANCH_NAME" \
+            --state open \
+            --json url \
+            --jq '.[0].url // ""')"
+
+          if [ -n "$existing_pr" ]; then
+            gh pr edit "$existing_pr" --title "$pr_title" --body-file "$pr_body"
+            echo "Updated existing PR: $existing_pr"
+          else
+            gh pr create \
+              --repo "$JAVASCRIPT_REPO" \
+              --base main \
+              --head "$BRANCH_NAME" \
+              --title "$pr_title" \
+              --body-file "$pr_body"
+          fi

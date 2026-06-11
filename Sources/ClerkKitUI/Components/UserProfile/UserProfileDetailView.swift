@@ -3,10 +3,9 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 struct UserProfileDetailView: View {
@@ -76,75 +75,72 @@ struct UserProfileDetailView: View {
   var body: some View {
     ZStack {
       if let user {
-        VStack(spacing: 0) {
-          ScrollView {
-            LazyVStack(spacing: 0) {
-              if showEmailSection {
-                Section {
-                  Group {
-                    ForEach(sortedEmails) { emailAddress in
-                      UserProfileEmailRow(emailAddress: emailAddress)
-                    }
+        ScrollView {
+          LazyVStack(spacing: 0) {
+            if showEmailSection {
+              Section {
+                Group {
+                  ForEach(sortedEmails) { emailAddress in
+                    UserProfileEmailRow(emailAddress: emailAddress)
+                  }
 
-                    if canAddEmailAddress {
-                      UserProfileButtonRow(text: "Add email address") {
-                        addEmailAddressDestination = .add
-                      }
+                  if canAddEmailAddress {
+                    UserProfileButtonRow(text: "Add email address") {
+                      addEmailAddressDestination = .add
                     }
                   }
-                  .background(theme.colors.background)
-
-                } header: {
-                  UserProfileSectionHeader(text: "EMAIL ADDRESSES")
                 }
-              }
+                .background(theme.colors.background)
 
-              if showPhoneNumberSection {
-                Section {
-                  Group {
-                    ForEach(sortedPhoneNumbers) { phoneNumber in
-                      UserProfilePhoneRow(phoneNumber: phoneNumber)
-                    }
-
-                    if canAddPhoneNumber {
-                      UserProfileButtonRow(text: "Add phone number") {
-                        addPhoneNumberDestination = .add
-                      }
-                    }
-                  }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "PHONE NUMBERS")
-                }
-              }
-
-              if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
-                Section {
-                  Group {
-                    ForEach(sortedExternalAccounts) { externalAccount in
-                      UserProfileExternalAccountRow(externalAccount: externalAccount)
-                    }
-
-                    if !user.unconnectedProviders.isEmpty {
-                      UserProfileButtonRow(text: "Connect account") {
-                        addConnectedAccountIsPresented = true
-                      }
-                    }
-                  }
-                  .background(theme.colors.background)
-                } header: {
-                  UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
-                }
+              } header: {
+                UserProfileSectionHeader(text: "EMAIL ADDRESSES")
               }
             }
-            .animation(.default, value: sortedEmails)
-            .animation(.default, value: sortedPhoneNumbers)
-            .animation(.default, value: sortedExternalAccounts)
-          }
-          .background(theme.colors.muted)
 
-          SecuredByClerkFooter()
+            if showPhoneNumberSection {
+              Section {
+                Group {
+                  ForEach(sortedPhoneNumbers) { phoneNumber in
+                    UserProfilePhoneRow(phoneNumber: phoneNumber)
+                  }
+
+                  if canAddPhoneNumber {
+                    UserProfileButtonRow(text: "Add phone number") {
+                      addPhoneNumberDestination = .add
+                    }
+                  }
+                }
+                .background(theme.colors.background)
+              } header: {
+                UserProfileSectionHeader(text: "PHONE NUMBERS")
+              }
+            }
+
+            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+              Section {
+                Group {
+                  ForEach(sortedExternalAccounts) { externalAccount in
+                    UserProfileExternalAccountRow(externalAccount: externalAccount)
+                  }
+
+                  if !user.unconnectedProviders.isEmpty {
+                    UserProfileButtonRow(text: "Connect account") {
+                      addConnectedAccountIsPresented = true
+                    }
+                  }
+                }
+                .background(theme.colors.background)
+              } header: {
+                UserProfileSectionHeader(text: "CONNECTED ACCOUNTS")
+              }
+            }
+          }
+          .animation(.default, value: sortedEmails)
+          .animation(.default, value: sortedPhoneNumbers)
+          .animation(.default, value: sortedExternalAccounts)
         }
+        .background(theme.colors.muted)
+        .securedByClerkFooter()
       }
     }
     .toolbar {
@@ -155,7 +151,9 @@ struct UserProfileDetailView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
     .sheet(item: $addEmailAddressDestination) {
@@ -166,11 +164,16 @@ struct UserProfileDetailView: View {
     }
     .sheet(isPresented: $addConnectedAccountIsPresented) {
       UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
-        .presentationDetents([.height(connectAccountSheetHeight)])
+      #if os(iOS)
+      .presentationDetents([.height(connectAccountSheetHeight)])
+      #endif
     }
     .task {
       _ = try? await clerk.refreshClient()
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 

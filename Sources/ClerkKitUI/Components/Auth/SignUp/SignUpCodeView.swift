@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -87,7 +87,12 @@ struct SignUpCodeView: View {
         }
 
         VStack(spacing: 24) {
-          OTPField(code: $code, fieldState: $otpFieldState, isFocused: $otpFieldIsFocused) { _ in
+          OTPField(
+            code: $code,
+            fieldState: $otpFieldState,
+            isFocused: $otpFieldIsFocused,
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.code
+          ) { _ in
             await attempt()
           }
           .onAppear {
@@ -133,7 +138,9 @@ struct SignUpCodeView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Sign up", bundle: .module)
@@ -141,7 +148,9 @@ struct SignUpCodeView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .background(theme.colors.background)
     .clerkErrorPresenting(
       $error,
@@ -231,8 +240,8 @@ extension SignUpCodeView {
 #Preview("Phone") {
   NavigationStack {
     SignUpCodeView(field: .phone(PhoneNumber.mock.phoneNumber))
-      .environment(\.clerkTheme, .clerk)
   }
+  .environment(\.clerkTheme, .clerk)
 }
 
 #endif
