@@ -20,7 +20,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "13.0.6")),
-    .package(url: "https://github.com/marmelroy/PhoneNumberKit", .upToNextMajor(from: "4.0.0")),
+    .package(url: "https://github.com/PhoneNumberKit/PhoneNumberKit", .upToNextMajor(from: "5.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
     .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0"),
   ],
