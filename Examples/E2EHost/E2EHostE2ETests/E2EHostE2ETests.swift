@@ -231,7 +231,9 @@ final class E2EHostE2ETests: XCTestCase {
     )
     completeEmailCodeSignUp(email: secondEmail, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForCurrentUserIDToChange(from: firstUserID, in: signUpApp)
     waitForSessionActive(in: signUpApp)
+    waitForAddAccountAuthFlowDismissed(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp, timeout: 10)
 
     tapWhenHittableAfterScrolling(
@@ -2524,6 +2526,72 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
+  }
+
+  private func waitForCurrentUserIDToChange(
+    from previousUserID: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval = 60,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let element = app.staticTexts[E2EIdentifier.userID]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if element.exists,
+         let currentUserID = Self.normalized(element.label),
+         currentUserID != previousUserID
+      {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    let currentValue = element.exists ? element.label : "<missing>"
+    XCTFail(
+      "Expected the current E2EHost user ID to change after adding a second account. Previous: '\(previousUserID)', current: '\(currentValue)'.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func waitForAddAccountAuthFlowDismissed(
+    in app: XCUIApplication,
+    timeout: TimeInterval = 45,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if !addAccountAuthFlowIsPresented(in: app) {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    XCTFail(
+      "Expected the add-account auth flow to dismiss after completing sign-up.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func addAccountAuthFlowIsPresented(in app: XCUIApplication) -> Bool {
+    [
+      E2EIdentifier.authStartIdentifier,
+      E2EIdentifier.authStartContinue,
+      E2EIdentifier.signUpCode,
+      E2EIdentifier.signUpPassword,
+      E2EIdentifier.signUpContinue,
+      E2EIdentifier.signInPassword,
+      E2EIdentifier.signInContinue,
+    ].contains { app.descendants(matching: .any)[$0].exists }
   }
 
   private func setUserPasswordCompromised(
