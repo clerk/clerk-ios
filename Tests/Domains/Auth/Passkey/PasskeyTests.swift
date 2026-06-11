@@ -70,7 +70,7 @@ struct PasskeyTests {
   }
 
   @Test
-  func relyingPartyIdentifierReadsRegistrationNonce() throws {
+  func relyingPartyIdentifierReadsRegistrationNonce() {
     let passkey = passkey(withNonce: #"{"rp":{"id":"example.com"},"challenge":"Y2hhbGxlbmdl"}"#)
 
     #expect(passkey.relyingPartyIdentifier == "example.com")
