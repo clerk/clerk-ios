@@ -388,13 +388,13 @@ extension User {
   /// - Parameters:
   ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page. Defaults to `20`.
-  ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
   public func getOrganizationInvitations(
     page: Int = 1,
     pageSize: Int = 20,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await getOrganizationInvitations(
       offset: offset(forPage: page, pageSize: pageSize),
@@ -407,13 +407,13 @@ extension User {
   /// - Parameters:
   ///   - offset: The number of items to skip before returning results.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The optional invitation status to filter by. Defaults to `nil`, which applies no status filter.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
   /// - Returns: A ``ClerkPaginatedResponse`` of ``UserOrganizationInvitation`` objects.
   @discardableResult @MainActor
   package func getOrganizationInvitations(
     offset: Int = 0,
     pageSize: Int = 10,
-    status: String? = nil
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)
   }
@@ -445,6 +445,14 @@ extension User {
     pageSize: Int = 10
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await userService.getOrganizationMemberships(offset: offset, pageSize: pageSize)
+  }
+
+  /// Leaves the organization with the provided id.
+  /// - Parameter organizationId: The id of the organization to leave.
+  /// - Returns: A ``DeletedObject`` response.
+  @discardableResult @MainActor
+  public func leaveOrganization(organizationId: String) async throws -> DeletedObject {
+    try await userService.leaveOrganization(organizationId: organizationId)
   }
 
   /// Retrieves a list of organization suggestions for the user.

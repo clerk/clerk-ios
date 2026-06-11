@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -19,11 +19,11 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @State private var error: Error?
   @FocusState private var isFocused: Bool
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
-  var buttonIsDisabled: Bool {
+  private var buttonIsDisabled: Bool {
     deleteAccount != String(localized: "DELETE", bundle: .module)
   }
 
@@ -38,13 +38,19 @@ struct UserProfileDeleteAccountConfirmationView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
           VStack(spacing: 4) {
-            ClerkTextField("Type \"DELETE\" to continue", text: $deleteAccount)
-              .autocorrectionDisabled()
-              .textInputAutocapitalization(.characters)
-              .focused($isFocused)
-              .onFirstAppear {
-                isFocused = true
-              }
+            ClerkTextField(
+              "Type \"DELETE\" to continue",
+              text: $deleteAccount,
+              accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.DeleteAccount.confirmation
+            )
+            .autocorrectionDisabled()
+            #if os(iOS)
+            .textInputAutocapitalization(.characters)
+            #endif
+            .focused($isFocused)
+            .onFirstAppear {
+              isFocused = true
+            }
 
             if let error {
               ErrorText(error: error, alignment: .leading)
@@ -65,10 +71,13 @@ struct UserProfileDeleteAccountConfirmationView: View {
           }
           .buttonStyle(.negative())
           .disabled(buttonIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.DeleteAccount.confirmButton)
         }
         .padding(24)
       }
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -85,13 +94,16 @@ struct UserProfileDeleteAccountConfirmationView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 420, maxWidth: 520)
+    #endif
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
   }
 }
 
 extension UserProfileDeleteAccountConfirmationView {
-  func deleteAccount() async {
+  private func deleteAccount() async {
     guard let user else { return }
 
     do {
@@ -119,6 +131,7 @@ extension UserProfileDeleteAccountConfirmationView {
         dismissAction: { _ in }
       )
     )
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
     .environment(\.locale, .init(identifier: "es"))
 }

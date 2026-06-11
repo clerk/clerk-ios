@@ -25,6 +25,8 @@ excluded:
   - .build
   - DerivedData
   - build
+  - build-docs
+  - build-docs-test
   - Tests
 
 # Reporter type

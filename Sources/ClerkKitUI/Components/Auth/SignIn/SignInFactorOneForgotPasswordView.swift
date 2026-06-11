@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -31,20 +31,31 @@ struct SignInFactorOneForgotPasswordView: View {
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
     switch factor.strategy {
+    case .phoneCode, .emailCode, .emailLink:
+      identifierActionText(factor: factor)
+    case .passkey:
+      "Sign in with your passkey"
+    case .password:
+      "Sign in with your password"
+    case .totp:
+      "Use your authenticator app"
+    case .backupCode:
+      "Use a backup code"
+    default:
+      nil
+    }
+  }
+
+  func identifierActionText(factor: Factor) -> LocalizedStringKey? {
+    guard let safeIdentifier = factor.safeIdentifier else { return nil }
+
+    switch factor.strategy {
     case .phoneCode:
-      guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Send SMS code to \(safeIdentifier.formattedAsPhoneNumberIfPossible)"
     case .emailCode:
-      guard let safeIdentifier = factor.safeIdentifier else { return nil }
       return "Email code to \(safeIdentifier)"
-    case .passkey:
-      return "Sign in with your passkey"
-    case .password:
-      return "Sign in with your password"
-    case .totp:
-      return "Use your authenticator app"
-    case .backupCode:
-      return "Use a backup code"
+    case .emailLink:
+      return "Email link to \(safeIdentifier)"
     default:
       return nil
     }
@@ -56,7 +67,7 @@ struct SignInFactorOneForgotPasswordView: View {
       "icon-lock"
     case .phoneCode:
       "icon-sms"
-    case .emailCode:
+    case .emailCode, .emailLink:
       "icon-email"
     case .passkey:
       "icon-fingerprint"
@@ -88,7 +99,11 @@ struct SignInFactorOneForgotPasswordView: View {
 
           SocialButtonLayout {
             ForEach(socialProviders) { provider in
-              SocialButton(provider: provider, transferable: authState.transferable) {
+              SocialButton(
+                provider: provider,
+                transferable: authState.transferable,
+                showsTitle: socialProviders.count == 1
+              ) {
                 await signInWithProvider(provider)
               }
               .simultaneousGesture(TapGesture())
@@ -155,9 +170,16 @@ extension SignInFactorOneForgotPasswordView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple(transferable: authState.transferable)
+          try await signIn.authenticateWithApple(
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
         } else {
-          try await signIn.authenticateWithOAuth(provider: provider, transferable: authState.transferable)
+          try await signIn.authenticateWithOAuth(
+            provider: provider,
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
         }
 
       switch result {

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -41,7 +41,9 @@ struct SignInFactorTwoBackupCodeView: View {
               text: $authState.signInBackupCode,
               fieldState: fieldError != nil ? .error : .default
             )
+            #if os(iOS)
             .textInputAutocapitalization(.never)
+            #endif
             .focused($isFocused)
             .onFirstAppear {
               isFocused = true

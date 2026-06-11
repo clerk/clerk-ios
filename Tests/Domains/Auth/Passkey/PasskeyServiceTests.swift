@@ -23,7 +23,7 @@ struct PasskeyServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       requestHandled.setValue(true)
     }
@@ -46,7 +46,7 @@ struct PasskeyServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["name"] == "New Name")
       requestHandled.setValue(true)
@@ -70,7 +70,7 @@ struct PasskeyServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "passkey")
       #expect(request.urlEncodedFormBody!["public_key_credential"] == "mock_credential")
@@ -98,7 +98,7 @@ struct PasskeyServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }

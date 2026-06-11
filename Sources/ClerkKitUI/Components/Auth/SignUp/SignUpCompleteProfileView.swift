@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -66,22 +66,30 @@ struct SignUpCompleteProfileView: View {
           if firstOrLastNameIsMissing {
             HStack(spacing: 24) {
               if fieldIsMissing(.firstName) {
-                ClerkTextField("First name", text: $authState.signUpFirstName)
-                  .textContentType(.givenName)
-                  .focused($focused, equals: .firstName)
-                  .submitLabel(submitLabelFor(.firstName))
-                  .onChange(of: authState.signUpFirstName) {
-                    updateFocusIfNeeded()
-                  }
+                ClerkTextField(
+                  "First name",
+                  text: $authState.signUpFirstName,
+                  accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileFirstName
+                )
+                .textContentType(.givenName)
+                .focused($focused, equals: .firstName)
+                .submitLabel(submitLabelFor(.firstName))
+                .onChange(of: authState.signUpFirstName) {
+                  updateFocusIfNeeded()
+                }
               }
               if fieldIsMissing(.lastName) {
-                ClerkTextField("Last name", text: $authState.signUpLastName)
-                  .textContentType(.familyName)
-                  .focused($focused, equals: .lastName)
-                  .submitLabel(submitLabelFor(.lastName))
-                  .onChange(of: authState.signUpLastName) {
-                    updateFocusIfNeeded()
-                  }
+                ClerkTextField(
+                  "Last name",
+                  text: $authState.signUpLastName,
+                  accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileLastName
+                )
+                .textContentType(.familyName)
+                .focused($focused, equals: .lastName)
+                .submitLabel(submitLabelFor(.lastName))
+                .onChange(of: authState.signUpLastName) {
+                  updateFocusIfNeeded()
+                }
               }
             }
             .autocorrectionDisabled()
@@ -107,6 +115,7 @@ struct SignUpCompleteProfileView: View {
           }
           .buttonStyle(.primary())
           .disabled(continueIsDisabled)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileContinueButton)
           .simultaneousGesture(TapGesture())
         }
 
@@ -114,7 +123,9 @@ struct SignUpCompleteProfileView: View {
       }
       .padding(16)
     }
+    #if os(iOS)
     .scrollDismissesKeyboard(.interactively)
+    #endif
     .clerkErrorPresenting($error)
     .sheet(item: $safariSheetItem) { item in
       SafariView(url: item.url)
@@ -127,7 +138,9 @@ struct SignUpCompleteProfileView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .onFirstAppear {
       focused = firstEmptyMissingField() ?? firstMissingField()
     }

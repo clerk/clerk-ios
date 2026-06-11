@@ -28,8 +28,8 @@ After running `make setup`, you're ready to start developing!
 
 ### Prerequisites
 
-- macOS with Xcode 16+ installed
-- Swift 5.10+
+- macOS with Xcode 26+ installed
+- Swift 6.2+
 - Git
 
 ## Development Workflow
@@ -79,6 +79,7 @@ After running `make setup`, you're ready to start developing!
 - `make check` - Run both format-check and lint (for CI)
 - `make test` - Run `ClerkKitTests` on macOS
 - `make test-ui` - Run `ClerkKitUITests` on iOS Simulator
+- `make test-e2e` - Run E2EHost tests on iOS Simulator
 - `make test-integration` - Run only integration tests (requires `.keys.json` file; Clerk employees only)
 - `make fetch-test-keys` - Fetch integration test keys from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
@@ -91,7 +92,7 @@ This project uses **SwiftFormat** for code formatting. The configuration is stor
 - **Indentation**: 2 spaces
 - **Line length**: 1000 characters (very permissive)
 - **Line breaks**: LF (Unix-style)
-- **Swift version**: 5.10
+- **SwiftFormat parser version**: 5.10
 
 ### Xcode Indentation Settings
 
@@ -120,7 +121,7 @@ SwiftLint checks for:
 
 ## Testing
 
-This project uses **Swift Testing** (not XCTest) for all tests. Tests are organized into two categories:
+This project uses **Swift Testing** for package unit and integration tests, and **XCTest/XCUITest** for app-level E2E UI automation. Tests are organized into three categories:
 
 ### Unit and UI Tests
 
@@ -165,7 +166,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 3. If `make fetch-test-keys` doesn't work, you can manually add the key to `.keys.json`:
    ```json
    {
-     "with-email-codes": {
+     "auth-email-code-password": {
        "pk": "pk_test_..."
      }
    }
@@ -177,8 +178,8 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - The `.keys.json` file created by `make setup` will remain empty, which is expected
 
 **How it works:**
-- The `.keys.json` file is automatically created by `make setup` with a blank `with-email-codes.pk` entry
-- Clerk employees can run `make fetch-test-keys` to populate it from 1Password (only includes `pk` values)
+- The `.keys.json` file is automatically created by `make setup` with blank baseline E2E key entries such as `auth-email-code-password.pk`, `auth-legal-consent.pk`, `auth-multi-methods.pk`, `auth-phone-code.pk`, `auth-username-password-user-model.pk`, `session-task-setup-mfa.pk`, and `with-email-codes.pk`
+- Clerk employees can run `make fetch-test-keys` to populate it from 1Password via `scripts/fetch-1password-secrets.sh`; fetched entries may include both `pk` and optional `sk` values, such as reset-password fixtures, so do not strip `sk` values from `.keys.json`
 - Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
 - Tests read keys directly from `.keys.json` file
 - In the maintainer-only **Release SDK** workflow, the `.keys.json` content is provided via `CLERK_TEST_KEYS_JSON` GitHub Actions secret (written to `.keys.json` before tests run)
@@ -190,6 +191,48 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - If `make fetch-test-keys` fails, ensure you have 1Password CLI installed and authenticated with access to the Shared vault
 - Integration tests may be slower than unit tests due to real network calls
 - Some tests may be flaky due to network conditions - consider retrying
+
+### E2EHost Tests
+
+E2E tests live in `Examples/E2EHost/` and run a dedicated SwiftUI test host app on an iOS Simulator with XCUITest. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, these tests use the `auth-email-code-password` mobile integration test instance.
+
+**Running E2E tests (Clerk employees only):**
+```bash
+make fetch-test-keys
+make test-e2e
+```
+
+If CI is missing a named test key, add it to the 1Password item, then sync the GitHub Actions snapshot:
+```bash
+make sync-test-keys-to-github
+```
+
+You can also provide a key directly:
+```bash
+CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e
+```
+
+To run against a different named test instance from `.keys.json`:
+```bash
+CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e
+```
+If omitted, `CLERK_E2E_KEY_NAME` defaults to `auth-email-code-password`.
+Mobile auth examples include `auth-legal-consent`, `auth-multi-methods`, `auth-phone-code`, and `auth-username-password-user-model`.
+Session-task examples include `session-task-setup-mfa`, `session-task-choose-organization`, and `session-task-reset-password`.
+
+To choose a specific simulator:
+```bash
+IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
+```
+
+**Requirements:**
+- Network access
+- Valid publishable key in `.keys.json` for `CLERK_E2E_KEY_NAME` or `CLERK_E2E_PUBLISHABLE_KEY`
+- iOS Simulator available through `xcrun simctl`
+
+The test runner writes its result bundle to `build/reports/E2EHost.xcresult`. In CI, this bundle is uploaded on failure. AI tools may help draft page objects, test flows, and accessibility ID changes, but generated tests must use the approved accessibility identifiers and be reviewed like production code. Maestro can be useful for exploratory mobile QA, but XCUITest is the release-gating E2E layer.
+
+E2E cleanup uses the normal host-level delete-account control when possible. If a failure leaves the test inside an auth sheet or pending session-task screen, teardown sends an E2E-only in-app cleanup notification so the app can delete the current user without exposing a visible cleanup button.
 
 ## Releasing (Maintainers)
 

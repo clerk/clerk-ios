@@ -5,10 +5,9 @@
 
 // swiftlint:disable file_length
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
-import NukeUI
 import SwiftUI
 
 /// A comprehensive user profile view that displays user information and account management options.
@@ -27,16 +26,16 @@ import SwiftUI
 ///   var body: some View {
 ///     Group {
 ///       if clerk.user != nil {
-///         UserProfileView(isDismissable: false)
+///         UserProfileView(isDismissible: false)
 ///       } else {
-///         AuthView(isDismissable: false)
+///         AuthView(isDismissible: false)
 ///       }
 ///     }
 ///   }
 /// }
 /// ```
 ///
-/// As a dismissable sheet:
+/// As a dismissible sheet:
 ///
 /// ```swift
 /// struct MainView: View {
@@ -65,7 +64,7 @@ import SwiftUI
 ///         .navigationDestination(for: AppRoute.self) { route in
 ///           switch route {
 ///           case .profile:
-///             UserProfileView(isDismissable: false, navigationPath: $path)
+///             UserProfileView(isDismissible: false, navigationPath: $path)
 ///           }
 ///         }
 ///     }
@@ -103,7 +102,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  private let isDismissable: Bool
+  private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
@@ -118,13 +117,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var error: Error?
 
   init(
-    isDismissable: Bool,
+    isDismissible: Bool,
     navigationPath: Binding<NavigationPath>?,
     customRows: [UserProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?,
     oauthConfig: UserProfileOAuthConfiguration
   ) {
-    self.isDismissable = isDismissable
+    self.isDismissible = isDismissible
     self.navigationPath = navigationPath
     self.customRows = customRows
     self.customDestination = customDestination
@@ -134,9 +133,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   /// Creates a new user profile view.
   ///
   /// - Parameters:
-  ///   - isDismissable: Whether the view can be dismissed by the user.
+  ///   - isDismissible: Whether the view can be dismissed by the user.
   ///   When `true`, a dismiss button appears in the navigation bar and the view
-  ///   can be used in sheets or other dismissable contexts. When `false`, no
+  ///   can be used in sheets or other dismissible contexts. When `false`, no
   ///   dismiss button is shown, making it suitable for full-screen usage.
   ///   Defaults to `true`.
   ///   - navigationPath: An optional binding to a parent `NavigationPath`. When provided,
@@ -144,11 +143,11 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   ///   parent's path instead. Use this when embedding `UserProfileView` inside your own
   ///   `NavigationStack` to avoid nested navigation stacks. Defaults to `nil`.
   public init(
-    isDismissable: Bool = true,
+    isDismissible: Bool = true,
     navigationPath: Binding<NavigationPath>? = nil
   ) where Route == Never, Destination == EmptyView {
     self.init(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: [],
       customDestination: nil,
@@ -180,6 +179,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
                   )
               }
           }
+          #if os(macOS)
+          .frame(
+            width: isDismissible ? 560 : nil,
+            height: isDismissible ? 620 : nil,
+            alignment: .topLeading
+          )
+          #endif
         } else {
           profileContent(user: user)
         }
@@ -192,15 +198,18 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+        #if os(iOS)
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
+        #elseif os(macOS)
+        UserButtonAccountSwitcher()
+        #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
         AuthView()
-          .interactiveDismissDisabled()
       }
       .task {
         for await event in clerk.auth.events {
@@ -227,7 +236,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
             payload: [
-              "isDismissable": .bool(isDismissable),
+              "isDismissible": .bool(isDismissible),
               "isEmbedded": .bool(navigationPath != nil),
             ]
           )
@@ -289,28 +298,28 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   private func profileContent(user: User) -> some View {
-    VStack(spacing: 0) {
-      ScrollView {
-        LazyVStack(spacing: 0) {
-          UserProfileHeaderView(
-            user: user,
-            onUpdateProfile: {
-              updateProfileIsPresented = true
-            }
-          )
-
-          VStack(spacing: 48) {
-            section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
-            section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
+    ScrollView {
+      LazyVStack(spacing: 0) {
+        UserProfileHeaderView(
+          user: user,
+          onUpdateProfile: {
+            updateProfileIsPresented = true
           }
+        )
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.currentUser(userID: user.id))
+
+        VStack(spacing: 48) {
+          section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
+          section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
         }
       }
-      .background(theme.colors.muted)
-
-      SecuredByClerkFooter()
     }
+    .background(theme.colors.muted)
+    .securedByClerkFooter(macOSDismissAction: isDismissible ? { dismiss() } : nil)
     .animation(.default, value: user)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #endif
     .toolbar {
       ToolbarItem(placement: .principal) {
         Text("Account", bundle: .module)
@@ -319,11 +328,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           .foregroundStyle(theme.colors.foreground)
       }
 
-      if isDismissable {
-        ToolbarItem(placement: .topBarTrailing) {
-          DismissButton()
+      #if os(iOS)
+      if isDismissible {
+        DismissToolbarItem {
+          dismiss()
         }
       }
+      #endif
     }
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
@@ -343,6 +354,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         )
         .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
+    #endif
   }
 }
 
@@ -354,7 +368,7 @@ extension UserProfileView {
     _ rows: [UserProfileCustomRow<Route>]
   ) -> UserProfileView<Route, Destination> {
     UserProfileView<Route, Destination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: customDestination,
@@ -367,7 +381,7 @@ extension UserProfileView {
     _ configs: [OAuthProviderConfig]
   ) -> UserProfileView<Route, Destination> {
     UserProfileView<Route, Destination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: customRows,
       customDestination: customDestination,
@@ -386,7 +400,7 @@ extension UserProfileView where Destination == EmptyView {
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> UserProfileView<Route, NewDestination> {
     UserProfileView<Route, NewDestination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: customRows,
       customDestination: destination,
@@ -401,7 +415,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
     _ rows: [UserProfileCustomRow<NewRoute>]
   ) -> UserProfileView<NewRoute, EmptyView> {
     UserProfileView<NewRoute, EmptyView>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: nil,
@@ -419,7 +433,7 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
   ) -> UserProfileView<NewRoute, NewDestination> {
     UserProfileView<NewRoute, NewDestination>(
-      isDismissable: isDismissable,
+      isDismissible: isDismissible,
       navigationPath: navigationPath,
       customRows: [],
       customDestination: destination,
@@ -473,6 +487,7 @@ extension UserProfileView {
         await signOut(sessionId: sessionId)
       }
     }
+    .accessibilityIdentifier(rowType.accessibilityIdentifier)
   }
 
   fileprivate func row(
@@ -625,7 +640,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   case custom(route: Route, occurrence: Int)
 }
 
-#Preview("Dismissable") {
+#Preview("Dismissible") {
   UserProfileView()
     .environment(
       Clerk.preview { builder in
@@ -699,8 +714,8 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
     .environment(\.clerkTheme, .clerk)
 }
 
-#Preview("Not dismissable") {
-  UserProfileView(isDismissable: false)
+#Preview("Not dismissible") {
+  UserProfileView(isDismissible: false)
     .environment(
       Clerk.preview { builder in
         builder.services.clientService.getHandler = {
@@ -727,7 +742,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 #Preview("Embedded in parent NavigationStack") {
   @Previewable @State var navigationPath = NavigationPath()
 
-  UserProfileView(isDismissable: false, navigationPath: $navigationPath)
+  UserProfileView(isDismissible: false, navigationPath: $navigationPath)
     .environment(
       Clerk.preview { builder in
         builder.services.clientService.getHandler = {

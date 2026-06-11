@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -128,7 +128,8 @@ struct UserProfileVerifyView: View {
         OTPField(
           code: $code,
           fieldState: $otpFieldState,
-          isFocused: $otpFieldIsFocused
+          isFocused: $otpFieldIsFocused,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Mfa.verificationCode
         ) { _ in
           await attempt()
         }
@@ -175,9 +176,11 @@ struct UserProfileVerifyView: View {
     .clerkErrorPresenting($error)
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
-    .preGlassSolidNavBar()
     .navigationBarBackButtonHidden(hasCancelAction)
+    #endif
+    .preGlassSolidNavBar()
     .toolbar {
       if hasCancelAction {
         ToolbarItem(placement: .cancellationAction) {
@@ -269,6 +272,14 @@ extension UserProfileVerifyView {
 #Preview("Phone") {
   NavigationStack {
     UserProfileVerifyView(mode: .phone(.mock)) { _ in }
+  }
+  .environment(CodeLimiter())
+  .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("TOTP") {
+  NavigationStack {
+    UserProfileVerifyView(mode: .totp) { _ in }
   }
   .environment(CodeLimiter())
   .environment(\.clerkTheme, .clerk)

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -76,6 +76,7 @@ struct LegalConsentView: View {
           .foregroundStyle(theme.colors.foreground)
           .tint(theme.colors.primary)
           .frame(minHeight: 22)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.legalAccepted)
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 8)

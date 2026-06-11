@@ -23,7 +23,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
       #expect(request.urlEncodedFormBody!["password"] == "password123")
@@ -52,7 +52,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_google")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
@@ -81,7 +81,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "enterprise_sso")
       #expect(request.urlEncodedFormBody!["email_address"] == "user@enterprise.com")
@@ -111,7 +111,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "oauth_token_apple")
       #expect(request.urlEncodedFormBody!["token"] == "mock_id_token")
@@ -139,7 +139,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "ticket")
       #expect(request.urlEncodedFormBody!["ticket"] == "mock_ticket_value")
@@ -167,7 +167,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["transfer"] == "1")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
@@ -192,7 +192,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
       requestHandled.setValue(true)
@@ -215,7 +215,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
       #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
@@ -242,7 +242,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["first_name"] == "John")
       #expect(request.urlEncodedFormBody!["last_name"] == "Doe")
@@ -270,7 +270,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["unsafe_metadata"] == "{\"token\":\"some-value\"}")
       #expect(request.urlEncodedFormBody!["unsafe_metadata[token]"] == nil)
@@ -298,7 +298,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       requestHandled.setValue(true)
@@ -325,7 +325,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       requestHandled.setValue(true)
@@ -352,7 +352,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "email_code")
       #expect(request.urlEncodedFormBody!["code"] == "123456")
@@ -380,7 +380,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
       #expect(request.urlEncodedFormBody!["strategy"] == "phone_code")
       #expect(request.urlEncodedFormBody!["code"] == "654321")
@@ -408,7 +408,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       requestHandled.setValue(true)
     }
@@ -434,7 +434,7 @@ struct SignUpServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
       #expect(request.url?.query?.contains("rotating_token_nonce=test_nonce") == true)
       requestHandled.setValue(true)

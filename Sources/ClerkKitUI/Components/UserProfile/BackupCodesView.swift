@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -54,13 +54,18 @@ struct BackupCodesView: View {
       }
       .padding(24)
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     .navigationBarBackButtonHidden()
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarItem(placement: doneToolbarPlacement) {
         Button {
           switch mfaType {
           case .phoneCode, .authenticatorApp:
@@ -72,8 +77,11 @@ struct BackupCodesView: View {
           Text("Done", bundle: .module)
             .font(theme.fonts.body)
             .fontWeight(.semibold)
+            #if os(iOS)
             .foregroundStyle(theme.colors.primary)
+            #endif
         }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }
 
       ToolbarItem(placement: .principal) {
@@ -85,13 +93,14 @@ struct BackupCodesView: View {
   }
 }
 
-private func copyToClipboard(_ text: String) {
-  #if os(iOS)
-  UIPasteboard.general.string = text
-  #elseif os(macOS)
-  NSPasteboard.general.clearContents()
-  NSPasteboard.general.setString(text, forType: .string)
-  #endif
+extension BackupCodesView {
+  private var doneToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarTrailing
+    #elseif os(macOS)
+    .confirmationAction
+    #endif
+  }
 }
 
 struct BackupCodesGrid: View {
@@ -132,6 +141,7 @@ struct BackupCodesGrid: View {
     backupCodes: ["abc", "def", "ghi", "jkl", "lmn", "opq", "rst", "uvw", "xyz"],
     mfaType: .authenticatorApp
   )
+  .clerkPreview()
   .environment(UserProfileSheetNavigation())
 }
 

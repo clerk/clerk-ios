@@ -8,6 +8,9 @@
       location = "group:Examples/AirbnbClone/AirbnbClone.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:Examples/MacExampleApp/MacExampleApp.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:Examples/Quickstart/Quickstart.xcodeproj">
    </FileRef>
    <FileRef

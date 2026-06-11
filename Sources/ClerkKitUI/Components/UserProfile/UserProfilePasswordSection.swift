@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
@@ -22,7 +22,7 @@ struct UserProfilePasswordSection: View {
 
   @State private var passwordAction: PasswordAction?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -43,6 +43,7 @@ struct UserProfilePasswordSection: View {
       .background(theme.colors.background)
       .buttonStyle(.pressedBackground)
       .simultaneousGesture(TapGesture())
+      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.changePassword)
     } header: {
       UserProfileSectionHeader(text: "PASSWORD")
     }
@@ -87,6 +88,7 @@ struct UserProfilePasswordSection: View {
 
 #Preview {
   UserProfilePasswordSection()
+    .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 

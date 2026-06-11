@@ -1,5 +1,3 @@
-#if os(iOS)
-
 @testable import ClerkKit
 @testable import ClerkKitUI
 import Testing
@@ -28,11 +26,56 @@ struct AuthNavigationTests {
     #expect(navigation.allTasksComplete)
   }
 
+  @Test
+  func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [.password],
+      unverifiedFields: [.emailAddress],
+      verifications: ["email_address": Verification(status: .unverified, strategy: .emailLink)]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpEmailLink])
+  }
+
+  @Test
+  func signUpEmailCodeVerificationRunsBeforeCollectingMissingFields() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [.password],
+      unverifiedFields: [.emailAddress],
+      verifications: ["email_address": Verification(status: .unverified, strategy: .emailCode)]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCode(.email("test@example.com"))])
+  }
+
   private func session(pendingTasks: [Session.Task]) -> Session {
     var session = Session.mock
     session.tasks = pendingTasks
     return session
   }
-}
 
-#endif
+  private func signUp(
+    missingFields: [SignUp.Field],
+    unverifiedFields: [SignUp.Field],
+    verifications: [String: Verification?]
+  ) -> SignUp {
+    SignUp(
+      id: "sign_up_123",
+      status: .missingRequirements,
+      requiredFields: [.emailAddress, .password],
+      optionalFields: [],
+      missingFields: missingFields,
+      unverifiedFields: unverifiedFields,
+      verifications: verifications,
+      emailAddress: "test@example.com",
+      passwordEnabled: false,
+      abandonAt: .distantFuture
+    )
+  }
+}

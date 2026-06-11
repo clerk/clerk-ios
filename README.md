@@ -13,7 +13,7 @@
 
 [![chat on Discord](https://img.shields.io/discord/856971667393609759.svg?logo=discord)](https://clerk.com/discord)
 [![documentation](https://img.shields.io/badge/documentation-clerk-green.svg)](https://clerk.com/docs)
-[![twitter](https://img.shields.io/twitter/follow/Clerk?style=social)](https://twitter.com/intent/follow?screen_name=Clerk)
+[![Follow on X](https://img.shields.io/twitter/follow/clerk?style=social)](https://x.com/intent/follow?screen_name=clerk)
 
 The Clerk iOS SDK gives you access to prebuilt SwiftUI views, observable state management, and helpers to make user management easier.
 
@@ -27,8 +27,8 @@ The Clerk iOS SDK gives you access to prebuilt SwiftUI views, observable state m
 
 ### Requirements
 - iOS 17+ / Mac Catalyst 17+ / macOS 14+ / tvOS 17+ / watchOS 10+ / visionOS 1+
-- Xcode 16+
-- Swift 5.10+
+- Xcode 26+
+- Swift 6.2+
 
 ### Swift Package Manager
 
@@ -38,7 +38,7 @@ Alternatively, add the following as a dependency to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/clerk/clerk-ios", from: "1.0.0")
+    .package(url: "https://github.com/clerk/clerk-ios", from: "1.2.0")
 ]
 
 // Then add ClerkKit and/or ClerkKitUI to your target dependencies:

@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
@@ -137,7 +137,11 @@ final class AuthNavigation {
         path = []
         return
       }
-      path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      if signUp.emailVerificationStrategy == .emailLink {
+        path.append(AuthView.Destination.signUpEmailLink)
+      } else {
+        path.append(AuthView.Destination.signUpCode(.email(emailAddress)))
+      }
     case .phoneNumber:
       guard let phoneNumber = signUp.phoneNumber else {
         path = []

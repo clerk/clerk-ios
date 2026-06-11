@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -25,17 +25,20 @@ struct ClerkTextField: View {
   @Binding var text: String
   let isSecure: Bool
   let fieldState: FieldState
+  let accessibilityIdentifier: String
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
     isSecure: Bool = false,
-    fieldState: FieldState = .default
+    fieldState: FieldState = .default,
+    accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.isSecure = isSecure
     self.fieldState = fieldState
+    self.accessibilityIdentifier = accessibilityIdentifier
   }
 
   var isFocusedOrFilled: Bool {
@@ -132,6 +135,7 @@ struct ClerkTextField: View {
     .padding(.vertical, 6)
     .frame(minHeight: 56)
     .contentShape(.rect)
+    .accessibilityIdentifier(accessibilityIdentifier)
     .onTapGesture {
       if isSecure {
         focused = revealText ? .regular : .secure

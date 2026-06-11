@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -51,20 +51,22 @@ struct UserProfileAddEmailView: View {
           VStack(spacing: 4) {
             ClerkTextField("Enter your email", text: $email)
               .textContentType(.emailAddress)
+              #if os(iOS)
               .keyboardType(.emailAddress)
-              .autocorrectionDisabled()
               .textInputAutocapitalization(.never)
+              #endif
+              .autocorrectionDisabled()
               .focused($isFocused)
               .onFirstAppear {
                 isFocused = true
               }
 
-            if let error {
-              ErrorText(error: error, alignment: .leading)
-                .font(theme.fonts.subheadline)
-                .transition(.blurReplace.animation(.default))
-                .id(error.localizedDescription)
-            }
+              if let error {
+                ErrorText(error: error, alignment: .leading)
+                  .font(theme.fonts.subheadline)
+                  .transition(.blurReplace.animation(.default))
+                  .id(error.localizedDescription)
+              }
           }
 
           AsyncButton {
@@ -86,7 +88,9 @@ struct UserProfileAddEmailView: View {
         .padding(24)
       }
       .presentationBackground(theme.colors.background)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -118,6 +122,9 @@ struct UserProfileAddEmailView: View {
         }
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
   }
 }
 

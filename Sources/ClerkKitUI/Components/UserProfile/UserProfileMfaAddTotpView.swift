@@ -3,13 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
 
 struct UserProfileMfaAddTotpView: View {
-  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
@@ -40,10 +39,6 @@ struct UserProfileMfaAddTotpView: View {
     }
   }
 
-  private var user: User? {
-    clerk.user
-  }
-
   var body: some View {
     NavigationStack(path: $path) {
       ScrollView {
@@ -54,7 +49,10 @@ struct UserProfileMfaAddTotpView: View {
               .foregroundStyle(theme.colors.mutedForeground)
 
             VStack(spacing: 12) {
-              CopyableTextView(text: secret)
+              CopyableTextView(
+                text: secret,
+                accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Mfa.totpSecret
+              )
 
               Button {
                 copyToClipboard(secret)
@@ -98,11 +96,14 @@ struct UserProfileMfaAddTotpView: View {
             ContinueButtonLabelView()
           }
           .buttonStyle(.primary())
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.totpContinue)
         }
         .padding(24)
       }
       .clerkErrorPresenting($error)
+      #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
+      #endif
       .preGlassSolidNavBar()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -122,25 +123,18 @@ struct UserProfileMfaAddTotpView: View {
         viewForDestination($0)
       }
     }
+    #if os(macOS)
+    .frame(minWidth: 460, maxWidth: 620)
+    #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
-  }
-}
-
-extension UserProfileMfaAddTotpView {
-  private func copyToClipboard(_ text: String) {
-    #if os(iOS)
-    UIPasteboard.general.string = text
-    #elseif os(macOS)
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
-    #endif
   }
 }
 
 #Preview {
   UserProfileMfaAddTotpView(totp: .mock)
     .clerkPreview()
+    .environment(UserProfileSheetNavigation())
     .environment(\.clerkTheme, .clerk)
 }
 

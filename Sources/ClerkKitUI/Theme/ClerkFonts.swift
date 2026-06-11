@@ -3,12 +3,12 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
 extension ClerkTheme {
-  /// A typography scale aligned with iOS Dynamic Type text styles.
+  /// A typography scale aligned with system text styles.
   public struct Fonts {
     /// The large title text style.
     public var largeTitle: Font

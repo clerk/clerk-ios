@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -15,7 +15,11 @@ struct UserProfileDeleteAccountSection: View {
 
   var body: some View {
     Section {
-      UserProfileButtonRow(text: "Delete account", style: .danger) {
+      UserProfileButtonRow(
+        text: "Delete account",
+        style: .danger,
+        accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Security.deleteAccount
+      ) {
         confirmationIsPresented = true
       }
       .background(theme.colors.background)
@@ -30,6 +34,7 @@ struct UserProfileDeleteAccountSection: View {
 
 #Preview {
   UserProfileDeleteAccountSection()
+    .clerkPreview()
 }
 
 #endif

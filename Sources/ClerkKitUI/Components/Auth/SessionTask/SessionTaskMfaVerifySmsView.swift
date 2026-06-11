@@ -2,7 +2,7 @@
 //  SessionTaskMfaVerifySmsView.swift
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -60,7 +60,8 @@ struct SessionTaskMfaVerifySmsView: View {
         OTPField(
           code: $code,
           fieldState: $otpFieldState,
-          isFocused: $otpFieldIsFocused
+          isFocused: $otpFieldIsFocused,
+          accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.code
         ) { _ in
           await attempt()
         }
@@ -128,12 +129,14 @@ struct SessionTaskMfaVerifySmsView: View {
       }
     )
     .background(theme.colors.background)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
+    #elseif os(macOS)
+    .macOSBackButton()
+    #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        UserButton(presentationContext: .sessionTaskToolbar)
-      }
+      UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     }
   }
 

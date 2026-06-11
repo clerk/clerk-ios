@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -19,7 +19,7 @@ struct UserProfileExternalAccountRow: View {
   @State private var isLoading = false
   @State private var error: Error?
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -50,6 +50,8 @@ struct UserProfileExternalAccountRow: View {
             Text(externalAccount.oauthProvider.name)
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
+              .lineLimit(1)
+              .truncationMode(.tail)
               .frame(minHeight: 20)
           }
         }
@@ -58,12 +60,18 @@ struct UserProfileExternalAccountRow: View {
           Text(externalAccount.emailAddress)
             .font(theme.fonts.body)
             .foregroundStyle(theme.colors.foreground)
+            .lineLimit(1)
+            .truncationMode(.middle)
             .frame(minHeight: 22)
         }
 
         if let error = externalAccount.verification?.error {
-          ErrorText(error: error, alignment: .leading)
-            .font(theme.fonts.footnote)
+          ErrorText(text: verificationErrorText(for: error), alignment: .leading)
+          #if os(iOS)
+          .font(theme.fonts.footnote)
+          #elseif os(macOS)
+          .fixedSize(horizontal: false, vertical: true)
+          #endif
         }
       }
 
@@ -87,13 +95,10 @@ struct UserProfileExternalAccountRow: View {
         }
 
       } label: {
-        Image("icon-three-dots-vertical", bundle: .module)
-          .resizable()
-          .scaledToFit()
-          .foregroundColor(theme.colors.mutedForeground)
-          .frame(width: 20, height: 20)
+        ThreeDotsMenuLabel()
       }
       .frame(width: 30, height: 30)
+      .menuIndicator(.hidden)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(.horizontal, 24)
@@ -133,6 +138,21 @@ struct UserProfileExternalAccountRow: View {
 }
 
 extension UserProfileExternalAccountRow {
+  private static let reconnectableVerificationErrorCodes: Set<String> = [
+    "external_account_missing_refresh_token",
+    "oauth_fetch_user_error",
+    "oauth_token_exchange_error",
+    "external_account_email_address_verification_required",
+  ]
+
+  private func verificationErrorText(for error: ClerkAPIError) -> Text {
+    if Self.reconnectableVerificationErrorCodes.contains(error.code) {
+      return Text("This account has been disconnected.", bundle: .module)
+    }
+
+    return Text(verbatim: error.localizedDescription)
+  }
+
   private func reconnect() async {
     guard let user else { return }
 
@@ -161,6 +181,7 @@ extension UserProfileExternalAccountRow {
       }
       try await account.reauthorize()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to reconnect external account", error: error)
     }
@@ -179,7 +200,13 @@ extension UserProfileExternalAccountRow {
 }
 
 #Preview {
+  #if os(iOS)
   UserProfileExternalAccountRow(externalAccount: .mockVerified)
+  #elseif os(macOS)
+  UserProfileExternalAccountRow(externalAccount: .mockVerified)
+    .environment(Clerk.preview())
+    .padding()
+  #endif
 }
 
 #endif

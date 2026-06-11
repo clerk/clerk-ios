@@ -27,7 +27,7 @@ struct ExternalAccountServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["redirect_url"] == expectedRedirectUrl)
       let scopes = request.urlEncodedFormBodyMultiValue!["additional_scope"]
@@ -59,7 +59,7 @@ struct ExternalAccountServiceTests {
       ]
     )
 
-    mock.onRequestHandler = OnRequestHandler { request in
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
       requestHandled.setValue(true)
     }

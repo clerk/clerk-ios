@@ -6,7 +6,7 @@
 import Foundation
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
-public struct Organization: Codable, Equatable, Sendable, Identifiable {
+public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable {
   /// The unique identifier of the related organization.
   public var id: String
 
@@ -111,6 +111,14 @@ extension Organization {
     try await organizationService.setOrganizationLogo(organizationId: id, imageData: imageData)
   }
 
+  /// Deletes the organization's uploaded logo and falls back to the default logo.
+  ///
+  /// - Returns: ``Organization``
+  @discardableResult @MainActor
+  public func deleteLogo() async throws -> Organization {
+    try await organizationService.deleteOrganizationLogo(organizationId: id)
+  }
+
   /// Returns a ClerkPaginatedResponse of RoleResource objects.
   ///
   /// - Parameters:
@@ -147,11 +155,36 @@ extension Organization {
     page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    try await getMemberships(
+      query: query,
+      role: role,
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize
+    )
+  }
+
+  /// Retrieves the list of memberships for the currently active organization.
+  ///
+  /// - Parameters:
+  ///     - query: Returns members that match the given query.
+  ///     - role: Filter by roles. This can be one of the predefined roles or a custom role.
+  ///     - offset: The number of items to skip before returning results.
+  ///     - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///
+  /// - Returns:
+  ///     A ``ClerkPaginatedResponse`` of ``OrganizationMembership`` objects.
+  @MainActor
+  package func getMemberships(
+    query: String? = nil,
+    role: [String]? = nil,
+    offset: Int,
+    pageSize: Int = 10
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await organizationService.getOrganizationMemberships(
       organizationId: id,
       query: query,
       role: role,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize
     )
   }
@@ -212,7 +245,7 @@ extension Organization {
   /// - Parameters:
   ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: A number that indicates the maximum number of results that should be returned for a specific page.
-  ///   - status: The status an invitation can have.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
   ///
   /// - Returns:
   ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
@@ -220,11 +253,33 @@ extension Organization {
   public func getInvitations(
     page: Int = 1,
     pageSize: Int = 20,
-    status: String? = nil
+    status: [String] = []
+  ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
+    try await getInvitations(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves the list of invitations for the currently active organization.
+  ///
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///   - status: An array of invitation statuses to filter by. Defaults to an empty array, which applies no status filter.
+  ///
+  /// - Returns:
+  ///   A ``ClerkPaginatedResponse`` of ``OrganizationInvitation`` objects.
+  @MainActor
+  package func getInvitations(
+    offset: Int,
+    pageSize: Int = 10,
+    status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await organizationService.getOrganizationInvitations(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       status: status
     )
@@ -244,6 +299,26 @@ extension Organization {
     role: String
   ) async throws -> OrganizationInvitation {
     try await organizationService.inviteOrganizationMember(organizationId: id, emailAddress: emailAddress, role: role)
+  }
+
+  /// Creates and sends invitations to the target email addresses to become members with the specified role.
+  ///
+  /// - Parameters:
+  ///   - emailAddresses: The email addresses to invite.
+  ///   - role: The role of the new members.
+  ///
+  /// - Returns:
+  ///   An array of ``OrganizationInvitation`` objects.
+  @discardableResult @MainActor
+  public func inviteMembers(
+    emailAddresses: [String],
+    role: String
+  ) async throws -> [OrganizationInvitation] {
+    try await organizationService.inviteOrganizationMembers(
+      organizationId: id,
+      emailAddresses: emailAddresses,
+      role: role
+    )
   }
 
   /// Creates a new domain for the currently active organization.
@@ -269,11 +344,31 @@ extension Organization {
   public func getDomains(
     page: Int = 1,
     pageSize: Int = 20,
+    enrollmentMode: OrganizationDomain.EnrollmentMode? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
+    try await getDomains(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      enrollmentMode: enrollmentMode?.rawValue
+    )
+  }
+
+  /// Retrieves the list of domains for the currently active organization.
+  ///
+  /// - Parameters:
+  ///  - offset: The number of items to skip before returning results.
+  ///  - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///  - enrollmentMode: An enrollment mode will change how new users join an organization.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationDomain`` objects.
+  @MainActor
+  package func getDomains(
+    offset: Int,
+    pageSize: Int = 10,
     enrollmentMode: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await organizationService.getOrganizationDomains(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       enrollmentMode: enrollmentMode
     )
@@ -302,9 +397,29 @@ extension Organization {
     pageSize: Int = 20,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+    try await getMembershipRequests(
+      offset: offset(forPage: page, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
+  }
+
+  /// Retrieves the list of membership requests for the currently active organization.
+  ///
+  /// - Parameters:
+  ///   - offset: The number of items to skip before returning results.
+  ///   - pageSize: A number that indicates the maximum number of results that should be returned.
+  ///   - status: The status of the membership requests that will be included in the response.
+  /// - Returns: A ``ClerkPaginatedResponse`` of ``OrganizationMembershipRequest`` objects.
+  @MainActor
+  package func getMembershipRequests(
+    offset: Int,
+    pageSize: Int = 10,
+    status: String? = nil
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     try await organizationService.getOrganizationMembershipRequests(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      initialPage: offset,
       pageSize: pageSize,
       status: status
     )

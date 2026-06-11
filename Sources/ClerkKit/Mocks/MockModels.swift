@@ -138,6 +138,49 @@ extension Session {
   }
 }
 
+// MARK: SessionVerification
+
+extension SessionVerification {
+  public static var mockNeedsFirstFactor: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .needsFirstFactor,
+      level: .firstFactor,
+      session: .mock,
+      supportedFirstFactors: [.mockPassword, .mockPasskey],
+      supportedSecondFactors: nil,
+      firstFactorVerification: .mockPasskeyUnverifiedVerification,
+      secondFactorVerification: nil
+    )
+  }
+
+  public static var mockNeedsSecondFactor: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .needsSecondFactor,
+      level: .secondFactor,
+      session: .mock,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: [.mockTotp],
+      firstFactorVerification: nil,
+      secondFactorVerification: .mockTotpUnverifiedVerification
+    )
+  }
+
+  public static var mockComplete: SessionVerification {
+    SessionVerification(
+      id: "ver_1",
+      status: .complete,
+      level: .firstFactor,
+      session: .mock,
+      supportedFirstFactors: nil,
+      supportedSecondFactors: nil,
+      firstFactorVerification: .mockPasskeyVerifiedVerification,
+      secondFactorVerification: nil
+    )
+  }
+}
+
 // MARK: SignIn
 
 extension SignIn {
@@ -148,6 +191,7 @@ extension SignIn {
       supportedIdentifiers: [.emailAddress, .phoneNumber],
       identifier: User.mock.emailAddresses.first?.emailAddress,
       supportedFirstFactors: [
+        .mockEmailLink,
         .mockEmailCode,
         .mockPhoneCode,
         .mockGoogle,
@@ -319,8 +363,20 @@ extension Verification {
 // MARK: Factor
 
 extension Factor {
+  public static var mockEmailLink: Factor {
+    Factor(
+      strategy: .emailLink,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
+  }
+
   public static var mockEmailCode: Factor {
-    Factor(strategy: .emailCode)
+    Factor(
+      strategy: .emailCode,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
   }
 
   public static var mockPhoneCode: Factor {
@@ -973,6 +1029,7 @@ extension Clerk.Environment.DisplayConfig {
       applicationName: "Acme Co",
       preferredSignInStrategy: .otp,
       supportEmail: "support@example.com",
+      showDevmodeWarning: false,
       branded: true,
       logoImageUrl: "",
       homeUrl: "",

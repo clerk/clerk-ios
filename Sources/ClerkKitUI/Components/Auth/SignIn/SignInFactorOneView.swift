@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -20,6 +20,8 @@ struct SignInFactorOneView: View {
       SignInFactorOnePasskeyView(factor: factor)
     case .password:
       SignInFactorOnePasswordView(factor: factor)
+    case .emailLink:
+      EmailLinkVerificationView(mode: .signIn(factor))
     case .emailCode,
          .phoneCode,
          .resetPasswordEmailCode,

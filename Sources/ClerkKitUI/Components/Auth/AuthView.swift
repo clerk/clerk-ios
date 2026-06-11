@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -17,7 +17,7 @@ import SwiftUI
 ///
 /// ## Usage
 ///
-/// Basic usage as a dismissable sheet:
+/// Basic usage as a dismissible sheet:
 ///
 /// ```swift
 /// struct HomeView: View {
@@ -44,7 +44,7 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// Full-screen authentication (non-dismissable):
+/// Full-screen authentication (non-dismissible):
 ///
 /// ```swift
 /// struct ProfileView: View {
@@ -53,9 +53,9 @@ import SwiftUI
 ///   var body: some View {
 ///     Group {
 ///       if clerk.user != nil {
-///         UserProfileView(isDismissable: false)
+///         UserProfileView(isDismissible: false)
 ///       } else {
-///         AuthView(isDismissable: false)
+///         AuthView(isDismissible: false)
 ///       }
 ///     }
 ///   }
@@ -71,8 +71,11 @@ public struct AuthView: View {
   /// Form field state for auth views.
   @State private var authState: AuthState
 
-  /// Configuration values for identifier pre-filling and persistence.
-  private let config: AuthIdentifierConfig
+  /// Configuration values for the auth flow.
+  private let config: AuthConfig
+
+  /// Error to present to the user.
+  @State private var error: Error?
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -92,70 +95,73 @@ public struct AuthView: View {
     case signUp
   }
 
-  let isDismissable: Bool
+  let isDismissible: Bool
 
   /// Creates a new authentication view.
   ///
   /// - Parameters:
   ///   - mode: The authentication mode that determines available flows.
   ///     Defaults to `.signInOrUp()` which allows both sign-in and sign-up.
-  ///   - isDismissable: Whether the view can be dismissed by the user.
+  ///   - isDismissible: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
-  ///     button is shown. Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissable: Bool = true) {
-    _authState = State(initialValue: AuthState(mode: mode))
-    self.isDismissable = isDismissable
-    config = AuthIdentifierConfig()
+  ///     button is shown. Interactive presentation dismissal is always disabled.
+  ///     Defaults to `true`.
+  public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
+    self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
   }
 
-  private init(
+  init(
     mode: Mode,
-    isDismissable: Bool,
-    config: AuthIdentifierConfig
+    isDismissible: Bool,
+    config: AuthConfig
   ) {
-    _authState = State(initialValue: AuthState(mode: mode))
-    self.isDismissable = isDismissable
+    _authState = State(initialValue: AuthState(mode: mode, config: config))
+    self.isDismissible = isDismissible
     self.config = config
   }
 
   public var body: some View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
+        #if os(iOS)
         .toolbar {
-          if showDismissButton {
-            ToolbarItem(placement: .topBarTrailing) {
-              DismissButton {
-                dismiss()
-              }
-            }
-          }
+          dismissToolbarItem
         }
+        #endif
         .navigationDestination(for: Destination.self) {
           $0.view
+            #if os(iOS)
             .toolbar {
-              if showDismissButton {
-                ToolbarItem(placement: .topBarTrailing) {
-                  DismissButton {
-                    dismiss()
-                  }
-                }
-              }
+              dismissToolbarItem
             }
+            #endif
+            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
+        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
-    .interactiveDismissDisabled(navigation.hasSessionTaskStartInPath && clerk.session?.status != .active)
+    #if os(macOS)
+    .frame(
+      width: isDismissible ? 560 : nil,
+      height: isDismissible ? 620 : nil,
+      alignment: .topLeading
+    )
+    #endif
     .tint(theme.colors.primary)
+    .clerkErrorPresenting($error)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
     .onAppear {
       navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+      if let callbackContinuation = clerk.callbackContinuation {
+        resumeAuth(callbackContinuation)
+      }
     }
     .task {
       _ = try? await clerk.refreshEnvironment()
@@ -163,12 +169,16 @@ public struct AuthView: View {
     .task {
       for await event in clerk.auth.events {
         switch event {
+        case .signInNeedsContinuation(let signIn):
+          resumeAuth(.signIn(signIn))
+        case .signUpNeedsContinuation(let signUp):
+          resumeAuth(.signUp(signUp))
         case .sessionChanged(let oldValue, let newValue):
           guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
           let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
           let sessionSwitched = oldValue?.id != newValue?.id
-          if becameActive, isDismissable, !isHandlingSessionTask || sessionSwitched {
+          if becameActive, isDismissible, !isHandlingSessionTask || sessionSwitched {
             dismiss()
           }
         default:
@@ -178,7 +188,7 @@ public struct AuthView: View {
     }
     .onChange(of: navigation.allTasksComplete) { _, isComplete in
       guard isComplete else { return }
-      if isDismissable {
+      if isDismissible {
         dismiss()
       }
     }
@@ -187,14 +197,23 @@ public struct AuthView: View {
     }
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
-      if isDismissable {
+      if isDismissible {
         dismiss()
       } else {
         navigation.path = []
       }
     }
-    .onChange(of: config, initial: true) { _, newConfig in
+    .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
+    }
+    .onOpenURL { url in
+      Task {
+        do {
+          try await clerk.handle(url)
+        } catch {
+          self.error = error
+        }
+      }
     }
     .taskOnce {
       await clerk.telemetry.record(
@@ -202,7 +221,7 @@ public struct AuthView: View {
           "AuthView",
           payload: [
             "mode": .string(authState.mode.rawValue),
-            "isDismissable": .bool(isDismissable),
+            "isDismissible": .bool(isDismissible),
           ]
         )
       )
@@ -213,7 +232,27 @@ public struct AuthView: View {
 extension AuthView {
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
-    isDismissable && !navigation.hasSessionTaskStartInPath
+    isDismissible && !navigation.hasSessionTaskStartInPath
+  }
+
+  @ToolbarContentBuilder
+  private var dismissToolbarItem: some ToolbarContent {
+    if showDismissButton {
+      DismissToolbarItem {
+        dismiss()
+      }
+    }
+  }
+
+  private func resumeAuth(_ result: TransferFlowResult) {
+    switch result {
+    case .signIn(let signIn):
+      navigation.setToStepForStatus(signIn: signIn)
+      clerk.setCallbackContinuation(nil)
+    case .signUp(let signUp):
+      navigation.setToStepForStatus(signUp: signUp)
+      clerk.setCallbackContinuation(nil)
+    }
   }
 }
 
@@ -230,7 +269,7 @@ extension AuthView {
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
     config.initialIdentifier = identifier
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
   }
 
   /// Controls whether auth identifier values are persisted between sessions.
@@ -243,7 +282,20 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
-    return AuthView(mode: authState.mode, isDismissable: isDismissable, config: config)
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Sets unsafe metadata to attach when this auth flow creates a sign-up.
+  ///
+  /// This value is scoped to this `AuthView` instance and is only sent with sign-up creation
+  /// requests, including sign-in flows that transfer to sign-up.
+  ///
+  /// - Parameter metadata: The unsafe metadata to attach to created users.
+  /// - Returns: A view with the unsafe metadata configured.
+  public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
+    var config = config
+    config.unsafeMetadata = metadata
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
   }
 }
 
@@ -265,6 +317,7 @@ extension AuthView {
     // Sign up
     case signUpCollectField(SignUpCollectFieldView.Field)
     case signUpCode(SignUpCodeView.Field)
+    case signUpEmailLink
     case signUpCompleteProfile
 
     // Session tasks
@@ -308,6 +361,8 @@ extension AuthView {
         SignUpCollectFieldView(field: field)
       case let .signUpCode(field):
         SignUpCodeView(field: field)
+      case .signUpEmailLink:
+        EmailLinkVerificationView(mode: .signUp)
       case .signUpCompleteProfile:
         SignUpCompleteProfileView()
       case .sessionTaskStart(let task):
@@ -341,7 +396,7 @@ extension AuthView {
 }
 
 #Preview("Not in sheet") {
-  AuthView(isDismissable: false)
+  AuthView(isDismissible: false)
     .clerkPreview()
 }
 

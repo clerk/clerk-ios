@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import NukeUI
@@ -147,6 +147,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           .transition(.opacity.animation(.easeInOut(duration: 0.2)))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserButton.profileButton)
+        .accessibilityLabel(Text("Open account", bundle: .module))
       } else {
         signedOutContent()
       }
@@ -155,16 +157,20 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       switch sheet {
       case .userProfile:
         UserProfileView(
-          isDismissable: true,
+          isDismissible: true,
           navigationPath: nil,
           customRows: customRows,
           customDestination: customDestination,
           oauthConfig: userProfileOAuthConfig
         )
+        #if os(iOS)
         .presentationDragIndicator(.visible)
+        #endif
       case .sessionTaskAuth:
         AuthView()
+          #if os(iOS)
           .presentationDragIndicator(.visible)
+          #endif
       case .signOut:
         UserButtonSignOutView()
           .contentSizingDetent()
@@ -184,6 +190,26 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
 enum UserButtonPresentationContext {
   case standard
   case sessionTaskToolbar
+}
+
+struct UserButtonToolbarItem: ToolbarContent {
+  private let presentationContext: UserButtonPresentationContext
+
+  init(presentationContext: UserButtonPresentationContext = .standard) {
+    self.presentationContext = presentationContext
+  }
+
+  var body: some ToolbarContent {
+    #if os(iOS)
+    ToolbarItem(placement: .topBarTrailing) {
+      UserButton(presentationContext: presentationContext)
+    }
+    #elseif os(macOS)
+    ToolbarItem {
+      UserButton(presentationContext: presentationContext)
+    }
+    #endif
+  }
 }
 
 extension UserButton {

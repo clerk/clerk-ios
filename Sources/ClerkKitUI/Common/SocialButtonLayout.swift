@@ -3,8 +3,9 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
+import ClerkKit
 import SwiftUI
 
 struct SocialButtonLayout: Layout {
@@ -76,34 +77,35 @@ struct SocialButtonLayout: Layout {
       }
 
       SocialButtonLayout {
-        SocialButton(provider: .google)
-        SocialButton(provider: .apple)
+        SocialButton(provider: .google, showsTitle: false)
+        SocialButton(provider: .apple, showsTitle: false)
       }
 
       SocialButtonLayout {
-        SocialButton(provider: .google)
-        SocialButton(provider: .apple)
-        SocialButton(provider: .github)
+        SocialButton(provider: .google, showsTitle: false)
+        SocialButton(provider: .apple, showsTitle: false)
+        SocialButton(provider: .github, showsTitle: false)
       }
 
       SocialButtonLayout {
-        SocialButton(provider: .google)
-        SocialButton(provider: .apple)
-        SocialButton(provider: .github)
-        SocialButton(provider: .slack)
+        SocialButton(provider: .google, showsTitle: false)
+        SocialButton(provider: .apple, showsTitle: false)
+        SocialButton(provider: .github, showsTitle: false)
+        SocialButton(provider: .slack, showsTitle: false)
       }
 
       SocialButtonLayout {
-        SocialButton(provider: .google)
-        SocialButton(provider: .apple)
-        SocialButton(provider: .github)
-        SocialButton(provider: .slack)
-        SocialButton(provider: .facebook)
+        SocialButton(provider: .google, showsTitle: false)
+        SocialButton(provider: .apple, showsTitle: false)
+        SocialButton(provider: .github, showsTitle: false)
+        SocialButton(provider: .slack, showsTitle: false)
+        SocialButton(provider: .facebook, showsTitle: false)
       }
     }
     .frame(maxWidth: .infinity)
     .padding()
   }
+  .environment(Clerk.preview())
 }
 
 #endif

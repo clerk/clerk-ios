@@ -6,7 +6,55 @@
 import Foundation
 
 /// The model representing an organization domain.
-public struct OrganizationDomain: Codable, Identifiable, Sendable {
+public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Sendable {
+  /// The enrollment mode for new users joining an organization.
+  public enum EnrollmentMode: Codable, Sendable, Equatable, Hashable, CaseIterable {
+    case manualInvitation
+    case automaticInvitation
+    case automaticSuggestion
+    case unknown(String)
+
+    public static var allCases: [EnrollmentMode] {
+      [.manualInvitation, .automaticInvitation, .automaticSuggestion]
+    }
+
+    public var rawValue: String {
+      switch self {
+      case .manualInvitation:
+        "manual_invitation"
+      case .automaticInvitation:
+        "automatic_invitation"
+      case .automaticSuggestion:
+        "automatic_suggestion"
+      case .unknown(let value):
+        value
+      }
+    }
+
+    public init(rawValue: String) {
+      switch rawValue {
+      case "manual_invitation":
+        self = .manualInvitation
+      case "automatic_invitation":
+        self = .automaticInvitation
+      case "automatic_suggestion":
+        self = .automaticSuggestion
+      default:
+        self = .unknown(rawValue)
+      }
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.singleValueContainer()
+      try self.init(rawValue: container.decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.singleValueContainer()
+      try container.encode(rawValue)
+    }
+  }
+
   /// The unique identifier for this organization domain.
   public var id: String
 
@@ -19,8 +67,18 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
   /// The enrollment mode for new users joining the organization.
   public var enrollmentMode: String
 
-  /// The object that describes the status of the verification process of the domain.
-  public var verification: Verification
+  /// The typed enrollment mode value.
+  public var enrollmentModeType: EnrollmentMode {
+    EnrollmentMode(rawValue: enrollmentMode)
+  }
+
+  /// Whether this organization domain has completed verification.
+  public var isVerified: Bool {
+    verification?.status == "verified"
+  }
+
+  /// The object that describes the status of the verification process of the domain, or `nil` if verification has not been prepared.
+  public var verification: Verification?
 
   /// The email address that was used to verify this organization domain, or `nil` if not available.
   public var affiliationEmailAddress: String?
@@ -42,7 +100,7 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
     name: String,
     organizationId: String,
     enrollmentMode: String,
-    verification: OrganizationDomain.Verification,
+    verification: OrganizationDomain.Verification? = nil,
     affiliationEmailAddress: String? = nil,
     totalPendingInvitations: Int,
     totalPendingSuggestions: Int,
@@ -62,7 +120,7 @@ public struct OrganizationDomain: Codable, Identifiable, Sendable {
   }
 
   /// The model representing the verification details of an organization domain.
-  public struct Verification: Codable, Sendable {
+  public struct Verification: Codable, Equatable, Hashable, Sendable {
     /// The status of the verification process.
     public var status: String
 
@@ -105,7 +163,7 @@ extension OrganizationDomain {
     try await organizationService.deleteOrganizationDomain(organizationId: organizationId, domainId: id)
   }
 
-  /// Begins the verification process of a created organization domain.
+  /// Prepares affiliation verification for this organization domain by sending a verification email.
   ///
   /// This is a required step to complete the registration of the domain under the organization.
   ///
@@ -113,21 +171,64 @@ extension OrganizationDomain {
   /// - Returns: The unverified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
-  public func sendEmailCode(affiliationEmailAddress: String) async throws -> OrganizationDomain {
+  public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
     try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
   }
 
-  /// Attempts to complete the domain verification process.
+  /// Attempts to verify the affiliation of this organization domain using a verification code.
   ///
   /// This is a required step to complete the registration of a domain under an organization, as the administrator should be verified as a person affiliated with that domain.
   ///
-  /// Make sure that an ``OrganizationDomain`` object already exists before calling this method by first calling ``sendEmailCode(affiliationEmailAddress:)``.
+  /// Affiliation verification must be prepared for this domain before calling this method. Call ``prepareAffiliationVerification(affiliationEmailAddress:)`` first to issue a verification code.
+  ///
+  /// - Parameter code: The one-time code sent to the user as part of this verification step.
+  /// - Returns: The verified ``OrganizationDomain`` object.
+  /// - Throws: An error if the verification process cannot be completed.
+  @discardableResult @MainActor
+  public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
+    try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
+  }
+
+  /// Sends a verification code to the specified email address for domain affiliation verification.
+  ///
+  /// This is a convenience method that calls ``prepareAffiliationVerification(affiliationEmailAddress:)``.
+  ///
+  /// - Parameter affiliationEmailAddress: An email address affiliated with the domain name (e.g., `user@example.com`).
+  /// - Returns: The unverified ``OrganizationDomain`` object.
+  /// - Throws: An error if the verification process cannot be initiated.
+  @discardableResult @MainActor
+  public func sendEmailCode(affiliationEmailAddress: String) async throws -> OrganizationDomain {
+    try await prepareAffiliationVerification(affiliationEmailAddress: affiliationEmailAddress)
+  }
+
+  /// Verifies the domain affiliation using the provided verification code.
+  ///
+  /// This is a convenience method that calls ``attemptAffiliationVerification(code:)``.
   ///
   /// - Parameter code: The one-time code sent to the user as part of this verification step.
   /// - Returns: The verified ``OrganizationDomain`` object.
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> OrganizationDomain {
-    try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
+    try await attemptAffiliationVerification(code: code)
+  }
+
+  /// Updates the enrollment mode for this organization domain.
+  ///
+  /// - Parameters:
+  ///   - enrollmentMode: The enrollment mode to apply.
+  ///   - deletePending: Whether pending invitations or suggestions for the previous mode should be deleted.
+  /// - Returns: The updated ``OrganizationDomain`` object.
+  @discardableResult @MainActor
+  public func updateEnrollmentMode(
+    _ enrollmentMode: EnrollmentMode,
+    deletePending: Bool? = nil
+  ) async throws -> OrganizationDomain {
+    try await organizationService.updateOrganizationDomainEnrollmentMode(
+      organizationId: organizationId,
+      domainId: id,
+      enrollmentMode: enrollmentMode.rawValue,
+      deletePending: deletePending
+    )
   }
 }

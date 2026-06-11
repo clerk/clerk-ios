@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import SwiftUI
 
@@ -26,6 +26,7 @@ struct UserProfileButtonRow: View {
 
   let text: LocalizedStringKey
   var style = Style.default
+  var accessibilityIdentifier = ""
   let action: () async -> Void
 
   var body: some View {
@@ -50,6 +51,7 @@ struct UserProfileButtonRow: View {
     }
     .buttonStyle(.pressedBackground)
     .simultaneousGesture(TapGesture())
+    .accessibilityIdentifier(accessibilityIdentifier)
   }
 }
 

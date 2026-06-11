@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -21,6 +21,7 @@ struct UserProfileAddMfaView: View {
   enum PresentedView: Identifiable, Hashable {
     case sms
     case authApp(TOTPResource)
+
     var id: Self {
       self
     }
@@ -37,19 +38,23 @@ struct UserProfileAddMfaView: View {
     }
   }
 
-  var extraContentHeight: CGFloat {
+  private var extraContentHeight: CGFloat {
+    #if os(iOS)
     if #available(iOS 26.0, *) {
       0
     } else {
       7
     }
+    #else
+    0
+    #endif
   }
 
-  var environment: Clerk.Environment? {
+  private var environment: Clerk.Environment? {
     clerk.environment
   }
 
-  var user: User? {
+  private var user: User? {
     clerk.user
   }
 
@@ -79,6 +84,7 @@ struct UserProfileAddMfaView: View {
                 } label: {
                   UserProfileRowView(icon: "icon-phone", text: "SMS code")
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsCode)
               }
 
               if environment?.mfaAuthenticatorAppIsEnabled == true, user?.totpEnabled != true {
@@ -88,6 +94,7 @@ struct UserProfileAddMfaView: View {
                   UserProfileRowView(icon: "icon-key", text: "Authenticator application")
                     .overlayProgressView(isActive: isRunning)
                 }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.authenticatorApp)
               }
             }
             .overlay(alignment: .bottom) {
@@ -106,7 +113,9 @@ struct UserProfileAddMfaView: View {
         }
         .padding(.top, 24)
         .clerkErrorPresenting($error)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
@@ -123,12 +132,17 @@ struct UserProfileAddMfaView: View {
               .foregroundStyle(theme.colors.foreground)
           }
         }
+        #if os(iOS)
         .onGeometryChange(for: CGFloat.self) { proxy in
           proxy.size.height
         } action: { newValue in
           contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
         }
+        #endif
       }
+      #if os(macOS)
+      .frame(minWidth: 460, maxWidth: 620)
+      #endif
       .scrollBounceBehavior(.basedOnSize)
     }
   }

@@ -39,6 +39,7 @@ func setupMockAPIClient() {
     signInService: SignInService(apiClient: mockAPIClient),
     signUpService: SignUpService(apiClient: mockAPIClient),
     sessionService: SessionService(apiClient: mockAPIClient),
+    magicLinkService: MagicLinkService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     environmentService: EnvironmentService(apiClient: mockAPIClient),
@@ -50,9 +51,12 @@ func setupMockAPIClient() {
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
 @MainActor
-func createMockAPIClient(runtimeScope: ClerkRuntimeScope? = nil) -> APIClient {
+func createMockAPIClient(
+  baseURL: URL = mockBaseUrl,
+  runtimeScope: ClerkRuntimeScope? = nil
+) -> APIClient {
   let runtimeScope = runtimeScope ?? Clerk.shared.runtimeScope
-  return APIClient(baseURL: mockBaseUrl, runtimeScope: runtimeScope) { @Sendable configuration in
+  return APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
     configuration.pipeline = .clerkDefault(runtimeScope: runtimeScope)
     configuration.decoder = .clerkDecoder
     configuration.encoder = .clerkEncoder
@@ -110,7 +114,7 @@ extension URLRequest {
     var bodyDict: [String: String] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
-      let parts = pair.split(separator: "=", maxSplits: 1)
+      let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1])
@@ -136,7 +140,7 @@ extension URLRequest {
     var bodyDict: [String: [String]] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
-      let parts = pair.split(separator: "=", maxSplits: 1)
+      let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1]).removingPercentEncoding ?? String(parts[1])
