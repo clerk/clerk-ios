@@ -453,8 +453,19 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
+    try await refreshClient(skipClientId: false)
+  }
+
+  /// Refreshes the current client from the API.
+  ///
+  /// - Parameter skipClientId: When `true`, omits the currently cached client id
+  ///   from the request while still sending the stored device token. This is used
+  ///   after replacing the device token so a stale client id from the previous
+  ///   native client cannot conflict with the newly stored token.
+  @discardableResult
+  func refreshClient(skipClientId: Bool) async throws -> Client? {
     let runtime = runtimeScope
-    let response = try await dependencies.clientService.getResponse()
+    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
@@ -696,6 +707,24 @@ extension Clerk {
     client = incoming
   }
 
+  func clearCachedClientStateAfterDeviceTokenChange() {
+    lastAppliedClientResponseSequence = nil
+    lastClientServerFetchDate = nil
+    client = nil
+
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+    ] {
+      do {
+        try dependencies.keychain.deleteItem(forKey: key.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
+      }
+    }
+  }
+
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
     guard let serverDate, let lastClientServerFetchDate else {
       return false
@@ -772,13 +801,9 @@ extension Clerk {
     }
   }
 
-  func storeReceivedDeviceToken(_ token: String) {
-    do {
-      try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      watchConnectivityCoordinator?.sync()
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to save device token to keychain")
-    }
+  func storeDeviceToken(_ token: String) throws {
+    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    watchConnectivityCoordinator?.sync()
   }
 
   /// Cleans up managers that were started during configuration.

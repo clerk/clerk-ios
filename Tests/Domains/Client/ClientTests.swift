@@ -1,4 +1,4 @@
-@testable import ClerkKit
+@_spi(FrameworkIntegration) @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
@@ -109,6 +109,54 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == current.id)
     #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
   }
+
+  @Test
+  func updateDeviceTokenStoresTokenAndRefreshesWithoutClientId() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+
+    let expectedClient = Client(
+      id: "updated-token-client",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let service = DeviceTokenUpdateClientService(
+      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      clientService: service
+    )
+    Clerk.shared.client = Client.mock
+
+    let client = try await Clerk.shared.updateDeviceToken("new-token")
+
+    #expect(client?.id == expectedClient.id)
+    #expect(Clerk.shared.client?.id == expectedClient.id)
+    #expect(Clerk.shared.deviceToken == "new-token")
+    #expect(service.skipClientIdValues == [true])
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+  }
+
+  @Test
+  func updateDeviceTokenRejectsBlankToken() async throws {
+    configureClerkForTesting()
+
+    await #expect(throws: Clerk.DeviceTokenError.emptyToken) {
+      try await Clerk.shared.updateDeviceToken("   ")
+    }
+  }
 }
 
 private final class SequencedClientService: ClientServiceProtocol {
@@ -119,7 +167,26 @@ private final class SequencedClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse() async throws -> ClientServiceResponse {
+  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
     response
+  }
+}
+
+private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
+  private let response: ClientServiceResponse
+  private let skipClientIdValuesStore = LockIsolated([Bool]())
+
+  var skipClientIdValues: [Bool] {
+    skipClientIdValuesStore.value
+  }
+
+  init(response: ClientServiceResponse) {
+    self.response = response
+  }
+
+  @MainActor
+  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
+    skipClientIdValuesStore.withValue { $0.append(skipClientId) }
+    return response
   }
 }
