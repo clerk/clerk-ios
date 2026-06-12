@@ -127,9 +127,14 @@ extension HTTPURLResponse {
 
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
+  private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
+  }
+
+  var clerkClientResponseGeneration: ClientResponseGeneration? {
+    URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self) as? ClientResponseGeneration
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -138,6 +143,16 @@ extension URLRequest {
       return
     }
     URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
+    self = mutableRequest as URLRequest
+  }
+
+  mutating func setClerkClientResponseGeneration(_ generation: ClientResponseGeneration) {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+
+    URLProtocol.setProperty(generation, forKey: Self.clerkClientResponseGenerationKey, in: mutableRequest)
     self = mutableRequest as URLRequest
   }
 }

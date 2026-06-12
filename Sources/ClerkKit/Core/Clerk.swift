@@ -127,6 +127,10 @@ public final class Clerk {
   /// single clock (the server) and advances on every API response.
   private(set) var lastClientServerFetchDate: Date?
 
+  /// Changes when local device-token ownership changes.
+  /// Client responses prepared before this value changes must not update state.
+  private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
+
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
@@ -465,12 +469,14 @@ extension Clerk {
   @discardableResult
   func refreshClient(skipClientId: Bool) async throws -> Client? {
     let runtime = runtimeScope
+    let clientResponseGeneration = clientResponseGeneration
     let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
       responseSequence: response.requestSequence,
-      serverDate: response.serverDate
+      serverDate: response.serverDate,
+      clientResponseGeneration: clientResponseGeneration
     )
     return client
   }
@@ -686,7 +692,19 @@ extension Clerk {
     return task
   }
 
-  func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil, serverDate: Date? = nil) {
+  func applyResponseClient(
+    _ incoming: Client?,
+    responseSequence: Int? = nil,
+    serverDate: Date? = nil,
+    clientResponseGeneration: ClientResponseGeneration? = nil
+  ) {
+    if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
+      ClerkLogger.debug(
+        "Ignoring client response from stale device token generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(clientResponseGeneration)"
+      )
+      return
+    }
+
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
          responseSequence <= lastAppliedClientResponseSequence,
@@ -708,6 +726,7 @@ extension Clerk {
   }
 
   func clearCachedClientStateAfterDeviceTokenChange() {
+    clientResponseGeneration = clientResponseGeneration.next()
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
     client = nil

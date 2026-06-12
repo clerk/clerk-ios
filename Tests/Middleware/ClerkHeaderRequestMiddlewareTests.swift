@@ -71,6 +71,16 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
+  func tagsRequestWithCurrentClientResponseGeneration() async throws {
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+
+    try await middleware.prepare(&request)
+
+    #expect(request.clerkClientResponseGeneration == Clerk.shared.clientResponseGeneration)
+  }
+
+  @Test
   func omitsClientIdHeaderWhenSkipClientIdHeaderIsPresent() async throws {
     Clerk.shared.client = .mock
 

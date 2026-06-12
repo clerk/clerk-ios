@@ -150,6 +150,32 @@ struct ClientTests {
   }
 
   @Test
+  func refreshClientIgnoresResponseWhenDeviceTokenGenerationChangesDuringRequest() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let staleClient = Client(
+      id: "stale-client",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let service = DeviceTokenChangingClientService(
+      response: ClientServiceResponse(client: staleClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: service
+    )
+
+    let client = try await Clerk.shared.refreshClient()
+
+    #expect(client == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
   func updateDeviceTokenRejectsBlankToken() async throws {
     configureClerkForTesting()
 
@@ -187,6 +213,20 @@ private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
   @MainActor
   func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
     skipClientIdValuesStore.withValue { $0.append(skipClientId) }
+    return response
+  }
+}
+
+private final class DeviceTokenChangingClientService: ClientServiceProtocol {
+  private let response: ClientServiceResponse
+
+  init(response: ClientServiceResponse) {
+    self.response = response
+  }
+
+  @MainActor
+  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
+    Clerk.shared.clearCachedClientStateAfterDeviceTokenChange()
     return response
   }
 }
