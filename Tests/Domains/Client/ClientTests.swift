@@ -138,7 +138,7 @@ struct ClientTests {
     )
     Clerk.shared.client = Client.mock
 
-    let client = try await Clerk.shared.updateDeviceToken("new-token")
+    let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
 
     #expect(client?.id == expectedClient.id)
     #expect(Clerk.shared.client?.id == expectedClient.id)

@@ -42,14 +42,15 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   @discardableResult
   public func updateDeviceToken(_ token: String) async throws -> Client? {
-    guard !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !normalizedToken.isEmpty else {
       throw DeviceTokenError.emptyToken
     }
 
     let previousToken = deviceToken
-    try storeDeviceToken(token)
+    try storeDeviceToken(normalizedToken)
 
-    if previousToken != token {
+    if previousToken != normalizedToken {
       clearCachedClientStateAfterDeviceTokenChange()
     }
 
