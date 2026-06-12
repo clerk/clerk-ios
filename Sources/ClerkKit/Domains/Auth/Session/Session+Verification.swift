@@ -99,10 +99,12 @@ extension Session {
     }
 
     let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
+    let allowedCredentialIDs = nonceJSON.webAuthnAssertionAllowedCredentialIDs
     let manager = PasskeyHelper()
     let authorization = try await manager.signIn(
       challenge: challenge,
       relyingPartyIdentifier: relyingPartyIdentifier,
+      allowedCredentialIDs: allowedCredentialIDs,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
     )
 
