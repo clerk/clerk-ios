@@ -37,7 +37,10 @@ final class PasskeyHelper: NSObject {
     }
 
     let host = urlComponents.host ?? ""
-    return host.replacingOccurrences(of: "www.", with: "")
+    if host.hasPrefix("www.") {
+      return String(host.dropFirst("www.".count))
+    }
+    return host
   }
 
   @MainActor
