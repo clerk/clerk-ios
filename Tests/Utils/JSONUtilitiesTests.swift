@@ -203,6 +203,110 @@ struct JSONUtilitiesTests {
     #expect(merged.stringValue == "new") // Returns new when not objects
   }
 
+  @Test
+  func mergePatchRemovesMissingKeys() {
+    let current: JSON = [
+      "token": "old-value",
+      "stale": true,
+      "nested": [
+        "keep": "same",
+        "remove": "old",
+      ],
+    ]
+    let replacement: JSON = [
+      "token": "new-value",
+      "nested": [
+        "keep": "same",
+        "added": "new",
+      ],
+    ]
+
+    let patch = current.mergePatch(against: replacement)
+
+    #expect(patch == [
+      "token": "new-value",
+      "stale": .null,
+      "nested": [
+        "added": "new",
+        "remove": .null,
+      ],
+    ])
+  }
+
+  @Test
+  func mergePatchReturnsEmptyObjectForIdenticalObjects() {
+    let current: JSON = [
+      "token": "some-value",
+      "nested": ["keep": true],
+    ]
+
+    #expect(current.mergePatch(against: current) == .object([:]))
+  }
+
+  @Test
+  func mergePatchReturnsDesiredForTopLevelReplacement() {
+    let current: JSON = ["token": "some-value"]
+
+    #expect(current.mergePatch(against: "replacement") == "replacement")
+    #expect(current.mergePatch(against: .null) == .null)
+  }
+
+  @Test
+  func mergePatchTreatsArraysAsAtomicValues() {
+    let current: JSON = [
+      "tags": ["one", "two"],
+      "nested": [
+        "items": [1, 2],
+      ],
+    ]
+    let desired: JSON = [
+      "tags": ["one"],
+      "nested": [
+        "items": [2, 3],
+      ],
+    ]
+
+    #expect(current.mergePatch(against: desired) == [
+      "tags": ["one"],
+      "nested": [
+        "items": [2, 3],
+      ],
+    ])
+  }
+
+  @Test
+  func mergePatchRemovesNestedKeysWhenDesiredNestedObjectIsEmpty() {
+    let current: JSON = [
+      "prefs": [
+        "theme": "dark",
+        "font": "sans",
+      ],
+    ]
+    let desired: JSON = [
+      "prefs": .object([:]),
+    ]
+
+    #expect(current.mergePatch(against: desired) == [
+      "prefs": [
+        "theme": .null,
+        "font": .null,
+      ],
+    ])
+  }
+
+  @Test
+  func mergePatchRemovesAllKeysWhenDesiredObjectIsEmpty() {
+    let current: JSON = [
+      "token": "some-value",
+      "nested": ["keep": true],
+    ]
+
+    #expect(current.mergePatch(against: .object([:])) == [
+      "token": .null,
+      "nested": .null,
+    ])
+  }
+
   // MARK: - Codable
 
   @Test

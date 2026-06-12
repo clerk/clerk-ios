@@ -9,6 +9,7 @@ import Foundation
 protocol UserServiceProtocol: Sendable {
   @MainActor func reload() async throws -> User
   @MainActor func update(params: User.UpdateParams) async throws -> User
+  @MainActor func updateMetadata(params: User.UpdateMetadataParams) async throws -> User
   @MainActor func createBackupCodes() async throws -> BackupCodeResource
   @MainActor func createEmailAddress(emailAddress: String) async throws -> EmailAddress
   @MainActor func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber
@@ -71,6 +72,18 @@ final class UserService: UserServiceProtocol {
   func update(params: User.UpdateParams) async throws -> User {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me",
+      method: .patch,
+      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func updateMetadata(params: User.UpdateMetadataParams) async throws -> User {
+    let request = Request<ClientResponse<User>>(
+      path: "/v1/me/metadata",
       method: .patch,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: params
