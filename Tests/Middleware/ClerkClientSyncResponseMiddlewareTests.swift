@@ -92,6 +92,30 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateIgnoresClientResponseFromStaleDeviceTokenGeneration() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let staleClient = client(id: "stale-client", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(ClientOnlyEnvelope(response: staleClient, client: nil))
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+
+    clerk.clearCachedClientStateAfterDeviceTokenChange()
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.client == nil)
+  }
+
+  @Test
   func validateAppliesClientFromErrorMetaClientEnvelope() async throws {
     configureClerkForTesting()
     let clerk = Clerk()

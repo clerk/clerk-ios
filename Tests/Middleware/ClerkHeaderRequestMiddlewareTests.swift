@@ -71,6 +71,30 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
+  func tagsRequestWithCurrentClientResponseGeneration() async throws {
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+
+    try await middleware.prepare(&request)
+
+    #expect(request.clerkClientResponseGeneration == Clerk.shared.clientResponseGeneration)
+  }
+
+  @Test
+  func omitsClientIdHeaderWhenSkipClientIdHeaderIsPresent() async throws {
+    Clerk.shared.client = .mock
+
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    request.setValue("1", forHTTPHeaderField: ClerkHeaderRequestMiddleware.skipClientIdHeader)
+
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == nil)
+    #expect(request.value(forHTTPHeaderField: ClerkHeaderRequestMiddleware.skipClientIdHeader) == nil)
+  }
+
+  @Test
   func doesNotAddClientIdHeaderWhenClientMissing() async throws {
     // Ensure no client is set
     Clerk.shared.client = nil

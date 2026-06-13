@@ -127,6 +127,10 @@ public final class Clerk {
   /// single clock (the server) and advances on every API response.
   private(set) var lastClientServerFetchDate: Date?
 
+  /// Changes when local device-token ownership changes.
+  /// Client responses prepared before this value changes must not update state.
+  private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
+
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
@@ -453,13 +457,26 @@ extension Clerk {
   /// Refreshes the current client from the API.
   @discardableResult
   public func refreshClient() async throws -> Client? {
+    try await refreshClient(skipClientId: false)
+  }
+
+  /// Refreshes the current client from the API.
+  ///
+  /// - Parameter skipClientId: When `true`, omits the currently cached client id
+  ///   from the request while still sending the stored device token. This is used
+  ///   after replacing the device token so a stale client id from the previous
+  ///   native client cannot conflict with the newly stored token.
+  @discardableResult
+  func refreshClient(skipClientId: Bool) async throws -> Client? {
     let runtime = runtimeScope
-    let response = try await dependencies.clientService.getResponse()
+    let clientResponseGeneration = clientResponseGeneration
+    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
       responseSequence: response.requestSequence,
-      serverDate: response.serverDate
+      serverDate: response.serverDate,
+      clientResponseGeneration: clientResponseGeneration
     )
     return client
   }
@@ -675,7 +692,19 @@ extension Clerk {
     return task
   }
 
-  func applyResponseClient(_ incoming: Client?, responseSequence: Int? = nil, serverDate: Date? = nil) {
+  func applyResponseClient(
+    _ incoming: Client?,
+    responseSequence: Int? = nil,
+    serverDate: Date? = nil,
+    clientResponseGeneration: ClientResponseGeneration? = nil
+  ) {
+    if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
+      ClerkLogger.debug(
+        "Ignoring client response from stale device token generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(clientResponseGeneration)"
+      )
+      return
+    }
+
     if let responseSequence {
       if let lastAppliedClientResponseSequence,
          responseSequence <= lastAppliedClientResponseSequence,
@@ -694,6 +723,25 @@ extension Clerk {
       lastClientServerFetchDate = serverDate
     }
     client = incoming
+  }
+
+  func clearCachedClientStateAfterDeviceTokenChange() {
+    clientResponseGeneration = clientResponseGeneration.next()
+    lastAppliedClientResponseSequence = nil
+    lastClientServerFetchDate = nil
+    client = nil
+
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+    ] {
+      do {
+        try dependencies.keychain.deleteItem(forKey: key.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
+      }
+    }
   }
 
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
@@ -772,13 +820,9 @@ extension Clerk {
     }
   }
 
-  func storeReceivedDeviceToken(_ token: String) {
-    do {
-      try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      watchConnectivityCoordinator?.sync()
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to save device token to keychain")
-    }
+  func storeDeviceToken(_ token: String) throws {
+    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    watchConnectivityCoordinator?.sync()
   }
 
   /// Cleans up managers that were started during configuration.
