@@ -31,26 +31,70 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
-  var domain: String {
+  private var defaultRelyingPartyIdentifier: String {
     guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
       return ""
     }
 
     let host = urlComponents.host ?? ""
-    return host.replacingOccurrences(of: "www.", with: "")
+    if host.hasPrefix("www.") {
+      return String(host.dropFirst("www.".count))
+    }
+    return host
+  }
+
+  @MainActor
+  private func publicKeyCredentialProvider(
+    relyingPartyIdentifier: String?
+  ) -> ASAuthorizationPlatformPublicKeyCredentialProvider {
+    let identifier = relyingPartyIdentifier.map {
+      $0.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    let resolvedIdentifier = if let identifier, !identifier.isEmpty {
+      identifier
+    } else {
+      defaultRelyingPartyIdentifier
+    }
+    return ASAuthorizationPlatformPublicKeyCredentialProvider(
+      relyingPartyIdentifier: resolvedIdentifier
+    )
   }
 
   private var continuation: CheckedContinuation<ASAuthorization, Error>?
 
   @MainActor
-  func signIn(challenge: Data, preferImmediatelyAvailableCredentials: Bool) async throws -> ASAuthorization {
+  func credentialAssertionRequest(
+    challenge: Data,
+    relyingPartyIdentifier: String? = nil,
+    allowedCredentialIDs: [Data] = []
+  ) -> ASAuthorizationPlatformPublicKeyCredentialAssertionRequest {
+    let publicKeyCredentialProvider = publicKeyCredentialProvider(
+      relyingPartyIdentifier: relyingPartyIdentifier
+    )
+
+    let assertionRequest = publicKeyCredentialProvider.createCredentialAssertionRequest(challenge: challenge)
+    assertionRequest.allowedCredentials = allowedCredentialIDs.map {
+      ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0)
+    }
+    return assertionRequest
+  }
+
+  @MainActor
+  func signIn(
+    challenge: Data,
+    relyingPartyIdentifier: String? = nil,
+    allowedCredentialIDs: [Data] = [],
+    preferImmediatelyAvailableCredentials: Bool
+  ) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 
-      let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
-
-      let assertionRequest = publicKeyCredentialProvider.createCredentialAssertionRequest(challenge: challenge)
+      let assertionRequest = credentialAssertionRequest(
+        challenge: challenge,
+        relyingPartyIdentifier: relyingPartyIdentifier,
+        allowedCredentialIDs: allowedCredentialIDs
+      )
 
       // Pass in any mix of supported sign-in request types.
       let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
@@ -83,14 +127,20 @@ final class PasskeyHelper: NSObject {
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
   @MainActor
-  func beginAutoFillAssistedPasskeySignIn(challenge: Data) async throws -> ASAuthorization {
+  func beginAutoFillAssistedPasskeySignIn(
+    challenge: Data,
+    relyingPartyIdentifier: String? = nil,
+    allowedCredentialIDs: [Data] = []
+  ) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 
-      let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
-
-      let assertionRequest = publicKeyCredentialProvider.createCredentialAssertionRequest(challenge: challenge)
+      let assertionRequest = credentialAssertionRequest(
+        challenge: challenge,
+        relyingPartyIdentifier: relyingPartyIdentifier,
+        allowedCredentialIDs: allowedCredentialIDs
+      )
 
       // AutoFill-assisted requests only support ASAuthorizationPlatformPublicKeyCredentialAssertionRequest.
       let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
@@ -104,12 +154,19 @@ final class PasskeyHelper: NSObject {
   #endif
 
   @MainActor
-  func createPasskey(challenge: Data, name: String, userId: Data) async throws -> ASAuthorization {
+  func createPasskey(
+    challenge: Data,
+    name: String,
+    userId: Data,
+    relyingPartyIdentifier: String? = nil
+  ) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 
-      let publicKeyCredentialProvider = ASAuthorizationPlatformPublicKeyCredentialProvider(relyingPartyIdentifier: domain)
+      let publicKeyCredentialProvider = publicKeyCredentialProvider(
+        relyingPartyIdentifier: relyingPartyIdentifier
+      )
 
       let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
         challenge: challenge,
