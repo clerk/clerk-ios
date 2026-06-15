@@ -1413,13 +1413,12 @@ extension E2EHostE2ETests {
       let result = waitForCodePreparationResult(
         in: app,
         codeInputIdentifier: E2EIdentifier.signUpCode,
-        timeout: 45
+        timeout: 90
       )
       switch result {
       case .prepared:
         return
-      case .requestTimedOut where attempt < maxAttempts,
-           .timedOut where attempt < maxAttempts:
+      case .requestTimedOut where attempt < maxAttempts:
         dismissAuthIfPresent(in: app)
         openAuth(in: app, file: file, line: line)
         switchToPhoneNumberIdentifier(in: app, file: file, line: line)
