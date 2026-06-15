@@ -1153,7 +1153,7 @@ extension E2EHostE2ETests {
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
-    preparePhoneCodeSignUp(in: app)
+    preparePhoneCodeSignUp(phoneNumber: phoneNumber, in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completeMissingEmailAddressIfNeeded(email: email, in: app)
     completePasswordCollectionIfNeeded(in: app)
@@ -1398,6 +1398,7 @@ extension E2EHostE2ETests {
   }
 
   private func preparePhoneCodeSignUp(
+    phoneNumber: String,
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
@@ -1419,6 +1420,10 @@ extension E2EHostE2ETests {
         return
       case .requestTimedOut where attempt < maxAttempts,
            .timedOut where attempt < maxAttempts:
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+        switchToPhoneNumberIdentifier(in: app, file: file, line: line)
+        enterPhoneNumber(phoneNumber, in: app, file: file, line: line)
         continue
       case .requestTimedOut, .timedOut:
         XCTFail(
