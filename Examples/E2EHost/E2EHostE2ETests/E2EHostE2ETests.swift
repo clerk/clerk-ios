@@ -1410,9 +1410,8 @@ extension E2EHostE2ETests {
       tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
       waitForAuthStartRequestTimedOutErrorToClear(in: app)
 
-      let result = waitForCodePreparationResult(
+      let result = waitForCodeSentResult(
         in: app,
-        codeInputIdentifier: E2EIdentifier.signUpCode,
         timeout: 90
       )
       switch result {
@@ -1466,6 +1465,39 @@ extension E2EHostE2ETests {
     if codeInput.exists {
       return .prepared
     }
+
+    if resendCooldown.exists {
+      return .prepared
+    }
+
+    if timeoutError.exists {
+      return .requestTimedOut
+    }
+
+    return .timedOut
+  }
+
+  private func waitForCodeSentResult(
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> CodePreparationResult {
+    let resendCooldown = app.buttons.matching(
+      NSPredicate(format: "label CONTAINS %@", "Resend (")
+    ).firstMatch
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if resendCooldown.exists {
+        return .prepared
+      }
+
+      if timeoutError.exists {
+        return .requestTimedOut
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
 
     if resendCooldown.exists {
       return .prepared
