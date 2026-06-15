@@ -127,6 +127,7 @@ jobs:
           echo "should_open=true" >> "$GITHUB_OUTPUT"
 
       - name: Open pull request
+        id: pull_request
         if: steps.update.outputs.should_open == 'true'
         working-directory: javascript
         env:
@@ -182,11 +183,68 @@ jobs:
           if [ -n "$existing_pr" ]; then
             gh pr edit "$existing_pr" --title "$pr_title" --body-file "$pr_body"
             echo "Updated existing PR: $existing_pr"
+            pr_url="$existing_pr"
           else
-            gh pr create \
+            pr_url="$(gh pr create \
               --repo "$JAVASCRIPT_REPO" \
               --base main \
               --head "$BRANCH_NAME" \
               --title "$pr_title" \
-              --body-file "$pr_body"
+              --body-file "$pr_body")"
           fi
+
+          gh pr edit "$pr_url" --add-reviewer clerk/team-sdk
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack
+        if: steps.update.outputs.should_open == 'true' && steps.pull_request.outputs.pr_url != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          IOS_VERSION: ${{ steps.version.outputs.ios_version }}
+          RELEASE_URL: ${{ steps.version.outputs.release_url }}
+          PR_URL: ${{ steps.pull_request.outputs.pr_url }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
+            exit 0
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg version "$IOS_VERSION" \
+            --arg release_url "$RELEASE_URL" \
+            --arg pr_url "$PR_URL" \
+            '{
+              text: "Clerk iOS SDK \($version) Expo bump PR is ready",
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: "*Clerk iOS SDK \($version) Expo bump PR is ready*"
+                  }
+                },
+                {
+                  type: "context",
+                  elements: [
+                    {
+                      type: "mrkdwn",
+                      text: "<\($pr_url)|View the JavaScript PR> · <\($release_url)|View the iOS release>"
+                    }
+                  ]
+                }
+              ]
+            }')
+
+          curl --fail-with-body \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-max-time 60 \
+            --retry-all-errors \
+            --request POST \
+            --header "Content-type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
