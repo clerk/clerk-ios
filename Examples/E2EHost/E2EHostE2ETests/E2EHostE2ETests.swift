@@ -1542,11 +1542,29 @@ extension E2EHostE2ETests {
     let timeoutError = authStartRequestTimedOutError(in: app)
     guard timeoutError.exists else { return }
 
-    let closeButton = app.buttons["Close"].firstMatch
-    if closeButton.waitForExistence(timeout: 5), closeButton.isHittable {
+    let deadline = Date().addingTimeInterval(5)
+    repeat {
+      if let closeButton = hittableButton(labeled: "Close", in: app) {
+        closeButton.tap()
+        _ = timeoutError.waitForNonExistence(timeout: 5)
+        return
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if let closeButton = hittableButton(labeled: "Close", in: app) {
       closeButton.tap()
       _ = timeoutError.waitForNonExistence(timeout: 5)
     }
+  }
+
+  private func hittableButton(labeled label: String, in app: XCUIApplication) -> XCUIElement? {
+    app.buttons.matching(
+      NSPredicate(format: "label == %@", label)
+    )
+    .allElementsBoundByIndex
+    .first { $0.exists && $0.isEnabled && $0.isHittable }
   }
 
   private func enterText(
