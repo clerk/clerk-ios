@@ -1418,6 +1418,7 @@ extension E2EHostE2ETests {
       case .prepared:
         return
       case .requestTimedOut where attempt < maxAttempts:
+        dismissRequestTimedOutErrorIfPresent(in: app)
         dismissAuthIfPresent(in: app)
         openAuth(in: app, file: file, line: line)
         switchToPhoneNumberIdentifier(in: app, file: file, line: line)
@@ -1535,6 +1536,17 @@ extension E2EHostE2ETests {
     guard timeoutError.exists else { return }
 
     _ = timeoutError.waitForNonExistence(timeout: 5)
+  }
+
+  private func dismissRequestTimedOutErrorIfPresent(in app: XCUIApplication) {
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    guard timeoutError.exists else { return }
+
+    let closeButton = app.buttons["Close"].firstMatch
+    if closeButton.waitForExistence(timeout: 5), closeButton.isHittable {
+      closeButton.tap()
+      _ = timeoutError.waitForNonExistence(timeout: 5)
+    }
   }
 
   private func enterText(
