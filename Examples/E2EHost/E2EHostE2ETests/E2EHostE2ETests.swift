@@ -1153,8 +1153,7 @@ extension E2EHostE2ETests {
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    waitForSignUpCodePrepared(in: app)
+    preparePhoneCodeSignUp(in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completeMissingEmailAddressIfNeeded(email: email, in: app)
     completePasswordCollectionIfNeeded(in: app)
@@ -1386,6 +1385,40 @@ extension E2EHostE2ETests {
       case .prepared:
         return
       case .requestTimedOut where attempt < maxAttempts:
+        continue
+      case .requestTimedOut, .timedOut:
+        XCTFail(
+          codePreparationFailureMessage(message, result: result),
+          file: file,
+          line: line
+        )
+        return
+      }
+    }
+  }
+
+  private func preparePhoneCodeSignUp(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+    let message = "Expected sign-up code preparation to finish before entering the verification code."
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+      waitForAuthStartRequestTimedOutErrorToClear(in: app)
+
+      let result = waitForCodePreparationResult(
+        in: app,
+        codeInputIdentifier: E2EIdentifier.signUpCode,
+        timeout: 45
+      )
+      switch result {
+      case .prepared:
+        return
+      case .requestTimedOut where attempt < maxAttempts,
+           .timedOut where attempt < maxAttempts:
         continue
       case .requestTimedOut, .timedOut:
         XCTFail(
