@@ -1153,8 +1153,7 @@ extension E2EHostE2ETests {
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    waitForSignUpCodePrepared(in: app)
+    preparePhoneCodeSignUp(phoneNumber: phoneNumber, in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completeMissingEmailAddressIfNeeded(email: email, in: app)
     completePasswordCollectionIfNeeded(in: app)
@@ -1398,6 +1397,44 @@ extension E2EHostE2ETests {
     }
   }
 
+  private func preparePhoneCodeSignUp(
+    phoneNumber: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+    let message = "Expected sign-up code preparation to finish before entering the verification code."
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+      waitForAuthStartRequestTimedOutErrorToClear(in: app)
+
+      let result = waitForCodeSentResult(
+        in: app,
+        timeout: 90
+      )
+      switch result {
+      case .prepared:
+        return
+      case .requestTimedOut where attempt < maxAttempts:
+        dismissRequestTimedOutErrorIfPresent(in: app)
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+        switchToPhoneNumberIdentifier(in: app, file: file, line: line)
+        enterPhoneNumber(phoneNumber, in: app, file: file, line: line)
+        continue
+      case .requestTimedOut, .timedOut:
+        XCTFail(
+          codePreparationFailureMessage(message, result: result),
+          file: file,
+          line: line
+        )
+        return
+      }
+    }
+  }
+
   private func waitForCodePreparationResult(
     in app: XCUIApplication,
     codeInputIdentifier: String,
@@ -1441,6 +1478,39 @@ extension E2EHostE2ETests {
     return .timedOut
   }
 
+  private func waitForCodeSentResult(
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> CodePreparationResult {
+    let resendCooldown = app.buttons.matching(
+      NSPredicate(format: "label CONTAINS %@", "Resend (")
+    ).firstMatch
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if resendCooldown.exists {
+        return .prepared
+      }
+
+      if timeoutError.exists {
+        return .requestTimedOut
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if resendCooldown.exists {
+      return .prepared
+    }
+
+    if timeoutError.exists {
+      return .requestTimedOut
+    }
+
+    return .timedOut
+  }
+
   private func codePreparationFailureMessage(
     _ message: String,
     result: CodePreparationResult
@@ -1466,6 +1536,35 @@ extension E2EHostE2ETests {
     guard timeoutError.exists else { return }
 
     _ = timeoutError.waitForNonExistence(timeout: 5)
+  }
+
+  private func dismissRequestTimedOutErrorIfPresent(in app: XCUIApplication) {
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    guard timeoutError.exists else { return }
+
+    let deadline = Date().addingTimeInterval(5)
+    repeat {
+      if let closeButton = hittableButton(labeled: "Close", in: app) {
+        closeButton.tap()
+        _ = timeoutError.waitForNonExistence(timeout: 5)
+        return
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if let closeButton = hittableButton(labeled: "Close", in: app) {
+      closeButton.tap()
+      _ = timeoutError.waitForNonExistence(timeout: 5)
+    }
+  }
+
+  private func hittableButton(labeled label: String, in app: XCUIApplication) -> XCUIElement? {
+    app.buttons.matching(
+      NSPredicate(format: "label == %@", label)
+    )
+    .allElementsBoundByIndex
+    .first { $0.exists && $0.isEnabled && $0.isHittable }
   }
 
   private func enterText(
