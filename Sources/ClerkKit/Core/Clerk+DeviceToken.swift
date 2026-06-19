@@ -37,11 +37,8 @@ extension Clerk {
   ///
   /// - Parameter token: The Clerk device token to store in ClerkKit's keychain.
   ///   Empty or whitespace-only values are rejected.
-  /// - Returns: The refreshed client resolved from the stored device token, or
-  ///   `nil` when no client is available.
   @_spi(FrameworkIntegration)
-  @discardableResult
-  public func updateDeviceToken(_ token: String) async throws -> Client? {
+  public func updateDeviceToken(_ token: String) async throws {
     let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !normalizedToken.isEmpty else {
       throw DeviceTokenError.emptyToken
@@ -54,6 +51,24 @@ extension Clerk {
       clearCachedClientStateAfterDeviceTokenChange()
     }
 
-    return try await refreshClient(skipClientId: true)
+    try await refreshClient(skipClientId: true)
+  }
+
+  /// Clears the stored Clerk device token and refreshes native auth state.
+  ///
+  /// This is intended for framework integrations that need to mirror another
+  /// Clerk SDK runtime clearing its device token. The refresh intentionally
+  /// omits the current client id so a stale anonymous client cannot conflict
+  /// with the cleared device-token state.
+  @_spi(FrameworkIntegration)
+  public func clearDeviceToken() async throws {
+    let previousToken = deviceToken
+    try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    if previousToken != nil {
+      clearCachedClientStateAfterDeviceTokenChange()
+    }
+
+    try await refreshClient(skipClientId: true)
   }
 }

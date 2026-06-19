@@ -138,9 +138,8 @@ struct ClientTests {
     )
     Clerk.shared.client = Client.mock
 
-    let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
+    try await Clerk.shared.updateDeviceToken(" new-token\n")
 
-    #expect(client?.id == expectedClient.id)
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
@@ -182,6 +181,45 @@ struct ClientTests {
     await #expect(throws: Clerk.DeviceTokenError.emptyToken) {
       try await Clerk.shared.updateDeviceToken("   ")
     }
+  }
+
+  @Test
+  func clearDeviceTokenRemovesTokenAndRefreshesWithoutClientId() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+
+    let expectedClient = Client(
+      id: "cleared-token-client",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let service = DeviceTokenUpdateClientService(
+      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      clientService: service
+    )
+    Clerk.shared.client = Client.mock
+
+    try await Clerk.shared.clearDeviceToken()
+
+    #expect(Clerk.shared.client?.id == expectedClient.id)
+    #expect(Clerk.shared.deviceToken == nil)
+    #expect(service.skipClientIdValues == [true])
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
   }
 }
 
