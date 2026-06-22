@@ -185,8 +185,8 @@ extension ClerkTheme.Colors {
   public static let defaultRingColor = Color(.neutral)
   public static let defaultMutedColor = Color(.muted)
   public static let defaultSecondaryButtonBackgroundColor = Color(.background)
-  static let defaultLightSecondaryTextColor = Color(red: 47.0 / 255.0, green: 48.0 / 255.0, blue: 55.0 / 255.0)
-  static let defaultDarkSecondaryTextColor = Color.white
+  public static let defaultLightSecondaryTextColor = Color(red: 47.0 / 255.0, green: 48.0 / 255.0, blue: 55.0 / 255.0)
+  public static let defaultDarkSecondaryTextColor = Color.white
   public static let defaultShadowColor = Color(.neutral)
   public static let defaultBorderColor = Color(.neutral)
 
