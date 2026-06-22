@@ -245,6 +245,7 @@ struct ClerkPhoneNumberField: View {
       }
       .accessibilityIdentifier(accessibilityIdentifier)
     }
+    .opacity(isEnabled ? 1 : 0.6)
     .padding(.horizontal, 6)
     .padding(.vertical, 6)
     .frame(minHeight: 56)

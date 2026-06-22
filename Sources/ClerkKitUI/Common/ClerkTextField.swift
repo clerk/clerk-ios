@@ -134,6 +134,7 @@ struct ClerkTextField: View {
         .frame(width: 24)
       }
     }
+    .opacity(isEnabled ? 1 : 0.6)
     .padding(.horizontal, 16)
     .padding(.vertical, 6)
     .frame(minHeight: 56)
