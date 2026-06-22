@@ -86,13 +86,12 @@ extension SignInFactorCodeView {
       HeaderView(style: .subtitle, text: subtitleString)
 
       if let identifier = factor.safeIdentifier {
-        Button {
+        IdentityPreviewView(
+          label: identifier.formattedAsPhoneNumberIfPossible,
+          isEnabled: authState.authStartIdentifierCanBeChanged
+        ) {
           navigation.path = []
-        } label: {
-          IdentityPreviewView(label: identifier.formattedAsPhoneNumberIfPossible)
         }
-        .buttonStyle(.secondary(config: .init(size: .small)))
-        .simultaneousGesture(TapGesture())
       }
     }
     .padding(.bottom, 32)

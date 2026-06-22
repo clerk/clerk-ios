@@ -101,6 +101,7 @@ struct AuthStateConfigurationTests {
 
     #expect(!authState.authStartIdentifierIsEnabled)
     #expect(authState.authStartPhoneNumberIsEnabled)
+    #expect(!authState.authStartIdentifierCanBeChanged)
     #expect(!authState.signUpFirstNameIsEnabled)
     #expect(authState.signUpLastNameIsEnabled)
   }
@@ -116,6 +117,7 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifierIsEnabled)
     #expect(!authState.authStartPhoneNumberIsEnabled)
+    #expect(!authState.authStartIdentifierCanBeChanged)
   }
 
   @Test
@@ -130,6 +132,7 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifier == "stored@example.com")
     #expect(authState.authStartIdentifierIsEnabled)
+    #expect(authState.authStartIdentifierCanBeChanged)
     #expect(authState.signUpFirstNameIsEnabled)
   }
 

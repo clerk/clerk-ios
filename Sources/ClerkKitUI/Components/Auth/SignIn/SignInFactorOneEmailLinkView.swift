@@ -12,6 +12,7 @@ struct EmailLinkVerificationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
+  @Environment(AuthState.self) private var authState
   @Environment(\.openURL) private var openURL
 
   @State private var deliveryState = DeliveryState.idle
@@ -72,13 +73,12 @@ extension EmailLinkVerificationView {
       HeaderView(style: .subtitle, text: subtitleString)
 
       if let emailAddress {
-        Button {
+        IdentityPreviewView(
+          label: emailAddress,
+          isEnabled: authState.authStartIdentifierCanBeChanged
+        ) {
           navigation.path = []
-        } label: {
-          IdentityPreviewView(label: emailAddress)
         }
-        .buttonStyle(.secondary(config: .init(size: .small)))
-        .simultaneousGesture(TapGesture())
       }
     }
     .padding(.bottom, 32)

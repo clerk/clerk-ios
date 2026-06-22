@@ -51,7 +51,7 @@ struct AuthStartView: View {
   }
 
   var showIdentifierSwitcher: Bool {
-    (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled && authState.authStartIdentifierSwitcherIsEnabled
+    (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled && authState.authStartIdentifierCanBeChanged
   }
 
   var showOrDivider: Bool {

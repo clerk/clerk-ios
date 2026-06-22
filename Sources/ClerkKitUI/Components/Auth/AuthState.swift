@@ -149,7 +149,7 @@ final class AuthState {
 }
 
 extension AuthState {
-  var authStartIdentifierSwitcherIsEnabled: Bool {
+  var authStartIdentifierCanBeChanged: Bool {
     !(prefilledFieldsAreLocked && hasInitialIdentifier)
   }
 
