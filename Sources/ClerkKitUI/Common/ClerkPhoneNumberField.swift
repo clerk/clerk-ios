@@ -100,17 +100,20 @@ struct ClerkPhoneNumberField: View {
   let titleKey: LocalizedStringKey
   @Binding var text: String
   let fieldState: FieldState
+  let isEnabled: Bool
   let accessibilityIdentifier: String
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
     fieldState: FieldState = .default,
+    isEnabled: Bool = true,
     accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.fieldState = fieldState
+    self.isEnabled = isEnabled
     self.accessibilityIdentifier = accessibilityIdentifier
   }
 
@@ -239,6 +242,7 @@ struct ClerkPhoneNumberField: View {
     .onTapGesture {
       isFocused = true
     }
+    .disabled(!isEnabled)
     .background(
       theme.colors.input,
       in: .rect(cornerRadius: theme.design.borderRadius)

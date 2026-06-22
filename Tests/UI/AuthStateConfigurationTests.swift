@@ -73,6 +73,67 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func initialNameValuesConfigureSignUpFields() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialFirstName: "Jane",
+      initialLastName: "Doe"
+    ))
+
+    #expect(authState.signUpFirstName == "Jane")
+    #expect(authState.signUpLastName == "Doe")
+    #expect(!authState.hasInitialIdentifier)
+    #expect(authState.hasInitialFirstName)
+    #expect(authState.hasInitialLastName)
+  }
+
+  @Test
+  func disablingPrefilledEmailAndNameFieldsDisablesOnlyConfiguredNonEmptyValues() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "seed@example.com",
+      initialFirstName: "Jane",
+      initialLastName: "",
+      prefilledFieldsAreDisabled: true
+    ))
+
+    #expect(!authState.authStartIdentifierIsEnabled)
+    #expect(authState.authStartPhoneNumberIsEnabled)
+    #expect(!authState.signUpFirstNameIsEnabled)
+    #expect(authState.signUpLastNameIsEnabled)
+  }
+
+  @Test
+  func disablingPrefilledPhoneNumberDisablesPhoneFieldOnly() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "+17777770123",
+      prefilledFieldsAreDisabled: true
+    ))
+
+    #expect(authState.authStartIdentifierIsEnabled)
+    #expect(!authState.authStartPhoneNumberIsEnabled)
+  }
+
+  @Test
+  func disablingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    let authState = AuthState(userDefaults: defaults)
+    authState.signUpFirstName = "Typed"
+    authState.configure(AuthConfig(
+      prefilledFieldsAreDisabled: true
+    ))
+
+    #expect(authState.authStartIdentifier == "stored@example.com")
+    #expect(authState.authStartIdentifierIsEnabled)
+    #expect(authState.signUpFirstNameIsEnabled)
+  }
+
+  @Test
   func disablingPersistenceClearsStoredValues() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
@@ -188,7 +249,7 @@ struct AuthStateConfigurationTests {
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(authState.persistsIdentifiers == false)
-    #expect(authState.hasInitialValues == true)
+    #expect(authState.hasInitialIdentifier == true)
     #expect(authState.unsafeMetadata == metadata)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)

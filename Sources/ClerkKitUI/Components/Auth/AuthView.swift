@@ -272,6 +272,40 @@ extension AuthView {
     return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
   }
 
+  /// Sets the initial value for the first name field during sign-up.
+  ///
+  /// - Parameter firstName: The first name to pre-fill.
+  /// - Returns: A view with the initial first name configured.
+  public func initialFirstName(_ firstName: String) -> AuthView {
+    var config = config
+    config.initialFirstName = firstName
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Sets the initial value for the last name field during sign-up.
+  ///
+  /// - Parameter lastName: The last name to pre-fill.
+  /// - Returns: A view with the initial last name configured.
+  public func initialLastName(_ lastName: String) -> AuthView {
+    var config = config
+    config.initialLastName = lastName
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Controls whether configured initial field values can be edited.
+  ///
+  /// When enabled, non-empty values configured with `initialIdentifier(_:)`,
+  /// `initialFirstName(_:)`, or `initialLastName(_:)` are displayed as read-only fields.
+  /// Fields without configured initial values remain editable.
+  ///
+  /// - Parameter disabled: Whether to disable editing configured initial values.
+  /// - Returns: A view with prefilled field locking configured.
+  public func disablePrefilledFields(_ disabled: Bool = true) -> AuthView {
+    var config = config
+    config.prefilledFieldsAreDisabled = disabled
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
   /// Controls whether auth identifier values are persisted between sessions.
   ///
   /// When set to `false`, any previously stored identifiers are cleared and

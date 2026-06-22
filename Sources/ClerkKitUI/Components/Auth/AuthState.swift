@@ -21,8 +21,17 @@ final class AuthState {
   /// Whether identifier values are persisted to `UserDefaults` between sessions.
   private(set) var persistsIdentifiers: Bool = true
 
-  /// Whether the configure method received any initial values.
-  private(set) var hasInitialValues: Bool = false
+  /// Whether the configure method received an initial identifier value.
+  private(set) var hasInitialIdentifier: Bool = false
+
+  /// Whether the configure method received an initial first name value.
+  private(set) var hasInitialFirstName: Bool = false
+
+  /// Whether the configure method received an initial last name value.
+  private(set) var hasInitialLastName: Bool = false
+
+  /// Whether configured initial values should be shown as read-only fields.
+  private(set) var prefilledFieldsAreDisabled = false
 
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
@@ -80,7 +89,10 @@ final class AuthState {
   /// Applies auth flow configuration values.
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    hasInitialValues = config.initialIdentifier != nil
+    hasInitialIdentifier = config.initialIdentifier?.isEmptyTrimmed == false
+    hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
+    hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
+    prefilledFieldsAreDisabled = config.prefilledFieldsAreDisabled
     unsafeMetadata = config.unsafeMetadata
 
     if !config.persistsIdentifiers {
@@ -105,6 +117,14 @@ final class AuthState {
       authStartPhoneNumber = ""
       authStartPhoneNumberFieldIsActive = false
     }
+
+    if let firstName = config.initialFirstName {
+      signUpFirstName = firstName
+    }
+
+    if let lastName = config.initialLastName {
+      signUpLastName = lastName
+    }
   }
 
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
@@ -126,6 +146,28 @@ final class AuthState {
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
   var signUpLegalAccepted = false
+}
+
+extension AuthState {
+  var authStartIdentifierSwitcherIsEnabled: Bool {
+    !(prefilledFieldsAreDisabled && hasInitialIdentifier)
+  }
+
+  var authStartIdentifierIsEnabled: Bool {
+    !prefilledFieldsAreDisabled || !hasInitialIdentifier || authStartIdentifier.isEmptyTrimmed
+  }
+
+  var authStartPhoneNumberIsEnabled: Bool {
+    !prefilledFieldsAreDisabled || !hasInitialIdentifier || authStartPhoneNumber.isEmptyTrimmed
+  }
+
+  var signUpFirstNameIsEnabled: Bool {
+    !(prefilledFieldsAreDisabled && hasInitialFirstName && !signUpFirstName.isEmptyTrimmed)
+  }
+
+  var signUpLastNameIsEnabled: Bool {
+    !(prefilledFieldsAreDisabled && hasInitialLastName && !signUpLastName.isEmptyTrimmed)
+  }
 }
 
 extension AuthState {

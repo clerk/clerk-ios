@@ -25,6 +25,7 @@ struct ClerkTextField: View {
   @Binding var text: String
   let isSecure: Bool
   let fieldState: FieldState
+  let isEnabled: Bool
   let accessibilityIdentifier: String
 
   init(
@@ -32,12 +33,14 @@ struct ClerkTextField: View {
     text: Binding<String>,
     isSecure: Bool = false,
     fieldState: FieldState = .default,
+    isEnabled: Bool = true,
     accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.isSecure = isSecure
     self.fieldState = fieldState
+    self.isEnabled = isEnabled
     self.accessibilityIdentifier = accessibilityIdentifier
   }
 
@@ -143,6 +146,7 @@ struct ClerkTextField: View {
         focused = .regular
       }
     }
+    .disabled(!isEnabled)
     .background(
       theme.colors.input,
       in: .rect(cornerRadius: theme.design.borderRadius)
