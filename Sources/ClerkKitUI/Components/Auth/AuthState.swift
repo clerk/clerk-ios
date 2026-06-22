@@ -31,7 +31,7 @@ final class AuthState {
   private(set) var hasInitialLastName: Bool = false
 
   /// Whether configured initial values should be shown as read-only fields.
-  private(set) var prefilledFieldsAreDisabled = false
+  private(set) var prefilledFieldsAreLocked = false
 
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
@@ -92,7 +92,7 @@ final class AuthState {
     hasInitialIdentifier = config.initialIdentifier?.isEmptyTrimmed == false
     hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
     hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
-    prefilledFieldsAreDisabled = config.prefilledFieldsAreDisabled
+    prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
     unsafeMetadata = config.unsafeMetadata
 
     if !config.persistsIdentifiers {
@@ -150,23 +150,23 @@ final class AuthState {
 
 extension AuthState {
   var authStartIdentifierSwitcherIsEnabled: Bool {
-    !(prefilledFieldsAreDisabled && hasInitialIdentifier)
+    !(prefilledFieldsAreLocked && hasInitialIdentifier)
   }
 
   var authStartIdentifierIsEnabled: Bool {
-    !prefilledFieldsAreDisabled || !hasInitialIdentifier || authStartIdentifier.isEmptyTrimmed
+    !prefilledFieldsAreLocked || !hasInitialIdentifier || authStartIdentifier.isEmptyTrimmed
   }
 
   var authStartPhoneNumberIsEnabled: Bool {
-    !prefilledFieldsAreDisabled || !hasInitialIdentifier || authStartPhoneNumber.isEmptyTrimmed
+    !prefilledFieldsAreLocked || !hasInitialIdentifier || authStartPhoneNumber.isEmptyTrimmed
   }
 
   var signUpFirstNameIsEnabled: Bool {
-    !(prefilledFieldsAreDisabled && hasInitialFirstName && !signUpFirstName.isEmptyTrimmed)
+    !(prefilledFieldsAreLocked && hasInitialFirstName && !signUpFirstName.isEmptyTrimmed)
   }
 
   var signUpLastNameIsEnabled: Bool {
-    !(prefilledFieldsAreDisabled && hasInitialLastName && !signUpLastName.isEmptyTrimmed)
+    !(prefilledFieldsAreLocked && hasInitialLastName && !signUpLastName.isEmptyTrimmed)
   }
 }
 

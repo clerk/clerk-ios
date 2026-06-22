@@ -298,11 +298,11 @@ extension AuthView {
   /// `initialFirstName(_:)`, or `initialLastName(_:)` are displayed as read-only fields.
   /// Fields without configured initial values remain editable.
   ///
-  /// - Parameter disabled: Whether to disable editing configured initial values.
+  /// - Parameter locked: Whether to lock configured initial values.
   /// - Returns: A view with prefilled field locking configured.
-  public func disablePrefilledFields(_ disabled: Bool = true) -> AuthView {
+  public func lockPrefilledFields(_ locked: Bool = true) -> AuthView {
     var config = config
-    config.prefilledFieldsAreDisabled = disabled
+    config.prefilledFieldsAreLocked = locked
     return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
   }
 

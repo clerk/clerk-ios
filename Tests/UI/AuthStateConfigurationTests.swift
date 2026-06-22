@@ -89,14 +89,14 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func disablingPrefilledEmailAndNameFieldsDisablesOnlyConfiguredNonEmptyValues() {
+  func lockingPrefilledEmailAndNameFieldsLocksOnlyConfiguredNonEmptyValues() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthConfig(
       initialIdentifier: "seed@example.com",
       initialFirstName: "Jane",
       initialLastName: "",
-      prefilledFieldsAreDisabled: true
+      prefilledFieldsAreLocked: true
     ))
 
     #expect(!authState.authStartIdentifierIsEnabled)
@@ -106,12 +106,12 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func disablingPrefilledPhoneNumberDisablesPhoneFieldOnly() {
+  func lockingPrefilledPhoneNumberLocksPhoneFieldOnly() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
     authState.configure(AuthConfig(
       initialIdentifier: "+17777770123",
-      prefilledFieldsAreDisabled: true
+      prefilledFieldsAreLocked: true
     ))
 
     #expect(authState.authStartIdentifierIsEnabled)
@@ -119,13 +119,13 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func disablingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() {
+  func lockingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     let authState = AuthState(userDefaults: defaults)
     authState.signUpFirstName = "Typed"
     authState.configure(AuthConfig(
-      prefilledFieldsAreDisabled: true
+      prefilledFieldsAreLocked: true
     ))
 
     #expect(authState.authStartIdentifier == "stored@example.com")

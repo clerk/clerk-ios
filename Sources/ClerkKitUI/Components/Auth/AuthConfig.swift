@@ -19,7 +19,7 @@ struct AuthConfig: Equatable {
   var initialLastName: String?
 
   /// Whether configured initial values should be shown as read-only fields.
-  var prefilledFieldsAreDisabled = false
+  var prefilledFieldsAreLocked = false
 
   /// Whether identifier values are persisted between sessions.
   var persistsIdentifiers: Bool = true
