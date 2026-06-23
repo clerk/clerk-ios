@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		8F000001E3A648E00831B13 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F000002E3A648E00831B13 /* ClerkKit */; };
 		8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */; };
+		8F506B022EF1000000BB4E4E /* PhoneNumberKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F506B012EF1000000BB4E4E /* PhoneNumberKitUI */; };
 		8FATLANTIS004E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS005E3A648E00831B13 /* Atlantis */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +45,7 @@
 			files = (
 				8F000001E3A648E00831B13 /* ClerkKit in Frameworks */,
 				8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */,
+				8F506B022EF1000000BB4E4E /* PhoneNumberKitUI in Frameworks */,
 				8FATLANTIS004E3A648E00831B13 /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -89,6 +91,7 @@
 			packageProductDependencies = (
 				8F000002E3A648E00831B13 /* ClerkKit */,
 				8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */,
+				8F506B012EF1000000BB4E4E /* PhoneNumberKitUI */,
 				8FATLANTIS005E3A648E00831B13 /* Atlantis */,
 			);
 			productName = AirbnbClone;
@@ -121,6 +124,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8F3946202EF0B22F00BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
+				8F506B002EF1000000BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKitUI" */,
 				8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -381,10 +385,18 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		8F3946202EF0B22F00BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/marmelroy/PhoneNumberKit";
+			repositoryURL = "https://github.com/PhoneNumberKit/PhoneNumberKit";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.2.1;
+				minimumVersion = 5.0.0;
+			};
+		};
+		8F506B002EF1000000BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKitUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PhoneNumberKit/PhoneNumberKitUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
 			};
 		};
 		8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */ = {
@@ -406,6 +418,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8F3946202EF0B22F00BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
 			productName = PhoneNumberKit;
+		};
+		8F506B012EF1000000BB4E4E /* PhoneNumberKitUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8F506B002EF1000000BB4E4E /* XCRemoteSwiftPackageReference "PhoneNumberKitUI" */;
+			productName = PhoneNumberKitUI;
 		};
 		8FATLANTIS005E3A648E00831B13 /* Atlantis */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -68,6 +68,16 @@ struct ClerkConfigurationEpoch: Equatable {
   }
 }
 
+struct ClientResponseGeneration: Equatable {
+  static let initial = ClientResponseGeneration(rawValue: 0)
+
+  private let rawValue: Int
+
+  func next() -> ClientResponseGeneration {
+    ClientResponseGeneration(rawValue: rawValue + 1)
+  }
+}
+
 final class ClerkRuntimeState: @unchecked Sendable {
   private let lock = NSLock()
   private var epoch: ClerkConfigurationEpoch

@@ -69,6 +69,7 @@ struct SignUpCompleteProfileView: View {
                 ClerkTextField(
                   "First name",
                   text: $authState.signUpFirstName,
+                  isEnabled: authState.signUpFirstNameIsEnabled,
                   accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileFirstName
                 )
                 .textContentType(.givenName)
@@ -82,6 +83,7 @@ struct SignUpCompleteProfileView: View {
                 ClerkTextField(
                   "Last name",
                   text: $authState.signUpLastName,
+                  isEnabled: authState.signUpLastNameIsEnabled,
                   accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.completeProfileLastName
                 )
                 .textContentType(.familyName)
@@ -142,7 +144,7 @@ struct SignUpCompleteProfileView: View {
     .navigationBarTitleDisplayMode(.inline)
     #endif
     .onFirstAppear {
-      focused = firstEmptyMissingField() ?? firstMissingField()
+      focused = firstEmptyMissingEnabledField() ?? firstMissingEnabledField()
     }
   }
 }
@@ -169,27 +171,36 @@ extension SignUpCompleteProfileView {
     }
   }
 
-  func firstEmptyMissingField() -> Field? {
-    Field.allCases.first { field in
-      fieldIsMissing(field) && textForField(field).isEmptyTrimmed
+  func fieldIsEnabled(_ field: Field) -> Bool {
+    switch field {
+    case .firstName:
+      authState.signUpFirstNameIsEnabled
+    case .lastName:
+      authState.signUpLastNameIsEnabled
     }
   }
 
-  func firstMissingField() -> Field? {
-    Field.allCases.first { fieldIsMissing($0) }
+  func firstEmptyMissingEnabledField() -> Field? {
+    Field.allCases.first { field in
+      fieldIsMissing(field) && fieldIsEnabled(field) && textForField(field).isEmptyTrimmed
+    }
   }
 
-  func lastMissingField() -> Field? {
-    Field.allCases.last { fieldIsMissing($0) }
+  func firstMissingEnabledField() -> Field? {
+    Field.allCases.first { fieldIsMissing($0) && fieldIsEnabled($0) }
   }
 
-  func nextMissingField(after currentField: Field) -> Field? {
+  func lastMissingEnabledField() -> Field? {
+    Field.allCases.last { fieldIsMissing($0) && fieldIsEnabled($0) }
+  }
+
+  func nextMissingEnabledField(after currentField: Field) -> Field? {
     guard let currentIndex = Field.allCases.firstIndex(of: currentField) else {
       return nil
     }
 
     let fieldsAfterCurrent = Field.allCases.dropFirst(currentIndex + 1)
-    return fieldsAfterCurrent.first { fieldIsMissing($0) }
+    return fieldsAfterCurrent.first { fieldIsMissing($0) && fieldIsEnabled($0) }
   }
 }
 
@@ -197,13 +208,13 @@ extension SignUpCompleteProfileView {
 
 extension SignUpCompleteProfileView {
   func submitLabelFor(_ field: Field) -> SubmitLabel {
-    field == lastMissingField() ? .done : .next
+    field == lastMissingEnabledField() ? .done : .next
   }
 
   func handleReturnKey() {
     guard let currentField = focused else { return }
 
-    if let nextField = nextMissingField(after: currentField) {
+    if let nextField = nextMissingEnabledField(after: currentField) {
       focused = nextField
     } else {
       focused = nil
@@ -211,7 +222,7 @@ extension SignUpCompleteProfileView {
   }
 
   func updateFocusIfNeeded() {
-    if focused == nil, let firstEmpty = firstEmptyMissingField() {
+    if focused == nil, let firstEmpty = firstEmptyMissingEnabledField() {
       focused = firstEmpty
     }
   }

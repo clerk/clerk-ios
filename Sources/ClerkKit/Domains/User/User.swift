@@ -222,9 +222,52 @@ extension User {
   ///
   /// For example, if you want to use the `update(.init(firstName:))` method, you must enable the Name setting.
   /// It can be found in the Email, phone, username > Personal information section in the Clerk Dashboard.
+  ///
+  /// - Important: Passing `unsafeMetadata` through ``User/UpdateParams`` is deprecated.
+  ///   When `unsafeMetadata` is provided with other profile fields, the SDK sends two
+  ///   requests: one to update profile fields and one to update metadata. These requests
+  ///   are not atomic; if the metadata request fails, profile changes may already be saved.
+  ///   Prefer ``updateMetadata(unsafeMetadata:)`` for metadata updates.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    try await userService.update(params: params)
+    let service = userService
+
+    guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
+      return try await service.update(params: params)
+    }
+
+    let paramsWithoutUnsafeMetadata = params.withoutUnsafeMetadata
+    let hasProfileUpdates = paramsWithoutUnsafeMetadata.hasAnyField
+    let userAfterProfileUpdate: User =
+      if hasProfileUpdates {
+        try await service.update(params: paramsWithoutUnsafeMetadata)
+      } else {
+        try await service.reload()
+      }
+
+    let currentUnsafeMetadata = userAfterProfileUpdate.unsafeMetadata ?? .object([:])
+    let patch = currentUnsafeMetadata.mergePatch(against: desiredUnsafeMetadata)
+    if case let .object(patchObject) = patch, patchObject.isEmpty {
+      return userAfterProfileUpdate
+    }
+
+    return try await service.updateMetadata(params: .init(unsafeMetadata: patch))
+  }
+
+  /// Updates the user's unsafe metadata.
+  ///
+  /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
+  @discardableResult @MainActor
+  public func updateMetadata(_ params: User.UpdateMetadataParams) async throws -> User {
+    try await userService.updateMetadata(params: params)
+  }
+
+  /// Updates the user's unsafe metadata.
+  ///
+  /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
+  @discardableResult @MainActor
+  public func updateMetadata(unsafeMetadata: JSON) async throws -> User {
+    try await updateMetadata(.init(unsafeMetadata: unsafeMetadata))
   }
 
   /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.

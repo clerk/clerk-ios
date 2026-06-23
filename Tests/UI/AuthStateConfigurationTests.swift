@@ -73,6 +73,81 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func initialNameValuesConfigureSignUpFields() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialFirstName: "Jane",
+      initialLastName: "Doe"
+    ))
+
+    #expect(authState.signUpFirstName == "Jane")
+    #expect(authState.signUpLastName == "Doe")
+    #expect(!authState.hasInitialIdentifier)
+    #expect(authState.hasInitialFirstName)
+    #expect(authState.hasInitialLastName)
+  }
+
+  @Test
+  func lockingPrefilledEmailAndNameFieldsLocksOnlyConfiguredNonEmptyValues() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "seed@example.com",
+      initialFirstName: "Jane",
+      initialLastName: "",
+      prefilledFieldsAreLocked: true
+    ))
+
+    #expect(authState.authStartIdentifierIsLocked)
+    #expect(!authState.authStartPhoneNumberIsLocked)
+    #expect(authState.authStartFieldIsLocked(Factor.mockEmailCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor(
+      strategy: .password,
+      safeIdentifier: "seed@example.com"
+    ).authStartField))
+    #expect(!authState.authStartFieldIsLocked(Factor.mockPhoneCode.authStartField))
+    #expect(!authState.signUpFirstNameIsEnabled)
+    #expect(authState.signUpLastNameIsEnabled)
+  }
+
+  @Test
+  func lockingPrefilledPhoneNumberLocksPhoneFieldOnly() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "+17777770123",
+      prefilledFieldsAreLocked: true
+    ))
+
+    #expect(!authState.authStartIdentifierIsLocked)
+    #expect(authState.authStartPhoneNumberIsLocked)
+    #expect(!authState.authStartFieldIsLocked(Factor.mockEmailCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor.mockPhoneCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor(
+      strategy: .password,
+      phoneNumberId: "phone_123",
+      safeIdentifier: "+17777770123"
+    ).authStartField))
+  }
+
+  @Test
+  func lockingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    let authState = AuthState(userDefaults: defaults)
+    authState.signUpFirstName = "Typed"
+    authState.configure(AuthConfig(
+      prefilledFieldsAreLocked: true
+    ))
+
+    #expect(authState.authStartIdentifier == "stored@example.com")
+    #expect(!authState.authStartIdentifierIsLocked)
+    #expect(!authState.authStartPhoneNumberIsLocked)
+    #expect(authState.signUpFirstNameIsEnabled)
+  }
+
+  @Test
   func disablingPersistenceClearsStoredValues() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
@@ -188,7 +263,7 @@ struct AuthStateConfigurationTests {
     #expect(authState.authStartIdentifier == "seed@example.com")
     #expect(authState.authStartPhoneNumber.isEmpty)
     #expect(authState.persistsIdentifiers == false)
-    #expect(authState.hasInitialValues == true)
+    #expect(authState.hasInitialIdentifier == true)
     #expect(authState.unsafeMetadata == metadata)
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)

@@ -18,12 +18,22 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
 
     if let client = Self.decodeClient(from: data) {
       try await runtimeScope.withCurrentClerk {
-        $0.applyResponseClient(client, responseSequence: responseSequence, serverDate: serverDate)
+        $0.applyResponseClient(
+          client,
+          responseSequence: responseSequence,
+          serverDate: serverDate,
+          clientResponseGeneration: request.clerkClientResponseGeneration
+        )
       }
     } else if hasExplicitNullClientField(in: data) {
       ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
       try await runtimeScope.withCurrentClerk {
-        $0.applyResponseClient(nil, responseSequence: responseSequence, serverDate: serverDate)
+        $0.applyResponseClient(
+          nil,
+          responseSequence: responseSequence,
+          serverDate: serverDate,
+          clientResponseGeneration: request.clerkClientResponseGeneration
+        )
       }
     }
   }

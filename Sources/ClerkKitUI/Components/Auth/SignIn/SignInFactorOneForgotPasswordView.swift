@@ -99,7 +99,11 @@ struct SignInFactorOneForgotPasswordView: View {
 
           SocialButtonLayout {
             ForEach(socialProviders) { provider in
-              SocialButton(provider: provider, transferable: authState.transferable) {
+              SocialButton(
+                provider: provider,
+                transferable: authState.transferable,
+                showsTitle: socialProviders.count == 1
+              ) {
                 await signInWithProvider(provider)
               }
               .simultaneousGesture(TapGesture())

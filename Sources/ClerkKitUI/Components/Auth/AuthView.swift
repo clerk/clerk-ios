@@ -105,7 +105,8 @@ public struct AuthView: View {
   ///   - isDismissible: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
-  ///     button is shown. Defaults to `true`.
+  ///     button is shown. Interactive presentation dismissal is always disabled.
+  ///     Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
     self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
   }
@@ -151,7 +152,6 @@ public struct AuthView: View {
       alignment: .topLeading
     )
     #endif
-    .interactiveDismissDisabled(disablesInteractiveDismissal)
     .tint(theme.colors.primary)
     .clerkErrorPresenting($error)
     .environment(navigation)
@@ -235,10 +235,6 @@ extension AuthView {
     isDismissible && !navigation.hasSessionTaskStartInPath
   }
 
-  private var disablesInteractiveDismissal: Bool {
-    navigation.hasSessionTaskStartInPath && clerk.session?.status != .active
-  }
-
   @ToolbarContentBuilder
   private var dismissToolbarItem: some ToolbarContent {
     if showDismissButton {
@@ -273,6 +269,40 @@ extension AuthView {
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
     config.initialIdentifier = identifier
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Sets the initial value for the first name field during sign-up.
+  ///
+  /// - Parameter firstName: The first name to pre-fill.
+  /// - Returns: A view with the initial first name configured.
+  public func initialFirstName(_ firstName: String) -> AuthView {
+    var config = config
+    config.initialFirstName = firstName
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Sets the initial value for the last name field during sign-up.
+  ///
+  /// - Parameter lastName: The last name to pre-fill.
+  /// - Returns: A view with the initial last name configured.
+  public func initialLastName(_ lastName: String) -> AuthView {
+    var config = config
+    config.initialLastName = lastName
+    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+  }
+
+  /// Controls whether configured initial field values can be edited.
+  ///
+  /// When enabled, non-empty values configured with `initialIdentifier(_:)`,
+  /// `initialFirstName(_:)`, or `initialLastName(_:)` are displayed as read-only fields.
+  /// Fields without configured initial values remain editable.
+  ///
+  /// - Parameter locked: Whether to lock configured initial values.
+  /// - Returns: A view with prefilled field locking configured.
+  public func lockPrefilledFields(_ locked: Bool = true) -> AuthView {
+    var config = config
+    config.prefilledFieldsAreLocked = locked
     return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
   }
 

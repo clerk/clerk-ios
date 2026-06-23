@@ -79,7 +79,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -231,7 +231,9 @@ final class E2EHostE2ETests: XCTestCase {
     )
     completeEmailCodeSignUp(email: secondEmail, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForCurrentUserIDToChange(from: firstUserID, in: signUpApp)
     waitForSessionActive(in: signUpApp)
+    waitForAddAccountAuthFlowDismissed(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp, timeout: 10)
 
     tapWhenHittableAfterScrolling(
@@ -288,7 +290,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -304,7 +306,7 @@ final class E2EHostE2ETests: XCTestCase {
     enterAuthStartIdentifier(email, in: signInApp)
     tap(E2EIdentifier.authStartContinue, in: signInApp)
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    tap(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
+    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
     waitForSignedIn(in: signInApp)
@@ -333,7 +335,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -376,7 +378,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -391,9 +393,8 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signInApp)
     switchToPhoneNumberIdentifier(in: signInApp)
     enterPhoneNumber(phoneNumber, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    tap(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
+    submitPhoneSignInAndTapUseAnotherMethod(phoneNumber: phoneNumber, in: signInApp)
+    tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
     waitForSignedIn(in: signInApp)
@@ -421,7 +422,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -602,7 +603,7 @@ final class E2EHostE2ETests: XCTestCase {
     dismissSavePasswordPromptIfPresent(in: signUpApp)
     let userID = try currentUserID(in: signUpApp)
 
-    tap(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
     waitForSignedOut(in: signUpApp)
     signUpApp.terminate()
 
@@ -623,8 +624,8 @@ final class E2EHostE2ETests: XCTestCase {
     tap(E2EIdentifier.signInContinue, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp)
     tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
-    tapWhenHittable(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
+    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 5, recoverByReactivatingApp: true)
+    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
     waitForSignInCodePrepared(in: signInApp)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
@@ -742,6 +743,7 @@ extension E2EHostE2ETests {
     static let resetPasswordNewPassword = "clerk.auth.sessionTask.resetPassword.newPassword"
     static let resetPasswordConfirmPassword = "clerk.auth.sessionTask.resetPassword.confirmPassword"
     static let resetPasswordSubmit = "clerk.auth.sessionTask.resetPassword.submit"
+    static let requestTimedOutErrorMessage = "The request timed out."
 
     static func userProfileCurrentUser(userID: String) -> String {
       "clerk.userProfile.currentUser.\(userID)"
@@ -750,6 +752,18 @@ extension E2EHostE2ETests {
     static func accountSwitcherSession(userID: String) -> String {
       "clerk.accountSwitcher.session.\(userID)"
     }
+  }
+
+  private enum CodePreparationResult: Equatable {
+    case prepared
+    case requestTimedOut
+    case timedOut
+  }
+
+  private enum SavePasswordPromptDismissalResult {
+    case notFound
+    case dismissed
+    case stillVisible
   }
 
   fileprivate struct BackendAPIError: Error, CustomStringConvertible {
@@ -967,10 +981,85 @@ extension E2EHostE2ETests {
     return app
   }
 
-  private func openAuth(in app: XCUIApplication) {
-    let signInButton = app.buttons["Sign in"].firstMatch
-    XCTAssertTrue(signInButton.waitForExistence(timeout: 20), "Expected the E2EHost sign-in button.")
-    signInButton.tap()
+  private func openAuth(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 4
+
+    for attempt in 1 ... maxAttempts {
+      let signInButton = app.buttons["Sign in"].firstMatch
+      guard signInButton.waitForExistence(timeout: 20) else {
+        XCTFail("Expected the E2EHost sign-in button.", file: file, line: line)
+        return
+      }
+
+      signInButton.tap()
+
+      if waitForAuthStartInput(in: app, timeout: 30) {
+        return
+      }
+
+      guard attempt < maxAttempts else {
+        XCTFail("Expected AuthView to render an auth start input.", file: file, line: line)
+        return
+      }
+
+      dismissAuthIfPresent(in: app)
+
+      if attempt.isMultiple(of: 2) {
+        guard relaunchSignedOutApp(app, file: file, line: line) else {
+          return
+        }
+      }
+    }
+  }
+
+  private func waitForAuthStartInput(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let identifierInput = app.descendants(matching: .any)[E2EIdentifier.authStartIdentifier]
+    let phoneNumberInput = app.descendants(matching: .any)[E2EIdentifier.authStartPhoneNumber]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if identifierInput.exists || phoneNumberInput.exists {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return identifierInput.exists || phoneNumberInput.exists
+  }
+
+  private func dismissAuthIfPresent(in app: XCUIApplication) {
+    guard let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) else {
+      return
+    }
+
+    dismissButton.tap()
+    _ = app.buttons["Sign in"].firstMatch.waitForExistence(timeout: 5)
+  }
+
+  private func relaunchSignedOutApp(
+    _ app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) -> Bool {
+    app.terminate()
+    app.launch()
+
+    let signedOut = waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30)
+    guard signedOut else {
+      XCTFail(
+        "Expected relaunchSignedOutApp to waitForStateIndicator(\(E2EIdentifier.signedOut)) after relaunch.",
+        file: file,
+        line: line
+      )
+      return false
+    }
+
+    return true
   }
 
   private func openUserProfileRoot(
@@ -978,14 +1067,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    tapWhenHittable(E2EIdentifier.userButtonProfile, in: app, file: file, line: line)
-
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityRow].waitForExistence(timeout: 45),
-      "Expected the user profile root screen.",
-      file: file,
-      line: line
-    )
+    openUserProfileRootScreen(in: app, file: file, line: line)
   }
 
   private func openUserProfileSecurity(
@@ -993,7 +1075,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    tapWhenHittable(E2EIdentifier.userButtonProfile, in: app, file: file, line: line)
+    openUserProfileRootScreen(in: app, file: file, line: line)
     tapWhenHittable(E2EIdentifier.userProfileSecurityRow, in: app, file: file, line: line)
 
     XCTAssertTrue(
@@ -1004,10 +1086,59 @@ extension E2EHostE2ETests {
     )
   }
 
+  private func openUserProfileRootScreen(
+    in app: XCUIApplication,
+    file: StaticString,
+    line: UInt
+  ) {
+    let profileRoot = app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityRow]
+    let maxAttempts = 3
+
+    for attempt in 1 ... maxAttempts {
+      if waitForUserProfileRoot(profileRoot, in: app, timeout: 1) {
+        return
+      }
+
+      guard let profileButton = waitForHittableElement(withIdentifier: E2EIdentifier.userButtonProfile, in: app, timeout: 30) else {
+        if waitForUserProfileRoot(profileRoot, in: app, timeout: 15) {
+          return
+        }
+
+        XCTFail("Expected hittable user profile button.", file: file, line: line)
+        return
+      }
+
+      profileButton.tap()
+
+      if waitForUserProfileRoot(profileRoot, in: app, timeout: 15) {
+        return
+      }
+
+      guard attempt < maxAttempts else { break }
+      _ = waitForStateIndicator(E2EIdentifier.sessionActive, in: app, timeout: 10)
+    }
+
+    XCTFail("Expected the user profile root screen.", file: file, line: line)
+  }
+
+  private func waitForUserProfileRoot(_ profileRoot: XCUIElement, in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if profileRoot.exists {
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return profileRoot.exists
+  }
+
   private func completeEmailCodeSignUp(email: String, in app: XCUIApplication) {
     enterAuthStartIdentifier(email, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    waitForSignUpCodePrepared(in: app)
+    prepareEmailCodeSignUp(in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completePasswordCollectionIfNeeded(in: app)
   }
@@ -1022,8 +1153,7 @@ extension E2EHostE2ETests {
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    waitForSignUpCodePrepared(in: app)
+    preparePhoneCodeSignUp(phoneNumber: phoneNumber, in: app)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signUpCode, in: app)
     completeMissingEmailAddressIfNeeded(email: email, in: app)
     completePasswordCollectionIfNeeded(in: app)
@@ -1073,9 +1203,40 @@ extension E2EHostE2ETests {
     }
 
     tap(E2EIdentifier.signInUseAnotherMethod, in: app, file: file, line: line)
-    tap(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
+    tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
     waitForSignInCodePrepared(in: app, file: file, line: line)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+  }
+
+  private func submitPhoneSignInAndTapUseAnotherMethod(
+    phoneNumber: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+
+      if let useAnotherMethod = waitForHittableElement(
+        withIdentifier: E2EIdentifier.signInUseAnotherMethod,
+        in: app,
+        timeout: 45
+      ) {
+        useAnotherMethod.tap()
+        return
+      }
+
+      guard attempt < maxAttempts else { break }
+
+      dismissAuthIfPresent(in: app)
+      openAuth(in: app, file: file, line: line)
+      switchToPhoneNumberIdentifier(in: app, file: file, line: line)
+      enterPhoneNumber(phoneNumber, in: app, file: file, line: line)
+    }
+
+    XCTFail("Expected sign-in alternative methods after submitting the phone number.", file: file, line: line)
   }
 
   private func switchToPhoneNumberIdentifier(
@@ -1150,8 +1311,8 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
-    legalAccepted.tap()
-    tap(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signUpLegalAccepted, in: app, file: file, line: line)
+    tapWhenEnabled(E2EIdentifier.signUpCompleteProfileContinue, in: app, file: file, line: line)
   }
 
   private func waitForSignUpCodePrepared(
@@ -1161,6 +1322,7 @@ extension E2EHostE2ETests {
   ) {
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.signUpCode,
       message: "Expected sign-up code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -1174,6 +1336,7 @@ extension E2EHostE2ETests {
   ) {
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.signInCode,
       message: "Expected sign-in code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -1182,20 +1345,226 @@ extension E2EHostE2ETests {
 
   private func waitForCodePrepared(
     in app: XCUIApplication,
+    codeInputIdentifier: String,
     message: String,
     file: StaticString,
     line: UInt
   ) {
-    let resendCooldown = app.buttons.matching(
-      NSPredicate(format: "label CONTAINS %@", "Resend (")
-    ).firstMatch
+    let result = waitForCodePreparationResult(
+      in: app,
+      codeInputIdentifier: codeInputIdentifier,
+      timeout: 30
+    )
+    guard result != .prepared else { return }
 
-    XCTAssertTrue(
-      resendCooldown.waitForExistence(timeout: 30),
-      message,
+    XCTFail(
+      codePreparationFailureMessage(message, result: result),
       file: file,
       line: line
     )
+  }
+
+  private func prepareEmailCodeSignUp(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+    let message = "Expected sign-up code preparation to finish before entering the verification code."
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+      waitForAuthStartRequestTimedOutErrorToClear(in: app)
+
+      let result = waitForCodePreparationResult(
+        in: app,
+        codeInputIdentifier: E2EIdentifier.signUpCode,
+        timeout: 30
+      )
+      switch result {
+      case .prepared:
+        return
+      case .requestTimedOut where attempt < maxAttempts:
+        continue
+      case .requestTimedOut, .timedOut:
+        XCTFail(
+          codePreparationFailureMessage(message, result: result),
+          file: file,
+          line: line
+        )
+        return
+      }
+    }
+  }
+
+  private func preparePhoneCodeSignUp(
+    phoneNumber: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+    let message = "Expected sign-up code preparation to finish before entering the verification code."
+
+    for attempt in 1 ... maxAttempts {
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+      waitForAuthStartRequestTimedOutErrorToClear(in: app)
+
+      let result = waitForCodeSentResult(
+        in: app,
+        timeout: 90
+      )
+      switch result {
+      case .prepared:
+        return
+      case .requestTimedOut where attempt < maxAttempts:
+        dismissRequestTimedOutErrorIfPresent(in: app)
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+        switchToPhoneNumberIdentifier(in: app, file: file, line: line)
+        enterPhoneNumber(phoneNumber, in: app, file: file, line: line)
+        continue
+      case .requestTimedOut, .timedOut:
+        XCTFail(
+          codePreparationFailureMessage(message, result: result),
+          file: file,
+          line: line
+        )
+        return
+      }
+    }
+  }
+
+  private func waitForCodePreparationResult(
+    in app: XCUIApplication,
+    codeInputIdentifier: String,
+    timeout: TimeInterval
+  ) -> CodePreparationResult {
+    let codeInput = app.descendants(matching: .any)[codeInputIdentifier]
+    let resendCooldown = app.buttons.matching(
+      NSPredicate(format: "label CONTAINS %@", "Resend (")
+    ).firstMatch
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if codeInput.exists {
+        return .prepared
+      }
+
+      if resendCooldown.exists {
+        return .prepared
+      }
+
+      if timeoutError.exists {
+        return .requestTimedOut
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if codeInput.exists {
+      return .prepared
+    }
+
+    if resendCooldown.exists {
+      return .prepared
+    }
+
+    if timeoutError.exists {
+      return .requestTimedOut
+    }
+
+    return .timedOut
+  }
+
+  private func waitForCodeSentResult(
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> CodePreparationResult {
+    let resendCooldown = app.buttons.matching(
+      NSPredicate(format: "label CONTAINS %@", "Resend (")
+    ).firstMatch
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if resendCooldown.exists {
+        return .prepared
+      }
+
+      if timeoutError.exists {
+        return .requestTimedOut
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if resendCooldown.exists {
+      return .prepared
+    }
+
+    if timeoutError.exists {
+      return .requestTimedOut
+    }
+
+    return .timedOut
+  }
+
+  private func codePreparationFailureMessage(
+    _ message: String,
+    result: CodePreparationResult
+  ) -> String {
+    switch result {
+    case .prepared:
+      message
+    case .requestTimedOut:
+      "\(message) Auth start showed '\(E2EIdentifier.requestTimedOutErrorMessage)' after retrying."
+    case .timedOut:
+      message
+    }
+  }
+
+  private func authStartRequestTimedOutError(in app: XCUIApplication) -> XCUIElement {
+    app.staticTexts.matching(
+      NSPredicate(format: "label == %@", E2EIdentifier.requestTimedOutErrorMessage)
+    ).firstMatch
+  }
+
+  private func waitForAuthStartRequestTimedOutErrorToClear(in app: XCUIApplication) {
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    guard timeoutError.exists else { return }
+
+    _ = timeoutError.waitForNonExistence(timeout: 5)
+  }
+
+  private func dismissRequestTimedOutErrorIfPresent(in app: XCUIApplication) {
+    let timeoutError = authStartRequestTimedOutError(in: app)
+    guard timeoutError.exists else { return }
+
+    let deadline = Date().addingTimeInterval(5)
+    repeat {
+      if let closeButton = hittableButton(labeled: "Close", in: app) {
+        closeButton.tap()
+        _ = timeoutError.waitForNonExistence(timeout: 5)
+        return
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if let closeButton = hittableButton(labeled: "Close", in: app) {
+      closeButton.tap()
+      _ = timeoutError.waitForNonExistence(timeout: 5)
+    }
+  }
+
+  private func hittableButton(labeled label: String, in app: XCUIApplication) -> XCUIElement? {
+    app.buttons.matching(
+      NSPredicate(format: "label == %@", label)
+    )
+    .allElementsBoundByIndex
+    .first { $0.exists && $0.isEnabled && $0.isHittable }
   }
 
   private func enterText(
@@ -1278,30 +1647,78 @@ extension E2EHostE2ETests {
       return false
     }
 
+    let deadline = Date().addingTimeInterval(30)
+    repeat {
+      if let concreteInput = tapConcreteInput(withIdentifier: identifier, in: app),
+         waitForTextInputFocus(on: concreteInput, timeout: 2)
+      {
+        return true
+      }
+
+      dismissKeyboardIfPresent(in: app)
+      if tapFallbackInputTarget(withIdentifier: identifier, in: app), waitForAnyTextInputFocus(in: app, timeout: 2) {
+        return true
+      }
+
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 1, recoverByReactivatingApp: true)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    XCTFail("Expected input '\(identifier)' to accept keyboard focus.", file: file, line: line)
+    return false
+  }
+
+  private func tapConcreteInput(withIdentifier identifier: String, in app: XCUIApplication) -> XCUIElement? {
+    guard let element = concreteInputElement(withIdentifier: identifier, in: app, timeout: 1) else {
+      return nil
+    }
+
     if element.isHittable {
       element.tap()
+    } else if !element.frame.isEmpty {
+      tapAppCoordinate(CGPoint(x: element.frame.midX, y: element.frame.midY), in: app)
+    } else {
+      return nil
+    }
+
+    return element
+  }
+
+  private func tapFallbackInputTarget(withIdentifier identifier: String, in app: XCUIApplication) -> Bool {
+    let matchingElements = app.descendants(matching: .any)
+      .matching(identifier: identifier)
+      .allElementsBoundByIndex
+      .filter { $0.exists && !$0.frame.isEmpty }
+
+    if let label = matchingElements.first(where: { $0.elementType == .staticText }) {
+      tapAppCoordinate(CGPoint(x: label.frame.midX, y: label.frame.midY + 24), in: app)
       return true
     }
 
-    let hittableElement = app.descendants(matching: .any)
-      .matching(identifier: identifier)
-      .allElementsBoundByIndex
-      .first { $0.exists && $0.isHittable }
+    if let visibilityButton = matchingElements.first(where: { $0.elementType == .button }) {
+      tapAppCoordinate(CGPoint(x: visibilityButton.frame.minX - 80, y: visibilityButton.frame.midY + 24), in: app)
+      return true
+    }
 
-    if let hittableElement {
+    if let hittableElement = matchingElements.first(where: { $0.isEnabled && $0.isHittable }) {
       hittableElement.tap()
       return true
     }
 
-    guard !element.frame.isEmpty else {
-      XCTFail("Expected hittable input '\(identifier)'.", file: file, line: line)
+    guard let element = matchingElements.first else {
       return false
     }
 
-    app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
-      .withOffset(CGVector(dx: element.frame.midX, dy: element.frame.midY))
-      .tap()
+    tapAppCoordinate(CGPoint(x: element.frame.midX, y: element.frame.midY), in: app)
     return true
+  }
+
+  private func tapAppCoordinate(_ point: CGPoint, in app: XCUIApplication) {
+    let x = min(max(point.x, app.frame.minX + 1), app.frame.maxX - 1)
+    let y = min(max(point.y, app.frame.minY + 1), app.frame.maxY - 1)
+    app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+      .withOffset(CGVector(dx: x, dy: y))
+      .tap()
   }
 
   private func enterPhoneNumber(
@@ -1470,14 +1887,80 @@ extension E2EHostE2ETests {
     return app.descendants(matching: .any).matching(identifier: identifier).firstMatch
   }
 
+  private func concreteInputElement(
+    withIdentifier identifier: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      let textField = app.textFields[identifier].firstMatch
+      if textField.exists {
+        return textField
+      }
+
+      let secureTextField = app.secureTextFields[identifier].firstMatch
+      if secureTextField.exists {
+        return secureTextField
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    let textField = app.textFields[identifier].firstMatch
+    if textField.exists {
+      return textField
+    }
+
+    let secureTextField = app.secureTextFields[identifier].firstMatch
+    if secureTextField.exists {
+      return secureTextField
+    }
+
+    return nil
+  }
+
+  private func waitForTextInputFocus(on element: XCUIElement, timeout: TimeInterval) -> Bool {
+    let focusPredicate = NSPredicate(format: "hasKeyboardFocus == true")
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if element.exists, focusPredicate.evaluate(with: element) {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    return element.exists && focusPredicate.evaluate(with: element)
+  }
+
+  private func waitForAnyTextInputFocus(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let focusedElement = app.descendants(matching: .any)
+      .matching(NSPredicate(format: "hasKeyboardFocus == true"))
+      .firstMatch
+    let keyboard = app.keyboards.firstMatch
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if focusedElement.exists || keyboard.exists {
+        return true
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    return focusedElement.exists || keyboard.exists
+  }
+
   private func tap(
     _ identifier: String,
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    let element = app.descendants(matching: .any)[identifier]
-    guard waitForElementHittable(element, timeout: 30) else {
+    guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
       XCTFail("Expected tappable element '\(identifier)' to become hittable.", file: file, line: line)
       return
     }
@@ -1493,12 +1976,17 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     let element = app.descendants(matching: .any)[identifier]
-    XCTAssertTrue(
-      waitForElementEnabled(element, timeout: timeout),
-      "Expected enabled tappable element '\(identifier)'.",
-      file: file,
-      line: line
-    )
+    guard waitForElementEnabled(element, in: app, timeout: timeout) else {
+      XCTFail("Expected enabled tappable element '\(identifier)'.", file: file, line: line)
+      return
+    }
+
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+    guard waitForElementEnabled(element, in: app, timeout: 5) else {
+      XCTFail("Expected enabled tappable element '\(identifier)' after dismissing blocking system UI.", file: file, line: line)
+      return
+    }
+
     element.tap()
   }
 
@@ -1532,6 +2020,63 @@ extension E2EHostE2ETests {
     element.tap()
   }
 
+  private func tapWhenHittableRecoveringFromSavePasswordPrompt(
+    _ identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    if waitForHittableElement(withIdentifier: identifier, in: app, timeout: 3) != nil {
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+      guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
+        XCTFail("Expected hittable tappable element '\(identifier)'.", file: file, line: line)
+        return
+      }
+
+      element.tap()
+      return
+    }
+
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 10, recoverByReactivatingApp: true)
+
+    guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
+      XCTFail("Expected hittable tappable element '\(identifier)'.", file: file, line: line)
+      return
+    }
+
+    element.tap()
+  }
+
+  private func tapSignInAlternativeMethod(
+    _ identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    if let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 3) {
+      element.tap()
+    } else {
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 10, recoverByReactivatingApp: true)
+
+      guard let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 30) else {
+        XCTFail("Expected hittable sign-in alternative method '\(identifier)'.", file: file, line: line)
+        return
+      }
+
+      element.tap()
+    }
+
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+    if app.descendants(matching: .any)[E2EIdentifier.signInCode].waitForExistence(timeout: 2) {
+      return
+    }
+
+    if let element = waitForHittableElement(withIdentifier: identifier, in: app, timeout: 2) {
+      element.tap()
+      dismissSavePasswordPromptIfPresent(in: app, timeout: 3, recoverByReactivatingApp: true)
+    }
+  }
+
   private func tapWhenHittableAfterScrolling(
     _ identifier: String,
     in app: XCUIApplication,
@@ -1551,6 +2096,7 @@ extension E2EHostE2ETests {
           return
         }
 
+        dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
         RunLoop.current.run(until: Date().addingTimeInterval(0.5))
       }
 
@@ -1596,6 +2142,7 @@ extension E2EHostE2ETests {
         return element
       }
 
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
       RunLoop.current.run(until: Date().addingTimeInterval(0.25))
     } while Date() < deadline
 
@@ -1621,6 +2168,7 @@ extension E2EHostE2ETests {
         return element
       }
 
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
       RunLoop.current.run(until: Date().addingTimeInterval(0.25))
     } while Date() < deadline
 
@@ -1642,16 +2190,19 @@ extension E2EHostE2ETests {
     }
   }
 
-  private func waitForElementEnabled(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-    let predicate = NSPredicate(format: "exists == true AND enabled == true")
-    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
-  }
+  private func waitForElementEnabled(_ element: XCUIElement, in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
 
-  private func waitForElementHittable(_ element: XCUIElement, timeout: TimeInterval) -> Bool {
-    let predicate = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
-    let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-    return XCTWaiter.wait(for: [expectation], timeout: timeout) == .completed
+    repeat {
+      if element.exists, element.isEnabled {
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    return element.exists && element.isEnabled
   }
 
   private func waitForSignedIn(
@@ -1660,7 +2211,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.signedIn].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.signedIn, in: app, timeout: 45),
       "Expected the E2EHost signed-in state.",
       file: file,
       line: line
@@ -1673,7 +2224,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.signedOut].waitForExistence(timeout: 30),
+      waitForStateIndicator(E2EIdentifier.signedOut, in: app, timeout: 30),
       "Expected the E2EHost signed-out state.",
       file: file,
       line: line
@@ -1686,7 +2237,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.sessionPending].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.sessionPending, in: app, timeout: 45),
       "Expected the E2EHost pending-session state.",
       file: file,
       line: line
@@ -1699,11 +2250,37 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.sessionActive].waitForExistence(timeout: 45),
+      waitForStateIndicator(E2EIdentifier.sessionActive, in: app, timeout: 45),
       "Expected the E2EHost active-session state.",
       file: file,
       line: line
     )
+  }
+
+  private func waitForStateIndicator(
+    _ identifier: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval
+  ) -> Bool {
+    let indicator = app.staticTexts[identifier]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if indicator.exists {
+        dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+        return true
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if indicator.exists {
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      return true
+    }
+
+    return false
   }
 
   private func waitForUserProfileCurrentUser(
@@ -1755,43 +2332,64 @@ extension E2EHostE2ETests {
     )
   }
 
-  private func dismissSavePasswordPromptIfPresent(in app: XCUIApplication, timeout: TimeInterval = 5) {
-    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-    let notNowButtons = [
-      app.buttons["Not Now"].firstMatch,
-      springboard.buttons["Not Now"].firstMatch,
-    ]
-    guard let initialNotNowButton = waitForExistingElement(in: notNowButtons, timeout: timeout) else { return }
+  private func dismissSavePasswordPromptIfPresent(
+    in app: XCUIApplication,
+    timeout: TimeInterval = 5,
+    recoverByReactivatingApp: Bool = false
+  ) {
+    var observedPrompt = false
+    let deadline = Date().addingTimeInterval(timeout)
 
-    var notNowButton = initialNotNowButton
-    for _ in 0 ..< 3 {
-      if !notNowButton.exists {
-        guard let existingNotNowButton = waitForExistingElement(in: notNowButtons, timeout: 0.5) else { return }
-        notNowButton = existingNotNowButton
-      }
-      guard notNowButton.isHittable else {
-        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-        continue
-      }
-
-      notNowButton.tap()
-      if notNowButton.waitForNonExistence(timeout: 2) {
+    repeat {
+      switch dismissVisibleSavePasswordPrompt(in: app) {
+      case .dismissed:
         return
+      case .stillVisible:
+        observedPrompt = true
+      case .notFound:
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
       }
+    } while Date() < deadline
+
+    if recoverByReactivatingApp, observedPrompt {
+      recoverFromSavePasswordPromptDismissal(in: app)
     }
   }
 
-  private func waitForExistingElement(in elements: [XCUIElement], timeout: TimeInterval) -> XCUIElement? {
-    let deadline = Date().addingTimeInterval(timeout)
-    repeat {
-      if let element = elements.first(where: \.exists) {
-        return element
-      }
+  private func dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in app: XCUIApplication) {
+    if dismissVisibleSavePasswordPrompt(in: app) == .stillVisible {
+      recoverFromSavePasswordPromptDismissal(in: app)
+    }
+  }
 
-      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
-    } while Date() < deadline
+  private func dismissVisibleSavePasswordPrompt(in app: XCUIApplication) -> SavePasswordPromptDismissalResult {
+    let notNowButtons = savePasswordPromptNotNowButtons(in: app)
 
-    return elements.first(where: \.exists)
+    if let notNowButton = notNowButtons.first(where: { $0.exists && $0.isHittable }) {
+      notNowButton.tap()
+      return notNowButton.waitForNonExistence(timeout: 2) ? .dismissed : .stillVisible
+    }
+
+    if let notNowButton = notNowButtons.first(where: { $0.exists && !$0.frame.isEmpty }) {
+      tapAppCoordinate(CGPoint(x: notNowButton.frame.midX, y: notNowButton.frame.midY), in: app)
+      return notNowButton.waitForNonExistence(timeout: 2) ? .dismissed : .stillVisible
+    }
+
+    return .notFound
+  }
+
+  private func savePasswordPromptNotNowButtons(in app: XCUIApplication) -> [XCUIElement] {
+    [
+      XCUIApplication(bundleIdentifier: "com.apple.springboard"),
+      app,
+    ]
+    .map { $0.buttons["Not Now"].firstMatch }
+  }
+
+  private func recoverFromSavePasswordPromptDismissal(in app: XCUIApplication) {
+    XCUIDevice.shared.press(.home)
+    app.activate()
+    _ = app.wait(for: .runningForeground, timeout: 5)
   }
 
   private func completeUserProfilePasswordChange(
@@ -1805,6 +2403,8 @@ extension E2EHostE2ETests {
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordNext, in: app, file: file, line: line)
     enterText(newPassword, into: E2EIdentifier.userProfileChangePasswordNewPassword, in: app, file: file, line: line)
     enterText(newPassword, into: E2EIdentifier.userProfileChangePasswordConfirmPassword, in: app, file: file, line: line)
+    dismissKeyboardIfPresent(in: app)
+    dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordSave, in: app, timeout: 45, file: file, line: line)
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
 
@@ -1860,6 +2460,7 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.userProfilePhoneContinue, in: app, file: file, line: line)
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.userProfileMfaVerificationCode,
       message: "Expected user-profile phone verification code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -1929,6 +2530,7 @@ extension E2EHostE2ETests {
     tap(E2EIdentifier.smsContinue, in: app, file: file, line: line)
     waitForCodePrepared(
       in: app,
+      codeInputIdentifier: E2EIdentifier.smsCode,
       message: "Expected setup-MFA SMS code preparation to finish before entering the verification code.",
       file: file,
       line: line
@@ -2023,6 +2625,72 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
+  }
+
+  private func waitForCurrentUserIDToChange(
+    from previousUserID: String,
+    in app: XCUIApplication,
+    timeout: TimeInterval = 60,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let element = app.staticTexts[E2EIdentifier.userID]
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if element.exists,
+         let currentUserID = Self.normalized(element.label),
+         currentUserID != previousUserID
+      {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    let currentValue = element.exists ? element.label : "<missing>"
+    XCTFail(
+      "Expected the current E2EHost user ID to change after adding a second account. Previous: '\(previousUserID)', current: '\(currentValue)'.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func waitForAddAccountAuthFlowDismissed(
+    in app: XCUIApplication,
+    timeout: TimeInterval = 45,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if !addAccountAuthFlowIsPresented(in: app) {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    XCTFail(
+      "Expected the add-account auth flow to dismiss after completing sign-up.",
+      file: file,
+      line: line
+    )
+  }
+
+  private func addAccountAuthFlowIsPresented(in app: XCUIApplication) -> Bool {
+    [
+      E2EIdentifier.authStartIdentifier,
+      E2EIdentifier.authStartContinue,
+      E2EIdentifier.signUpCode,
+      E2EIdentifier.signUpPassword,
+      E2EIdentifier.signUpContinue,
+      E2EIdentifier.signInPassword,
+      E2EIdentifier.signInContinue,
+    ].contains { app.descendants(matching: .any)[$0].exists }
   }
 
   private func setUserPasswordCompromised(

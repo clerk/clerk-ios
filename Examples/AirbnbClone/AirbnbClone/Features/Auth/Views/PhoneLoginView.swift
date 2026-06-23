@@ -5,6 +5,7 @@
 
 import ClerkKit
 import PhoneNumberKit
+import PhoneNumberKitUI
 import SwiftUI
 
 struct PhoneLoginView: View {

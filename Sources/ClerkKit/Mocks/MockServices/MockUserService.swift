@@ -21,6 +21,9 @@ package final class MockUserService: UserServiceProtocol {
   /// Custom handler for the `update(params:)` method.
   package nonisolated(unsafe) var updateHandler: ((User.UpdateParams) async throws -> User)?
 
+  /// Custom handler for the `updateMetadata(params:)` method.
+  package nonisolated(unsafe) var updateMetadataHandler: ((User.UpdateMetadataParams) async throws -> User)?
+
   /// Custom handler for the `createBackupCodes()` method.
   package nonisolated(unsafe) var createBackupCodesHandler: (() async throws -> BackupCodeResource)?
 
@@ -94,6 +97,7 @@ package final class MockUserService: UserServiceProtocol {
   ///   - getSessions: Optional implementation of the `getSessions(user:)` method.
   ///   - reload: Optional implementation of the `reload()` method.
   ///   - update: Optional implementation of the `update(params:)` method.
+  ///   - updateMetadata: Optional implementation of the `updateMetadata(params:)` method.
   ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
   ///   - createEmailAddress: Optional implementation of the `createEmailAddress(emailAddress:)` method.
   ///   - createPhoneNumber: Optional implementation of the `createPhoneNumber(phoneNumber:)` method.
@@ -136,6 +140,7 @@ package final class MockUserService: UserServiceProtocol {
     getSessions: ((User) async throws -> [Session])? = nil,
     reload: (() async throws -> User)? = nil,
     update: ((User.UpdateParams) async throws -> User)? = nil,
+    updateMetadata: ((User.UpdateMetadataParams) async throws -> User)? = nil,
     createBackupCodes: (() async throws -> BackupCodeResource)? = nil,
     createEmailAddress: ((String) async throws -> EmailAddress)? = nil,
     createPhoneNumber: ((String) async throws -> PhoneNumber)? = nil,
@@ -157,6 +162,7 @@ package final class MockUserService: UserServiceProtocol {
     getSessionsHandler = getSessions
     reloadHandler = reload
     updateHandler = update
+    updateMetadataHandler = updateMetadata
     createBackupCodesHandler = createBackupCodes
     createEmailAddressHandler = createEmailAddress
     createPhoneNumberHandler = createPhoneNumber
@@ -196,6 +202,14 @@ package final class MockUserService: UserServiceProtocol {
   @MainActor
   package func update(params: User.UpdateParams) async throws -> User {
     if let handler = updateHandler {
+      return try await handler(params)
+    }
+    return .mock
+  }
+
+  @MainActor
+  package func updateMetadata(params: User.UpdateMetadataParams) async throws -> User {
+    if let handler = updateMetadataHandler {
       return try await handler(params)
     }
     return .mock

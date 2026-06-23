@@ -68,20 +68,30 @@ extension ClerkPhoneNumberField {
       ) ?? ""
     }
 
-    func phoneNumberFormattedForDisplay(text: String) -> String {
+    func formattedText(for text: String) -> (displayText: String, dataText: String) {
       if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
-        utility.format(phoneNumber, toType: .national)
-      } else {
-        partialFormatter.formatPartial(text)
+        updateCurrentCountry(for: phoneNumber)
+        return (
+          utility.format(phoneNumber, toType: .national),
+          utility.format(phoneNumber, toType: .e164)
+        )
       }
+
+      let rawText = text.filter(\.isWholeNumber)
+      return (
+        partialFormatter.formatPartial(rawText),
+        rawText
+      )
     }
 
-    func phoneNumberFormattedForData(text: String) -> String {
-      if let phoneNumber = try? utility.parse(text, withRegion: currentCountry.code) {
-        utility.format(phoneNumber, toType: .e164)
-      } else {
-        text
-      }
+    private func updateCurrentCountry(for phoneNumber: PhoneNumber) {
+      let countryCode = phoneNumber.regionID ?? utility.mainCountry(forCode: phoneNumber.countryCode)
+      guard
+        let countryCode,
+        let country = ClerkPhoneCountry(for: countryCode, with: utility)
+      else { return }
+
+      currentCountry = country
     }
   }
 }
@@ -100,17 +110,20 @@ struct ClerkPhoneNumberField: View {
   let titleKey: LocalizedStringKey
   @Binding var text: String
   let fieldState: FieldState
+  let isEnabled: Bool
   let accessibilityIdentifier: String
 
   init(
     _ titleKey: LocalizedStringKey,
     text: Binding<String>,
     fieldState: FieldState = .default,
+    isEnabled: Bool = true,
     accessibilityIdentifier: String = ""
   ) {
     self.titleKey = titleKey
     _text = text
     self.fieldState = fieldState
+    self.isEnabled = isEnabled
     self.accessibilityIdentifier = accessibilityIdentifier
   }
 
@@ -124,9 +137,9 @@ struct ClerkPhoneNumberField: View {
   }
 
   private func textDidUpdate(text: String) {
-    let rawText = text.filter(\.isWholeNumber)
-    displayText = phoneNumberModel.phoneNumberFormattedForDisplay(text: rawText)
-    self.text = phoneNumberModel.phoneNumberFormattedForData(text: rawText)
+    let formattedText = phoneNumberModel.formattedText(for: text)
+    displayText = formattedText.displayText
+    self.text = formattedText.dataText
   }
 
   var countrySelector: some View {
@@ -232,6 +245,7 @@ struct ClerkPhoneNumberField: View {
       }
       .accessibilityIdentifier(accessibilityIdentifier)
     }
+    .opacity(isEnabled ? 1 : 0.6)
     .padding(.horizontal, 6)
     .padding(.vertical, 6)
     .frame(minHeight: 56)
@@ -239,6 +253,7 @@ struct ClerkPhoneNumberField: View {
     .onTapGesture {
       isFocused = true
     }
+    .disabled(!isEnabled)
     .background(
       theme.colors.input,
       in: .rect(cornerRadius: theme.design.borderRadius)

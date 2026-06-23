@@ -11,14 +11,14 @@ struct DevelopmentModeBackgroundView: View {
   let background: DevelopmentModeBackground
 
   var body: some View {
-    Rectangle()
-      .fill(.clear)
-      .overlay {
+    Color.clear
+      .overlay(alignment: .top) {
         Image(background.imageName, bundle: .module)
           .resizable()
           .scaledToFill()
       }
       .clipped()
+      .accessibilityHidden(true)
   }
 }
 

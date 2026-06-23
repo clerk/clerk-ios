@@ -68,4 +68,25 @@ struct PasskeyTests {
 
     #expect(captured.value == passkey.id)
   }
+
+  @Test
+  func relyingPartyIdentifierReadsRegistrationNonce() {
+    let passkey = passkey(withNonce: #"{"rp":{"id":"example.com"},"challenge":"Y2hhbGxlbmdl"}"#)
+
+    #expect(passkey.relyingPartyIdentifier == "example.com")
+  }
+
+  private func passkey(withNonce nonce: String) -> Passkey {
+    Passkey(
+      id: "passkey_test",
+      name: "Test passkey",
+      verification: Verification(
+        status: .unverified,
+        strategy: .passkey,
+        nonce: nonce
+      ),
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
+    )
+  }
 }

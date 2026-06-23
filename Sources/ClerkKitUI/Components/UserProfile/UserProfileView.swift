@@ -210,7 +210,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
         AuthView()
-          .interactiveDismissDisabled()
       }
       .task {
         for await event in clerk.auth.events {
