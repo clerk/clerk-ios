@@ -79,10 +79,6 @@ struct SignUpCodeView: View {
     signUp.id + field.identityPreviewString
   }
 
-  private var identityPreviewIsEnabled: Bool {
-    !authState.authStartFieldIsLocked(field.authStartField)
-  }
-
   let field: Field
 
   var body: some View {
@@ -92,7 +88,7 @@ struct SignUpCodeView: View {
           HeaderView(style: .title, text: field.title)
           IdentityPreviewView(
             label: field.identityPreviewString,
-            isEnabled: identityPreviewIsEnabled
+            isEnabled: !authState.authStartFieldIsLocked(field.authStartField)
           ) {
             authState.authStartPhoneNumberFieldIsActive = field.authStartField == .phoneNumber
             navigation.path = []
