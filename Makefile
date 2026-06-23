@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -21,7 +21,10 @@ help:
 	@echo "  make format-check  - Check formatting without modifying files (for CI)"
 	@echo "  make lint          - Run SwiftLint to check code quality"
 	@echo "  make lint-fix      - Run SwiftLint with auto-fix where possible"
-	@echo "  make check         - Run both format-check and lint (for CI)"
+	@echo "  make check         - Run format-check, lint, and E2E hook checks (for CI)"
+	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
+	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
+	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
@@ -150,8 +153,20 @@ lint-fix:
 	@./scripts/install-swiftlint.sh > /dev/null
 	@"$(SWIFTLINT)" --fix
 
-# Run both format-check and lint
-check: format-check lint
+# Verify E2E-only product hooks are limited to reviewed OS automation workarounds
+check-e2e-hooks:
+	@./scripts/check-e2e-hooks.sh
+
+# Verify E2E selectors are backed by product and E2EHost identifier contracts
+check-e2e-selectors:
+	@./scripts/check-e2e-selectors.sh
+
+# Verify E2E phone numbers stay inside the approved Clerk test-number range
+check-e2e-phone-numbers:
+	@./scripts/check-e2e-phone-numbers.sh
+
+# Run format-check, lint, and lightweight repo checks
+check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers
 	@echo "✅ All checks passed!"
 
 clean:
@@ -226,6 +241,11 @@ test-e2e:
 		echo "   Set CLERK_E2E_PUBLISHABLE_KEY or configure '$$key_name.pk' in .keys.json."; \
 		exit 1; \
 	fi; \
+	if [ "$${CLERK_E2E_SKIP_PREFLIGHT:-}" != "1" ]; then \
+		CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" ./scripts/validate-e2e-test-instances.sh "$$key_name"; \
+	else \
+		echo "Skipping E2E test instance preflight because CLERK_E2E_SKIP_PREFLIGHT=1."; \
+	fi; \
 	echo "Using E2E test key: $$key_name"; \
 	simulator_id=""; \
 	destination="$(IOS_SIMULATOR_DESTINATION)"; \
@@ -287,7 +307,7 @@ test-e2e:
 	chmod 600 build/reports/E2EHostPublishableKey.txt; \
 	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path"
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path"
 	@echo "✅ E2EHost tests completed!"
 
 # Run only integration tests

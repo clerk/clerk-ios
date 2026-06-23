@@ -805,6 +805,7 @@ struct UserServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["current_password"] == "currentPassword123")
       #expect(request.urlEncodedFormBody!["new_password"] == "newPassword123")
       #expect(request.urlEncodedFormBody!["sign_out_of_other_sessions"] == "1")
       requestHandled.setValue(true)
@@ -812,7 +813,42 @@ struct UserServiceTests {
     mock.register()
 
     _ = try await Clerk.shared.dependencies.userService.updatePassword(
-      params: .init(newPassword: "newPassword123", signOutOfOtherSessions: true)
+      params: .init(
+        currentPassword: "currentPassword123",
+        newPassword: "newPassword123",
+        signOutOfOtherSessions: true
+      )
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func updatePasswordOmitsCurrentPasswordWhenNil() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/change_password")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody!["current_password"] == nil)
+      #expect(request.urlEncodedFormBody!["new_password"] == "newPassword123")
+      #expect(request.urlEncodedFormBody!["sign_out_of_other_sessions"] == "0")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.userService.updatePassword(
+      params: .init(
+        currentPassword: nil,
+        newPassword: "newPassword123",
+        signOutOfOtherSessions: false
+      )
     )
     #expect(requestHandled.value)
   }
