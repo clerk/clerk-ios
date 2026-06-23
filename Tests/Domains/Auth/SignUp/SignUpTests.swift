@@ -32,12 +32,13 @@ struct SignUpTests {
 
     configureService(service)
 
-    _ = try await signUp.update(firstName: "John", lastName: "Doe")
+    _ = try await signUp.update(firstName: "John", lastName: "Doe", legalAccepted: true)
 
     let params = try #require(captured.value)
     #expect(params.0 == signUp.id)
     #expect(params.1.firstName == "John")
     #expect(params.1.lastName == "Doe")
+    #expect(params.1.legalAccepted == true)
   }
 
   @Test

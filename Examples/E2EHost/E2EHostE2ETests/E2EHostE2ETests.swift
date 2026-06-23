@@ -43,6 +43,7 @@ final class E2EHostE2ETests: XCTestCase {
   private let testPassword = "ClerkIOS2026E2ETestPassword9!"
 
   private var app: XCUIApplication?
+  private var testPhoneNumbers: [String] = []
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -155,7 +156,7 @@ final class E2EHostE2ETests: XCTestCase {
   func testUserProfileSecurityAddsTwoStepVerificationWithSmsCode() throws {
     let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
+    let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
     app = launchApp(
@@ -319,7 +320,7 @@ final class E2EHostE2ETests: XCTestCase {
   func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
     let publishableKey = try requiredPublishableKey(named: Self.phonePublishableKeyName)
     let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
+    let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
     app = launchApp(
@@ -362,7 +363,7 @@ final class E2EHostE2ETests: XCTestCase {
   func testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod() throws {
     let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
+    let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
     app = launchApp(
@@ -501,7 +502,7 @@ final class E2EHostE2ETests: XCTestCase {
   func testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup() throws {
     let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
+    let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
     app = launchApp(
@@ -698,8 +699,11 @@ extension E2EHostE2ETests {
     static let sessionStatus = "e2e.auth.sessionStatus"
     static let pendingTasks = "e2e.auth.pendingTasks"
     static let userID = "e2e.auth.userID"
+    static let cleanupInProgress = "e2e.auth.cleanupInProgress"
     static let cleanupComplete = "e2e.auth.cleanupComplete"
+    static let cleanupFailed = "e2e.auth.cleanupFailed"
     static let signOut = "e2e.auth.signOut"
+    static let signIn = "e2e.auth.signIn"
     static let deleteAccount = "e2e.auth.deleteAccount"
     static let dismissButton = "clerk.dismissButton"
     static let userButtonProfile = "clerk.userButton.profile"
@@ -779,6 +783,16 @@ extension E2EHostE2ETests {
     case invalidSecret
   }
 
+  private static let approvedTestPhoneNumberPrefix = "5555550"
+  private static let approvedTestPhoneNumberSuffixRange = 100 ... 199
+  private static let approvedTestPhoneNumberRangeDescription = "5555550100...5555550199"
+  private static let approvedTestPhoneNumberSuffixByTestName = [
+    "testUserProfileSecurityAddsTwoStepVerificationWithSmsCode": 110,
+    "testPhoneCodeSignUpThenPhoneCodeSignIn": 120,
+    "testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod": 130,
+    "testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup": 140,
+  ]
+
   fileprivate static func makeUniqueTestEmail() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     return "clerk_ios_e2e+clerk_test_\(suffix)@example.com"
@@ -791,9 +805,33 @@ extension E2EHostE2ETests {
     return "clerk_ios_e2e+clerk_test_\(suffix)@\(domain)"
   }
 
-  fileprivate static func makeUniqueTestPhoneNumber() -> String {
-    let suffix = Int.random(in: 100 ... 199)
-    return "5555550\(suffix)"
+  fileprivate static func makeUniqueTestPhoneNumber(
+    testName: String? = nil,
+    sequence: Int = 0
+  ) -> String {
+    let suffix = approvedTestPhoneNumberSuffix(for: testName, sequence: sequence)
+    let phoneNumber = "\(approvedTestPhoneNumberPrefix)\(suffix)"
+    precondition(
+      isApprovedTestPhoneNumber(phoneNumber),
+      "Generated E2E phone number must be inside \(approvedTestPhoneNumberRangeDescription)."
+    )
+    return phoneNumber
+  }
+
+  private static func approvedTestPhoneNumberSuffix(for testName: String?, sequence: Int) -> Int {
+    let baseSuffix = approvedTestPhoneNumberSuffixByTestName.first { testName?.contains($0.key) == true }?.value
+      ?? stableApprovedTestPhoneNumberSuffix(for: testName ?? "")
+    let zeroBasedOffset = baseSuffix - approvedTestPhoneNumberSuffixRange.lowerBound + sequence
+    let suffixCount = approvedTestPhoneNumberSuffixRange.count
+    return approvedTestPhoneNumberSuffixRange.lowerBound + (zeroBasedOffset % suffixCount)
+  }
+
+  private static func stableApprovedTestPhoneNumberSuffix(for value: String) -> Int {
+    var hash = 0
+    for scalar in value.unicodeScalars {
+      hash = (hash * 31 + Int(scalar.value)) % approvedTestPhoneNumberSuffixRange.count
+    }
+    return approvedTestPhoneNumberSuffixRange.lowerBound + hash
   }
 
   fileprivate static func makeUniqueTestUsername() -> String {
@@ -804,6 +842,30 @@ extension E2EHostE2ETests {
   fileprivate static func makeUniqueTestPassword() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)
     return "ClerkIOS2026E2ENewPassword9!\(suffix)"
+  }
+
+  private static func isApprovedTestPhoneNumber(_ phoneNumber: String) -> Bool {
+    let digits = phoneNumber.filter(\.isWholeNumber)
+    guard digits.count == 10, let value = Int(digits) else {
+      return false
+    }
+
+    let lowerBound = Int("\(approvedTestPhoneNumberPrefix)\(approvedTestPhoneNumberSuffixRange.lowerBound)")!
+    let upperBound = Int("\(approvedTestPhoneNumberPrefix)\(approvedTestPhoneNumberSuffixRange.upperBound)")!
+    return (lowerBound ... upperBound).contains(value)
+  }
+
+  private func makeTrackedTestPhoneNumber(
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) -> String {
+    let phoneNumber = Self.makeUniqueTestPhoneNumber(testName: name, sequence: testPhoneNumbers.count)
+    guard assertApprovedTestPhoneNumber(phoneNumber, file: file, line: line) else {
+      return phoneNumber
+    }
+
+    testPhoneNumbers.append(phoneNumber)
+    return phoneNumber
   }
 
   private func requiredPublishableKey(named keyName: String) throws -> String {
@@ -989,8 +1051,13 @@ extension E2EHostE2ETests {
     let maxAttempts = 4
 
     for attempt in 1 ... maxAttempts {
-      let signInButton = app.buttons["Sign in"].firstMatch
-      guard signInButton.waitForExistence(timeout: 20) else {
+      guard let signInButton = waitForHittableElement(withIdentifier: E2EIdentifier.signIn, in: app, timeout: 20) else {
+        attachAuthStartDiagnostics(
+          in: app,
+          reason: "Expected the E2EHost sign-in button.",
+          attempt: attempt,
+          maxAttempts: maxAttempts
+        )
         XCTFail("Expected the E2EHost sign-in button.", file: file, line: line)
         return
       }
@@ -1002,6 +1069,12 @@ extension E2EHostE2ETests {
       }
 
       guard attempt < maxAttempts else {
+        attachAuthStartDiagnostics(
+          in: app,
+          reason: "Expected AuthView to render an auth start input.",
+          attempt: attempt,
+          maxAttempts: maxAttempts
+        )
         XCTFail("Expected AuthView to render an auth start input.", file: file, line: line)
         return
       }
@@ -1032,13 +1105,181 @@ extension E2EHostE2ETests {
     return identifierInput.exists || phoneNumberInput.exists
   }
 
+  private func attachAuthStartDiagnostics(
+    in app: XCUIApplication,
+    reason: String,
+    attempt: Int,
+    maxAttempts: Int
+  ) {
+    let summary = authStartDiagnosticSummary(
+      in: app,
+      reason: reason,
+      attempt: attempt,
+      maxAttempts: maxAttempts
+    )
+    let summaryAttachment = XCTAttachment(string: summary)
+    summaryAttachment.name = "auth-start-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "auth-start-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "auth-start-timeout"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
+  }
+
+  private func authStartDiagnosticSummary(
+    in app: XCUIApplication,
+    reason: String,
+    attempt: Int,
+    maxAttempts: Int
+  ) -> String {
+    let launchEnvironment = app.launchEnvironment
+    let lines = [
+      "reason: \(reason)",
+      "test: \(name)",
+      "attempt: \(attempt)/\(maxAttempts)",
+      "appState: \(appStateDescription(app.state))",
+      "launchEnvironment:",
+      "  CLERK_E2E_KEY_NAME: \(launchEnvironment["CLERK_E2E_KEY_NAME"] ?? "<missing>")",
+      "  CLERK_E2E_AUTH_MODE: \(launchEnvironment["CLERK_E2E_AUTH_MODE"] ?? "<missing>")",
+      "  CLERK_E2E_KEYCHAIN_SERVICE: \(launchEnvironment["CLERK_E2E_KEYCHAIN_SERVICE"] ?? "<missing>")",
+      "  CLERK_E2E_MODE: \(launchEnvironment["CLERK_E2E_MODE"] ?? "<missing>")",
+      "  CLERK_PUBLISHABLE_KEY: \(redactedPublishableKey(launchEnvironment["CLERK_PUBLISHABLE_KEY"]))",
+      "testPhoneNumbers:",
+      testPhoneNumberDiagnosticSummary(),
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedOut, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionPending, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      "authStartElements:",
+      authStartDiagnosticProbe(E2EIdentifier.authStartIdentifier, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartPhoneNumber, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartContinue, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartIdentifierSwitcher, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.dismissButton, in: app),
+      "requestTimedOutError: \(authStartRequestTimedOutError(in: app).exists)",
+      "keyboardVisible: \(app.keyboards.firstMatch.exists)",
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleTextFields:",
+      visibleElementSummary(app.textFields),
+      "visibleSecureTextFields:",
+      visibleElementSummary(app.secureTextFields),
+      "visibleSwitches:",
+      visibleElementSummary(app.switches),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    return lines.joined(separator: "\n")
+  }
+
+  private func appStateDescription(_ state: XCUIApplication.State) -> String {
+    switch state {
+    case .unknown:
+      return "unknown"
+    case .notRunning:
+      return "notRunning"
+    case .runningBackgroundSuspended:
+      return "runningBackgroundSuspended"
+    case .runningBackground:
+      return "runningBackground"
+    case .runningForeground:
+      return "runningForeground"
+    @unknown default:
+      return "unrecognized(\(state.rawValue))"
+    }
+  }
+
+  private func redactedPublishableKey(_ key: String?) -> String {
+    guard let key, !key.isEmpty else {
+      return "<missing>"
+    }
+
+    guard key.count > 12 else {
+      return "<redacted>"
+    }
+
+    return "\(key.prefix(6))...\(key.suffix(4))"
+  }
+
+  private func testPhoneNumberDiagnosticSummary() -> String {
+    guard !testPhoneNumbers.isEmpty else {
+      return "  <none>"
+    }
+
+    return testPhoneNumbers.map { "  - \($0)" }.joined(separator: "\n")
+  }
+
+  private func authStartDiagnosticProbe(_ identifier: String, in app: XCUIApplication) -> String {
+    let matches = app.descendants(matching: .any).matching(identifier: identifier).allElementsBoundByIndex
+    guard let element = matches.first, element.exists else {
+      return "  \(identifier): exists=false"
+    }
+
+    return [
+      "  \(identifier): exists=true",
+      "matches=\(matches.count)",
+      "hittable=\(element.isHittable)",
+      "enabled=\(element.isEnabled)",
+      "label=\(truncatedDiagnosticValue(element.label))",
+      "value=\(truncatedDiagnosticValue(element.value as? String))",
+    ].joined(separator: ", ")
+  }
+
+  private func visibleElementSummary(_ query: XCUIElementQuery, limit: Int = 30) -> String {
+    let summaries = query.allElementsBoundByIndex
+      .filter(\.exists)
+      .prefix(limit)
+      .map { element in
+        [
+          "identifier=\(truncatedDiagnosticValue(element.identifier))",
+          "label=\(truncatedDiagnosticValue(element.label))",
+          "value=\(truncatedDiagnosticValue(element.value as? String))",
+          "hittable=\(element.isHittable)",
+          "enabled=\(element.isEnabled)",
+        ].joined(separator: ", ")
+      }
+
+    guard !summaries.isEmpty else {
+      return "  <none>"
+    }
+
+    return summaries.map { "  - \($0)" }.joined(separator: "\n")
+  }
+
+  private func truncatedDiagnosticValue(_ value: String?, limit: Int = 120) -> String {
+    guard let value, !value.isEmpty else {
+      return "<empty>"
+    }
+
+    let sanitized = value
+      .replacingOccurrences(of: "\n", with: "\\n")
+      .replacingOccurrences(of: "\r", with: "\\r")
+
+    guard sanitized.count > limit else {
+      return sanitized
+    }
+
+    return "\(sanitized.prefix(limit))..."
+  }
+
   private func dismissAuthIfPresent(in app: XCUIApplication) {
     guard let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) else {
       return
     }
 
     dismissButton.tap()
-    _ = app.buttons["Sign in"].firstMatch.waitForExistence(timeout: 5)
+    _ = app.descendants(matching: .any)[E2EIdentifier.signIn].waitForExistence(timeout: 5)
   }
 
   private func relaunchSignedOutApp(
@@ -1728,6 +1969,10 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
+    guard assertApprovedTestPhoneNumber(phoneNumber, file: file, line: line) else {
+      return
+    }
+
     let element = focusedPhoneNumberInput(withIdentifier: identifier, in: app, file: file, line: line)
     let digits = phoneNumber.filter(\.isWholeNumber)
 
@@ -1750,6 +1995,21 @@ extension E2EHostE2ETests {
       file: file,
       line: line
     )
+  }
+
+  private func assertApprovedTestPhoneNumber(
+    _ phoneNumber: String,
+    file: StaticString,
+    line: UInt
+  ) -> Bool {
+    let isApproved = Self.isApprovedTestPhoneNumber(phoneNumber)
+    XCTAssertTrue(
+      isApproved,
+      "E2E phone number '\(phoneNumber)' must be inside the approved \(Self.approvedTestPhoneNumberRangeDescription) test-number range.",
+      file: file,
+      line: line
+    )
+    return isApproved
   }
 
   private func focusedPhoneNumberInput(
@@ -2303,12 +2563,71 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.cleanupComplete].waitForExistence(timeout: 45),
-      "Expected E2EHost in-app cleanup to finish.",
-      file: file,
-      line: line
-    )
+    let cleanupComplete = app.staticTexts[E2EIdentifier.cleanupComplete]
+    let cleanupFailed = app.staticTexts[E2EIdentifier.cleanupFailed]
+    let deadline = Date().addingTimeInterval(45)
+
+    repeat {
+      if cleanupComplete.exists {
+        return
+      }
+
+      if cleanupFailed.exists {
+        attachCleanupDiagnostics(in: app, reason: cleanupFailed.label)
+        XCTFail(
+          "Expected E2EHost in-app cleanup to finish, but cleanup failed: \(cleanupFailed.label)",
+          file: file,
+          line: line
+        )
+        return
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    attachCleanupDiagnostics(in: app, reason: "Timed out waiting for cleanup to finish.")
+    XCTFail("Expected E2EHost in-app cleanup to finish.", file: file, line: line)
+  }
+
+  private func attachCleanupDiagnostics(in app: XCUIApplication, reason: String) {
+    let lines = [
+      "reason: \(truncatedDiagnosticValue(reason, limit: 300))",
+      "test: \(name)",
+      "appState: \(appStateDescription(app.state))",
+      "testPhoneNumbers:",
+      testPhoneNumberDiagnosticSummary(),
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedOut, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionPending, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userID, in: app),
+      "cleanupMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.cleanupInProgress, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupComplete, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupFailed, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "cleanup-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "cleanup-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "cleanup-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func assertPendingTasksContain(

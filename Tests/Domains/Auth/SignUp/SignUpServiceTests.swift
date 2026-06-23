@@ -246,13 +246,14 @@ struct SignUpServiceTests {
       #expect(request.httpMethod == "PATCH")
       #expect(request.urlEncodedFormBody!["first_name"] == "John")
       #expect(request.urlEncodedFormBody!["last_name"] == "Doe")
+      #expect(request.urlEncodedFormBody!["legal_accepted"] == "1")
       requestHandled.setValue(true)
     }
     mock.register()
 
     _ = try await Clerk.shared.dependencies.signUpService.update(
       signUpId: signUp.id,
-      params: .init(firstName: "John", lastName: "Doe")
+      params: .init(firstName: "John", lastName: "Doe", legalAccepted: true)
     )
     #expect(requestHandled.value)
   }
