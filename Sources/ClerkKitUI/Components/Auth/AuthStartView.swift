@@ -374,27 +374,18 @@ extension AuthStartView {
   }
 
   private func signUpParams() async throws -> SignUp {
-    let firstName = authState.signUpFirstName.isEmptyTrimmed ? nil : authState.signUpFirstName
-    let lastName = authState.signUpLastName.isEmptyTrimmed ? nil : authState.signUpLastName
-
     if phoneNumberInputIsActive {
-      return try await clerk.auth.signUp(
-        firstName: firstName,
-        lastName: lastName,
+      try await clerk.auth.signUp(
         phoneNumber: authState.authStartPhoneNumber,
         unsafeMetadata: authState.unsafeMetadata
       )
     } else if authState.authStartIdentifier.isEmailAddress {
-      return try await clerk.auth.signUp(
+      try await clerk.auth.signUp(
         emailAddress: authState.authStartIdentifier,
-        firstName: firstName,
-        lastName: lastName,
         unsafeMetadata: authState.unsafeMetadata
       )
     } else {
-      return try await clerk.auth.signUp(
-        firstName: firstName,
-        lastName: lastName,
+      try await clerk.auth.signUp(
         username: authState.authStartIdentifier,
         unsafeMetadata: authState.unsafeMetadata
       )
