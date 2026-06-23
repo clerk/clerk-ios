@@ -35,7 +35,7 @@ struct SignInFactorOnePasswordView: View {
           if let identifier = factor.safeIdentifier {
             IdentityPreviewView(
               label: identifier.formattedAsPhoneNumberIfPossible,
-              isEnabled: authState.authStartIdentifierCanBeChanged
+              isEnabled: !authState.authStartIdentifierIsLocked(for: factor)
             ) {
               navigation.path = []
             }

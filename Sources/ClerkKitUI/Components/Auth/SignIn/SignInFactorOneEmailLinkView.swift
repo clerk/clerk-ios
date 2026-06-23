@@ -75,7 +75,7 @@ extension EmailLinkVerificationView {
       if let emailAddress {
         IdentityPreviewView(
           label: emailAddress,
-          isEnabled: authState.authStartIdentifierCanBeChanged
+          isEnabled: !authState.authStartIdentifierIsLocked
         ) {
           navigation.path = []
         }

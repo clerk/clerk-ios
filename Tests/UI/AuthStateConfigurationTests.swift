@@ -99,9 +99,11 @@ struct AuthStateConfigurationTests {
       prefilledFieldsAreLocked: true
     ))
 
-    #expect(!authState.authStartIdentifierIsEnabled)
-    #expect(authState.authStartPhoneNumberIsEnabled)
-    #expect(!authState.authStartIdentifierCanBeChanged)
+    #expect(authState.authStartIdentifierIsLocked)
+    #expect(!authState.authStartPhoneNumberIsLocked)
+    #expect(authState.authStartIdentifierIsLocked(for: .mockEmailCode))
+    #expect(authState.authStartIdentifierIsLocked(for: .init(strategy: .password, safeIdentifier: "seed@example.com")))
+    #expect(!authState.authStartIdentifierIsLocked(for: .mockPhoneCode))
     #expect(!authState.signUpFirstNameIsEnabled)
     #expect(authState.signUpLastNameIsEnabled)
   }
@@ -115,9 +117,15 @@ struct AuthStateConfigurationTests {
       prefilledFieldsAreLocked: true
     ))
 
-    #expect(authState.authStartIdentifierIsEnabled)
-    #expect(!authState.authStartPhoneNumberIsEnabled)
-    #expect(!authState.authStartIdentifierCanBeChanged)
+    #expect(!authState.authStartIdentifierIsLocked)
+    #expect(authState.authStartPhoneNumberIsLocked)
+    #expect(!authState.authStartIdentifierIsLocked(for: .mockEmailCode))
+    #expect(authState.authStartIdentifierIsLocked(for: .mockPhoneCode))
+    #expect(authState.authStartIdentifierIsLocked(for: .init(
+      strategy: .password,
+      phoneNumberId: "phone_123",
+      safeIdentifier: "+17777770123"
+    )))
   }
 
   @Test
@@ -131,8 +139,8 @@ struct AuthStateConfigurationTests {
     ))
 
     #expect(authState.authStartIdentifier == "stored@example.com")
-    #expect(authState.authStartIdentifierIsEnabled)
-    #expect(authState.authStartIdentifierCanBeChanged)
+    #expect(!authState.authStartIdentifierIsLocked)
+    #expect(!authState.authStartPhoneNumberIsLocked)
     #expect(authState.signUpFirstNameIsEnabled)
   }
 

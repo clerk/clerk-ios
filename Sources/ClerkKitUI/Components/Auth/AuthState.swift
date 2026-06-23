@@ -24,6 +24,12 @@ final class AuthState {
   /// Whether the configure method received an initial identifier value.
   private(set) var hasInitialIdentifier: Bool = false
 
+  /// Whether the non-phone auth-start identifier field was populated from configuration.
+  private(set) var authStartIdentifierWasPrefilled: Bool = false
+
+  /// Whether the phone auth-start identifier field was populated from configuration.
+  private(set) var authStartPhoneNumberWasPrefilled: Bool = false
+
   /// Whether the configure method received an initial first name value.
   private(set) var hasInitialFirstName: Bool = false
 
@@ -89,7 +95,10 @@ final class AuthState {
   /// Applies auth flow configuration values.
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    hasInitialIdentifier = config.initialIdentifier?.isEmptyTrimmed == false
+    let initialIdentifier = config.initialIdentifier
+    hasInitialIdentifier = initialIdentifier?.isEmptyTrimmed == false
+    authStartPhoneNumberWasPrefilled = hasInitialIdentifier && initialIdentifier?.looksLikePhoneNumber == true
+    authStartIdentifierWasPrefilled = hasInitialIdentifier && !authStartPhoneNumberWasPrefilled
     hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
     hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
     prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
@@ -149,16 +158,27 @@ final class AuthState {
 }
 
 extension AuthState {
-  var authStartIdentifierCanBeChanged: Bool {
-    !(prefilledFieldsAreLocked && hasInitialIdentifier)
+  var authStartIdentifierIsLocked: Bool {
+    prefilledFieldsAreLocked && authStartIdentifierWasPrefilled && !authStartIdentifier.isEmptyTrimmed
   }
 
-  var authStartIdentifierIsEnabled: Bool {
-    !prefilledFieldsAreLocked || !hasInitialIdentifier || authStartIdentifier.isEmptyTrimmed
+  var authStartPhoneNumberIsLocked: Bool {
+    prefilledFieldsAreLocked && authStartPhoneNumberWasPrefilled && !authStartPhoneNumber.isEmptyTrimmed
   }
 
-  var authStartPhoneNumberIsEnabled: Bool {
-    !prefilledFieldsAreLocked || !hasInitialIdentifier || authStartPhoneNumber.isEmptyTrimmed
+  func authStartIdentifierIsLocked(for factor: Factor) -> Bool {
+    switch factor.strategy {
+    case .phoneCode, .resetPasswordPhoneCode:
+      authStartPhoneNumberIsLocked
+    case .emailCode, .emailLink, .resetPasswordEmailCode:
+      authStartIdentifierIsLocked
+    case .password, .passkey:
+      factor.phoneNumberId != nil || factor.safeIdentifier?.looksLikePhoneNumber == true
+        ? authStartPhoneNumberIsLocked
+        : authStartIdentifierIsLocked
+    default:
+      false
+    }
   }
 
   var signUpFirstNameIsEnabled: Bool {

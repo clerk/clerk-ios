@@ -51,7 +51,7 @@ struct AuthStartView: View {
   }
 
   var showIdentifierSwitcher: Bool {
-    (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled && authState.authStartIdentifierCanBeChanged
+    (emailIsEnabled || usernameIsEnabled) && phoneNumberIsEnabled
   }
 
   var showOrDivider: Bool {
@@ -221,7 +221,7 @@ extension AuthStartView {
         "Enter your phone number",
         text: $authState.authStartPhoneNumber,
         fieldState: fieldError != nil ? .error : .default,
-        isEnabled: authState.authStartPhoneNumberIsEnabled,
+        isEnabled: !authState.authStartPhoneNumberIsLocked,
         accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.phoneNumber
       )
       .transition(.blurReplace)
@@ -232,7 +232,7 @@ extension AuthStartView {
           emailOrUsernamePlaceholder,
           text: $authState.authStartIdentifier,
           fieldState: fieldError != nil ? .error : .default,
-          isEnabled: authState.authStartIdentifierIsEnabled,
+          isEnabled: !authState.authStartIdentifierIsLocked,
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
