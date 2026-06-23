@@ -771,13 +771,14 @@ struct UserServiceTests {
   @Test
   func testGetSessions() async throws {
     let user = User.mock
+    let sessions = [Session.mock, Session.mock2]
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/active")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: JSONEncoder.clerkEncoder.encode([Session.mock]),
+        .get: JSONEncoder.clerkEncoder.encode(sessions),
       ]
     )
 
@@ -787,8 +788,11 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getSessions(user: user)
+    let fetchedSessions = try await Clerk.shared.dependencies.userService.getSessions(user: user)
+
     #expect(requestHandled.value)
+    #expect(fetchedSessions.map(\.id) == sessions.map(\.id))
+    #expect(Clerk.shared.sessionsByUserId[user.id]?.map(\.id) == sessions.map(\.id))
   }
 
   @Test
