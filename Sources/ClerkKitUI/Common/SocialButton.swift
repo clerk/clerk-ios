@@ -43,7 +43,8 @@ struct SocialButton: View {
             HStack(spacing: 12) {
               ProviderIconView(
                 provider: provider,
-                image: image
+                image: image,
+                foregroundColor: theme.colors.secondaryButtonForeground
               )
               .frame(width: 21, height: 21)
 
@@ -56,7 +57,8 @@ struct SocialButton: View {
 
           ProviderIconView(
             provider: provider,
-            image: image
+            image: image,
+            foregroundColor: theme.colors.secondaryButtonForeground
           )
           .frame(width: 21, height: 21)
         }

@@ -142,13 +142,7 @@ extension ClerkTheme {
       self.ring = ring
       self.muted = muted
       self.secondaryButtonBackground = secondaryButtonBackground
-      self.secondaryButtonForeground =
-        secondaryButtonForeground
-        ?? (
-          secondaryButtonBackground.isDark
-            ? Self.defaultDarkSecondaryTextColor
-            : Self.defaultLightSecondaryTextColor
-        )
+      self.secondaryButtonForeground = secondaryButtonForeground ?? foreground
       self.shadow = shadow
 
       // Derived tokens
@@ -185,8 +179,6 @@ extension ClerkTheme.Colors {
   public static let defaultRingColor = Color(.neutral)
   public static let defaultMutedColor = Color(.muted)
   public static let defaultSecondaryButtonBackgroundColor = Color(.background)
-  public static let defaultLightSecondaryTextColor = Color(red: 47.0 / 255.0, green: 48.0 / 255.0, blue: 55.0 / 255.0)
-  public static let defaultDarkSecondaryTextColor = Color.white
   public static let defaultShadowColor = Color(.neutral)
   public static let defaultBorderColor = Color(.neutral)
 
