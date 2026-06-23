@@ -88,8 +88,9 @@ extension SignInFactorCodeView {
       if let identifier = factor.safeIdentifier {
         IdentityPreviewView(
           label: identifier.formattedAsPhoneNumberIfPossible,
-          isEnabled: !authState.authStartIdentifierIsLocked(for: factor)
+          isEnabled: !authState.authStartFieldIsLocked(factor.authStartField)
         ) {
+          authState.authStartPhoneNumberFieldIsActive = factor.authStartField == .phoneNumber
           navigation.path = []
         }
       }

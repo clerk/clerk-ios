@@ -52,6 +52,15 @@ struct SignUpCodeView: View {
         phoneNumber.formattedAsPhoneNumberIfPossible
       }
     }
+
+    var authStartField: AuthStartField {
+      switch self {
+      case .email:
+        .emailOrUsername
+      case .phone:
+        .phoneNumber
+      }
+    }
   }
 
   var resendString: LocalizedStringKey {
@@ -71,12 +80,7 @@ struct SignUpCodeView: View {
   }
 
   private var identityPreviewIsEnabled: Bool {
-    switch field {
-    case .email:
-      !authState.authStartIdentifierIsLocked
-    case .phone:
-      !authState.authStartPhoneNumberIsLocked
-    }
+    !authState.authStartFieldIsLocked(field.authStartField)
   }
 
   let field: Field
@@ -90,6 +94,7 @@ struct SignUpCodeView: View {
             label: field.identityPreviewString,
             isEnabled: identityPreviewIsEnabled
           ) {
+            authState.authStartPhoneNumberFieldIsActive = field.authStartField == .phoneNumber
             navigation.path = []
           }
         }

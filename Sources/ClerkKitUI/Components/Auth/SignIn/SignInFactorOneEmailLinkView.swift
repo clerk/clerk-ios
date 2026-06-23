@@ -77,6 +77,7 @@ extension EmailLinkVerificationView {
           label: emailAddress,
           isEnabled: !authState.authStartIdentifierIsLocked
         ) {
+          authState.authStartPhoneNumberFieldIsActive = false
           navigation.path = []
         }
       }

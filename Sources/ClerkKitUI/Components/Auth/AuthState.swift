@@ -157,6 +157,11 @@ final class AuthState {
   var signUpLegalAccepted = false
 }
 
+enum AuthStartField {
+  case emailOrUsername
+  case phoneNumber
+}
+
 extension AuthState {
   var authStartIdentifierIsLocked: Bool {
     prefilledFieldsAreLocked && authStartIdentifierWasPrefilled && !authStartIdentifier.isEmptyTrimmed
@@ -166,17 +171,13 @@ extension AuthState {
     prefilledFieldsAreLocked && authStartPhoneNumberWasPrefilled && !authStartPhoneNumber.isEmptyTrimmed
   }
 
-  func authStartIdentifierIsLocked(for factor: Factor) -> Bool {
-    switch factor.strategy {
-    case .phoneCode, .resetPasswordPhoneCode:
-      authStartPhoneNumberIsLocked
-    case .emailCode, .emailLink, .resetPasswordEmailCode:
+  func authStartFieldIsLocked(_ field: AuthStartField?) -> Bool {
+    switch field {
+    case .emailOrUsername:
       authStartIdentifierIsLocked
-    case .password, .passkey:
-      factor.phoneNumberId != nil || factor.safeIdentifier?.looksLikePhoneNumber == true
-        ? authStartPhoneNumberIsLocked
-        : authStartIdentifierIsLocked
-    default:
+    case .phoneNumber:
+      authStartPhoneNumberIsLocked
+    case nil:
       false
     }
   }

@@ -101,9 +101,12 @@ struct AuthStateConfigurationTests {
 
     #expect(authState.authStartIdentifierIsLocked)
     #expect(!authState.authStartPhoneNumberIsLocked)
-    #expect(authState.authStartIdentifierIsLocked(for: .mockEmailCode))
-    #expect(authState.authStartIdentifierIsLocked(for: .init(strategy: .password, safeIdentifier: "seed@example.com")))
-    #expect(!authState.authStartIdentifierIsLocked(for: .mockPhoneCode))
+    #expect(authState.authStartFieldIsLocked(Factor.mockEmailCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor(
+      strategy: .password,
+      safeIdentifier: "seed@example.com"
+    ).authStartField))
+    #expect(!authState.authStartFieldIsLocked(Factor.mockPhoneCode.authStartField))
     #expect(!authState.signUpFirstNameIsEnabled)
     #expect(authState.signUpLastNameIsEnabled)
   }
@@ -119,13 +122,13 @@ struct AuthStateConfigurationTests {
 
     #expect(!authState.authStartIdentifierIsLocked)
     #expect(authState.authStartPhoneNumberIsLocked)
-    #expect(!authState.authStartIdentifierIsLocked(for: .mockEmailCode))
-    #expect(authState.authStartIdentifierIsLocked(for: .mockPhoneCode))
-    #expect(authState.authStartIdentifierIsLocked(for: .init(
+    #expect(!authState.authStartFieldIsLocked(Factor.mockEmailCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor.mockPhoneCode.authStartField))
+    #expect(authState.authStartFieldIsLocked(Factor(
       strategy: .password,
       phoneNumberId: "phone_123",
       safeIdentifier: "+17777770123"
-    )))
+    ).authStartField))
   }
 
   @Test
