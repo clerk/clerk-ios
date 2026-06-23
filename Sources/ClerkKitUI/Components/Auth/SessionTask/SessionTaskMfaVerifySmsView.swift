@@ -48,13 +48,9 @@ struct SessionTaskMfaVerifySmsView: View {
         )
         .padding(.bottom, 16)
 
-        Button {
+        IdentityPreviewView(label: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) {
           dismiss()
-        } label: {
-          IdentityPreviewView(label: phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)
         }
-        .buttonStyle(.secondary(config: .init(size: .small)))
-        .simultaneousGesture(TapGesture())
         .padding(.bottom, 24)
 
         OTPField(

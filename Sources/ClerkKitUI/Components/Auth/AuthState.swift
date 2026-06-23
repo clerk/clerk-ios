@@ -21,8 +21,23 @@ final class AuthState {
   /// Whether identifier values are persisted to `UserDefaults` between sessions.
   private(set) var persistsIdentifiers: Bool = true
 
-  /// Whether the configure method received any initial values.
-  private(set) var hasInitialValues: Bool = false
+  /// Whether the configure method received an initial identifier value.
+  private(set) var hasInitialIdentifier: Bool = false
+
+  /// Whether the non-phone auth-start identifier field was populated from configuration.
+  private(set) var authStartIdentifierWasPrefilled: Bool = false
+
+  /// Whether the phone auth-start identifier field was populated from configuration.
+  private(set) var authStartPhoneNumberWasPrefilled: Bool = false
+
+  /// Whether the configure method received an initial first name value.
+  private(set) var hasInitialFirstName: Bool = false
+
+  /// Whether the configure method received an initial last name value.
+  private(set) var hasInitialLastName: Bool = false
+
+  /// Whether configured initial values should be shown as read-only fields.
+  private(set) var prefilledFieldsAreLocked = false
 
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
@@ -80,7 +95,13 @@ final class AuthState {
   /// Applies auth flow configuration values.
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    hasInitialValues = config.initialIdentifier != nil
+    let initialIdentifier = config.initialIdentifier
+    hasInitialIdentifier = initialIdentifier?.isEmptyTrimmed == false
+    authStartPhoneNumberWasPrefilled = hasInitialIdentifier && initialIdentifier?.looksLikePhoneNumber == true
+    authStartIdentifierWasPrefilled = hasInitialIdentifier && !authStartPhoneNumberWasPrefilled
+    hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
+    hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
+    prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
     unsafeMetadata = config.unsafeMetadata
 
     if !config.persistsIdentifiers {
@@ -105,6 +126,14 @@ final class AuthState {
       authStartPhoneNumber = ""
       authStartPhoneNumberFieldIsActive = false
     }
+
+    if let firstName = config.initialFirstName {
+      signUpFirstName = firstName
+    }
+
+    if let lastName = config.initialLastName {
+      signUpLastName = lastName
+    }
   }
 
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
@@ -126,6 +155,40 @@ final class AuthState {
   var signUpEmailAddress = ""
   var signUpPhoneNumber = ""
   var signUpLegalAccepted = false
+}
+
+enum AuthStartField {
+  case emailOrUsername
+  case phoneNumber
+}
+
+extension AuthState {
+  var authStartIdentifierIsLocked: Bool {
+    prefilledFieldsAreLocked && authStartIdentifierWasPrefilled && !authStartIdentifier.isEmptyTrimmed
+  }
+
+  var authStartPhoneNumberIsLocked: Bool {
+    prefilledFieldsAreLocked && authStartPhoneNumberWasPrefilled && !authStartPhoneNumber.isEmptyTrimmed
+  }
+
+  func authStartFieldIsLocked(_ field: AuthStartField?) -> Bool {
+    switch field {
+    case .emailOrUsername:
+      authStartIdentifierIsLocked
+    case .phoneNumber:
+      authStartPhoneNumberIsLocked
+    case nil:
+      false
+    }
+  }
+
+  var signUpFirstNameIsEnabled: Bool {
+    !(prefilledFieldsAreLocked && hasInitialFirstName && !signUpFirstName.isEmptyTrimmed)
+  }
+
+  var signUpLastNameIsEnabled: Bool {
+    !(prefilledFieldsAreLocked && hasInitialLastName && !signUpLastName.isEmptyTrimmed)
+  }
 }
 
 extension AuthState {

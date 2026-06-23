@@ -52,6 +52,15 @@ struct SignUpCodeView: View {
         phoneNumber.formattedAsPhoneNumberIfPossible
       }
     }
+
+    var authStartField: AuthStartField {
+      switch self {
+      case .email:
+        .emailOrUsername
+      case .phone:
+        .phoneNumber
+      }
+    }
   }
 
   var resendString: LocalizedStringKey {
@@ -77,13 +86,13 @@ struct SignUpCodeView: View {
       VStack(spacing: 32) {
         VStack(spacing: 8) {
           HeaderView(style: .title, text: field.title)
-          Button {
+          IdentityPreviewView(
+            label: field.identityPreviewString,
+            isEnabled: !authState.authStartFieldIsLocked(field.authStartField)
+          ) {
+            authState.authStartPhoneNumberFieldIsActive = field.authStartField == .phoneNumber
             navigation.path = []
-          } label: {
-            IdentityPreviewView(label: field.identityPreviewString)
           }
-          .buttonStyle(.secondary(config: .init(size: .small)))
-          .simultaneousGesture(TapGesture())
         }
 
         VStack(spacing: 24) {

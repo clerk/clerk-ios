@@ -185,7 +185,7 @@ struct AuthStartView: View {
       if authState.persistsIdentifiers {
         lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
       }
-      if authState.hasInitialValues {
+      if authState.hasInitialIdentifier {
         authState.authStartPhoneNumberFieldIsActive = shouldStartOnPhoneNumber
       } else if shouldStartOnPhoneNumber {
         authState.authStartPhoneNumberFieldIsActive = true
@@ -221,6 +221,7 @@ extension AuthStartView {
         "Enter your phone number",
         text: $authState.authStartPhoneNumber,
         fieldState: fieldError != nil ? .error : .default,
+        isEnabled: !authState.authStartPhoneNumberIsLocked,
         accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.phoneNumber
       )
       .transition(.blurReplace)
@@ -231,6 +232,7 @@ extension AuthStartView {
           emailOrUsernamePlaceholder,
           text: $authState.authStartIdentifier,
           fieldState: fieldError != nil ? .error : .default,
+          isEnabled: !authState.authStartIdentifierIsLocked,
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
