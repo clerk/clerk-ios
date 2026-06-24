@@ -40,6 +40,7 @@ private struct AuthFooterModifier: ViewModifier {
     content
       .bottomTrackedFooter(isPresented: clerk.shouldShowDevelopmentModeWarning) {
         DevelopmentModeView()
+          .offset(y: 8) // nudge the label toward the bottom line; grid (background) stays put
           .padding(.top, 16)
           .frame(maxWidth: .infinity)
           .background {
