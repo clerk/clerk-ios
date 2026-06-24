@@ -190,9 +190,13 @@ def key_entry(keys, key_name)
   entry.is_a?(Hash) ? entry : {}
 end
 
-def publishable_key_for(keys, key_name)
+def publishable_key_for(keys, key_name, allow_global_env_override: false)
   selected_key_name = ENV["CLERK_E2E_KEY_NAME"]
-  if (blank?(selected_key_name) || selected_key_name == key_name) && !blank?(ENV["CLERK_E2E_PUBLISHABLE_KEY"])
+  if selected_key_name == key_name && !blank?(ENV["CLERK_E2E_PUBLISHABLE_KEY"])
+    return ENV["CLERK_E2E_PUBLISHABLE_KEY"].strip
+  end
+
+  if allow_global_env_override && blank?(selected_key_name) && !blank?(ENV["CLERK_E2E_PUBLISHABLE_KEY"])
     return ENV["CLERK_E2E_PUBLISHABLE_KEY"].strip
   end
 
@@ -265,7 +269,11 @@ end
 failures = []
 
 key_names.each do |key_name|
-  publishable_key = publishable_key_for(keys, key_name)
+  publishable_key = publishable_key_for(
+    keys,
+    key_name,
+    allow_global_env_override: key_names.length == 1
+  )
   if blank?(publishable_key)
     failures << "#{key_name}: missing publishable key"
     next
