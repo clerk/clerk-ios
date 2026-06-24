@@ -96,7 +96,7 @@ final class E2EHostE2ETests: XCTestCase {
 
     openAuth(in: signInApp)
     enterAuthStartIdentifier(email, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(in: signInApp) else { return }
+    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: signInApp) else { return }
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
     waitForSignedIn(in: signInApp)
@@ -312,9 +312,7 @@ final class E2EHostE2ETests: XCTestCase {
     guard let signInApp = app else { return }
 
     openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
+    submitEmailSignInAndTapUseAnotherMethod(email: email, in: signInApp)
     tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
     waitForSignInCodePrepared(in: signInApp)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
@@ -457,7 +455,7 @@ final class E2EHostE2ETests: XCTestCase {
 
     openAuth(in: signInApp)
     enterAuthStartIdentifier(username, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(in: signInApp) else { return }
+    guard submitAuthStartAndWaitForSignInPassword(identifier: username, in: signInApp) else { return }
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
     waitForSignedIn(in: signInApp)
@@ -646,7 +644,7 @@ final class E2EHostE2ETests: XCTestCase {
 
     openAuth(in: signInApp)
     enterAuthStartIdentifier(email, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(in: signInApp) else { return }
+    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: signInApp) else { return }
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
     tap(E2EIdentifier.signInContinue, in: signInApp)
     dismissSavePasswordPromptIfPresent(in: signInApp)
@@ -1440,7 +1438,7 @@ extension E2EHostE2ETests {
     line: UInt = #line
   ) {
     enterAuthStartIdentifier(email, in: app, file: file, line: line)
-    guard submitAuthStartAndWaitForSignInPassword(in: app, file: file, line: line) else { return }
+    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: app, file: file, line: line) else { return }
     enterText(testPassword, into: E2EIdentifier.signInPassword, in: app, file: file, line: line)
     tap(E2EIdentifier.signInContinue, in: app, file: file, line: line)
   }
@@ -1501,6 +1499,36 @@ extension E2EHostE2ETests {
     tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
     waitForSignInCodePrepared(in: app, file: file, line: line)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+  }
+
+  private func submitEmailSignInAndTapUseAnotherMethod(
+    email: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+
+    for attempt in 1 ... maxAttempts {
+      if attempt > 1 {
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+      }
+
+      enterAuthStartIdentifier(email, in: app, file: file, line: line)
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+
+      if let useAnotherMethod = waitForHittableElement(
+        withIdentifier: E2EIdentifier.signInUseAnotherMethod,
+        in: app,
+        timeout: 45
+      ) {
+        useAnotherMethod.tap()
+        return
+      }
+    }
+
+    XCTFail("Expected sign-in alternative methods after submitting the email.", file: file, line: line)
   }
 
   private func submitPhoneSignInAndTapUseAnotherMethod(
@@ -1737,6 +1765,7 @@ extension E2EHostE2ETests {
   }
 
   private func submitAuthStartAndWaitForSignInPassword(
+    identifier: String,
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
@@ -1745,6 +1774,13 @@ extension E2EHostE2ETests {
     let message = "Expected sign-in password preparation to finish before entering the password."
 
     for attempt in 1 ... maxAttempts {
+      if attempt > 1 {
+        dismissRequestTimedOutErrorIfPresent(in: app)
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+        enterAuthStartIdentifier(identifier, in: app, file: file, line: line)
+      }
+
       tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
       waitForAuthStartRequestTimedOutErrorToClear(in: app)
 
@@ -1755,7 +1791,8 @@ extension E2EHostE2ETests {
       switch result {
       case .prepared:
         return true
-      case .requestTimedOut where attempt < maxAttempts:
+      case .requestTimedOut where attempt < maxAttempts,
+           .timedOut where attempt < maxAttempts:
         dismissRequestTimedOutErrorIfPresent(in: app)
         continue
       case .requestTimedOut, .timedOut:
