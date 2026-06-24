@@ -161,6 +161,12 @@ final class E2EHostE2ETests: XCTestCase {
     let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
+    try deleteExistingUsersMatchingPhoneNumber(
+      phoneNumber,
+      publishableKey: publishableKey,
+      keyName: Self.multiMethodsPublishableKeyName
+    )
+
     app = launchApp(
       authMode: "signUp",
       publishableKey: publishableKey,
@@ -325,6 +331,12 @@ final class E2EHostE2ETests: XCTestCase {
     let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
 
+    try deleteExistingUsersMatchingPhoneNumber(
+      phoneNumber,
+      publishableKey: publishableKey,
+      keyName: Self.phonePublishableKeyName
+    )
+
     app = launchApp(
       authMode: "signUp",
       publishableKey: publishableKey,
@@ -367,6 +379,12 @@ final class E2EHostE2ETests: XCTestCase {
     let email = Self.makeUniqueTestEmail()
     let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    try deleteExistingUsersMatchingPhoneNumber(
+      phoneNumber,
+      publishableKey: publishableKey,
+      keyName: Self.multiMethodsPublishableKeyName
+    )
 
     app = launchApp(
       authMode: "signUp",
@@ -506,6 +524,12 @@ final class E2EHostE2ETests: XCTestCase {
     let email = Self.makeUniqueTestEmail()
     let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    try deleteExistingUsersMatchingPhoneNumber(
+      phoneNumber,
+      publishableKey: publishableKey,
+      keyName: Self.sessionTaskSetupMfaPublishableKeyName
+    )
 
     app = launchApp(
       authMode: "signUp",
@@ -762,6 +786,7 @@ extension E2EHostE2ETests {
 
   private enum CodePreparationResult: Equatable {
     case prepared
+    case identifierTaken(String)
     case requestTimedOut
     case timedOut
   }
@@ -784,6 +809,14 @@ extension E2EHostE2ETests {
 
     var description: String {
       "Backend API request failed with status \(statusCode): \(responseBody)"
+    }
+  }
+
+  fileprivate struct BackendAPIResponseError: Error, CustomStringConvertible {
+    let message: String
+
+    var description: String {
+      message
     }
   }
 
@@ -897,6 +930,14 @@ extension E2EHostE2ETests {
   }
 
   private func requiredSecretKey(named keyName: String) throws -> String {
+    if let secretKey = secretKey(named: keyName) {
+      return secretKey
+    }
+
+    throw XCTSkip("Configure '\(keyName).sk' in .keys.json.")
+  }
+
+  private func secretKey(named keyName: String) -> String? {
     let environment = ProcessInfo.processInfo.environment
     let selectedKeyName = Self.publishableKeyName(environment: environment)
 
@@ -908,7 +949,7 @@ extension E2EHostE2ETests {
       return secretKey
     }
 
-    throw XCTSkip("Configure '\(keyName).sk' in .keys.json.")
+    return nil
   }
 
   private static func publishableKeyName(environment: [String: String]) -> String {
@@ -1638,6 +1679,9 @@ extension E2EHostE2ETests {
       switch result {
       case .prepared:
         return
+      case let .identifierTaken(message):
+        XCTFail(message, file: file, line: line)
+        return
       case .requestTimedOut where attempt < maxAttempts:
         continue
       case .requestTimedOut, .timedOut:
@@ -1670,6 +1714,9 @@ extension E2EHostE2ETests {
       )
       switch result {
       case .prepared:
+        return
+      case let .identifierTaken(message):
+        XCTFail(message, file: file, line: line)
         return
       case .requestTimedOut where attempt < maxAttempts:
         dismissRequestTimedOutErrorIfPresent(in: app)
@@ -1842,6 +1889,7 @@ extension E2EHostE2ETests {
       NSPredicate(format: "label CONTAINS %@", "Resend (")
     ).firstMatch
     let timeoutError = authStartRequestTimedOutError(in: app)
+    let identifierTakenError = authStartIdentifierTakenError(in: app)
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
@@ -1851,6 +1899,10 @@ extension E2EHostE2ETests {
 
       if resendCooldown.exists {
         return .prepared
+      }
+
+      if identifierTakenError.exists {
+        return .identifierTaken(identifierTakenError.label)
       }
 
       if timeoutError.exists {
@@ -1868,6 +1920,10 @@ extension E2EHostE2ETests {
       return .prepared
     }
 
+    if identifierTakenError.exists {
+      return .identifierTaken(identifierTakenError.label)
+    }
+
     if timeoutError.exists {
       return .requestTimedOut
     }
@@ -1883,11 +1939,16 @@ extension E2EHostE2ETests {
       NSPredicate(format: "label CONTAINS %@", "Resend (")
     ).firstMatch
     let timeoutError = authStartRequestTimedOutError(in: app)
+    let identifierTakenError = authStartIdentifierTakenError(in: app)
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
       if resendCooldown.exists {
         return .prepared
+      }
+
+      if identifierTakenError.exists {
+        return .identifierTaken(identifierTakenError.label)
       }
 
       if timeoutError.exists {
@@ -1899,6 +1960,10 @@ extension E2EHostE2ETests {
 
     if resendCooldown.exists {
       return .prepared
+    }
+
+    if identifierTakenError.exists {
+      return .identifierTaken(identifierTakenError.label)
     }
 
     if timeoutError.exists {
@@ -1915,6 +1980,8 @@ extension E2EHostE2ETests {
     switch result {
     case .prepared:
       message
+    case let .identifierTaken(errorMessage):
+      "\(message) Auth start showed: \(errorMessage)"
     case .requestTimedOut:
       "\(message) Auth start showed '\(E2EIdentifier.requestTimedOutErrorMessage)' after retrying."
     case .timedOut:
@@ -1925,6 +1992,12 @@ extension E2EHostE2ETests {
   private func authStartRequestTimedOutError(in app: XCUIApplication) -> XCUIElement {
     app.staticTexts.matching(
       NSPredicate(format: "label == %@", E2EIdentifier.requestTimedOutErrorMessage)
+    ).firstMatch
+  }
+
+  private func authStartIdentifierTakenError(in app: XCUIApplication) -> XCUIElement {
+    app.staticTexts.matching(
+      NSPredicate(format: "label CONTAINS[c] %@", "is taken")
     ).firstMatch
   }
 
@@ -3329,6 +3402,104 @@ extension E2EHostE2ETests {
     )
   }
 
+  private func deleteExistingUsersMatchingPhoneNumber(
+    _ phoneNumber: String,
+    publishableKey: String,
+    keyName: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws {
+    guard let secretKey = secretKey(named: keyName) else {
+      return
+    }
+
+    let formattedPhoneNumber = Self.e164TestPhoneNumber(phoneNumber)
+    let userIDs = try backendUserIDsMatchingPhoneNumber(
+      formattedPhoneNumber,
+      publishableKey: publishableKey,
+      secretKey: secretKey,
+      file: file,
+      line: line
+    )
+
+    for userID in userIDs {
+      try deleteBackendUser(
+        userID: userID,
+        publishableKey: publishableKey,
+        secretKey: secretKey,
+        file: file,
+        line: line
+      )
+    }
+  }
+
+  private func backendUserIDsMatchingPhoneNumber(
+    _ phoneNumber: String,
+    publishableKey: String,
+    secretKey: String,
+    file: StaticString,
+    line: UInt
+  ) throws -> [String] {
+    let url = Self.backendAPIBaseURL(publishableKey: publishableKey)
+      .appendingPathComponent("v1")
+      .appendingPathComponent("users")
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    components?.queryItems = [
+      URLQueryItem(name: "phone_number[]", value: phoneNumber),
+      URLQueryItem(name: "limit", value: "100"),
+    ]
+
+    guard let requestURL = components?.url else {
+      throw BackendAPIResponseError(message: "Unable to build Backend API users URL.")
+    }
+
+    let data = try performBackendAPIRequest(
+      method: "GET",
+      url: requestURL,
+      secretKey: secretKey,
+      body: nil,
+      file: file,
+      line: line
+    )
+    let json = try JSONSerialization.jsonObject(with: data)
+    let users: [[String: Any]]
+    if let response = json as? [String: Any],
+       let data = response["data"] as? [[String: Any]]
+    {
+      users = data
+    } else if let data = json as? [[String: Any]] {
+      users = data
+    } else {
+      throw BackendAPIResponseError(message: "Unable to parse Backend API users response.")
+    }
+
+    return users
+      .filter { Self.backendUser($0, matchesPhoneNumber: phoneNumber) }
+      .compactMap { $0["id"] as? String }
+  }
+
+  private func deleteBackendUser(
+    userID: String,
+    publishableKey: String,
+    secretKey: String,
+    file: StaticString,
+    line: UInt
+  ) throws {
+    let url = Self.backendAPIBaseURL(publishableKey: publishableKey)
+      .appendingPathComponent("v1")
+      .appendingPathComponent("users")
+      .appendingPathComponent(userID)
+
+    _ = try performBackendAPIRequest(
+      method: "DELETE",
+      url: url,
+      secretKey: secretKey,
+      body: nil,
+      file: file,
+      line: line
+    )
+  }
+
   private func performBackendAPIPost(
     url: URL,
     secretKey: String,
@@ -3336,12 +3507,33 @@ extension E2EHostE2ETests {
     file: StaticString,
     line: UInt
   ) throws {
+    _ = try performBackendAPIRequest(
+      method: "POST",
+      url: url,
+      secretKey: secretKey,
+      body: body,
+      file: file,
+      line: line
+    )
+  }
+
+  @discardableResult
+  private func performBackendAPIRequest(
+    method: String,
+    url: URL,
+    secretKey: String,
+    body: [String: Any]?,
+    file: StaticString,
+    line: UInt
+  ) throws -> Data {
     var request = URLRequest(url: url)
-    request.httpMethod = "POST"
+    request.httpMethod = method
     request.setValue("Bearer \(secretKey)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("2026-05-12", forHTTPHeaderField: "Clerk-API-Version")
-    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    if let body {
+      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    }
 
     let expectation = expectation(description: "Backend API request")
     var result: Result<(HTTPURLResponse, Data), Error>?
@@ -3369,6 +3561,27 @@ extension E2EHostE2ETests {
     guard (200 ..< 300).contains(response.statusCode) else {
       let responseBody = String(data: data, encoding: .utf8) ?? ""
       throw BackendAPIError(statusCode: response.statusCode, responseBody: responseBody)
+    }
+
+    return data
+  }
+
+  private static func e164TestPhoneNumber(_ phoneNumber: String) -> String {
+    let digits = phoneNumber.filter(\.isWholeNumber)
+    if digits.hasPrefix("1"), digits.count == 11 {
+      return "+\(digits)"
+    }
+
+    return "+1\(digits)"
+  }
+
+  private static func backendUser(_ user: [String: Any], matchesPhoneNumber phoneNumber: String) -> Bool {
+    guard let phoneNumbers = user["phone_numbers"] as? [[String: Any]] else {
+      return false
+    }
+
+    return phoneNumbers.contains { phoneNumberResource in
+      phoneNumberResource["phone_number"] as? String == phoneNumber
     }
   }
 
