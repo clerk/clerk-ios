@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 APPROVED_RANGE = 5_555_550_100..5_555_550_199
+PHONE_NUMBER_PATTERN = /(?<!\d)\+?1?(?:[\s().-]*)555(?:[\s().-]*)555(?:[\s().-]*)\d{4}(?!\d)/
 E2E_SOURCES = [
   "Examples/E2EHost",
 ].freeze
@@ -24,7 +25,7 @@ end
 
 Dir.glob(E2E_SOURCES.map { |source| File.join(source, "**/*.swift") }).each do |file|
   File.readlines(file, chomp: true).each_with_index do |line, index|
-    line.scan(/\+?1?555555\d{4}/).each do |candidate|
+    line.scan(PHONE_NUMBER_PATTERN).each do |candidate|
       digits = normalized_phone_digits(candidate)
       next if digits.length == 10 && APPROVED_RANGE.cover?(digits.to_i)
 

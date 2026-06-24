@@ -3142,10 +3142,13 @@ extension E2EHostE2ETests {
 
   private func waitForStableTOTPWindow() {
     let period: TimeInterval = 30
+    let minimumRemainingTime: TimeInterval = 20
     let elapsed = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: period)
-    guard elapsed > 24 else { return }
+    let remaining = period - elapsed
 
-    Thread.sleep(forTimeInterval: period - elapsed + 1)
+    guard remaining < minimumRemainingTime else { return }
+
+    Thread.sleep(forTimeInterval: remaining + 1)
   }
 
   private static func currentTOTPCode(secret: String, date: Date = Date()) throws -> String {
