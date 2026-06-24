@@ -2032,6 +2032,22 @@ extension E2EHostE2ETests {
     }
   }
 
+  private func enterCurrentTOTPCode(
+    secret: String,
+    into identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws {
+    let element = inputElement(withIdentifier: identifier, in: app)
+    XCTAssertTrue(element.waitForExistence(timeout: 30), "Expected verification code input '\(identifier)'.", file: file, line: line)
+    guard tapInput(identifier, in: app, file: file, line: line) else { return }
+
+    waitForStableTOTPWindow()
+    let code = try Self.currentTOTPCode(secret: secret)
+    app.typeText(code)
+  }
+
   private func tapInput(
     _ identifier: String,
     in app: XCUIApplication,
@@ -2964,9 +2980,13 @@ extension E2EHostE2ETests {
     let secret = secretElement.label
 
     tap(E2EIdentifier.userProfileMfaTotpContinue, in: app, file: file, line: line)
-    waitForStableTOTPWindow()
-    let code = try Self.currentTOTPCode(secret: secret)
-    enterVerificationCode(code, into: E2EIdentifier.userProfileMfaVerificationCode, in: app, file: file, line: line)
+    try enterCurrentTOTPCode(
+      secret: secret,
+      into: E2EIdentifier.userProfileMfaVerificationCode,
+      in: app,
+      file: file,
+      line: line
+    )
 
     continueUserProfileBackupCodesIfPresent(in: app)
     XCTAssertTrue(
@@ -3042,11 +3062,9 @@ extension E2EHostE2ETests {
     let secret = secretElement.label
 
     tap(E2EIdentifier.totpContinue, in: app, file: file, line: line)
-    waitForStableTOTPWindow()
-    let code = try Self.currentTOTPCode(secret: secret)
-    enterVerificationCode(code, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
+    try enterCurrentTOTPCode(secret: secret, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
 
-    continueBackupCodesIfPresent(in: app, file: file, line: line)
+    continueBackupCodesAfterMfaSetup(in: app, file: file, line: line)
   }
 
   private func completeSmsCodeMfaSetup(
@@ -3079,6 +3097,71 @@ extension E2EHostE2ETests {
     if backupCodesContinue.waitForExistence(timeout: 10) {
       tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
     }
+  }
+
+  private func continueBackupCodesAfterMfaSetup(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let backupCodesContinue = app.descendants(matching: .any)[E2EIdentifier.backupCodesContinue]
+    let didAdvanceToBackupCodes = backupCodesContinue.waitForExistence(timeout: 45)
+
+    if !didAdvanceToBackupCodes {
+      attachAuthenticatorAppSetupDiagnostics(in: app)
+    }
+
+    XCTAssertTrue(
+      didAdvanceToBackupCodes,
+      authenticatorAppSetupFailureMessage(in: app),
+      file: file,
+      line: line
+    )
+
+    guard didAdvanceToBackupCodes else { return }
+
+    tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
+  }
+
+  private func authenticatorAppSetupFailureMessage(in app: XCUIApplication) -> String {
+    let incorrectCode = app.staticTexts.matching(NSPredicate(format: "label == %@", "Incorrect code")).firstMatch
+    if incorrectCode.exists {
+      return "Expected backup codes after submitting the generated TOTP code, but the app displayed Incorrect code."
+    }
+
+    return "Expected backup codes after submitting the generated TOTP code."
+  }
+
+  private func attachAuthenticatorAppSetupDiagnostics(in app: XCUIApplication) {
+    let lines = [
+      "totpControls:",
+      authStartDiagnosticProbe(E2EIdentifier.totpCode, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.backupCodesContinue, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleTextFields:",
+      visibleElementSummary(app.textFields),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "authenticator-app-setup-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "authenticator-app-setup-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "authenticator-app-setup-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func dismissAuthSheetIfNeeded(
@@ -3353,7 +3436,7 @@ extension E2EHostE2ETests {
 
   private func waitForStableTOTPWindow() {
     let period: TimeInterval = 30
-    let minimumRemainingTime: TimeInterval = 20
+    let minimumRemainingTime: TimeInterval = 25
     let elapsed = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: period)
     let remaining = period - elapsed
 
