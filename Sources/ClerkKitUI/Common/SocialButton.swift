@@ -32,7 +32,7 @@ struct SocialButton: View {
     }
     .lineLimit(1)
     .font(theme.fonts.body)
-    .foregroundStyle(theme.colors.foreground)
+    .foregroundStyle(theme.colors.secondaryButtonForeground)
   }
 
   private var providerLabel: some View {
@@ -43,20 +43,22 @@ struct SocialButton: View {
             HStack(spacing: 12) {
               ProviderIconView(
                 provider: provider,
-                image: image
+                image: image,
+                foregroundColor: theme.colors.secondaryButtonForeground
               )
               .frame(width: 21, height: 21)
 
               Text("Continue with \(provider.name)", bundle: .module)
                 .lineLimit(1)
                 .font(theme.fonts.body)
-                .foregroundStyle(theme.colors.foreground)
+                .foregroundStyle(theme.colors.secondaryButtonForeground)
             }
           }
 
           ProviderIconView(
             provider: provider,
-            image: image
+            image: image,
+            foregroundColor: theme.colors.secondaryButtonForeground
           )
           .frame(width: 21, height: 21)
         }

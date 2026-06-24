@@ -52,6 +52,12 @@ extension ClerkTheme {
     /// The color used for muted backgrounds.
     public var muted: Color
 
+    /// The background color for secondary buttons, including social and SSO buttons.
+    public var secondaryButtonBackground: Color
+
+    /// The color used for text and tintable icons on secondary buttons.
+    public var secondaryButtonForeground: Color
+
     /// The base shadow color used in the views.
     public var shadow: Color
 
@@ -117,6 +123,8 @@ extension ClerkTheme {
       neutral: Color = Self.defaultNeutralColor,
       ring: Color = Self.defaultRingColor,
       muted: Color = Self.defaultMutedColor,
+      secondaryButtonBackground: Color = Self.defaultSecondaryButtonBackgroundColor,
+      secondaryButtonForeground: Color? = nil,
       shadow: Color = Self.defaultShadowColor,
       border: Color = Self.defaultBorderColor
     ) {
@@ -133,6 +141,8 @@ extension ClerkTheme {
       self.neutral = neutral
       self.ring = ring
       self.muted = muted
+      self.secondaryButtonBackground = secondaryButtonBackground
+      self.secondaryButtonForeground = secondaryButtonForeground ?? foreground
       self.shadow = shadow
 
       // Derived tokens
@@ -168,6 +178,7 @@ extension ClerkTheme.Colors {
   public static let defaultNeutralColor = Color(.neutral)
   public static let defaultRingColor = Color(.neutral)
   public static let defaultMutedColor = Color(.muted)
+  public static let defaultSecondaryButtonBackgroundColor = Color(.background)
   public static let defaultShadowColor = Color(.neutral)
   public static let defaultBorderColor = Color(.neutral)
 
@@ -187,6 +198,7 @@ extension ClerkTheme.Colors {
       neutral: defaultNeutralColor,
       ring: defaultRingColor,
       muted: defaultMutedColor,
+      secondaryButtonBackground: defaultSecondaryButtonBackgroundColor,
       shadow: defaultShadowColor,
       border: defaultBorderColor
     )

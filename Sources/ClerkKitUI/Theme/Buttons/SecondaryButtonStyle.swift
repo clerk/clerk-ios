@@ -23,16 +23,9 @@ struct SecondaryButtonStyle: ButtonStyle {
   }
 
   func foregroundStyle(configuration: Configuration) -> Color {
-    switch config.emphasis {
-    case .none:
-      configuration.isPressed
-        ? theme.colors.foreground
-        : theme.colors.mutedForeground
-    case .low:
-      theme.colors.foreground
-    case .high:
-      theme.colors.foreground
-    }
+    configuration.isPressed
+      ? theme.colors.foreground
+      : theme.colors.secondaryButtonForeground
   }
 
   var height: CGFloat {
@@ -47,20 +40,9 @@ struct SecondaryButtonStyle: ButtonStyle {
   func backgroundColor(
     configuration: Configuration
   ) -> Color {
-    switch config.emphasis {
-    case .none:
-      configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
-    case .low:
-      configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
-    case .high:
-      configuration.isPressed
-        ? theme.colors.muted
-        : theme.colors.background
-    }
+    configuration.isPressed
+      ? theme.colors.muted
+      : theme.colors.secondaryButtonBackground
   }
 
   var borderWidth: CGFloat {
