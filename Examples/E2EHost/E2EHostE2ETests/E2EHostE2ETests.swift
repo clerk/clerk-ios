@@ -38,6 +38,7 @@ final class E2EHostE2ETests: XCTestCase {
   private static let sessionTaskChooseOrganizationPublishableKeyName = "session-task-choose-organization"
   private static let sessionTaskResetPasswordPublishableKeyName = "session-task-reset-password"
   private static let defaultChooseOrganizationEmailDomain = "clerk.dev"
+  private static let passwordChangeCompletionTimeout: TimeInterval = 75
 
   private let verificationCode = "424242"
   private let testPassword = "ClerkIOS2026E2ETestPassword9!"
@@ -2726,13 +2727,68 @@ extension E2EHostE2ETests {
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordSave, in: app, timeout: 45, file: file, line: line)
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
+    waitForUserProfilePasswordChangeToFinish(in: app, file: file, line: line)
+  }
 
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileChangePasswordSave].waitForNonExistence(timeout: 45),
-      "Expected the change-password sheet to dismiss after saving.",
-      file: file,
-      line: line
-    )
+  private func waitForUserProfilePasswordChangeToFinish(
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let saveButton = app.descendants(matching: .any)[E2EIdentifier.userProfileChangePasswordSave]
+    let deadline = Date().addingTimeInterval(Self.passwordChangeCompletionTimeout)
+
+    repeat {
+      if !saveButton.exists {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if !saveButton.exists {
+      return
+    }
+
+    attachUserProfilePasswordChangeDiagnostics(in: app, reason: "Timed out waiting for the change-password sheet to dismiss.")
+    XCTFail("Expected the change-password sheet to dismiss after saving.", file: file, line: line)
+  }
+
+  private func attachUserProfilePasswordChangeDiagnostics(in app: XCUIApplication, reason: String) {
+    let lines = [
+      "reason: \(truncatedDiagnosticValue(reason, limit: 300))",
+      "test: \(name)",
+      "appState: \(appStateDescription(app.state))",
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupInProgress, in: app),
+      "changePasswordControls:",
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordSave, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordNewPassword, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordConfirmPassword, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "change-password-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "change-password-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "change-password-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func completeUserProfileAuthenticatorAppMfaSetup(
