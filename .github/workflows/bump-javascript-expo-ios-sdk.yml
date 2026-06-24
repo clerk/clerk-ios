@@ -81,11 +81,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          plugin_file="packages/expo/app.plugin.js"
-          current_version="$(sed -nE "s/.*const CLERK_IOS_VERSION = ['\"]([^'\"]+)['\"].*/\1/p" "$plugin_file" | head -n 1)"
+          podspec_file="packages/expo/ios/ClerkExpo.podspec"
+          current_version="$(sed -nE "s/.*clerk_ios_version[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"].*/\1/p" "$podspec_file" | head -n 1)"
 
           if [ -z "$current_version" ]; then
-            echo "Could not read CLERK_IOS_VERSION from $plugin_file"
+            echo "Could not read clerk_ios_version from $podspec_file"
             exit 1
           fi
 
@@ -100,19 +100,19 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
 
-          const pluginFile = 'packages/expo/app.plugin.js';
+          const podspecFile = 'packages/expo/ios/ClerkExpo.podspec';
           const iosVersion = process.env.IOS_VERSION;
-          const source = fs.readFileSync(pluginFile, 'utf8');
+          const source = fs.readFileSync(podspecFile, 'utf8');
           const updated = source.replace(
-            /(const CLERK_IOS_VERSION = ['"])([^'"]+)(['"])/,
+            /(clerk_ios_version\s*=\s*['"])([^'"]+)(['"])/,
             `$1${iosVersion}$3`,
           );
 
           if (updated === source) {
-            throw new Error(`Failed to update CLERK_IOS_VERSION in ${pluginFile}`);
+            throw new Error(`Failed to update clerk_ios_version in ${podspecFile}`);
           }
 
-          fs.writeFileSync(pluginFile, updated);
+          fs.writeFileSync(podspecFile, updated);
           NODE
 
           mkdir -p .changeset
@@ -144,7 +144,7 @@ jobs:
           git config user.name "clerk-cookie"
           git config user.email "cookie@clerk.dev"
           git checkout -B "$BRANCH_NAME"
-          git add packages/expo/app.plugin.js ".changeset/$CHANGESET_FILE"
+          git add packages/expo/ios/ClerkExpo.podspec ".changeset/$CHANGESET_FILE"
 
           if git diff --cached --quiet; then
             echo "No changes to commit; no PR needed."
