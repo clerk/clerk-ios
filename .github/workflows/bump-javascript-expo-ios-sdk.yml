@@ -206,4 +206,5 @@ jobs:
       release_tag: ${{ github.event.release.tag_name }}
       release_url: ${{ github.event.release.html_url }}
       expo_bump_pr_url: ${{ needs.open-pr.outputs.pr_url }}
-    secrets: inherit
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
