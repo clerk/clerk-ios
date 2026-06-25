@@ -63,11 +63,12 @@ struct SecuredByClerkFooter: View {
             #if os(macOS)
             theme.colors.muted
             #else
-            if clerk.shouldShowDevelopmentModeWarning {
-              DevelopmentModeBackgroundView(background: .gray)
-            } else {
-              theme.colors.muted
-            }
+            theme.colors.muted
+              .overlay {
+                if clerk.shouldShowDevelopmentModeWarning {
+                  DevelopmentModeBackgroundView()
+                }
+              }
             #endif
           }
           .ignoresSafeArea(.container, edges: .bottom)
