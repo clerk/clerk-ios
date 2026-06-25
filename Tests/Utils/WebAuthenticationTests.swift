@@ -2,14 +2,20 @@
 //  WebAuthenticationTests.swift
 //
 
+import AuthenticationServices
 @testable import ClerkKit
 import Foundation
 import Testing
 
 // MARK: - WebAuthContinuationManager Tests
 
+@MainActor
 @Suite(.serialized)
 struct WebAuthContinuationManagerTests {
+  init() {
+    configureClerkForTesting()
+  }
+
   @Test
   func completesSessionWithURL() async throws {
     let manager = WebAuthContinuationManager()
@@ -40,18 +46,25 @@ struct WebAuthContinuationManagerTests {
   }
 
   @Test
-  func completesSessionWithExplicitError() async {
+  func completesSessionWithExplicitError() async throws {
     let manager = WebAuthContinuationManager()
+    let expectedError = NSError(domain: "Test", code: -1)
 
-    await #expect(throws: (any Error).self) {
-      try await withCheckedThrowingContinuation { continuation in
+    var thrownError: (any Error)?
+    do {
+      _ = try await withCheckedThrowingContinuation { continuation in
         Task {
           await manager.setContinuation(continuation)
-          let error = NSError(domain: "Test", code: -1)
-          await manager.completeSession(with: nil, error: error)
+          await manager.completeSession(with: nil, error: expectedError)
         }
       } as URL
+    } catch {
+      thrownError = error
     }
+
+    let nsError = try #require(thrownError as? NSError)
+    #expect(nsError.domain == "Test")
+    #expect(nsError.code == -1)
   }
 
   @Test
@@ -88,12 +101,24 @@ struct WebAuthContinuationManagerTests {
 
 // MARK: - WebAuthentication State Cleanup Tests
 
+@MainActor
 @Suite(.serialized)
 struct WebAuthenticationCleanupTests {
+  init() {
+    configureClerkForTesting()
+  }
+
   @Test
-  @MainActor
   func finishWithDeeplinkUrlClearsSessionBeforeCompletion() async throws {
     let url = try #require(URL(string: "https://example.com/callback"))
+
+    // Seed active session
+    let dummySession = ASWebAuthenticationSession(url: url, callbackURLScheme: "test") { _, _ in }
+    let auth = WebAuthentication(url: url)
+    WebAuthentication.currentSession = dummySession
+    WebAuthentication.currentAuthInstance = auth
+
+    #expect(WebAuthentication.hasActiveSession() == true)
 
     // Simulate a pending auth session by running a continuation that
     // will be completed by `finishWithDeeplinkUrl`.
@@ -116,10 +141,40 @@ struct WebAuthenticationCleanupTests {
   }
 
   @Test
-  @MainActor
-  func cancelCurrentSessionClearsState() async {
+  func cancelCurrentSessionClearsState() async throws {
+    let url = try #require(URL(string: "https://example.com/callback"))
+
+    // Seed active session
+    let dummySession = ASWebAuthenticationSession(url: url, callbackURLScheme: "test") { _, _ in }
+    let auth = WebAuthentication(url: url)
+    WebAuthentication.currentSession = dummySession
+    WebAuthentication.currentAuthInstance = auth
+
+    #expect(WebAuthentication.hasActiveSession() == true)
+
+    // Signal so we know the continuation has been set before we cancel.
+    let (signal, signalContinuation) = AsyncStream<Void>.makeStream()
+
+    let task = Task {
+      await #expect(throws: CancellationError.self) {
+        try await withCheckedThrowingContinuation { continuation in
+          Task {
+            await WebAuthentication.continuationManager.setContinuation(continuation)
+            signalContinuation.yield()
+            signalContinuation.finish()
+          }
+        } as URL
+      }
+    }
+
+    // Wait until the continuation is actually set.
+    for await _ in signal {}
+
     // After cancel, session state should be cleared.
     await WebAuthentication.cancelCurrentSession()
     #expect(WebAuthentication.hasActiveSession() == false)
+
+    // Await the task to ensure the continuation completed with cancellation.
+    _ = await task.result
   }
 }

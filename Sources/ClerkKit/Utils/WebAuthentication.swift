@@ -59,9 +59,9 @@ final class WebAuthentication: NSObject {
   let url: URL
   let prefersEphemeralWebBrowserSession: Bool
 
-  private static var currentSession: ASWebAuthenticationSession?
-  private static var currentAuthInstance: WebAuthentication?
-  private static var fallbackAnchor: AnyObject?
+  static var currentSession: ASWebAuthenticationSession?
+  static var currentAuthInstance: WebAuthentication?
+  static var fallbackAnchor: AnyObject?
 
   /// Whether a web authentication session is currently active.
   /// Internal for `@testable` test access.
