@@ -25,6 +25,8 @@ jobs:
       JAVASCRIPT_REPO: clerk/javascript
       RAW_IOS_VERSION: ${{ github.event.release.tag_name || inputs.version }}
       RELEASE_URL: ${{ github.event.release.html_url }}
+    outputs:
+      pr_url: ${{ steps.pull_request.outputs.pr_url }}
 
     steps:
       - name: Prepare version metadata
@@ -193,58 +195,15 @@ jobs:
               --body-file "$pr_body")"
           fi
 
-          gh pr edit "$pr_url" --add-reviewer clerk/team-sdk
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
 
-      - name: Notify Slack
-        if: steps.update.outputs.should_open == 'true' && steps.pull_request.outputs.pr_url != ''
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          IOS_VERSION: ${{ steps.version.outputs.ios_version }}
-          RELEASE_URL: ${{ steps.version.outputs.release_url }}
-          PR_URL: ${{ steps.pull_request.outputs.pr_url }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
-            exit 0
-          fi
-
-          PAYLOAD=$(jq -n \
-            --arg version "$IOS_VERSION" \
-            --arg release_url "$RELEASE_URL" \
-            --arg pr_url "$PR_URL" \
-            '{
-              text: "Clerk iOS SDK \($version) Expo bump PR is ready",
-              blocks: [
-                {
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: "*Clerk iOS SDK \($version) Expo bump PR is ready*"
-                  }
-                },
-                {
-                  type: "context",
-                  elements: [
-                    {
-                      type: "mrkdwn",
-                      text: "<\($pr_url)|View the JavaScript PR> · <\($release_url)|View the iOS release>"
-                    }
-                  ]
-                }
-              ]
-            }')
-
-          curl --fail-with-body \
-            --connect-timeout 10 \
-            --max-time 30 \
-            --retry 3 \
-            --retry-delay 5 \
-            --retry-max-time 60 \
-            --retry-all-errors \
-            --request POST \
-            --header "Content-type: application/json" \
-            --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+  notify-slack-release:
+    name: Notify Slack of release
+    needs: open-pr
+    if: ${{ always() && github.event_name == 'release' }}
+    uses: ./.github/workflows/notify-slack-release.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+      release_url: ${{ github.event.release.html_url }}
+      expo_bump_pr_url: ${{ needs.open-pr.outputs.pr_url }}
+    secrets: inherit
