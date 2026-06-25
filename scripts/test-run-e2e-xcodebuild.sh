@@ -79,7 +79,7 @@ count="$((count + 1))"
 echo "$count" > "$FAKE_COUNTER"
 
 if [[ "$count" -eq 1 ]]; then
-  echo "Lost connection to test manager"
+  echo "${FAKE_FAILURE_MESSAGE:-Lost connection to test manager}"
   exit 42
 fi
 
@@ -97,6 +97,19 @@ count="$(cat "${FAKE_COUNTER:?}" 2>/dev/null || echo 0)"
 count="$((count + 1))"
 echo "$count" > "$FAKE_COUNTER"
 echo "CoreSimulator failed to boot"
+exit 42
+SH
+  chmod +x "$path"
+}
+
+write_unclassified_failure_command() {
+  local path="$1"
+  cat > "$path" <<'SH'
+#!/usr/bin/env bash
+count="$(cat "${FAKE_COUNTER:?}" 2>/dev/null || echo 0)"
+count="$((count + 1))"
+echo "$count" > "$FAKE_COUNTER"
+echo "The build failed for an unrelated reason"
 exit 42
 SH
   chmod +x "$path"
@@ -122,9 +135,12 @@ run_infrastructure_retry_test() {
   local log_path="$tmpdir/logs/infra.log"
   local counter="$tmpdir/infra-counter"
   local xcrun_log="$tmpdir/xcrun.log"
+  local result_bundle_path="$tmpdir/result.xcresult"
 
   write_fake_xcrun
   write_infrastructure_flake_command "$command"
+  mkdir -p "$result_bundle_path"
+  touch "$result_bundle_path/Info.plist"
 
   env \
     PATH="$tmpdir/bin:$PATH" \
@@ -132,7 +148,7 @@ run_infrastructure_retry_test() {
     FAKE_XCRUN_LOG="$xcrun_log" \
     E2E_XCODEBUILD_ATTEMPTS=2 \
     E2E_XCODEBUILD_LOG_PATH="$log_path" \
-    E2E_RESULT_BUNDLE_PATH="$tmpdir/result.xcresult" \
+    E2E_RESULT_BUNDLE_PATH="$result_bundle_path" \
     E2E_SIMULATOR_ID="SIM-123" \
     "$runner" "$command" > "$output" 2>&1
 
@@ -143,6 +159,49 @@ run_infrastructure_retry_test() {
   assert_contains "$xcrun_log" "simctl bootstatus SIM-123 -b"
   assert_file_exists "$tmpdir/logs/infra-attempt-1.log"
   assert_file_exists "$tmpdir/logs/infra-attempt-2.log"
+  assert_file_missing "$result_bundle_path"
+}
+
+run_infrastructure_signature_matrix_test() {
+  local signatures=(
+    "Failed to start test runner"
+    "test runner failed to initialize"
+    "Test runner never began executing tests"
+    "Lost connection to test manager"
+    "Early unexpected exit while bootstrapping"
+    "DTXProxyChannel disconnected"
+    "iOSSimulatorErrorDomain returned code 146"
+    "CoreSimulator timed out"
+    "CoreSimulator unavailable"
+    "CoreSimulator crashed"
+    "Timed out waiting for device to boot"
+    "Unable to boot simulator"
+    "Failed to boot simulator"
+    "Failed to install XCTest test runner"
+    "Failed to launch XCTest test runner"
+    "result bundle could not be written"
+    "result bundle unable to open"
+  )
+  local index=0
+
+  for signature in "${signatures[@]}"; do
+    index="$((index + 1))"
+    local command="$tmpdir/infra-signature-$index.sh"
+    local output="$tmpdir/infra-signature-$index.out"
+    local counter="$tmpdir/infra-signature-$index-counter"
+
+    write_infrastructure_flake_command "$command"
+
+    env \
+      FAKE_COUNTER="$counter" \
+      FAKE_FAILURE_MESSAGE="$signature" \
+      E2E_XCODEBUILD_ATTEMPTS=2 \
+      E2E_XCODEBUILD_LOG_PATH="$tmpdir/logs/infra-signature-$index.log" \
+      "$runner" "$command" > "$output" 2>&1
+
+    assert_equals "2" "$(cat "$counter")"
+    assert_contains "$output" "known infrastructure signature; retrying"
+  done
 }
 
 run_assertion_failure_no_retry_test() {
@@ -166,6 +225,29 @@ run_assertion_failure_no_retry_test() {
   assert_equals "1" "$(cat "$counter")"
   assert_contains "$output" "failed without a retryable infrastructure signature"
   assert_file_missing "$tmpdir/logs/assertion-attempt-2.log"
+}
+
+run_unclassified_failure_no_retry_test() {
+  local command="$tmpdir/unclassified-failure.sh"
+  local output="$tmpdir/unclassified-failure.out"
+  local counter="$tmpdir/unclassified-counter"
+  local status
+
+  write_unclassified_failure_command "$command"
+
+  set +e
+  env \
+    FAKE_COUNTER="$counter" \
+    E2E_XCODEBUILD_ATTEMPTS=2 \
+    E2E_XCODEBUILD_LOG_PATH="$tmpdir/logs/unclassified.log" \
+    "$runner" "$command" > "$output" 2>&1
+  status="$?"
+  set -e
+
+  assert_equals "42" "$status"
+  assert_equals "1" "$(cat "$counter")"
+  assert_contains "$output" "failed without a retryable infrastructure signature"
+  assert_file_missing "$tmpdir/logs/unclassified-attempt-2.log"
 }
 
 run_invalid_attempts_fallback_test() {
@@ -193,7 +275,9 @@ run_invalid_attempts_fallback_test() {
 
 run_success_log_path_test
 run_infrastructure_retry_test
+run_infrastructure_signature_matrix_test
 run_assertion_failure_no_retry_test
+run_unclassified_failure_no_retry_test
 run_invalid_attempts_fallback_test
 
 echo "run-e2e-xcodebuild tests passed."
