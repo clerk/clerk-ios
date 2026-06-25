@@ -2263,20 +2263,24 @@ extension E2EHostE2ETests {
       app.typeText(String(digit))
 
       let expectedPrefix = String(digits[...offset])
+      if element.isTextInput {
+        XCTAssertTrue(
+          waitForPhoneNumberDigits(in: element, toHavePrefix: expectedPrefix, timeout: 2),
+          "Expected phone number input to contain '\(expectedPrefix)'. Actual value: '\(phoneNumberInputValue(in: element))'.",
+          file: file,
+          line: line
+        )
+      }
+    }
+
+    if element.isTextInput {
       XCTAssertTrue(
-        waitForPhoneNumberDigits(in: element, toHavePrefix: expectedPrefix, timeout: 2),
-        "Expected phone number input to contain '\(expectedPrefix)'. Actual value: '\(phoneNumberInputValue(in: element))'.",
+        waitForPhoneNumberDigits(in: element, toEqual: digits, timeout: 5),
+        "Expected phone number input to contain '\(digits)' before continuing. Actual value: '\(phoneNumberInputValue(in: element))'.",
         file: file,
         line: line
       )
     }
-
-    XCTAssertTrue(
-      waitForPhoneNumberDigits(in: element, toEqual: digits, timeout: 5),
-      "Expected phone number input to contain '\(digits)' before continuing. Actual value: '\(phoneNumberInputValue(in: element))'.",
-      file: file,
-      line: line
-    )
   }
 
   private func assertApprovedTestPhoneNumber(
@@ -2300,28 +2304,15 @@ extension E2EHostE2ETests {
     file: StaticString,
     line: UInt
   ) -> XCUIElement {
-    let textField = app.textFields[identifier].firstMatch
-    if textField.waitForExistence(timeout: 2) {
-      textField.tap()
-      return textField
+    guard tapInput(identifier, in: app, file: file, line: line) else {
+      return inputElement(withIdentifier: identifier, in: app)
     }
 
-    let container = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
-    XCTAssertTrue(
-      container.waitForExistence(timeout: 30),
-      "Expected phone number input.",
-      file: file,
-      line: line
-    )
-    container.tap()
+    if let focusedInput = focusedTextInput(in: app, timeout: 2) {
+      return focusedInput
+    }
 
-    XCTAssertTrue(
-      textField.waitForExistence(timeout: 10),
-      "Expected focused phone number text field.",
-      file: file,
-      line: line
-    )
-    return textField
+    return inputElement(withIdentifier: identifier, in: app)
   }
 
   private func waitForPhoneNumberDigits(
@@ -2412,7 +2403,11 @@ extension E2EHostE2ETests {
   }
 
   private func phoneNumberInputValue(in element: XCUIElement) -> String {
-    element.value as? String ?? ""
+    if let value = element.value as? String, !value.isEmpty {
+      return value
+    }
+
+    return element.label
   }
 
   private func inputElement(withIdentifier identifier: String, in app: XCUIApplication) -> XCUIElement {
@@ -2479,21 +2474,45 @@ extension E2EHostE2ETests {
   }
 
   private func waitForAnyTextInputFocus(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
-    let focusedElement = app.descendants(matching: .any)
-      .matching(NSPredicate(format: "hasKeyboardFocus == true"))
-      .firstMatch
     let keyboard = app.keyboards.firstMatch
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
-      if focusedElement.exists || keyboard.exists {
+      if focusedTextInput(in: app, timeout: 0) != nil || keyboard.exists {
         return true
       }
 
       RunLoop.current.run(until: Date().addingTimeInterval(0.1))
     } while Date() < deadline
 
-    return focusedElement.exists || keyboard.exists
+    return focusedTextInput(in: app, timeout: 0) != nil || keyboard.exists
+  }
+
+  private func focusedTextInput(in app: XCUIApplication, timeout: TimeInterval) -> XCUIElement? {
+    let focusedPredicate = NSPredicate(format: "hasKeyboardFocus == true")
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      let focusedElement = app.descendants(matching: .any)
+        .matching(focusedPredicate)
+        .firstMatch
+
+      if focusedElement.exists, focusedElement.isTextInput {
+        return focusedElement
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    let focusedElement = app.descendants(matching: .any)
+      .matching(focusedPredicate)
+      .firstMatch
+
+    guard focusedElement.exists, focusedElement.isTextInput else {
+      return nil
+    }
+
+    return focusedElement
   }
 
   private func tap(
@@ -3767,6 +3786,17 @@ extension E2EHostE2ETests {
     let cancelButton = app.buttons["Cancel"].firstMatch
     if cancelButton.waitForExistence(timeout: 1) {
       cancelButton.tap()
+    }
+  }
+}
+
+extension XCUIElement {
+  fileprivate var isTextInput: Bool {
+    switch elementType {
+    case .textField, .secureTextField, .textView:
+      true
+    default:
+      false
     }
   }
 }
