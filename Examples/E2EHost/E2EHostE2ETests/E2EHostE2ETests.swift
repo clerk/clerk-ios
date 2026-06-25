@@ -3446,9 +3446,7 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) throws {
-    guard let secretKey = secretKey(named: keyName) else {
-      return
-    }
+    let secretKey = try requiredSecretKey(named: keyName)
 
     let formattedPhoneNumber = Self.e164TestPhoneNumber(phoneNumber)
     let userIDs = try backendUserIDsMatchingPhoneNumber(
