@@ -1,8 +1,25 @@
 name: Notify Slack of release
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag to announce.
+        required: true
+        type: string
+      release_url:
+        description: GitHub release URL.
+        required: false
+        type: string
+        default: ""
+      expo_bump_pr_url:
+        description: Optional @clerk/expo bump PR URL.
+        required: false
+        type: string
+        default: ""
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
 
 permissions:
   contents: read
@@ -15,8 +32,9 @@ jobs:
       - name: Notify Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_URL: ${{ github.event.release.html_url }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_URL: ${{ inputs.release_url }}
+          EXPO_BUMP_PR_URL: ${{ inputs.expo_bump_pr_url }}
         run: |
           set -euo pipefail
 
@@ -30,9 +48,14 @@ jobs:
             release_url="https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
           fi
 
+          context_links="<${release_url}|View the GitHub release>"
+          if [ -n "$EXPO_BUMP_PR_URL" ]; then
+            context_links="$context_links · <$EXPO_BUMP_PR_URL|View the Expo bump PR>"
+          fi
+
           PAYLOAD=$(jq -n \
             --arg tag "$RELEASE_TAG" \
-            --arg release_url "$release_url" \
+            --arg context_links "$context_links" \
             '{
               text: "Clerk iOS SDK \($tag) has been released",
               blocks: [
@@ -48,7 +71,7 @@ jobs:
                   elements: [
                     {
                       type: "mrkdwn",
-                      text: "<\($release_url)|View the GitHub release>"
+                      text: $context_links
                     }
                   ]
                 }
