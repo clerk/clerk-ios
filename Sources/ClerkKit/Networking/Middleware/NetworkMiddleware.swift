@@ -128,6 +128,7 @@ extension HTTPURLResponse {
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
+  private static let clerkSuppressesDeviceTokenPersistenceKey = "com.clerk.suppresses-device-token-persistence"
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
@@ -135,6 +136,10 @@ extension URLRequest {
 
   var clerkClientResponseGeneration: ClientResponseGeneration? {
     URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self) as? ClientResponseGeneration
+  }
+
+  var clerkSuppressesDeviceTokenPersistence: Bool {
+    URLProtocol.property(forKey: Self.clerkSuppressesDeviceTokenPersistenceKey, in: self) as? Bool ?? false
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -153,6 +158,20 @@ extension URLRequest {
     }
 
     URLProtocol.setProperty(generation, forKey: Self.clerkClientResponseGenerationKey, in: mutableRequest)
+    self = mutableRequest as URLRequest
+  }
+
+  mutating func setClerkSuppressesDeviceTokenPersistence(_ suppressesDeviceTokenPersistence: Bool) {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+
+    URLProtocol.setProperty(
+      suppressesDeviceTokenPersistence,
+      forKey: Self.clerkSuppressesDeviceTokenPersistenceKey,
+      in: mutableRequest
+    )
     self = mutableRequest as URLRequest
   }
 }

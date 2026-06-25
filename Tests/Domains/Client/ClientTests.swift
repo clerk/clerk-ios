@@ -143,6 +143,7 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
+    #expect(service.suppressDeviceTokenPersistenceValues == [false])
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
@@ -216,7 +217,40 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == nil)
     #expect(service.skipClientIdValues == [true])
+    #expect(service.suppressDeviceTokenPersistenceValues == [true])
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+  }
+
+  @Test
+  func clearDeviceTokenClearsCachedStateEvenWhenTokenAlreadyMissing() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let keychain = InMemoryKeychain()
+    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+
+    let service = DeviceTokenUpdateClientService(
+      response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      clientService: service
+    )
+    Clerk.shared.client = Client.mock
+
+    try await Clerk.shared.clearDeviceToken()
+
+    #expect(Clerk.shared.client == nil)
+    #expect(Clerk.shared.deviceToken == nil)
+    #expect(service.skipClientIdValues == [true])
+    #expect(service.suppressDeviceTokenPersistenceValues == [true])
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
@@ -231,7 +265,10 @@ private final class SequencedClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
+  func getResponse(
+    skipClientId _: Bool = false,
+    suppressDeviceTokenPersistence _: Bool = false
+  ) async throws -> ClientServiceResponse {
     response
   }
 }
@@ -239,9 +276,14 @@ private final class SequencedClientService: ClientServiceProtocol {
 private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
   private let response: ClientServiceResponse
   private let skipClientIdValuesStore = LockIsolated([Bool]())
+  private let suppressDeviceTokenPersistenceValuesStore = LockIsolated([Bool]())
 
   var skipClientIdValues: [Bool] {
     skipClientIdValuesStore.value
+  }
+
+  var suppressDeviceTokenPersistenceValues: [Bool] {
+    suppressDeviceTokenPersistenceValuesStore.value
   }
 
   init(response: ClientServiceResponse) {
@@ -249,8 +291,9 @@ private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
+  func getResponse(skipClientId: Bool, suppressDeviceTokenPersistence: Bool) async throws -> ClientServiceResponse {
     skipClientIdValuesStore.withValue { $0.append(skipClientId) }
+    suppressDeviceTokenPersistenceValuesStore.withValue { $0.append(suppressDeviceTokenPersistence) }
     return response
   }
 }
@@ -263,7 +306,10 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
+  func getResponse(
+    skipClientId _: Bool,
+    suppressDeviceTokenPersistence _: Bool
+  ) async throws -> ClientServiceResponse {
     Clerk.shared.clearCachedClientStateAfterDeviceTokenChange()
     return response
   }

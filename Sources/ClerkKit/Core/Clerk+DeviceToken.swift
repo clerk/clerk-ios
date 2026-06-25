@@ -62,13 +62,9 @@ extension Clerk {
   /// with the cleared device-token state.
   @_spi(FrameworkIntegration)
   public func clearDeviceToken() async throws {
-    let previousToken = deviceToken
-    try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try deleteStoredDeviceToken()
+    clearCachedClientStateAfterDeviceTokenChange()
 
-    if previousToken != nil {
-      clearCachedClientStateAfterDeviceTokenChange()
-    }
-
-    try await refreshClient(skipClientId: true)
+    try await refreshClient(skipClientId: true, suppressDeviceTokenPersistence: true)
   }
 }

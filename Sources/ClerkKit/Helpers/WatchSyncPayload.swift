@@ -25,22 +25,26 @@ package enum WatchSyncSource {
 
 package struct WatchSyncPayload {
   private static let deviceTokenKey = "clerkDeviceToken"
+  private static let deviceTokenClearedKey = "clerkDeviceTokenCleared"
   private static let clientKey = "clerkClient"
   private static let clientServerFetchDateKey = "clerkClientServerFetchDate"
   private static let environmentKey = "clerkEnvironment"
 
   let deviceToken: String?
+  let clearsDeviceToken: Bool
   let client: Client?
   let clientServerFetchDate: Date?
   let environment: Clerk.Environment?
 
   init(
     deviceToken: String?,
+    clearsDeviceToken: Bool = false,
     client: Client?,
     clientServerFetchDate: Date?,
     environment: Clerk.Environment?
   ) {
     self.deviceToken = deviceToken
+    self.clearsDeviceToken = deviceToken == nil && clearsDeviceToken
     self.client = client
     self.clientServerFetchDate = clientServerFetchDate
     self.environment = environment
@@ -48,15 +52,17 @@ package struct WatchSyncPayload {
 
   init?(applicationContext: [String: Any]) {
     let deviceToken = applicationContext[Self.deviceTokenKey] as? String
+    let clearsDeviceToken = applicationContext[Self.deviceTokenClearedKey] as? Bool == true
     let clientData = applicationContext[Self.clientKey] as? Data
     let environmentData = applicationContext[Self.environmentKey] as? Data
     let clientServerFetchDate = (applicationContext[Self.clientServerFetchDateKey] as? Double).map(Date.init(timeIntervalSince1970:))
 
-    guard deviceToken != nil || clientData != nil || environmentData != nil else {
+    guard deviceToken != nil || clearsDeviceToken || clientData != nil || environmentData != nil else {
       return nil
     }
 
     self.deviceToken = deviceToken
+    self.clearsDeviceToken = deviceToken == nil && clearsDeviceToken
     self.clientServerFetchDate = clientServerFetchDate
     if let clientData, !clientData.isEmpty {
       guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
@@ -81,7 +87,14 @@ package struct WatchSyncPayload {
 
   @MainActor
   init(clerk: Clerk, keychain: any KeychainStorage) {
-    deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    do {
+      deviceToken = try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      clearsDeviceToken = deviceToken == nil
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to read deviceToken for watch sync")
+      deviceToken = nil
+      clearsDeviceToken = false
+    }
     client = clerk.client
     clientServerFetchDate = clerk.lastClientServerFetchDate
     environment = clerk.environment
@@ -92,6 +105,8 @@ package struct WatchSyncPayload {
 
     if let deviceToken {
       applicationContext[Self.deviceTokenKey] = deviceToken
+    } else if clearsDeviceToken {
+      applicationContext[Self.deviceTokenClearedKey] = true
     }
 
     if let client {
@@ -125,6 +140,8 @@ package struct WatchSyncPayload {
         from: source,
         keychain: keychain
       )
+    } else if clearsDeviceToken {
+      clearDeviceToken(from: source, keychain: keychain)
     }
 
     if let environment {
@@ -163,6 +180,30 @@ package struct WatchSyncPayload {
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")
+    }
+  }
+
+  @MainActor
+  private func clearDeviceToken(from source: WatchSyncSource, keychain: any KeychainStorage) {
+    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
+    let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
+      do {
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
+      }
+      return
+    }
+
+    do {
+      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      if !hasSyncedBefore {
+        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
+      }
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
     }
   }
 }

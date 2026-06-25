@@ -467,10 +467,13 @@ extension Clerk {
   ///   after replacing the device token so a stale client id from the previous
   ///   native client cannot conflict with the newly stored token.
   @discardableResult
-  func refreshClient(skipClientId: Bool) async throws -> Client? {
+  func refreshClient(skipClientId: Bool, suppressDeviceTokenPersistence: Bool = false) async throws -> Client? {
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    let response = try await dependencies.clientService.getResponse(
+      skipClientId: skipClientId,
+      suppressDeviceTokenPersistence: suppressDeviceTokenPersistence
+    )
     try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
@@ -823,6 +826,10 @@ extension Clerk {
   func storeDeviceToken(_ token: String) throws {
     try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     watchConnectivityCoordinator?.sync()
+  }
+
+  func deleteStoredDeviceToken() throws {
+    try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
   }
 
   /// Cleans up managers that were started during configuration.

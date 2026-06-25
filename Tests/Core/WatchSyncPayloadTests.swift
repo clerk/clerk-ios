@@ -18,11 +18,30 @@ struct WatchSyncPayloadTests {
     let decoded = try #require(WatchSyncPayload(applicationContext: payload.applicationContext))
 
     #expect(decoded.deviceToken == "device-token")
+    #expect(decoded.clearsDeviceToken == false)
     #expect(decoded.client?.id == "client-1")
     #expect(decoded.client?.signIn?.id == "sign-in-1")
     #expect(decoded.client?.lastActiveSessionId == "session-1")
     #expect(decoded.clientServerFetchDate == serverFetchDate)
     #expect(decoded.environment == .mock)
+  }
+
+  @Test
+  func applicationContextRoundTripsExplicitDeviceTokenClear() throws {
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+
+    let decoded = try #require(WatchSyncPayload(applicationContext: payload.applicationContext))
+
+    #expect(payload.applicationContext["clerkDeviceToken"] == nil)
+    #expect(payload.applicationContext["clerkDeviceTokenCleared"] as? Bool == true)
+    #expect(decoded.deviceToken == nil)
+    #expect(decoded.clearsDeviceToken == true)
   }
 
   @Test
@@ -35,6 +54,48 @@ struct WatchSyncPayloadTests {
     )
 
     #expect(payload.applicationContext["clerkClient"] == nil)
+  }
+
+  @Test
+  func phonePayloadClearsDeviceTokenOnWatch() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("watch-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+
+    payload.apply(from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+  }
+
+  @Test
+  func watchPayloadClearDoesNotWinFirstDeviceTokenSync() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test

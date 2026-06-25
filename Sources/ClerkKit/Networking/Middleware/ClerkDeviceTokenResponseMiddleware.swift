@@ -13,6 +13,10 @@ struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data _: Data, for request: URLRequest) async throws {
+    guard !request.clerkSuppressesDeviceTokenPersistence else {
+      return
+    }
+
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
       try await runtimeScope.withCurrentClerk {
         if let requestGeneration = request.clerkClientResponseGeneration,
