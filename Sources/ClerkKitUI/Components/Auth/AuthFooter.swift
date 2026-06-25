@@ -10,12 +10,10 @@ import SwiftUI
 
 extension View {
   func authFooter(
-    developmentModeBackground: DevelopmentModeBackground = .white,
     macOSDismissAction: (() -> Void)? = nil
   ) -> some View {
     modifier(
       AuthFooterModifier(
-        developmentModeBackground: developmentModeBackground,
         macOSDismissAction: macOSDismissAction
       )
     )
@@ -25,7 +23,6 @@ extension View {
 private struct AuthFooterModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
 
-  let developmentModeBackground: DevelopmentModeBackground
   let macOSDismissAction: (() -> Void)?
 
   func body(content: Content) -> some View {
@@ -40,10 +37,11 @@ private struct AuthFooterModifier: ViewModifier {
     content
       .bottomTrackedFooter(isPresented: clerk.shouldShowDevelopmentModeWarning) {
         DevelopmentModeView()
+          .offset(y: 8)
           .padding(.top, 16)
           .frame(maxWidth: .infinity)
           .background {
-            DevelopmentModeBackgroundView(background: developmentModeBackground)
+            DevelopmentModeBackgroundView()
               .ignoresSafeArea(.container, edges: .bottom)
           }
       }
