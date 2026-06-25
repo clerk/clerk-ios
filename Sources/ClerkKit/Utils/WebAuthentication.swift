@@ -58,7 +58,9 @@ final class WebAuthentication: NSObject {
 
   let url: URL
   let prefersEphemeralWebBrowserSession: Bool
+
   private static var currentSession: ASWebAuthenticationSession?
+  private static var currentAuthInstance: WebAuthentication?
 
   init(url: URL, prefersEphemeralWebBrowserSession: Bool = false) {
     self.url = url
@@ -90,8 +92,24 @@ final class WebAuthentication: NSObject {
         #endif
 
         Self.currentSession = session
+        Self.currentAuthInstance = self
+
         await WebAuthentication.continuationManager.setContinuation(continuation)
-        session.start()
+
+        await MainActor.run {
+          let didStart = session.start()
+
+          if !didStart {
+            let startError = NSError(
+              domain: "ClerkAuthError",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: "ASWebAuthenticationSession failed to start. Window context may be invalid."]
+            )
+            Task {
+              await WebAuthentication.continuationManager.completeSession(with: nil, error: startError)
+            }
+          }
+        }
       }
     }
   }
@@ -104,12 +122,11 @@ final class WebAuthentication: NSObject {
       await continuationManager.completeSession(with: url, error: nil)
 
       #if targetEnvironment(macCatalyst)
-      // mac catalyst web auth window doesn't close without
-      // this when the callback is intercepted as a universal link
       currentSession?.cancel()
       #endif
 
       currentSession = nil
+      currentAuthInstance = nil
     }
   }
 
@@ -119,6 +136,7 @@ final class WebAuthentication: NSObject {
     #endif
 
     currentSession = nil
+    currentAuthInstance = nil
 
     await continuationManager.cancelSessionIfNeeded()
   }
@@ -132,8 +150,33 @@ final class WebAuthentication: NSObject {
 extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
-    PresentationAnchorProvider.current
+    #if os(iOS)
+    if let activeScene = UIApplication.shared.connectedScenes.filter({ $0.activationState == .foregroundActive }).first as? UIWindowScene,
+       let window = activeScene.windows.first(where: \.isKeyWindow) ?? activeScene.windows.first
+    {
+        return window
+    }
+    let fallbackWindow = UIWindow(frame: UIScreen.main.bounds)
+    fallbackWindow.isHidden = false
+    return fallbackWindow
+
+    #elseif os(macOS)
+    if let keyWindow = NSApp.keyWindow { return keyWindow }
+    if let mainWindow = NSApp.mainWindow { return mainWindow }
+    if let visibleWindow = NSApp.windows.first(where: { $0.isVisible && $0.className != "NSStatusBarWindow" }) { return visibleWindow }
+
+    let tempWindow = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 1, height: 1),
+      styleMask: .borderless,
+      backing: .buffered,
+      defer: false
+    )
+    tempWindow.makeKeyAndOrderFront(nil)
+    return tempWindow
+
+    #else
+    return ASPresentationAnchor()
+    #endif
   }
 }
-
 #endif
