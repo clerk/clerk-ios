@@ -53,7 +53,7 @@ actor WebAuthLifecycleRefreshManager {
 @available(tvOS 16.0, watchOS 6.2, *)
 @MainActor
 final class WebAuthentication: NSObject {
-  private static let continuationManager = WebAuthContinuationManager()
+  static let continuationManager = WebAuthContinuationManager()
   private static let lifecycleRefreshManager = WebAuthLifecycleRefreshManager()
 
   let url: URL
@@ -61,6 +61,19 @@ final class WebAuthentication: NSObject {
 
   private static var currentSession: ASWebAuthenticationSession?
   private static var currentAuthInstance: WebAuthentication?
+  private static var fallbackAnchor: AnyObject?
+
+  /// Whether a web authentication session is currently active.
+  /// Internal for `@testable` test access.
+  static func hasActiveSession() -> Bool {
+    currentSession != nil || currentAuthInstance != nil
+  }
+
+  private static func clearSession() {
+    currentSession = nil
+    currentAuthInstance = nil
+    fallbackAnchor = nil
+  }
 
   init(url: URL, prefersEphemeralWebBrowserSession: Bool = false) {
     self.url = url
@@ -78,6 +91,7 @@ final class WebAuthentication: NSObject {
               #if os(macOS)
               await WebAuthentication.lifecycleRefreshManager.markPendingForegroundRefreshSuppression()
               #endif
+              await MainActor.run { WebAuthentication.clearSession() }
               await WebAuthentication.continuationManager.completeSession(with: url, error: error)
             }
           }
@@ -100,6 +114,7 @@ final class WebAuthentication: NSObject {
           let didStart = session.start()
 
           if !didStart {
+            Self.clearSession()
             let startError = NSError(
               domain: "ClerkAuthError",
               code: -1,
@@ -119,14 +134,13 @@ final class WebAuthentication: NSObject {
       #if os(macOS)
       await lifecycleRefreshManager.markPendingForegroundRefreshSuppression()
       #endif
-      await continuationManager.completeSession(with: url, error: nil)
 
       #if targetEnvironment(macCatalyst)
-      currentSession?.cancel()
+      await MainActor.run { currentSession?.cancel() }
       #endif
 
-      currentSession = nil
-      currentAuthInstance = nil
+      await MainActor.run { clearSession() }
+      await continuationManager.completeSession(with: url, error: nil)
     }
   }
 
@@ -135,8 +149,7 @@ final class WebAuthentication: NSObject {
     currentSession?.cancel()
     #endif
 
-    currentSession = nil
-    currentAuthInstance = nil
+    clearSession()
 
     await continuationManager.cancelSessionIfNeeded()
   }
@@ -151,13 +164,17 @@ extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
     #if os(iOS)
-    if let activeScene = UIApplication.shared.connectedScenes.filter({ $0.activationState == .foregroundActive }).first as? UIWindowScene,
-       let window = activeScene.windows.first(where: \.isKeyWindow) ?? activeScene.windows.first
-    {
-        return window
+    let foregroundWindows = UIApplication.shared.connectedScenes
+      .filter { $0.activationState == .foregroundActive }
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap(\.windows)
+
+    if let window = foregroundWindows.first(where: \.isKeyWindow) ?? foregroundWindows.first {
+      return window
     }
     let fallbackWindow = UIWindow(frame: UIScreen.main.bounds)
     fallbackWindow.isHidden = false
+    Self.fallbackAnchor = fallbackWindow
     return fallbackWindow
 
     #elseif os(macOS)
@@ -172,6 +189,7 @@ extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
       defer: false
     )
     tempWindow.makeKeyAndOrderFront(nil)
+    Self.fallbackAnchor = tempWindow
     return tempWindow
 
     #else
