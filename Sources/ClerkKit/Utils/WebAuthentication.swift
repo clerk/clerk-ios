@@ -64,7 +64,7 @@ final class WebAuthentication: NSObject {
   static var fallbackAnchor: AnyObject?
 
   /// Whether a web authentication session is currently active.
-  /// Internal for `@testable` test access.
+  /// Internal for @testable test access.
   static func hasActiveSession() -> Bool {
     currentSession != nil || currentAuthInstance != nil
   }
@@ -172,7 +172,11 @@ extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
     if let window = foregroundWindows.first(where: \.isKeyWindow) ?? foregroundWindows.first {
       return window
     }
-    let fallbackWindow = UIWindow(frame: UIScreen.main.bounds)
+    let fallbackScene = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first
+    let fallbackWindow = fallbackScene.map { UIWindow(windowScene: $0) }
+      ?? UIWindow(frame: UIScreen.main.bounds)
     fallbackWindow.isHidden = false
     Self.fallbackAnchor = fallbackWindow
     return fallbackWindow
