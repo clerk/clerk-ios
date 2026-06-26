@@ -95,48 +95,81 @@ final class WebAuthentication: NSObject {
     return nextSessionIdentifier
   }
 
-  func start() async throws -> URL {
-    try await withCheckedThrowingContinuation { continuation in
-      guard Self.currentContinuation == nil else {
-        continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress."))
-        return
-      }
+  private static func cancelSession(identifier: Int? = nil) {
+    guard identifier == nil || currentSessionIdentifier == identifier else {
+      return
+    }
 
-      let sessionIdentifier = Self.makeSessionIdentifier()
-      let session = sessionFactory(
-        url,
-        callbackURLSchemeOverride ?? Clerk.shared.options.redirectConfig.callbackUrlScheme
-      ) { @Sendable url, error in
-        Task { @MainActor in
-          WebAuthentication.completeSession(
-            identifier: sessionIdentifier,
-            with: url,
-            error: error,
-            suppressForegroundRefresh: true
-          )
-        }
-      }
+    #if !os(tvOS)
+    currentSession?.cancel()
+    #endif
 
-      #if !os(watchOS) && !os(tvOS)
-      session.presentationContextProvider = self
-      #endif
+    completeSession(identifier: identifier, with: nil, error: CancellationError())
+  }
 
-      #if !os(tvOS)
-      session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
-      #endif
+  private func beginSession(identifier sessionIdentifier: Int, continuation: CheckedContinuation<URL, any Error>) {
+    guard Self.currentContinuation == nil else {
+      continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress."))
+      return
+    }
 
-      Self.currentSession = session
-      Self.currentSessionIdentifier = sessionIdentifier
-      Self.currentPresentationContextProvider = self
-      Self.currentContinuation = continuation
+    guard !Task.isCancelled else {
+      continuation.resume(throwing: CancellationError())
+      return
+    }
 
-      guard session.start() else {
-        Self.completeSession(
+    let session = sessionFactory(
+      url,
+      callbackURLSchemeOverride ?? Clerk.shared.options.redirectConfig.callbackUrlScheme
+    ) { @Sendable url, error in
+      Task { @MainActor in
+        WebAuthentication.completeSession(
           identifier: sessionIdentifier,
-          with: nil,
-          error: ClerkClientError(message: "Unable to start web authentication session.")
+          with: url,
+          error: error,
+          suppressForegroundRefresh: true
         )
-        return
+      }
+    }
+
+    #if !os(watchOS) && !os(tvOS)
+    session.presentationContextProvider = self
+    #endif
+
+    #if !os(tvOS)
+    session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+    #endif
+
+    Self.currentSession = session
+    Self.currentSessionIdentifier = sessionIdentifier
+    Self.currentPresentationContextProvider = self
+    Self.currentContinuation = continuation
+
+    guard !Task.isCancelled else {
+      Self.cancelSession(identifier: sessionIdentifier)
+      return
+    }
+
+    guard session.start() else {
+      Self.completeSession(
+        identifier: sessionIdentifier,
+        with: nil,
+        error: ClerkClientError(message: "Unable to start web authentication session.")
+      )
+      return
+    }
+  }
+
+  func start() async throws -> URL {
+    let sessionIdentifier = Self.makeSessionIdentifier()
+
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        beginSession(identifier: sessionIdentifier, continuation: continuation)
+      }
+    } onCancel: {
+      Task { @MainActor in
+        WebAuthentication.cancelSession(identifier: sessionIdentifier)
       }
     }
   }
@@ -152,17 +185,7 @@ final class WebAuthentication: NSObject {
   }
 
   static func cancelCurrentSession() {
-    #if !os(tvOS)
-    currentSession?.cancel()
-    #endif
-
-    defer {
-      currentContinuation = nil
-      clearSession()
-    }
-
-    guard let continuation = currentContinuation else { return }
-    continuation.resume(throwing: CancellationError())
+    cancelSession()
   }
 
   static func consumePendingForegroundRefreshSuppression() -> Bool {

@@ -67,6 +67,60 @@ struct WebAuthenticationTests {
 
   @Test
   @MainActor
+  func taskCancellationCancelsSystemSessionAndAllowsNextSession() async throws {
+    let authURL = try #require(URL(string: "https://example.com/oauth"))
+    let sessionProbe = SessionFactoryProbe()
+
+    let authentication = WebAuthentication(
+      url: authURL,
+      callbackURLScheme: "test"
+    ) { url, callbackURLScheme, completionHandler in
+      let stub = StubWebAuthenticationSession(
+        url: url,
+        callbackURLScheme: callbackURLScheme,
+        completionHandler: completionHandler,
+        startResult: true
+      )
+      sessionProbe.record(stub)
+      return stub
+    }
+
+    let task = Task { @MainActor in
+      try await authentication.start()
+    }
+
+    let session = await sessionProbe.waitForSession()
+    #expect(session.startCallCount == 1)
+
+    task.cancel()
+
+    await #expect(throws: CancellationError.self) {
+      try await task.value
+    }
+    #expect(session.cancelCallCount == 1)
+
+    let callbackURL = try #require(URL(string: "test://callback?code=next"))
+    let succeedingAuthentication = WebAuthentication(
+      url: authURL,
+      callbackURLScheme: "test"
+    ) { url, callbackURLScheme, completionHandler in
+      StubWebAuthenticationSession(
+        url: url,
+        callbackURLScheme: callbackURLScheme,
+        completionHandler: completionHandler,
+        startResult: true,
+        onStart: { session in
+          session.complete(with: callbackURL, error: nil)
+        }
+      )
+    }
+
+    let result = try await succeedingAuthentication.start()
+    #expect(result == callbackURL)
+  }
+
+  @Test
+  @MainActor
   func cancelCurrentSessionCancelsSystemSessionAndResumesCaller() async throws {
     let authURL = try #require(URL(string: "https://example.com/oauth"))
     let sessionProbe = SessionFactoryProbe()
