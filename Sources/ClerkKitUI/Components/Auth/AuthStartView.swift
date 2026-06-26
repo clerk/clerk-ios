@@ -23,7 +23,6 @@ struct AuthStartView: View {
 
   @State private var fieldError: Error?
   @State private var generalError: Error?
-  @State private var lastUsedAuth: LastUsedAuth?
 
   // MARK: - Configuration
 
@@ -84,6 +83,11 @@ struct AuthStartView: View {
     let providers = clerk.environment?.authenticatableSocialProviders ?? []
     guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
     return providers.filter { $0 != lastUsedSocialProvider }
+  }
+
+  private var lastUsedAuth: LastUsedAuth? {
+    guard authState.persistsIdentifiers else { return nil }
+    return LastUsedAuth(environment: clerk.environment)
   }
 
   // MARK: - Display Strings
@@ -182,9 +186,6 @@ struct AuthStartView: View {
       $1 != nil
     }
     .onFirstAppear {
-      if authState.persistsIdentifiers {
-        lastUsedAuth = LastUsedAuth(environment: Clerk.shared.environment)
-      }
       if authState.hasInitialIdentifier {
         authState.authStartPhoneNumberFieldIsActive = shouldStartOnPhoneNumber
       } else if shouldStartOnPhoneNumber {
