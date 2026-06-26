@@ -17,7 +17,7 @@ struct OrganizationCreateFlowView: View {
   @State private var inviteMembersIsPresented = false
 
   init(
-    creationDefaults: OrganizationCreationDefaults?,
+    creationDefaults: OrganizationCreationDefaults? = nil,
     skipInvitationScreen: Bool = false,
     onComplete: (() -> Void)? = nil
   ) {
@@ -60,7 +60,7 @@ struct OrganizationCreateFlowView: View {
 
 #Preview("Create Organization Flow") {
   NavigationStack {
-    OrganizationCreateFlowView(creationDefaults: nil)
+    OrganizationCreateFlowView()
       .clerkPreview()
   }
 }
