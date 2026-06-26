@@ -56,10 +56,21 @@ final class WebAuthentication: NSObject {
     currentPresentationContextProvider = nil
   }
 
-  private static func completeSession(identifier: Int? = nil, with url: URL?, error: Error?) {
+  private static func completeSession(
+    identifier: Int? = nil,
+    with url: URL?,
+    error: Error?,
+    suppressForegroundRefresh: Bool = false
+  ) {
     guard identifier == nil || currentSessionIdentifier == identifier else {
       return
     }
+
+    #if os(macOS)
+    if suppressForegroundRefresh {
+      suppressNextForegroundRefresh = true
+    }
+    #endif
 
     defer {
       currentContinuation = nil
@@ -97,10 +108,12 @@ final class WebAuthentication: NSObject {
         callbackURLSchemeOverride ?? Clerk.shared.options.redirectConfig.callbackUrlScheme
       ) { @Sendable url, error in
         Task { @MainActor in
-          #if os(macOS)
-          WebAuthentication.suppressNextForegroundRefresh = true
-          #endif
-          WebAuthentication.completeSession(identifier: sessionIdentifier, with: url, error: error)
+          WebAuthentication.completeSession(
+            identifier: sessionIdentifier,
+            with: url,
+            error: error,
+            suppressForegroundRefresh: true
+          )
         }
       }
 
@@ -129,17 +142,13 @@ final class WebAuthentication: NSObject {
   }
 
   static func finishWithDeeplinkUrl(url: URL) {
-    #if os(macOS)
-    suppressNextForegroundRefresh = true
-    #endif
-
     #if targetEnvironment(macCatalyst)
     // mac catalyst web auth window doesn't close without
     // this when the callback is intercepted as a universal link
     currentSession?.cancel()
     #endif
 
-    completeSession(with: url, error: nil)
+    completeSession(with: url, error: nil, suppressForegroundRefresh: true)
   }
 
   static func cancelCurrentSession() {

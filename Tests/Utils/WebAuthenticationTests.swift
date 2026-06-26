@@ -69,7 +69,7 @@ struct WebAuthenticationTests {
   @MainActor
   func cancelCurrentSessionCancelsSystemSessionAndResumesCaller() async throws {
     let authURL = try #require(URL(string: "https://example.com/oauth"))
-    var session: StubWebAuthenticationSession?
+    let sessionProbe = SessionFactoryProbe()
 
     let authentication = WebAuthentication(
       url: authURL,
@@ -81,7 +81,7 @@ struct WebAuthenticationTests {
         completionHandler: completionHandler,
         startResult: true
       )
-      session = stub
+      sessionProbe.record(stub)
       return stub
     }
 
@@ -89,10 +89,8 @@ struct WebAuthenticationTests {
       try await authentication.start()
     }
 
-    for _ in 0 ..< 10 where session?.startCallCount != 1 {
-      await Task.yield()
-    }
-    #expect(session?.startCallCount == 1)
+    let session = await sessionProbe.waitForSession()
+    #expect(session.startCallCount == 1)
 
     WebAuthentication.cancelCurrentSession()
 
@@ -100,7 +98,7 @@ struct WebAuthenticationTests {
       _ = try await task.value
       Issue.record("Expected active web authentication session to be cancelled")
     } catch is CancellationError {
-      #expect(session?.cancelCallCount == 1)
+      #expect(session.cancelCallCount == 1)
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -110,7 +108,7 @@ struct WebAuthenticationTests {
   @MainActor
   func staleCompletionAfterCancellationDoesNotCompleteNextSession() async throws {
     let authURL = try #require(URL(string: "https://example.com/oauth"))
-    var firstSession: StubWebAuthenticationSession?
+    let firstSessionProbe = SessionFactoryProbe()
 
     let firstAuthentication = WebAuthentication(
       url: authURL,
@@ -122,7 +120,7 @@ struct WebAuthenticationTests {
         completionHandler: completionHandler,
         startResult: true
       )
-      firstSession = stub
+      firstSessionProbe.record(stub)
       return stub
     }
 
@@ -130,17 +128,15 @@ struct WebAuthenticationTests {
       try await firstAuthentication.start()
     }
 
-    for _ in 0 ..< 10 where firstSession?.startCallCount != 1 {
-      await Task.yield()
-    }
-    #expect(firstSession?.startCallCount == 1)
+    let firstSession = await firstSessionProbe.waitForSession()
+    #expect(firstSession.startCallCount == 1)
 
     WebAuthentication.cancelCurrentSession()
     await #expect(throws: CancellationError.self) {
       try await firstTask.value
     }
 
-    var secondSession: StubWebAuthenticationSession?
+    let secondSessionProbe = SessionFactoryProbe()
     let secondAuthentication = WebAuthentication(
       url: authURL,
       callbackURLScheme: "test"
@@ -151,7 +147,7 @@ struct WebAuthenticationTests {
         completionHandler: completionHandler,
         startResult: true
       )
-      secondSession = stub
+      secondSessionProbe.record(stub)
       return stub
     }
 
@@ -159,19 +155,14 @@ struct WebAuthenticationTests {
       try await secondAuthentication.start()
     }
 
-    for _ in 0 ..< 10 where secondSession?.startCallCount != 1 {
-      await Task.yield()
-    }
-    #expect(secondSession?.startCallCount == 1)
+    let secondSession = await secondSessionProbe.waitForSession()
+    #expect(secondSession.startCallCount == 1)
 
     let staleURL = try #require(URL(string: "test://callback?code=stale"))
-    firstSession?.complete(with: staleURL, error: nil)
-    for _ in 0 ..< 10 {
-      await Task.yield()
-    }
+    firstSession.complete(with: staleURL, error: nil)
 
     let callbackURL = try #require(URL(string: "test://callback?code=current"))
-    secondSession?.complete(with: callbackURL, error: nil)
+    secondSession.complete(with: callbackURL, error: nil)
 
     let result = try await secondTask.value
     #expect(result == callbackURL)
@@ -181,7 +172,7 @@ struct WebAuthenticationTests {
   @MainActor
   func secondStartFailsWithoutOverwritingActiveSession() async throws {
     let authURL = try #require(URL(string: "https://example.com/oauth"))
-    var activeSession: StubWebAuthenticationSession?
+    let activeSessionProbe = SessionFactoryProbe()
 
     let activeAuthentication = WebAuthentication(
       url: authURL,
@@ -193,7 +184,7 @@ struct WebAuthenticationTests {
         completionHandler: completionHandler,
         startResult: true
       )
-      activeSession = stub
+      activeSessionProbe.record(stub)
       return stub
     }
 
@@ -201,10 +192,8 @@ struct WebAuthenticationTests {
       try await activeAuthentication.start()
     }
 
-    for _ in 0 ..< 10 where activeSession?.startCallCount != 1 {
-      await Task.yield()
-    }
-    #expect(activeSession?.startCallCount == 1)
+    let activeSession = await activeSessionProbe.waitForSession()
+    #expect(activeSession.startCallCount == 1)
 
     let competingAuthentication = WebAuthentication(
       url: authURL,
@@ -228,9 +217,36 @@ struct WebAuthenticationTests {
     }
 
     let callbackURL = try #require(URL(string: "test://callback?code=current"))
-    activeSession?.complete(with: callbackURL, error: nil)
+    activeSession.complete(with: callbackURL, error: nil)
     let result = try await activeTask.value
     #expect(result == callbackURL)
+  }
+}
+
+@MainActor
+private final class SessionFactoryProbe {
+  private var session: StubWebAuthenticationSession?
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func record(_ session: StubWebAuthenticationSession) {
+    self.session = session
+
+    guard let continuation else { return }
+    self.continuation = nil
+    continuation.resume()
+  }
+
+  func waitForSession() async -> StubWebAuthenticationSession {
+    if session == nil {
+      await withCheckedContinuation { continuation in
+        self.continuation = continuation
+      }
+    }
+
+    guard let session else {
+      fatalError("Expected session factory to record a session")
+    }
+    return session
   }
 }
 
