@@ -153,6 +153,65 @@ struct SignInFactorSelectionTests {
 
     #expect(signIn.startingFirstFactor?.strategy == .password)
   }
+
+  @Test
+  func resetPasswordFactorPrefersMatchingEmailCodeFactor() {
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "user@example.com",
+      supportedFirstFactors: [
+        Factor(
+          strategy: .resetPasswordPhoneCode,
+          phoneNumberId: "phone_123",
+          safeIdentifier: "+15555550100"
+        ),
+        Factor(
+          strategy: .resetPasswordEmailCode,
+          emailAddressId: "email_other",
+          safeIdentifier: "other@example.com"
+        ),
+        Factor(
+          strategy: .resetPasswordEmailCode,
+          emailAddressId: "email_123",
+          safeIdentifier: "user@example.com"
+        ),
+      ]
+    )
+
+    let factor = signIn.resetPasswordFactor
+
+    #expect(factor?.strategy == .resetPasswordEmailCode)
+    #expect(factor?.emailAddressId == "email_123")
+  }
+
+  @Test
+  func alternativeFirstFactorsKeepEmailCodeAndFilterResetPasswordFactors() {
+    let passwordFactor = Factor(strategy: .password)
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "user@example.com",
+      supportedFirstFactors: [
+        passwordFactor,
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "email_123",
+          safeIdentifier: "user@example.com"
+        ),
+        Factor(
+          strategy: .resetPasswordEmailCode,
+          emailAddressId: "email_123",
+          safeIdentifier: "user@example.com"
+        ),
+      ]
+    )
+
+    let factors = signIn.alternativeFirstFactors(currentFactor: passwordFactor)
+
+    #expect(factors.map(\.strategy) == [.emailCode])
+    #expect(factors.first?.emailAddressId == "email_123")
+  }
 }
 
 #endif

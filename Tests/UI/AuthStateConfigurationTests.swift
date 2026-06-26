@@ -73,6 +73,25 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func initialUsernameUsesIdentifierField() {
+    let defaults = makeUserDefaults()
+    defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
+    defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
+    defaults.set(true, forKey: AuthState.phoneNumberFieldIsActiveStorageKey)
+
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      initialIdentifier: "clerk_user"
+    ))
+
+    #expect(authState.authStartIdentifier == "clerk_user")
+    #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
+    #expect(defaults.string(forKey: AuthState.identifierStorageKey) == "clerk_user")
+    #expect(!defaults.bool(forKey: AuthState.phoneNumberFieldIsActiveStorageKey))
+  }
+
+  @Test
   func initialNameValuesConfigureSignUpFields() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
@@ -184,6 +203,29 @@ struct AuthStateConfigurationTests {
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == nil)
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == nil)
     #expect(defaults.object(forKey: AuthState.phoneNumberFieldIsActiveStorageKey) == nil)
+  }
+
+  @Test
+  func storeLastUsedIdentifierTypePersistsWhenEnabled() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+
+    authState.storeLastUsedIdentifierType(.username)
+
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == .username)
+  }
+
+  @Test
+  func storeLastUsedIdentifierTypeIsSuppressedWhenPersistenceIsDisabled() {
+    let defaults = makeUserDefaults()
+    let authState = AuthState(userDefaults: defaults)
+    authState.configure(AuthConfig(
+      persistsIdentifiers: false
+    ))
+
+    authState.storeLastUsedIdentifierType(.email)
+
+    #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
   }
 
   @Test
