@@ -12,7 +12,15 @@ struct SessionTaskCreateOrganizationView: View {
   @Environment(AuthNavigation.self) private var navigation
 
   let creationDefaults: OrganizationCreationDefaults?
-  var showBackButton = false
+  let showBackButton: Bool
+
+  init(
+    creationDefaults: OrganizationCreationDefaults? = nil,
+    showBackButton: Bool = false
+  ) {
+    self.creationDefaults = creationDefaults
+    self.showBackButton = showBackButton
+  }
 
   var body: some View {
     OrganizationCreateFlowView(creationDefaults: creationDefaults, skipInvitationScreen: true) {
@@ -33,7 +41,7 @@ struct SessionTaskCreateOrganizationView: View {
 }
 
 #Preview("Create Organization") {
-  SessionTaskCreateOrganizationView(creationDefaults: nil)
+  SessionTaskCreateOrganizationView()
     .clerkPreview()
 }
 

@@ -250,10 +250,7 @@ public struct OrganizationListView: View {
   }
 
   private var createOrganizationContent: some View {
-    OrganizationCreateFlowView(
-      creationDefaults: accountList.creationDefaults,
-      skipInvitationScreen: skipInvitationScreen
-    ) {
+    OrganizationCreateFlowView(skipInvitationScreen: skipInvitationScreen) {
       completeCreateOrganizationFlow()
     }
     #if os(iOS)
@@ -267,8 +264,7 @@ public struct OrganizationListView: View {
 
 extension OrganizationListView {
   private func fetchOrganizationResources() async {
-    let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
-    await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
+    await accountList.loadInitial(user: user, includeCreationDefaults: false)
   }
 
   private func selectPersonalAccount() async {

@@ -75,7 +75,7 @@ struct OrganizationProfileFormView: View {
   }
 
   init(
-    creationDefaults: OrganizationCreationDefaults?,
+    creationDefaults: OrganizationCreationDefaults? = nil,
     onComplete: ((Organization) -> Void)? = nil
   ) {
     mode = .create
@@ -544,7 +544,7 @@ private enum OrganizationProfileFormMode {
 
 #Preview("Create Organization Form") {
   NavigationStack {
-    OrganizationProfileFormView(creationDefaults: nil)
+    OrganizationProfileFormView()
       .clerkPreview()
   }
 }
