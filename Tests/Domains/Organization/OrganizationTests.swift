@@ -35,6 +35,31 @@ struct OrganizationTests {
   }
 
   @Test
+  func decodesOrganizationWithoutImageUrl() throws {
+    let json = Data(
+      """
+      {
+        "object": "organization",
+        "id": "org_123",
+        "name": "Acme",
+        "slug": "acme",
+        "has_image": false,
+        "max_allowed_memberships": 100,
+        "admin_delete_enabled": true,
+        "created_at": 0,
+        "updated_at": 0,
+        "public_metadata": {}
+      }
+      """.utf8
+    )
+
+    let organization = try JSONDecoder.clerkDecoder.decode(Organization.self, from: json)
+
+    #expect(organization.imageUrl == "")
+    #expect(!organization.hasImage)
+  }
+
+  @Test
   func updateOrganizationUsesOrganizationServiceUpdateOrganization() async throws {
     let organization = Organization.mock
     let captured = LockIsolated<(String, String, String?)?>(nil)

@@ -542,8 +542,9 @@ extension OrganizationProfileFormView {
       defer { isPickerImageLoading = false }
 
       do {
-        self.organization = try await organization.deleteLogo()
+        try await organization.deleteLogo()
         clearSelectedLogo()
+        self.organization = try await clerk.organizations.get(id: organization.id)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to delete organization logo", error: error)

@@ -28,7 +28,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   package nonisolated(unsafe) var setOrganizationLogoHandler: ((String, Data) async throws -> Organization)?
 
   /// Custom handler for the `deleteOrganizationLogo(organizationId:)` method.
-  package nonisolated(unsafe) var deleteOrganizationLogoHandler: ((String) async throws -> Organization)?
+  package nonisolated(unsafe) var deleteOrganizationLogoHandler: ((String) async throws -> DeletedObject)?
 
   /// Custom handler for the `getOrganizationRoles(organizationId:initialPage:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationRolesHandler: ((String, Int, Int) async throws -> ClerkPaginatedResponse<RoleResource>)?
@@ -102,7 +102,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
     updateOrganization: ((String, String, String?) async throws -> Organization)? = nil,
     destroyOrganization: ((String) async throws -> DeletedObject)? = nil,
     setOrganizationLogo: ((String, Data) async throws -> Organization)? = nil,
-    deleteOrganizationLogo: ((String) async throws -> Organization)? = nil,
+    deleteOrganizationLogo: ((String) async throws -> DeletedObject)? = nil,
     getOrganizationRoles: ((String, Int, Int) async throws -> ClerkPaginatedResponse<RoleResource>)? = nil,
     getOrganizationMemberships: ((String, String?, [String]?, Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)? = nil,
     addOrganizationMember: ((String, String, String) async throws -> OrganizationMembership)? = nil,
@@ -183,7 +183,7 @@ package final class MockOrganizationService: OrganizationServiceProtocol {
   }
 
   @MainActor
-  package func deleteOrganizationLogo(organizationId: String) async throws -> Organization {
+  package func deleteOrganizationLogo(organizationId: String) async throws -> DeletedObject {
     if let handler = deleteOrganizationLogoHandler {
       return try await handler(organizationId)
     }

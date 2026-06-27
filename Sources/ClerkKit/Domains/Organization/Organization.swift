@@ -46,6 +46,21 @@ public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable
   /// and can be set only from the Backend API.
   public var publicMetadata: JSON?
 
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case name
+    case slug
+    case imageUrl
+    case hasImage
+    case membersCount
+    case pendingInvitationsCount
+    case maxAllowedMemberships
+    case adminDeleteEnabled
+    case createdAt
+    case updatedAt
+    case publicMetadata
+  }
+
   public init(
     id: String,
     name: String,
@@ -72,6 +87,22 @@ public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable
     self.createdAt = createdAt
     self.updatedAt = updatedAt
     self.publicMetadata = publicMetadata
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(String.self, forKey: .id)
+    name = try container.decode(String.self, forKey: .name)
+    slug = try container.decodeIfPresent(String.self, forKey: .slug)
+    imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl) ?? ""
+    hasImage = try container.decodeIfPresent(Bool.self, forKey: .hasImage) ?? false
+    membersCount = try container.decodeIfPresent(Int.self, forKey: .membersCount)
+    pendingInvitationsCount = try container.decodeIfPresent(Int.self, forKey: .pendingInvitationsCount)
+    maxAllowedMemberships = try container.decode(Int.self, forKey: .maxAllowedMemberships)
+    adminDeleteEnabled = try container.decode(Bool.self, forKey: .adminDeleteEnabled)
+    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    publicMetadata = try container.decodeIfPresent(JSON.self, forKey: .publicMetadata)
   }
 }
 
@@ -113,9 +144,9 @@ extension Organization {
 
   /// Deletes the organization's uploaded logo and falls back to the default logo.
   ///
-  /// - Returns: ``Organization``
+  /// - Returns: ``DeletedObject``
   @discardableResult @MainActor
-  public func deleteLogo() async throws -> Organization {
+  public func deleteLogo() async throws -> DeletedObject {
     try await organizationService.deleteOrganizationLogo(organizationId: id)
   }
 
