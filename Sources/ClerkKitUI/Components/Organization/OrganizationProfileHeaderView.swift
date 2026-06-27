@@ -24,6 +24,7 @@ struct OrganizationProfileHeaderView: View {
       title: organization.name,
       actionTitle: showsUpdateProfile ? "Update profile" : nil,
       action: showsUpdateProfile ? onUpdateProfile : nil,
+      avatarCornerRadius: theme.design.borderRadius,
       avatarPlaceholder: {
         initialsAvatar
       }
@@ -32,7 +33,7 @@ struct OrganizationProfileHeaderView: View {
 
   private var initialsAvatar: some View {
     ZStack {
-      Circle()
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .fill(theme.colors.primary.gradient)
 
       if initials.isEmpty {

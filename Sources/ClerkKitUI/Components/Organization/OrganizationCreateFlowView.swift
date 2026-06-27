@@ -12,6 +12,7 @@ struct OrganizationCreateFlowView: View {
 
   private let creationDefaults: OrganizationCreationDefaults?
   private let skipInvitationScreen: Bool
+  private let createPresentation: OrganizationCreatePresentation
   private let onComplete: (() -> Void)?
 
   @State private var inviteMembersIsPresented = false
@@ -19,15 +20,20 @@ struct OrganizationCreateFlowView: View {
   init(
     creationDefaults: OrganizationCreationDefaults? = nil,
     skipInvitationScreen: Bool = false,
+    createPresentation: OrganizationCreatePresentation = .regular,
     onComplete: (() -> Void)? = nil
   ) {
     self.creationDefaults = creationDefaults
     self.skipInvitationScreen = skipInvitationScreen
+    self.createPresentation = createPresentation
     self.onComplete = onComplete
   }
 
   var body: some View {
-    OrganizationProfileFormView(creationDefaults: creationDefaults) { organization in
+    OrganizationProfileFormView(
+      creationDefaults: creationDefaults,
+      createPresentation: createPresentation
+    ) { organization in
       if shouldShowPostCreateInviteStep(for: organization) {
         inviteMembersIsPresented = true
       } else {
