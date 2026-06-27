@@ -93,15 +93,11 @@ struct AuthStartView: View {
     authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
   }
 
-  var passkeyAutomaticModalIsEnabled: Bool {
+  var automaticPasskeySignInIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     guard let environment = clerk.environment else { return false }
     return passkeySignInIsAvailable &&
       environment.userSettings.passkeySettings?.allowAutofill == true
-  }
-
-  var passkeySignInIsEnabled: Bool {
-    #if os(iOS) && !targetEnvironment(macCatalyst)
-    passkeySignInIsAvailable
     #else
     false
     #endif
@@ -221,8 +217,8 @@ struct AuthStartView: View {
       }
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    .task(id: passkeySignInIsEnabled) {
-      guard passkeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted else { return }
+    .task(id: automaticPasskeySignInIsEnabled) {
+      guard automaticPasskeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted else { return }
       authState.automaticPasskeySignInHasStarted = true
       await startPasskeySignIn()
     }
@@ -360,6 +356,12 @@ extension AuthStartView {
 // MARK: - Actions
 
 extension AuthStartView {
+  private enum PasskeySignInResult {
+    case completed
+    case retryWithAutofill
+    case failed
+  }
+
   func startAuth() async {
     dismissKeyboard()
 
@@ -401,7 +403,7 @@ extension AuthStartView {
   private func signInWithPasskey(
     autofill: Bool,
     preferImmediatelyAvailableCredentials: Bool
-  ) async -> Bool {
+  ) async -> PasskeySignInResult {
     do {
       let signIn = try await clerk.auth.signInWithPasskey(
         autofill: autofill,
@@ -410,9 +412,9 @@ extension AuthStartView {
 
       generalError = nil
       navigation.setToStepForStatus(signIn: signIn)
-      return true
+      return .completed
     } catch {
-      if error.isUserCancelledError || error.isCancellationError { return false }
+      if error.isUserCancelledError || error.isCancellationError { return .retryWithAutofill }
 
       generalError = error
       if autofill {
@@ -420,19 +422,17 @@ extension AuthStartView {
       } else {
         ClerkLogger.error("Failed to authenticate with passkey", error: error)
       }
-      return false
+      return .failed
     }
   }
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn() async {
-    if passkeyAutomaticModalIsEnabled {
-      let completedWithModal = await signInWithPasskey(
-        autofill: false,
-        preferImmediatelyAvailableCredentials: true
-      )
-      guard !completedWithModal else { return }
-    }
+    let result = await signInWithPasskey(
+      autofill: false,
+      preferImmediatelyAvailableCredentials: true
+    )
+    guard case .retryWithAutofill = result else { return }
 
     await signInWithPasskey(
       autofill: true,
