@@ -279,13 +279,22 @@ public struct Auth {
 
   // Signs in with a passkey.
   //
+  // - Parameters:
+  //   - autofill: Whether to use the AutoFill-assisted passkey flow.
+  //   - preferImmediatelyAvailableCredentials: Whether to show UI only for locally available credentials.
   // - Returns: A `SignIn` object representing the sign-in attempt.
   // - Throws: An error if the passkey sign-in fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @discardableResult
-  public func signInWithPasskey() async throws -> SignIn {
+  public func signInWithPasskey(
+    autofill: Bool = false,
+    preferImmediatelyAvailableCredentials: Bool = true
+  ) async throws -> SignIn {
     let signIn = try await signInService.create(params: .init(strategy: .passkey))
-    return try await signIn.authenticateWithPasskey()
+    return try await signIn.authenticateWithPasskey(
+      autofill: autofill,
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+    )
   }
   #endif
 

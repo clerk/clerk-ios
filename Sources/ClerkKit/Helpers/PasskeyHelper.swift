@@ -86,7 +86,9 @@ final class PasskeyHelper: NSObject {
     allowedCredentialIDs: [Data] = [],
     preferImmediatelyAvailableCredentials: Bool
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
+    Self.cancelCurrentAuthorization()
+
+    return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 
@@ -132,7 +134,9 @@ final class PasskeyHelper: NSObject {
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = []
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
+    Self.cancelCurrentAuthorization()
+
+    return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 
@@ -160,7 +164,9 @@ final class PasskeyHelper: NSObject {
     userId: Data,
     relyingPartyIdentifier: String? = nil
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
+    Self.cancelCurrentAuthorization()
+
+    return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
       Self.activeHelper = self
 

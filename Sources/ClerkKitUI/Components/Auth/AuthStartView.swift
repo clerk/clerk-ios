@@ -79,6 +79,23 @@ struct AuthStartView: View {
     return false
   }
 
+  var passkeySignInIsAvailable: Bool {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      clerk.environment?.passkeyIsEnabled == true
+    case .signUp:
+      false
+    }
+  }
+
+  var passkeySignInIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    passkeySignInIsAvailable
+    #else
+    false
+    #endif
+  }
+
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
     let providers = clerk.environment?.authenticatableSocialProviders ?? []
     guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
@@ -192,6 +209,12 @@ struct AuthStartView: View {
         authState.authStartPhoneNumberFieldIsActive = true
       }
     }
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    .task(id: passkeySignInIsEnabled) {
+      guard passkeySignInIsEnabled else { return }
+      await startPasskeySignIn()
+    }
+    #endif
   }
 }
 
@@ -362,6 +385,47 @@ extension AuthStartView {
       }
     }
   }
+
+  private func signInWithPasskey(
+    autofill: Bool,
+    preferImmediatelyAvailableCredentials: Bool
+  ) async -> Bool {
+    do {
+      let signIn = try await clerk.auth.signInWithPasskey(
+        autofill: autofill,
+        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      )
+
+      generalError = nil
+      navigation.setToStepForStatus(signIn: signIn)
+      return true
+    } catch {
+      if error.isUserCancelledError || error.isCancellationError { return false }
+
+      generalError = error
+      if autofill {
+        ClerkLogger.error("Failed to authenticate with passkey autofill", error: error)
+      } else {
+        ClerkLogger.error("Failed to authenticate with passkey", error: error)
+      }
+      return false
+    }
+  }
+
+  #if os(iOS) && !targetEnvironment(macCatalyst)
+  private func startPasskeySignIn() async {
+    let completedWithModal = await signInWithPasskey(
+      autofill: false,
+      preferImmediatelyAvailableCredentials: true
+    )
+    guard !completedWithModal else { return }
+
+    await signInWithPasskey(
+      autofill: true,
+      preferImmediatelyAvailableCredentials: true
+    )
+  }
+  #endif
 
   private func signUp() async {
     fieldError = nil
