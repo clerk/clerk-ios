@@ -511,14 +511,7 @@ extension OrganizationProfileFormView {
       }
       do {
         let url = try result.get()
-        let securityScopeIsAccessed = url.startAccessingSecurityScopedResource()
-        defer {
-          if securityScopeIsAccessed {
-            url.stopAccessingSecurityScopedResource()
-          }
-        }
-
-        let data = try Data(contentsOf: url)
+        let data = try await Self.readSecurityScopedFileData(from: url)
         guard let resizedData = processImageData(data) else {
           throw ClerkClientError(message: "There was an error loading the selected image file.")
         }
@@ -538,6 +531,18 @@ extension OrganizationProfileFormView {
         ClerkLogger.error("Failed to set organization logo", error: error)
       }
     }
+  }
+
+  @concurrent
+  private static func readSecurityScopedFileData(from url: URL) async throws -> Data {
+    let securityScopeIsAccessed = url.startAccessingSecurityScopedResource()
+    defer {
+      if securityScopeIsAccessed {
+        url.stopAccessingSecurityScopedResource()
+      }
+    }
+
+    return try Data(contentsOf: url)
   }
 
   private func setOrganizationLogo(imageData: Data) async throws {
