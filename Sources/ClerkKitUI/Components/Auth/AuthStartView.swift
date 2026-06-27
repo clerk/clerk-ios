@@ -88,6 +88,12 @@ struct AuthStartView: View {
     }
   }
 
+  var passkeyAutomaticModalIsEnabled: Bool {
+    guard let environment = clerk.environment else { return false }
+    return passkeySignInIsAvailable &&
+      environment.userSettings.passkeySettings?.allowAutofill == true
+  }
+
   var passkeySignInIsEnabled: Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     passkeySignInIsAvailable
@@ -414,11 +420,13 @@ extension AuthStartView {
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn() async {
-    let completedWithModal = await signInWithPasskey(
-      autofill: false,
-      preferImmediatelyAvailableCredentials: true
-    )
-    guard !completedWithModal else { return }
+    if passkeyAutomaticModalIsEnabled {
+      let completedWithModal = await signInWithPasskey(
+        autofill: false,
+        preferImmediatelyAvailableCredentials: true
+      )
+      guard !completedWithModal else { return }
+    }
 
     await signInWithPasskey(
       autofill: true,
