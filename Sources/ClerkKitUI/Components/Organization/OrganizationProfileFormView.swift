@@ -45,7 +45,7 @@ struct OrganizationProfileFormView: View {
   }
 
   private var logoActionTitle: LocalizedStringKey {
-    logoCanBeRemoved ? "Change photo" : "Upload logo"
+    logoCanBeRemoved ? "Change logo" : "Upload logo"
   }
 
   private var trimmedOrganizationName: String {

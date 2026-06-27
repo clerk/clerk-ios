@@ -3581,96 +3581,96 @@
         }
       }
     },
-    "Change photo" : {
+    "Change logo" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تغيير الصورة"
+            "value" : "تغيير الشعار"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Foto ändern"
+            "value" : "Logo ändern"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αλλαγή φωτογραφίας"
+            "value" : "Αλλαγή λογότυπου"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cambiar foto"
+            "value" : "Cambiar logotipo"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Changer la photo"
+            "value" : "Changer le logo"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "फोटो बदलें"
+            "value" : "लोगो बदलें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cambia foto"
+            "value" : "Cambia logo"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "写真を変更"
+            "value" : "ロゴを変更"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "사진 변경"
+            "value" : "로고 변경"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zmień zdjęcie"
+            "value" : "Zmień logo"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alterar foto"
+            "value" : "Alterar logotipo"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schimbă fotografia"
+            "value" : "Schimbă sigla"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Изменить фото"
+            "value" : "Изменить логотип"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğrafı değiştir"
+            "value" : "Logoyu değiştir"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "更改照片"
+            "value" : "更改徽标"
           }
         }
       }
