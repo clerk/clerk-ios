@@ -22,7 +22,7 @@ struct OrganizationProfileFormView: View {
   private let creationDefaults: OrganizationCreationDefaults?
   private let onComplete: ((Organization) -> Void)?
 
-  @State private var organization: Organization? = nil
+  @State private var organization: Organization?
   @State private var organizationName: String
   @State private var slug: String
   @State private var error: Error?
@@ -99,15 +99,15 @@ struct OrganizationProfileFormView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        if !mode.isUpdate {
-          if mode.createPresentation == .sessionTask {
-            VStack(spacing: 8) {
-              HeaderView(style: .title, text: "Create organization")
-              HeaderView(style: .subtitle, text: "Enter your organization details to continue")
-            }
-            .padding(.bottom, 32)
+        if mode.showsSessionTaskHeader {
+          VStack(spacing: 8) {
+            HeaderView(style: .title, text: "Create organization")
+            HeaderView(style: .subtitle, text: "Enter your organization details to continue")
           }
+          .padding(.bottom, 32)
+        }
 
+        if mode.isCreate {
           if let advisory = creationDefaults?.advisory, let advisoryMessage = advisoryMessage(for: advisory) {
             WarningText(verbatim: advisoryMessage)
               .padding(.bottom, 16)
@@ -121,7 +121,7 @@ struct OrganizationProfileFormView: View {
     .background(theme.colors.background)
     .clerkErrorPresenting($error)
     .toolbar {
-      if mode.createPresentation == .regular {
+      if mode.showsRegularCreateNavigationTitle {
         ToolbarItem(placement: .principal) {
           Text("Create organization", bundle: .module)
             .font(theme.fonts.headline)
@@ -145,7 +145,7 @@ struct OrganizationProfileFormView: View {
       loadSelectedImage(item)
     }
     .onChange(of: organizationName) { _, newValue in
-      if !mode.isUpdate {
+      if mode.isCreate {
         slug = createSlug(from: newValue)
       }
       slugValidationError = nil
@@ -154,7 +154,7 @@ struct OrganizationProfileFormView: View {
       slugValidationError = nil
     }
     .taskOnce {
-      if !mode.isUpdate {
+      if mode.isCreate {
         loadDefaultLogo()
       }
     }
@@ -231,44 +231,21 @@ extension OrganizationProfileFormView {
           logoAvatar
 
           Menu {
-            createLogoMenuContent
+            logoSourceMenuItems
+
+            if selectedImageData != nil {
+              Button(role: .destructive) {
+                clearSelectedLogo()
+              } label: {
+                Text("Remove current logo", bundle: .module)
+              }
+            }
           } label: {
             PillButtonLabelView(logoActionTitle, isLoading: imageIsLoading)
           }
           .buttonStyle(.plain)
           .disabled(imageIsLoading)
         }
-      }
-    }
-  }
-
-  @ViewBuilder
-  private var createLogoMenuContent: some View {
-    Button {
-      photosPickerIsPresented = true
-    } label: {
-      Label {
-        Text("Photo library", bundle: .module)
-      } icon: {
-        Image(systemName: "photo.on.rectangle")
-      }
-    }
-
-    Button {
-      fileImporterIsPresented = true
-    } label: {
-      Label {
-        Text("Choose file", bundle: .module)
-      } icon: {
-        Image(systemName: "folder")
-      }
-    }
-
-    if selectedImageData != nil {
-      Button(role: .destructive) {
-        clearSelectedLogo()
-      } label: {
-        Text("Remove current logo", bundle: .module)
       }
     }
   }
@@ -288,7 +265,15 @@ extension OrganizationProfileFormView {
     .overlay(alignment: .bottomTrailing) {
       if mode.isUpdate {
         Menu {
-          logoMenuContent
+          logoSourceMenuItems
+
+          if logoCanBeRemoved {
+            AsyncButton(role: .destructive) {
+              await removeLogo()
+            } label: { _ in
+              Text("Remove current logo", bundle: .module)
+            }
+          }
         } label: {
           Image("icon-edit", bundle: .module)
             .resizable()
@@ -358,7 +343,7 @@ extension OrganizationProfileFormView {
   }
 
   @ViewBuilder
-  private var logoMenuContent: some View {
+  private var logoSourceMenuItems: some View {
     Button {
       photosPickerIsPresented = true
     } label: {
@@ -376,14 +361,6 @@ extension OrganizationProfileFormView {
         Text("Choose file", bundle: .module)
       } icon: {
         Image(systemName: "folder")
-      }
-    }
-
-    if logoCanBeRemoved {
-      AsyncButton(role: .destructive) {
-        await removeLogo()
-      } label: { _ in
-        Text("Remove current logo", bundle: .module)
       }
     }
   }
@@ -669,16 +646,32 @@ private enum OrganizationProfileFormMode {
     return false
   }
 
-  var logoAvatarSize: CGFloat {
-    isUpdate ? 96 : 80
-  }
-
-  var createPresentation: OrganizationCreatePresentation? {
-    if case .create(let presentation) = self {
-      return presentation
+  var isCreate: Bool {
+    if case .create = self {
+      return true
     }
 
-    return nil
+    return false
+  }
+
+  var showsSessionTaskHeader: Bool {
+    if case .create(.sessionTask) = self {
+      return true
+    }
+
+    return false
+  }
+
+  var showsRegularCreateNavigationTitle: Bool {
+    if case .create(.regular) = self {
+      return true
+    }
+
+    return false
+  }
+
+  var logoAvatarSize: CGFloat {
+    isUpdate ? 96 : 80
   }
 }
 
