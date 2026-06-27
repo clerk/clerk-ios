@@ -455,6 +455,7 @@ extension AuthStartView {
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
 
+      guard !Task.isCancelled else { return .stopped }
       generalError = nil
       guard navigation.path.isEmpty else { return .stopped }
       navigation.setToStepForStatus(signIn: signIn)
