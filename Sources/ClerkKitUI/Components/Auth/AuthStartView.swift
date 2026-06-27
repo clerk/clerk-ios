@@ -23,6 +23,7 @@ struct AuthStartView: View {
 
   @State private var fieldError: Error?
   @State private var generalError: Error?
+  @State private var automaticPasskeySignInTask: Task<Void, Never>?
 
   // MARK: - Configuration
 
@@ -227,9 +228,16 @@ struct AuthStartView: View {
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInIsEnabled) {
-      guard passkeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted else { return }
+      guard passkeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted, navigation.path.isEmpty else { return }
       authState.automaticPasskeySignInHasStarted = true
-      await startPasskeySignIn()
+      let task = Task { await startPasskeySignIn() }
+      automaticPasskeySignInTask = task
+      await withTaskCancellationHandler {
+        await task.value
+      } onCancel: {
+        task.cancel()
+      }
+      automaticPasskeySignInTask = nil
     }
     #endif
   }
@@ -331,12 +339,9 @@ extension AuthStartView {
         SocialButton(
           provider: lastUsedProvider,
           transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata
-        ) { result in
-          handleTransferFlowResult(result)
-        } onError: { error in
-          generalError = error
-        }
+          unsafeMetadata: authState.unsafeMetadata,
+          action: { await signInWithSocialProvider(lastUsedProvider) }
+        )
         .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
       }
@@ -348,12 +353,9 @@ extension AuthStartView {
               provider: provider,
               transferable: authState.transferable,
               unsafeMetadata: authState.unsafeMetadata,
-              showsTitle: socialProvidersMinusLastUsed.count == 1
-            ) { result in
-              handleTransferFlowResult(result)
-            } onError: { error in
-              generalError = error
-            }
+              showsTitle: socialProvidersMinusLastUsed.count == 1,
+              action: { await signInWithSocialProvider(provider) }
+            )
             .simultaneousGesture(TapGesture())
           }
         }
@@ -372,12 +374,46 @@ extension AuthStartView {
   }
 
   func startAuth() async {
+    cancelAutomaticPasskeySignIn()
     dismissKeyboard()
 
     switch authState.mode {
     case .signInOrUp: await signIn(withSignUp: true)
     case .signIn: await signIn(withSignUp: false)
     case .signUp: await signUp()
+    }
+  }
+
+  private func cancelAutomaticPasskeySignIn() {
+    automaticPasskeySignInTask?.cancel()
+    automaticPasskeySignInTask = nil
+  }
+
+  private func signInWithSocialProvider(_ provider: OAuthProvider) async {
+    cancelAutomaticPasskeySignIn()
+
+    do {
+      let result: TransferFlowResult
+      if provider == .apple {
+        let appleTransferable = SocialButton.shouldTransferAppleSignIn(
+          transferable: authState.transferable,
+          environment: clerk.environment
+        )
+        result = try await clerk.auth.signInWithApple(
+          transferable: appleTransferable,
+          unsafeMetadata: authState.unsafeMetadata
+        )
+      } else {
+        result = try await clerk.auth.signInWithOAuth(
+          provider: provider,
+          transferable: authState.transferable,
+          unsafeMetadata: authState.unsafeMetadata
+        )
+      }
+      handleTransferFlowResult(result)
+    } catch {
+      if error.isUserCancelledError { return }
+      generalError = error
     }
   }
 
@@ -420,11 +456,13 @@ extension AuthStartView {
       )
 
       generalError = nil
+      guard navigation.path.isEmpty else { return .stopped }
       navigation.setToStepForStatus(signIn: signIn)
       return .completed
     } catch {
       if Task.isCancelled || error.isCancellationError { return .stopped }
       if error.isUserCancelledError { return .continueWithAutofill }
+      guard navigation.path.isEmpty else { return .stopped }
 
       generalError = error
       if autofill {
@@ -438,6 +476,8 @@ extension AuthStartView {
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn() async {
+    guard navigation.path.isEmpty else { return }
+
     if passkeyAutomaticModalIsEnabled {
       let result = await signInWithPasskey(
         autofill: false,
@@ -446,6 +486,7 @@ extension AuthStartView {
       guard case .continueWithAutofill = result else { return }
     }
 
+    guard navigation.path.isEmpty else { return }
     await signInWithPasskey(
       autofill: true,
       preferImmediatelyAvailableCredentials: true
