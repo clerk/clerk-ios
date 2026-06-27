@@ -31,6 +31,12 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
+  private static func cancelAuthorization(for helperID: ObjectIdentifier) {
+    guard let activeHelper, ObjectIdentifier(activeHelper) == helperID else { return }
+    cancelCurrentAuthorization()
+  }
+
+  @MainActor
   private var defaultRelyingPartyIdentifier: String {
     guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
       return ""
@@ -86,44 +92,53 @@ final class PasskeyHelper: NSObject {
     allowedCredentialIDs: [Data] = [],
     preferImmediatelyAvailableCredentials: Bool
   ) async throws -> ASAuthorization {
+    try Task.checkCancellation()
     Self.cancelCurrentAuthorization()
+    let helperID = ObjectIdentifier(self)
 
-    return try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      return try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        Self.activeHelper = self
 
-      let assertionRequest = credentialAssertionRequest(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
-      )
+        let assertionRequest = credentialAssertionRequest(
+          challenge: challenge,
+          relyingPartyIdentifier: relyingPartyIdentifier,
+          allowedCredentialIDs: allowedCredentialIDs
+        )
 
-      // Pass in any mix of supported sign-in request types.
-      let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
+        // Pass in any mix of supported sign-in request types.
+        let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
+        authController.delegate = self
+        authController.presentationContextProvider = self
+        Self.controller = authController
 
-      #if !os(tvOS)
+        #if !os(tvOS)
 
-      if preferImmediatelyAvailableCredentials {
-        // If credentials are available, presents a modal sign-in sheet.
-        // If there are no locally saved credentials, no UI appears and
-        // the system passes ASAuthorizationError.Code.canceled to call
-        // `AccountManager.authorizationController(controller:didCompleteWithError:)`.
-        authController.performRequests(options: .preferImmediatelyAvailableCredentials)
-      } else {
-        // If credentials are available, presents a modal sign-in sheet.
-        // If there are no locally saved credentials, the system presents a QR code to allow signing in with a
-        // passkey from a nearby device.
+        if preferImmediatelyAvailableCredentials {
+          // If credentials are available, presents a modal sign-in sheet.
+          // If there are no locally saved credentials, no UI appears and
+          // the system passes ASAuthorizationError.Code.canceled to call
+          // `AccountManager.authorizationController(controller:didCompleteWithError:)`.
+          authController.performRequests(options: .preferImmediatelyAvailableCredentials)
+        } else {
+          // If credentials are available, presents a modal sign-in sheet.
+          // If there are no locally saved credentials, the system presents a QR code to allow signing in with a
+          // passkey from a nearby device.
+          authController.performRequests()
+        }
+
+        #else
+
         authController.performRequests()
+
+        #endif
       }
-
-      #else
-
-      authController.performRequests()
-
-      #endif
+    } onCancel: {
+      Task { @MainActor in
+        Self.cancelAuthorization(for: helperID)
+      }
     }
   }
 
@@ -134,25 +149,34 @@ final class PasskeyHelper: NSObject {
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = []
   ) async throws -> ASAuthorization {
+    try Task.checkCancellation()
     Self.cancelCurrentAuthorization()
+    let helperID = ObjectIdentifier(self)
 
-    return try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      return try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        Self.activeHelper = self
 
-      let assertionRequest = credentialAssertionRequest(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
-      )
+        let assertionRequest = credentialAssertionRequest(
+          challenge: challenge,
+          relyingPartyIdentifier: relyingPartyIdentifier,
+          allowedCredentialIDs: allowedCredentialIDs
+        )
 
-      // AutoFill-assisted requests only support ASAuthorizationPlatformPublicKeyCredentialAssertionRequest.
-      let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
+        // AutoFill-assisted requests only support ASAuthorizationPlatformPublicKeyCredentialAssertionRequest.
+        let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
+        authController.delegate = self
+        authController.presentationContextProvider = self
+        Self.controller = authController
 
-      authController.performAutoFillAssistedRequests()
+        authController.performAutoFillAssistedRequests()
+      }
+    } onCancel: {
+      Task { @MainActor in
+        Self.cancelAuthorization(for: helperID)
+      }
     }
   }
   #endif
@@ -164,30 +188,39 @@ final class PasskeyHelper: NSObject {
     userId: Data,
     relyingPartyIdentifier: String? = nil
   ) async throws -> ASAuthorization {
+    try Task.checkCancellation()
     Self.cancelCurrentAuthorization()
+    let helperID = ObjectIdentifier(self)
 
-    return try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      return try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        Self.activeHelper = self
 
-      let publicKeyCredentialProvider = publicKeyCredentialProvider(
-        relyingPartyIdentifier: relyingPartyIdentifier
-      )
+        let publicKeyCredentialProvider = publicKeyCredentialProvider(
+          relyingPartyIdentifier: relyingPartyIdentifier
+        )
 
-      let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
-        challenge: challenge,
-        name: name,
-        userID: userId
-      )
+        let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
+          challenge: challenge,
+          name: name,
+          userID: userId
+        )
 
-      // Use only ASAuthorizationPlatformPublicKeyCredentialRegistrationRequests or
-      // ASAuthorizationSecurityKeyPublicKeyCredentialRegistrationRequests here.
-      let authController = ASAuthorizationController(authorizationRequests: [registrationRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
+        // Use only ASAuthorizationPlatformPublicKeyCredentialRegistrationRequests or
+        // ASAuthorizationSecurityKeyPublicKeyCredentialRegistrationRequests here.
+        let authController = ASAuthorizationController(authorizationRequests: [registrationRequest])
+        authController.delegate = self
+        authController.presentationContextProvider = self
+        Self.controller = authController
 
-      authController.performRequests()
+        authController.performRequests()
+      }
+    } onCancel: {
+      Task { @MainActor in
+        Self.cancelAuthorization(for: helperID)
+      }
     }
   }
 

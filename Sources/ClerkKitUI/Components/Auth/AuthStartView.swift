@@ -82,10 +82,15 @@ struct AuthStartView: View {
   var passkeySignInIsAvailable: Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      clerk.environment?.passkeyIsEnabled == true
+      clerk.environment?.passkeyIsEnabled == true &&
+        !lockedInitialIdentifierIsActive
     case .signUp:
       false
     }
+  }
+
+  var lockedInitialIdentifierIsActive: Bool {
+    authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
   }
 
   var passkeyAutomaticModalIsEnabled: Bool {
