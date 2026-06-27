@@ -42,6 +42,8 @@ final class AuthState {
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
 
+  var automaticPasskeySignInHasStarted = false
+
   private let userDefaults: UserDefaults
 
   init(

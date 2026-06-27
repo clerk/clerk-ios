@@ -222,7 +222,8 @@ struct AuthStartView: View {
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInIsEnabled) {
-      guard passkeySignInIsEnabled else { return }
+      guard passkeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted else { return }
+      authState.automaticPasskeySignInHasStarted = true
       await startPasskeySignIn()
     }
     #endif

@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 @testable import ClerkKit
 @testable import ClerkKitUI
@@ -33,6 +33,23 @@ struct AuthStateConfigurationTests {
     #expect(defaults.string(forKey: AuthState.identifierStorageKey) == "edited@example.com")
     #expect(defaults.string(forKey: AuthState.phoneNumberStorageKey) == "16666660123")
     #expect(defaults.bool(forKey: AuthState.phoneNumberFieldIsActiveStorageKey))
+  }
+
+  @Test
+  func automaticPasskeySignInHasNotStartedByDefault() {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+
+    #expect(!authState.automaticPasskeySignInHasStarted)
+  }
+
+  @Test
+  func automaticPasskeySignInStateSurvivesConfigurationChanges() {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+    authState.automaticPasskeySignInHasStarted = true
+
+    authState.configure(AuthConfig(initialIdentifier: "seed@example.com"))
+
+    #expect(authState.automaticPasskeySignInHasStarted)
   }
 
   @Test
