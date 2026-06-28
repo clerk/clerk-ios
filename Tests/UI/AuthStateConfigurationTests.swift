@@ -36,23 +36,6 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
-  func automaticPasskeySignInHasNotStartedByDefault() {
-    let authState = AuthState(userDefaults: makeUserDefaults())
-
-    #expect(!authState.automaticPasskeySignInHasStarted)
-  }
-
-  @Test
-  func automaticPasskeySignInStateSurvivesConfigurationChanges() {
-    let authState = AuthState(userDefaults: makeUserDefaults())
-    authState.automaticPasskeySignInHasStarted = true
-
-    authState.configure(AuthConfig(initialIdentifier: "seed@example.com"))
-
-    #expect(authState.automaticPasskeySignInHasStarted)
-  }
-
-  @Test
   func initialEmailOverridesPersistedValues() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)

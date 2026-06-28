@@ -26,13 +26,9 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTask: Task<Void, Never>?
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
+  @State private var automaticPasskeySignInHasStarted = false
 
   // MARK: - Configuration
-
-  private struct PasskeySignInTaskID: Equatable {
-    let isEnabled: Bool
-    let restartID: Int
-  }
 
   var emailIsEnabled: Bool {
     clerk.environment?.enabledFirstFactorAttributes
@@ -128,8 +124,8 @@ struct AuthStartView: View {
     #endif
   }
 
-  private var passkeySignInTaskID: PasskeySignInTaskID {
-    .init(isEnabled: passkeySignInTaskIsEnabled, restartID: automaticPasskeySignInRestartID)
+  private var passkeySignInTaskID: Int? {
+    passkeySignInTaskIsEnabled ? automaticPasskeySignInRestartID : nil
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -247,9 +243,9 @@ struct AuthStartView: View {
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInTaskID) {
-      guard passkeySignInTaskID.isEnabled else { return }
-      let includeAutomaticModal = !authState.automaticPasskeySignInHasStarted
-      authState.automaticPasskeySignInHasStarted = true
+      guard passkeySignInTaskID != nil else { return }
+      let includeAutomaticModal = !automaticPasskeySignInHasStarted
+      automaticPasskeySignInHasStarted = true
       automaticPasskeySignInTaskGeneration += 1
       let taskGeneration = automaticPasskeySignInTaskGeneration
       let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
@@ -465,12 +461,26 @@ extension AuthStartView {
     }
   }
 
-  private func signInWithPasskey(
+  private func createPasskeySignIn() async -> SignIn? {
+    do {
+      return try await clerk.auth.createPasskeySignIn()
+    } catch {
+      if Task.isCancelled || error.isCancellationError { return nil }
+      guard navigation.path.isEmpty else { return nil }
+
+      generalError = error
+      ClerkLogger.error("Failed to create passkey sign-in", error: error)
+      return nil
+    }
+  }
+
+  private func authenticateWithPasskey(
+    signIn: SignIn,
     autofill: Bool,
     preferImmediatelyAvailableCredentials: Bool
   ) async -> PasskeySignInResult {
     do {
-      let signIn = try await clerk.auth.signInWithPasskey(
+      let signIn = try await signIn.authenticateWithPasskey(
         autofill: autofill,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
@@ -500,9 +510,12 @@ extension AuthStartView {
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn(includeAutomaticModal: Bool) async {
     guard navigation.path.isEmpty else { return }
+    guard let signIn = await createPasskeySignIn() else { return }
+    guard !Task.isCancelled, navigation.path.isEmpty else { return }
 
     if includeAutomaticModal, passkeyAutomaticModalIsEnabled {
-      let result = await signInWithPasskey(
+      let result = await authenticateWithPasskey(
+        signIn: signIn,
         autofill: false,
         preferImmediatelyAvailableCredentials: true
       )
@@ -512,7 +525,8 @@ extension AuthStartView {
     guard navigation.path.isEmpty else { return }
     // Clerk's AutoFill setting gates the automatic modal above; this keeps
     // iOS text-field AutoFill available.
-    await signInWithPasskey(
+    await authenticateWithPasskey(
+      signIn: signIn,
       autofill: true,
       preferImmediatelyAvailableCredentials: true
     )
