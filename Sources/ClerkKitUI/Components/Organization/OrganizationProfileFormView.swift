@@ -8,6 +8,7 @@ import ClerkKit
 import NukeUI
 import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
 #if os(macOS)
 import AppKit
 #endif
@@ -21,12 +22,13 @@ struct OrganizationProfileFormView: View {
   private let creationDefaults: OrganizationCreationDefaults?
   private let onComplete: ((Organization) -> Void)?
 
-  @State private var organization: Organization? = nil
+  @State private var organization: Organization?
   @State private var organizationName: String
   @State private var slug: String
   @State private var error: Error?
   @State private var slugValidationError: ClerkClientError?
   @State private var photosPickerIsPresented = false
+  @State private var fileImporterIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
   @State private var selectedImageData: Data?
   @State private var imageLoadTask: Task<Void, Never>?
@@ -34,20 +36,16 @@ struct OrganizationProfileFormView: View {
   @State private var isPickerImageLoading = false
   @State private var isPreloadedLogoLoading = false
 
-  private var isUpdateMode: Bool {
-    if case .update = mode {
-      return true
-    }
-
-    return false
-  }
-
   private var slugEnabled: Bool {
     clerk.environment?.organizationSettings.slug.disabled == false
   }
 
   private var imageIsLoading: Bool {
     isPickerImageLoading || isPreloadedLogoLoading
+  }
+
+  private var logoActionTitle: LocalizedStringKey {
+    logoCanBeRemoved ? "Change logo" : "Upload logo"
   }
 
   private var trimmedOrganizationName: String {
@@ -76,9 +74,10 @@ struct OrganizationProfileFormView: View {
 
   init(
     creationDefaults: OrganizationCreationDefaults? = nil,
+    createPresentation: OrganizationCreatePresentation = .regular,
     onComplete: ((Organization) -> Void)? = nil
   ) {
-    mode = .create
+    mode = .create(createPresentation)
     self.creationDefaults = creationDefaults
     self.onComplete = onComplete
     _organizationName = State(initialValue: creationDefaults?.form?.name ?? "")
@@ -100,13 +99,15 @@ struct OrganizationProfileFormView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        if !isUpdateMode {
+        if mode.showsSessionTaskHeader {
           VStack(spacing: 8) {
             HeaderView(style: .title, text: "Create organization")
             HeaderView(style: .subtitle, text: "Enter your organization details to continue")
           }
           .padding(.bottom, 32)
+        }
 
+        if mode.isCreate {
           if let advisory = creationDefaults?.advisory, let advisoryMessage = advisoryMessage(for: advisory) {
             WarningText(verbatim: advisoryMessage)
               .padding(.bottom, 16)
@@ -119,17 +120,32 @@ struct OrganizationProfileFormView: View {
     }
     .background(theme.colors.background)
     .clerkErrorPresenting($error)
+    .toolbar {
+      if mode.showsRegularCreateNavigationTitle {
+        ToolbarItem(placement: .principal) {
+          Text("Create organization", bundle: .module)
+            .font(theme.fonts.headline)
+            .foregroundStyle(theme.colors.foreground)
+        }
+      }
+    }
     .photosPicker(
       isPresented: $photosPickerIsPresented,
       selection: $photosPickerItem,
       matching: .images
     )
+    .fileImporter(
+      isPresented: $fileImporterIsPresented,
+      allowedContentTypes: [.image]
+    ) { result in
+      loadSelectedImage(result)
+    }
     .onChange(of: photosPickerItem) { _, item in
       guard let item else { return }
       loadSelectedImage(item)
     }
     .onChange(of: organizationName) { _, newValue in
-      if !isUpdateMode {
+      if mode.isCreate {
         slug = createSlug(from: newValue)
       }
       slugValidationError = nil
@@ -138,7 +154,7 @@ struct OrganizationProfileFormView: View {
       slugValidationError = nil
     }
     .taskOnce {
-      if !isUpdateMode {
+      if mode.isCreate {
         loadDefaultLogo()
       }
     }
@@ -151,7 +167,7 @@ extension OrganizationProfileFormView {
   private var formContent: some View {
     Group {
       logoSection
-        .frame(maxWidth: .infinity, alignment: isUpdateMode ? .center : .leading)
+        .frame(maxWidth: .infinity)
         .padding(.bottom, 24)
 
       VStack(spacing: 16) {
@@ -185,7 +201,7 @@ extension OrganizationProfileFormView {
       AsyncButton {
         await submit()
       } label: { isRunning in
-        Text(isUpdateMode ? "Save" : "Create organization", bundle: .module)
+        Text(mode.isUpdate ? "Save" : "Create organization", bundle: .module)
           .frame(maxWidth: .infinity)
           .overlayProgressView(isActive: isRunning) {
             SpinnerView(color: theme.colors.primaryForeground)
@@ -195,7 +211,7 @@ extension OrganizationProfileFormView {
       .disabled(trimmedOrganizationName.isEmpty || imageIsLoading)
       .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.ProfileForm.submitButton)
 
-      if !isUpdateMode {
+      if !mode.isUpdate {
         Spacer().frame(height: 32)
         SecuredByClerkView()
       }
@@ -208,24 +224,27 @@ extension OrganizationProfileFormView {
 extension OrganizationProfileFormView {
   private var logoSection: some View {
     Group {
-      if isUpdateMode {
+      if mode.isUpdate {
         logoAvatar
       } else {
-        HStack(spacing: 16) {
+        VStack(spacing: 12) {
           logoAvatar
 
-          VStack(alignment: .leading, spacing: 12) {
-            Button {
-              photosPickerIsPresented = true
-            } label: {
-              PillButtonLabelView("Upload logo")
-            }
-            .buttonStyle(.plain)
+          Menu {
+            logoSourceMenuItems
 
-            Text("Recommended size 1:1, up to 10MB.", bundle: .module)
-              .font(.caption)
-              .foregroundStyle(theme.colors.mutedForeground)
+            if selectedImageData != nil {
+              Button(role: .destructive) {
+                clearSelectedLogo()
+              } label: {
+                Text("Remove current logo", bundle: .module)
+              }
+            }
+          } label: {
+            PillButtonLabelView(logoActionTitle, isLoading: imageIsLoading)
           }
+          .buttonStyle(.plain)
+          .disabled(imageIsLoading)
         }
       }
     }
@@ -241,12 +260,20 @@ extension OrganizationProfileFormView {
           .frame(width: 24, height: 24)
       }
     }
-    .frame(width: 96, height: 96)
-    .clipShape(.circle)
+    .frame(width: mode.logoAvatarSize, height: mode.logoAvatarSize)
+    .clipShape(.rect(cornerRadius: theme.design.borderRadius))
     .overlay(alignment: .bottomTrailing) {
-      if isUpdateMode {
+      if mode.isUpdate {
         Menu {
-          logoMenuContent
+          logoSourceMenuItems
+
+          if logoCanBeRemoved {
+            AsyncButton(role: .destructive) {
+              await removeLogo()
+            } label: { _ in
+              Text("Remove current logo", bundle: .module)
+            }
+          }
         } label: {
           Image("icon-edit", bundle: .module)
             .resizable()
@@ -262,6 +289,8 @@ extension OrganizationProfileFormView {
             }
             .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
         }
+        .disabled(imageIsLoading)
+        .accessibilityLabel(Text(logoActionTitle, bundle: .module))
       }
     }
   }
@@ -303,9 +332,9 @@ extension OrganizationProfileFormView {
 
   private var logoPlaceholder: some View {
     ZStack {
-      Circle()
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .fill(theme.colors.muted)
-      Circle()
+      RoundedRectangle(cornerRadius: theme.design.borderRadius)
         .strokeBorder(theme.colors.border, style: StrokeStyle(lineWidth: 1, dash: [4]))
       Image(systemName: "building.2")
         .font(.title2)
@@ -314,16 +343,24 @@ extension OrganizationProfileFormView {
   }
 
   @ViewBuilder
-  private var logoMenuContent: some View {
-    Button("Choose from photo library") {
+  private var logoSourceMenuItems: some View {
+    Button {
       photosPickerIsPresented = true
+    } label: {
+      Label {
+        Text("Photo library", bundle: .module)
+      } icon: {
+        Image(systemName: "photo.on.rectangle")
+      }
     }
 
-    if logoCanBeRemoved {
-      AsyncButton(role: .destructive) {
-        await removeLogo()
-      } label: { _ in
-        Text("Remove logo", bundle: .module)
+    Button {
+      fileImporterIsPresented = true
+    } label: {
+      Label {
+        Text("Choose file", bundle: .module)
+      } icon: {
+        Image(systemName: "folder")
       }
     }
   }
@@ -424,7 +461,7 @@ extension OrganizationProfileFormView {
           throw ClerkClientError(message: "There was an error loading the image from the photos library.")
         }
         guard !Task.isCancelled else { return }
-        if isUpdateMode {
+        if mode.isUpdate {
           try await setOrganizationLogo(imageData: resizedData)
         } else {
           selectedImageData = resizedData
@@ -437,6 +474,54 @@ extension OrganizationProfileFormView {
     }
   }
 
+  private func loadSelectedImage(_ result: Result<URL, any Error>) {
+    imageLoadTask?.cancel()
+    isPreloadedLogoLoading = false
+    preloadedLogoTask?.cancel()
+    error = nil
+    imageLoadTask = Task {
+      isPickerImageLoading = true
+      defer {
+        if !Task.isCancelled {
+          isPickerImageLoading = false
+        }
+      }
+      do {
+        let url = try result.get()
+        let data = try await Self.readSecurityScopedFileData(from: url)
+        guard let resizedData = processImageData(data) else {
+          throw ClerkClientError(message: "There was an error loading the selected image file.")
+        }
+        guard !Task.isCancelled else { return }
+        photosPickerItem = nil
+        if mode.isUpdate {
+          try await setOrganizationLogo(imageData: resizedData)
+        } else {
+          selectedImageData = resizedData
+        }
+      } catch {
+        guard !Task.isCancelled else { return }
+        guard !error.isUserCancelledFileImport else {
+          return
+        }
+        self.error = error
+        ClerkLogger.error("Failed to set organization logo", error: error)
+      }
+    }
+  }
+
+  @concurrent
+  private static func readSecurityScopedFileData(from url: URL) async throws -> Data {
+    let securityScopeIsAccessed = url.startAccessingSecurityScopedResource()
+    defer {
+      if securityScopeIsAccessed {
+        url.stopAccessingSecurityScopedResource()
+      }
+    }
+
+    return try Data(contentsOf: url)
+  }
+
   private func setOrganizationLogo(imageData: Data) async throws {
     guard let organization else { return }
 
@@ -444,22 +529,28 @@ extension OrganizationProfileFormView {
     selectedImageData = imageData
   }
 
+  private func clearSelectedLogo() {
+    photosPickerItem = nil
+    selectedImageData = nil
+  }
+
   private func removeLogo() async {
-    if isUpdateMode {
+    if mode.isUpdate {
       guard let organization else { return }
 
       isPickerImageLoading = true
       defer { isPickerImageLoading = false }
 
       do {
-        self.organization = try await organization.deleteLogo()
-        selectedImageData = nil
+        try await organization.deleteLogo()
+        clearSelectedLogo()
+        self.organization = try await clerk.organizations.get(id: organization.id)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to delete organization logo", error: error)
       }
     } else {
-      selectedImageData = nil
+      clearSelectedLogo()
     }
   }
 }
@@ -537,9 +628,57 @@ extension OrganizationProfileFormView {
   }
 }
 
+extension Error {
+  fileprivate var isUserCancelledFileImport: Bool {
+    let nsError = self as NSError
+    return nsError.domain == NSCocoaErrorDomain && nsError.code == CocoaError.Code.userCancelled.rawValue
+  }
+}
+
 private enum OrganizationProfileFormMode {
-  case create
+  case create(OrganizationCreatePresentation)
   case update
+
+  var isUpdate: Bool {
+    if case .update = self {
+      return true
+    }
+
+    return false
+  }
+
+  var isCreate: Bool {
+    if case .create = self {
+      return true
+    }
+
+    return false
+  }
+
+  var showsSessionTaskHeader: Bool {
+    if case .create(.sessionTask) = self {
+      return true
+    }
+
+    return false
+  }
+
+  var showsRegularCreateNavigationTitle: Bool {
+    if case .create(.regular) = self {
+      return true
+    }
+
+    return false
+  }
+
+  var logoAvatarSize: CGFloat {
+    isUpdate ? 96 : 80
+  }
+}
+
+enum OrganizationCreatePresentation: Equatable {
+  case regular
+  case sessionTask
 }
 
 #Preview("Create Organization Form") {

@@ -23,7 +23,11 @@ struct SessionTaskCreateOrganizationView: View {
   }
 
   var body: some View {
-    OrganizationCreateFlowView(creationDefaults: creationDefaults, skipInvitationScreen: true) {
+    OrganizationCreateFlowView(
+      creationDefaults: creationDefaults,
+      skipInvitationScreen: true,
+      createPresentation: .sessionTask
+    ) {
       navigation.handleSessionTaskCompletion(session: clerk.session)
     }
     .navigationBarBackButtonHidden(!showBackButton)

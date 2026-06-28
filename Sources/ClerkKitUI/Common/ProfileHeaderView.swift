@@ -16,7 +16,10 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
   let subtitle: String?
   let actionTitle: LocalizedStringKey?
   let action: (() -> Void)?
+  let avatarCornerRadius: CGFloat?
   let avatarPlaceholder: AvatarPlaceholder
+
+  private let avatarSize: CGFloat = 96
 
   init(
     imageUrl: String,
@@ -24,6 +27,7 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
     subtitle: String? = nil,
     actionTitle: LocalizedStringKey? = nil,
     action: (() -> Void)? = nil,
+    avatarCornerRadius: CGFloat? = nil,
     @ViewBuilder avatarPlaceholder: () -> AvatarPlaceholder
   ) {
     self.imageUrl = imageUrl
@@ -31,6 +35,7 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
     self.subtitle = subtitle
     self.actionTitle = actionTitle
     self.action = action
+    self.avatarCornerRadius = avatarCornerRadius
     self.avatarPlaceholder = avatarPlaceholder()
   }
 
@@ -79,8 +84,8 @@ struct ProfileHeaderView<AvatarPlaceholder: View>: View {
         avatarPlaceholder
       }
     }
-    .frame(width: 96, height: 96)
-    .clipShape(.circle)
+    .frame(width: avatarSize, height: avatarSize)
+    .clipShape(.rect(cornerRadius: avatarCornerRadius ?? avatarSize / 2))
     .transition(.opacity.animation(.easeInOut(duration: 0.25)))
   }
 }
