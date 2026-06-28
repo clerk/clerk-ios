@@ -86,7 +86,7 @@ struct AuthStartView: View {
   var passkeySignInIsAvailable: Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      clerk.environment?.enabledFirstFactorAttributes.contains("passkey") == true &&
+      clerk.environment?.passkeyIsEnabled == true &&
         !lockedInitialIdentifierIsActive
     case .signUp:
       false
