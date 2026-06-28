@@ -239,6 +239,11 @@ struct AuthStartView: View {
       }
       automaticPasskeySignInTask = nil
     }
+    .onChange(of: navigation.path) { _, newPath in
+      if !newPath.isEmpty {
+        cancelAutomaticPasskeySignIn()
+      }
+    }
     #endif
   }
 }
