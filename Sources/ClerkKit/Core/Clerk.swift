@@ -526,7 +526,7 @@ extension Clerk {
     client = nil
     environment = nil
     sessionsByUserId = [:]
-    await WebAuthentication.cancelCurrentSession()
+    WebAuthentication.cancelCurrentSession()
 
     #if canImport(AuthenticationServices) && !os(watchOS)
     PasskeyHelper.cancelCurrentAuthorization()
@@ -567,7 +567,7 @@ extension Clerk: LifecycleEventHandling {
     watchConnectivityCoordinator?.sync()
 
     #if os(macOS)
-    if await WebAuthentication.consumePendingForegroundRefreshSuppression() {
+    if WebAuthentication.consumePendingForegroundRefreshSuppression() {
       return
     }
     #endif
