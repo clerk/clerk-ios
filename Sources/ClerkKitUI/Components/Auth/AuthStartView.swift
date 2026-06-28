@@ -349,7 +349,9 @@ extension AuthStartView {
           provider: lastUsedProvider,
           transferable: authState.transferable,
           unsafeMetadata: authState.unsafeMetadata,
-          action: { await signInWithSocialProvider(lastUsedProvider) }
+          onStart: cancelAutomaticPasskeySignIn,
+          onSuccess: handleTransferFlowResult,
+          onError: { generalError = $0 }
         )
         .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
@@ -363,7 +365,9 @@ extension AuthStartView {
               transferable: authState.transferable,
               unsafeMetadata: authState.unsafeMetadata,
               showsTitle: socialProvidersMinusLastUsed.count == 1,
-              action: { await signInWithSocialProvider(provider) }
+              onStart: cancelAutomaticPasskeySignIn,
+              onSuccess: handleTransferFlowResult,
+              onError: { generalError = $0 }
             )
             .simultaneousGesture(TapGesture())
           }
@@ -396,34 +400,6 @@ extension AuthStartView {
   private func cancelAutomaticPasskeySignIn() {
     automaticPasskeySignInTask?.cancel()
     automaticPasskeySignInTask = nil
-  }
-
-  private func signInWithSocialProvider(_ provider: OAuthProvider) async {
-    cancelAutomaticPasskeySignIn()
-
-    do {
-      let result: TransferFlowResult
-      if provider == .apple {
-        let appleTransferable = SocialButton.shouldTransferAppleSignIn(
-          transferable: authState.transferable,
-          environment: clerk.environment
-        )
-        result = try await clerk.auth.signInWithApple(
-          transferable: appleTransferable,
-          unsafeMetadata: authState.unsafeMetadata
-        )
-      } else {
-        result = try await clerk.auth.signInWithOAuth(
-          provider: provider,
-          transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata
-        )
-      }
-      handleTransferFlowResult(result)
-    } catch {
-      if error.isUserCancelledError { return }
-      generalError = error
-    }
   }
 
   private func signIn(withSignUp: Bool) async {

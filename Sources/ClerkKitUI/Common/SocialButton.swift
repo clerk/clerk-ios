@@ -17,6 +17,7 @@ struct SocialButton: View {
   let transferable: Bool
   let unsafeMetadata: JSON?
   let showsTitle: Bool
+  var onStart: (() -> Void)?
   var action: (() async -> Void)?
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
@@ -102,6 +103,7 @@ struct SocialButton: View {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil,
     showsTitle: Bool = true,
+    onStart: (() -> Void)? = nil,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
     onError: ((Error) -> Void)? = nil
   ) {
@@ -109,6 +111,7 @@ struct SocialButton: View {
     self.transferable = transferable
     self.unsafeMetadata = unsafeMetadata
     self.showsTitle = showsTitle
+    self.onStart = onStart
     self.onSuccess = onSuccess
     self.onError = onError
   }
@@ -116,6 +119,7 @@ struct SocialButton: View {
   var body: some View {
     AsyncButton {
       do {
+        onStart?()
         if let action {
           await action()
         } else {
