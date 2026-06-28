@@ -113,6 +113,14 @@ struct AuthStartView: View {
     #endif
   }
 
+  var passkeySignInTaskIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    passkeySignInIsEnabled && navigation.path.isEmpty
+    #else
+    false
+    #endif
+  }
+
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
     let providers = clerk.environment?.authenticatableSocialProviders ?? []
     guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
@@ -227,10 +235,11 @@ struct AuthStartView: View {
       }
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    .task(id: passkeySignInIsEnabled) {
-      guard passkeySignInIsEnabled, !authState.automaticPasskeySignInHasStarted, navigation.path.isEmpty else { return }
+    .task(id: passkeySignInTaskIsEnabled) {
+      guard passkeySignInTaskIsEnabled else { return }
+      let includeAutomaticModal = !authState.automaticPasskeySignInHasStarted
       authState.automaticPasskeySignInHasStarted = true
-      let task = Task { await startPasskeySignIn() }
+      let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
       automaticPasskeySignInTask = task
       await withTaskCancellationHandler {
         await task.value
@@ -238,11 +247,6 @@ struct AuthStartView: View {
         task.cancel()
       }
       automaticPasskeySignInTask = nil
-    }
-    .onChange(of: navigation.path) { _, newPath in
-      if !newPath.isEmpty {
-        cancelAutomaticPasskeySignIn()
-      }
     }
     #endif
   }
@@ -476,15 +480,17 @@ extension AuthStartView {
       } else {
         ClerkLogger.error("Failed to authenticate with passkey", error: error)
       }
+      // Keep iOS text-field AutoFill armed after a modal error so users can
+      // pick another passkey without a second modal.
       return autofill ? .stopped : .continueWithAutofill
     }
   }
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
-  private func startPasskeySignIn() async {
+  private func startPasskeySignIn(includeAutomaticModal: Bool) async {
     guard navigation.path.isEmpty else { return }
 
-    if passkeyAutomaticModalIsEnabled {
+    if includeAutomaticModal, passkeyAutomaticModalIsEnabled {
       let result = await signInWithPasskey(
         autofill: false,
         preferImmediatelyAvailableCredentials: true
@@ -493,6 +499,8 @@ extension AuthStartView {
     }
 
     guard navigation.path.isEmpty else { return }
+    // Clerk's AutoFill setting gates the automatic modal above; this keeps
+    // iOS text-field AutoFill available.
     await signInWithPasskey(
       autofill: true,
       preferImmediatelyAvailableCredentials: true
