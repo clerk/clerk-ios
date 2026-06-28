@@ -18,11 +18,15 @@ final class WebAuthentication: NSObject {
   private let callbackURLSchemeOverride: String?
   private let sessionFactory: SessionFactory
 
-  private static var currentSession: ASWebAuthenticationSession?
-  private static var currentSessionIdentifier: Int?
-  private static var currentContinuation: CheckedContinuation<URL, any Error>?
-  // Retains the presentation context provider while the system auth UI is active.
-  private static var currentPresentationContextProvider: WebAuthentication?
+  private struct ActiveSession {
+    let identifier: Int
+    let session: ASWebAuthenticationSession
+    let continuation: CheckedContinuation<URL, any Error>
+    /// Retains the presentation context provider while the system auth UI is active.
+    let presentationContextProvider: WebAuthentication
+  }
+
+  private static var activeSession: ActiveSession?
   private static var nextSessionIdentifier = 0
   private static var suppressNextForegroundRefresh = false
 
@@ -50,19 +54,13 @@ final class WebAuthentication: NSObject {
     )
   }
 
-  private static func clearSession() {
-    currentSession = nil
-    currentSessionIdentifier = nil
-    currentPresentationContextProvider = nil
-  }
-
   private static func completeSession(
     identifier: Int? = nil,
     with url: URL?,
     error: Error?,
     suppressForegroundRefresh: Bool = false
   ) {
-    guard identifier == nil || currentSessionIdentifier == identifier else {
+    guard identifier == nil || activeSession?.identifier == identifier else {
       return
     }
 
@@ -73,11 +71,10 @@ final class WebAuthentication: NSObject {
     #endif
 
     defer {
-      currentContinuation = nil
-      clearSession()
+      activeSession = nil
     }
 
-    guard let continuation = currentContinuation else {
+    guard let continuation = activeSession?.continuation else {
       return
     }
 
@@ -96,19 +93,19 @@ final class WebAuthentication: NSObject {
   }
 
   private static func cancelSession(identifier: Int? = nil) {
-    guard identifier == nil || currentSessionIdentifier == identifier else {
+    guard identifier == nil || activeSession?.identifier == identifier else {
       return
     }
 
     #if !os(tvOS)
-    currentSession?.cancel()
+    activeSession?.session.cancel()
     #endif
 
     completeSession(identifier: identifier, with: nil, error: CancellationError())
   }
 
   private func beginSession(identifier sessionIdentifier: Int, continuation: CheckedContinuation<URL, any Error>) {
-    guard Self.currentContinuation == nil else {
+    guard Self.activeSession == nil else {
       continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress."))
       return
     }
@@ -140,10 +137,12 @@ final class WebAuthentication: NSObject {
     session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
     #endif
 
-    Self.currentSession = session
-    Self.currentSessionIdentifier = sessionIdentifier
-    Self.currentPresentationContextProvider = self
-    Self.currentContinuation = continuation
+    Self.activeSession = ActiveSession(
+      identifier: sessionIdentifier,
+      session: session,
+      continuation: continuation,
+      presentationContextProvider: self
+    )
 
     guard !Task.isCancelled else {
       Self.cancelSession(identifier: sessionIdentifier)
@@ -178,7 +177,7 @@ final class WebAuthentication: NSObject {
     #if targetEnvironment(macCatalyst)
     // mac catalyst web auth window doesn't close without
     // this when the callback is intercepted as a universal link
-    currentSession?.cancel()
+    activeSession?.session.cancel()
     #endif
 
     completeSession(with: url, error: nil, suppressForegroundRefresh: true)
