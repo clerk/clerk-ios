@@ -24,8 +24,15 @@ struct AuthStartView: View {
   @State private var fieldError: Error?
   @State private var generalError: Error?
   @State private var automaticPasskeySignInTask: Task<Void, Never>?
+  @State private var automaticPasskeySignInTaskGeneration = 0
+  @State private var automaticPasskeySignInRestartID = 0
 
   // MARK: - Configuration
+
+  private struct PasskeySignInTaskID: Equatable {
+    let isEnabled: Bool
+    let restartID: Int
+  }
 
   var emailIsEnabled: Bool {
     clerk.environment?.enabledFirstFactorAttributes
@@ -119,6 +126,10 @@ struct AuthStartView: View {
     #else
     false
     #endif
+  }
+
+  private var passkeySignInTaskID: PasskeySignInTaskID {
+    .init(isEnabled: passkeySignInTaskIsEnabled, restartID: automaticPasskeySignInRestartID)
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -235,10 +246,12 @@ struct AuthStartView: View {
       }
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    .task(id: passkeySignInTaskIsEnabled) {
-      guard passkeySignInTaskIsEnabled else { return }
+    .task(id: passkeySignInTaskID) {
+      guard passkeySignInTaskID.isEnabled else { return }
       let includeAutomaticModal = !authState.automaticPasskeySignInHasStarted
       authState.automaticPasskeySignInHasStarted = true
+      automaticPasskeySignInTaskGeneration += 1
+      let taskGeneration = automaticPasskeySignInTaskGeneration
       let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
       automaticPasskeySignInTask = task
       await withTaskCancellationHandler {
@@ -246,7 +259,9 @@ struct AuthStartView: View {
       } onCancel: {
         task.cancel()
       }
-      automaticPasskeySignInTask = nil
+      if automaticPasskeySignInTaskGeneration == taskGeneration {
+        automaticPasskeySignInTask = nil
+      }
     }
     #endif
   }
@@ -351,7 +366,11 @@ extension AuthStartView {
           unsafeMetadata: authState.unsafeMetadata,
           onStart: cancelAutomaticPasskeySignIn,
           onSuccess: handleTransferFlowResult,
-          onError: { generalError = $0 }
+          onError: { error in
+            generalError = error
+            restartAutomaticPasskeySignInIfNeeded()
+          },
+          onCancel: restartAutomaticPasskeySignInIfNeeded
         )
         .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
@@ -367,7 +386,11 @@ extension AuthStartView {
               showsTitle: socialProvidersMinusLastUsed.count == 1,
               onStart: cancelAutomaticPasskeySignIn,
               onSuccess: handleTransferFlowResult,
-              onError: { generalError = $0 }
+              onError: { error in
+                generalError = error
+                restartAutomaticPasskeySignInIfNeeded()
+              },
+              onCancel: restartAutomaticPasskeySignInIfNeeded
             )
             .simultaneousGesture(TapGesture())
           }
@@ -390,19 +413,29 @@ extension AuthStartView {
     cancelAutomaticPasskeySignIn()
     dismissKeyboard()
 
-    switch authState.mode {
+    let shouldRestartPasskeySignIn = switch authState.mode {
     case .signInOrUp: await signIn(withSignUp: true)
     case .signIn: await signIn(withSignUp: false)
     case .signUp: await signUp()
     }
+
+    if shouldRestartPasskeySignIn {
+      restartAutomaticPasskeySignInIfNeeded()
+    }
   }
 
   private func cancelAutomaticPasskeySignIn() {
+    automaticPasskeySignInTaskGeneration += 1
     automaticPasskeySignInTask?.cancel()
     automaticPasskeySignInTask = nil
   }
 
-  private func signIn(withSignUp: Bool) async {
+  private func restartAutomaticPasskeySignInIfNeeded() {
+    guard passkeySignInTaskIsEnabled else { return }
+    automaticPasskeySignInRestartID += 1
+  }
+
+  private func signIn(withSignUp: Bool) async -> Bool {
     fieldError = nil
 
     do {
@@ -417,15 +450,17 @@ extension AuthStartView {
           unsafeMetadata: authState.unsafeMetadata
         )
         handleTransferFlowResult(result)
-        return
+        return false
       }
 
       navigation.setToStepForStatus(signIn: signIn)
+      return signInStatusStaysOnStart(signIn.status)
     } catch {
       if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
-        await signUp()
+        return await signUp()
       } else {
         fieldError = error
+        return true
       }
     }
   }
@@ -484,14 +519,16 @@ extension AuthStartView {
   }
   #endif
 
-  private func signUp() async {
+  private func signUp() async -> Bool {
     fieldError = nil
 
     do {
       let signUp = try await signUpParams()
       navigation.setToStepForStatus(signUp: signUp)
+      return signUpStatusStaysOnStart(signUp.status)
     } catch {
       fieldError = error
+      return true
     }
   }
 
@@ -530,6 +567,24 @@ extension AuthStartView {
       authState.storeLastUsedIdentifierType(.email)
     } else {
       authState.storeLastUsedIdentifierType(.username)
+    }
+  }
+
+  private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
+    switch status {
+    case .needsIdentifier, .unknown:
+      true
+    default:
+      false
+    }
+  }
+
+  private func signUpStatusStaysOnStart(_ status: SignUp.Status) -> Bool {
+    switch status {
+    case .abandoned, .unknown:
+      true
+    default:
+      false
     }
   }
 }

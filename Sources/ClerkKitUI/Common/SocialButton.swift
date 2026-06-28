@@ -22,6 +22,7 @@ struct SocialButton: View {
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
+  var onCancel: (() -> Void)?
 
   private var fallbackProviderText: some View {
     ViewThatFits(in: .horizontal) {
@@ -105,7 +106,8 @@ struct SocialButton: View {
     showsTitle: Bool = true,
     onStart: (() -> Void)? = nil,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
-    onError: ((Error) -> Void)? = nil
+    onError: ((Error) -> Void)? = nil,
+    onCancel: (() -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
@@ -114,6 +116,7 @@ struct SocialButton: View {
     self.onStart = onStart
     self.onSuccess = onSuccess
     self.onError = onError
+    self.onCancel = onCancel
   }
 
   var body: some View {
@@ -127,6 +130,7 @@ struct SocialButton: View {
         }
       } catch {
         if error.isUserCancelledError {
+          onCancel?()
           return
         } else {
           onError?(error)
