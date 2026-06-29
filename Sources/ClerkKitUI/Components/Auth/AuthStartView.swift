@@ -84,9 +84,13 @@ struct AuthStartView: View {
   }
 
   var passkeySignInIsAvailable: Bool {
+    passkeySignInIsAvailable(environment: clerk.environment)
+  }
+
+  func passkeySignInIsAvailable(environment: Clerk.Environment?) -> Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      clerk.environment?.passkeyIsEnabled == true &&
+      environment?.passkeyIsEnabled == true &&
         !lockedInitialIdentifierIsActive
     case .signUp:
       false
@@ -97,11 +101,10 @@ struct AuthStartView: View {
     authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
   }
 
-  var passkeyAutomaticModalIsEnabled: Bool {
+  func passkeyAutomaticModalIsEnabled(environment: Clerk.Environment) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    guard let environment = clerk.environment else { return false }
     // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
-    return passkeySignInIsAvailable &&
+    return passkeySignInIsAvailable(environment: environment) &&
       environment.userSettings.passkeySettings?.allowAutofill == true
     #else
     false
@@ -125,8 +128,15 @@ struct AuthStartView: View {
   }
 
   var passkeyAutoFillFallbackIsEnabled: Bool {
+    passkeyAutoFillFallbackIsEnabled(environment: clerk.environment)
+  }
+
+  func passkeyAutoFillFallbackIsEnabled(environment: Clerk.Environment?) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    passkeySignInIsAvailable && !phoneNumberInputIsActive && (emailIsEnabled || usernameIsEnabled)
+    let enabledAttributes = environment?.enabledFirstFactorAttributes ?? []
+    return passkeySignInIsAvailable(environment: environment) &&
+      !phoneNumberInputIsActive &&
+      (enabledAttributes.contains("email_address") || enabledAttributes.contains("username"))
     #else
     false
     #endif
@@ -520,8 +530,13 @@ extension AuthStartView {
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn(includeAutomaticModal: Bool) async {
     guard navigation.path.isEmpty else { return }
-    let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled
-    guard shouldPresentAutomaticModal || passkeyAutoFillFallbackIsEnabled else { return }
+    let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
+    guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
+    guard !Task.isCancelled, navigation.path.isEmpty else { return }
+
+    let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled(environment: environment)
+    let shouldStartAutoFillFallback = passkeyAutoFillFallbackIsEnabled(environment: environment)
+    guard shouldPresentAutomaticModal || shouldStartAutoFillFallback else { return }
 
     guard let signIn = await createPasskeySignIn() else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
@@ -535,7 +550,7 @@ extension AuthStartView {
       guard case .continueWithAutofill = result else { return }
     }
 
-    guard passkeyAutoFillFallbackIsEnabled, navigation.path.isEmpty else { return }
+    guard shouldStartAutoFillFallback, navigation.path.isEmpty else { return }
     // Clerk's AutoFill setting gates the automatic modal above; this keeps
     // iOS text-field AutoFill available when a visible identifier field can
     // surface suggestions.
