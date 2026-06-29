@@ -126,7 +126,7 @@ struct AuthStartView: View {
 
   var passkeyAutoFillFallbackIsEnabled: Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    passkeySignInIsAvailable && showIdentifierField
+    passkeySignInIsAvailable && !phoneNumberInputIsActive && (emailIsEnabled || usernameIsEnabled)
     #else
     false
     #endif
@@ -349,9 +349,11 @@ extension AuthStartView {
 
   private var identifierSwitcherButton: some View {
     Button {
+      cancelAutomaticPasskeySignIn()
       withAnimation(.default.speed(2)) {
         authState.authStartPhoneNumberFieldIsActive.toggle()
       }
+      restartAutomaticPasskeySignInIfNeeded()
     } label: {
       Text(identifierSwitcherString, bundle: .module)
         .id(phoneNumberFieldIsActive)
@@ -518,10 +520,13 @@ extension AuthStartView {
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn(includeAutomaticModal: Bool) async {
     guard navigation.path.isEmpty else { return }
+    let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled
+    guard shouldPresentAutomaticModal || passkeyAutoFillFallbackIsEnabled else { return }
+
     guard let signIn = await createPasskeySignIn() else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
 
-    if includeAutomaticModal, passkeyAutomaticModalIsEnabled {
+    if shouldPresentAutomaticModal {
       let result = await authenticateWithPasskey(
         signIn: signIn,
         autofill: false,
