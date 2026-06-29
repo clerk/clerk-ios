@@ -124,6 +124,14 @@ struct AuthStartView: View {
     #endif
   }
 
+  var passkeyAutoFillFallbackIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    passkeySignInIsAvailable && showIdentifierField
+    #else
+    false
+    #endif
+  }
+
   private var passkeySignInTaskID: Int? {
     passkeySignInTaskIsEnabled ? automaticPasskeySignInRestartID : nil
   }
@@ -522,9 +530,10 @@ extension AuthStartView {
       guard case .continueWithAutofill = result else { return }
     }
 
-    guard navigation.path.isEmpty else { return }
+    guard passkeyAutoFillFallbackIsEnabled, navigation.path.isEmpty else { return }
     // Clerk's AutoFill setting gates the automatic modal above; this keeps
-    // iOS text-field AutoFill available.
+    // iOS text-field AutoFill available when a visible identifier field can
+    // surface suggestions.
     await authenticateWithPasskey(
       signIn: signIn,
       autofill: true,
