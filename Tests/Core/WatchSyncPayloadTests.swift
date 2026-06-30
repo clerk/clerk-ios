@@ -197,6 +197,34 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func ignoredWatchClearDoesNotApplyWatchClient() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 10,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch"),
+      clientServerFetchDate: Date(timeIntervalSince1970: 200),
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.client?.id == "client-local")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
+  }
+
+  @Test
   func applyingDeviceTokenClearsPendingDeviceTokenClear() throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -277,6 +305,32 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
+  }
+
+  @Test
+  func stalePendingClearWithStoredTokenDoesNotSkipWatchClientPayload() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+    clerk.applyResponseClient(
+      client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000, lastActiveSessionId: "session-local"),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch"),
+      clientServerFetchDate: Date(timeIntervalSince1970: 200),
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == "client-watch")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
   }
 
   @Test

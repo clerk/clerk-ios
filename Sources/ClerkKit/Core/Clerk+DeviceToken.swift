@@ -45,11 +45,12 @@ extension Clerk {
     }
 
     let previousToken = deviceToken
-    try storeDeviceToken(normalizedToken)
+    try storeDeviceToken(normalizedToken, syncWatchConnectivity: false)
 
     if previousToken != normalizedToken {
       clearCachedClientStateAfterDeviceTokenChange()
     }
+    syncWatchConnectivity()
 
     try await refreshClient(skipClientId: true, honorsPendingDeviceTokenClear: false)
   }

@@ -833,10 +833,12 @@ extension Clerk {
     }
   }
 
-  func storeDeviceToken(_ token: String) throws {
+  func storeDeviceToken(_ token: String, syncWatchConnectivity: Bool = true) throws {
     try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clearPendingDeviceTokenClearForWatchSync()
-    watchConnectivityCoordinator?.sync()
+    if syncWatchConnectivity {
+      watchConnectivityCoordinator?.sync()
+    }
   }
 
   func deleteStoredDeviceToken() throws {
