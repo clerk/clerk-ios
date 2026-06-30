@@ -259,6 +259,27 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func watchPayloadClearDoesNotCancelPendingLocalClear() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
+  }
+
+  @Test
   func peerDeviceTokenClearInvalidatesCachedClientStateAndStaleGeneration() throws {
     configureClerkForTesting()
     let clerk = Clerk()

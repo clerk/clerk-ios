@@ -51,7 +51,7 @@ extension Clerk {
       clearCachedClientStateAfterDeviceTokenChange()
     }
 
-    try await refreshClient(skipClientId: true)
+    try await refreshClient(skipClientId: true, honorsPendingDeviceTokenClear: false)
   }
 
   /// Clears the stored Clerk device token and refreshes native auth state.
@@ -63,9 +63,18 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   public func clearDeviceToken() async throws {
     try deleteStoredDeviceToken()
+    var pendingClearError: Error?
+    do {
+      try markDeviceTokenClearPendingForWatchSync()
+    } catch {
+      pendingClearError = error
+    }
     clearCachedClientStateAfterDeviceTokenChange()
-    try markDeviceTokenClearPendingForWatchSync()
     syncWatchConnectivity()
+
+    if let pendingClearError {
+      throw pendingClearError
+    }
 
     try await refreshClient(skipClientId: true, suppressDeviceTokenPersistence: true)
   }

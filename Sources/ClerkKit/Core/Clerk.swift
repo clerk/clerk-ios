@@ -467,12 +467,18 @@ extension Clerk {
   ///   after replacing the device token so a stale client id from the previous
   ///   native client cannot conflict with the newly stored token.
   @discardableResult
-  func refreshClient(skipClientId: Bool, suppressDeviceTokenPersistence: Bool = false) async throws -> Client? {
+  func refreshClient(
+    skipClientId: Bool,
+    suppressDeviceTokenPersistence: Bool = false,
+    honorsPendingDeviceTokenClear: Bool = true
+  ) async throws -> Client? {
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
+    let effectiveSuppressDeviceTokenPersistence =
+      suppressDeviceTokenPersistence || (honorsPendingDeviceTokenClear && deviceTokenClearIsPendingForWatchSync())
     let response = try await dependencies.clientService.getResponse(
       skipClientId: skipClientId,
-      suppressDeviceTokenPersistence: suppressDeviceTokenPersistence
+      suppressDeviceTokenPersistence: effectiveSuppressDeviceTokenPersistence
     )
     try runtime.validateStableRuntime()
     applyResponseClient(

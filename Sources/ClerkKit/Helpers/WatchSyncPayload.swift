@@ -212,6 +212,12 @@ package struct WatchSyncPayload {
   ) {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let clearIsPending = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+
+    if clearIsPending, !source.incomingDeviceIsAuthoritative {
+      ClerkLogger.debug("Ignoring deviceToken clear from \(source.sourceDescription) while a local deviceToken clear is pending")
+      return
+    }
 
     let hasProtectedLocalState = currentToken != nil || clerk.client != nil || clerk.lastClientServerFetchDate != nil
     if !hasSyncedBefore, hasProtectedLocalState, !source.incomingDeviceIsAuthoritative {
