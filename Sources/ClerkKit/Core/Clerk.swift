@@ -298,6 +298,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    reconcileTrustedDeviceCredentialsForCurrentInstallation()
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(

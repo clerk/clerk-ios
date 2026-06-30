@@ -24,9 +24,26 @@ struct TrustedDeviceSignInButtonTests {
   }
 
   @Test
+  func biometryDisplayNamesTrackSupport() {
+    #expect(TrustedDeviceBiometryDisplayName(biometryType: .faceID).isSupported)
+    #expect(TrustedDeviceBiometryDisplayName(biometryType: .none).isSupported == false)
+    #expect(TrustedDeviceBiometryDisplayName(biometryType: .faceID, isSupported: false).isSupported == false)
+  }
+
+  @Test
   func trustedDeviceCancellationIsTreatedAsUserCancellation() {
     #expect(TrustedDeviceKeyManagerError.biometricAuthenticationCanceled.isUserCancelledError)
     #expect(!TrustedDeviceKeyManagerError.biometricAuthenticationFailed.isUserCancelledError)
+  }
+
+  @Test
+  func enrollmentReasonUsesRequestedPromptCopy() {
+    let reason = TrustedDeviceEnrollmentStrings.enrollmentReason(
+      applicationName: "My Application",
+      biometryDisplayName: .init(biometryType: .faceID)
+    )
+
+    #expect(reason == "The app My Application uses Face ID to sign you in.")
   }
 }
 
