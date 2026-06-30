@@ -164,6 +164,39 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func watchPayloadClearDoesNotWinFirstClientSyncWhenDeviceTokenIsMissing() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local")
+    let serverFetchDate = Date(timeIntervalSince1970: 200)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      clientService: MockClientService(get: { localClient })
+    )
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 10,
+      serverDate: serverFetchDate
+    )
+
+    let payload = WatchSyncPayload(
+      deviceToken: nil,
+      clearsDeviceToken: true,
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == "client-local")
+    #expect(clerk.lastClientServerFetchDate == serverFetchDate)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+  }
+
+  @Test
   func applyingDeviceTokenClearsPendingDeviceTokenClear() throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -199,6 +232,28 @@ struct WatchSyncPayloadTests {
 
     payload.apply(from: .watch, to: clerk, keychain: keychain)
 
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
+  }
+
+  @Test
+  func watchPayloadDeviceTokenDoesNotApplyClientWhileLocalClearIsPending() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceToken: "stale-watch-token",
+      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch"),
+      clientServerFetchDate: Date(timeIntervalSince1970: 100),
+      environment: nil
+    )
+
+    payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
   }

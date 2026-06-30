@@ -138,6 +138,8 @@ package struct WatchSyncPayload {
 
   @MainActor
   func apply(from source: WatchSyncSource, to clerk: Clerk, keychain: any KeychainStorage) {
+    let shouldSkipClientPayload = shouldSkipClientPayload(from: source, keychain: keychain)
+
     if let deviceToken {
       applyDeviceToken(
         deviceToken,
@@ -150,6 +152,10 @@ package struct WatchSyncPayload {
 
     if let environment {
       clerk.environment = environment
+    }
+
+    guard !shouldSkipClientPayload else {
+      return
     }
 
     clerk.applyWatchSyncedClient(
@@ -207,7 +213,8 @@ package struct WatchSyncPayload {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
+    let hasProtectedLocalState = currentToken != nil || clerk.client != nil || clerk.lastClientServerFetchDate != nil
+    if !hasSyncedBefore, hasProtectedLocalState, !source.incomingDeviceIsAuthoritative {
       do {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       } catch {
@@ -230,5 +237,17 @@ package struct WatchSyncPayload {
     } catch {
       ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
     }
+  }
+
+  private func shouldSkipClientPayload(from source: WatchSyncSource, keychain: any KeychainStorage) -> Bool {
+    guard !source.incomingDeviceIsAuthoritative else {
+      return false
+    }
+
+    let clearIsPending = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+    if clearIsPending {
+      ClerkLogger.debug("Ignoring client from \(source.sourceDescription) while a local deviceToken clear is pending")
+    }
+    return clearIsPending
   }
 }

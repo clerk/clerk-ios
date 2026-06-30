@@ -685,7 +685,11 @@ extension Clerk {
       defer { invalidAuthRefreshTask = nil }
 
       do {
-        try await refreshClient()
+        let clearIsPending = deviceTokenClearIsPendingForWatchSync()
+        try await refreshClient(
+          skipClientId: clearIsPending,
+          suppressDeviceTokenPersistence: clearIsPending
+        )
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
       }
@@ -835,6 +839,10 @@ extension Clerk {
 
   func markDeviceTokenClearPendingForWatchSync() throws {
     try dependencies.keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+  }
+
+  func deviceTokenClearIsPendingForWatchSync() -> Bool {
+    (try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
   }
 
   private func clearPendingDeviceTokenClearForWatchSync() {
