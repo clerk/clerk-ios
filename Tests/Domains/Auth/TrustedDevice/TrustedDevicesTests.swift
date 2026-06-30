@@ -95,6 +95,24 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func localAvailabilityDoesNotReconcileServerCredentialWhenSessionIsActive() throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        Issue.record("Local availability should not fetch trusted devices.")
+        return []
+      })
+    )
+
+    let availability = try setup.trustedDevices.localAvailability()
+
+    #expect(availability.isAvailable == true)
+    #expect(availability.unavailableReason == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+  }
+
+  @Test
   func availabilitySkipsStaleNewerCredentialWhenSignedIn() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock

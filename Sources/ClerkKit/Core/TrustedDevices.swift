@@ -52,6 +52,19 @@ public struct TrustedDevices {
     }
   }
 
+  /// Returns local trusted-device sign-in availability without reconciling with the server.
+  package func localAvailability(
+    id: String? = nil,
+    identifierHint: String? = nil
+  ) throws -> TrustedDeviceAvailability {
+    switch try localCredentialCandidates(id: id, identifierHint: identifierHint) {
+    case .available:
+      .available
+    case let .unavailable(reason):
+      .unavailable(reason)
+    }
+  }
+
   /// Enrolls the current app installation as a biometric trusted device.
   ///
   /// This requires an active or pending Clerk session. The generated private key stays on the device.
@@ -208,7 +221,9 @@ public struct TrustedDevices {
       throw handleTrustedDeviceSignInError(error, localCredential: localCredential)
     }
   }
+}
 
+extension TrustedDevices {
   private var trustedDeviceFeatureUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
     guard let nativeSettings = Clerk.shared.environment?.authConfig.nativeSettings else {
       return .environmentUnavailable
@@ -244,10 +259,50 @@ public struct TrustedDevices {
     case unavailable(TrustedDeviceAvailability.UnavailableReason)
   }
 
+  private enum LocalCredentialCandidates {
+    case available([TrustedDeviceLocalCredential])
+    case unavailable(TrustedDeviceAvailability.UnavailableReason)
+  }
+
   private func selectedLocalCredential(
     id: String?,
     identifierHint: String?
   ) async throws -> LocalCredentialSelection {
+    switch try localCredentialCandidates(id: id, identifierHint: identifierHint) {
+    case let .available(supportedCredentials):
+      guard Clerk.shared.session?.status == .active else {
+        return .available(supportedCredentials[0])
+      }
+
+      let trustedDevices = try await trustedDeviceService.list()
+      var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
+
+      for credential in supportedCredentials {
+        guard let trustedDevice = trustedDevices.first(where: { $0.id == credential.id }) else {
+          try deleteLocalCredential(credential)
+          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
+          continue
+        }
+
+        guard trustedDevice.status == .active else {
+          try deleteLocalCredential(credential)
+          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialRevoked
+          continue
+        }
+
+        return .available(credential)
+      }
+
+      return .unavailable(firstUnavailableReason ?? .serverCredentialMissing)
+    case let .unavailable(reason):
+      return .unavailable(reason)
+    }
+  }
+
+  private func localCredentialCandidates(
+    id: String?,
+    identifierHint: String?
+  ) throws -> LocalCredentialCandidates {
     if let unavailableReason = trustedDeviceFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
@@ -263,34 +318,11 @@ public struct TrustedDevices {
     }
 
     let supportedCredentials = credentialsWithKeys.filter { keyManager.isSupported(policy: $0.policy) }
-    guard let firstSupportedCredential = supportedCredentials.first else {
+    guard !supportedCredentials.isEmpty else {
       return .unavailable(.biometricAuthenticationUnavailable)
     }
 
-    guard Clerk.shared.session?.status == .active else {
-      return .available(firstSupportedCredential)
-    }
-
-    let trustedDevices = try await trustedDeviceService.list()
-    var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
-
-    for credential in supportedCredentials {
-      guard let trustedDevice = trustedDevices.first(where: { $0.id == credential.id }) else {
-        try deleteLocalCredential(credential)
-        firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
-        continue
-      }
-
-      guard trustedDevice.status == .active else {
-        try deleteLocalCredential(credential)
-        firstUnavailableReason = firstUnavailableReason ?? .serverCredentialRevoked
-        continue
-      }
-
-      return .available(credential)
-    }
-
-    return .unavailable(firstUnavailableReason ?? .serverCredentialMissing)
+    return .available(supportedCredentials)
   }
 
   private func candidateLocalCredentials(
