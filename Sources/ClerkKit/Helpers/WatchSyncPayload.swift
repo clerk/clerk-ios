@@ -127,7 +127,7 @@ package struct WatchSyncPayload {
   }
 
   @MainActor
-  func apply(from source: WatchSyncSource, to clerk: Clerk, keychain: any KeychainStorage) {
+  func apply(from source: WatchSyncSource, to clerk: Clerk, keychain: any KeychainStorage) async {
     if let deviceToken {
       applyDeviceToken(
         deviceToken,
@@ -135,7 +135,7 @@ package struct WatchSyncPayload {
         keychain: keychain
       )
     } else if clearsDeviceToken, source.incomingDeviceIsAuthoritative {
-      clearDeviceToken(from: source, to: clerk, keychain: keychain)
+      await clearDeviceToken(from: source, to: clerk, keychain: keychain)
     } else if clearsDeviceToken {
       ClerkLogger.debug("Ignoring deviceToken clear from \(source.sourceDescription)")
     }
@@ -156,12 +156,12 @@ package struct WatchSyncPayload {
     from source: WatchSyncSource,
     to clerk: Clerk,
     keychain: any KeychainStorage
-  ) {
+  ) async {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
 
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      clerk.clearCachedClientStateAfterDeviceTokenChange()
+      await clerk.clearCachedAuthStateAfterDeviceTokenClear()
       if !hasSyncedBefore {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }

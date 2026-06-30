@@ -199,6 +199,8 @@ struct ClientTests {
       keychain: keychain
     )
     Clerk.shared.client = Client.mock
+    let tokenCacheKey = Session.mock.tokenCacheKey(template: nil)
+    await SessionTokensCache.shared.insertToken(.init(jwt: "cached-jwt"), cacheKey: tokenCacheKey)
 
     try await Clerk.shared.clearDeviceToken()
 
@@ -208,6 +210,7 @@ struct ClientTests {
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+    #expect(await SessionTokensCache.shared.getToken(cacheKey: tokenCacheKey) == nil)
   }
 }
 

@@ -40,10 +40,10 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   }
 
   @MainActor
-  private func applyPayload(_ payload: WatchSyncPayload) {
+  private func applyPayload(_ payload: WatchSyncPayload) async {
     isProcessingSync = true
     defer { isProcessingSync = false }
-    payload.apply(from: .phone, to: Clerk.shared, keychain: keychain)
+    await payload.apply(from: .phone, to: Clerk.shared, keychain: keychain)
   }
 
   /// Syncs deviceToken, Client, and Environment to the iOS app.
@@ -94,7 +94,7 @@ extension WatchSyncReceiver: WCSessionDelegate {
     Task { @MainActor [weak self] in
       guard let self else { return }
       if activationState == .activated, let payload {
-        applyPayload(payload)
+        await applyPayload(payload)
       }
     }
   }
@@ -104,7 +104,7 @@ extension WatchSyncReceiver: WCSessionDelegate {
     Task { @MainActor [weak self] in
       guard let self else { return }
       if let payload {
-        applyPayload(payload)
+        await applyPayload(payload)
       }
     }
   }

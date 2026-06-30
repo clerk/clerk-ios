@@ -98,7 +98,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func phonePayloadClearsDeviceTokenOnWatch() throws {
+  func phonePayloadClearsDeviceTokenOnWatch() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -112,14 +112,14 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
+    await payload.apply(from: .phone, to: clerk, keychain: keychain)
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
-  func watchPayloadClearDoesNotClearPhoneDeviceToken() throws {
+  func watchPayloadClearDoesNotClearPhoneDeviceToken() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -133,14 +133,14 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
   }
 
   @Test
-  func peerDeviceTokenClearInvalidatesCachedClientStateAndStaleGeneration() throws {
+  func peerDeviceTokenClearInvalidatesCachedClientStateAndStaleGeneration() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -158,6 +158,8 @@ struct WatchSyncPayloadTests {
       serverDate: Date(timeIntervalSince1970: 100)
     )
     let staleGeneration = clerk.clientResponseGeneration
+    let tokenCacheKey = Session.mock.tokenCacheKey(template: nil)
+    await SessionTokensCache.shared.insertToken(.init(jwt: "cached-jwt"), cacheKey: tokenCacheKey)
 
     let payload = WatchSyncPayload(
       deviceToken: nil,
@@ -167,7 +169,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
+    await payload.apply(from: .phone, to: clerk, keychain: keychain)
     clerk.applyResponseClient(
       client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 5000, lastActiveSessionId: "session-stale"),
       responseSequence: 2,
@@ -181,10 +183,11 @@ struct WatchSyncPayloadTests {
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+    #expect(await SessionTokensCache.shared.getToken(cacheKey: tokenCacheKey) == nil)
   }
 
   @Test
-  func phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync() throws {
+  func phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -201,7 +204,7 @@ struct WatchSyncPayloadTests {
       environment: .mock
     )
 
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
+    await payload.apply(from: .phone, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-phone")
     #expect(clerk.client?.signIn?.id == "sign-in-phone")
@@ -211,7 +214,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() throws {
+  func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -229,7 +232,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-local")
     #expect(clerk.client?.signIn?.id == "sign-in-local")
@@ -238,7 +241,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadSeedsPhoneWhenNoLocalClient() {
+  func watchPayloadSeedsPhoneWhenNoLocalClient() async {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -252,7 +255,7 @@ struct WatchSyncPayloadTests {
       environment: .mock
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-watch")
     #expect(clerk.client?.signIn?.id == "sign-in-watch")
@@ -261,7 +264,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadNilClientDoesNotClearPhoneClient() {
+  func watchPayloadNilClientDoesNotClearPhoneClient() async {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -278,13 +281,13 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-local")
   }
 
   @Test
-  func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() {
+  func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() async {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -301,7 +304,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-watch")
     #expect(clerk.client?.signIn?.id == "sign-in-watch")

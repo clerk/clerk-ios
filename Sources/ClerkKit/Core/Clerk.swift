@@ -744,6 +744,12 @@ extension Clerk {
     }
   }
 
+  func clearCachedAuthStateAfterDeviceTokenClear() async {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+    clearCachedClientStateAfterDeviceTokenChange()
+  }
+
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
     guard let serverDate, let lastClientServerFetchDate else {
       return false

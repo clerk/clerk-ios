@@ -72,10 +72,10 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   }
 
   @MainActor
-  private func applyPayload(_ payload: WatchSyncPayload) {
+  private func applyPayload(_ payload: WatchSyncPayload) async {
     isProcessingSync = true
     defer { isProcessingSync = false }
-    payload.apply(from: .watch, to: Clerk.shared, keychain: keychain)
+    await payload.apply(from: .watch, to: Clerk.shared, keychain: keychain)
   }
 }
 
@@ -124,7 +124,7 @@ extension WatchConnectivityManager: WCSessionDelegate {
     Task { @MainActor [weak self] in
       guard let self else { return }
       if let payload {
-        applyPayload(payload)
+        await applyPayload(payload)
       }
     }
   }
