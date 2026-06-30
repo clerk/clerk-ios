@@ -86,11 +86,9 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
-  func signIn(
-    challenge: Data,
-    relyingPartyIdentifier: String? = nil,
-    allowedCredentialIDs: [Data] = [],
-    preferImmediatelyAvailableCredentials: Bool
+  private func performAuthorization(
+    requests: [ASAuthorizationRequest],
+    start: @escaping @MainActor (ASAuthorizationController) -> Void
   ) async throws -> ASAuthorization {
     try Task.checkCancellation()
     Self.cancelCurrentAuthorization()
@@ -102,43 +100,54 @@ final class PasskeyHelper: NSObject {
         self.continuation = continuation
         Self.activeHelper = self
 
-        let assertionRequest = credentialAssertionRequest(
-          challenge: challenge,
-          relyingPartyIdentifier: relyingPartyIdentifier,
-          allowedCredentialIDs: allowedCredentialIDs
-        )
-
-        // Pass in any mix of supported sign-in request types.
-        let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
+        let authController = ASAuthorizationController(authorizationRequests: requests)
         authController.delegate = self
         authController.presentationContextProvider = self
         Self.controller = authController
 
-        #if !os(tvOS)
-
-        if preferImmediatelyAvailableCredentials {
-          // If credentials are available, presents a modal sign-in sheet.
-          // If there are no locally saved credentials, no UI appears and
-          // the system passes ASAuthorizationError.Code.canceled to call
-          // `AccountManager.authorizationController(controller:didCompleteWithError:)`.
-          authController.performRequests(options: .preferImmediatelyAvailableCredentials)
-        } else {
-          // If credentials are available, presents a modal sign-in sheet.
-          // If there are no locally saved credentials, the system presents a QR code to allow signing in with a
-          // passkey from a nearby device.
-          authController.performRequests()
-        }
-
-        #else
-
-        authController.performRequests()
-
-        #endif
+        start(authController)
       }
     } onCancel: {
       Task { @MainActor in
         Self.cancelAuthorization(for: helperID)
       }
+    }
+  }
+
+  @MainActor
+  func signIn(
+    challenge: Data,
+    relyingPartyIdentifier: String? = nil,
+    allowedCredentialIDs: [Data] = [],
+    preferImmediatelyAvailableCredentials: Bool
+  ) async throws -> ASAuthorization {
+    let assertionRequest = credentialAssertionRequest(
+      challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
+      allowedCredentialIDs: allowedCredentialIDs
+    )
+
+    return try await performAuthorization(requests: [assertionRequest]) { authController in
+      #if !os(tvOS)
+
+      if preferImmediatelyAvailableCredentials {
+        // If credentials are available, presents a modal sign-in sheet.
+        // If there are no locally saved credentials, no UI appears and
+        // the system passes ASAuthorizationError.Code.canceled to call
+        // `AccountManager.authorizationController(controller:didCompleteWithError:)`.
+        authController.performRequests(options: .preferImmediatelyAvailableCredentials)
+      } else {
+        // If credentials are available, presents a modal sign-in sheet.
+        // If there are no locally saved credentials, the system presents a QR code to allow signing in with a
+        // passkey from a nearby device.
+        authController.performRequests()
+      }
+
+      #else
+
+      authController.performRequests()
+
+      #endif
     }
   }
 
@@ -149,34 +158,14 @@ final class PasskeyHelper: NSObject {
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = []
   ) async throws -> ASAuthorization {
-    try Task.checkCancellation()
-    Self.cancelCurrentAuthorization()
-    let helperID = ObjectIdentifier(self)
+    let assertionRequest = credentialAssertionRequest(
+      challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
+      allowedCredentialIDs: allowedCredentialIDs
+    )
 
-    return try await withTaskCancellationHandler {
-      try Task.checkCancellation()
-      return try await withCheckedThrowingContinuation { continuation in
-        self.continuation = continuation
-        Self.activeHelper = self
-
-        let assertionRequest = credentialAssertionRequest(
-          challenge: challenge,
-          relyingPartyIdentifier: relyingPartyIdentifier,
-          allowedCredentialIDs: allowedCredentialIDs
-        )
-
-        // AutoFill-assisted requests only support ASAuthorizationPlatformPublicKeyCredentialAssertionRequest.
-        let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
-        authController.delegate = self
-        authController.presentationContextProvider = self
-        Self.controller = authController
-
-        authController.performAutoFillAssistedRequests()
-      }
-    } onCancel: {
-      Task { @MainActor in
-        Self.cancelAuthorization(for: helperID)
-      }
+    return try await performAuthorization(requests: [assertionRequest]) { authController in
+      authController.performAutoFillAssistedRequests()
     }
   }
   #endif
@@ -188,39 +177,18 @@ final class PasskeyHelper: NSObject {
     userId: Data,
     relyingPartyIdentifier: String? = nil
   ) async throws -> ASAuthorization {
-    try Task.checkCancellation()
-    Self.cancelCurrentAuthorization()
-    let helperID = ObjectIdentifier(self)
+    let publicKeyCredentialProvider = publicKeyCredentialProvider(
+      relyingPartyIdentifier: relyingPartyIdentifier
+    )
 
-    return try await withTaskCancellationHandler {
-      try Task.checkCancellation()
-      return try await withCheckedThrowingContinuation { continuation in
-        self.continuation = continuation
-        Self.activeHelper = self
+    let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
+      challenge: challenge,
+      name: name,
+      userID: userId
+    )
 
-        let publicKeyCredentialProvider = publicKeyCredentialProvider(
-          relyingPartyIdentifier: relyingPartyIdentifier
-        )
-
-        let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
-          challenge: challenge,
-          name: name,
-          userID: userId
-        )
-
-        // Use only ASAuthorizationPlatformPublicKeyCredentialRegistrationRequests or
-        // ASAuthorizationSecurityKeyPublicKeyCredentialRegistrationRequests here.
-        let authController = ASAuthorizationController(authorizationRequests: [registrationRequest])
-        authController.delegate = self
-        authController.presentationContextProvider = self
-        Self.controller = authController
-
-        authController.performRequests()
-      }
-    } onCancel: {
-      Task { @MainActor in
-        Self.cancelAuthorization(for: helperID)
-      }
+    return try await performAuthorization(requests: [registrationRequest]) { authController in
+      authController.performRequests()
     }
   }
 
