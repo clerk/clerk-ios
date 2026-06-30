@@ -218,6 +218,11 @@ package struct WatchSyncPayload {
 
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      do {
+        try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
+      }
       clerk.clearCachedClientStateAfterDeviceTokenChange()
       if !hasSyncedBefore {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
