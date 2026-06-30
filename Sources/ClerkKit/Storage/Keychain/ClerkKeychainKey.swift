@@ -27,9 +27,6 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for tracking whether device token has been synced to watch app.
   case clerkDeviceTokenSynced
 
-  /// Key for tracking an explicit device token clear that should be synced to watch app.
-  case clerkDeviceTokenClearPending
-
   /// Key for App Attest key ID.
   case attestKeyId = "AttestKeyId"
 

@@ -467,19 +467,10 @@ extension Clerk {
   ///   after replacing the device token so a stale client id from the previous
   ///   native client cannot conflict with the newly stored token.
   @discardableResult
-  func refreshClient(
-    skipClientId: Bool,
-    suppressDeviceTokenPersistence: Bool = false,
-    honorsPendingDeviceTokenClear: Bool = true
-  ) async throws -> Client? {
+  func refreshClient(skipClientId: Bool) async throws -> Client? {
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
-    let effectiveSuppressDeviceTokenPersistence =
-      suppressDeviceTokenPersistence || (honorsPendingDeviceTokenClear && deviceTokenClearIsPendingForWatchSync())
-    let response = try await dependencies.clientService.getResponse(
-      skipClientId: skipClientId,
-      suppressDeviceTokenPersistence: effectiveSuppressDeviceTokenPersistence
-    )
+    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
     applyResponseClient(
       response.client,
@@ -691,11 +682,7 @@ extension Clerk {
       defer { invalidAuthRefreshTask = nil }
 
       do {
-        let clearIsPending = deviceTokenClearIsPendingForWatchSync()
-        try await refreshClient(
-          skipClientId: clearIsPending,
-          suppressDeviceTokenPersistence: clearIsPending
-        )
+        try await refreshClient()
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
       }
@@ -833,34 +820,13 @@ extension Clerk {
     }
   }
 
-  func storeDeviceToken(_ token: String, syncWatchConnectivity: Bool = true) throws {
+  func storeDeviceToken(_ token: String) throws {
     try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    clearPendingDeviceTokenClearForWatchSync()
-    if syncWatchConnectivity {
-      watchConnectivityCoordinator?.sync()
-    }
+    watchConnectivityCoordinator?.sync()
   }
 
   func deleteStoredDeviceToken() throws {
     try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-  }
-
-  func markDeviceTokenClearPendingForWatchSync() throws {
-    try dependencies.keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-  }
-
-  func deviceTokenClearIsPendingForWatchSync() -> Bool {
-    let clearIsPending = (try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
-    let deviceToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    return clearIsPending && deviceToken == nil
-  }
-
-  private func clearPendingDeviceTokenClearForWatchSync() {
-    do {
-      try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
-    }
   }
 
   func syncWatchConnectivity() {

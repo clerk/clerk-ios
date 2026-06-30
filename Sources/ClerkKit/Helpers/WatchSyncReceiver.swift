@@ -59,8 +59,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
     let isReachable = session.isReachable
     guard activationState == .activated, isReachable else { return }
 
-    let payload = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain)
-    let applicationContext = payload.applicationContext
+    let applicationContext = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain).applicationContext
 
     guard !applicationContext.isEmpty else { return }
 

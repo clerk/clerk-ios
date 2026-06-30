@@ -45,38 +45,23 @@ extension Clerk {
     }
 
     let previousToken = deviceToken
-    try storeDeviceToken(normalizedToken, syncWatchConnectivity: false)
+    try storeDeviceToken(normalizedToken)
 
     if previousToken != normalizedToken {
       clearCachedClientStateAfterDeviceTokenChange()
     }
-    syncWatchConnectivity()
 
-    try await refreshClient(skipClientId: true, honorsPendingDeviceTokenClear: false)
+    try await refreshClient(skipClientId: true)
   }
 
-  /// Clears the stored Clerk device token and refreshes native auth state.
+  /// Clears the stored Clerk device token and cached native auth state.
   ///
   /// This is intended for framework integrations that need to mirror another
-  /// Clerk SDK runtime clearing its device token. The refresh intentionally
-  /// omits the current client id so a stale anonymous client cannot conflict
-  /// with the cleared device-token state.
+  /// Clerk SDK runtime clearing its device token.
   @_spi(FrameworkIntegration)
   public func clearDeviceToken() async throws {
     try deleteStoredDeviceToken()
-    var pendingClearError: Error?
-    do {
-      try markDeviceTokenClearPendingForWatchSync()
-    } catch {
-      pendingClearError = error
-    }
     clearCachedClientStateAfterDeviceTokenChange()
     syncWatchConnectivity()
-
-    if let pendingClearError {
-      throw pendingClearError
-    }
-
-    try await refreshClient(skipClientId: true, suppressDeviceTokenPersistence: true)
   }
 }

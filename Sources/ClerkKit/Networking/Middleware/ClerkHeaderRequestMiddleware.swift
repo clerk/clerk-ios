@@ -7,7 +7,6 @@ import Foundation
 
 struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   static let skipClientIdHeader = "X-Clerk-SDK-Skip-Client-Id"
-  static let suppressDeviceTokenPersistenceHeader = "X-Clerk-SDK-Suppress-Device-Token-Persistence"
 
   private let runtimeScope: ClerkRuntimeScope
 
@@ -21,11 +20,6 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
     let skipClientId = request.value(forHTTPHeaderField: Self.skipClientIdHeader) == "1"
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
-    let suppressDeviceTokenPersistence = request.value(forHTTPHeaderField: Self.suppressDeviceTokenPersistenceHeader) == "1"
-    request.setValue(nil, forHTTPHeaderField: Self.suppressDeviceTokenPersistenceHeader)
-    if suppressDeviceTokenPersistence {
-      request.setClerkSuppressesDeviceTokenPersistence(true)
-    }
 
     if let deviceToken = try? clerk.dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")

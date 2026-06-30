@@ -58,13 +58,12 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func clerkSnapshotBroadcastsExplicitPendingDeviceTokenClear() throws {
+  func clerkSnapshotCanBroadcastMissingDeviceTokenAsExplicitClear() {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
 
-    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain)
+    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain, clearsMissingDeviceToken: true)
 
     #expect(payload.deviceToken == nil)
     #expect(payload.clearsDeviceToken == true)
@@ -72,14 +71,13 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func clerkSnapshotDoesNotTreatStoredDeviceTokenAsClearWhenClearIsPending() throws {
+  func clerkSnapshotDoesNotTreatStoredDeviceTokenAsClear() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     try keychain.set("device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
 
-    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain)
+    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain, clearsMissingDeviceToken: true)
 
     #expect(payload.deviceToken == "device-token")
     #expect(payload.clearsDeviceToken == false)
@@ -121,29 +119,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func peerDeviceTokenClearClearsPendingLocalClear() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("watch-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-
-    let payload = WatchSyncPayload(
-      deviceToken: nil,
-      clearsDeviceToken: true,
-      client: nil,
-      clientServerFetchDate: nil,
-      environment: nil
-    )
-
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
-
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == false)
-  }
-
-  @Test
-  func watchPayloadClearDoesNotWinFirstDeviceTokenSync() throws {
+  func watchPayloadClearDoesNotClearPhoneDeviceToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -161,176 +137,6 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
-  }
-
-  @Test
-  func watchPayloadClearDoesNotWinFirstClientSyncWhenDeviceTokenIsMissing() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local")
-    let serverFetchDate = Date(timeIntervalSince1970: 200)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      clientService: MockClientService(get: { localClient })
-    )
-    clerk.applyResponseClient(
-      localClient,
-      responseSequence: 10,
-      serverDate: serverFetchDate
-    )
-
-    let payload = WatchSyncPayload(
-      deviceToken: nil,
-      clearsDeviceToken: true,
-      client: nil,
-      clientServerFetchDate: nil,
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(clerk.client?.id == "client-local")
-    #expect(clerk.lastClientServerFetchDate == serverFetchDate)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
-  }
-
-  @Test
-  func ignoredWatchClearDoesNotApplyWatchClient() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local")
-    clerk.applyResponseClient(
-      localClient,
-      responseSequence: 10,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-
-    let payload = WatchSyncPayload(
-      deviceToken: nil,
-      clearsDeviceToken: true,
-      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch"),
-      clientServerFetchDate: Date(timeIntervalSince1970: 200),
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(clerk.client?.id == "client-local")
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
-  }
-
-  @Test
-  func applyingDeviceTokenClearsPendingDeviceTokenClear() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-
-    let payload = WatchSyncPayload(
-      deviceToken: "phone-token",
-      client: nil,
-      clientServerFetchDate: nil,
-      environment: nil
-    )
-
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
-
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == false)
-  }
-
-  @Test
-  func watchPayloadDeviceTokenDoesNotCancelPendingLocalClear() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-
-    let payload = WatchSyncPayload(
-      deviceToken: "stale-watch-token",
-      client: nil,
-      clientServerFetchDate: nil,
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
-  }
-
-  @Test
-  func watchPayloadDeviceTokenDoesNotApplyClientWhileLocalClearIsPending() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-
-    let payload = WatchSyncPayload(
-      deviceToken: "stale-watch-token",
-      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch"),
-      clientServerFetchDate: Date(timeIntervalSince1970: 100),
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(clerk.client == nil)
-    #expect(clerk.lastClientServerFetchDate == nil)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
-  }
-
-  @Test
-  func watchPayloadClearDoesNotCancelPendingLocalClear() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-
-    let payload = WatchSyncPayload(
-      deviceToken: nil,
-      clearsDeviceToken: true,
-      client: nil,
-      clientServerFetchDate: nil,
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
-  }
-
-  @Test
-  func stalePendingClearWithStoredTokenDoesNotSkipWatchClientPayload() throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-    clerk.applyResponseClient(
-      client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000, lastActiveSessionId: "session-local"),
-      responseSequence: 1,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-
-    let payload = WatchSyncPayload(
-      deviceToken: nil,
-      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch"),
-      clientServerFetchDate: Date(timeIntervalSince1970: 200),
-      environment: nil
-    )
-
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
-
-    #expect(clerk.client?.id == "client-watch")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
   }
 
   @Test

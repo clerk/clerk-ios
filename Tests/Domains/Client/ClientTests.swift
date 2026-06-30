@@ -117,7 +117,6 @@ struct ClientTests {
 
     let keychain = InMemoryKeychain()
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
     try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
@@ -144,8 +143,6 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
-    #expect(service.suppressDeviceTokenPersistenceValues == [false])
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
@@ -187,7 +184,7 @@ struct ClientTests {
   }
 
   @Test
-  func clearDeviceTokenRemovesTokenAndRefreshesWithoutClientId() async throws {
+  func clearDeviceTokenRemovesTokenAndClearsCachedState() async throws {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
 
@@ -197,54 +194,9 @@ struct ClientTests {
     try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
 
-    let expectedClient = Client(
-      id: "cleared-token-client",
-      sessions: [],
-      lastActiveSessionId: nil,
-      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
-    )
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
-
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: service
-    )
-    Clerk.shared.client = Client.mock
-
-    try await Clerk.shared.clearDeviceToken()
-
-    #expect(Clerk.shared.client?.id == expectedClient.id)
-    #expect(Clerk.shared.deviceToken == nil)
-    #expect(service.skipClientIdValues == [true])
-    #expect(service.suppressDeviceTokenPersistenceValues == [true])
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
-  }
-
-  @Test
-  func clearDeviceTokenClearsCachedStateEvenWhenTokenAlreadyMissing() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
-    let keychain = InMemoryKeychain()
-    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: service
+      keychain: keychain
     )
     Clerk.shared.client = Client.mock
 
@@ -252,76 +204,10 @@ struct ClientTests {
 
     #expect(Clerk.shared.client == nil)
     #expect(Clerk.shared.deviceToken == nil)
-    #expect(service.skipClientIdValues == [true])
-    #expect(service.suppressDeviceTokenPersistenceValues == [true])
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
-  }
-
-  @Test
-  func clearDeviceTokenClearsCachedStateWhenPendingWatchClearWriteFails() async throws {
-    let keychain = SelectivelyFailingKeychain(setFailures: [ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue])
-    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
-    )
-    let clerk = Clerk()
-
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      clientService: service
-    )
-    clerk.client = Client.mock
-
-    await #expect(throws: SelectivelyFailingKeychain.Failure.self) {
-      try await clerk.clearDeviceToken()
-    }
-
-    #expect(clerk.client == nil)
-    #expect(service.skipClientIdValues == [])
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
-  }
-
-  @Test
-  func updateDeviceTokenRefreshesWhenPendingWatchClearDeleteFails() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
-    let keychain = SelectivelyFailingKeychain(deleteFailures: [ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue])
-    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-    let expectedClient = Client(
-      id: "updated-token-client",
-      sessions: [],
-      lastActiveSessionId: nil,
-      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
-    )
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: service
-    )
-    Clerk.shared.client = Client.mock
-
-    try await Clerk.shared.updateDeviceToken("new-token")
-
-    #expect(Clerk.shared.client?.id == expectedClient.id)
-    #expect(Clerk.shared.deviceToken == "new-token")
-    #expect(service.skipClientIdValues == [true])
-    #expect(service.suppressDeviceTokenPersistenceValues == [false])
   }
 }
 
@@ -333,10 +219,7 @@ private final class SequencedClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(
-    skipClientId _: Bool = false,
-    suppressDeviceTokenPersistence _: Bool = false
-  ) async throws -> ClientServiceResponse {
+  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
     response
   }
 }
@@ -344,14 +227,9 @@ private final class SequencedClientService: ClientServiceProtocol {
 private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
   private let response: ClientServiceResponse
   private let skipClientIdValuesStore = LockIsolated([Bool]())
-  private let suppressDeviceTokenPersistenceValuesStore = LockIsolated([Bool]())
 
   var skipClientIdValues: [Bool] {
     skipClientIdValuesStore.value
-  }
-
-  var suppressDeviceTokenPersistenceValues: [Bool] {
-    suppressDeviceTokenPersistenceValuesStore.value
   }
 
   init(response: ClientServiceResponse) {
@@ -359,9 +237,8 @@ private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(skipClientId: Bool, suppressDeviceTokenPersistence: Bool) async throws -> ClientServiceResponse {
+  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
     skipClientIdValuesStore.withValue { $0.append(skipClientId) }
-    suppressDeviceTokenPersistenceValuesStore.withValue { $0.append(suppressDeviceTokenPersistence) }
     return response
   }
 }
@@ -374,58 +251,8 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  func getResponse(
-    skipClientId _: Bool,
-    suppressDeviceTokenPersistence _: Bool
-  ) async throws -> ClientServiceResponse {
+  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
     Clerk.shared.clearCachedClientStateAfterDeviceTokenChange()
     return response
-  }
-}
-
-private final class SelectivelyFailingKeychain: @unchecked Sendable, KeychainStorage {
-  enum Failure: Error {
-    case set(String)
-    case delete(String)
-  }
-
-  private let lock = NSLock()
-  private var items: [String: Data] = [:]
-  private let setFailures: Set<String>
-  private let deleteFailures: Set<String>
-
-  init(setFailures: Set<String> = [], deleteFailures: Set<String> = []) {
-    self.setFailures = setFailures
-    self.deleteFailures = deleteFailures
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    guard !setFailures.contains(key) else {
-      throw Failure.set(key)
-    }
-    lock.lock()
-    defer { lock.unlock() }
-    items[key] = data
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    lock.lock()
-    defer { lock.unlock() }
-    return items[key]
-  }
-
-  func deleteItem(forKey key: String) throws {
-    guard !deleteFailures.contains(key) else {
-      throw Failure.delete(key)
-    }
-    lock.lock()
-    defer { lock.unlock() }
-    items.removeValue(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    lock.lock()
-    defer { lock.unlock() }
-    return items[key] != nil
   }
 }

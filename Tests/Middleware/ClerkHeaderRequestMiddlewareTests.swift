@@ -81,18 +81,6 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func tagsRequestToSuppressDeviceTokenPersistenceAndRemovesInternalHeader() async throws {
-    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
-    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
-    request.setValue("1", forHTTPHeaderField: ClerkHeaderRequestMiddleware.suppressDeviceTokenPersistenceHeader)
-
-    try await middleware.prepare(&request)
-
-    #expect(request.clerkSuppressesDeviceTokenPersistence == true)
-    #expect(request.value(forHTTPHeaderField: ClerkHeaderRequestMiddleware.suppressDeviceTokenPersistenceHeader) == nil)
-  }
-
-  @Test
   func omitsClientIdHeaderWhenSkipClientIdHeaderIsPresent() async throws {
     Clerk.shared.client = .mock
 

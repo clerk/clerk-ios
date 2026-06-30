@@ -34,10 +34,7 @@ package final class MockClientService: ClientServiceProtocol {
   }
 
   @MainActor
-  package func getResponse(
-    skipClientId _: Bool = false,
-    suppressDeviceTokenPersistence _: Bool = false
-  ) async throws -> ClientServiceResponse {
+  package func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
     if let handler = getHandler {
       return try await ClientServiceResponse(
         client: handler(),
