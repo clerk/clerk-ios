@@ -254,20 +254,15 @@ extension TrustedDevices {
     }
   }
 
-  private enum LocalCredentialSelection {
-    case available(TrustedDeviceLocalCredential)
-    case unavailable(TrustedDeviceAvailability.UnavailableReason)
-  }
-
-  private enum LocalCredentialCandidates {
-    case available([TrustedDeviceLocalCredential])
+  private enum LocalCredentialResult<Value> {
+    case available(Value)
     case unavailable(TrustedDeviceAvailability.UnavailableReason)
   }
 
   private func selectedLocalCredential(
     id: String?,
     identifierHint: String?
-  ) async throws -> LocalCredentialSelection {
+  ) async throws -> LocalCredentialResult<TrustedDeviceLocalCredential> {
     switch try localCredentialCandidates(id: id, identifierHint: identifierHint) {
     case let .available(supportedCredentials):
       guard Clerk.shared.session?.status == .active else {
@@ -302,7 +297,7 @@ extension TrustedDevices {
   private func localCredentialCandidates(
     id: String?,
     identifierHint: String?
-  ) throws -> LocalCredentialCandidates {
+  ) throws -> LocalCredentialResult<[TrustedDeviceLocalCredential]> {
     if let unavailableReason = trustedDeviceFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
