@@ -42,6 +42,8 @@ final class AuthState {
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
 
+  private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
+
   private let userDefaults: UserDefaults
 
   init(
@@ -163,6 +165,16 @@ enum AuthStartField {
 }
 
 extension AuthState {
+  func environmentRefreshCheckpoint(for clerk: Clerk) -> Clerk.EnvironmentRefreshCheckpoint {
+    if let environmentRefreshCheckpoint {
+      return environmentRefreshCheckpoint
+    }
+
+    let checkpoint = clerk.environmentRefreshCheckpoint
+    environmentRefreshCheckpoint = checkpoint
+    return checkpoint
+  }
+
   var authStartIdentifierIsLocked: Bool {
     prefilledFieldsAreLocked && authStartIdentifierWasPrefilled && !authStartIdentifier.isEmptyTrimmed
   }

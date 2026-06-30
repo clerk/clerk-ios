@@ -31,6 +31,12 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
+  private static func cancelAuthorization(for helperID: ObjectIdentifier) {
+    guard let activeHelper, ObjectIdentifier(activeHelper) == helperID else { return }
+    cancelCurrentAuthorization()
+  }
+
+  @MainActor
   private var defaultRelyingPartyIdentifier: String {
     guard let urlComponents = URLComponents(string: Clerk.shared.frontendApiUrl) else {
       return ""
@@ -80,28 +86,48 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
+  private func performAuthorization(
+    requests: [ASAuthorizationRequest],
+    start: @escaping @MainActor (ASAuthorizationController) -> Void
+  ) async throws -> ASAuthorization {
+    try Task.checkCancellation()
+    Self.cancelCurrentAuthorization()
+    let helperID = ObjectIdentifier(self)
+
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      return try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        Self.activeHelper = self
+
+        let authController = ASAuthorizationController(authorizationRequests: requests)
+        authController.delegate = self
+        authController.presentationContextProvider = self
+        Self.controller = authController
+
+        start(authController)
+      }
+    } onCancel: {
+      Task { @MainActor in
+        Self.cancelAuthorization(for: helperID)
+      }
+    }
+  }
+
+  @MainActor
   func signIn(
     challenge: Data,
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = [],
     preferImmediatelyAvailableCredentials: Bool
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    let assertionRequest = credentialAssertionRequest(
+      challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
+      allowedCredentialIDs: allowedCredentialIDs
+    )
 
-      let assertionRequest = credentialAssertionRequest(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
-      )
-
-      // Pass in any mix of supported sign-in request types.
-      let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
-
+    return try await performAuthorization(requests: [assertionRequest]) { authController in
       #if !os(tvOS)
 
       if preferImmediatelyAvailableCredentials {
@@ -132,22 +158,13 @@ final class PasskeyHelper: NSObject {
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = []
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    let assertionRequest = credentialAssertionRequest(
+      challenge: challenge,
+      relyingPartyIdentifier: relyingPartyIdentifier,
+      allowedCredentialIDs: allowedCredentialIDs
+    )
 
-      let assertionRequest = credentialAssertionRequest(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
-      )
-
-      // AutoFill-assisted requests only support ASAuthorizationPlatformPublicKeyCredentialAssertionRequest.
-      let authController = ASAuthorizationController(authorizationRequests: [assertionRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
-
+    return try await performAuthorization(requests: [assertionRequest]) { authController in
       authController.performAutoFillAssistedRequests()
     }
   }
@@ -160,27 +177,17 @@ final class PasskeyHelper: NSObject {
     userId: Data,
     relyingPartyIdentifier: String? = nil
   ) async throws -> ASAuthorization {
-    try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      Self.activeHelper = self
+    let publicKeyCredentialProvider = publicKeyCredentialProvider(
+      relyingPartyIdentifier: relyingPartyIdentifier
+    )
 
-      let publicKeyCredentialProvider = publicKeyCredentialProvider(
-        relyingPartyIdentifier: relyingPartyIdentifier
-      )
+    let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
+      challenge: challenge,
+      name: name,
+      userID: userId
+    )
 
-      let registrationRequest = publicKeyCredentialProvider.createCredentialRegistrationRequest(
-        challenge: challenge,
-        name: name,
-        userID: userId
-      )
-
-      // Use only ASAuthorizationPlatformPublicKeyCredentialRegistrationRequests or
-      // ASAuthorizationSecurityKeyPublicKeyCredentialRegistrationRequests here.
-      let authController = ASAuthorizationController(authorizationRequests: [registrationRequest])
-      authController.delegate = self
-      authController.presentationContextProvider = self
-      Self.controller = authController
-
+    return try await performAuthorization(requests: [registrationRequest]) { authController in
       authController.performRequests()
     }
   }

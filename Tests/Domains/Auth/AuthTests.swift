@@ -281,6 +281,23 @@ struct AuthTests {
   }
 
   @Test
+  func createPasskeySignInUsesPasskeyStrategy() async throws {
+    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInService = MockSignInService(create: { params in
+      signInParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signInService: signInService)
+
+    let signIn = try await Clerk.shared.auth.createPasskeySignIn()
+
+    #expect(signIn == .mock)
+    let createParams = try #require(signInParams.value)
+    #expect(createParams.strategy == .passkey)
+  }
+
+  @Test
   func signInWithPasskeyUsesOneShotPasskeySignIn() async throws {
     var preparedSignIn = SignIn.mock
     preparedSignIn.firstFactorVerification = nil

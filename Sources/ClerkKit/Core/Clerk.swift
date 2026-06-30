@@ -160,6 +160,18 @@ public final class Clerk {
     }
   }
 
+  package struct EnvironmentRefreshCheckpoint: Equatable {
+    fileprivate let revision: Int
+  }
+
+  private var environmentRefreshRevision = 0
+  private var environmentRefreshTask: Task<Environment, Error>?
+  private var environmentRefreshTaskID: UUID?
+
+  package var environmentRefreshCheckpoint: EnvironmentRefreshCheckpoint {
+    .init(revision: environmentRefreshRevision)
+  }
+
   /// The configuration options for this Clerk instance.
   public var options: Clerk.Options {
     dependencies.configurationManager.options
@@ -484,11 +496,40 @@ extension Clerk {
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
+    if let environmentRefreshTask {
+      return try await environmentRefreshTask.value
+    }
+
     let runtime = runtimeScope
-    let environment = try await dependencies.environmentService.get()
-    try runtime.validateStableRuntime()
-    self.environment = environment
-    return environment
+    let taskID = UUID()
+    let task = Task { @MainActor in
+      defer {
+        if self.environmentRefreshTaskID == taskID {
+          self.environmentRefreshTask = nil
+          self.environmentRefreshTaskID = nil
+        }
+      }
+
+      let environment = try await self.dependencies.environmentService.get()
+      try Task.checkCancellation()
+      try runtime.validateStableRuntime()
+      self.environment = environment
+      self.environmentRefreshRevision += 1
+      return environment
+    }
+
+    environmentRefreshTask = task
+    environmentRefreshTaskID = taskID
+    return try await task.value
+  }
+
+  @discardableResult
+  package func ensureEnvironmentRefreshed(after checkpoint: EnvironmentRefreshCheckpoint) async throws -> Environment {
+    if environmentRefreshRevision > checkpoint.revision, let environment {
+      return environment
+    }
+
+    return try await refreshEnvironment()
   }
 
   private static let startupRefreshRetryPolicy = RetryPolicy(
@@ -848,6 +889,7 @@ extension Clerk {
     watchSyncRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
 
+    cancelEnvironmentRefreshTask()
     // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
     // from enqueuing new writes during the drain.
     await taskCoordinator?.cancelAllAndWait()
@@ -862,9 +904,21 @@ extension Clerk {
     if finishAuthEventStreams {
       authEventEmitter.finish()
     }
+    resetEnvironmentRefreshState()
     callbackContinuation = nil
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
+  }
+
+  private func cancelEnvironmentRefreshTask() {
+    environmentRefreshTask?.cancel()
+    environmentRefreshTask = nil
+    environmentRefreshTaskID = nil
+  }
+
+  private func resetEnvironmentRefreshState() {
+    cancelEnvironmentRefreshTask()
+    environmentRefreshRevision = 0
   }
 
   private func teardownNonCacheManagers() {

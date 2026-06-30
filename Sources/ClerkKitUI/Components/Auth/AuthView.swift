@@ -164,7 +164,8 @@ public struct AuthView: View {
       }
     }
     .task {
-      _ = try? await clerk.refreshEnvironment()
+      let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
+      _ = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint)
     }
     .task {
       for await event in clerk.auth.events {

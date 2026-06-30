@@ -17,10 +17,12 @@ struct SocialButton: View {
   let transferable: Bool
   let unsafeMetadata: JSON?
   let showsTitle: Bool
+  var onStart: (() -> Void)?
   var action: (() async -> Void)?
   var result: Result<Void, Error>?
   var onSuccess: ((TransferFlowResult) -> Void)?
   var onError: ((Error) -> Void)?
+  var onCancel: (() -> Void)?
 
   private var fallbackProviderText: some View {
     ViewThatFits(in: .horizontal) {
@@ -102,20 +104,25 @@ struct SocialButton: View {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil,
     showsTitle: Bool = true,
+    onStart: (() -> Void)? = nil,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
-    onError: ((Error) -> Void)? = nil
+    onError: ((Error) -> Void)? = nil,
+    onCancel: (() -> Void)? = nil
   ) {
     self.provider = provider
     self.transferable = transferable
     self.unsafeMetadata = unsafeMetadata
     self.showsTitle = showsTitle
+    self.onStart = onStart
     self.onSuccess = onSuccess
     self.onError = onError
+    self.onCancel = onCancel
   }
 
   var body: some View {
     AsyncButton {
       do {
+        onStart?()
         if let action {
           await action()
         } else {
@@ -123,6 +130,7 @@ struct SocialButton: View {
         }
       } catch {
         if error.isUserCancelledError {
+          onCancel?()
           return
         } else {
           onError?(error)

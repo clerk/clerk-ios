@@ -277,14 +277,30 @@ public struct Auth {
   }
   #endif
 
-  // Signs in with a passkey.
-  //
-  // - Returns: A `SignIn` object representing the sign-in attempt.
-  // - Throws: An error if the passkey sign-in fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Creates a passkey sign-in attempt.
+  ///
+  /// Use this when you need to control how an existing passkey sign-in attempt is
+  /// authenticated, such as trying a modal request before falling back to
+  /// AutoFill-assisted passkey suggestions.
+  ///
+  /// - Returns: A `SignIn` object representing the passkey sign-in attempt.
+  /// - Throws: An error if the passkey sign-in attempt cannot be created.
+  @discardableResult
+  public func createPasskeySignIn() async throws -> SignIn {
+    try await signInService.create(params: .init(strategy: .passkey))
+  }
+
+  /// Signs in with a passkey.
+  ///
+  /// This is a one-shot convenience method that creates a passkey sign-in
+  /// attempt and authenticates it immediately.
+  ///
+  /// - Returns: A `SignIn` object representing the sign-in attempt.
+  /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    let signIn = try await signInService.create(params: .init(strategy: .passkey))
+    let signIn = try await createPasskeySignIn()
     return try await signIn.authenticateWithPasskey()
   }
   #endif

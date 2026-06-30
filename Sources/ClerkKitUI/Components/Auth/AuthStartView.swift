@@ -23,6 +23,10 @@ struct AuthStartView: View {
 
   @State private var fieldError: Error?
   @State private var generalError: Error?
+  @State private var automaticPasskeySignInTask: Task<Void, Never>?
+  @State private var automaticPasskeySignInTaskGeneration = 0
+  @State private var automaticPasskeySignInRestartID = 0
+  @State private var automaticPasskeySignInHasStarted = false
 
   // MARK: - Configuration
 
@@ -77,6 +81,69 @@ struct AuthStartView: View {
     }
 
     return false
+  }
+
+  var passkeySignInIsAvailable: Bool {
+    passkeySignInIsAvailable(environment: clerk.environment)
+  }
+
+  func passkeySignInIsAvailable(environment: Clerk.Environment?) -> Bool {
+    switch authState.mode {
+    case .signIn, .signInOrUp:
+      environment?.passkeyIsEnabled == true &&
+        !lockedInitialIdentifierIsActive
+    case .signUp:
+      false
+    }
+  }
+
+  var lockedInitialIdentifierIsActive: Bool {
+    authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
+  }
+
+  func passkeyAutomaticModalIsEnabled(environment: Clerk.Environment) -> Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
+    return passkeySignInIsAvailable(environment: environment) &&
+      environment.userSettings.passkeySettings?.allowAutofill == true
+    #else
+    false
+    #endif
+  }
+
+  var passkeySignInIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    passkeySignInIsAvailable
+    #else
+    false
+    #endif
+  }
+
+  var passkeySignInTaskIsEnabled: Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    passkeySignInIsEnabled && navigation.path.isEmpty
+    #else
+    false
+    #endif
+  }
+
+  var passkeyAutoFillFallbackIsEnabled: Bool {
+    passkeyAutoFillFallbackIsEnabled(environment: clerk.environment)
+  }
+
+  func passkeyAutoFillFallbackIsEnabled(environment: Clerk.Environment?) -> Bool {
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    let enabledAttributes = environment?.enabledFirstFactorAttributes ?? []
+    return passkeySignInIsAvailable(environment: environment) &&
+      !phoneNumberInputIsActive &&
+      (enabledAttributes.contains("email_address") || enabledAttributes.contains("username"))
+    #else
+    false
+    #endif
+  }
+
+  private var passkeySignInTaskID: Int? {
+    passkeySignInTaskIsEnabled ? automaticPasskeySignInRestartID : nil
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -192,6 +259,27 @@ struct AuthStartView: View {
         authState.authStartPhoneNumberFieldIsActive = true
       }
     }
+    #if os(iOS) && !targetEnvironment(macCatalyst)
+    .task(id: passkeySignInTaskID) {
+      guard passkeySignInTaskID != nil else { return }
+      let includeAutomaticModal = !automaticPasskeySignInHasStarted
+      automaticPasskeySignInTaskGeneration += 1
+      let taskGeneration = automaticPasskeySignInTaskGeneration
+      let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
+      automaticPasskeySignInTask = task
+      await withTaskCancellationHandler {
+        await task.value
+      } onCancel: {
+        task.cancel()
+      }
+      if automaticPasskeySignInTaskGeneration == taskGeneration {
+        automaticPasskeySignInTask = nil
+      }
+    }
+    .onChange(of: clerk.environmentRefreshCheckpoint) { _, _ in
+      restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
+    }
+    #endif
   }
 }
 
@@ -273,9 +361,11 @@ extension AuthStartView {
 
   private var identifierSwitcherButton: some View {
     Button {
+      cancelAutomaticPasskeySignIn()
       withAnimation(.default.speed(2)) {
         authState.authStartPhoneNumberFieldIsActive.toggle()
       }
+      restartAutomaticPasskeySignInIfNeeded()
     } label: {
       Text(identifierSwitcherString, bundle: .module)
         .id(phoneNumberFieldIsActive)
@@ -291,12 +381,15 @@ extension AuthStartView {
         SocialButton(
           provider: lastUsedProvider,
           transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata
-        ) { result in
-          handleTransferFlowResult(result)
-        } onError: { error in
-          generalError = error
-        }
+          unsafeMetadata: authState.unsafeMetadata,
+          onStart: cancelAutomaticPasskeySignIn,
+          onSuccess: handleTransferFlowResult,
+          onError: { error in
+            generalError = error
+            restartAutomaticPasskeySignInIfNeeded()
+          },
+          onCancel: restartAutomaticPasskeySignInIfNeeded
+        )
         .lastUsedAuthBadgeOverlay(true)
         .simultaneousGesture(TapGesture())
       }
@@ -308,12 +401,15 @@ extension AuthStartView {
               provider: provider,
               transferable: authState.transferable,
               unsafeMetadata: authState.unsafeMetadata,
-              showsTitle: socialProvidersMinusLastUsed.count == 1
-            ) { result in
-              handleTransferFlowResult(result)
-            } onError: { error in
-              generalError = error
-            }
+              showsTitle: socialProvidersMinusLastUsed.count == 1,
+              onStart: cancelAutomaticPasskeySignIn,
+              onSuccess: handleTransferFlowResult,
+              onError: { error in
+                generalError = error
+                restartAutomaticPasskeySignInIfNeeded()
+              },
+              onCancel: restartAutomaticPasskeySignInIfNeeded
+            )
             .simultaneousGesture(TapGesture())
           }
         }
@@ -325,17 +421,44 @@ extension AuthStartView {
 // MARK: - Actions
 
 extension AuthStartView {
+  private enum PasskeySignInResult {
+    case completed
+    case continueWithAutofill
+    case stopped
+  }
+
   func startAuth() async {
+    cancelAutomaticPasskeySignIn()
     dismissKeyboard()
 
-    switch authState.mode {
+    let shouldRestartPasskeySignIn = switch authState.mode {
     case .signInOrUp: await signIn(withSignUp: true)
     case .signIn: await signIn(withSignUp: false)
     case .signUp: await signUp()
     }
+
+    if shouldRestartPasskeySignIn {
+      restartAutomaticPasskeySignInIfNeeded()
+    }
   }
 
-  private func signIn(withSignUp: Bool) async {
+  private func cancelAutomaticPasskeySignIn() {
+    automaticPasskeySignInTaskGeneration += 1
+    automaticPasskeySignInTask?.cancel()
+    automaticPasskeySignInTask = nil
+  }
+
+  private func restartAutomaticPasskeySignInIfNeeded() {
+    guard passkeySignInTaskIsEnabled else { return }
+    automaticPasskeySignInRestartID += 1
+  }
+
+  private func restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded() {
+    guard !automaticPasskeySignInHasStarted, automaticPasskeySignInTask == nil else { return }
+    restartAutomaticPasskeySignInIfNeeded()
+  }
+
+  private func signIn(withSignUp: Bool) async -> Bool {
     fieldError = nil
 
     do {
@@ -350,27 +473,115 @@ extension AuthStartView {
           unsafeMetadata: authState.unsafeMetadata
         )
         handleTransferFlowResult(result)
-        return
+        return false
       }
 
       navigation.setToStepForStatus(signIn: signIn)
+      return signInStatusStaysOnStart(signIn.status)
     } catch {
       if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
-        await signUp()
+        return await signUp()
       } else {
         fieldError = error
+        return true
       }
     }
   }
 
-  private func signUp() async {
+  private func createPasskeySignIn() async -> SignIn? {
+    do {
+      return try await clerk.auth.createPasskeySignIn()
+    } catch {
+      if Task.isCancelled || error.isCancellationError { return nil }
+      guard navigation.path.isEmpty else { return nil }
+
+      generalError = error
+      ClerkLogger.error("Failed to create passkey sign-in", error: error)
+      return nil
+    }
+  }
+
+  private func authenticateWithPasskey(
+    signIn: SignIn,
+    autofill: Bool,
+    preferImmediatelyAvailableCredentials: Bool
+  ) async -> PasskeySignInResult {
+    do {
+      let signIn = try await signIn.authenticateWithPasskey(
+        autofill: autofill,
+        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      )
+
+      guard !Task.isCancelled else { return .stopped }
+      generalError = nil
+      guard navigation.path.isEmpty else { return .stopped }
+      navigation.setToStepForStatus(signIn: signIn)
+      return .completed
+    } catch {
+      if Task.isCancelled || error.isCancellationError { return .stopped }
+      if error.isUserCancelledError { return .continueWithAutofill }
+      guard navigation.path.isEmpty else { return .stopped }
+
+      generalError = error
+      if autofill {
+        ClerkLogger.error("Failed to authenticate with passkey autofill", error: error)
+      } else {
+        ClerkLogger.error("Failed to authenticate with passkey", error: error)
+      }
+      // Keep iOS text-field AutoFill armed after a modal error so users can
+      // pick another passkey without a second modal.
+      return autofill ? .stopped : .continueWithAutofill
+    }
+  }
+
+  #if os(iOS) && !targetEnvironment(macCatalyst)
+  private func startPasskeySignIn(includeAutomaticModal: Bool) async {
+    guard navigation.path.isEmpty else { return }
+    let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
+    guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
+    guard !Task.isCancelled, navigation.path.isEmpty else { return }
+    if includeAutomaticModal {
+      automaticPasskeySignInHasStarted = true
+    }
+
+    let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled(environment: environment)
+    let shouldStartAutoFillFallback = passkeyAutoFillFallbackIsEnabled(environment: environment)
+    guard shouldPresentAutomaticModal || shouldStartAutoFillFallback else { return }
+
+    guard let signIn = await createPasskeySignIn() else { return }
+    guard !Task.isCancelled, navigation.path.isEmpty else { return }
+
+    if shouldPresentAutomaticModal {
+      let result = await authenticateWithPasskey(
+        signIn: signIn,
+        autofill: false,
+        preferImmediatelyAvailableCredentials: true
+      )
+      guard case .continueWithAutofill = result else { return }
+    }
+
+    guard shouldStartAutoFillFallback, navigation.path.isEmpty else { return }
+    // Clerk's AutoFill setting gates the automatic modal above; this keeps
+    // iOS text-field AutoFill available when a visible identifier field can
+    // surface suggestions.
+    await authenticateWithPasskey(
+      signIn: signIn,
+      autofill: true,
+      preferImmediatelyAvailableCredentials: true
+    )
+  }
+  #endif
+
+  private func signUp() async -> Bool {
     fieldError = nil
 
     do {
       let signUp = try await signUpParams()
       navigation.setToStepForStatus(signUp: signUp)
+      return signUpStatusStaysOnStart(signUp.status)
     } catch {
       fieldError = error
+      return true
     }
   }
 
@@ -409,6 +620,24 @@ extension AuthStartView {
       authState.storeLastUsedIdentifierType(.email)
     } else {
       authState.storeLastUsedIdentifierType(.username)
+    }
+  }
+
+  private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
+    switch status {
+    case .needsIdentifier, .unknown:
+      true
+    default:
+      false
+    }
+  }
+
+  private func signUpStatusStaysOnStart(_ status: SignUp.Status) -> Bool {
+    switch status {
+    case .abandoned, .unknown:
+      true
+    default:
+      false
     }
   }
 }
