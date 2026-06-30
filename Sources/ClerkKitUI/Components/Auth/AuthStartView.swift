@@ -263,7 +263,6 @@ struct AuthStartView: View {
     .task(id: passkeySignInTaskID) {
       guard passkeySignInTaskID != nil else { return }
       let includeAutomaticModal = !automaticPasskeySignInHasStarted
-      automaticPasskeySignInHasStarted = true
       automaticPasskeySignInTaskGeneration += 1
       let taskGeneration = automaticPasskeySignInTaskGeneration
       let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
@@ -276,6 +275,9 @@ struct AuthStartView: View {
       if automaticPasskeySignInTaskGeneration == taskGeneration {
         automaticPasskeySignInTask = nil
       }
+    }
+    .onChange(of: clerk.environmentRefreshCheckpoint) { _, _ in
+      restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
   }
@@ -451,6 +453,11 @@ extension AuthStartView {
     automaticPasskeySignInRestartID += 1
   }
 
+  private func restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded() {
+    guard !automaticPasskeySignInHasStarted, automaticPasskeySignInTask == nil else { return }
+    restartAutomaticPasskeySignInIfNeeded()
+  }
+
   private func signIn(withSignUp: Bool) async -> Bool {
     fieldError = nil
 
@@ -533,6 +540,9 @@ extension AuthStartView {
     let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
     guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
+    if includeAutomaticModal {
+      automaticPasskeySignInHasStarted = true
+    }
 
     let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled(environment: environment)
     let shouldStartAutoFillFallback = passkeyAutoFillFallbackIsEnabled(environment: environment)
