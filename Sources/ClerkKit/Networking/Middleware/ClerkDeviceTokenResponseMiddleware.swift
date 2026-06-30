@@ -19,6 +19,10 @@ struct ClerkDeviceTokenResponseMiddleware: ClerkResponseMiddleware {
 
     if let deviceToken = response.value(forHTTPHeaderField: "Authorization") {
       try await runtimeScope.withCurrentClerk {
+        guard !$0.deviceTokenClearIsPendingForWatchSync() else {
+          return
+        }
+
         if let requestGeneration = request.clerkClientResponseGeneration,
            requestGeneration != $0.clientResponseGeneration
         {

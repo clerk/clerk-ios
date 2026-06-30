@@ -64,6 +64,26 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
     #expect(clientService.skipClientIdValues == [false])
     #expect(clientService.suppressDeviceTokenPersistenceValues == [true])
   }
+
+  @Test
+  func refreshClientDoesNotSuppressDeviceTokenPersistenceWhenStaleClearPendingHasStoredToken() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+    let clientService = CapturingClientService()
+
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      clientService: clientService
+    )
+
+    try await clerk.refreshClient()
+
+    #expect(clientService.skipClientIdValues == [false])
+    #expect(clientService.suppressDeviceTokenPersistenceValues == [false])
+  }
 }
 
 private final class CapturingClientService: ClientServiceProtocol {

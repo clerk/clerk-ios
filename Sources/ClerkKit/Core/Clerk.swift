@@ -848,7 +848,9 @@ extension Clerk {
   }
 
   func deviceTokenClearIsPendingForWatchSync() -> Bool {
-    (try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+    let clearIsPending = (try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+    let deviceToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    return clearIsPending && deviceToken == nil
   }
 
   private func clearPendingDeviceTokenClearForWatchSync() {

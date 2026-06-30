@@ -221,11 +221,6 @@ package struct WatchSyncPayload {
 
     let hasProtectedLocalState = currentToken != nil || clerk.client != nil || clerk.lastClientServerFetchDate != nil
     if !hasSyncedBefore, hasProtectedLocalState, !source.incomingDeviceIsAuthoritative {
-      do {
-        try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
-      }
       return
     }
 

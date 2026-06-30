@@ -160,7 +160,7 @@ struct WatchSyncPayloadTests {
     payload.apply(from: .watch, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
   }
 
   @Test
@@ -193,7 +193,7 @@ struct WatchSyncPayloadTests {
 
     #expect(clerk.client?.id == "client-local")
     #expect(clerk.lastClientServerFetchDate == serverFetchDate)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
   }
 
   @Test
