@@ -89,7 +89,11 @@ package struct WatchSyncPayload {
   init(clerk: Clerk, keychain: any KeychainStorage) {
     do {
       deviceToken = try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      clearsDeviceToken = deviceToken == nil
+      if deviceToken == nil {
+        clearsDeviceToken = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+      } else {
+        clearsDeviceToken = false
+      }
     } catch {
       ClerkLogger.logError(error, message: "Failed to read deviceToken for watch sync")
       deviceToken = nil
@@ -141,7 +145,7 @@ package struct WatchSyncPayload {
         keychain: keychain
       )
     } else if clearsDeviceToken {
-      clearDeviceToken(from: source, keychain: keychain)
+      clearDeviceToken(from: source, to: clerk, keychain: keychain)
     }
 
     if let environment {
@@ -175,6 +179,7 @@ package struct WatchSyncPayload {
 
     do {
       try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
       if !hasSyncedBefore {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }
@@ -184,7 +189,11 @@ package struct WatchSyncPayload {
   }
 
   @MainActor
-  private func clearDeviceToken(from source: WatchSyncSource, keychain: any KeychainStorage) {
+  private func clearDeviceToken(
+    from source: WatchSyncSource,
+    to clerk: Clerk,
+    keychain: any KeychainStorage
+  ) {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
@@ -199,11 +208,20 @@ package struct WatchSyncPayload {
 
     do {
       try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      clerk.clearCachedClientStateAfterDeviceTokenChange()
       if !hasSyncedBefore {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
+    }
+  }
+
+  static func clearPendingDeviceTokenClear(in keychain: any KeychainStorage) {
+    do {
+      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
     }
   }
 }

@@ -825,11 +825,20 @@ extension Clerk {
 
   func storeDeviceToken(_ token: String) throws {
     try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
     watchConnectivityCoordinator?.sync()
   }
 
   func deleteStoredDeviceToken() throws {
     try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+  }
+
+  func markDeviceTokenClearPendingForWatchSync() throws {
+    try dependencies.keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+  }
+
+  func syncWatchConnectivity() {
+    watchConnectivityCoordinator?.sync()
   }
 
   /// Cleans up managers that were started during configuration.

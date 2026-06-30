@@ -59,12 +59,16 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
     let isReachable = session.isReachable
     guard activationState == .activated, isReachable else { return }
 
-    let applicationContext = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain).applicationContext
+    let payload = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain)
+    let applicationContext = payload.applicationContext
 
     guard !applicationContext.isEmpty else { return }
 
     do {
       try session.updateApplicationContext(applicationContext)
+      if payload.deviceToken != nil || payload.clearsDeviceToken {
+        WatchSyncPayload.clearPendingDeviceTokenClear(in: keychain)
+      }
     } catch {
       let nsError = error as NSError
       if nsError.domain == "WCErrorDomain", nsError.code == 7001 {

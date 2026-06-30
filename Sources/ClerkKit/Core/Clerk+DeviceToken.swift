@@ -63,7 +63,9 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   public func clearDeviceToken() async throws {
     try deleteStoredDeviceToken()
+    try markDeviceTokenClearPendingForWatchSync()
     clearCachedClientStateAfterDeviceTokenChange()
+    syncWatchConnectivity()
 
     try await refreshClient(skipClientId: true, suppressDeviceTokenPersistence: true)
   }
