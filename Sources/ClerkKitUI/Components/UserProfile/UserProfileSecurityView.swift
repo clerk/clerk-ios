@@ -14,6 +14,11 @@ struct UserProfileSecurityView: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @State private var error: Error?
 
+  #if os(iOS)
+  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
+  private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+  #endif
+
   private var user: User? {
     clerk.user
   }
@@ -27,6 +32,37 @@ struct UserProfileSecurityView: View {
     return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
+  #if os(iOS)
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    guard let nativeSettings = environment?.authConfig.nativeSettings else {
+      return false
+    }
+
+    return nativeSettings.apiEnabled &&
+      nativeSettings.trustedDeviceSignInEnabled &&
+      biometryDisplayName.isSupported
+  }
+
+  private var shouldShowTrustedDeviceSignIn: Bool {
+    trustedDeviceFeatureIsEnabled && trustedDeviceAvailability != nil
+  }
+
+  private var trustedDeviceAvailabilityRefreshID: String? {
+    guard trustedDeviceFeatureIsEnabled,
+          let user,
+          let sessionID = clerk.session?.id
+    else {
+      return nil
+    }
+
+    return [
+      sessionID,
+      user.id,
+      user.trustedDeviceIdentifierHint ?? "",
+    ].joined(separator: ":")
+  }
+  #endif
+
   var body: some View {
     @Bindable var navigation = navigation
 
@@ -37,6 +73,15 @@ struct UserProfileSecurityView: View {
             if environment?.passwordIsEnabled == true {
               UserProfilePasswordSection()
             }
+
+            #if os(iOS)
+            if shouldShowTrustedDeviceSignIn, let trustedDeviceAvailability {
+              UserProfileTrustedDeviceSection(
+                isEnabled: trustedDeviceAvailability.isAvailable,
+                refreshAvailability: refreshTrustedDeviceAvailability
+              )
+            }
+            #endif
 
             if environment?.passkeyIsEnabled == true {
               UserProfilePasskeySection()
@@ -79,6 +124,11 @@ struct UserProfileSecurityView: View {
     .task {
       _ = try? await user?.getSessions()
     }
+    #if os(iOS)
+    .task(id: trustedDeviceAvailabilityRefreshID) {
+      await refreshTrustedDeviceAvailability()
+    }
+    #endif
     .task {
       _ = try? await clerk.refreshClient()
     }
@@ -90,6 +140,34 @@ struct UserProfileSecurityView: View {
     #endif
   }
 }
+
+#if os(iOS)
+extension UserProfileSecurityView {
+  @MainActor
+  @discardableResult
+  private func refreshTrustedDeviceAvailability() async -> TrustedDeviceAvailability? {
+    guard trustedDeviceFeatureIsEnabled, let user else {
+      trustedDeviceAvailability = nil
+      return nil
+    }
+
+    do {
+      let availability = try await clerk.trustedDevices.availability(
+        identifierHint: user.trustedDeviceIdentifierHint
+      )
+      trustedDeviceAvailability = availability
+      return availability
+    } catch {
+      if error.isCancellationError {
+        return nil
+      } else {
+        ClerkLogger.error("Failed to refresh trusted-device availability", error: error)
+      }
+      return nil
+    }
+  }
+}
+#endif
 
 #Preview {
   NavigationStack {

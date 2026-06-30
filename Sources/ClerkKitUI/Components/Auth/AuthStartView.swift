@@ -61,7 +61,7 @@ struct AuthStartView: View {
   }
 
   var showOrDivider: Bool {
-    hasSocialProviders && showIdentifierField
+    hasAlternativeAuthMethods && showIdentifierField
   }
 
   var phoneNumberInputIsActive: Bool {
@@ -167,6 +167,14 @@ struct AuthStartView: View {
     !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
   }
 
+  private var hasAlternativeAuthMethods: Bool {
+    #if os(iOS)
+    hasSocialProviders || shouldShowTrustedDeviceSignIn
+    #else
+    hasSocialProviders
+    #endif
+  }
+
   #if os(iOS)
   private var trustedDeviceFeatureIsEnabled: Bool {
     clerk.environment?.authConfig.nativeSettings.trustedDeviceSignInEnabled == true
@@ -255,16 +263,6 @@ struct AuthStartView: View {
         headerSection
 
         VStack(spacing: 24) {
-          #if os(iOS)
-          if shouldShowTrustedDeviceSignIn {
-            trustedDeviceSignInButton
-
-            if showIdentifierField || hasSocialProviders {
-              TextDivider(string: "or")
-            }
-          }
-          #endif
-
           if showIdentifierField {
             identifierInputSection
 
@@ -279,7 +277,9 @@ struct AuthStartView: View {
             TextDivider(string: "or")
           }
 
-          socialButtonsSection
+          if hasAlternativeAuthMethods {
+            alternativeAuthMethodsSection
+          }
         }
         .padding(.bottom, 32)
 
@@ -439,6 +439,18 @@ extension AuthStartView {
     .simultaneousGesture(TapGesture())
   }
   #endif
+
+  private var alternativeAuthMethodsSection: some View {
+    VStack(spacing: 16) {
+      #if os(iOS)
+      if shouldShowTrustedDeviceSignIn {
+        trustedDeviceSignInButton
+      }
+      #endif
+
+      socialButtonsSection
+    }
+  }
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {

@@ -16,7 +16,7 @@
 		</dict>
 	</array>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Quickstart uses Face ID to enroll and sign in with this trusted device.</string>
+	<string>Quickstart uses Face ID to sign you in.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Atlantis uses Bonjour Service to discover the Proxyman app on your local network.</string>
 	<key>NSBonjourServices</key>
