@@ -262,9 +262,6 @@ struct ClientTests {
 
   @Test
   func clearDeviceTokenClearsCachedStateWhenPendingWatchClearWriteFails() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
     let keychain = SelectivelyFailingKeychain(setFailures: [ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue])
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
@@ -273,19 +270,20 @@ struct ClientTests {
     let service = DeviceTokenUpdateClientService(
       response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
     )
+    let clerk = Clerk()
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       clientService: service
     )
-    Clerk.shared.client = Client.mock
+    clerk.client = Client.mock
 
     await #expect(throws: SelectivelyFailingKeychain.Failure.self) {
-      try await Clerk.shared.clearDeviceToken()
+      try await clerk.clearDeviceToken()
     }
 
-    #expect(Clerk.shared.client == nil)
+    #expect(clerk.client == nil)
     #expect(service.skipClientIdValues == [])
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
