@@ -123,7 +123,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     query[kSecReturnRef as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
 
-    #if canImport(LocalAuthentication)
+    #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
     let context = LAContext()
     if let localizedReason {
       context.localizedReason = localizedReason
@@ -251,7 +251,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return try publicKeyJWK(fromX963Representation: representation)
   }
 
-  #if canImport(LocalAuthentication)
+  #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
   private static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
     switch policy {
     case .biometryCurrentSet, .biometryAny, .biometryOrDevicePasscode:
