@@ -49,6 +49,24 @@ struct UserProfileSecurityView: View {
     let identifierHint: String?
   }
 
+  private var trustedDeviceIsEnabled: Bool {
+    if let trustedDeviceAvailability {
+      return trustedDeviceAvailability.isAvailable
+    }
+
+    return localTrustedDeviceAvailability?.isAvailable == true
+  }
+
+  private var localTrustedDeviceAvailability: TrustedDeviceAvailability? {
+    guard trustedDeviceFeatureIsEnabled, let user else {
+      return nil
+    }
+
+    return try? clerk.trustedDevices.localAvailability(
+      identifierHint: user.trustedDeviceIdentifierHint
+    )
+  }
+
   private var trustedDeviceAvailabilityRefreshKey: TrustedDeviceAvailabilityRefreshKey? {
     guard trustedDeviceFeatureIsEnabled,
           let user,
@@ -79,7 +97,7 @@ struct UserProfileSecurityView: View {
             #if os(iOS)
             if trustedDeviceFeatureIsEnabled {
               UserProfileTrustedDeviceSection(
-                isEnabled: trustedDeviceAvailability?.isAvailable,
+                isEnabled: trustedDeviceIsEnabled,
                 refreshAvailability: refreshTrustedDeviceAvailability
               )
             }
