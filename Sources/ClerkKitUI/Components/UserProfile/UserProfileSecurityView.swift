@@ -43,11 +43,13 @@ struct UserProfileSecurityView: View {
       biometryDisplayName.isSupported
   }
 
-  private var shouldShowTrustedDeviceSignIn: Bool {
-    trustedDeviceFeatureIsEnabled && trustedDeviceAvailability != nil
+  private struct TrustedDeviceAvailabilityRefreshKey: Hashable {
+    let sessionID: String
+    let userID: String
+    let identifierHint: String?
   }
 
-  private var trustedDeviceAvailabilityRefreshID: String? {
+  private var trustedDeviceAvailabilityRefreshKey: TrustedDeviceAvailabilityRefreshKey? {
     guard trustedDeviceFeatureIsEnabled,
           let user,
           let sessionID = clerk.session?.id
@@ -55,11 +57,11 @@ struct UserProfileSecurityView: View {
       return nil
     }
 
-    return [
-      sessionID,
-      user.id,
-      user.trustedDeviceIdentifierHint ?? "",
-    ].joined(separator: ":")
+    return TrustedDeviceAvailabilityRefreshKey(
+      sessionID: sessionID,
+      userID: user.id,
+      identifierHint: user.trustedDeviceIdentifierHint
+    )
   }
   #endif
 
@@ -75,9 +77,9 @@ struct UserProfileSecurityView: View {
             }
 
             #if os(iOS)
-            if shouldShowTrustedDeviceSignIn, let trustedDeviceAvailability {
+            if trustedDeviceFeatureIsEnabled {
               UserProfileTrustedDeviceSection(
-                isEnabled: trustedDeviceAvailability.isAvailable,
+                isEnabled: trustedDeviceAvailability?.isAvailable,
                 refreshAvailability: refreshTrustedDeviceAvailability
               )
             }
@@ -125,7 +127,8 @@ struct UserProfileSecurityView: View {
       _ = try? await user?.getSessions()
     }
     #if os(iOS)
-    .task(id: trustedDeviceAvailabilityRefreshID) {
+    .task(id: trustedDeviceAvailabilityRefreshKey) {
+      refreshLocalTrustedDeviceAvailability()
       await refreshTrustedDeviceAvailability()
     }
     #endif
@@ -143,6 +146,23 @@ struct UserProfileSecurityView: View {
 
 #if os(iOS)
 extension UserProfileSecurityView {
+  @MainActor
+  private func refreshLocalTrustedDeviceAvailability() {
+    guard trustedDeviceFeatureIsEnabled, let user else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    do {
+      trustedDeviceAvailability = try clerk.trustedDevices.localAvailability(
+        identifierHint: user.trustedDeviceIdentifierHint
+      )
+    } catch {
+      trustedDeviceAvailability = nil
+      ClerkLogger.error("Failed to refresh local trusted-device availability", error: error)
+    }
+  }
+
   @MainActor
   @discardableResult
   private func refreshTrustedDeviceAvailability() async -> TrustedDeviceAvailability? {
