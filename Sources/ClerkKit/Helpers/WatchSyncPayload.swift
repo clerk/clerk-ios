@@ -167,6 +167,12 @@ package struct WatchSyncPayload {
   ) {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let clearIsPending = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)) == "true"
+
+    if clearIsPending, !source.incomingDeviceIsAuthoritative {
+      ClerkLogger.debug("Ignoring deviceToken from \(source.sourceDescription) while a local deviceToken clear is pending")
+      return
+    }
 
     if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
       do {
@@ -179,7 +185,11 @@ package struct WatchSyncPayload {
 
     do {
       try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+      do {
+        try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
+      }
       if !hasSyncedBefore {
         try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
       }

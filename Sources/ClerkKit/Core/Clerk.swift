@@ -825,7 +825,7 @@ extension Clerk {
 
   func storeDeviceToken(_ token: String) throws {
     try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+    clearPendingDeviceTokenClearForWatchSync()
     watchConnectivityCoordinator?.sync()
   }
 
@@ -835,6 +835,14 @@ extension Clerk {
 
   func markDeviceTokenClearPendingForWatchSync() throws {
     try dependencies.keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+  }
+
+  private func clearPendingDeviceTokenClearForWatchSync() {
+    do {
+      try dependencies.keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
+    }
   }
 
   func syncWatchConnectivity() {
