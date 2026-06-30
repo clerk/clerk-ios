@@ -13,11 +13,15 @@ actor SessionTokenFetcher {
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
 
-  func reset() {
-    for task in tokenTasks.values {
+  func reset() async {
+    let tasks = Array(tokenTasks.values)
+    for task in tasks {
       task.cancel()
     }
     tokenTasks.removeAll()
+    for task in tasks {
+      _ = await task.result
+    }
   }
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
