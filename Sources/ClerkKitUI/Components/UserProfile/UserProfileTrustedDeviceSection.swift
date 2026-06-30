@@ -12,7 +12,7 @@ struct UserProfileTrustedDeviceSection: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  let isEnabled: Bool?
+  let isEnabled: Bool
   let refreshAvailability: @MainActor () async -> TrustedDeviceAvailability?
 
   @State private var optimisticIsEnabled: Bool?
@@ -25,16 +25,15 @@ struct UserProfileTrustedDeviceSection: View {
     clerk.user
   }
 
-  private var currentIsEnabled: Bool? {
+  private var currentIsEnabled: Bool {
     optimisticIsEnabled ?? isEnabled
   }
 
   private var toggleBinding: Binding<Bool> {
     Binding {
-      currentIsEnabled ?? false
+      currentIsEnabled
     } set: { newValue in
-      guard let currentIsEnabled,
-            currentIsEnabled != newValue,
+      guard currentIsEnabled != newValue,
             !isLoading
       else {
         return
@@ -63,17 +62,11 @@ struct UserProfileTrustedDeviceSection: View {
 
         Spacer(minLength: 0)
 
-        if currentIsEnabled != nil {
-          Toggle("", isOn: toggleBinding)
-            .labelsHidden()
-            .tint(theme.colors.primary)
-            .accessibilityLabel(Text("Sign in with \(biometryDisplayName.value)", bundle: .module))
-            .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.trustedDeviceToggle)
-        } else {
-          ProgressView()
-            .controlSize(.small)
-            .accessibilityHidden(true)
-        }
+        Toggle("", isOn: toggleBinding)
+          .labelsHidden()
+          .tint(theme.colors.primary)
+          .accessibilityLabel(Text("Sign in with \(biometryDisplayName.value)", bundle: .module))
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.trustedDeviceToggle)
       }
       .padding(.horizontal, 24)
       .padding(.vertical, 16)
