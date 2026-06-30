@@ -62,9 +62,6 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
     do {
       try session.updateApplicationContext(applicationContext)
-      if payload.deviceToken != nil || payload.clearsDeviceToken {
-        WatchSyncPayload.clearPendingDeviceTokenClear(in: keychain)
-      }
     } catch {
       let nsError = error as NSError
       if nsError.domain == "WCErrorDomain", nsError.code == 7006 || nsError.code == 7001 {

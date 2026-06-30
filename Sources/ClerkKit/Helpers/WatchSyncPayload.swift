@@ -216,12 +216,4 @@ package struct WatchSyncPayload {
       ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
     }
   }
-
-  static func clearPendingDeviceTokenClear(in keychain: any KeychainStorage) {
-    do {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to clear pending deviceToken watch sync state")
-    }
-  }
 }
