@@ -75,48 +75,4 @@ struct TrustedDeviceSignInButton: View {
   .padding()
 }
 
-struct TrustedDeviceBiometryDisplayName: Equatable {
-  let value: String
-  let systemImageName: String?
-
-  init(biometryType: LABiometryType) {
-    systemImageName = biometryType.systemImageName
-
-    switch biometryType {
-    case .faceID:
-      value = "Face ID"
-    case .touchID:
-      value = "Touch ID"
-    case .opticID:
-      value = "Optic ID"
-    default:
-      value = "biometrics"
-    }
-  }
-
-  static func current() -> Self {
-    let context = LAContext()
-    var error: NSError?
-    _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
-    return .init(biometryType: context.biometryType)
-  }
-}
-
-extension LABiometryType {
-  fileprivate var systemImageName: String? {
-    switch self {
-    case .none:
-      nil
-    case .touchID:
-      "touchid"
-    case .faceID:
-      "faceid"
-    case .opticID:
-      "opticid"
-    @unknown default:
-      nil
-    }
-  }
-}
-
 #endif

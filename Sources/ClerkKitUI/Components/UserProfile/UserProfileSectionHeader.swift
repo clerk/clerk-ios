@@ -10,13 +10,22 @@ import SwiftUI
 struct UserProfileSectionHeader: View {
   @Environment(\.clerkTheme) private var theme
 
-  let text: LocalizedStringKey
+  let text: Text
+
+  init(text: LocalizedStringKey) {
+    self.text = Text(text, bundle: .module)
+  }
+
+  init(verbatim text: String) {
+    self.text = Text(verbatim: text)
+  }
 
   var body: some View {
-    Text(text, bundle: .module)
+    text
       .font(theme.fonts.caption)
       .fontWeight(.medium)
       .foregroundStyle(theme.colors.mutedForeground)
+      .textCase(.uppercase)
       .frame(minHeight: 16)
       .padding(.horizontal, 24)
       .padding(.top, 32)

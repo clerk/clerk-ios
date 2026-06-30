@@ -19,8 +19,13 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
-  /// Set to `true` when a session task flow completes and auth navigation should continue.
+  /// Set to `true` when all session tasks are complete.
   private(set) var allTasksComplete = false
+
+  #if os(iOS)
+  /// Whether trusted-device enrollment has already been offered in this auth flow.
+  private(set) var trustedDeviceEnrollmentWasOffered = false
+  #endif
 
   /// Creates a new AuthNavigation instance.
   init() {}
@@ -103,12 +108,26 @@ final class AuthNavigation {
   @MainActor
   func handleSessionTaskCompletion(session: Session?) {
     guard let nextTask = nextPendingSessionTask(from: session) else {
-      allTasksComplete = true
+      completeAuthFlow()
       return
     }
 
     path.append(.sessionTaskStart(task: nextTask))
   }
+
+  @MainActor
+  func completeAuthFlow() {
+    allTasksComplete = true
+  }
+
+  #if os(iOS)
+  @MainActor
+  func routeToTrustedDeviceEnrollment() {
+    trustedDeviceEnrollmentWasOffered = true
+    guard !hasTrustedDeviceEnrollmentInPath else { return }
+    path.append(.trustedDeviceEnrollment)
+  }
+  #endif
 
   var hasSessionTaskStartInPath: Bool {
     path.contains { destination in
@@ -119,6 +138,12 @@ final class AuthNavigation {
       }
     }
   }
+
+  #if os(iOS)
+  var hasTrustedDeviceEnrollmentInPath: Bool {
+    path.contains(.trustedDeviceEnrollment)
+  }
+  #endif
 
   @MainActor
   private func handleMissingRequirements(signUp: SignUp) {

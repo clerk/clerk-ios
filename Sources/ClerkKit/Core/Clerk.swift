@@ -344,6 +344,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    reconcileTrustedDeviceCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
     // Set up session polling and lifecycle management

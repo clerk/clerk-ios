@@ -54,7 +54,7 @@ public struct TrustedDevices {
 
   /// Enrolls the current app installation as a biometric trusted device.
   ///
-  /// This requires an active Clerk session. The generated private key stays on the device.
+  /// This requires an active or pending Clerk session. The generated private key stays on the device.
   /// - Parameters:
   ///   - name: A human-readable device name stored with the trusted-device credential.
   ///   - identifierHint: A local-only user identifier hint for selecting this credential later.
@@ -67,8 +67,8 @@ public struct TrustedDevices {
     reason: String? = nil,
     policy: TrustedDevicePolicy = .biometryCurrentSet
   ) async throws -> TrustedDevice {
-    guard Clerk.shared.session?.status == .active else {
-      throw ClerkClientError(message: "Unable to enroll a trusted device without an active Clerk session.")
+    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
+      throw ClerkClientError(message: "Unable to enroll a trusted device without an active or pending Clerk session.")
     }
     try ensureTrustedDeviceFeatureEnabled()
 
@@ -115,6 +115,42 @@ public struct TrustedDevices {
       try deleteLocalCredential(localCredential)
     }
     return trustedDevice
+  }
+
+  /// Revokes the available local trusted-device credential for the current signed-in user.
+  @discardableResult
+  package func revokeCurrentDeviceCredential(identifierHint: String? = nil) async throws -> TrustedDevice? {
+    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
+      throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
+    }
+
+    switch try await selectedLocalCredential(id: nil, identifierHint: identifierHint) {
+    case let .available(localCredential):
+      return try await revoke(id: localCredential.id)
+    case .unavailable:
+      return nil
+    }
+  }
+
+  /// Deletes locally stored trusted-device credentials matching an identifier hint.
+  ///
+  /// This is local cleanup only. Use ``revoke(id:)`` when the server-side trusted-device
+  /// credential should be revoked for an active user.
+  @discardableResult
+  package func forgetLocalCredentials(identifierHint: String?) throws -> Int {
+    let credentials = try credentialStore.all().filter { credential in
+      if let identifierHint {
+        credential.matches(identifierHint: identifierHint)
+      } else {
+        credential.identifierHint == nil
+      }
+    }
+
+    for credential in credentials {
+      try deleteLocalCredential(credential)
+    }
+
+    return credentials.count
   }
 
   /// Signs in with a locally enrolled biometric trusted-device credential.
@@ -351,5 +387,16 @@ extension Error {
 
     return error.code == "form_resource_not_found" &&
       error.meta?["param_name"]?.stringValue == "trusted_device_id"
+  }
+}
+
+extension Session.SessionStatus {
+  package var allowsTrustedDeviceEnrollment: Bool {
+    switch self {
+    case .active, .pending:
+      true
+    default:
+      false
+    }
   }
 }
