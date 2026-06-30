@@ -128,6 +128,11 @@ package struct WatchSyncPayload {
 
   @MainActor
   func apply(from source: WatchSyncSource, to clerk: Clerk, keychain: any KeychainStorage) async {
+    if !source.incomingDeviceIsAuthoritative, clerk.deviceTokenClearIsPendingForWatchSync() {
+      ClerkLogger.debug("Ignoring watch sync from \(source.sourceDescription) while deviceToken clear is pending")
+      return
+    }
+
     if let deviceToken {
       applyDeviceToken(
         deviceToken,

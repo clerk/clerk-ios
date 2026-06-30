@@ -62,8 +62,17 @@ struct WatchSyncPayloadTests {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    clerk.markDeviceTokenClearPendingForWatchSync()
 
-    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain, clearsMissingDeviceToken: true)
+    let payload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      clearsMissingDeviceToken: clerk.deviceTokenClearIsPendingForWatchSync()
+    )
 
     #expect(payload.deviceToken == nil)
     #expect(payload.clearsDeviceToken == true)
@@ -75,9 +84,18 @@ struct WatchSyncPayloadTests {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    clerk.markDeviceTokenClearPendingForWatchSync()
     try keychain.set("device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    let payload = WatchSyncPayload(clerk: clerk, keychain: keychain, clearsMissingDeviceToken: true)
+    let payload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      clearsMissingDeviceToken: clerk.deviceTokenClearIsPendingForWatchSync()
+    )
 
     #expect(payload.deviceToken == "device-token")
     #expect(payload.clearsDeviceToken == false)
@@ -137,6 +155,32 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == false)
+  }
+
+  @Test
+  func watchPayloadDoesNotRestorePhoneWhileDeviceTokenClearIsPending() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    clerk.markDeviceTokenClearPendingForWatchSync()
+
+    let payload = WatchSyncPayload(
+      deviceToken: "watch-token",
+      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch"),
+      clientServerFetchDate: Date(timeIntervalSince1970: 200),
+      environment: .mock
+    )
+
+    await payload.apply(from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
+    #expect(clerk.client == nil)
+    #expect(clerk.environment == nil)
   }
 
   @Test

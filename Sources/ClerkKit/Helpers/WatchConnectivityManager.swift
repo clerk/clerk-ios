@@ -55,7 +55,12 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     guard !isProcessingSync else { return }
     guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
 
-    let payload = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain, clearsMissingDeviceToken: true)
+    let clerk = Clerk.shared
+    let payload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      clearsMissingDeviceToken: clerk.deviceTokenClearIsPendingForWatchSync()
+    )
     let applicationContext = payload.applicationContext
 
     guard !applicationContext.isEmpty else { return }

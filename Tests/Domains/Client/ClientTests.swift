@@ -186,7 +186,7 @@ struct ClientTests {
   @Test
   func clearDeviceTokenRemovesTokenAndClearsCachedState() async throws {
     configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
+    let clerk = Clerk()
 
     let keychain = InMemoryKeychain()
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
@@ -194,19 +194,20 @@ struct ClientTests {
     try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
-    Clerk.shared.client = Client.mock
+    clerk.client = Client.mock
     let tokenCacheKey = Session.mock.tokenCacheKey(template: nil)
     await SessionTokensCache.shared.insertToken(.init(jwt: "cached-jwt"), cacheKey: tokenCacheKey)
 
-    try await Clerk.shared.clearDeviceToken()
+    try await clerk.clearDeviceToken()
 
-    #expect(Clerk.shared.client == nil)
-    #expect(Clerk.shared.deviceToken == nil)
+    #expect(clerk.client == nil)
+    #expect(clerk.deviceToken == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenClearPending.rawValue) == "true")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
