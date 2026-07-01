@@ -609,12 +609,10 @@ extension UserProfileView {
     do {
       try await user.getSessions()
     } catch {
-      if error.isCancellationError {
-        ClerkLogger.error("Get sessions on all devices cancelled.", error: error)
-      } else {
-        self.error = error
-        ClerkLogger.error("Failed to get sessions on all devices", error: error)
-      }
+      guard !error.isCancellationError else { return }
+
+      self.error = error
+      ClerkLogger.error("Failed to get sessions on all devices", error: error)
     }
   }
 }
