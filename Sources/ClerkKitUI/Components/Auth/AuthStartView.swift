@@ -181,7 +181,9 @@ struct AuthStartView: View {
   }
 
   private var shouldShowTrustedDeviceSignIn: Bool {
-    authState.mode != .signUp && trustedDeviceAvailability?.isAvailable == true
+    trustedDeviceFeatureIsEnabled &&
+      authState.mode != .signUp &&
+      trustedDeviceAvailability?.isAvailable == true
   }
 
   private var trustedDeviceIdentifierHint: String? {
@@ -434,6 +436,7 @@ extension AuthStartView {
   #if os(iOS)
   private var trustedDeviceSignInButton: some View {
     TrustedDeviceSignInButton {
+      cancelAutomaticPasskeySignIn()
       await signInWithTrustedDevice()
     }
     .simultaneousGesture(TapGesture())
@@ -725,12 +728,18 @@ extension AuthStartView {
       )
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
+      if error.isCancellationError {
+        return
+      }
+
       if error.isUserCancelledError {
+        restartAutomaticPasskeySignInIfNeeded()
         return
       }
 
       generalError = error
       await refreshTrustedDeviceAvailability()
+      restartAutomaticPasskeySignInIfNeeded()
     }
   }
   #endif

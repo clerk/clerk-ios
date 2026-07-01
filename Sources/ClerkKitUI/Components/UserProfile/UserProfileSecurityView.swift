@@ -199,6 +199,7 @@ extension UserProfileSecurityView {
       if error.isCancellationError {
         return nil
       } else {
+        trustedDeviceAvailability = nil
         ClerkLogger.error("Failed to refresh trusted-device availability", error: error)
       }
       return nil
