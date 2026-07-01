@@ -16,6 +16,9 @@ extension ClerkTheme {
     /// The primary color used throughout the views.
     public var primary: Color
 
+    /// The selected tint color for switch-style toggles.
+    public var switchTint: Color
+
     /// The background color for containers.
     public var background: Color
 
@@ -111,6 +114,7 @@ extension ClerkTheme {
     ///   the `border` base color passed to this initializer.
     public init(
       primary: Color = Self.defaultPrimaryColor,
+      switchTint: Color? = nil,
       background: Color = Self.defaultBackgroundColor,
       input: Color = Self.defaultInputColor,
       danger: Color = Self.defaultDangerColor,
@@ -129,6 +133,7 @@ extension ClerkTheme {
       border: Color = Self.defaultBorderColor
     ) {
       self.primary = primary
+      self.switchTint = switchTint ?? primary
       self.background = background
       self.input = input
       self.danger = danger
