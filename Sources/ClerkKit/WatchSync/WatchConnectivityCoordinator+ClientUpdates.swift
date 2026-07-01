@@ -105,6 +105,11 @@ extension WatchConnectivityCoordinator {
   }
 
   private func applyNonAuthoritativeClear(_ update: WatchSyncClientApplication, to clerk: Clerk) {
+    guard clerk.client == nil else {
+      scheduleRefresh(for: clerk)
+      return
+    }
+
     if let serverFetchDate = update.serverFetchDate {
       clerk.lastClientServerFetchDate = serverFetchDate
     }

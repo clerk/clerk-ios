@@ -395,6 +395,44 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
+  func nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared() {
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
+    let clerk = makeIsolatedClerk(clientService: MockClientService { phoneClient })
+    let keychain = clerk.dependencies.keychain
+    let phoneServerDate = Date(timeIntervalSince1970: 100)
+    let clearServerDate = Date(timeIntervalSince1970: 200)
+    let coordinator = WatchConnectivityCoordinator()
+
+    clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
+    let clearPayload = WatchSyncPayload(
+      deviceTokenUpdate: .notIncluded,
+      clientUpdate: .cleared(serverFetchDate: clearServerDate, version: WatchSyncVersion(rawValue: 3)),
+      environment: nil
+    )
+
+    coordinator.apply(clearPayload, from: .watch, to: clerk)
+    let outgoingPayload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      authGeneration: coordinator.currentAuthVersion(keychain: keychain)
+    )
+
+    #expect(clerk.client?.id == phoneClient.id)
+    #expect(clerk.lastClientServerFetchDate == phoneServerDate)
+    #expect((try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)) == nil)
+    #expect((try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)) == nil)
+
+    guard case let .snapshot(client, serverFetchDate, version) = outgoingPayload.clientUpdate else {
+      Issue.record("Expected outgoing phone client snapshot")
+      return
+    }
+
+    #expect(client.id == phoneClient.id)
+    #expect(serverFetchDate == phoneServerDate)
+    #expect(version == .initial)
+  }
+
+  @Test
   func nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient() {
     let clerk = makeIsolatedClerk()
     clerk.client = nil
