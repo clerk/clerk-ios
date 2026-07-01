@@ -271,7 +271,12 @@ package struct WatchSyncPayload {
     case "cleared":
       return .cleared(serverFetchDate: clientServerFetchDate, version: version)
     default:
-      guard let clientData, !clientData.isEmpty else { return .notIncluded }
+      guard let clientData, !clientData.isEmpty else {
+        if let clientServerFetchDate {
+          return .cleared(serverFetchDate: clientServerFetchDate, version: nil)
+        }
+        return .notIncluded
+      }
       guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
         return .notIncluded

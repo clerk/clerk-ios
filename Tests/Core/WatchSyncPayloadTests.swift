@@ -38,6 +38,30 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func legacySignedOutPhonePayloadClearsLocalClient() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let serverFetchDate = Date(timeIntervalSince1970: 200)
+    clerk.applyResponseClient(
+      client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local"),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    let payload = try #require(WatchSyncPayload(applicationContext: [
+      "clerkDeviceToken": "phone-token",
+      "clerkClientServerFetchDate": serverFetchDate.timeIntervalSince1970,
+    ]))
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == serverFetchDate)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+  }
+
+  @Test
   func phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync() throws {
     configureClerkForTesting()
     let clerk = Clerk()
