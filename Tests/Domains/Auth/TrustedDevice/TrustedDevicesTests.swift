@@ -212,6 +212,60 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func availabilityIgnoresCredentialFromDifferentAppIdentifierBeforeCheckingKeys() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let checkedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(keyManager: MockTrustedDeviceKeyManager(hasKey: { localKeyId in
+      checkedLocalKeyIds.withValue { $0.append(localKeyId) }
+      return false
+    }))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let availability = try await setup.trustedDevices.availability()
+
+    #expect(availability.isAvailable == false)
+    #expect(availability.unavailableReason == .noLocalCredential)
+    #expect(checkedLocalKeyIds.value.isEmpty)
+    #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
+  }
+
+  @Test
+  func signInUsesCurrentAppCredentialWhenSharedKeychainContainsNewerCredential() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let setup = makeTrustedDevices(signInService: MockSignInService(
+      create: { params in
+        capturedCreateParams.setValue(params)
+        return .mockTrustedDeviceChallenge
+      },
+      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_current_app",
+      localKeyId: "tdlk_current_app",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    _ = try await setup.trustedDevices.signIn()
+
+    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_current_app")
+    #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
+  }
+
+  @Test
   func availabilityDoesNotDeleteCredentialOwnedByDifferentUserWhenSignedIn() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
@@ -682,6 +736,38 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func forgetLocalCredentialsDeletesDeletedUserIDAfterCurrentUserIsCleared() throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    }))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_deleted",
+      localKeyId: "tdlk_deleted",
+      userID: User.mock.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.other",
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let deletedCount = try setup.trustedDevices.forgetLocalCredentials(deletedUserID: User.mock.id)
+
+    #expect(deletedCount == 1)
+    #expect(deletedLocalKeyIds.value == ["tdlk_deleted"])
+    #expect(try setup.credentialStore.credential(id: "tdc_deleted") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
+  }
+
+  @Test
   func availabilityUsesStoredCredentialPolicy() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mockSignedOut
@@ -1001,6 +1087,7 @@ private func localCredential(
   id: String,
   localKeyId: String,
   userID: String = User.mock.id,
+  appIdentifier: String = "com.clerk.example",
   identifierHint: String? = nil,
   createdAt: Date
 ) -> TrustedDeviceLocalCredential {
@@ -1008,7 +1095,7 @@ private func localCredential(
     id: id,
     localKeyId: localKeyId,
     userID: userID,
-    appIdentifier: "com.clerk.example",
+    appIdentifier: appIdentifier,
     identifierHint: identifierHint,
     createdAt: createdAt,
     updatedAt: createdAt
