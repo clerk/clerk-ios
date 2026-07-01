@@ -502,7 +502,7 @@ jobs:
                 summary="Manual CI was cancelled."
                 ;;
               skipped)
-                conclusion="failure"
+                conclusion="skipped"
                 summary="Manual CI did not run because a dependency did not complete."
                 ;;
               *)
