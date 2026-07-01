@@ -107,8 +107,8 @@ extension UserProfileDeleteAccountConfirmationView {
     guard let user else { return }
 
     do {
+      forgetCurrentUserTrustedDeviceLocalCredentials()
       try await user.delete()
-      forgetTrustedDeviceLocalCredentials(identifierHint: user.trustedDeviceIdentifierHint)
       let shouldPresentAccountSwitcher = clerk.auth.sessions.count > 1
       let shouldDismissUserProfile = clerk.user == nil && !shouldPresentAccountSwitcher
       dismiss()
@@ -122,9 +122,9 @@ extension UserProfileDeleteAccountConfirmationView {
     }
   }
 
-  private func forgetTrustedDeviceLocalCredentials(identifierHint: String?) {
+  private func forgetCurrentUserTrustedDeviceLocalCredentials() {
     do {
-      try clerk.trustedDevices.forgetLocalCredentials(identifierHint: identifierHint)
+      try clerk.trustedDevices.forgetCurrentUserLocalCredentials()
     } catch {
       ClerkLogger.error(
         "Failed to delete trusted-device local credentials after account deletion. This is non-critical.",
