@@ -211,6 +211,42 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func rejectedWatchDeviceTokenSetPreservesPhoneDeviceToken() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let phoneServerDate = Date(timeIntervalSince1970: 200)
+    let originalGeneration = clerk.clientResponseGeneration
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.applyResponseClient(
+      phoneClient,
+      responseSequence: 10,
+      serverDate: phoneServerDate
+    )
+
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "watch-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: watchClient,
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == phoneClient.id)
+    #expect(clerk.client?.signIn?.id == phoneClient.signIn?.id)
+    #expect(clerk.lastClientServerFetchDate == phoneServerDate)
+    #expect(clerk.clientResponseGeneration == originalGeneration)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
+  }
+
+  @Test
   func acceptedWatchClientSnapshotCarriesMatchingDeviceToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
