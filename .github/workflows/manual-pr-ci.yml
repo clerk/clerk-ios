@@ -12,12 +12,6 @@ permissions:
 jobs:
   resolve-pr-ci-request:
     name: Resolve PR CI request
-    if: >
-      github.event.issue.pull_request != null
-      && (
-        (github.event.action == 'created' && contains(github.event.comment.body, '/run ci'))
-        || (github.event.action == 'edited' && contains(github.event.comment.body, '<!-- clerk-ios-manual-ci -->'))
-      )
     runs-on: ubuntu-latest
     permissions:
       checks: write
@@ -37,6 +31,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_ID: ${{ github.event.comment.id }}
           EVENT_ACTION: ${{ github.event.action }}
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           SENDER_LOGIN: ${{ github.event.sender.login }}
@@ -44,6 +39,26 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
+
+          skip_ci() {
+            echo "$1"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [ "$IS_PULL_REQUEST" != "true" ]; then
+            skip_ci "Ignoring comment because it is not on a pull request."
+          fi
+
+          if [ "$EVENT_ACTION" = "created" ]; then
+            if ! grep -Eiq '^[[:space:]]*/run[[:space:]]+ci[[:space:]]*$' <<< "$COMMENT_BODY"; then
+              skip_ci "Ignoring comment because it is not a CI command."
+            fi
+          elif [ "$EVENT_ACTION" = "edited" ]; then
+            if ! grep -Fq '<!-- clerk-ios-manual-ci -->' <<< "$COMMENT_BODY"; then
+              skip_ci "Ignoring comment because it is not the CI instructions comment."
+            fi
+          fi
 
           pr_json="$(gh api "repos/$REPO/pulls/$ISSUE_NUMBER")"
           author="$(jq -r '.user.login' <<< "$pr_json")"
@@ -57,18 +72,15 @@ jobs:
           actor_role="$(jq -r '.role_name // ""' <<< "$permission_json")"
 
           if [ "$base_ref" != "main" ]; then
-            echo "Ignoring comment because PR #$ISSUE_NUMBER targets '$base_ref', not 'main'."
-            exit 0
+            skip_ci "Ignoring comment because PR #$ISSUE_NUMBER targets '$base_ref', not 'main'."
           fi
 
           if [ "$pr_state" != "open" ]; then
-            echo "Ignoring comment because PR #$ISSUE_NUMBER is '$pr_state'."
-            exit 0
+            skip_ci "Ignoring comment because PR #$ISSUE_NUMBER is '$pr_state'."
           fi
 
           if [ -z "$head_repository" ] || [ "$head_repository" = "null" ]; then
-            echo "Ignoring comment because PR #$ISSUE_NUMBER no longer has a checkout repository."
-            exit 0
+            skip_ci "Ignoring comment because PR #$ISSUE_NUMBER no longer has a checkout repository."
           fi
 
           actor_is_author="false"
@@ -83,9 +95,7 @@ jobs:
           fi
 
           if [ "$actor_is_author" != "true" ] && [ "$actor_can_manage" != "true" ]; then
-            echo "Ignoring comment because $SENDER_LOGIN is not the PR author or a repository maintainer."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            skip_ci "Ignoring comment because $SENDER_LOGIN is not the PR author or a repository maintainer."
           fi
 
           request_kind=""
@@ -101,9 +111,7 @@ jobs:
           fi
 
           if [ -z "$request_kind" ]; then
-            echo "Ignoring comment because it is not an authorized CI request."
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            skip_ci "Ignoring comment because it is not an authorized CI request."
           fi
 
           if [ "$EVENT_ACTION" = "edited" ]; then
