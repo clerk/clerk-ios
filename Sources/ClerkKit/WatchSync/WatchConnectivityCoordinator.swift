@@ -89,13 +89,42 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     isApplyingRemotePayload = true
     defer { isApplyingRemotePayload = wasApplyingRemotePayload }
 
-    applyDeviceTokenUpdate(payload.deviceTokenUpdate, from: source, to: clerk)
+    applyDeviceTokenUpdate(
+      payload.deviceTokenUpdate,
+      from: source,
+      to: clerk,
+      allowNonAuthoritativeUpdate: shouldApplyNonAuthoritativeDeviceTokenUpdate(
+        matching: payload.clientUpdate,
+        from: source,
+        to: clerk
+      )
+    )
 
     if let environment = payload.environment {
       clerk.environment = environment
     }
 
     applyClientUpdate(payload.clientUpdate, from: source, to: clerk)
+  }
+
+  private func shouldApplyNonAuthoritativeDeviceTokenUpdate(
+    matching clientUpdate: WatchSyncClientUpdate,
+    from source: WatchSyncSource,
+    to clerk: Clerk
+  ) -> Bool {
+    guard !source.incomingDeviceIsAuthoritative else {
+      return true
+    }
+
+    if willApplyClientUpdate(clientUpdate, from: source, to: clerk) {
+      return true
+    }
+
+    if case .notIncluded = clientUpdate {
+      return clerk.client == nil && clerk.lastClientServerFetchDate == nil
+    }
+
+    return false
   }
 
   func currentAuthVersion(keychain: any KeychainStorage) -> WatchSyncVersion {

@@ -9,7 +9,8 @@ extension WatchConnectivityCoordinator {
   func applyDeviceTokenUpdate(
     _ update: WatchSyncDeviceTokenUpdate,
     from source: WatchSyncSource,
-    to clerk: Clerk
+    to clerk: Clerk,
+    allowNonAuthoritativeUpdate: Bool = true
   ) {
     let keychain = clerk.dependencies.keychain
 
@@ -17,7 +18,12 @@ extension WatchConnectivityCoordinator {
     case .notIncluded:
       return
     case let .tokenSet(deviceToken, version):
-      guard shouldApplyDeviceTokenUpdate(version: version, from: source, keychain: keychain) else {
+      guard shouldApplyDeviceTokenUpdate(
+        version: version,
+        from: source,
+        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+        keychain: keychain
+      ) else {
         return
       }
 
@@ -25,7 +31,7 @@ extension WatchConnectivityCoordinator {
         let previousToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
         try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
         if previousToken != deviceToken {
-          clerk.clearCachedClientStateAfterDeviceTokenChange()
+          handleAppliedDeviceTokenChange(from: source, clerk: clerk)
         }
         try persistDeviceTokenState("set", version: version, keychain: keychain)
         try markDeviceTokenSynced(keychain: keychain)
@@ -34,7 +40,12 @@ extension WatchConnectivityCoordinator {
         ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")
       }
     case let .tokenCleared(version):
-      guard shouldApplyDeviceTokenUpdate(version: version, from: source, keychain: keychain) else {
+      guard shouldApplyDeviceTokenUpdate(
+        version: version,
+        from: source,
+        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+        keychain: keychain
+      ) else {
         return
       }
 
@@ -47,7 +58,7 @@ extension WatchConnectivityCoordinator {
           version: max(version ?? .initial, nextAuthVersion(keychain: keychain)),
           keychain: keychain
         )
-        clerk.clearCachedClientStateAfterDeviceTokenChange()
+        handleAppliedDeviceTokenChange(from: source, clerk: clerk)
         syncCurrentState(from: clerk)
       } catch {
         ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
@@ -72,11 +83,21 @@ extension WatchConnectivityCoordinator {
   private func shouldApplyDeviceTokenUpdate(
     version incomingVersion: WatchSyncVersion?,
     from source: WatchSyncSource,
+    allowNonAuthoritativeUpdate: Bool,
     keychain: any KeychainStorage
   ) -> Bool {
     let currentVersion = readDeviceTokenVersion(keychain: keychain)
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let currentState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+
+    if !source.incomingDeviceIsAuthoritative, !allowNonAuthoritativeUpdate {
+      do {
+        try markDeviceTokenSynced(keychain: keychain)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
+      }
+      return false
+    }
 
     guard let incomingVersion else {
       return shouldApplyLegacyDeviceTokenUpdate(from: source, currentToken: currentToken, keychain: keychain)
@@ -136,5 +157,13 @@ extension WatchConnectivityCoordinator {
 
   private func markDeviceTokenSynced(keychain: any KeychainStorage) throws {
     try keychain.set("true", forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)
+  }
+
+  private func handleAppliedDeviceTokenChange(from source: WatchSyncSource, clerk: Clerk) {
+    if source.incomingDeviceIsAuthoritative {
+      clerk.clearCachedClientStateAfterDeviceTokenChange()
+    } else {
+      clerk.fenceClientResponsesAfterDeviceTokenChange()
+    }
   }
 }

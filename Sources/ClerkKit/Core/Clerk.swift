@@ -796,9 +796,13 @@ extension Clerk {
     return incoming.updatedAt > client.updatedAt
   }
 
-  func clearCachedClientStateAfterDeviceTokenChange() {
+  func fenceClientResponsesAfterDeviceTokenChange() {
     clientResponseGeneration = clientResponseGeneration.next()
     lastAppliedClientResponseSequence = nil
+  }
+
+  func clearCachedClientStateAfterDeviceTokenChange() {
+    fenceClientResponsesAfterDeviceTokenChange()
     lastClientServerFetchDate = nil
     client = nil
 
