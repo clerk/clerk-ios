@@ -305,6 +305,7 @@ extension AuthView {
   private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
     #if os(iOS)
     guard clerk.callbackContinuation == nil,
+          trustedDeviceFeatureIsEnabled,
           !navigation.hasSessionTaskStartInPath,
           !navigation.trustedDeviceEnrollmentWasOffered,
           let session = clerk.session,
@@ -347,6 +348,17 @@ extension AuthView {
     return false
     #endif
   }
+
+  #if os(iOS)
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
+      return false
+    }
+
+    return nativeSettings.apiEnabled &&
+      nativeSettings.trustedDeviceSignInEnabled
+  }
+  #endif
 }
 
 // MARK: - View Modifiers

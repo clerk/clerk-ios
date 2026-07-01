@@ -15,6 +15,6 @@ public enum TrustedDevicePolicy: String, Codable, Equatable, Sendable {
   /// Require biometric authentication, but allow biometric enrollment changes.
   case biometryAny = "biometry_any"
 
-  /// Require biometric availability and allow device passcode fallback during authentication.
+  /// Require biometric availability, then allow biometric or device passcode authentication.
   case biometryOrDevicePasscode = "biometry_or_device_passcode"
 }

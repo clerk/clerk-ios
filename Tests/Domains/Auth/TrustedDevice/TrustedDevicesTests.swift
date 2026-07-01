@@ -295,6 +295,31 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func enrollDefaultsToBiometryCurrentSetPolicy() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let createdKeyPolicies = LockIsolated<[TrustedDevicePolicy]>([])
+    let setup = makeTrustedDevices(
+      keyManager: MockTrustedDeviceKeyManager(
+        createKeyWithPolicy: { policy in
+          createdKeyPolicies.withValue { $0.append(policy) }
+          return .init(
+            localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
+            publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+            policy: policy
+          )
+        }
+      )
+    )
+
+    _ = try await setup.trustedDevices.enroll()
+    let localCredential = try #require(try setup.credentialStore.credential(id: TrustedDevice.mock.id))
+
+    #expect(createdKeyPolicies.value == [.biometryCurrentSet])
+    #expect(localCredential.policy == .biometryCurrentSet)
+  }
+
+  @Test
   func enrollDeletesGeneratedKeyWhenAttemptFails() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock

@@ -38,6 +38,7 @@ struct UserProfileTrustedDeviceSection: View {
       else {
         return
       }
+      isLoading = true
       optimisticIsEnabled = newValue
       Task {
         await setTrustedDeviceSignInEnabled(newValue)
@@ -94,7 +95,6 @@ extension UserProfileTrustedDeviceSection {
   }
 
   private func setTrustedDeviceSignInEnabled(_ enabled: Bool) async {
-    isLoading = true
     optimisticIsEnabled = enabled
     defer { isLoading = false }
 
