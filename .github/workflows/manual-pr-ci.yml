@@ -21,7 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      pull-requests: read
+      # PR issue comments return 403 with issues: write alone in this repository.
+      pull-requests: write
       statuses: write
     outputs:
       should_run: ${{ steps.resolve.outputs.should_run }}
