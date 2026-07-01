@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      pull-requests: write
     steps:
       - name: Add or update CI instructions
         env:

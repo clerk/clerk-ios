@@ -16,4 +16,3 @@ jobs:
       contents: read
       statuses: write
     uses: ./.github/workflows/shared-checks.yml
-    secrets: inherit
