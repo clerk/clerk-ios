@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      # PR issue comments return 403 with issues: write alone in this repository.
+      pull-requests: write
     steps:
       - name: Add or update CI instructions
         env:
