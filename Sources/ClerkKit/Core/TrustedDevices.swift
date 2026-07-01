@@ -73,12 +73,13 @@ public struct TrustedDevices {
   ///   - identifierHint: A local-only user identifier hint for selecting this credential later.
   ///   - reason: The reason shown in the system biometric prompt.
   ///   - policy: The local authentication policy used to protect the generated private key.
+  ///     Defaults to requiring biometric availability while allowing device passcode fallback during authentication.
   @discardableResult
   public func enroll(
     name: String? = nil,
     identifierHint: String? = nil,
     reason: String? = nil,
-    policy: TrustedDevicePolicy = .biometryCurrentSet
+    policy: TrustedDevicePolicy = .biometryOrDevicePasscode
   ) async throws -> TrustedDevice {
     guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without an active or pending Clerk session.")

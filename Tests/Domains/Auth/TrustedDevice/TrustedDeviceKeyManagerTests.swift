@@ -8,6 +8,13 @@ import Testing
 
 struct TrustedDeviceKeyManagerTests {
   @Test
+  func localKeyDefaultsToBiometryOrDevicePasscodePolicy() {
+    let localKey = TrustedDeviceLocalKey(localKeyId: "tdlk_123", publicKeyJWK: "{}")
+
+    #expect(localKey.policy == .biometryOrDevicePasscode)
+  }
+
+  @Test
   func privateKeyAttributesUseSecureEnclaveAccessControl() throws {
     let accessControl = try TrustedDeviceKeyManager.makeAccessControl()
 

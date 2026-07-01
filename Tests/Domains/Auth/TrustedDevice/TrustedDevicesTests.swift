@@ -364,7 +364,7 @@ struct TrustedDevicesTests {
   }
 
   @Test
-  func enrollDefaultsToBiometryCurrentSetPolicy() async throws {
+  func enrollDefaultsToBiometryOrDevicePasscodePolicy() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
     let createdKeyPolicies = LockIsolated<[TrustedDevicePolicy]>([])
@@ -384,8 +384,8 @@ struct TrustedDevicesTests {
     _ = try await setup.trustedDevices.enroll()
     let localCredential = try #require(try setup.credentialStore.credential(id: TrustedDevice.mock.id))
 
-    #expect(createdKeyPolicies.value == [.biometryCurrentSet])
-    #expect(localCredential.policy == .biometryCurrentSet)
+    #expect(createdKeyPolicies.value == [.biometryOrDevicePasscode])
+    #expect(localCredential.policy == .biometryOrDevicePasscode)
   }
 
   @Test
