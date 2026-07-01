@@ -20,11 +20,12 @@ jobs:
       )
     runs-on: ubuntu-latest
     permissions:
+      checks: write
       issues: write
       # PR issue comments return 403 with issues: write alone in this repository.
       pull-requests: write
-      statuses: write
     outputs:
+      manual_check_run_id: ${{ steps.resolve.outputs.manual_check_run_id }}
       should_run: ${{ steps.resolve.outputs.should_run }}
       head_repository: ${{ steps.resolve.outputs.head_repository }}
       head_sha: ${{ steps.resolve.outputs.head_sha }}
@@ -111,13 +112,18 @@ jobs:
               | gh api --method PATCH "repos/$REPO/issues/comments/$COMMENT_ID" --input -
           fi
 
-          gh api --method POST "repos/$REPO/statuses/$head_sha" \
-            -f state=pending \
-            -f context="Manual CI" \
-            -f target_url="$run_url" \
-            -f description="Manual CI requested by $SENDER_LOGIN."
+          manual_check_run_id="$(
+            gh api --method POST "repos/$REPO/check-runs" \
+              -f name="Manual CI" \
+              -f head_sha="$head_sha" \
+              -f status=in_progress \
+              -f details_url="$run_url" \
+              -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --jq '.id'
+          )"
 
           {
+            echo "manual_check_run_id=$manual_check_run_id"
             echo "should_run=true"
             echo "head_repository=$head_repository"
             echo "head_sha=$head_sha"
@@ -131,16 +137,16 @@ jobs:
     if: needs.resolve-pr-ci-request.outputs.should_run == 'true'
     permissions:
       actions: read
+      checks: write
       contents: read
-      statuses: write
     uses: ./.github/workflows/shared-checks.yml
     with:
       checkout_repository: ${{ needs.resolve-pr-ci-request.outputs.head_repository }}
       checkout_ref: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
-      report_commit_statuses: true
-      status_sha: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
-      status_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      status_context_prefix: Manual CI
+      report_check_runs: true
+      check_run_sha: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
+      check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      check_run_name_prefix: Manual CI
 
   report-pr-ci-status:
     name: Report PR CI status
@@ -150,12 +156,12 @@ jobs:
     if: always() && needs.resolve-pr-ci-request.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
-      statuses: write
+      checks: write
     steps:
-      - name: Report status on PR head
+      - name: Report check run on PR head
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
+          MANUAL_CHECK_RUN_ID: ${{ needs.resolve-pr-ci-request.outputs.manual_check_run_id }}
           REPO: ${{ github.repository }}
           RESULT: ${{ needs.pr-checks.result }}
           RUN_ID: ${{ github.run_id }}
@@ -165,21 +171,23 @@ jobs:
 
           case "$RESULT" in
             success)
-              state="success"
-              description="Manual CI completed successfully."
+              conclusion="success"
+              summary="Manual CI completed successfully."
               ;;
             cancelled)
-              state="error"
-              description="Manual CI was cancelled."
+              conclusion="cancelled"
+              summary="Manual CI was cancelled."
               ;;
             *)
-              state="failure"
-              description="Manual CI failed."
+              conclusion="failure"
+              summary="Manual CI failed."
               ;;
           esac
 
-          gh api --method POST "repos/$REPO/statuses/$HEAD_SHA" \
-            -f state="$state" \
-            -f context="Manual CI" \
-            -f target_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID" \
-            -f description="$description"
+          gh api --method PATCH "repos/$REPO/check-runs/$MANUAL_CHECK_RUN_ID" \
+            -f status=completed \
+            -f conclusion="$conclusion" \
+            -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -f details_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID" \
+            -f "output[title]=Manual CI" \
+            -f "output[summary]=$summary"

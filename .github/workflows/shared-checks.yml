@@ -23,23 +23,23 @@ on:
         required: false
         type: string
         default: ""
-      report_commit_statuses:
-        description: Report per-job commit statuses for manual PR CI
+      report_check_runs:
+        description: Report per-job check runs for manual PR CI
         required: false
         type: boolean
         default: false
-      status_sha:
-        description: Commit SHA to receive manual CI statuses
+      check_run_sha:
+        description: Commit SHA to receive manual CI check runs
         required: false
         type: string
         default: ""
-      status_target_url:
-        description: Target URL for manual CI statuses
+      check_run_target_url:
+        description: Target URL for manual CI check runs
         required: false
         type: string
         default: ""
-      status_context_prefix:
-        description: Prefix for manual CI status contexts
+      check_run_name_prefix:
+        description: Prefix for manual CI check run names
         required: false
         type: string
         default: Manual CI
@@ -51,64 +51,77 @@ permissions:
   contents: read
 
 jobs:
-  prepare-manual-ci-statuses:
-    name: Prepare manual CI statuses
-    if: inputs.report_commit_statuses && inputs.status_sha != ''
+  prepare-manual-ci-check-runs:
+    name: Prepare manual CI check runs
+    if: inputs.report_check_runs && inputs.check_run_sha != ''
     runs-on: ubuntu-latest
     permissions:
-      statuses: write
+      checks: write
+    outputs:
+      check_runs_json: ${{ steps.create.outputs.check_runs_json }}
     steps:
-      - name: Report pending statuses
+      - name: Create in-progress check runs
+        id: create
         env:
           GH_TOKEN: ${{ github.token }}
+          CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
+          CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
+          CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
           RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
-          STATUS_CONTEXT_PREFIX: ${{ inputs.status_context_prefix }}
-          STATUS_SHA: ${{ inputs.status_sha }}
-          STATUS_TARGET_URL: ${{ inputs.status_target_url }}
         run: |
           set -euo pipefail
 
-          target_url="$STATUS_TARGET_URL"
+          target_url="$CHECK_RUN_TARGET_URL"
           if [ -z "$target_url" ]; then
             target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
 
-          contexts=(
-            "$STATUS_CONTEXT_PREFIX / Check formatting and linting"
-            "$STATUS_CONTEXT_PREFIX / Run ClerkKit tests on macOS"
-            "$STATUS_CONTEXT_PREFIX / Run ClerkKitUI tests on iOS"
-            "$STATUS_CONTEXT_PREFIX / Build iOS"
-            "$STATUS_CONTEXT_PREFIX / Build macOS"
-            "$STATUS_CONTEXT_PREFIX / Build macCatalyst"
-            "$STATUS_CONTEXT_PREFIX / Build watchOS"
-            "$STATUS_CONTEXT_PREFIX / Build tvOS"
-            "$STATUS_CONTEXT_PREFIX / Build visionOS"
+          check_run_names=(
+            "$CHECK_RUN_NAME_PREFIX / Check formatting and linting"
+            "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS"
+            "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS"
+            "$CHECK_RUN_NAME_PREFIX / Build iOS"
+            "$CHECK_RUN_NAME_PREFIX / Build macOS"
+            "$CHECK_RUN_NAME_PREFIX / Build macCatalyst"
+            "$CHECK_RUN_NAME_PREFIX / Build watchOS"
+            "$CHECK_RUN_NAME_PREFIX / Build tvOS"
+            "$CHECK_RUN_NAME_PREFIX / Build visionOS"
           )
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
-            contexts+=(
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-email)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-phone)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-security)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (session-tasks)"
-              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (account-reset)"
+            check_run_names+=(
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-email)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-phone)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-security)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (session-tasks)"
+              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (account-reset)"
             )
           fi
 
-          for context in "${contexts[@]}"; do
-            gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
-              -f state=pending \
-              -f context="$context" \
-              -f target_url="$target_url" \
-              -f description="Manual CI is waiting to complete."
+          check_runs_json="$(jq -cn '{}')"
+          started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          for name in "${check_run_names[@]}"; do
+            check_run_id="$(
+              gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
+                -f name="$name" \
+                -f head_sha="$CHECK_RUN_SHA" \
+                -f status=in_progress \
+                -f details_url="$target_url" \
+                -f started_at="$started_at" \
+                --jq '.id'
+            )"
+            check_runs_json="$(jq -c --arg name "$name" --argjson id "$check_run_id" '. + {($name): $id}' <<< "$check_runs_json")"
           done
+
+          echo "check_runs_json=$check_runs_json" >> "$GITHUB_OUTPUT"
 
   format-and-lint:
     name: Check formatting and linting
-    needs: prepare-manual-ci-statuses
-    if: always() && (!inputs.report_commit_statuses || needs.prepare-manual-ci-statuses.result == 'success')
+    needs: prepare-manual-ci-check-runs
+    if: always() && (!inputs.report_check_runs || needs.prepare-manual-ci-check-runs.result == 'success')
     runs-on: macos-26
     steps:
       - name: Checkout repository
@@ -422,31 +435,32 @@ jobs:
           esac
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 
-  report-manual-ci-statuses:
-    name: Report manual CI statuses
+  report-manual-ci-check-runs:
+    name: Report manual CI check runs
     needs:
+      - prepare-manual-ci-check-runs
       - format-and-lint
       - test
       - test-ui
       - test-e2e
       - build
-    if: always() && inputs.report_commit_statuses && inputs.status_sha != ''
+    if: always() && inputs.report_check_runs && inputs.check_run_sha != ''
     runs-on: ubuntu-latest
     permissions:
       actions: read
-      statuses: write
+      checks: write
     steps:
-      - name: Report final statuses
+      - name: Report final check runs
         env:
           GH_TOKEN: ${{ github.token }}
+          CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
+          CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
+          CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
           RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
-          STATUS_CONTEXT_PREFIX: ${{ inputs.status_context_prefix }}
-          STATUS_SHA: ${{ inputs.status_sha }}
-          STATUS_TARGET_URL: ${{ inputs.status_target_url }}
         run: |
           set -euo pipefail
 
-          target_url="$STATUS_TARGET_URL"
+          target_url="$CHECK_RUN_TARGET_URL"
           if [ -z "$target_url" ]; then
             target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
@@ -460,55 +474,69 @@ jobs:
             ' <<< "$jobs_json"
           }
 
-          post_status() {
-            local context="$1"
+          check_run_id() {
+            local name="$1"
+            jq -r --arg name "$name" '.[$name] // empty' <<< "$CHECK_RUNS_JSON"
+          }
+
+          update_check_run() {
+            local name="$1"
             local result="$2"
-            local state
-            local description
+            local check_run_id
+            local conclusion
+            local summary
+
+            check_run_id="$(check_run_id "$name")"
+            if [ -z "$check_run_id" ]; then
+              echo "::warning::No check run id found for '$name'."
+              return
+            fi
 
             case "$result" in
               success)
-                state="success"
-                description="Manual CI completed successfully."
+                conclusion="success"
+                summary="Manual CI completed successfully."
                 ;;
               cancelled)
-                state="error"
-                description="Manual CI was cancelled."
+                conclusion="cancelled"
+                summary="Manual CI was cancelled."
                 ;;
               skipped)
-                state="failure"
-                description="Manual CI did not run because a dependency did not complete."
+                conclusion="skipped"
+                summary="Manual CI did not run because a dependency did not complete."
                 ;;
               *)
-                state="failure"
-                description="Manual CI failed."
+                conclusion="failure"
+                summary="Manual CI failed."
                 ;;
             esac
 
-            gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
-              -f state="$state" \
-              -f context="$context" \
-              -f target_url="$target_url" \
-              -f description="$description"
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/check-runs/$check_run_id" \
+              -f status=completed \
+              -f conclusion="$conclusion" \
+              -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -f details_url="$target_url" \
+              -f "output[title]=$name" \
+              -f "output[summary]=$summary"
           }
 
-          post_status "$STATUS_CONTEXT_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
-          post_status "$STATUS_CONTEXT_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
-          post_status "$STATUS_CONTEXT_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
 
-          post_status "$STATUS_CONTEXT_PREFIX / Build iOS" "$(job_result "Build iOS")"
-          post_status "$STATUS_CONTEXT_PREFIX / Build macOS" "$(job_result "Build macOS")"
-          post_status "$STATUS_CONTEXT_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
-          post_status "$STATUS_CONTEXT_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
-          post_status "$STATUS_CONTEXT_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
-          post_status "$STATUS_CONTEXT_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build iOS" "$(job_result "Build iOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macOS" "$(job_result "Build macOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-email)" "$(job_result "Run E2EHost tests on iOS (auth-email)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-phone)" "$(job_result "Run E2EHost tests on iOS (auth-phone)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)" "$(job_result "Run E2EHost tests on iOS (auth-username-cleanup)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)" "$(job_result "Run E2EHost tests on iOS (user-profile-password-change)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-security)" "$(job_result "Run E2EHost tests on iOS (user-profile-security)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (session-tasks)" "$(job_result "Run E2EHost tests on iOS (session-tasks)")"
-            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (account-reset)" "$(job_result "Run E2EHost tests on iOS (account-reset)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-email)" "$(job_result "Run E2EHost tests on iOS (auth-email)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-phone)" "$(job_result "Run E2EHost tests on iOS (auth-phone)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)" "$(job_result "Run E2EHost tests on iOS (auth-username-cleanup)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)" "$(job_result "Run E2EHost tests on iOS (user-profile-password-change)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-security)" "$(job_result "Run E2EHost tests on iOS (user-profile-security)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (session-tasks)" "$(job_result "Run E2EHost tests on iOS (session-tasks)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (account-reset)" "$(job_result "Run E2EHost tests on iOS (account-reset)")"
           fi

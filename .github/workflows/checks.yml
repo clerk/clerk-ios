@@ -12,7 +12,5 @@ jobs:
   checks:
     name: Shared checks
     permissions:
-      actions: read
       contents: read
-      statuses: write
     uses: ./.github/workflows/shared-checks.yml
