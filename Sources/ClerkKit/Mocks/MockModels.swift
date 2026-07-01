@@ -482,6 +482,7 @@ extension TrustedDeviceLocalCredential {
     TrustedDeviceLocalCredential(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
+      userID: User.mock.id,
       appIdentifier: "com.clerk.example",
       createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
