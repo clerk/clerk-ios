@@ -13,6 +13,16 @@ on:
         required: false
         type: string
         default: auth-email-code-password
+      checkout_repository:
+        description: Repository to checkout for shared checks
+        required: false
+        type: string
+        default: ""
+      checkout_ref:
+        description: Git ref or SHA to checkout for shared checks
+        required: false
+        type: string
+        default: ""
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -27,6 +37,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
 
       - name: Install SwiftFormat
         run: ./scripts/install-swiftformat.sh
@@ -58,6 +72,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
 
       - name: Verify macOS and Xcode version
         run: |
@@ -112,6 +130,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
 
       - name: Verify macOS and Xcode version
         run: |
@@ -175,6 +197,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
           persist-credentials: false
 
       - name: Verify macOS and Xcode version
@@ -297,6 +321,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
 
       - name: Verify macOS and Xcode version
         run: |
