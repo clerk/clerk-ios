@@ -162,15 +162,15 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func missingDeviceTokenEventDoesNotClearStoredToken() throws {
+  func payloadWithoutDeviceTokenUpdateDoesNotClearStoredToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     try keychain.set("local-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
     let payload = WatchSyncPayload(
-      deviceTokenEvent: .unknown,
-      authEvent: .snapshot(
+      deviceTokenUpdate: .notIncluded,
+      authUpdate: .clientSnapshot(
         client: client(id: "client-watch", updatedAt: 3000),
         serverFetchDate: Date(timeIntervalSince1970: 100),
         version: WatchSyncVersion(rawValue: 1)
@@ -190,15 +190,15 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
 
     let clearPayload = WatchSyncPayload(
-      deviceTokenEvent: .cleared(version: WatchSyncVersion(rawValue: 3)),
-      authEvent: .unknown,
+      deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 3)),
+      authUpdate: .notIncluded,
       environment: nil
     )
     apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
 
     let stalePayload = WatchSyncPayload(
-      deviceTokenEvent: .set(token: "stale-token", version: WatchSyncVersion(rawValue: 2)),
-      authEvent: .unknown,
+      deviceTokenUpdate: .tokenSet(token: "stale-token", version: WatchSyncVersion(rawValue: 2)),
+      authUpdate: .notIncluded,
       environment: nil
     )
     apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
@@ -215,8 +215,8 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
 
     let clearPayload = WatchSyncPayload(
-      deviceTokenEvent: .unknown,
-      authEvent: .cleared(
+      deviceTokenUpdate: .notIncluded,
+      authUpdate: .clientCleared(
         serverFetchDate: Date(timeIntervalSince1970: 200),
         version: WatchSyncVersion(rawValue: 3)
       ),
@@ -225,8 +225,8 @@ struct WatchSyncPayloadTests {
     apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
 
     let stalePayload = WatchSyncPayload(
-      deviceTokenEvent: .unknown,
-      authEvent: .snapshot(
+      deviceTokenUpdate: .notIncluded,
+      authUpdate: .clientSnapshot(
         client: client(id: "client-stale", updatedAt: 4000),
         serverFetchDate: Date(timeIntervalSince1970: 300),
         version: WatchSyncVersion(rawValue: 2)
@@ -246,8 +246,8 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
 
     let clearPayload = WatchSyncPayload(
-      deviceTokenEvent: .unknown,
-      authEvent: .cleared(
+      deviceTokenUpdate: .notIncluded,
+      authUpdate: .clientCleared(
         serverFetchDate: Date(timeIntervalSince1970: 200),
         version: WatchSyncVersion(rawValue: 3)
       ),

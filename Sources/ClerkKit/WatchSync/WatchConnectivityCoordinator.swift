@@ -9,13 +9,13 @@ import Foundation
 
 /// Coordinates WatchConnectivity as a transport for Clerk auth state.
 @MainActor
-final class WatchConnectivityCoordinator: ClerkStateEventObserver {
+final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var watchConnectivitySync: (any WatchConnectivitySyncing)?
   private var authGeneration: WatchSyncVersion = .initial
   private var isApplyingRemotePayload = false
   private var isRefreshScheduled = false
 
-  private enum RemoteAuthEventDecision {
+  private enum RemoteAuthUpdateDecision {
     case apply
     case refresh
     case ignore
@@ -45,9 +45,9 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     #endif
   }
 
-  func handle(_ event: ClerkStateEvent, from clerk: Clerk) throws {
-    switch event {
-    case let .authChanged(previousClient, client):
+  func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
+    switch change {
+    case let .clientDidChange(previousClient, client):
       guard !isApplyingRemotePayload,
             shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
       else {
@@ -60,10 +60,10 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
         keychain: clerk.dependencies.keychain
       )
       syncCurrentState(from: clerk)
-    case .environmentChanged:
+    case .environmentDidChange:
       guard !isApplyingRemotePayload else { return }
       syncCurrentState(from: clerk)
-    case let .deviceTokenSet(previousToken, token):
+    case let .deviceTokenDidChange(previousToken, token):
       if previousToken != token {
         try persistDeviceTokenState(
           "set",
@@ -73,7 +73,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
       }
 
       syncCurrentState(from: clerk)
-    case .foregrounded:
+    case .applicationDidEnterForeground:
       syncCurrentState(from: clerk)
     }
   }
@@ -95,27 +95,27 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     isApplyingRemotePayload = true
     defer { isApplyingRemotePayload = wasApplyingRemotePayload }
 
-    applyDeviceToken(payload.deviceTokenEvent, from: source, to: clerk)
+    applyDeviceTokenUpdate(payload.deviceTokenUpdate, from: source, to: clerk)
 
     if let environment = payload.environment {
       clerk.environment = environment
     }
 
-    applyAuth(payload.authEvent, from: source, to: clerk)
+    applyAuthUpdate(payload.authUpdate, from: source, to: clerk)
   }
 
-  private func applyDeviceToken(
-    _ event: WatchSyncDeviceTokenEvent,
+  private func applyDeviceTokenUpdate(
+    _ update: WatchSyncDeviceTokenUpdate,
     from source: WatchSyncSource,
     to clerk: Clerk
   ) {
     let keychain = clerk.dependencies.keychain
 
-    switch event {
-    case .unknown:
+    switch update {
+    case .notIncluded:
       return
-    case let .set(deviceToken, version):
-      guard shouldApplyDeviceTokenEvent(version: version, from: source, keychain: keychain) else {
+    case let .tokenSet(deviceToken, version):
+      guard shouldApplyDeviceTokenUpdate(version: version, from: source, keychain: keychain) else {
         return
       }
 
@@ -127,8 +127,8 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
       } catch {
         ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")
       }
-    case let .cleared(version):
-      guard shouldApplyDeviceTokenEvent(version: version, from: source, keychain: keychain) else {
+    case let .tokenCleared(version):
+      guard shouldApplyDeviceTokenUpdate(version: version, from: source, keychain: keychain) else {
         return
       }
 
@@ -149,11 +149,11 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     }
   }
 
-  private func applyAuth(_ event: WatchSyncAuthEvent, from source: WatchSyncSource, to clerk: Clerk) {
-    switch event {
-    case .unknown:
+  private func applyAuthUpdate(_ update: WatchSyncAuthUpdate, from source: WatchSyncSource, to clerk: Clerk) {
+    switch update {
+    case .notIncluded:
       return
-    case let .snapshot(client, incomingServerFetchDate, version):
+    case let .clientSnapshot(client, incomingServerFetchDate, version):
       applyClient(
         client,
         incomingServerFetchDate: incomingServerFetchDate,
@@ -162,7 +162,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
         authState: "set",
         to: clerk
       )
-    case let .cleared(incomingServerFetchDate, version):
+    case let .clientCleared(incomingServerFetchDate, version):
       applyClient(
         nil,
         incomingServerFetchDate: incomingServerFetchDate,
@@ -182,7 +182,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     authState: String,
     to clerk: Clerk
   ) {
-    switch remoteAuthEventDecision(
+    switch remoteAuthUpdateDecision(
       incomingServerFetchDate: incomingServerFetchDate,
       incomingVersion: incomingVersion,
       incomingIsAuthoritative: incomingIsAuthoritative,
@@ -232,12 +232,12 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     }
   }
 
-  private func remoteAuthEventDecision(
+  private func remoteAuthUpdateDecision(
     incomingServerFetchDate: Date?,
     incomingVersion: WatchSyncVersion?,
     incomingIsAuthoritative: Bool,
     clerk: Clerk
-  ) -> RemoteAuthEventDecision {
+  ) -> RemoteAuthUpdateDecision {
     let currentVersion = max(authGeneration, readAuthVersion(keychain: clerk.dependencies.keychain))
 
     if let incomingServerFetchDate, let lastClientServerFetchDate = clerk.lastClientServerFetchDate,
@@ -269,7 +269,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
     incomingServerFetchDate: Date?,
     incomingIsAuthoritative: Bool,
     clerk: Clerk
-  ) -> RemoteAuthEventDecision {
+  ) -> RemoteAuthUpdateDecision {
     guard !incomingIsAuthoritative, let incomingServerFetchDate else {
       return .ignore
     }
@@ -304,7 +304,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
 }
 
 extension WatchConnectivityCoordinator {
-  private func shouldApplyDeviceTokenEvent(
+  private func shouldApplyDeviceTokenUpdate(
     version incomingVersion: WatchSyncVersion?,
     from source: WatchSyncSource,
     keychain: any KeychainStorage
@@ -313,7 +313,7 @@ extension WatchConnectivityCoordinator {
     let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
     guard let incomingVersion else {
-      return shouldApplyLegacyDeviceTokenEvent(from: source, currentToken: currentToken, keychain: keychain)
+      return shouldApplyLegacyDeviceTokenUpdate(from: source, currentToken: currentToken, keychain: keychain)
     }
 
     if incomingVersion < currentVersion {
@@ -332,7 +332,7 @@ extension WatchConnectivityCoordinator {
     return true
   }
 
-  private func shouldApplyLegacyDeviceTokenEvent(
+  private func shouldApplyLegacyDeviceTokenUpdate(
     from source: WatchSyncSource,
     currentToken: String?,
     keychain: any KeychainStorage

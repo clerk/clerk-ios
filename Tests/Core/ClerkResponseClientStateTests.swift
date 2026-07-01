@@ -521,13 +521,13 @@ struct ClerkResponseClientStateTests {
     version: WatchSyncVersion? = nil,
     to clerk: Clerk
   ) {
-    let authEvent: WatchSyncAuthEvent = if let incoming {
-      .snapshot(client: incoming, serverFetchDate: incomingServerFetchDate, version: version)
+    let authUpdate: WatchSyncAuthUpdate = if let incoming {
+      .clientSnapshot(client: incoming, serverFetchDate: incomingServerFetchDate, version: version)
     } else {
-      .cleared(serverFetchDate: incomingServerFetchDate, version: version)
+      .clientCleared(serverFetchDate: incomingServerFetchDate, version: version)
     }
     let source: WatchSyncSource = incomingIsAuthoritative ? .phone : .watch
-    let payload = WatchSyncPayload(deviceTokenEvent: .unknown, authEvent: authEvent, environment: nil)
+    let payload = WatchSyncPayload(deviceTokenUpdate: .notIncluded, authUpdate: authUpdate, environment: nil)
     WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
   }
 

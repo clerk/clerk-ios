@@ -19,49 +19,49 @@ package struct WatchSyncVersion: Hashable, Comparable {
   }
 }
 
-package enum WatchSyncDeviceTokenEvent: Equatable {
-  case unknown
-  case set(token: String, version: WatchSyncVersion?)
-  case cleared(version: WatchSyncVersion?)
+package enum WatchSyncDeviceTokenUpdate: Equatable {
+  case notIncluded
+  case tokenSet(token: String, version: WatchSyncVersion?)
+  case tokenCleared(version: WatchSyncVersion?)
 
   var version: WatchSyncVersion? {
     switch self {
-    case .unknown:
+    case .notIncluded:
       nil
-    case let .set(_, version), let .cleared(version):
+    case let .tokenSet(_, version), let .tokenCleared(version):
       version
     }
   }
 }
 
-package enum WatchSyncAuthEvent: Equatable {
-  case unknown
-  case snapshot(client: Client, serverFetchDate: Date?, version: WatchSyncVersion?)
-  case cleared(serverFetchDate: Date?, version: WatchSyncVersion?)
+package enum WatchSyncAuthUpdate: Equatable {
+  case notIncluded
+  case clientSnapshot(client: Client, serverFetchDate: Date?, version: WatchSyncVersion?)
+  case clientCleared(serverFetchDate: Date?, version: WatchSyncVersion?)
 
   var version: WatchSyncVersion? {
     switch self {
-    case .unknown:
+    case .notIncluded:
       nil
-    case let .snapshot(_, _, version), let .cleared(_, version):
+    case let .clientSnapshot(_, _, version), let .clientCleared(_, version):
       version
     }
   }
 
   var client: Client? {
     switch self {
-    case .unknown, .cleared:
+    case .notIncluded, .clientCleared:
       nil
-    case let .snapshot(client, _, _):
+    case let .clientSnapshot(client, _, _):
       client
     }
   }
 
   var serverFetchDate: Date? {
     switch self {
-    case .unknown:
+    case .notIncluded:
       nil
-    case let .snapshot(_, serverFetchDate, _), let .cleared(serverFetchDate, _):
+    case let .clientSnapshot(_, serverFetchDate, _), let .clientCleared(serverFetchDate, _):
       serverFetchDate
     }
   }
@@ -95,25 +95,25 @@ package struct WatchSyncPayload {
   private static let clientServerFetchDateKey = "clerkClientServerFetchDate"
   private static let environmentKey = "clerkEnvironment"
 
-  let deviceTokenEvent: WatchSyncDeviceTokenEvent
-  let authEvent: WatchSyncAuthEvent
+  let deviceTokenUpdate: WatchSyncDeviceTokenUpdate
+  let authUpdate: WatchSyncAuthUpdate
   let environment: Clerk.Environment?
 
   var deviceToken: String? {
-    switch deviceTokenEvent {
-    case .unknown, .cleared:
+    switch deviceTokenUpdate {
+    case .notIncluded, .tokenCleared:
       nil
-    case let .set(token, _):
+    case let .tokenSet(token, _):
       token
     }
   }
 
   var client: Client? {
-    authEvent.client
+    authUpdate.client
   }
 
   var clientServerFetchDate: Date? {
-    authEvent.serverFetchDate
+    authUpdate.serverFetchDate
   }
 
   init(
@@ -122,38 +122,38 @@ package struct WatchSyncPayload {
     clientServerFetchDate: Date?,
     environment: Clerk.Environment?
   ) {
-    deviceTokenEvent = deviceToken.map { .set(token: $0, version: nil) } ?? .unknown
-    authEvent = client.map { .snapshot(client: $0, serverFetchDate: clientServerFetchDate, version: nil) } ?? .unknown
+    deviceTokenUpdate = deviceToken.map { .tokenSet(token: $0, version: nil) } ?? .notIncluded
+    authUpdate = client.map { .clientSnapshot(client: $0, serverFetchDate: clientServerFetchDate, version: nil) } ?? .notIncluded
     self.environment = environment
   }
 
   init(
-    deviceTokenEvent: WatchSyncDeviceTokenEvent,
-    authEvent: WatchSyncAuthEvent,
+    deviceTokenUpdate: WatchSyncDeviceTokenUpdate,
+    authUpdate: WatchSyncAuthUpdate,
     environment: Clerk.Environment?
   ) {
-    self.deviceTokenEvent = deviceTokenEvent
-    self.authEvent = authEvent
+    self.deviceTokenUpdate = deviceTokenUpdate
+    self.authUpdate = authUpdate
     self.environment = environment
   }
 
   init?(applicationContext: [String: Any]) {
-    let deviceTokenEvent = Self.decodeDeviceTokenEvent(from: applicationContext)
+    let deviceTokenUpdate = Self.decodeDeviceTokenUpdate(from: applicationContext)
     let clientData = applicationContext[Self.clientKey] as? Data
     let environmentData = applicationContext[Self.environmentKey] as? Data
     let clientServerFetchDate = (applicationContext[Self.clientServerFetchDateKey] as? Double).map(Date.init(timeIntervalSince1970:))
-    let authEvent = Self.decodeAuthEvent(
+    let authUpdate = Self.decodeAuthUpdate(
       from: applicationContext,
       clientData: clientData,
       clientServerFetchDate: clientServerFetchDate
     )
 
-    guard deviceTokenEvent != .unknown || authEvent != .unknown || environmentData != nil else {
+    guard deviceTokenUpdate != .notIncluded || authUpdate != .notIncluded || environmentData != nil else {
       return nil
     }
 
-    self.deviceTokenEvent = deviceTokenEvent
-    self.authEvent = authEvent
+    self.deviceTokenUpdate = deviceTokenUpdate
+    self.authUpdate = authUpdate
     if let environmentData {
       if let decoded = try? JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) {
         environment = decoded
@@ -168,14 +168,14 @@ package struct WatchSyncPayload {
 
   @MainActor
   init(clerk: Clerk, keychain: any KeychainStorage, authGeneration: WatchSyncVersion) {
-    deviceTokenEvent = Self.deviceTokenEvent(keychain: keychain)
+    deviceTokenUpdate = Self.deviceTokenUpdate(keychain: keychain)
     let persistedAuthState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     if let client = clerk.client {
-      authEvent = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
+      authUpdate = .clientSnapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == "cleared" {
-      authEvent = .cleared(serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
+      authUpdate = .clientCleared(serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else {
-      authEvent = .unknown
+      authUpdate = .notIncluded
     }
     environment = clerk.environment
   }
@@ -183,26 +183,26 @@ package struct WatchSyncPayload {
   var applicationContext: [String: Any] {
     var applicationContext: [String: Any] = [:]
 
-    switch deviceTokenEvent {
-    case .unknown:
+    switch deviceTokenUpdate {
+    case .notIncluded:
       break
-    case let .set(deviceToken, version):
+    case let .tokenSet(deviceToken, version):
       applicationContext[Self.deviceTokenKey] = deviceToken
       applicationContext[Self.deviceTokenStateKey] = "set"
       if let version {
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
-    case let .cleared(version):
+    case let .tokenCleared(version):
       applicationContext[Self.deviceTokenStateKey] = "cleared"
       if let version {
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
     }
 
-    switch authEvent {
-    case .unknown:
+    switch authUpdate {
+    case .notIncluded:
       break
-    case let .snapshot(client, clientServerFetchDate, version):
+    case let .clientSnapshot(client, clientServerFetchDate, version):
       applicationContext[Self.authStateKey] = "set"
       do {
         applicationContext[Self.clientKey] = try JSONEncoder.clerkEncoder.encode(client)
@@ -215,7 +215,7 @@ package struct WatchSyncPayload {
       if let version {
         applicationContext[Self.authVersionKey] = version.rawValue
       }
-    case let .cleared(clientServerFetchDate, version):
+    case let .clientCleared(clientServerFetchDate, version):
       applicationContext[Self.authStateKey] = "cleared"
       if let clientServerFetchDate {
         applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
@@ -236,47 +236,47 @@ package struct WatchSyncPayload {
     return applicationContext
   }
 
-  private static func decodeDeviceTokenEvent(from applicationContext: [String: Any]) -> WatchSyncDeviceTokenEvent {
+  private static func decodeDeviceTokenUpdate(from applicationContext: [String: Any]) -> WatchSyncDeviceTokenUpdate {
     let state = applicationContext[deviceTokenStateKey] as? String
     let version = decodeVersion(applicationContext[deviceTokenVersionKey])
     let deviceToken = applicationContext[deviceTokenKey] as? String
 
     switch state {
     case "set":
-      guard let deviceToken else { return .unknown }
-      return .set(token: deviceToken, version: version)
+      guard let deviceToken else { return .notIncluded }
+      return .tokenSet(token: deviceToken, version: version)
     case "cleared":
-      return .cleared(version: version)
+      return .tokenCleared(version: version)
     default:
-      return deviceToken.map { .set(token: $0, version: nil) } ?? .unknown
+      return deviceToken.map { .tokenSet(token: $0, version: nil) } ?? .notIncluded
     }
   }
 
-  private static func decodeAuthEvent(
+  private static func decodeAuthUpdate(
     from applicationContext: [String: Any],
     clientData: Data?,
     clientServerFetchDate: Date?
-  ) -> WatchSyncAuthEvent {
+  ) -> WatchSyncAuthUpdate {
     let state = applicationContext[authStateKey] as? String
     let version = decodeVersion(applicationContext[authVersionKey])
 
     switch state {
     case "set":
-      guard let clientData, !clientData.isEmpty else { return .unknown }
+      guard let clientData, !clientData.isEmpty else { return .notIncluded }
       guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
-        return .unknown
+        return .notIncluded
       }
-      return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: version)
+      return .clientSnapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: version)
     case "cleared":
-      return .cleared(serverFetchDate: clientServerFetchDate, version: version)
+      return .clientCleared(serverFetchDate: clientServerFetchDate, version: version)
     default:
-      guard let clientData, !clientData.isEmpty else { return .unknown }
+      guard let clientData, !clientData.isEmpty else { return .notIncluded }
       guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
-        return .unknown
+        return .notIncluded
       }
-      return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: nil)
+      return .clientSnapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: nil)
     }
   }
 
@@ -293,18 +293,18 @@ package struct WatchSyncPayload {
     return nil
   }
 
-  private static func deviceTokenEvent(keychain: any KeychainStorage) -> WatchSyncDeviceTokenEvent {
+  private static func deviceTokenUpdate(keychain: any KeychainStorage) -> WatchSyncDeviceTokenUpdate {
     let version = readDeviceTokenVersion(keychain: keychain)
     if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
-      return .set(token: deviceToken, version: version)
+      return .tokenSet(token: deviceToken, version: version)
     }
 
     let state = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
     if state == "cleared" {
-      return .cleared(version: version)
+      return .tokenCleared(version: version)
     }
 
-    return .unknown
+    return .notIncluded
   }
 
   private static func readDeviceTokenVersion(keychain: any KeychainStorage) -> WatchSyncVersion {

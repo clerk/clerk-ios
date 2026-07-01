@@ -68,7 +68,7 @@ public final class Clerk {
         cacheManager?.deleteClient(serverFetchDate: lastClientServerFetchDate)
       }
 
-      emitStateEvent(.authChanged(previousClient: oldValue, client: client))
+      emitInternalStateChange(.clientDidChange(previous: oldValue, current: client))
     }
   }
 
@@ -150,7 +150,7 @@ public final class Clerk {
     didSet {
       if let environment {
         cacheManager?.saveEnvironment(environment)
-        emitStateEvent(.environmentChanged)
+        emitInternalStateChange(.environmentDidChange)
       }
     }
   }
@@ -194,7 +194,7 @@ public final class Clerk {
   private var lifecycleManager: LifecycleManager?
 
   /// Dispatches Clerk state changes to optional internal observers.
-  var stateEvents = ClerkStateEventEmitter()
+  var internalStateChanges = ClerkInternalStateChangeEmitter()
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -280,7 +280,7 @@ extension Clerk {
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
     taskCoordinator?.cancelAll()
-    stateEvents.removeAllObservers()
+    internalStateChanges.removeAllObservers()
 
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
@@ -300,7 +300,7 @@ extension Clerk {
 
     // Set up watch connectivity coordinator only if enabled
     if options.watchConnectivityEnabled {
-      stateEvents.addObserver(WatchConnectivityCoordinator())
+      internalStateChanges.addObserver(WatchConnectivityCoordinator())
     }
 
     // Set up cache manager and load cached data synchronously
@@ -602,7 +602,7 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
-    emitStateEvent(.foregrounded)
+    emitInternalStateChange(.applicationDidEnterForeground)
 
     #if os(macOS)
     if WebAuthentication.consumePendingForegroundRefreshSuppression() {
@@ -645,9 +645,9 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
-  func emitStateEvent(_ event: ClerkStateEvent) {
+  func emitInternalStateChange(_ change: ClerkInternalStateChange) {
     do {
-      try stateEvents.emit(event, from: self)
+      try internalStateChanges.emit(change, from: self)
     } catch {
       ClerkLogger.logError(error, message: "Failed to notify Clerk state observer")
     }
@@ -871,7 +871,7 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    stateEvents.removeAllObservers()
+    internalStateChanges.removeAllObservers()
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }
