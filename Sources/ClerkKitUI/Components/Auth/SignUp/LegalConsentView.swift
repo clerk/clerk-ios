@@ -74,7 +74,7 @@ struct LegalConsentView: View {
           .labelsHidden()
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.foreground)
-          .tint(theme.colors.primary)
+          .tint(theme.colors.switchTint)
           .frame(minHeight: 22)
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignUp.legalAccepted)
       }
