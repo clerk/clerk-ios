@@ -18,6 +18,7 @@ struct QuickstartApp: App {
       ContentView()
         .prefetchClerkImages()
         .environment(Clerk.shared)
+        .atlantisProxy()
     }
   }
 }
