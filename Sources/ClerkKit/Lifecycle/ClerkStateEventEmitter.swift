@@ -16,8 +16,6 @@ enum ClerkStateEvent {
 @MainActor
 protocol ClerkStateEventObserver: AnyObject {
   func handle(_ event: ClerkStateEvent, from clerk: Clerk) throws
-  func cancel()
-  func cancelAndWait() async
 }
 
 @MainActor
@@ -47,18 +45,6 @@ struct ClerkStateEventEmitter {
 
     if let firstError {
       throw firstError
-    }
-  }
-
-  func cancelObservers() {
-    for observer in observers {
-      observer.cancel()
-    }
-  }
-
-  func cancelObserversAndWait() async {
-    for observer in observers {
-      await observer.cancelAndWait()
     }
   }
 }

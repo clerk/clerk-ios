@@ -173,7 +173,7 @@ public final class Clerk {
   }
 
   /// Coordinates task lifecycle and cleanup.
-  private var taskCoordinator: TaskCoordinator?
+  private var taskCoordinator: TaskCoordinator? = TaskCoordinator()
 
   /// Frontend API URL.
   var frontendApiUrl: String {
@@ -279,12 +279,13 @@ extension Clerk {
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
+    taskCoordinator?.cancelAll()
+    stateEvents.removeAllObservers()
+
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
-    stateEvents.cancelObservers()
-    stateEvents.removeAllObservers()
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -652,6 +653,14 @@ extension Clerk {
     }
   }
 
+  @discardableResult
+  func scheduleManagedTask(
+    priority: TaskPriority = .userInitiated,
+    operation: @escaping @Sendable () async -> Void
+  ) -> Task<Void, Never>? {
+    taskCoordinator?.task(priority: priority, operation: operation)
+  }
+
   @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
@@ -810,8 +819,9 @@ extension Clerk {
   package func cleanupManagers() {
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
-    stateEvents.cancelObservers()
     urlHandlingCoordinator.cancelAll()
+    cancelEnvironmentRefreshTask()
+    taskCoordinator?.cancelAll()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
@@ -822,7 +832,6 @@ extension Clerk {
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
-    await stateEvents.cancelObserversAndWait()
     urlHandlingCoordinator.cancelAll()
 
     cancelEnvironmentRefreshTask()

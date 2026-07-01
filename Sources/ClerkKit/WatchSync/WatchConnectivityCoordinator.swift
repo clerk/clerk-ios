@@ -13,7 +13,7 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
   private var watchConnectivitySync: (any WatchConnectivitySyncing)?
   private var authGeneration: WatchSyncVersion = .initial
   private var isApplyingRemotePayload = false
-  private var watchSyncRefreshTask: Task<Void, Never>?
+  private var isRefreshScheduled = false
 
   private enum RemoteAuthEventDecision {
     case apply
@@ -88,17 +88,6 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
       authGeneration: authGeneration
     )
     watchConnectivitySync.sync(payload)
-  }
-
-  func cancel() {
-    watchSyncRefreshTask?.cancel()
-    watchSyncRefreshTask = nil
-  }
-
-  func cancelAndWait() async {
-    watchSyncRefreshTask?.cancel()
-    await watchSyncRefreshTask?.value
-    watchSyncRefreshTask = nil
   }
 
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
@@ -415,15 +404,26 @@ extension WatchConnectivityCoordinator {
   }
 
   private func scheduleRefresh(for clerk: Clerk) {
-    guard watchSyncRefreshTask == nil else { return }
+    guard !isRefreshScheduled else { return }
+    isRefreshScheduled = true
 
-    watchSyncRefreshTask = Task { [weak self, weak clerk] in
-      defer { self?.watchSyncRefreshTask = nil }
+    let task = clerk.scheduleManagedTask { [weak self, weak clerk] in
       do {
         try await clerk?.refreshClient()
+      } catch is CancellationError {
+        // Managed cleanup cancels this task when Clerk reconfigures or resets.
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
       }
+      await self?.finishScheduledRefresh()
     }
+
+    if task == nil {
+      isRefreshScheduled = false
+    }
+  }
+
+  private func finishScheduledRefresh() {
+    isRefreshScheduled = false
   }
 }
