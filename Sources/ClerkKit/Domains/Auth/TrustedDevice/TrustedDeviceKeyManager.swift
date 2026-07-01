@@ -12,12 +12,12 @@ import Security
 extension TrustedDeviceKeyManagerProtocol {
   @MainActor
   var isSupported: Bool {
-    isSupported(policy: .biometryCurrentSet)
+    isSupported(policy: .biometryOrDevicePasscode)
   }
 
   @MainActor
   func createKey() throws -> TrustedDeviceLocalKey {
-    try createKey(policy: .biometryCurrentSet)
+    try createKey(policy: .biometryOrDevicePasscode)
   }
 
   @MainActor
@@ -41,7 +41,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   }
 
   @MainActor
-  func createKey(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> TrustedDeviceLocalKey {
+  func createKey(policy: TrustedDevicePolicy = .biometryOrDevicePasscode) throws -> TrustedDeviceLocalKey {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     guard isSupported(policy: policy) else {
       throw TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
@@ -166,7 +166,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     }
   }
 
-  package static func makeAccessControl(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> SecAccessControl {
+  package static func makeAccessControl(policy: TrustedDevicePolicy = .biometryOrDevicePasscode) throws -> SecAccessControl {
     var error: Unmanaged<CFError>?
     guard let accessControl = SecAccessControlCreateWithFlags(
       kCFAllocatorDefault,
@@ -286,7 +286,7 @@ package struct TrustedDeviceLocalKey: Equatable {
     localKeyId: String,
     publicKeyJWK: String,
     algorithm: TrustedDevice.Algorithm = .es256,
-    policy: TrustedDevicePolicy = .biometryCurrentSet
+    policy: TrustedDevicePolicy = .biometryOrDevicePasscode
   ) {
     self.localKeyId = localKeyId
     self.publicKeyJWK = publicKeyJWK
