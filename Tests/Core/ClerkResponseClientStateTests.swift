@@ -306,6 +306,38 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
+  func nonAuthoritativeWatchSyncSameVersionRefreshesWhenLocalVersionExists() async throws {
+    let serverClient = client(id: "client-server", signInId: "sign-in-server", updatedAt: 5000)
+    let refreshed = LockIsolated(false)
+    let clerk = makeIsolatedClerk(
+      clientService: MockClientService {
+        refreshed.setValue(true)
+        return serverClient
+      }
+    )
+    let keychain = clerk.dependencies.keychain
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
+
+    clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
+    applyRemoteAuthPayload(
+      watchClient,
+      incomingServerFetchDate: Date(timeIntervalSince1970: 200),
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 3),
+      to: clerk
+    )
+
+    #expect(clerk.client?.id == phoneClient.id)
+    try await waitUntil {
+      clerk.client?.id == serverClient.id
+    }
+    #expect(refreshed.value)
+  }
+
+  @Test
   func nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder() {
     let clerk = makeIsolatedClerk()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone")
@@ -394,6 +426,40 @@ struct ClerkResponseClientStateTests {
     )
 
     #expect(clerk.client == nil)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncClearRecordsVersionWhenLocalAuthIsEmpty() throws {
+    let clerk = makeIsolatedClerk()
+    let keychain = clerk.dependencies.keychain
+    let clearServerDate = Date(timeIntervalSince1970: 200)
+    let staleServerDate = Date(timeIntervalSince1970: 300)
+    clerk.client = nil
+
+    applyRemoteAuthPayload(
+      nil,
+      incomingServerFetchDate: clearServerDate,
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 3),
+      to: clerk
+    )
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == clearServerDate)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
+
+    applyRemoteAuthPayload(
+      client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 4000),
+      incomingServerFetchDate: staleServerDate,
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 2),
+      to: clerk
+    )
+
+    #expect(clerk.client == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
   }
 
   @Test

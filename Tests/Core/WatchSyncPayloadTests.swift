@@ -294,6 +294,32 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func explicitDeviceTokenClearWinsOverLegacyNonAuthoritativeSet() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+
+    let clearPayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 3)),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+    apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
+
+    let legacyPayload = WatchSyncPayload(
+      deviceToken: "stale-token",
+      client: nil,
+      clientServerFetchDate: nil,
+      environment: nil
+    )
+    apply(legacyPayload, from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+  }
+
+  @Test
   func staleAuthSnapshotDoesNotUndoNewerExplicitClear() {
     configureClerkForTesting()
     let clerk = Clerk()

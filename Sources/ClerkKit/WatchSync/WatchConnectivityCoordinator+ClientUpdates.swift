@@ -88,15 +88,28 @@ extension WatchConnectivityCoordinator {
       return
     }
 
+    guard let client = update.client else {
+      applyNonAuthoritativeClear(update, to: clerk)
+      return
+    }
+
     if clerk.client != nil || clerk.lastClientServerFetchDate != nil {
       scheduleRefresh(for: clerk)
       return
     }
 
-    if let client = update.client {
-      clerk.lastClientServerFetchDate = update.serverFetchDate
-      noteAppliedAuthState(update, keychain: clerk.dependencies.keychain)
-      clerk.client = client
+    clerk.lastClientServerFetchDate = update.serverFetchDate
+    noteAppliedAuthState(update, keychain: clerk.dependencies.keychain)
+    clerk.client = client
+    scheduleRefresh(for: clerk)
+  }
+
+  private func applyNonAuthoritativeClear(_ update: WatchSyncClientApplication, to clerk: Clerk) {
+    if let serverFetchDate = update.serverFetchDate {
+      clerk.lastClientServerFetchDate = serverFetchDate
+    }
+    noteAppliedAuthState(update, keychain: clerk.dependencies.keychain)
+    if clerk.client != nil || clerk.lastClientServerFetchDate != nil {
       scheduleRefresh(for: clerk)
     }
   }
@@ -115,7 +128,9 @@ extension WatchConnectivityCoordinator {
     }
 
     if let version = update.version {
-      if version < currentVersion {
+      if version < currentVersion
+        || (!update.isAuthoritative && version == currentVersion && currentVersion > .initial)
+      {
         return shouldRefreshForNonAuthoritativeClientConflict(update, clerk: clerk)
       }
     } else if currentVersion > .initial {

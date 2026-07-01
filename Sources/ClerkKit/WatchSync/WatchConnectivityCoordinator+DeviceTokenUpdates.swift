@@ -107,8 +107,12 @@ extension WatchConnectivityCoordinator {
     keychain: any KeychainStorage
   ) -> Bool {
     let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)) == "true"
+    let hasVersionedLocalState = readDeviceTokenVersion(keychain: keychain) > .initial
+      || (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)) != nil
 
-    if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
+    if !source.incomingDeviceIsAuthoritative,
+       hasVersionedLocalState || (!hasSyncedBefore && currentToken != nil)
+    {
       do {
         try markDeviceTokenSynced(keychain: keychain)
       } catch {
