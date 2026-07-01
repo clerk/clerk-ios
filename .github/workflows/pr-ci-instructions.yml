@@ -5,6 +5,7 @@ on:
     types:
       - opened
       - reopened
+      - synchronize
     branches:
       - main
 
@@ -16,6 +17,7 @@ jobs:
     name: Add CI instructions
     runs-on: ubuntu-latest
     permissions:
+      checks: write
       issues: write
       # PR issue comments return 403 with issues: write alone in this repository.
       pull-requests: write
@@ -23,8 +25,11 @@ jobs:
       - name: Add or update CI instructions
         env:
           GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
           set -euo pipefail
 
@@ -34,6 +39,8 @@ jobs:
           ## CI paused
 
           CI does not run automatically on pull request updates.
+
+          Before merging, manual CI must be run and pass for the latest commit.
 
           When this PR is ready for CI, the PR author or a repository maintainer can comment:
 
@@ -57,4 +64,35 @@ jobs:
           else
             jq -n --arg body "$body" '{body: $body}' \
               | gh api --method POST "repos/$REPO/issues/$PR_NUMBER/comments" --input -
+          fi
+
+          run_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID"
+          latest_manual_ci="$(
+            gh api --method GET "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+              -f check_name="Manual CI" \
+              --jq '.check_runs | sort_by(.started_at // .created_at) | last // {}'
+          )"
+          latest_manual_ci_id="$(jq -r '.id // ""' <<< "$latest_manual_ci")"
+          latest_manual_ci_status="$(jq -r '.status // ""' <<< "$latest_manual_ci")"
+          latest_manual_ci_conclusion="$(jq -r '.conclusion // ""' <<< "$latest_manual_ci")"
+
+          if [ "$latest_manual_ci_conclusion" = "success" ]; then
+            echo "Manual CI already passed for $HEAD_SHA."
+            exit 0
+          fi
+
+          if [ -n "$latest_manual_ci_id" ] && [ "$latest_manual_ci_status" != "completed" ]; then
+            gh api --method PATCH "repos/$REPO/check-runs/$latest_manual_ci_id" \
+              -f status=queued \
+              -f details_url="$run_url" \
+              -f "output[title]=Manual CI" \
+              -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
+          else
+            gh api --method POST "repos/$REPO/check-runs" \
+              -f name="Manual CI" \
+              -f head_sha="$HEAD_SHA" \
+              -f status=queued \
+              -f details_url="$run_url" \
+              -f "output[title]=Manual CI" \
+              -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
           fi
