@@ -65,7 +65,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
     localKeyId = try container.decode(String.self, forKey: .localKeyId)
     appIdentifier = try container.decode(String.self, forKey: .appIdentifier)
     identifierHint = try Self.normalizedIdentifierHint(container.decodeIfPresent(String.self, forKey: .identifierHint))
-    policy = try container.decodeIfPresent(TrustedDevicePolicy.self, forKey: .policy) ?? .biometryCurrentSet
+    policy = try container.decode(TrustedDevicePolicy.self, forKey: .policy)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     updatedAt = try container.decode(Date.self, forKey: .updatedAt)
   }
@@ -136,17 +136,23 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
   @MainActor
   func deleteAllLocalCredentials(keyManager: any TrustedDeviceKeyManagerProtocol) throws {
     let credentials = try all()
+    var remainingCredentials: [TrustedDeviceLocalCredential] = []
     var keyDeletionError: Error?
 
     for credential in credentials {
       do {
         try keyManager.deleteKey(localKeyId: credential.localKeyId)
       } catch {
+        remainingCredentials.append(credential)
         keyDeletionError = keyDeletionError ?? error
       }
     }
 
-    try deleteAll()
+    if remainingCredentials.isEmpty {
+      try deleteAll()
+    } else if remainingCredentials.count < credentials.count {
+      try persist(remainingCredentials)
+    }
 
     if let keyDeletionError {
       throw keyDeletionError

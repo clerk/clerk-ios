@@ -252,9 +252,12 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   }
 
   #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
-  private static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
+  package static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
     switch policy {
-    case .biometryCurrentSet, .biometryAny, .biometryOrDevicePasscode:
+    case .biometryCurrentSet, .biometryAny:
+      .deviceOwnerAuthenticationWithBiometrics
+    case .biometryOrDevicePasscode:
+      // Require enrolled biometrics before creating a key; .userPresence controls key-access fallback.
       .deviceOwnerAuthenticationWithBiometrics
     }
   }
