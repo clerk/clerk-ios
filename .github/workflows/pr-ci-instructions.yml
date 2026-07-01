@@ -16,6 +16,9 @@ jobs:
   add-ci-instructions:
     name: Add CI instructions
     runs-on: ubuntu-latest
+    concurrency:
+      group: manual-ci-${{ github.repository }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       checks: write
       issues: write
@@ -76,18 +79,13 @@ jobs:
           latest_manual_ci_status="$(jq -r '.status // ""' <<< "$latest_manual_ci")"
           latest_manual_ci_conclusion="$(jq -r '.conclusion // ""' <<< "$latest_manual_ci")"
 
-          if [ "$latest_manual_ci_conclusion" = "success" ]; then
-            echo "Manual CI already passed for $HEAD_SHA."
-            exit 0
-          fi
-
-          if [ -n "$latest_manual_ci_id" ] && [ "$latest_manual_ci_status" != "completed" ]; then
+          if [ -n "$latest_manual_ci_id" ] && [ "$latest_manual_ci_status" = "queued" ]; then
             gh api --method PATCH "repos/$REPO/check-runs/$latest_manual_ci_id" \
               -f status=queued \
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
               -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
-          else
+          elif [ -z "$latest_manual_ci_id" ]; then
             gh api --method POST "repos/$REPO/check-runs" \
               -f name="Manual CI" \
               -f head_sha="$HEAD_SHA" \
@@ -95,4 +93,6 @@ jobs:
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
               -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
+          else
+            echo "Manual CI already exists for $HEAD_SHA with status '$latest_manual_ci_status' and conclusion '$latest_manual_ci_conclusion'."
           fi
