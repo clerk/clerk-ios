@@ -56,6 +56,10 @@ jobs:
   checks:
     name: Shared checks (with integration tests)
     needs: authorize
+    permissions:
+      actions: read
+      contents: read
+      statuses: write
     uses: ./.github/workflows/shared-checks.yml
     with:
       run_integration_tests: true
