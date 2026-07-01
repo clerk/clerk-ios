@@ -64,7 +64,7 @@ struct UserProfileTrustedDeviceSection: View {
 
         Toggle("", isOn: toggleBinding)
           .labelsHidden()
-          .tint(theme.colors.primary)
+          .tint(theme.colors.switchTint)
           .accessibilityLabel(Text("Sign in with \(biometryDisplayName.value)", bundle: .module))
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.trustedDeviceToggle)
       }
