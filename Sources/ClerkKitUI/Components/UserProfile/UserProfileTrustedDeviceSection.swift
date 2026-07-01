@@ -95,19 +95,23 @@ extension UserProfileTrustedDeviceSection {
   }
 
   private func setTrustedDeviceSignInEnabled(_ enabled: Bool) async {
+    guard let user else {
+      optimisticIsEnabled = nil
+      isLoading = false
+      return
+    }
+
     optimisticIsEnabled = enabled
     defer { isLoading = false }
 
     do {
       if enabled {
         try await clerk.trustedDevices.enroll(
-          identifierHint: user?.trustedDeviceIdentifierHint,
+          identifierHint: user.trustedDeviceIdentifierHint,
           reason: enrollmentReason
         )
       } else {
-        try await clerk.trustedDevices.revokeCurrentDeviceCredential(
-          identifierHint: user?.trustedDeviceIdentifierHint
-        )
+        try await clerk.trustedDevices.revokeCurrentDeviceCredential()
       }
 
       if await refreshAvailability() != nil {

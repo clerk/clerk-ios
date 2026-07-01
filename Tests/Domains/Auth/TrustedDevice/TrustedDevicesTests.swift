@@ -280,6 +280,47 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func availabilityUsesUserIDWhenIdentifierHintChanged() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        [trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_current_user",
+      localKeyId: "tdlk_current_user",
+      userID: User.mock.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let availability = try await setup.trustedDevices.currentUserAvailability()
+
+    #expect(availability.isAvailable)
+    #expect(try setup.credentialStore.credential(id: "tdc_current_user") != nil)
+  }
+
+  @Test
+  func localAvailabilityUsesUserIDWhenIdentifierHintChanged() throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let setup = makeTrustedDevices()
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_current_user",
+      localKeyId: "tdlk_current_user",
+      userID: User.mock.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let availability = try setup.trustedDevices.currentUserLocalAvailability()
+
+    #expect(availability.isAvailable)
+  }
+
+  @Test
   func enrollCreatesKeyPreparesChallengeAttemptsAndPersistsMetadata() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
@@ -490,6 +531,37 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func revokeCurrentDeviceCredentialUsesUserIDWhenIdentifierHintChanged() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(
+        list: {
+          [trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+        },
+        revoke: { trustedDeviceId in
+          revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+          return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+        }
+      )
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_current_user",
+      localKeyId: "tdlk_current_user",
+      userID: User.mock.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let revokedTrustedDevice = try await setup.trustedDevices.revokeCurrentDeviceCredential()
+
+    #expect(revokedTrustedDevice?.id == "tdc_current_user")
+    #expect(revokedTrustedDeviceIds.value == ["tdc_current_user"])
+    #expect(try setup.credentialStore.credential(id: "tdc_current_user") == nil)
+  }
+
+  @Test
   func revokeCurrentDeviceCredentialReturnsNilWhenNoLocalCredentialIsAvailable() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
@@ -571,6 +643,37 @@ struct TrustedDevicesTests {
     let deletedCount = try setup.trustedDevices.forgetLocalCredentials(
       identifierHint: "  SEAN@example.com  "
     )
+
+    #expect(deletedCount == 1)
+    #expect(deletedLocalKeyIds.value == ["tdlk_deleted"])
+    #expect(try setup.credentialStore.credential(id: "tdc_deleted") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_other") != nil)
+  }
+
+  @Test
+  func forgetLocalCredentialsDeletesOnlyMatchingUserID() throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    }))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_deleted",
+      localKeyId: "tdlk_deleted",
+      userID: User.mock.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other",
+      localKeyId: "tdlk_other",
+      userID: User.mock2.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    let deletedCount = try setup.trustedDevices.forgetCurrentUserLocalCredentials()
 
     #expect(deletedCount == 1)
     #expect(deletedLocalKeyIds.value == ["tdlk_deleted"])
