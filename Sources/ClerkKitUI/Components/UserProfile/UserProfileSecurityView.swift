@@ -46,7 +46,6 @@ struct UserProfileSecurityView: View {
   private struct TrustedDeviceAvailabilityRefreshKey: Hashable {
     let sessionID: String
     let userID: String
-    let identifierHint: String?
   }
 
   private var trustedDeviceIsEnabled: Bool {
@@ -62,9 +61,7 @@ struct UserProfileSecurityView: View {
       return nil
     }
 
-    return try? clerk.trustedDevices.localAvailability(
-      identifierHint: user.trustedDeviceIdentifierHint
-    )
+    return try? clerk.trustedDevices.currentUserLocalAvailability()
   }
 
   private var trustedDeviceAvailabilityRefreshKey: TrustedDeviceAvailabilityRefreshKey? {
@@ -77,8 +74,7 @@ struct UserProfileSecurityView: View {
 
     return TrustedDeviceAvailabilityRefreshKey(
       sessionID: sessionID,
-      userID: user.id,
-      identifierHint: user.trustedDeviceIdentifierHint
+      userID: user.id
     )
   }
   #endif
@@ -172,9 +168,7 @@ extension UserProfileSecurityView {
     }
 
     do {
-      trustedDeviceAvailability = try clerk.trustedDevices.localAvailability(
-        identifierHint: user.trustedDeviceIdentifierHint
-      )
+      trustedDeviceAvailability = try clerk.trustedDevices.currentUserLocalAvailability()
     } catch {
       trustedDeviceAvailability = nil
       ClerkLogger.error("Failed to refresh local trusted-device availability", error: error)
@@ -190,9 +184,7 @@ extension UserProfileSecurityView {
     }
 
     do {
-      let availability = try await clerk.trustedDevices.availability(
-        identifierHint: user.trustedDeviceIdentifierHint
-      )
+      let availability = try await clerk.trustedDevices.currentUserAvailability()
       trustedDeviceAvailability = availability
       return availability
     } catch {

@@ -44,11 +44,24 @@ public struct TrustedDevices {
     id: String? = nil,
     identifierHint: String? = nil
   ) async throws -> TrustedDeviceAvailability {
-    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint) {
+    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
     case .available:
       .available
     case let .unavailable(reason):
       .unavailable(reason)
+    }
+  }
+
+  package func currentUserAvailability() async throws -> TrustedDeviceAvailability {
+    guard let userID = Clerk.shared.user?.id else {
+      return .unavailable(.noLocalCredential)
+    }
+
+    switch try await selectedLocalCredential(id: nil, identifierHint: nil, userID: userID) {
+    case .available:
+      return .available
+    case let .unavailable(reason):
+      return .unavailable(reason)
     }
   }
 
@@ -57,11 +70,24 @@ public struct TrustedDevices {
     id: String? = nil,
     identifierHint: String? = nil
   ) throws -> TrustedDeviceAvailability {
-    switch try localCredentialCandidates(id: id, identifierHint: identifierHint) {
+    switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
     case .available:
       .available
     case let .unavailable(reason):
       .unavailable(reason)
+    }
+  }
+
+  package func currentUserLocalAvailability() throws -> TrustedDeviceAvailability {
+    guard let userID = Clerk.shared.user?.id else {
+      return .unavailable(.noLocalCredential)
+    }
+
+    switch try localCredentialCandidates(id: nil, identifierHint: nil, userID: userID) {
+    case .available:
+      return .available
+    case let .unavailable(reason):
+      return .unavailable(reason)
     }
   }
 
@@ -137,12 +163,29 @@ public struct TrustedDevices {
 
   /// Revokes the available local trusted-device credential for the current signed-in user.
   @discardableResult
-  package func revokeCurrentDeviceCredential(identifierHint: String? = nil) async throws -> TrustedDevice? {
+  package func revokeCurrentDeviceCredential(identifierHint: String?) async throws -> TrustedDevice? {
     guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
       throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
     }
 
-    switch try await selectedLocalCredential(id: nil, identifierHint: identifierHint) {
+    switch try await selectedLocalCredential(id: nil, identifierHint: identifierHint, userID: nil) {
+    case let .available(localCredential):
+      return try await revoke(id: localCredential.id)
+    case .unavailable:
+      return nil
+    }
+  }
+
+  @discardableResult
+  package func revokeCurrentDeviceCredential() async throws -> TrustedDevice? {
+    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
+      throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
+    }
+    guard let userID = Clerk.shared.user?.id else {
+      return nil
+    }
+
+    switch try await selectedLocalCredential(id: nil, identifierHint: nil, userID: userID) {
     case let .available(localCredential):
       return try await revoke(id: localCredential.id)
     case .unavailable:
@@ -171,6 +214,21 @@ public struct TrustedDevices {
     return credentials.count
   }
 
+  @discardableResult
+  package func forgetCurrentUserLocalCredentials() throws -> Int {
+    guard let userID = Clerk.shared.user?.id else {
+      return 0
+    }
+
+    let credentials = try credentialStore.all().filter { $0.userID == userID }
+
+    for credential in credentials {
+      try deleteLocalCredential(credential)
+    }
+
+    return credentials.count
+  }
+
   /// Signs in with a locally enrolled biometric trusted-device credential.
   ///
   /// - Parameters:
@@ -184,7 +242,7 @@ public struct TrustedDevices {
     reason: String? = nil
   ) async throws -> SignIn {
     let localCredential: TrustedDeviceLocalCredential
-    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint) {
+    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
     case let .available(credential):
       localCredential = credential
     case .unavailable:
@@ -266,9 +324,10 @@ extension TrustedDevices {
 
   private func selectedLocalCredential(
     id: String?,
-    identifierHint: String?
+    identifierHint: String?,
+    userID: String?
   ) async throws -> LocalCredentialResult<TrustedDeviceLocalCredential> {
-    switch try localCredentialCandidates(id: id, identifierHint: identifierHint) {
+    switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID) {
     case let .available(supportedCredentials):
       guard Clerk.shared.session?.status == .active else {
         return .available(supportedCredentials[0])
@@ -318,13 +377,14 @@ extension TrustedDevices {
 
   private func localCredentialCandidates(
     id: String?,
-    identifierHint: String?
+    identifierHint: String?,
+    userID: String?
   ) throws -> LocalCredentialResult<[TrustedDeviceLocalCredential]> {
     if let unavailableReason = trustedDeviceFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
 
-    let localCredentials = try candidateLocalCredentials(id: id, identifierHint: identifierHint)
+    let localCredentials = try candidateLocalCredentials(id: id, identifierHint: identifierHint, userID: userID)
     guard !localCredentials.isEmpty else {
       return .unavailable(.noLocalCredential)
     }
@@ -344,13 +404,18 @@ extension TrustedDevices {
 
   private func candidateLocalCredentials(
     id: String?,
-    identifierHint: String?
+    identifierHint: String?,
+    userID: String?
   ) throws -> [TrustedDeviceLocalCredential] {
     var credentials = try credentialStore.all()
     if let id {
       credentials = credentials.filter { $0.id == id }
     }
-    credentials = credentials.filter { $0.matches(identifierHint: identifierHint) }
+    if let userID {
+      credentials = credentials.filter { $0.userID == userID }
+    } else {
+      credentials = credentials.filter { $0.matches(identifierHint: identifierHint) }
+    }
     return credentials.sorted { lhs, rhs in
       if lhs.createdAt != rhs.createdAt {
         return lhs.createdAt > rhs.createdAt
