@@ -592,7 +592,10 @@ struct TrustedDevicesTests {
     let setup = makeTrustedDevices(
       trustedDeviceService: MockTrustedDeviceService(
         list: {
-          [trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+          [
+            trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10)),
+            trustedDevice(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
+          ]
         },
         revoke: { trustedDeviceId in
           revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
@@ -607,12 +610,20 @@ struct TrustedDevicesTests {
       identifierHint: "old@example.com",
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_user",
+      localKeyId: "tdlk_other_user",
+      userID: User.mock2.id,
+      identifierHint: "old@example.com",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
 
     let revokedTrustedDevice = try await setup.trustedDevices.revokeCurrentDeviceCredential()
 
     #expect(revokedTrustedDevice?.id == "tdc_current_user")
     #expect(revokedTrustedDeviceIds.value == ["tdc_current_user"])
     #expect(try setup.credentialStore.credential(id: "tdc_current_user") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_other_user") != nil)
   }
 
   @Test
