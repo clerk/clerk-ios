@@ -23,6 +23,26 @@ on:
         required: false
         type: string
         default: ""
+      report_commit_statuses:
+        description: Report per-job commit statuses for manual PR CI
+        required: false
+        type: boolean
+        default: false
+      status_sha:
+        description: Commit SHA to receive manual CI statuses
+        required: false
+        type: string
+        default: ""
+      status_target_url:
+        description: Target URL for manual CI statuses
+        required: false
+        type: string
+        default: ""
+      status_context_prefix:
+        description: Prefix for manual CI status contexts
+        required: false
+        type: string
+        default: Manual CI
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -31,8 +51,64 @@ permissions:
   contents: read
 
 jobs:
+  prepare-manual-ci-statuses:
+    name: Prepare manual CI statuses
+    if: inputs.report_commit_statuses && inputs.status_sha != ''
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Report pending statuses
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
+          STATUS_CONTEXT_PREFIX: ${{ inputs.status_context_prefix }}
+          STATUS_SHA: ${{ inputs.status_sha }}
+          STATUS_TARGET_URL: ${{ inputs.status_target_url }}
+        run: |
+          set -euo pipefail
+
+          target_url="$STATUS_TARGET_URL"
+          if [ -z "$target_url" ]; then
+            target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+
+          contexts=(
+            "$STATUS_CONTEXT_PREFIX / Check formatting and linting"
+            "$STATUS_CONTEXT_PREFIX / Run ClerkKit tests on macOS"
+            "$STATUS_CONTEXT_PREFIX / Run ClerkKitUI tests on iOS"
+            "$STATUS_CONTEXT_PREFIX / Build iOS"
+            "$STATUS_CONTEXT_PREFIX / Build macOS"
+            "$STATUS_CONTEXT_PREFIX / Build macCatalyst"
+            "$STATUS_CONTEXT_PREFIX / Build watchOS"
+            "$STATUS_CONTEXT_PREFIX / Build tvOS"
+            "$STATUS_CONTEXT_PREFIX / Build visionOS"
+          )
+
+          if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
+            contexts+=(
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-email)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-phone)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-security)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (session-tasks)"
+              "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (account-reset)"
+            )
+          fi
+
+          for context in "${contexts[@]}"; do
+            gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
+              -f state=pending \
+              -f context="$context" \
+              -f target_url="$target_url" \
+              -f description="Manual CI is waiting to complete."
+          done
+
   format-and-lint:
     name: Check formatting and linting
+    needs: prepare-manual-ci-statuses
+    if: always() && (!inputs.report_commit_statuses || needs.prepare-manual-ci-statuses.result == 'success')
     runs-on: macos-26
     steps:
       - name: Checkout repository
@@ -345,3 +421,94 @@ jobs:
             *) echo "❌ Unknown platform: ${{ matrix.platform }}"; exit 1 ;;
           esac
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
+
+  report-manual-ci-statuses:
+    name: Report manual CI statuses
+    needs:
+      - format-and-lint
+      - test
+      - test-ui
+      - test-e2e
+      - build
+    if: always() && inputs.report_commit_statuses && inputs.status_sha != ''
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      statuses: write
+    steps:
+      - name: Report final statuses
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
+          STATUS_CONTEXT_PREFIX: ${{ inputs.status_context_prefix }}
+          STATUS_SHA: ${{ inputs.status_sha }}
+          STATUS_TARGET_URL: ${{ inputs.status_target_url }}
+        run: |
+          set -euo pipefail
+
+          target_url="$STATUS_TARGET_URL"
+          if [ -z "$target_url" ]; then
+            target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+
+          jobs_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100")"
+
+          job_result() {
+            local job_suffix="$1"
+            jq -r --arg job_suffix "$job_suffix" '
+              [.jobs[] | select(.name | endswith($job_suffix)) | .conclusion] | last // "skipped"
+            ' <<< "$jobs_json"
+          }
+
+          post_status() {
+            local context="$1"
+            local result="$2"
+            local state
+            local description
+
+            case "$result" in
+              success)
+                state="success"
+                description="Manual CI completed successfully."
+                ;;
+              cancelled)
+                state="error"
+                description="Manual CI was cancelled."
+                ;;
+              skipped)
+                state="failure"
+                description="Manual CI did not run because a dependency did not complete."
+                ;;
+              *)
+                state="failure"
+                description="Manual CI failed."
+                ;;
+            esac
+
+            gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
+              -f state="$state" \
+              -f context="$context" \
+              -f target_url="$target_url" \
+              -f description="$description"
+          }
+
+          post_status "$STATUS_CONTEXT_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
+          post_status "$STATUS_CONTEXT_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
+          post_status "$STATUS_CONTEXT_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
+
+          post_status "$STATUS_CONTEXT_PREFIX / Build iOS" "$(job_result "Build iOS")"
+          post_status "$STATUS_CONTEXT_PREFIX / Build macOS" "$(job_result "Build macOS")"
+          post_status "$STATUS_CONTEXT_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
+          post_status "$STATUS_CONTEXT_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
+          post_status "$STATUS_CONTEXT_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
+          post_status "$STATUS_CONTEXT_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
+
+          if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-email)" "$(job_result "Run E2EHost tests on iOS (auth-email)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-phone)" "$(job_result "Run E2EHost tests on iOS (auth-phone)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)" "$(job_result "Run E2EHost tests on iOS (auth-username-cleanup)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)" "$(job_result "Run E2EHost tests on iOS (user-profile-password-change)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (user-profile-security)" "$(job_result "Run E2EHost tests on iOS (user-profile-security)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (session-tasks)" "$(job_result "Run E2EHost tests on iOS (session-tasks)")"
+            post_status "$STATUS_CONTEXT_PREFIX / Run E2EHost tests on iOS (account-reset)" "$(job_result "Run E2EHost tests on iOS (account-reset)")"
+          fi

@@ -1,0 +1,59 @@
+name: PR CI Instructions
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  add-ci-instructions:
+    name: Add CI instructions
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Add or update CI instructions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          marker="<!-- clerk-ios-manual-ci -->"
+          body="$(cat <<'MARKDOWN'
+          <!-- clerk-ios-manual-ci -->
+          ## CI paused
+
+          CI does not run automatically on pull request updates.
+
+          When this PR is ready for CI, the PR author or a repository maintainer can comment:
+
+          `/run ci`
+
+          Or use the quick action below:
+
+          - [ ] Run CI
+          MARKDOWN
+          )"
+
+          existing_comment_id="$(
+            gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+              --jq ".[] | select(.body | contains(\"$marker\")) | .id" \
+              | tail -n 1
+          )"
+
+          if [ -n "$existing_comment_id" ]; then
+            jq -n --arg body "$body" '{body: $body}' \
+              | gh api --method PATCH "repos/$REPO/issues/comments/$existing_comment_id" --input -
+          else
+            jq -n --arg body "$body" '{body: $body}' \
+              | gh api --method POST "repos/$REPO/issues/$PR_NUMBER/comments" --input -
+          fi

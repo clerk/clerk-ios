@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct QuickstartApp: App {
   init() {
-    Clerk.configure(publishableKey: QuickstartLocalSecrets.load().publishableKey ?? "test")
+    Clerk.configure(publishableKey: QuickstartLocalSecrets.load().publishableKey)
   }
 
   var body: some Scene {
