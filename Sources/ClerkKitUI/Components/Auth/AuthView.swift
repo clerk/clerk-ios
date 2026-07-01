@@ -171,15 +171,9 @@ public struct AuthView: View {
       for await event in clerk.auth.events {
         switch event {
         case .signInCompleted(let signIn):
-          await completeAuthFlow(
-            createdSessionId: signIn.createdSessionId,
-            offersTrustedDeviceEnrollment: true
-          )
+          await completeAuthFlow(after: .signIn(signIn))
         case .signUpCompleted(let signUp):
-          await completeAuthFlow(
-            createdSessionId: signUp.createdSessionId,
-            offersTrustedDeviceEnrollment: true
-          )
+          await completeAuthFlow(after: .signUp(signUp))
         case .signInNeedsContinuation(let signIn):
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
@@ -194,7 +188,7 @@ public struct AuthView: View {
     .onChange(of: navigation.allTasksComplete) { _, isComplete in
       guard isComplete else { return }
       Task {
-        await completeAuthFlow(offersTrustedDeviceEnrollment: false)
+        await completeAuthFlowAfterSessionTasks()
       }
     }
     .onChange(of: clerk.user) { _, newUser in
@@ -211,11 +205,7 @@ public struct AuthView: View {
     .onOpenURL { url in
       Task {
         do {
-          guard try await clerk.handle(url) else {
-            return
-          }
-
-          await presentTrustedDeviceEnrollmentIfNeeded()
+          try await clerk.handle(url)
         } catch {
           self.error = error
         }
@@ -267,22 +257,33 @@ extension AuthView {
     }
   }
 
-  private func completeAuthFlow(
-    createdSessionId: String? = nil,
-    offersTrustedDeviceEnrollment: Bool
-  ) async {
+  private func completeAuthFlow(after result: TransferFlowResult) async {
     guard let session = clerk.session else {
       return
     }
 
-    if let createdSessionId, createdSessionId != session.id {
+    if let createdSessionId = result.createdSessionId,
+       createdSessionId != session.id
+    {
       return
     }
 
-    if offersTrustedDeviceEnrollment, await presentTrustedDeviceEnrollmentIfNeeded() {
+    if await presentTrustedDeviceEnrollmentIfNeeded(after: result) {
       return
     }
 
+    completeAuthFlow(with: session)
+  }
+
+  private func completeAuthFlowAfterSessionTasks() async {
+    guard let session = clerk.session else {
+      return
+    }
+
+    completeAuthFlow(with: session)
+  }
+
+  private func completeAuthFlow(with session: Session) {
     if navigation.routeToSessionTaskStartIfNeeded(session: session) {
       return
     }
@@ -301,12 +302,13 @@ extension AuthView {
   }
 
   @discardableResult
-  private func presentTrustedDeviceEnrollmentIfNeeded() async -> Bool {
+  private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
     #if os(iOS)
     guard clerk.callbackContinuation == nil,
           !navigation.hasSessionTaskStartInPath,
           !navigation.trustedDeviceEnrollmentWasOffered,
-          let session = clerk.session
+          let session = clerk.session,
+          let userID = session.user?.id
     else {
       return false
     }
@@ -320,13 +322,22 @@ extension AuthView {
       return false
     }
 
+    let promptStore = TrustedDeviceEnrollmentPromptStore()
+    guard result.shouldOfferTrustedDeviceEnrollmentPrompt(
+      userID: userID,
+      promptStore: promptStore
+    ) else {
+      return false
+    }
+
     do {
       let availability = try await clerk.trustedDevices.availability(
-        identifierHint: clerk.user?.trustedDeviceIdentifierHint
+        identifierHint: session.user?.trustedDeviceIdentifierHint
       )
       guard !availability.isAvailable, availability.canPromptForEnrollment else {
         return false
       }
+      promptStore.markPromptSeen(userID: userID)
       navigation.routeToTrustedDeviceEnrollment()
       return true
     } catch {
