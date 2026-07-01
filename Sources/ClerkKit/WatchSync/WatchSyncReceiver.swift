@@ -52,9 +52,7 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   @MainActor
   package func sync(_ payload: WatchSyncPayload) {
     guard !isProcessingSync else { return }
-    let activationState = session.activationState
-    let isReachable = session.isReachable
-    guard activationState == .activated, isReachable else { return }
+    guard session.activationState == .activated else { return }
 
     let applicationContext = payload.applicationContext
 

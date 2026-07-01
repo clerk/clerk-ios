@@ -37,7 +37,7 @@ enum ClerkKeychainKey: String, CaseIterable {
   case watchSyncDeviceTokenVersion
 
   /// Key for tracking whether device token has been synced to watch app.
-  case watchSyncDeviceTokenSynced
+  case watchSyncDeviceTokenSynced = "clerkDeviceTokenSynced"
 
   /// Key for App Attest key ID.
   case attestKeyId = "AttestKeyId"

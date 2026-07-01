@@ -298,15 +298,16 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up watch connectivity coordinator only if enabled
-    if options.watchConnectivityEnabled {
-      internalStateChanges.addObserver(WatchConnectivityCoordinator())
-    }
-
     // Set up cache manager and load cached data synchronously
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
+
+    // Set up watch connectivity coordinator only after cache hydration.
+    // Restored cached state should not be versioned as a new local auth change.
+    if options.watchConnectivityEnabled {
+      internalStateChanges.addObserver(WatchConnectivityCoordinator())
+    }
 
     // Fire and forget: fetch fresh client and environment from API
     let retryPolicy = Self.startupRefreshRetryPolicy

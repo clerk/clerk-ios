@@ -41,7 +41,7 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.clerkDeviceToken.rawValue == "clerkDeviceToken")
     #expect(ClerkKeychainKey.watchSyncDeviceTokenState.rawValue == "watchSyncDeviceTokenState")
     #expect(ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue == "watchSyncDeviceTokenVersion")
-    #expect(ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue == "watchSyncDeviceTokenSynced")
+    #expect(ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue == "clerkDeviceTokenSynced")
     #expect(ClerkKeychainKey.attestKeyId.rawValue == "AttestKeyId")
     #expect(ClerkKeychainKey.pendingMagicLinkFlow.rawValue == "pendingMagicLinkFlow")
   }

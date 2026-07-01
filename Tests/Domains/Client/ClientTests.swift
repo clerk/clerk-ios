@@ -150,6 +150,46 @@ struct ClientTests {
   }
 
   @Test
+  func updateDeviceTokenContinuesWhenInternalStateObserverThrows() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+
+    let expectedClient = Client(
+      id: "updated-token-client",
+      sessions: [],
+      lastActiveSessionId: nil,
+      updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+    let service = DeviceTokenUpdateClientService(
+      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
+    )
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      clientService: service
+    )
+    Clerk.shared.client = Client.mock
+    Clerk.shared.internalStateChanges.addObserver(ThrowingInternalStateChangeObserver())
+
+    let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
+
+    #expect(client?.id == expectedClient.id)
+    #expect(Clerk.shared.client?.id == expectedClient.id)
+    #expect(Clerk.shared.deviceToken == "new-token")
+    #expect(service.skipClientIdValues == [true])
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
+  }
+
+  @Test
   func refreshClientIgnoresResponseWhenDeviceTokenGenerationChangesDuringRequest() async throws {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
@@ -228,5 +268,16 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
   func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
     Clerk.shared.clearCachedClientStateAfterDeviceTokenChange()
     return response
+  }
+}
+
+private final class ThrowingInternalStateChangeObserver: ClerkInternalStateChangeObserver {
+  enum Failure: Error {
+    case failed
+  }
+
+  @MainActor
+  func handle(_: ClerkInternalStateChange, from _: Clerk) throws {
+    throw Failure.failed
   }
 }

@@ -65,6 +65,66 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func remoteDeviceTokenSetFencesStaleClientResponses() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let staleGeneration = clerk.clientResponseGeneration
+    let staleClient = client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 5000, lastActiveSessionId: "session-stale")
+    let payloadClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone")
+
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "phone-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: payloadClient,
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+    clerk.applyResponseClient(
+      staleClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 200),
+      clientResponseGeneration: staleGeneration
+    )
+
+    #expect(clerk.client?.id == payloadClient.id)
+    #expect(clerk.client?.signIn?.id == payloadClient.signIn?.id)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+  }
+
+  @Test
+  func cachedClientHydrationDoesNotAdvanceWatchAuthVersion() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let cachedClient = client(id: "client-cached", signInId: "sign-in-cached", updatedAt: 3000)
+    try keychain.set(JSONEncoder.clerkEncoder.encode(cachedClient), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set("100", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: .current(clerkProvider: { clerk })),
+      keychain: keychain,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(watchConnectivityEnabled: true)
+    )
+
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client?.id == cachedClient.id)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == nil)
+  }
+
+  @Test
   func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -202,6 +262,31 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
     apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+  }
+
+  @Test
+  func explicitDeviceTokenClearWinsOverSameVersionNonAuthoritativeSet() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+
+    let clearPayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 3)),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+    apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
+
+    let sameVersionPayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "stale-token", version: WatchSyncVersion(rawValue: 3)),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+    apply(sameVersionPayload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
     #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
