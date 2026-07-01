@@ -88,6 +88,9 @@ public struct TrustedDevices {
     guard let appIdentifier = appIdentifierProvider() else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without a bundle identifier.")
     }
+    guard let userID = Clerk.shared.session?.user?.id else {
+      throw ClerkClientError(message: "Unable to enroll a trusted device without a user for the current session.")
+    }
 
     let localKey = try keyManager.createKey(policy: policy)
     do {
@@ -111,6 +114,7 @@ public struct TrustedDevices {
       try await saveLocalCredential(
         trustedDevice: trustedDevice,
         localKey: localKey,
+        userID: userID,
         identifierHint: identifierHint
       )
       return trustedDevice
@@ -269,11 +273,28 @@ extension TrustedDevices {
         return .available(supportedCredentials[0])
       }
 
-      let trustedDevices = try await trustedDeviceService.list()
+      guard let activeUserID = Clerk.shared.session?.user?.id else {
+        return .available(supportedCredentials[0])
+      }
+
+      var trustedDevices: [TrustedDevice]?
       var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
 
       for credential in supportedCredentials {
-        guard let trustedDevice = trustedDevices.first(where: { $0.id == credential.id }) else {
+        guard credential.userID == activeUserID else {
+          return .available(credential)
+        }
+
+        let activeUserTrustedDevices: [TrustedDevice]
+        if let trustedDevices {
+          activeUserTrustedDevices = trustedDevices
+        } else {
+          let fetchedTrustedDevices = try await trustedDeviceService.list()
+          trustedDevices = fetchedTrustedDevices
+          activeUserTrustedDevices = fetchedTrustedDevices
+        }
+
+        guard let trustedDevice = activeUserTrustedDevices.first(where: { $0.id == credential.id }) else {
           try deleteLocalCredential(credential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
           continue
@@ -372,12 +393,14 @@ extension TrustedDevices {
   private func saveLocalCredential(
     trustedDevice: TrustedDevice,
     localKey: TrustedDeviceLocalKey,
+    userID: String,
     identifierHint: String?
   ) async throws {
     do {
       try credentialStore.save(.init(
         trustedDevice: trustedDevice,
         localKey: localKey,
+        userID: userID,
         identifierHint: identifierHint
       ))
     } catch {

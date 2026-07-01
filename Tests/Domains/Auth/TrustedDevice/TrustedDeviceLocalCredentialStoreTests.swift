@@ -22,6 +22,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
     let updated = TrustedDeviceLocalCredential(
       id: "tdc_123",
       localKeyId: "tdlk_new",
+      userID: User.mock.id,
       appIdentifier: "com.clerk.example",
       createdAt: Date(timeIntervalSince1970: 1),
       updatedAt: Date(timeIntervalSince1970: 2)
@@ -54,11 +55,13 @@ struct TrustedDeviceLocalCredentialStoreTests {
     let credential = TrustedDeviceLocalCredential(
       trustedDevice: .mock,
       localKey: localKey,
+      userID: User.mock.id,
       identifierHint: "  Sean@Example.COM  "
     )
 
     #expect(credential.id == TrustedDevice.mock.id)
     #expect(credential.localKeyId == TrustedDeviceLocalKey.mock.localKeyId)
+    #expect(credential.userID == User.mock.id)
     #expect(credential.appIdentifier == TrustedDevice.mock.appIdentifier)
     #expect(credential.identifierHint == "sean@example.com")
     #expect(credential.policy == .biometryOrDevicePasscode)
@@ -69,6 +72,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
     let credential = TrustedDeviceLocalCredential(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
+      userID: User.mock.id,
       appIdentifier: "com.clerk.example",
       identifierHint: "   ",
       createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
@@ -89,7 +93,33 @@ struct TrustedDeviceLocalCredentialStoreTests {
         [{
           "id": "tdc_123",
           "localKeyId": "tdlk_mock",
+          "userId": "1",
           "appIdentifier": "com.clerk.example",
+          "createdAt": 1234567890000,
+          "updatedAt": 1234567890000
+        }]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+
+    #expect(throws: DecodingError.self) {
+      _ = try store.credential(id: "tdc_123")
+    }
+  }
+
+  @Test
+  func credentialMetadataRequiresUserID() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [{
+          "id": "tdc_123",
+          "localKeyId": "tdlk_mock",
+          "appIdentifier": "com.clerk.example",
+          "policy": "biometry_current_set",
           "createdAt": 1234567890000,
           "updatedAt": 1234567890000
         }]
@@ -110,6 +140,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
     let other = TrustedDeviceLocalCredential(
       id: "tdc_456",
       localKeyId: "tdlk_other",
+      userID: User.mock.id,
       appIdentifier: "com.clerk.example",
       createdAt: Date(timeIntervalSince1970: 1),
       updatedAt: Date(timeIntervalSince1970: 2)
@@ -133,6 +164,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
     let failedCredential = TrustedDeviceLocalCredential(
       id: "tdc_failed",
       localKeyId: "tdlk_failed",
+      userID: User.mock.id,
       appIdentifier: "com.clerk.example",
       createdAt: Date(timeIntervalSince1970: 1),
       updatedAt: Date(timeIntervalSince1970: 2)

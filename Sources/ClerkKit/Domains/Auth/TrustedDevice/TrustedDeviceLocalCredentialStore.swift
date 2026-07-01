@@ -9,6 +9,7 @@ import Foundation
 package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   package let id: String
   package let localKeyId: String
+  package let userID: String
   package let appIdentifier: String
   package let identifierHint: String?
   package let policy: TrustedDevicePolicy
@@ -18,6 +19,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   private enum CodingKeys: String, CodingKey {
     case id
     case localKeyId
+    case userID = "userId"
     case appIdentifier
     case identifierHint
     case policy
@@ -28,6 +30,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   package init(
     id: String,
     localKeyId: String,
+    userID: String,
     appIdentifier: String,
     identifierHint: String? = nil,
     policy: TrustedDevicePolicy = .biometryCurrentSet,
@@ -36,6 +39,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   ) {
     self.id = id
     self.localKeyId = localKeyId
+    self.userID = userID
     self.appIdentifier = appIdentifier
     self.identifierHint = Self.normalizedIdentifierHint(identifierHint)
     self.policy = policy
@@ -46,11 +50,13 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
   package init(
     trustedDevice: TrustedDevice,
     localKey: TrustedDeviceLocalKey,
+    userID: String,
     identifierHint: String? = nil
   ) {
     self.init(
       id: trustedDevice.id,
       localKeyId: localKey.localKeyId,
+      userID: userID,
       appIdentifier: trustedDevice.appIdentifier,
       identifierHint: identifierHint,
       policy: localKey.policy,
@@ -63,6 +69,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(String.self, forKey: .id)
     localKeyId = try container.decode(String.self, forKey: .localKeyId)
+    userID = try container.decode(String.self, forKey: .userID)
     appIdentifier = try container.decode(String.self, forKey: .appIdentifier)
     identifierHint = try Self.normalizedIdentifierHint(container.decodeIfPresent(String.self, forKey: .identifierHint))
     policy = try container.decode(TrustedDevicePolicy.self, forKey: .policy)
