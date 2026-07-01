@@ -199,7 +199,7 @@ public struct TrustedDevices {
   /// credential should be revoked for an active user.
   @discardableResult
   package func forgetLocalCredentials(identifierHint: String?) throws -> Int {
-    let credentials = try credentialStore.all().filter { credential in
+    let credentials = try storedLocalCredentialsForCurrentApp().filter { credential in
       if let identifierHint {
         credential.matches(identifierHint: identifierHint)
       } else {
@@ -220,7 +220,16 @@ public struct TrustedDevices {
       return 0
     }
 
-    let credentials = try credentialStore.all().filter { $0.userID == userID }
+    return try forgetLocalCredentialsForCurrentApp(userID: userID)
+  }
+
+  @discardableResult
+  package func forgetLocalCredentials(deletedUserID: String) throws -> Int {
+    try forgetLocalCredentialsForCurrentApp(userID: deletedUserID)
+  }
+
+  private func forgetLocalCredentialsForCurrentApp(userID: String) throws -> Int {
+    let credentials = try storedLocalCredentialsForCurrentApp().filter { $0.userID == userID }
 
     for credential in credentials {
       try deleteLocalCredential(credential)
@@ -407,7 +416,7 @@ extension TrustedDevices {
     identifierHint: String?,
     userID: String?
   ) throws -> [TrustedDeviceLocalCredential] {
-    var credentials = try credentialStore.all()
+    var credentials = try storedLocalCredentialsForCurrentApp()
     if let id {
       credentials = credentials.filter { $0.id == id }
     }
@@ -425,6 +434,14 @@ extension TrustedDevices {
       }
       return lhs.id > rhs.id
     }
+  }
+
+  private func storedLocalCredentialsForCurrentApp() throws -> [TrustedDeviceLocalCredential] {
+    guard let appIdentifier = appIdentifierProvider() else {
+      return []
+    }
+
+    return try credentialStore.all().filter { $0.appIdentifier == appIdentifier }
   }
 
   private func localCredentialsWithExistingKeys(
