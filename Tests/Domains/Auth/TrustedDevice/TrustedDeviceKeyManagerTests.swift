@@ -1,11 +1,14 @@
 @testable import ClerkKit
 import Foundation
+#if os(iOS) && !targetEnvironment(macCatalyst)
+import LocalAuthentication
+#endif
 import Security
 import Testing
 
 struct TrustedDeviceKeyManagerTests {
   @Test
-  func privateKeyAttributesUseSecureEnclaveBiometricGate() throws {
+  func privateKeyAttributesUseSecureEnclaveAccessControl() throws {
     let accessControl = try TrustedDeviceKeyManager.makeAccessControl()
 
     let attributes = TrustedDeviceKeyManager.makePrivateKeyAttributes(
@@ -41,6 +44,24 @@ struct TrustedDeviceKeyManagerTests {
       .userPresence,
     ])
   }
+
+  #if os(iOS) && !targetEnvironment(macCatalyst)
+  @Test
+  func localAuthenticationPoliciesMatchTrustedDevicePolicies() {
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicy(for: .biometryCurrentSet) ==
+        .deviceOwnerAuthenticationWithBiometrics
+    )
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicy(for: .biometryAny) ==
+        .deviceOwnerAuthenticationWithBiometrics
+    )
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicy(for: .biometryOrDevicePasscode) ==
+        .deviceOwnerAuthenticationWithBiometrics
+    )
+  }
+  #endif
 
   @Test
   func privateKeyQueryUsesStableApplicationTag() {
@@ -101,7 +122,7 @@ struct TrustedDeviceKeyManagerTests {
         as? TrustedDeviceKeyManagerError == .biometricAuthenticationUnavailable
     )
 
-    guard case let .unexpectedStatus(status) = TrustedDeviceKeyManager.privateKeyLookupError(for: errSecNotAvailable)
+    guard case let .unexpectedStatus(status)? = TrustedDeviceKeyManager.privateKeyLookupError(for: errSecNotAvailable)
       as? KeychainError
     else {
       Issue.record("Expected unknown keychain statuses to preserve their OSStatus.")

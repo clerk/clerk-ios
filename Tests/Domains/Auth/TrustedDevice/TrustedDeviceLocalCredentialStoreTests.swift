@@ -81,7 +81,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
-  func legacyCredentialMetadataDefaultsToBiometryCurrentSetPolicy() throws {
+  func credentialMetadataRequiresPolicy() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(
       Data(
@@ -98,10 +98,10 @@ struct TrustedDeviceLocalCredentialStoreTests {
       forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
     )
     let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
-    let credential = try #require(try store.credential(id: "tdc_123"))
 
-    #expect(credential.policy == .biometryCurrentSet)
-    #expect(credential.identifierHint == nil)
+    #expect(throws: DecodingError.self) {
+      _ = try store.credential(id: "tdc_123")
+    }
   }
 
   @Test
@@ -128,6 +128,35 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func deleteAllLocalCredentialsPreservesMetadataForFailedKeyDeletions() throws {
+    let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    let failedCredential = TrustedDeviceLocalCredential(
+      id: "tdc_failed",
+      localKeyId: "tdlk_failed",
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      if localKeyId == failedCredential.localKeyId {
+        throw TestKeyDeletionError.failed
+      }
+    })
+
+    try store.save(.mock)
+    try store.save(failedCredential)
+
+    #expect(throws: TestKeyDeletionError.self) {
+      try store.deleteAllLocalCredentials(keyManager: keyManager)
+    }
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock", "tdlk_failed"])
+    #expect(try store.all() == [failedCredential])
+  }
+
+  @Test
   func corruptCredentialMetadataThrows() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(Data("not-json".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
@@ -140,4 +169,8 @@ struct TrustedDeviceLocalCredentialStoreTests {
       #expect(error is DecodingError)
     }
   }
+}
+
+private enum TestKeyDeletionError: Error {
+  case failed
 }
