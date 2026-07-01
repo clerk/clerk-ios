@@ -407,8 +407,8 @@ struct ClerkResponseClientStateTests {
       }
     )
     let keychain = clerk.dependencies.keychain
-    try keychain.set("cleared", forKey: ClerkKeychainKey.clerkAuthState.rawValue)
-    try keychain.set("3", forKey: ClerkKeychainKey.clerkAuthVersion.rawValue)
+    try keychain.set("cleared", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
     clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 200)
     clerk.client = nil
 

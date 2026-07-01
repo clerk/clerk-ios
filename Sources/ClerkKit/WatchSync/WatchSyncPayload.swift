@@ -87,11 +87,11 @@ package enum WatchSyncSource {
 
 package struct WatchSyncPayload {
   private static let deviceTokenKey = "clerkDeviceToken"
-  private static let deviceTokenStateKey = "clerkDeviceTokenState"
-  private static let deviceTokenVersionKey = "clerkDeviceTokenVersion"
+  private static let deviceTokenStateKey = "watchSyncDeviceTokenState"
+  private static let deviceTokenVersionKey = "watchSyncDeviceTokenVersion"
   private static let clientKey = "clerkClient"
-  private static let authStateKey = "clerkAuthState"
-  private static let authVersionKey = "clerkAuthVersion"
+  private static let authStateKey = "watchSyncAuthState"
+  private static let authVersionKey = "watchSyncAuthVersion"
   private static let clientServerFetchDateKey = "clerkClientServerFetchDate"
   private static let environmentKey = "clerkEnvironment"
 
@@ -169,7 +169,7 @@ package struct WatchSyncPayload {
   @MainActor
   init(clerk: Clerk, keychain: any KeychainStorage, authGeneration: WatchSyncVersion) {
     deviceTokenEvent = Self.deviceTokenEvent(keychain: keychain)
-    let persistedAuthState = try? keychain.string(forKey: ClerkKeychainKey.clerkAuthState.rawValue)
+    let persistedAuthState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     if let client = clerk.client {
       authEvent = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == "cleared" {
@@ -299,7 +299,7 @@ package struct WatchSyncPayload {
       return .set(token: deviceToken, version: version)
     }
 
-    let state = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenState.rawValue)
+    let state = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
     if state == "cleared" {
       return .cleared(version: version)
     }
@@ -308,7 +308,7 @@ package struct WatchSyncPayload {
   }
 
   private static func readDeviceTokenVersion(keychain: any KeychainStorage) -> WatchSyncVersion {
-    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenVersion.rawValue),
+    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue),
           let version = Int(versionString)
     else {
       return .initial

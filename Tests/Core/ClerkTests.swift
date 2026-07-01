@@ -83,8 +83,12 @@ struct ClerkTests {
     try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set(#require("test-date-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+    try keychain.set("1", forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
+    try keychain.set("true", forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
     try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
 

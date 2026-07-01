@@ -337,7 +337,7 @@ extension WatchConnectivityCoordinator {
     currentToken: String?,
     keychain: any KeychainStorage
   ) -> Bool {
-    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)) == "true"
+    let hasSyncedBefore = (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)) == "true"
 
     if !hasSyncedBefore, currentToken != nil, !source.incomingDeviceIsAuthoritative {
       do {
@@ -352,7 +352,7 @@ extension WatchConnectivityCoordinator {
   }
 
   private func readDeviceTokenVersion(keychain: any KeychainStorage) -> WatchSyncVersion {
-    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenVersion.rawValue),
+    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue),
           let version = Int(versionString)
     else {
       return .initial
@@ -366,7 +366,7 @@ extension WatchConnectivityCoordinator {
   }
 
   private func readAuthVersion(keychain: any KeychainStorage) -> WatchSyncVersion {
-    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.clerkAuthVersion.rawValue),
+    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue),
           let version = Int(versionString)
     else {
       return .initial
@@ -385,8 +385,8 @@ extension WatchConnectivityCoordinator {
     keychain: any KeychainStorage
   ) throws {
     authGeneration = version
-    try keychain.set(state, forKey: ClerkKeychainKey.clerkAuthState.rawValue)
-    try keychain.set(String(version.rawValue), forKey: ClerkKeychainKey.clerkAuthVersion.rawValue)
+    try keychain.set(state, forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set(String(version.rawValue), forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
   }
 
   private func persistDeviceTokenState(
@@ -395,12 +395,12 @@ extension WatchConnectivityCoordinator {
     keychain: any KeychainStorage
   ) throws {
     let resolvedVersion = version ?? nextDeviceTokenVersion(keychain: keychain)
-    try keychain.set(state, forKey: ClerkKeychainKey.clerkDeviceTokenState.rawValue)
-    try keychain.set(String(resolvedVersion.rawValue), forKey: ClerkKeychainKey.clerkDeviceTokenVersion.rawValue)
+    try keychain.set(state, forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+    try keychain.set(String(resolvedVersion.rawValue), forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
   }
 
   private func markDeviceTokenSynced(keychain: any KeychainStorage) throws {
-    try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
+    try keychain.set("true", forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)
   }
 
   private func scheduleRefresh(for clerk: Clerk) {

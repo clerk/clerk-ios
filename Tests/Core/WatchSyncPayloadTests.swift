@@ -61,7 +61,7 @@ struct WatchSyncPayloadTests {
     #expect(clerk.client?.signIn?.id == "sign-in-phone")
     #expect(clerk.environment == .mock)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -88,7 +88,7 @@ struct WatchSyncPayloadTests {
     #expect(clerk.client?.id == "client-local")
     #expect(clerk.client?.signIn?.id == "sign-in-local")
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue) == "true")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -204,8 +204,8 @@ struct WatchSyncPayloadTests {
     apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenVersion.rawValue) == "3")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
   }
 
   @Test
