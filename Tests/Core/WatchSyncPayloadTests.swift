@@ -170,7 +170,7 @@ struct WatchSyncPayloadTests {
 
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .notIncluded,
-      authUpdate: .clientSnapshot(
+      clientUpdate: .snapshot(
         client: client(id: "client-watch", updatedAt: 3000),
         serverFetchDate: Date(timeIntervalSince1970: 100),
         version: WatchSyncVersion(rawValue: 1)
@@ -191,14 +191,14 @@ struct WatchSyncPayloadTests {
 
     let clearPayload = WatchSyncPayload(
       deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 3)),
-      authUpdate: .notIncluded,
+      clientUpdate: .notIncluded,
       environment: nil
     )
     apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
 
     let stalePayload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "stale-token", version: WatchSyncVersion(rawValue: 2)),
-      authUpdate: .notIncluded,
+      clientUpdate: .notIncluded,
       environment: nil
     )
     apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
@@ -216,7 +216,7 @@ struct WatchSyncPayloadTests {
 
     let clearPayload = WatchSyncPayload(
       deviceTokenUpdate: .notIncluded,
-      authUpdate: .clientCleared(
+      clientUpdate: .cleared(
         serverFetchDate: Date(timeIntervalSince1970: 200),
         version: WatchSyncVersion(rawValue: 3)
       ),
@@ -226,7 +226,7 @@ struct WatchSyncPayloadTests {
 
     let stalePayload = WatchSyncPayload(
       deviceTokenUpdate: .notIncluded,
-      authUpdate: .clientSnapshot(
+      clientUpdate: .snapshot(
         client: client(id: "client-stale", updatedAt: 4000),
         serverFetchDate: Date(timeIntervalSince1970: 300),
         version: WatchSyncVersion(rawValue: 2)
@@ -247,7 +247,7 @@ struct WatchSyncPayloadTests {
 
     let clearPayload = WatchSyncPayload(
       deviceTokenUpdate: .notIncluded,
-      authUpdate: .clientCleared(
+      clientUpdate: .cleared(
         serverFetchDate: Date(timeIntervalSince1970: 200),
         version: WatchSyncVersion(rawValue: 3)
       ),

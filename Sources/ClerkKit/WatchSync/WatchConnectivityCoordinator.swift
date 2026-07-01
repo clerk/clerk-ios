@@ -101,7 +101,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       clerk.environment = environment
     }
 
-    applyAuthUpdate(payload.authUpdate, from: source, to: clerk)
+    applyClientUpdate(payload.clientUpdate, from: source, to: clerk)
   }
 
   private func applyDeviceTokenUpdate(
@@ -149,11 +149,11 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     }
   }
 
-  private func applyAuthUpdate(_ update: WatchSyncAuthUpdate, from source: WatchSyncSource, to clerk: Clerk) {
+  private func applyClientUpdate(_ update: WatchSyncClientUpdate, from source: WatchSyncSource, to clerk: Clerk) {
     switch update {
     case .notIncluded:
       return
-    case let .clientSnapshot(client, incomingServerFetchDate, version):
+    case let .snapshot(client, incomingServerFetchDate, version):
       applyClient(
         client,
         incomingServerFetchDate: incomingServerFetchDate,
@@ -162,7 +162,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
         authState: "set",
         to: clerk
       )
-    case let .clientCleared(incomingServerFetchDate, version):
+    case let .cleared(incomingServerFetchDate, version):
       applyClient(
         nil,
         incomingServerFetchDate: incomingServerFetchDate,
