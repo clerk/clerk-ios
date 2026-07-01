@@ -55,7 +55,7 @@ struct WatchSyncPayloadTests {
       environment: .mock
     )
 
-    payload.apply(from: .phone, to: clerk, keychain: keychain)
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-phone")
     #expect(clerk.client?.signIn?.id == "sign-in-phone")
@@ -83,7 +83,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-local")
     #expect(clerk.client?.signIn?.id == "sign-in-local")
@@ -106,7 +106,7 @@ struct WatchSyncPayloadTests {
       environment: .mock
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-watch")
     #expect(clerk.client?.signIn?.id == "sign-in-watch")
@@ -132,7 +132,7 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-local")
   }
@@ -155,10 +155,116 @@ struct WatchSyncPayloadTests {
       environment: nil
     )
 
-    payload.apply(from: .watch, to: clerk, keychain: keychain)
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "client-watch")
     #expect(clerk.client?.signIn?.id == "sign-in-watch")
+  }
+
+  @Test
+  func missingDeviceTokenEventDoesNotClearStoredToken() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("local-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceTokenEvent: .unknown,
+      authEvent: .snapshot(
+        client: client(id: "client-watch", updatedAt: 3000),
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .watch, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "local-token")
+  }
+
+  @Test
+  func explicitDeviceTokenClearWinsOverStaleSet() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+
+    let clearPayload = WatchSyncPayload(
+      deviceTokenEvent: .cleared(version: WatchSyncVersion(rawValue: 3)),
+      authEvent: .unknown,
+      environment: nil
+    )
+    apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
+
+    let stalePayload = WatchSyncPayload(
+      deviceTokenEvent: .set(token: "stale-token", version: WatchSyncVersion(rawValue: 2)),
+      authEvent: .unknown,
+      environment: nil
+    )
+    apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceTokenVersion.rawValue) == "3")
+  }
+
+  @Test
+  func staleAuthSnapshotDoesNotUndoNewerExplicitClear() {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+
+    let clearPayload = WatchSyncPayload(
+      deviceTokenEvent: .unknown,
+      authEvent: .cleared(
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      environment: nil
+    )
+    apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
+
+    let stalePayload = WatchSyncPayload(
+      deviceTokenEvent: .unknown,
+      authEvent: .snapshot(
+        client: client(id: "client-stale", updatedAt: 4000),
+        serverFetchDate: Date(timeIntervalSince1970: 300),
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      environment: nil
+    )
+    apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+  }
+
+  @Test
+  func legacyAuthSnapshotDoesNotUndoVersionedExplicitClear() {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+
+    let clearPayload = WatchSyncPayload(
+      deviceTokenEvent: .unknown,
+      authEvent: .cleared(
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      environment: nil
+    )
+    apply(clearPayload, from: .phone, to: clerk, keychain: keychain)
+
+    let legacyPayload = WatchSyncPayload(
+      deviceToken: nil,
+      client: client(id: "client-legacy", updatedAt: 4000),
+      clientServerFetchDate: Date(timeIntervalSince1970: 300),
+      environment: nil
+    )
+    apply(legacyPayload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
   }
 
   private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
@@ -172,5 +278,19 @@ struct WatchSyncPayloadTests {
       client.signIn = signIn
     }
     return client
+  }
+
+  private func apply(
+    _ payload: WatchSyncPayload,
+    from source: WatchSyncSource,
+    to clerk: Clerk,
+    keychain: InMemoryKeychain
+  ) {
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
   }
 }

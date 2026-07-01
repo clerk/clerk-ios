@@ -68,8 +68,7 @@ public final class Clerk {
         cacheManager?.deleteClient(serverFetchDate: lastClientServerFetchDate)
       }
 
-      // Sync to watch app if enabled (sync both when client is set and when it's cleared)
-      watchConnectivityCoordinator?.sync()
+      emitStateEvent(.authChanged(previousClient: oldValue, client: client))
     }
   }
 
@@ -123,9 +122,9 @@ public final class Clerk {
   private var lastAppliedClientResponseSequence: Int?
 
   /// Server timestamp from the response that last updated the local client.
-  /// Used as a cross-device ordering key for watch sync, since it comes from a
+  /// Used as a cross-device ordering key, since it comes from a
   /// single clock (the server) and advances on every API response.
-  private(set) var lastClientServerFetchDate: Date?
+  var lastClientServerFetchDate: Date?
 
   /// Changes when local device-token ownership changes.
   /// Client responses prepared before this value changes must not update state.
@@ -133,9 +132,6 @@ public final class Clerk {
 
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
-
-  /// Shared refresh task used to coalesce watch-sync-triggered refreshes.
-  private var watchSyncRefreshTask: Task<Void, Never>?
 
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
@@ -154,8 +150,7 @@ public final class Clerk {
     didSet {
       if let environment {
         cacheManager?.saveEnvironment(environment)
-        // Sync to watch app if enabled
-        watchConnectivityCoordinator?.sync()
+        emitStateEvent(.environmentChanged)
       }
     }
   }
@@ -190,7 +185,7 @@ public final class Clerk {
   // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
 
   /// Manages caching of client and environment data.
-  private var cacheManager: CacheManager?
+  var cacheManager: CacheManager?
 
   /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
@@ -198,8 +193,8 @@ public final class Clerk {
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
-  /// Coordinates watch connectivity syncing.
-  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  /// Dispatches Clerk state changes to optional internal observers.
+  var stateEvents = ClerkStateEventEmitter()
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -288,6 +283,8 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    stateEvents.cancelObservers()
+    stateEvents.removeAllObservers()
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -302,7 +299,7 @@ extension Clerk {
 
     // Set up watch connectivity coordinator only if enabled
     if options.watchConnectivityEnabled {
-      watchConnectivityCoordinator = WatchConnectivityCoordinator()
+      stateEvents.addObserver(WatchConnectivityCoordinator())
     }
 
     // Set up cache manager and load cached data synchronously
@@ -604,8 +601,7 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
-    // Sync authentication state to watch app if enabled
-    watchConnectivityCoordinator?.sync()
+    emitStateEvent(.foregrounded)
 
     #if os(macOS)
     if WebAuthentication.consumePendingForegroundRefreshSuppression() {
@@ -648,6 +644,14 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  func emitStateEvent(_ event: ClerkStateEvent) {
+    do {
+      try stateEvents.emit(event, from: self)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to notify Clerk state observer")
+    }
+  }
+
   @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
@@ -766,6 +770,22 @@ extension Clerk {
     client = incoming
   }
 
+  private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
+    guard let serverDate, let lastClientServerFetchDate else {
+      return false
+    }
+
+    if serverDate > lastClientServerFetchDate {
+      return true
+    }
+
+    guard serverDate == lastClientServerFetchDate, let incoming, let client else {
+      return false
+    }
+
+    return incoming.updatedAt > client.updatedAt
+  }
+
   func clearCachedClientStateAfterDeviceTokenChange() {
     clientResponseGeneration = clientResponseGeneration.next()
     lastAppliedClientResponseSequence = nil
@@ -785,94 +805,12 @@ extension Clerk {
     }
   }
 
-  private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
-    guard let serverDate, let lastClientServerFetchDate else {
-      return false
-    }
-
-    if serverDate > lastClientServerFetchDate {
-      return true
-    }
-
-    guard serverDate == lastClientServerFetchDate, let incoming, let client else {
-      return false
-    }
-
-    return incoming.updatedAt > client.updatedAt
-  }
-
-  func applyWatchSyncedClient(
-    _ incoming: Client?,
-    incomingServerFetchDate: Date?,
-    incomingIsAuthoritative: Bool
-  ) {
-    if incomingIsAuthoritative {
-      if let incomingServerFetchDate {
-        lastClientServerFetchDate = incomingServerFetchDate
-      }
-      client = incoming
-      return
-    }
-
-    // Non-authoritative (watch → phone):
-    // Compare server fetch dates when available — both come from the same server
-    // clock, so there is no cross-device skew. The device whose client was confirmed
-    // by the server more recently has the fresher state.
-    // A nil incoming (missing or undecodable client field) is never accepted
-    // non-authoritatively since there is no client data to apply.
-    if let incoming, let incomingServerFetchDate, let lastClientServerFetchDate,
-       incomingServerFetchDate > lastClientServerFetchDate
-    {
-      self.lastClientServerFetchDate = incomingServerFetchDate
-      if incoming != client {
-        client = incoming
-      } else {
-        cacheManager?.saveServerFetchDate(incomingServerFetchDate)
-      }
-      return
-    }
-
-    // Phone has a client or a server-confirmed state to protect — defer to server.
-    if client != nil || lastClientServerFetchDate != nil {
-      scheduleWatchSyncRefresh()
-      return
-    }
-
-    // Phone has no client and no server-confirmed state at all
-    // (e.g. fresh install, cold launch with no cached data) —
-    // accept watch state as provisional.
-    if let incoming {
-      lastClientServerFetchDate = incomingServerFetchDate
-      client = incoming
-      scheduleWatchSyncRefresh()
-    }
-  }
-
-  private func scheduleWatchSyncRefresh() {
-    guard watchSyncRefreshTask == nil else { return }
-
-    watchSyncRefreshTask = Task { [weak self] in
-      defer { self?.watchSyncRefreshTask = nil }
-      do {
-        try await self?.refreshClient()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
-      }
-    }
-  }
-
-  func storeDeviceToken(_ token: String) throws {
-    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    watchConnectivityCoordinator?.sync()
-  }
-
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
-    watchSyncRefreshTask?.cancel()
-    watchSyncRefreshTask = nil
+    stateEvents.cancelObservers()
     urlHandlingCoordinator.cancelAll()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
@@ -884,9 +822,7 @@ extension Clerk {
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
-    watchSyncRefreshTask?.cancel()
-    await watchSyncRefreshTask?.value
-    watchSyncRefreshTask = nil
+    await stateEvents.cancelObserversAndWait()
     urlHandlingCoordinator.cancelAll()
 
     cancelEnvironmentRefreshTask()
@@ -926,7 +862,7 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    watchConnectivityCoordinator = nil
+    stateEvents.removeAllObservers()
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

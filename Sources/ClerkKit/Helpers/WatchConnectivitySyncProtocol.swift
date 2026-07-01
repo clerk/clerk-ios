@@ -11,5 +11,5 @@ import Foundation
 /// This protocol allows type-erasure for conditional compilation and provides a unified interface.
 @MainActor
 package protocol WatchConnectivitySyncing {
-  func syncAll()
+  func sync(_ payload: WatchSyncPayload)
 }
