@@ -333,9 +333,7 @@ extension AuthView {
     }
 
     do {
-      let availability = try await clerk.trustedDevices.availability(
-        identifierHint: session.user?.trustedDeviceIdentifierHint
-      )
+      let availability = try await clerk.trustedDevices.currentUserAvailability()
       guard !availability.isAvailable, availability.canPromptForEnrollment else {
         return false
       }
