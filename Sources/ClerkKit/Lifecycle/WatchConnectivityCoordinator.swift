@@ -312,7 +312,9 @@ final class WatchConnectivityCoordinator: ClerkStateEventObserver {
       ClerkLogger.logError(error, message: "Failed to persist auth sync state")
     }
   }
+}
 
+extension WatchConnectivityCoordinator {
   private func shouldApplyDeviceTokenEvent(
     version incomingVersion: WatchSyncVersion?,
     from source: WatchSyncSource,
