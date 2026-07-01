@@ -13,6 +13,9 @@ jobs:
   resolve-pr-ci-request:
     name: Resolve PR CI request
     runs-on: ubuntu-latest
+    concurrency:
+      group: manual-ci-${{ github.repository }}-${{ github.event.issue.number }}
+      cancel-in-progress: false
     permissions:
       checks: write
       issues: write
@@ -120,15 +123,43 @@ jobs:
               | gh api --method PATCH "repos/$REPO/issues/comments/$COMMENT_ID" --input -
           fi
 
-          manual_check_run_id="$(
-            gh api --method POST "repos/$REPO/check-runs" \
-              -f name="Manual CI" \
-              -f head_sha="$head_sha" \
+          latest_manual_ci="$(
+            gh api --method GET "repos/$REPO/commits/$head_sha/check-runs" \
+              -f check_name="Manual CI" \
+              --jq '.check_runs | sort_by(.started_at // .created_at) | last // {}'
+          )"
+          latest_manual_ci_id="$(jq -r '.id // ""' <<< "$latest_manual_ci")"
+          latest_manual_ci_status="$(jq -r '.status // ""' <<< "$latest_manual_ci")"
+
+          if [ -n "$latest_manual_ci_id" ] \
+            && { [ "$latest_manual_ci_status" = "queued" ] \
+              || [ "$latest_manual_ci_status" = "requested" ] \
+              || [ "$latest_manual_ci_status" = "waiting" ] \
+              || [ "$latest_manual_ci_status" = "pending" ]; }; then
+            gh api --method PATCH "repos/$REPO/check-runs/$latest_manual_ci_id" \
               -f status=in_progress \
               -f details_url="$run_url" \
               -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              --jq '.id'
-          )"
+              -f "output[title]=Manual CI" \
+              -f "output[summary]=Manual CI requested by $SENDER_LOGIN."
+            manual_check_run_id="$latest_manual_ci_id"
+          elif [ "$latest_manual_ci_status" = "in_progress" ]; then
+            skip_ci "Ignoring request because Manual CI is already running for $head_sha."
+          elif [ -n "$latest_manual_ci_id" ] && [ "$latest_manual_ci_status" != "completed" ]; then
+            skip_ci "Ignoring request because Manual CI has unexpected status '$latest_manual_ci_status' for $head_sha."
+          else
+            manual_check_run_id="$(
+              gh api --method POST "repos/$REPO/check-runs" \
+                -f name="Manual CI" \
+                -f head_sha="$head_sha" \
+                -f status=in_progress \
+                -f details_url="$run_url" \
+                -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                -f "output[title]=Manual CI" \
+                -f "output[summary]=Manual CI requested by $SENDER_LOGIN." \
+                --jq '.id'
+            )"
+          fi
 
           {
             echo "manual_check_run_id=$manual_check_run_id"
