@@ -120,8 +120,6 @@ jobs:
 
   format-and-lint:
     name: Check formatting and linting
-    needs: prepare-manual-ci-check-runs
-    if: always() && (!inputs.report_check_runs || needs.prepare-manual-ci-check-runs.result == 'success')
     runs-on: macos-26
     steps:
       - name: Checkout repository
