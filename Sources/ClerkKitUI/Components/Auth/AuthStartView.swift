@@ -27,7 +27,7 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
   #endif
 
@@ -165,14 +165,14 @@ struct AuthStartView: View {
   }
 
   private var hasAlternativeAuthMethods: Bool {
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     hasSocialProviders || shouldShowTrustedDeviceSignIn
     #else
     hasSocialProviders
     #endif
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   private var trustedDeviceFeatureIsEnabled: Bool {
     clerk.environment?.authConfig.nativeSettings.trustedDeviceSignInEnabled == true
   }
@@ -324,7 +324,7 @@ struct AuthStartView: View {
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: trustedDeviceAvailabilityRefreshState) {
       await refreshTrustedDeviceAvailability()
     }
@@ -332,7 +332,7 @@ struct AuthStartView: View {
   }
 }
 
-#if os(iOS)
+#if os(iOS) && !targetEnvironment(macCatalyst)
 private enum TrustedDeviceAvailabilityRefreshState: Equatable {
   case disabled
   case signedOut(identifierHint: String?)
@@ -432,7 +432,7 @@ extension AuthStartView {
     .simultaneousGesture(TapGesture())
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   private var trustedDeviceSignInButton: some View {
     TrustedDeviceSignInButton {
       cancelAutomaticPasskeySignIn()
@@ -444,7 +444,7 @@ extension AuthStartView {
 
   private var alternativeAuthMethodsSection: some View {
     VStack(spacing: 16) {
-      #if os(iOS)
+      #if os(iOS) && !targetEnvironment(macCatalyst)
       if shouldShowTrustedDeviceSignIn {
         trustedDeviceSignInButton
       }
@@ -721,7 +721,7 @@ extension AuthStartView {
     }
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   private func refreshTrustedDeviceAvailability() async {
     guard authState.mode != .signUp, trustedDeviceFeatureIsEnabled else {
       trustedDeviceAvailability = nil

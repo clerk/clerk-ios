@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) && !targetEnvironment(macCatalyst)
 
 @testable import ClerkKit
 @testable import ClerkKitUI

@@ -26,7 +26,7 @@ struct AuthNavigationTests {
     #expect(navigation.allTasksComplete)
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   @Test
   func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
     let navigation = AuthNavigation()

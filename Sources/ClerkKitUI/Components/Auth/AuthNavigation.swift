@@ -22,7 +22,7 @@ final class AuthNavigation {
   /// Set to `true` when all session tasks are complete.
   private(set) var allTasksComplete = false
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   /// Whether trusted-device enrollment has already been offered in this auth flow.
   private(set) var trustedDeviceEnrollmentWasOffered = false
   #endif
@@ -120,7 +120,7 @@ final class AuthNavigation {
     allTasksComplete = true
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   @MainActor
   func routeToTrustedDeviceEnrollment() {
     trustedDeviceEnrollmentWasOffered = true
@@ -139,7 +139,7 @@ final class AuthNavigation {
     }
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   var hasTrustedDeviceEnrollmentInPath: Bool {
     path.contains(.trustedDeviceEnrollment)
   }
