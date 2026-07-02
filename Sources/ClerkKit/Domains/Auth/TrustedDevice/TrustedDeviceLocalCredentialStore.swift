@@ -142,7 +142,14 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
 
   @MainActor
   func deleteAllLocalCredentials(keyManager: any TrustedDeviceKeyManagerProtocol) throws {
-    let credentials = try all()
+    let credentials: [TrustedDeviceLocalCredential]
+    do {
+      credentials = try all()
+    } catch _ as DecodingError {
+      try deleteAllMalformedLocalCredentials(keyManager: keyManager)
+      return
+    }
+
     var remainingCredentials: [TrustedDeviceLocalCredential] = []
     var keyDeletionError: Error?
 
@@ -167,6 +174,39 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
   }
 
   @MainActor
+  private func deleteAllMalformedLocalCredentials(keyManager: any TrustedDeviceKeyManagerProtocol) throws {
+    guard let data = try keychain.data(forKey: keychainKey) else {
+      return
+    }
+
+    let deletionRecords: [TrustedDeviceLocalCredentialDeletionRecord]
+    do {
+      deletionRecords = try Self.metadataDecoder().decode(
+        [TrustedDeviceLocalCredentialDeletionRecord].self,
+        from: data
+      )
+    } catch {
+      try deleteAll()
+      return
+    }
+
+    var keyDeletionError: Error?
+    for record in deletionRecords {
+      do {
+        try keyManager.deleteKey(localKeyId: record.localKeyId)
+      } catch {
+        keyDeletionError = keyDeletionError ?? error
+      }
+    }
+
+    if let keyDeletionError {
+      throw keyDeletionError
+    }
+
+    try deleteAll()
+  }
+
+  @MainActor
   private func persist(_ credentials: [TrustedDeviceLocalCredential]) throws {
     if credentials.isEmpty {
       try deleteAll()
@@ -187,4 +227,8 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
     decoder.dateDecodingStrategy = .millisecondsSince1970
     return decoder
   }
+}
+
+private struct TrustedDeviceLocalCredentialDeletionRecord: Decodable {
+  let localKeyId: String
 }
