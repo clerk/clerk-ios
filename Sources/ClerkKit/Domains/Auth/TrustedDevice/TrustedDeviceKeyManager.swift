@@ -31,7 +31,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
   @MainActor
   func isSupported(policy: TrustedDevicePolicy) -> Bool {
-    #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
+    #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     let context = LAContext()
     var error: NSError?
     return context.canEvaluatePolicy(Self.localAuthenticationPolicy(for: policy), error: &error)
@@ -42,7 +42,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
   @MainActor
   func createKey(policy: TrustedDevicePolicy = .biometryOrDevicePasscode) throws -> TrustedDeviceLocalKey {
-    #if os(iOS) && !targetEnvironment(macCatalyst)
+    #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     guard isSupported(policy: policy) else {
       throw TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
     }
@@ -123,7 +123,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     query[kSecReturnRef as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
 
-    #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
+    #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     let context = LAContext()
     if let localizedReason {
       context.localizedReason = localizedReason
@@ -184,7 +184,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     localKeyId: String,
     accessControl: SecAccessControl
   ) -> [String: Any] {
-    [
+    var attributes: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeySizeInBits as String: 256,
       kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
@@ -194,15 +194,27 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
         kSecAttrAccessControl as String: accessControl,
       ],
     ]
+
+    #if os(macOS)
+    attributes[kSecUseDataProtectionKeychain as String] = kCFBooleanTrue
+    #endif
+
+    return attributes
   }
 
   package static func privateKeyQuery(localKeyId: String) -> [String: Any] {
-    [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrApplicationTag as String: applicationTag(localKeyId: localKeyId),
     ]
+
+    #if os(macOS)
+    query[kSecUseDataProtectionKeychain as String] = kCFBooleanTrue
+    #endif
+
+    return query
   }
 
   package static func privateKeyLookupError(for status: OSStatus) -> Error {
@@ -251,7 +263,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return try publicKeyJWK(fromX963Representation: representation)
   }
 
-  #if os(iOS) && !targetEnvironment(macCatalyst) && canImport(LocalAuthentication)
+  #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
   package static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
     switch policy {
     case .biometryCurrentSet, .biometryAny:
@@ -329,7 +341,7 @@ public enum TrustedDeviceKeyManagerError: Error, Equatable, LocalizedError, Send
   public var errorDescription: String? {
     switch self {
     case .unsupportedPlatform:
-      "Trusted-device biometric sign-in is only available on supported iOS devices."
+      "Trusted-device biometric sign-in is only available on supported Apple devices."
     case .biometricAuthenticationUnavailable:
       "Biometric authentication is not available or not enrolled on this device."
     case .biometricAuthenticationCanceled:

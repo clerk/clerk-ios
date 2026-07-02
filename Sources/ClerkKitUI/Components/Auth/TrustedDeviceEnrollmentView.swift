@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS) && !targetEnvironment(macCatalyst)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import SwiftUI
@@ -40,10 +40,12 @@ struct TrustedDeviceEnrollmentView: View {
     }
     .background(theme.colors.background)
     .clerkErrorPresenting($error)
+    #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
     .navigationBarBackButtonHidden()
     .toolbar(.visible, for: .navigationBar)
     .preGlassSolidNavBar()
+    #endif
   }
 }
 
