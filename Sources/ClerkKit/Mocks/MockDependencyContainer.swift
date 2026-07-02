@@ -40,6 +40,7 @@ final class MockDependencyContainer: Dependencies {
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
+  let billingService: BillingServiceProtocol
 
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
@@ -63,6 +64,7 @@ final class MockDependencyContainer: Dependencies {
   ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
   ///   - phoneNumberService: Optional custom phone number service (defaults to MockPhoneNumberService).
   ///   - externalAccountService: Optional custom external account service (defaults to MockExternalAccountService).
+  ///   - billingService: Optional custom billing service (defaults to MockBillingService).
   init(
     apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
@@ -86,7 +88,8 @@ final class MockDependencyContainer: Dependencies {
     environmentService: (any EnvironmentServiceProtocol)? = nil,
     emailAddressService: (any EmailAddressServiceProtocol)? = nil,
     phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
-    externalAccountService: (any ExternalAccountServiceProtocol)? = nil
+    externalAccountService: (any ExternalAccountServiceProtocol)? = nil,
+    billingService: (any BillingServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
     self.keychain = keychain ?? InMemoryKeychain()
@@ -120,5 +123,6 @@ final class MockDependencyContainer: Dependencies {
     self.emailAddressService = emailAddressService ?? MockEmailAddressService()
     self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
     self.externalAccountService = externalAccountService ?? MockExternalAccountService()
+    self.billingService = billingService ?? MockBillingService()
   }
 }

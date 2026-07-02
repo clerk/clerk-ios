@@ -86,6 +86,9 @@ protocol Dependencies: AnyObject {
   /// Service for external account operations.
   var externalAccountService: ExternalAccountServiceProtocol { get }
 
+  /// Service for billing operations.
+  var billingService: BillingServiceProtocol { get }
+
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }
 

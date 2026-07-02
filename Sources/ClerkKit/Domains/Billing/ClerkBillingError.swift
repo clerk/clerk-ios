@@ -1,0 +1,76 @@
+//
+//  ClerkBillingError.swift
+//  Clerk
+//
+
+import Foundation
+
+/// Errors that can occur during billing and In-App Purchase operations.
+public enum ClerkBillingError: Error, LocalizedError, Equatable, Sendable {
+  /// A purchase was attempted without a signed-in user.
+  case notSignedIn
+
+  /// No store product is mapped to the plan for the requested period.
+  ///
+  /// Map a store product to the plan in the Clerk Dashboard.
+  case storeProductNotConfigured(planId: String, period: BillingPlanPeriod)
+
+  /// The mapped store product could not be loaded from the App Store.
+  case productNotFound(productId: String)
+
+  /// The user cancelled the purchase.
+  case purchaseCancelled
+
+  /// The purchase is pending external action (for example Ask to Buy) and may complete later.
+  ///
+  /// If it completes, the transaction is delivered through `Transaction.updates` and registered
+  /// automatically while transaction observation is active.
+  case purchasePending
+
+  /// StoreKit could not verify the transaction's signature.
+  case verificationFailed
+
+  /// The user already has an active subscription to the plan through another payment processor.
+  ///
+  /// The associated value identifies the processor that manages the existing subscription
+  /// (for example `clerk`, `apple`, or `google`) when the API provides it.
+  case alreadySubscribed(via: String?)
+
+  public var errorDescription: String? {
+    switch self {
+    case .notSignedIn:
+      "A user must be signed in to complete a purchase."
+    case .storeProductNotConfigured(let planId, let period):
+      "No App Store product is mapped to plan \(planId) for the \(period.rawValue) period."
+    case .productNotFound(let productId):
+      "The App Store product \(productId) could not be loaded."
+    case .purchaseCancelled:
+      "The purchase was cancelled."
+    case .purchasePending:
+      "The purchase is pending and may complete later."
+    case .verificationFailed:
+      "The App Store transaction could not be verified."
+    case .alreadySubscribed(let via):
+      if let via {
+        "The user is already subscribed to this plan via \(via)."
+      } else {
+        "The user is already subscribed to this plan through another payment processor."
+      }
+    }
+  }
+}
+
+extension ClerkBillingError {
+  /// Creates an `alreadySubscribed` error from a Clerk API error when the API signals that the
+  /// user already has an active subscription through another payment processor.
+  init?(apiError: ClerkAPIError) {
+    guard apiError.code == "already_subscribed" else {
+      return nil
+    }
+
+    // The decoder's snake-case conversion also rewrites dictionary keys inside `meta`,
+    // so look the value up under both spellings.
+    let via = apiError.meta?["already_subscribed_via"] ?? apiError.meta?["alreadySubscribedVia"]
+    self = .alreadySubscribed(via: via?.stringValue)
+  }
+}

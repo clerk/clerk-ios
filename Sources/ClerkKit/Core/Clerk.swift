@@ -268,6 +268,14 @@ public final class Clerk {
     Organizations(organizationService: dependencies.organizationService)
   }
 
+  /// The main entry point for billing operations.
+  ///
+  /// Use this property to fetch the plan catalog, purchase plans through the App Store,
+  /// and inspect the current user's subscription items.
+  public var billing: Billing {
+    Billing(billingService: dependencies.billingService)
+  }
+
   /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration

@@ -1074,3 +1074,88 @@ extension ClerkAPIError {
     )
   }
 }
+
+// MARK: - Billing
+
+extension BillingPlan {
+  public static var mock: BillingPlan {
+    BillingPlan(
+      id: "cplan_1",
+      name: "Pro",
+      slug: "pro",
+      description: "The Pro plan.",
+      fee: .mock,
+      annualFee: BillingMoneyAmount(
+        amount: 9999,
+        amountFormatted: "99.99",
+        currency: "USD",
+        currencySymbol: "$"
+      ),
+      isDefault: false,
+      isRecurring: true,
+      hasBaseFee: true,
+      forPayerType: "user",
+      publiclyVisible: true,
+      freeTrialEnabled: false,
+      features: [.mock],
+      storeProducts: [
+        BillingPlanStoreProduct(
+          store: .apple,
+          productId: "com.example.pro.monthly",
+          period: .month
+        ),
+        BillingPlanStoreProduct(
+          store: .apple,
+          productId: "com.example.pro.annual",
+          period: .annual
+        ),
+      ]
+    )
+  }
+}
+
+// MARK: BillingMoneyAmount
+
+extension BillingMoneyAmount {
+  public static var mock: BillingMoneyAmount {
+    BillingMoneyAmount(
+      amount: 999,
+      amountFormatted: "9.99",
+      currency: "USD",
+      currencySymbol: "$"
+    )
+  }
+}
+
+// MARK: BillingFeature
+
+extension BillingFeature {
+  public static var mock: BillingFeature {
+    BillingFeature(
+      id: "feature_1",
+      name: "Unlimited Widgets",
+      slug: "unlimited-widgets",
+      description: "Create as many widgets as you like."
+    )
+  }
+}
+
+// MARK: BillingSubscriptionItem
+
+extension BillingSubscriptionItem {
+  public static var mock: BillingSubscriptionItem {
+    BillingSubscriptionItem(
+      id: "csi_1",
+      status: .active,
+      plan: .mock,
+      planId: "cplan_1",
+      planPeriod: .month,
+      priceId: "cprice_1",
+      managedBy: .apple,
+      storeProductId: "com.example.pro.monthly",
+      createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      periodStart: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
+      periodEnd: Date(timeIntervalSinceReferenceDate: 1_237_246_290)
+    )
+  }
+}
