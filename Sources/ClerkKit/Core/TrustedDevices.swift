@@ -441,7 +441,7 @@ extension TrustedDevices {
       return []
     }
 
-    return try credentialStore.all().filter { $0.appIdentifier == appIdentifier }
+    return try credentialStore.all(appIdentifier: appIdentifier)
   }
 
   private func localCredentialsWithExistingKeys(

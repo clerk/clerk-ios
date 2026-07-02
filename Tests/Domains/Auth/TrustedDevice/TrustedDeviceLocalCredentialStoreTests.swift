@@ -189,6 +189,61 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func deleteLocalCredentialsDeletesOnlyMatchingAppIdentifier() throws {
+    let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    let otherAppCredential = TrustedDeviceLocalCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    try store.save(.mock)
+    try store.save(otherAppCredential)
+    try store.deleteLocalCredentials(
+      appIdentifier: "com.clerk.example",
+      keyManager: keyManager
+    )
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try store.all() == [otherAppCredential])
+  }
+
+  @Test
+  func appScopedReadsAndSavesIgnoreMalformedCredentialsForOtherApps() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [{
+          "id": "tdc_other_app",
+          "localKeyId": "tdlk_other_app",
+          "appIdentifier": "com.clerk.other",
+          "createdAt": 1234567890000,
+          "updatedAt": 1234567890000
+        }]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+
+    try store.save(.mock)
+
+    #expect(try store.all(appIdentifier: "com.clerk.example") == [.mock])
+    #expect(try store.credential(id: TrustedDeviceLocalCredential.mock.id) == .mock)
+    #expect(throws: DecodingError.self) {
+      _ = try store.all()
+    }
+  }
+
+  @Test
   func deleteAllLocalCredentialsDeletesMalformedMetadataAfterDeletingKeys() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(
@@ -245,6 +300,55 @@ struct TrustedDeviceLocalCredentialStoreTests {
 
     #expect(deletedLocalKeyIds.value == ["tdlk_legacy"])
     #expect(try keychain.data(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == metadata)
+  }
+
+  @Test
+  func deleteLocalCredentialsDeletesOnlyMatchingAppIdentifierFromMalformedMetadata() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [
+          {
+            "id": "tdc_current_app",
+            "localKeyId": "tdlk_current_app",
+            "appIdentifier": "com.clerk.example",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          },
+          {
+            "id": "tdc_other_app",
+            "localKeyId": "tdlk_other_app",
+            "appIdentifier": "com.clerk.other",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          }
+        ]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    try store.deleteLocalCredentials(
+      appIdentifier: "com.clerk.example",
+      keyManager: keyManager
+    )
+
+    let remainingData = try #require(try keychain.data(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue))
+    let remainingObject = try JSONSerialization.jsonObject(with: remainingData)
+    let remainingRecords = try #require(remainingObject as? [[String: Any]])
+    let remainingRecord = try #require(remainingRecords.first)
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_current_app"])
+    #expect(try store.all(appIdentifier: "com.clerk.example").isEmpty)
+    #expect(remainingRecords.count == 1)
+    #expect(remainingRecord["localKeyId"] as? String == "tdlk_other_app")
+    #expect(remainingRecord["appIdentifier"] as? String == "com.clerk.other")
   }
 
   @Test
