@@ -57,7 +57,7 @@ struct UserProfileSecurityView: View {
   }
 
   private var localTrustedDeviceAvailability: TrustedDeviceAvailability? {
-    guard trustedDeviceFeatureIsEnabled, let user else {
+    guard trustedDeviceFeatureIsEnabled else {
       return nil
     }
 
@@ -162,7 +162,7 @@ struct UserProfileSecurityView: View {
 extension UserProfileSecurityView {
   @MainActor
   private func refreshLocalTrustedDeviceAvailability() {
-    guard trustedDeviceFeatureIsEnabled, let user else {
+    guard trustedDeviceFeatureIsEnabled else {
       trustedDeviceAvailability = nil
       return
     }
@@ -178,7 +178,7 @@ extension UserProfileSecurityView {
   @MainActor
   @discardableResult
   private func refreshTrustedDeviceAvailability() async -> TrustedDeviceAvailability? {
-    guard trustedDeviceFeatureIsEnabled, let user else {
+    guard trustedDeviceFeatureIsEnabled else {
       trustedDeviceAvailability = nil
       return nil
     }

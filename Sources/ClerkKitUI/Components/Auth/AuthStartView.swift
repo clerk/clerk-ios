@@ -580,6 +580,7 @@ extension AuthStartView {
     }
   }
 
+  @discardableResult
   private func authenticateWithPasskey(
     signIn: SignIn,
     autofill: Bool,
