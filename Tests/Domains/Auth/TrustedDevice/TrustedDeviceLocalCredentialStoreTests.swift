@@ -189,6 +189,65 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func deleteAllLocalCredentialsDeletesMalformedMetadataAfterDeletingKeys() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [{
+          "id": "tdc_legacy",
+          "localKeyId": "tdlk_legacy",
+          "appIdentifier": "com.clerk.example",
+          "createdAt": 1234567890000,
+          "updatedAt": 1234567890000
+        }]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    try store.deleteAllLocalCredentials(keyManager: keyManager)
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_legacy"])
+    #expect(try store.all().isEmpty)
+  }
+
+  @Test
+  func deleteAllLocalCredentialsPreservesMalformedMetadataForFailedKeyDeletions() throws {
+    let metadata = Data(
+      """
+      [{
+        "id": "tdc_legacy",
+        "localKeyId": "tdlk_legacy",
+        "appIdentifier": "com.clerk.example",
+        "createdAt": 1234567890000,
+        "updatedAt": 1234567890000
+      }]
+      """.utf8
+    )
+    let keychain = InMemoryKeychain()
+    try keychain.set(metadata, forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      throw TestKeyDeletionError.failed
+    })
+
+    #expect(throws: TestKeyDeletionError.self) {
+      try store.deleteAllLocalCredentials(keyManager: keyManager)
+    }
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_legacy"])
+    #expect(try keychain.data(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == metadata)
+  }
+
+  @Test
   func corruptCredentialMetadataThrows() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(Data("not-json".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
