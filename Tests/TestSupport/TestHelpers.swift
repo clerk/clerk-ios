@@ -41,6 +41,7 @@ func setupMockAPIClient() {
     sessionService: SessionService(apiClient: mockAPIClient),
     magicLinkService: MagicLinkService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
+    trustedDeviceService: TrustedDeviceService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     environmentService: EnvironmentService(apiClient: mockAPIClient),
     emailAddressService: EmailAddressService(apiClient: mockAPIClient),
@@ -65,7 +66,7 @@ func createMockAPIClient(
       "Content-Type": "application/x-www-form-urlencoded",
       "clerk-api-version": Clerk.apiVersion,
       "x-ios-sdk-version": Clerk.sdkVersion,
-      "x-mobile": "1",
+      "x-mobile": DependencyContainer.mobileHeaderValue,
     ]
   }
 }

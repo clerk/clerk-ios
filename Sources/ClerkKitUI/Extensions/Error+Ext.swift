@@ -6,6 +6,7 @@
 #if os(iOS) || os(macOS)
 
 import AuthenticationServices
+import ClerkKit
 import Foundation
 
 extension Error {
@@ -13,6 +14,12 @@ extension Error {
     if case ASWebAuthenticationSessionError.canceledLogin = self { return true }
 
     if let authError = self as? ASAuthorizationError, authError.errorUserInfo["NSLocalizedFailureReason"] == nil {
+      return true
+    }
+
+    if let trustedDeviceError = self as? TrustedDeviceKeyManagerError,
+       trustedDeviceError == .biometricAuthenticationCanceled
+    {
       return true
     }
 

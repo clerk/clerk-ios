@@ -27,6 +27,7 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
+  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
 
   // MARK: - Configuration
 
@@ -58,7 +59,7 @@ struct AuthStartView: View {
   }
 
   var showOrDivider: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
+    hasAlternativeAuthMethods && showIdentifierField
   }
 
   var phoneNumberInputIsActive: Bool {
@@ -157,6 +158,14 @@ struct AuthStartView: View {
     return LastUsedAuth(environment: clerk.environment)
   }
 
+  private var hasSocialProviders: Bool {
+    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
+  }
+
+  private var hasAlternativeAuthMethods: Bool {
+    hasSocialProviders || shouldShowTrustedDeviceSignIn
+  }
+
   // MARK: - Display Strings
 
   private var titleString: LocalizedStringKey {
@@ -236,7 +245,9 @@ struct AuthStartView: View {
             TextDivider(string: "or")
           }
 
-          socialButtonsSection
+          if hasAlternativeAuthMethods {
+            alternativeAuthMethodsSection
+          }
         }
         .padding(.bottom, 32)
 
@@ -280,6 +291,42 @@ struct AuthStartView: View {
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
+    .task(id: trustedDeviceAvailabilityRefreshState) {
+      await refreshTrustedDeviceAvailability()
+    }
+  }
+}
+
+private enum TrustedDeviceAvailabilityRefreshState: Equatable {
+  case disabled
+  case signedOut(identifierHint: String?)
+  case signedIn(activeSessionID: String, identifierHint: String?)
+}
+
+extension AuthStartView {
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    clerk.environment?.authConfig.nativeSettings.trustedDeviceSignInEnabled == true
+  }
+
+  private var shouldShowTrustedDeviceSignIn: Bool {
+    trustedDeviceFeatureIsEnabled &&
+      authState.mode != .signUp &&
+      trustedDeviceAvailability?.isAvailable == true
+  }
+
+  private var trustedDeviceIdentifierHint: String? {
+    let trimmedIdentifier = activeIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmedIdentifier.isEmpty ? nil : trimmedIdentifier
+  }
+
+  private var trustedDeviceAvailabilityRefreshState: TrustedDeviceAvailabilityRefreshState {
+    guard trustedDeviceFeatureIsEnabled else {
+      return .disabled
+    }
+    guard clerk.session?.status == .active, let sessionID = clerk.session?.id else {
+      return .signedOut(identifierHint: trustedDeviceIdentifierHint)
+    }
+    return .signedIn(activeSessionID: sessionID, identifierHint: trustedDeviceIdentifierHint)
   }
 }
 
@@ -373,6 +420,24 @@ extension AuthStartView {
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.identifierSwitcherButton)
     .simultaneousGesture(TapGesture())
+  }
+
+  private var trustedDeviceSignInButton: some View {
+    TrustedDeviceSignInButton {
+      cancelAutomaticPasskeySignIn()
+      await signInWithTrustedDevice()
+    }
+    .simultaneousGesture(TapGesture())
+  }
+
+  private var alternativeAuthMethodsSection: some View {
+    VStack(spacing: 16) {
+      if shouldShowTrustedDeviceSignIn {
+        trustedDeviceSignInButton
+      }
+
+      socialButtonsSection
+    }
   }
 
   private var socialButtonsSection: some View {
@@ -501,6 +566,7 @@ extension AuthStartView {
     }
   }
 
+  @discardableResult
   private func authenticateWithPasskey(
     signIn: SignIn,
     autofill: Bool,
@@ -638,6 +704,41 @@ extension AuthStartView {
       true
     default:
       false
+    }
+  }
+
+  private func refreshTrustedDeviceAvailability() async {
+    guard authState.mode != .signUp, trustedDeviceFeatureIsEnabled else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    trustedDeviceAvailability = try? await clerk.trustedDevices.availability(
+      identifierHint: trustedDeviceIdentifierHint
+    )
+  }
+
+  private func signInWithTrustedDevice() async {
+    generalError = nil
+
+    do {
+      let signIn = try await clerk.trustedDevices.signIn(
+        identifierHint: trustedDeviceIdentifierHint
+      )
+      navigation.setToStepForStatus(signIn: signIn)
+    } catch {
+      if error.isCancellationError {
+        return
+      }
+
+      if error.isUserCancelledError {
+        restartAutomaticPasskeySignInIfNeeded()
+        return
+      }
+
+      generalError = error
+      await refreshTrustedDeviceAvailability()
+      restartAutomaticPasskeySignInIfNeeded()
     }
   }
 }

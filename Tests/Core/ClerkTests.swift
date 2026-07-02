@@ -87,6 +87,7 @@ struct ClerkTests {
     try keychain.set("true", forKey: ClerkKeychainKey.clerkDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
     try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
+    try keychain.set(Data("[]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
 
     // Verify all keys exist before clearing
     for key in ClerkKeychainKey.allCases {
@@ -169,6 +170,182 @@ struct ClerkTests {
 
     // Verify key was deleted
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+  }
+
+  @Test
+  func configureClearsCurrentAppTrustedDeviceCredentialsWhenInstallMarkerIsMissing() throws {
+    let suiteName = installationMarkerDefaultsSuiteName()
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    let originalDefaults = Clerk.installationMarkerUserDefaults
+    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    Clerk.installationMarkerUserDefaults = defaults
+    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    defer {
+      Clerk.installationMarkerUserDefaults = originalDefaults
+      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let keychain = InMemoryKeychain()
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let otherAppCredential = TrustedDeviceLocalCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: keychain,
+      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      }),
+      trustedDeviceCredentialStore: credentialStore
+    )
+    try credentialStore.save(.mock)
+    try credentialStore.save(otherAppCredential)
+
+    let clerk = Clerk()
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try credentialStore.all() == [otherAppCredential])
+  }
+
+  @Test
+  func configureKeepsTrustedDeviceCredentialsWhenInstallMarkerExists() throws {
+    let suiteName = installationMarkerDefaultsSuiteName()
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    let originalDefaults = Clerk.installationMarkerUserDefaults
+    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    Clerk.installationMarkerUserDefaults = defaults
+    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    defer {
+      Clerk.installationMarkerUserDefaults = originalDefaults
+      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let keychain = InMemoryKeychain()
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: keychain,
+      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      }),
+      trustedDeviceCredentialStore: credentialStore
+    )
+
+    let firstConfigure = Clerk()
+    firstConfigure.performConfiguration(dependencies: dependencies)
+    firstConfigure.cleanupManagers()
+
+    try credentialStore.save(.mock)
+    let secondConfigure = Clerk()
+    secondConfigure.performConfiguration(dependencies: dependencies)
+    defer { secondConfigure.cleanupManagers() }
+
+    #expect(deletedLocalKeyIds.value.isEmpty)
+    #expect(try credentialStore.all() == [.mock])
+  }
+
+  @Test
+  func configureMigratesLegacyTrustedDeviceInstallationMarkerWithoutDeletingCredentials() throws {
+    let suiteName = installationMarkerDefaultsSuiteName()
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    let originalDefaults = Clerk.installationMarkerUserDefaults
+    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    let keychainConfig = Clerk.Options().keychainConfig
+    Clerk.installationMarkerUserDefaults = defaults
+    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    defaults.set(
+      true,
+      forKey: trustedDeviceInstallationMarkerKey(keychainConfig: keychainConfig)
+    )
+    defer {
+      Clerk.installationMarkerUserDefaults = originalDefaults
+      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let keychain = InMemoryKeychain()
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: keychain,
+      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      }),
+      trustedDeviceCredentialStore: credentialStore
+    )
+    try credentialStore.save(.mock)
+
+    let clerk = Clerk()
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(deletedLocalKeyIds.value.isEmpty)
+    #expect(try credentialStore.all() == [.mock])
+    #expect(defaults.bool(forKey: trustedDeviceInstallationMarkerKey(
+      keychainConfig: keychainConfig,
+      appIdentifier: "com.clerk.example"
+    )))
+  }
+
+  @Test
+  func configureUsesAppScopedTrustedDeviceInstallationMarkers() throws {
+    let suiteName = installationMarkerDefaultsSuiteName()
+    let defaults = try #require(UserDefaults(suiteName: suiteName))
+    let originalDefaults = Clerk.installationMarkerUserDefaults
+    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    Clerk.installationMarkerUserDefaults = defaults
+    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    defer {
+      Clerk.installationMarkerUserDefaults = originalDefaults
+      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    let keychain = InMemoryKeychain()
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let otherAppCredential = TrustedDeviceLocalCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: keychain,
+      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      }),
+      trustedDeviceCredentialStore: credentialStore
+    )
+
+    let firstConfigure = Clerk()
+    firstConfigure.performConfiguration(dependencies: dependencies)
+    firstConfigure.cleanupManagers()
+
+    try credentialStore.save(otherAppCredential)
+    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.other" }
+
+    let secondConfigure = Clerk()
+    secondConfigure.performConfiguration(dependencies: dependencies)
+    defer { secondConfigure.cleanupManagers() }
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_other_app"])
+    #expect(try credentialStore.all().isEmpty)
   }
 
   // MARK: - isLoaded Tests
@@ -452,4 +629,23 @@ struct ClerkTests {
     environment.displayConfig.instanceEnvironmentType = type
     return environment
   }
+}
+
+private func installationMarkerDefaultsSuiteName() -> String {
+  "com.clerk.tests.installation-marker.\(UUID().uuidString)"
+}
+
+private func trustedDeviceInstallationMarkerKey(
+  keychainConfig: Clerk.Options.KeychainConfig,
+  appIdentifier: String? = nil
+) -> String {
+  var components = [
+    "com.clerk.trusted-device-installation-marker",
+    keychainConfig.service,
+    keychainConfig.accessGroup ?? "default",
+  ]
+  if let appIdentifier {
+    components.append(appIdentifier)
+  }
+  return components.joined(separator: ".")
 }

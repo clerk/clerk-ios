@@ -27,7 +27,7 @@ struct ClerkAPIClientTests {
       #expect(request.allHTTPHeaderFields?["Content-Type"] == "application/x-www-form-urlencoded")
       #expect(request.allHTTPHeaderFields?["clerk-api-version"] == Clerk.apiVersion)
       #expect(request.allHTTPHeaderFields?["x-ios-sdk-version"] == Clerk.sdkVersion)
-      #expect(request.allHTTPHeaderFields?["x-mobile"] == "1")
+      #expect(request.allHTTPHeaderFields?["x-mobile"] == DependencyContainer.mobileHeaderValue)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -39,6 +39,15 @@ struct ClerkAPIClientTests {
 
     _ = try await Clerk.shared.dependencies.apiClient.send(request)
     #expect(requestHandled.value)
+  }
+
+  @Test
+  func mobileHeaderValueMatchesPlatform() {
+    #if os(macOS) || targetEnvironment(macCatalyst)
+    #expect(DependencyContainer.mobileHeaderValue == "0")
+    #else
+    #expect(DependencyContainer.mobileHeaderValue == "1")
+    #endif
   }
 
   @Test

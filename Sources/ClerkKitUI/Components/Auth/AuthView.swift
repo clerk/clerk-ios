@@ -170,18 +170,16 @@ public struct AuthView: View {
     .task {
       for await event in clerk.auth.events {
         switch event {
+        case .signInCompleted(let signIn):
+          await completeAuthFlow(after: .signIn(signIn))
+        case .signUpCompleted(let signUp):
+          await completeAuthFlow(after: .signUp(signUp))
         case .signInNeedsContinuation(let signIn):
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
           resumeAuth(.signUp(signUp))
         case .sessionChanged(let oldValue, let newValue):
-          guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
-          let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
-          let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
-          let sessionSwitched = oldValue?.id != newValue?.id
-          if becameActive, isDismissible, !isHandlingSessionTask || sessionSwitched {
-            dismiss()
-          }
+          routeToExistingSessionTaskStartIfNeeded(oldValue: oldValue, newValue: newValue)
         default:
           break
         }
@@ -189,12 +187,9 @@ public struct AuthView: View {
     }
     .onChange(of: navigation.allTasksComplete) { _, isComplete in
       guard isComplete else { return }
-      if isDismissible {
-        dismiss()
+      Task {
+        await completeAuthFlowAfterSessionTasks()
       }
-    }
-    .onChange(of: clerk.session?.tasks) { _, _ in
-      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
     }
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
@@ -231,9 +226,11 @@ public struct AuthView: View {
 }
 
 extension AuthView {
-  /// Whether the dismiss button should be shown, accounting for required session tasks.
+  /// Whether the dismiss button should be shown, accounting for final auth-flow steps.
   private var showDismissButton: Bool {
-    isDismissible && !navigation.hasSessionTaskStartInPath
+    isDismissible &&
+      !navigation.hasSessionTaskStartInPath &&
+      !navigation.hasTrustedDeviceEnrollmentInPath
   }
 
   @ToolbarContentBuilder
@@ -254,6 +251,101 @@ extension AuthView {
       navigation.setToStepForStatus(signUp: signUp)
       clerk.setCallbackContinuation(nil)
     }
+  }
+
+  private func completeAuthFlow(after result: TransferFlowResult) async {
+    guard let session = clerk.session else {
+      return
+    }
+
+    if let createdSessionId = result.createdSessionId,
+       createdSessionId != session.id
+    {
+      return
+    }
+
+    if await presentTrustedDeviceEnrollmentIfNeeded(after: result) {
+      return
+    }
+
+    completeAuthFlow(with: session)
+  }
+
+  private func completeAuthFlowAfterSessionTasks() async {
+    guard let session = clerk.session else {
+      return
+    }
+
+    completeAuthFlow(with: session)
+  }
+
+  private func completeAuthFlow(with session: Session) {
+    if navigation.routeToSessionTaskStartIfNeeded(session: session) {
+      return
+    }
+
+    if isDismissible {
+      dismiss()
+    }
+  }
+
+  private func routeToExistingSessionTaskStartIfNeeded(oldValue: Session?, newValue: Session?) {
+    guard oldValue?.id == newValue?.id || navigation.hasSessionTaskStartInPath else {
+      return
+    }
+
+    navigation.routeToSessionTaskStartIfNeeded(session: newValue)
+  }
+
+  @discardableResult
+  private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
+    guard clerk.callbackContinuation == nil,
+          trustedDeviceFeatureIsEnabled,
+          !navigation.hasSessionTaskStartInPath,
+          !navigation.trustedDeviceEnrollmentWasOffered,
+          let session = clerk.session,
+          let userID = session.user?.id
+    else {
+      return false
+    }
+
+    guard session.status.allowsTrustedDeviceEnrollment else {
+      return false
+    }
+
+    let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+    guard biometryDisplayName.isSupported else {
+      return false
+    }
+
+    let promptStore = TrustedDeviceEnrollmentPromptStore()
+    guard result.shouldOfferTrustedDeviceEnrollmentPrompt(
+      userID: userID,
+      promptStore: promptStore
+    ) else {
+      return false
+    }
+
+    do {
+      let availability = try await clerk.trustedDevices.currentUserAvailability()
+      guard !availability.isAvailable, availability.canPromptForEnrollment else {
+        return false
+      }
+      promptStore.markPromptSeen(userID: userID)
+      navigation.routeToTrustedDeviceEnrollment()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
+      return false
+    }
+
+    return nativeSettings.apiEnabled &&
+      nativeSettings.trustedDeviceSignInEnabled
   }
 }
 
@@ -367,6 +459,8 @@ extension AuthView {
       mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
     )
 
+    case trustedDeviceEnrollment
+
     @MainActor
     @ViewBuilder
     var view: some View {
@@ -417,6 +511,8 @@ extension AuthView {
           backupCodes: backupCodes,
           mfaType: mfaType
         )
+      case .trustedDeviceEnrollment:
+        TrustedDeviceEnrollmentView()
       }
     }
   }

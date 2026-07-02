@@ -27,6 +27,18 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+
+    navigation.routeToTrustedDeviceEnrollment()
+
+    #expect(navigation.path == [.signUpCompleteProfile, .trustedDeviceEnrollment])
+    #expect(navigation.hasTrustedDeviceEnrollmentInPath)
+    #expect(navigation.trustedDeviceEnrollmentWasOffered)
+  }
+
+  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(

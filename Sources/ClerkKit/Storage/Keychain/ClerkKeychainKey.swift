@@ -32,4 +32,7 @@ enum ClerkKeychainKey: String, CaseIterable {
 
   /// Key for the pending magic-link flow.
   case pendingMagicLinkFlow
+
+  /// Key for trusted-device credential metadata.
+  case trustedDeviceCredentials
 }
