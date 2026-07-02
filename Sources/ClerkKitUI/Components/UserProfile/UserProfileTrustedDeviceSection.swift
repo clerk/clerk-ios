@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS)
+#if os(iOS) && !targetEnvironment(macCatalyst)
 
 import ClerkKit
 import SwiftUI

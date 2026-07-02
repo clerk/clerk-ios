@@ -229,7 +229,7 @@ public struct AuthView: View {
 extension AuthView {
   /// Whether the dismiss button should be shown, accounting for final auth-flow steps.
   private var showDismissButton: Bool {
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     isDismissible &&
       !navigation.hasSessionTaskStartInPath &&
       !navigation.hasTrustedDeviceEnrollmentInPath
@@ -304,7 +304,7 @@ extension AuthView {
 
   @discardableResult
   private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     guard clerk.callbackContinuation == nil,
           trustedDeviceFeatureIsEnabled,
           !navigation.hasSessionTaskStartInPath,
@@ -348,7 +348,7 @@ extension AuthView {
     #endif
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   private var trustedDeviceFeatureIsEnabled: Bool {
     guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
       return false
@@ -470,7 +470,7 @@ extension AuthView {
       mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
     )
 
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     case trustedDeviceEnrollment
     #endif
 
@@ -524,7 +524,7 @@ extension AuthView {
           backupCodes: backupCodes,
           mfaType: mfaType
         )
-      #if os(iOS)
+      #if os(iOS) && !targetEnvironment(macCatalyst)
       case .trustedDeviceEnrollment:
         TrustedDeviceEnrollmentView()
       #endif

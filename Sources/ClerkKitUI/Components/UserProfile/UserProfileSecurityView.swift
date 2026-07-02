@@ -14,7 +14,7 @@ struct UserProfileSecurityView: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @State private var error: Error?
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
   private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
   #endif
@@ -32,7 +32,7 @@ struct UserProfileSecurityView: View {
     return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
-  #if os(iOS)
+  #if os(iOS) && !targetEnvironment(macCatalyst)
   private var trustedDeviceFeatureIsEnabled: Bool {
     guard let nativeSettings = environment?.authConfig.nativeSettings else {
       return false
@@ -90,7 +90,7 @@ struct UserProfileSecurityView: View {
               UserProfilePasswordSection()
             }
 
-            #if os(iOS)
+            #if os(iOS) && !targetEnvironment(macCatalyst)
             if trustedDeviceFeatureIsEnabled {
               UserProfileTrustedDeviceSection(
                 isEnabled: trustedDeviceIsEnabled,
@@ -140,7 +140,7 @@ struct UserProfileSecurityView: View {
     .task {
       _ = try? await user?.getSessions()
     }
-    #if os(iOS)
+    #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: trustedDeviceAvailabilityRefreshKey) {
       refreshLocalTrustedDeviceAvailability()
       await refreshTrustedDeviceAvailability()
@@ -158,7 +158,7 @@ struct UserProfileSecurityView: View {
   }
 }
 
-#if os(iOS)
+#if os(iOS) && !targetEnvironment(macCatalyst)
 extension UserProfileSecurityView {
   @MainActor
   private func refreshLocalTrustedDeviceAvailability() {
