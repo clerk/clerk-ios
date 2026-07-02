@@ -14,10 +14,8 @@ struct UserProfileSecurityView: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @State private var error: Error?
 
-  #if os(iOS) && !targetEnvironment(macCatalyst)
   @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
   private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
-  #endif
 
   private var user: User? {
     clerk.user
@@ -32,7 +30,6 @@ struct UserProfileSecurityView: View {
     return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
-  #if os(iOS) && !targetEnvironment(macCatalyst)
   private var trustedDeviceFeatureIsEnabled: Bool {
     guard let nativeSettings = environment?.authConfig.nativeSettings else {
       return false
@@ -77,7 +74,6 @@ struct UserProfileSecurityView: View {
       userID: user.id
     )
   }
-  #endif
 
   var body: some View {
     @Bindable var navigation = navigation
@@ -90,14 +86,12 @@ struct UserProfileSecurityView: View {
               UserProfilePasswordSection()
             }
 
-            #if os(iOS) && !targetEnvironment(macCatalyst)
             if trustedDeviceFeatureIsEnabled {
               UserProfileTrustedDeviceSection(
                 isEnabled: trustedDeviceIsEnabled,
                 refreshAvailability: refreshTrustedDeviceAvailability
               )
             }
-            #endif
 
             if environment?.passkeyIsEnabled == true {
               UserProfilePasskeySection()
@@ -140,12 +134,10 @@ struct UserProfileSecurityView: View {
     .task {
       _ = try? await user?.getSessions()
     }
-    #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: trustedDeviceAvailabilityRefreshKey) {
       refreshLocalTrustedDeviceAvailability()
       await refreshTrustedDeviceAvailability()
     }
-    #endif
     .task {
       _ = try? await clerk.refreshClient()
     }
@@ -158,7 +150,6 @@ struct UserProfileSecurityView: View {
   }
 }
 
-#if os(iOS) && !targetEnvironment(macCatalyst)
 extension UserProfileSecurityView {
   @MainActor
   private func refreshLocalTrustedDeviceAvailability() {
@@ -198,7 +189,6 @@ extension UserProfileSecurityView {
     }
   }
 }
-#endif
 
 #Preview {
   NavigationStack {
