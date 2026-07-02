@@ -21,7 +21,7 @@ final class BillingService: BillingServiceProtocol {
   @MainActor
   func getPlans() async throws -> ClerkPaginatedResponse<BillingPlan> {
     let request = Request<ClerkPaginatedResponse<BillingPlan>>(
-      path: "/v1/commerce/plans",
+      path: "/v1/billing/plans",
       method: .get,
       query: [("payer_type", value: "user")]
     )
@@ -32,7 +32,7 @@ final class BillingService: BillingServiceProtocol {
   @MainActor
   func getSubscriptionItems() async throws -> ClerkPaginatedResponse<BillingSubscriptionItem> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingSubscriptionItem>>>(
-      path: "/v1/me/commerce/subscription_items",
+      path: "/v1/me/billing/subscription_items",
       method: .get,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
     )
@@ -43,7 +43,7 @@ final class BillingService: BillingServiceProtocol {
   @MainActor
   func createStorePurchase(store: BillingStore, payload: String) async throws -> BillingSubscriptionItem {
     let request = Request<ClientResponse<BillingSubscriptionItem>>(
-      path: "/v1/me/commerce/store_purchases",
+      path: "/v1/me/billing/store_purchases",
       method: .post,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: [

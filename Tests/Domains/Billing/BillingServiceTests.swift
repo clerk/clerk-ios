@@ -14,7 +14,7 @@ struct BillingServiceTests {
   @Test
   func getPlansRequestsUserPlans() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/commerce/plans")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/billing/plans")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -41,7 +41,7 @@ struct BillingServiceTests {
   @Test
   func getSubscriptionItemsRequestsUserItems() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/commerce/subscription_items")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/subscription_items")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -72,7 +72,7 @@ struct BillingServiceTests {
   @Test
   func createStorePurchaseSendsStoreAndPayload() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/commerce/store_purchases")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
@@ -103,7 +103,7 @@ struct BillingServiceTests {
 
   @Test
   func createStorePurchaseMapsAlreadySubscribedError() async throws {
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/commerce/store_purchases")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases")!
 
     let errorJSON = """
     {
@@ -139,7 +139,7 @@ struct BillingServiceTests {
 
   @Test
   func createStorePurchaseRethrowsOtherAPIErrors() async throws {
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/commerce/store_purchases")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases")!
 
     let errorJSON = """
     {
