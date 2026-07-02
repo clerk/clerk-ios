@@ -249,16 +249,17 @@ struct ClerkResponseClientStateTests {
   // MARK: - Watch Sync (Authoritative / Phone → Watch)
 
   @Test
-  func applyWatchSyncedClientCanApplyAuthoritativeIncomingState() {
+  func watchReducerCanApplyAuthoritativeIncomingState() {
     let clerk = makeIsolatedClerk()
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000, lastActiveSessionId: "session-current")
     let replacement = client(id: "client-replacement", signInId: "sign-in-replacement", updatedAt: 3000, lastActiveSessionId: "session-replacement")
 
     clerk.applyResponseClient(current, responseSequence: 10)
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       replacement,
       incomingServerFetchDate: Date(timeIntervalSince1970: 1),
-      incomingIsAuthoritative: true
+      incomingIsAuthoritative: true,
+      to: clerk
     )
 
     #expect(clerk.client?.lastActiveSessionId == "session-replacement")
@@ -266,15 +267,16 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyWatchSyncedClientAuthoritativeNilClearsClient() {
+  func watchReducerAuthoritativeNilClearsClient() {
     let clerk = makeIsolatedClerk()
     let current = client(id: "client-current", signInId: "sign-in-current", updatedAt: 4000)
     clerk.applyResponseClient(current, responseSequence: 10)
 
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       nil,
       incomingServerFetchDate: nil,
-      incomingIsAuthoritative: true
+      incomingIsAuthoritative: true,
+      to: clerk
     )
 
     #expect(clerk.client == nil)
@@ -291,15 +293,48 @@ struct ClerkResponseClientStateTests {
     let watchServerDate = Date(timeIntervalSince1970: 200)
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       watchClient,
       incomingServerFetchDate: watchServerDate,
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     #expect(clerk.client?.id == watchClient.id)
     #expect(clerk.client?.lastActiveSessionId == "session-watch")
     #expect(clerk.lastClientServerFetchDate == watchServerDate)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncSameVersionRefreshesWhenLocalVersionExists() async throws {
+    let serverClient = client(id: "client-server", signInId: "sign-in-server", updatedAt: 5000)
+    let refreshed = LockIsolated(false)
+    let clerk = makeIsolatedClerk(
+      clientService: MockClientService {
+        refreshed.setValue(true)
+        return serverClient
+      }
+    )
+    let keychain = clerk.dependencies.keychain
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
+
+    clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
+    applyRemoteAuthPayload(
+      watchClient,
+      incomingServerFetchDate: Date(timeIntervalSince1970: 200),
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 3),
+      to: clerk
+    )
+
+    #expect(clerk.client?.id == phoneClient.id)
+    try await waitUntil {
+      clerk.client?.id == serverClient.id
+    }
+    #expect(refreshed.value)
   }
 
   @Test
@@ -311,10 +346,11 @@ struct ClerkResponseClientStateTests {
     let watchServerDate = Date(timeIntervalSince1970: 100)
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       watchClient,
       incomingServerFetchDate: watchServerDate,
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     #expect(clerk.client?.id == phoneClient.id)
@@ -328,10 +364,11 @@ struct ClerkResponseClientStateTests {
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 5000, lastActiveSessionId: "session-watch")
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1)
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       watchClient,
       incomingServerFetchDate: nil,
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     // Without server fetch dates, phone keeps its client (defers to server refresh)
@@ -345,15 +382,54 @@ struct ClerkResponseClientStateTests {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
 
     clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       nil,
       incomingServerFetchDate: Date(timeIntervalSince1970: 200),
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     // Even with a newer server fetch date, nil is not accepted from watch.
     // Only the server can sign out the phone.
     #expect(clerk.client?.id == phoneClient.id)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared() {
+    let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
+    let clerk = makeIsolatedClerk(clientService: MockClientService { phoneClient })
+    let keychain = clerk.dependencies.keychain
+    let phoneServerDate = Date(timeIntervalSince1970: 100)
+    let clearServerDate = Date(timeIntervalSince1970: 200)
+    let coordinator = WatchConnectivityCoordinator()
+
+    clerk.applyResponseClient(phoneClient, responseSequence: 1, serverDate: phoneServerDate)
+    let clearPayload = WatchSyncPayload(
+      deviceTokenUpdate: .notIncluded,
+      clientUpdate: .cleared(serverFetchDate: clearServerDate, version: WatchSyncVersion(rawValue: 3)),
+      environment: nil
+    )
+
+    coordinator.apply(clearPayload, from: .watch, to: clerk)
+    let outgoingPayload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      authGeneration: coordinator.currentAuthVersion(keychain: keychain)
+    )
+
+    #expect(clerk.client?.id == phoneClient.id)
+    #expect(clerk.lastClientServerFetchDate == phoneServerDate)
+    #expect((try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)) == nil)
+    #expect((try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)) == nil)
+
+    guard case let .snapshot(client, serverFetchDate, version) = outgoingPayload.clientUpdate else {
+      Issue.record("Expected outgoing phone client snapshot")
+      return
+    }
+
+    #expect(client.id == phoneClient.id)
+    #expect(serverFetchDate == phoneServerDate)
+    #expect(version == .initial)
   }
 
   @Test
@@ -363,10 +439,11 @@ struct ClerkResponseClientStateTests {
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
     let watchServerDate = Date(timeIntervalSince1970: 100)
 
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       watchClient,
       incomingServerFetchDate: watchServerDate,
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     #expect(clerk.client?.id == watchClient.id)
@@ -379,13 +456,80 @@ struct ClerkResponseClientStateTests {
     let clerk = makeIsolatedClerk()
     clerk.client = nil
 
-    clerk.applyWatchSyncedClient(
+    applyRemoteAuthPayload(
       nil,
       incomingServerFetchDate: nil,
-      incomingIsAuthoritative: false
+      incomingIsAuthoritative: false,
+      to: clerk
     )
 
     #expect(clerk.client == nil)
+  }
+
+  @Test
+  func nonAuthoritativeWatchSyncClearRecordsVersionWhenLocalAuthIsEmpty() throws {
+    let clerk = makeIsolatedClerk()
+    let keychain = clerk.dependencies.keychain
+    let clearServerDate = Date(timeIntervalSince1970: 200)
+    let staleServerDate = Date(timeIntervalSince1970: 300)
+    clerk.client = nil
+
+    applyRemoteAuthPayload(
+      nil,
+      incomingServerFetchDate: clearServerDate,
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 3),
+      to: clerk
+    )
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == clearServerDate)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
+
+    applyRemoteAuthPayload(
+      client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 4000),
+      incomingServerFetchDate: staleServerDate,
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 2),
+      to: clerk
+    )
+
+    #expect(clerk.client == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
+  }
+
+  @Test
+  func nonAuthoritativeWatchSignInWithLowerVersionRefreshesPhone() async throws {
+    let serverClient = client(id: "client-server", signInId: "sign-in-server", updatedAt: 5000)
+    let refreshed = LockIsolated(false)
+    let clerk = makeIsolatedClerk(
+      clientService: MockClientService {
+        refreshed.setValue(true)
+        return serverClient
+      }
+    )
+    let keychain = clerk.dependencies.keychain
+    try keychain.set("cleared", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 200)
+    clerk.client = nil
+
+    let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000)
+    applyRemoteAuthPayload(
+      watchClient,
+      incomingServerFetchDate: Date(timeIntervalSince1970: 300),
+      incomingIsAuthoritative: false,
+      version: WatchSyncVersion(rawValue: 1),
+      to: clerk
+    )
+
+    #expect(clerk.client == nil)
+    try await waitUntil {
+      clerk.client?.id == serverClient.id
+    }
+    #expect(refreshed.value)
   }
 
   // MARK: - Cleanup
@@ -474,17 +618,50 @@ struct ClerkResponseClientStateTests {
     return client
   }
 
-  private func makeIsolatedClerk() -> Clerk {
+  private func applyRemoteAuthPayload(
+    _ incoming: Client?,
+    incomingServerFetchDate: Date?,
+    incomingIsAuthoritative: Bool,
+    version: WatchSyncVersion? = nil,
+    to clerk: Clerk
+  ) {
+    let clientUpdate: WatchSyncClientUpdate = if let incoming {
+      .snapshot(client: incoming, serverFetchDate: incomingServerFetchDate, version: version)
+    } else {
+      .cleared(serverFetchDate: incomingServerFetchDate, version: version)
+    }
+    let source: WatchSyncSource = incomingIsAuthoritative ? .phone : .watch
+    let payload = WatchSyncPayload(deviceTokenUpdate: .notIncluded, clientUpdate: clientUpdate, environment: nil)
+    WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
+  }
+
+  private func makeIsolatedClerk(clientService: (any ClientServiceProtocol)? = nil) -> Clerk {
     configureClerkForTesting()
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: MockClientService(get: { nil })
+      clientService: clientService ?? MockClientService(get: { nil })
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
     return clerk
+  }
+
+  private func waitUntil(
+    timeout: Duration = .milliseconds(250),
+    condition: @MainActor () -> Bool
+  ) async throws {
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+      if condition() {
+        return
+      }
+
+      try await Task.sleep(for: .milliseconds(10))
+    }
+
+    #expect(condition())
   }
 }

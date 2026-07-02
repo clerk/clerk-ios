@@ -21,11 +21,23 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached environment data.
   case cachedEnvironment
 
+  /// Key for the last explicit watch auth sync state.
+  case watchSyncAuthState
+
+  /// Key for ordering explicit watch auth sync events.
+  case watchSyncAuthVersion
+
   /// Key for device authentication token received from the server.
   case clerkDeviceToken
 
+  /// Key for the last explicit watch device-token sync state.
+  case watchSyncDeviceTokenState
+
+  /// Key for ordering explicit watch device-token sync events.
+  case watchSyncDeviceTokenVersion
+
   /// Key for tracking whether device token has been synced to watch app.
-  case clerkDeviceTokenSynced
+  case watchSyncDeviceTokenSynced = "clerkDeviceTokenSynced"
 
   /// Key for App Attest key ID.
   case attestKeyId = "AttestKeyId"

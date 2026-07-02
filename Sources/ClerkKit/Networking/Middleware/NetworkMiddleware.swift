@@ -134,7 +134,9 @@ extension URLRequest {
   }
 
   var clerkClientResponseGeneration: ClientResponseGeneration? {
-    URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self) as? ClientResponseGeneration
+    ClientResponseGeneration(
+      propertyListValue: URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self)
+    )
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -152,7 +154,11 @@ extension URLRequest {
       return
     }
 
-    URLProtocol.setProperty(generation, forKey: Self.clerkClientResponseGenerationKey, in: mutableRequest)
+    URLProtocol.setProperty(
+      generation.propertyListValue,
+      forKey: Self.clerkClientResponseGenerationKey,
+      in: mutableRequest
+    )
     self = mutableRequest as URLRequest
   }
 }

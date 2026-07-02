@@ -73,6 +73,27 @@ struct ClientResponseGeneration: Equatable {
 
   private let rawValue: Int
 
+  private init(rawValue: Int) {
+    self.rawValue = rawValue
+  }
+
+  var propertyListValue: NSNumber {
+    NSNumber(value: rawValue)
+  }
+
+  init?(propertyListValue value: Any?) {
+    if let rawValue = value as? Int {
+      self.init(rawValue: rawValue)
+      return
+    }
+
+    guard let rawValue = value as? NSNumber else {
+      return nil
+    }
+
+    self.init(rawValue: rawValue.intValue)
+  }
+
   func next() -> ClientResponseGeneration {
     ClientResponseGeneration(rawValue: rawValue + 1)
   }
