@@ -1,4 +1,4 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
 @testable import ClerkKit
 @testable import ClerkKitUI

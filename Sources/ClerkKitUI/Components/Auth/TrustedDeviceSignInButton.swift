@@ -3,7 +3,7 @@
 //  Clerk
 //
 
-#if os(iOS) && !targetEnvironment(macCatalyst)
+#if os(iOS) || os(macOS)
 
 import ClerkKit
 import LocalAuthentication
