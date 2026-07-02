@@ -26,7 +26,6 @@ struct AuthNavigationTests {
     #expect(navigation.allTasksComplete)
   }
 
-  #if os(iOS) && !targetEnvironment(macCatalyst)
   @Test
   func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
     let navigation = AuthNavigation()
@@ -38,7 +37,6 @@ struct AuthNavigationTests {
     #expect(navigation.hasTrustedDeviceEnrollmentInPath)
     #expect(navigation.trustedDeviceEnrollmentWasOffered)
   }
-  #endif
 
   @Test
   func routeToSessionTaskStartRoutesResetPasswordTaskOnce() {

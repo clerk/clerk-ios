@@ -1,6 +1,6 @@
 @testable import ClerkKit
 import Foundation
-#if os(iOS) && !targetEnvironment(macCatalyst)
+#if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
 import LocalAuthentication
 #endif
 import Security
@@ -26,6 +26,11 @@ struct TrustedDeviceKeyManagerTests {
     #expect(attributes[kSecAttrKeyType as String] as? String == kSecAttrKeyTypeECSECPrimeRandom as String)
     #expect(attributes[kSecAttrKeySizeInBits as String] as? Int == 256)
     #expect(attributes[kSecAttrTokenID as String] as? String == kSecAttrTokenIDSecureEnclave as String)
+    #if os(macOS)
+    #expect(attributes[kSecUseDataProtectionKeychain as String] as? Bool == true)
+    #else
+    #expect(attributes[kSecUseDataProtectionKeychain as String] == nil)
+    #endif
 
     let privateKeyAttributes = try #require(attributes[kSecPrivateKeyAttrs as String] as? [String: Any])
     #expect(privateKeyAttributes[kSecAttrIsPermanent as String] as? Bool == true)
@@ -52,7 +57,7 @@ struct TrustedDeviceKeyManagerTests {
     ])
   }
 
-  #if os(iOS) && !targetEnvironment(macCatalyst)
+  #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
   @Test
   func localAuthenticationPoliciesMatchTrustedDevicePolicies() {
     #expect(
@@ -78,6 +83,11 @@ struct TrustedDeviceKeyManagerTests {
     #expect(query[kSecAttrKeyClass as String] as? String == kSecAttrKeyClassPrivate as String)
     #expect(query[kSecAttrKeyType as String] as? String == kSecAttrKeyTypeECSECPrimeRandom as String)
     #expect(query[kSecAttrApplicationTag as String] as? Data == Data("dev.clerk.trusted_device.tdlk_123".utf8))
+    #if os(macOS)
+    #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == true)
+    #else
+    #expect(query[kSecUseDataProtectionKeychain as String] == nil)
+    #endif
   }
 
   @Test

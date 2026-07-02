@@ -101,7 +101,7 @@ final class DependencyContainer: Dependencies {
         "Content-Type": "application/x-www-form-urlencoded",
         "clerk-api-version": Clerk.apiVersion,
         "x-ios-sdk-version": Clerk.sdkVersion,
-        "x-mobile": "1",
+        "x-mobile": Self.mobileHeaderValue,
       ]
     }
 
@@ -147,6 +147,14 @@ final class DependencyContainer: Dependencies {
     )
     #else
     return legacyKeychain
+    #endif
+  }
+
+  static var mobileHeaderValue: String {
+    #if os(macOS) || targetEnvironment(macCatalyst)
+    "0"
+    #else
+    "1"
     #endif
   }
 
