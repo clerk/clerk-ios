@@ -70,6 +70,15 @@ struct AuthTests {
     return clerk
   }
 
+  private func enabledTrustedDeviceEnvironment() -> Clerk.Environment {
+    var environment = Clerk.Environment.mock
+    environment.authConfig.nativeSettings = .init(
+      apiEnabled: true,
+      trustedDeviceSignInEnabled: true
+    )
+    return environment
+  }
+
   struct SignOutScenario: Codable, Equatable {
     let sessionId: String?
   }
@@ -328,6 +337,91 @@ struct AuthTests {
 
     let prepareParams = try #require(preparedParams.value)
     #expect(prepareParams.strategy == .passkey)
+  }
+
+  @Test
+  func signInWithTrustedDeviceDelegatesToTrustedDevicesSignIn() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+
+    let createParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let attemptedSignInId = LockIsolated<String?>(nil)
+    let attemptParams = LockIsolated<SignIn.AttemptFirstFactorParams?>(nil)
+    let signedLocalKeyIds = LockIsolated<[String]>([])
+    let signedReasons = LockIsolated<[String?]>([])
+
+    let challengeSignIn = SignIn(
+      id: "si_trusted_device",
+      status: .needsFirstFactor,
+      firstFactorVerification: .init(
+        status: .unverified,
+        strategy: .trustedDevice,
+        trustedDeviceChallenge: .mock
+      )
+    )
+    let completedSignIn = SignIn(
+      id: challengeSignIn.id,
+      status: .complete,
+      createdSessionId: "sess_trusted_device"
+    )
+    let signInService = MockSignInService(
+      create: { params in
+        createParams.setValue(params)
+        return challengeSignIn
+      },
+      attemptFirstFactor: { signInId, params in
+        attemptedSignInId.setValue(signInId)
+        attemptParams.setValue(params)
+        return completedSignIn
+      }
+    )
+    let keyManager = MockTrustedDeviceKeyManager(sign: { clientData, localKeyId, localizedReason in
+      #expect(clientData == TrustedDeviceChallenge.mock.clientData)
+      signedLocalKeyIds.withValue { $0.append(localKeyId) }
+      signedReasons.withValue { $0.append(localizedReason) }
+      return .init(clientData: clientData, signature: "trusted-device-signature")
+    })
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    try credentialStore.save(.init(
+      id: TrustedDeviceLocalCredential.mock.id,
+      localKeyId: TrustedDeviceLocalCredential.mock.localKeyId,
+      userID: TrustedDeviceLocalCredential.mock.userID,
+      appIdentifier: "com.clerk.example",
+      createdAt: TrustedDeviceLocalCredential.mock.createdAt,
+      updatedAt: TrustedDeviceLocalCredential.mock.updatedAt
+    ))
+
+    let apiClient = createMockAPIClient(baseURL: mockBaseUrl)
+    let auth = Auth(
+      magicLinkStore: MagicLinkStore(keychain: InMemoryKeychain()),
+      magicLinkService: MagicLinkService(apiClient: apiClient),
+      signInService: signInService,
+      signUpService: MockSignUpService(),
+      sessionService: MockSessionService(),
+      trustedDevices: TrustedDevices(
+        trustedDeviceService: MockTrustedDeviceService(),
+        signInService: signInService,
+        keyManager: keyManager,
+        credentialStore: credentialStore,
+        appIdentifierProvider: { "com.clerk.example" }
+      ),
+      eventEmitter: EventEmitter<AuthEvent>(),
+      urlHandlingCoordinator: URLHandlingCoordinator()
+    )
+
+    let signIn = try await auth.signInWithTrustedDevice(reason: "Use Face ID to sign in.")
+
+    #expect(signIn == completedSignIn)
+    #expect(createParams.value?.strategy == .trustedDevice)
+    #expect(createParams.value?.trustedDeviceId == TrustedDeviceLocalCredential.mock.id)
+    #expect(attemptedSignInId.value == challengeSignIn.id)
+    #expect(attemptParams.value?.strategy == .trustedDevice)
+    #expect(attemptParams.value?.trustedDeviceId == TrustedDeviceLocalCredential.mock.id)
+    #expect(attemptParams.value?.clientData == TrustedDeviceChallenge.mock.clientData)
+    #expect(attemptParams.value?.signature == "trusted-device-signature")
+    #expect(attemptParams.value?.algorithm == .es256)
+    #expect(signedLocalKeyIds.value == [TrustedDeviceLocalCredential.mock.localKeyId])
+    #expect(signedReasons.value == ["Use Face ID to sign in."])
   }
 
   @Test
