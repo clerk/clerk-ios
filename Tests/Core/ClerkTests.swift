@@ -275,7 +275,7 @@ struct ClerkTests {
     Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
     defaults.set(
       true,
-      forKey: trustedDeviceInstallationMarkerKey(keychainConfig: keychainConfig)
+      forKey: Clerk.trustedDeviceInstallationMarkerKey(for: keychainConfig)
     )
     defer {
       Clerk.installationMarkerUserDefaults = originalDefaults
@@ -302,8 +302,8 @@ struct ClerkTests {
 
     #expect(deletedLocalKeyIds.value.isEmpty)
     #expect(try credentialStore.all() == [.mock])
-    #expect(defaults.bool(forKey: trustedDeviceInstallationMarkerKey(
-      keychainConfig: keychainConfig,
+    #expect(defaults.bool(forKey: Clerk.trustedDeviceInstallationMarkerKey(
+      for: keychainConfig,
       appIdentifier: "com.clerk.example"
     )))
   }
@@ -642,19 +642,4 @@ struct ClerkTests {
 
 private func installationMarkerDefaultsSuiteName() -> String {
   "com.clerk.tests.installation-marker.\(UUID().uuidString)"
-}
-
-private func trustedDeviceInstallationMarkerKey(
-  keychainConfig: Clerk.Options.KeychainConfig,
-  appIdentifier: String? = nil
-) -> String {
-  var components = [
-    "com.clerk.trusted-device-installation-marker",
-    keychainConfig.service,
-    keychainConfig.accessGroup ?? "default",
-  ]
-  if let appIdentifier {
-    components.append(appIdentifier)
-  }
-  return components.joined(separator: ".")
 }
