@@ -13,13 +13,26 @@ enum LastUsedAuth: Equatable {
   case email
   case username
   case phone
+  case trustedDevice
   case social(OAuthProvider)
 
-  init?(environment: Clerk.Environment?) {
-    guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy,
-          (environment?.totalEnabledFirstFactorMethods ?? 0) > 1
-    else {
+  init?(
+    environment: Clerk.Environment?,
+    trustedDeviceSignInIsVisible: Bool = false
+  ) {
+    guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy else {
       return nil
+    }
+
+    let visibleMethodCount = (environment?.totalEnabledFirstFactorMethods ?? 0) +
+      (trustedDeviceSignInIsVisible ? 1 : 0)
+    guard visibleMethodCount > 1 else {
+      return nil
+    }
+
+    if trustedDeviceSignInIsVisible, lastAuth == .trustedDevice {
+      self = .trustedDevice
+      return
     }
 
     let providers = environment?.authenticatableSocialProviders ?? []
@@ -52,7 +65,7 @@ enum LastUsedAuth: Equatable {
     switch self {
     case .social(let provider):
       provider
-    case .email, .username, .phone:
+    case .email, .username, .phone, .trustedDevice:
       nil
     }
   }
@@ -61,7 +74,7 @@ enum LastUsedAuth: Equatable {
     switch self {
     case .email, .username:
       true
-    case .phone, .social:
+    case .phone, .trustedDevice, .social:
       false
     }
   }
@@ -70,7 +83,16 @@ enum LastUsedAuth: Equatable {
     switch self {
     case .phone:
       true
-    case .email, .username, .social:
+    case .email, .username, .trustedDevice, .social:
+      false
+    }
+  }
+
+  var showsTrustedDeviceBadge: Bool {
+    switch self {
+    case .trustedDevice:
+      true
+    case .email, .username, .phone, .social:
       false
     }
   }
@@ -130,7 +152,7 @@ extension LastUsedAuth {
     case .username:
       strategies.contains(.password)
         && Set(strategies).isDisjoint(with: [.emailCode, .phoneCode])
-    case .social:
+    case .trustedDevice, .social:
       false
     }
   }
@@ -161,7 +183,7 @@ extension LastUsedAuth {
       "phone"
     case .username:
       "username"
-    case .social:
+    case .trustedDevice, .social:
       nil
     }
   }

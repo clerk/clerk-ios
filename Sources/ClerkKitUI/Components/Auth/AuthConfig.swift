@@ -26,6 +26,9 @@ struct AuthConfig: Equatable {
 
   /// Unsafe metadata to attach when this flow creates a sign-up.
   var unsafeMetadata: JSON?
+
+  /// Whether this flow should offer trusted-device sign-in when a local credential is available.
+  var allowsTrustedDeviceSignIn = true
 }
 
 #endif
