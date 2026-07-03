@@ -50,7 +50,7 @@ extension Clerk {
     }
   }
 
-  private static func trustedDeviceInstallationMarkerKey(for keychainConfig: Options.KeychainConfig) -> String {
+  package static func trustedDeviceInstallationMarkerKey(for keychainConfig: Options.KeychainConfig) -> String {
     [
       trustedDeviceInstallationMarkerPrefix,
       keychainConfig.service,
@@ -58,7 +58,7 @@ extension Clerk {
     ].joined(separator: ".")
   }
 
-  private static func trustedDeviceInstallationMarkerKey(
+  package static func trustedDeviceInstallationMarkerKey(
     for keychainConfig: Options.KeychainConfig,
     appIdentifier: String
   ) -> String {
