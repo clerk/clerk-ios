@@ -265,50 +265,6 @@ struct ClerkTests {
   }
 
   @Test
-  func configureMigratesLegacyTrustedDeviceInstallationMarkerWithoutDeletingCredentials() throws {
-    let suiteName = installationMarkerDefaultsSuiteName()
-    let defaults = try #require(UserDefaults(suiteName: suiteName))
-    let originalDefaults = Clerk.installationMarkerUserDefaults
-    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
-    let keychainConfig = Clerk.Options().keychainConfig
-    Clerk.installationMarkerUserDefaults = defaults
-    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
-    defaults.set(
-      true,
-      forKey: Clerk.trustedDeviceInstallationMarkerKey(for: keychainConfig)
-    )
-    defer {
-      Clerk.installationMarkerUserDefaults = originalDefaults
-      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
-      defaults.removePersistentDomain(forName: suiteName)
-    }
-
-    let keychain = InMemoryKeychain()
-    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
-    let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
-        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
-      }),
-      trustedDeviceCredentialStore: credentialStore
-    )
-    try credentialStore.save(.mock)
-
-    let clerk = Clerk()
-    clerk.performConfiguration(dependencies: dependencies)
-    defer { clerk.cleanupManagers() }
-
-    #expect(deletedLocalKeyIds.value.isEmpty)
-    #expect(try credentialStore.all() == [.mock])
-    #expect(defaults.bool(forKey: Clerk.trustedDeviceInstallationMarkerKey(
-      for: keychainConfig,
-      appIdentifier: "com.clerk.example"
-    )))
-  }
-
-  @Test
   func configureUsesAppScopedTrustedDeviceInstallationMarkers() throws {
     let suiteName = installationMarkerDefaultsSuiteName()
     let defaults = try #require(UserDefaults(suiteName: suiteName))

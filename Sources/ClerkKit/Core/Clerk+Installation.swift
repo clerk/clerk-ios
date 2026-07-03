@@ -29,12 +29,6 @@ extension Clerk {
       return
     }
 
-    let legacyMarkerKey = Self.trustedDeviceInstallationMarkerKey(for: options.keychainConfig)
-    if Self.installationMarkerUserDefaults.object(forKey: legacyMarkerKey) as? Bool == true {
-      Self.installationMarkerUserDefaults.set(true, forKey: markerKey)
-      return
-    }
-
     do {
       try dependencies.trustedDeviceCredentialStore
         .deleteLocalCredentials(
@@ -50,20 +44,14 @@ extension Clerk {
     }
   }
 
-  package static func trustedDeviceInstallationMarkerKey(for keychainConfig: Options.KeychainConfig) -> String {
-    [
-      trustedDeviceInstallationMarkerPrefix,
-      keychainConfig.service,
-      keychainConfig.accessGroup ?? "default",
-    ].joined(separator: ".")
-  }
-
-  package static func trustedDeviceInstallationMarkerKey(
+  private static func trustedDeviceInstallationMarkerKey(
     for keychainConfig: Options.KeychainConfig,
     appIdentifier: String
   ) -> String {
     [
-      trustedDeviceInstallationMarkerKey(for: keychainConfig),
+      trustedDeviceInstallationMarkerPrefix,
+      keychainConfig.service,
+      keychainConfig.accessGroup ?? "default",
       appIdentifier,
     ].joined(separator: ".")
   }
