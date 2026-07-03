@@ -431,6 +431,105 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func enrollReplacesOtherCurrentAppCredentialsAfterSuccessfulEnrollment() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId in
+        revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+        return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+      }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_current_user",
+      localKeyId: "tdlk_current_user",
+      userID: User.mock.id,
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_user",
+      localKeyId: "tdlk_other_user",
+      userID: User.mock2.id,
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_app",
+      localKeyId: "tdlk_other_app",
+      appIdentifier: "com.clerk.other",
+      createdAt: Date(timeIntervalSinceReferenceDate: 30)
+    ))
+
+    _ = try await setup.trustedDevices.enroll()
+
+    #expect(revokedTrustedDeviceIds.value.isEmpty)
+    #expect(deletedLocalKeyIds.value == ["tdlk_current_user", "tdlk_other_user"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_current_user") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_other_user") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
+  }
+
+  @Test
+  func enrollKeepsExistingCredentialsWhenEnrollmentFails() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(
+        prepareEnrollment: { _ in .mock },
+        attemptEnrollment: { _ in throw ClerkClientError(message: "Attempt failed") }
+      ),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_existing",
+      localKeyId: "tdlk_existing",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    do {
+      _ = try await setup.trustedDevices.enroll()
+      Issue.record("Expected enrollment to fail.")
+    } catch {
+      #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+      #expect(try setup.credentialStore.credential(id: "tdc_existing") != nil)
+    }
+  }
+
+  @Test
+  func enrollDoesNotCallBackendRevokeForReplacedLocalCredentials() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in
+        throw ClerkClientError(message: "Revoke failed")
+      }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_existing",
+      localKeyId: "tdlk_existing",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+
+    _ = try await setup.trustedDevices.enroll()
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_existing"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_existing") == nil)
+  }
+
+  @Test
   func enrollAllowsPendingSession() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     var pendingSession = Session.mock

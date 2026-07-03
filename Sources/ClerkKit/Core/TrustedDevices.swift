@@ -144,6 +144,7 @@ public struct TrustedDevices {
         userID: userID,
         identifierHint: identifierHint
       )
+      removeOtherLocalCredentialsForCurrentApp(keeping: trustedDevice)
       return trustedDevice
     } catch {
       try? keyManager.deleteKey(localKeyId: localKey.localKeyId)
@@ -241,7 +242,9 @@ public struct TrustedDevices {
   /// Signs in with a locally enrolled biometric trusted-device credential.
   ///
   /// - Parameters:
-  ///   - id: The trusted-device credential ID to use. When omitted, the newest local credential is selected.
+  ///   - id: The trusted-device credential ID to use. When omitted, the available local credential is used. If
+  ///     legacy local state contains multiple credentials for this app installation, the newest supported
+  ///     credential is used.
   ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
   ///   - reason: The reason shown in the system biometric prompt.
   @discardableResult
@@ -489,6 +492,28 @@ extension TrustedDevices {
     } catch {
       _ = try? await trustedDeviceService.revoke(trustedDeviceId: trustedDevice.id)
       throw error
+    }
+  }
+
+  private func removeOtherLocalCredentialsForCurrentApp(keeping trustedDevice: TrustedDevice) {
+    let credentialsToReplace: [TrustedDeviceLocalCredential]
+    do {
+      credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != trustedDevice.id }
+    } catch {
+      ClerkLogger.warning(
+        "Failed to load replaced trusted-device credentials for local cleanup. Error: \(error)"
+      )
+      return
+    }
+
+    for credential in credentialsToReplace {
+      do {
+        try deleteLocalCredential(credential)
+      } catch {
+        ClerkLogger.warning(
+          "Failed to remove replaced trusted-device credential locally. Error: \(error)"
+        )
+      }
     }
   }
 

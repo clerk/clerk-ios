@@ -209,7 +209,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
-        AuthView()
+        AuthView(config: .init(allowsTrustedDeviceSignIn: false))
       }
       .task(id: user) {
         await getSessionsOnAllDevices()

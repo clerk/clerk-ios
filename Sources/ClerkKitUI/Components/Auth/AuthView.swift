@@ -112,8 +112,8 @@ public struct AuthView: View {
   }
 
   init(
-    mode: Mode,
-    isDismissible: Bool,
+    mode: Mode = .signInOrUp,
+    isDismissible: Bool = true,
     config: AuthConfig
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
@@ -300,7 +300,9 @@ extension AuthView {
   @discardableResult
   private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
     guard clerk.callbackContinuation == nil,
-          trustedDeviceFeatureIsEnabled,
+          let nativeSettings = clerk.environment?.authConfig.nativeSettings,
+          nativeSettings.apiEnabled,
+          nativeSettings.trustedDeviceSignInEnabled,
           !navigation.hasSessionTaskStartInPath,
           !navigation.trustedDeviceEnrollmentWasOffered,
           let session = clerk.session,
@@ -321,6 +323,7 @@ extension AuthView {
     let promptStore = TrustedDeviceEnrollmentPromptStore()
     guard result.shouldOfferTrustedDeviceEnrollmentPrompt(
       userID: userID,
+      nativeSettings: nativeSettings,
       promptStore: promptStore
     ) else {
       return false
@@ -337,15 +340,6 @@ extension AuthView {
     } catch {
       return false
     }
-  }
-
-  private var trustedDeviceFeatureIsEnabled: Bool {
-    guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
-      return false
-    }
-
-    return nativeSettings.apiEnabled &&
-      nativeSettings.trustedDeviceSignInEnabled
   }
 }
 

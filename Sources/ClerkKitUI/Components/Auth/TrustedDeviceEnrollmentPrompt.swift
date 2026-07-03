@@ -11,13 +11,15 @@ import Foundation
 extension TransferFlowResult {
   func shouldOfferTrustedDeviceEnrollmentPrompt(
     userID: String,
+    nativeSettings: Clerk.Environment.AuthConfig.NativeSettings,
     promptStore: TrustedDeviceEnrollmentPromptStore
   ) -> Bool {
     switch self {
     case .signIn:
-      !promptStore.hasSeenPrompt(userID: userID)
+      nativeSettings.trustedDevicePromptAfterSignInEnabled &&
+        !promptStore.hasSeenPrompt(userID: userID)
     case .signUp:
-      true
+      nativeSettings.trustedDevicePromptAfterSignUpEnabled
     }
   }
 }
