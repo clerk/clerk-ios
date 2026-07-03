@@ -9,6 +9,7 @@ protocol TrustedDeviceServiceProtocol: Sendable {
   @MainActor func list() async throws -> [TrustedDevice]
   @MainActor func prepareEnrollment(params: TrustedDevice.PrepareEnrollmentParams) async throws -> TrustedDeviceChallenge
   @MainActor func attemptEnrollment(params: TrustedDevice.AttemptEnrollmentParams) async throws -> TrustedDevice
+  @MainActor func validateSignInCredential(trustedDeviceId: String) async throws -> TrustedDeviceValidation
   @MainActor func revoke(trustedDeviceId: String) async throws -> TrustedDevice
 }
 
@@ -49,6 +50,17 @@ final class TrustedDeviceService: TrustedDeviceServiceProtocol {
       method: .post,
       query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
       body: params
+    )
+
+    return try await apiClient.send(request).value.response
+  }
+
+  @MainActor
+  func validateSignInCredential(trustedDeviceId: String) async throws -> TrustedDeviceValidation {
+    let request = Request<ClientResponse<TrustedDeviceValidation>>(
+      path: "/v1/client/trusted_devices/validate",
+      method: .post,
+      body: TrustedDeviceValidation.Params(trustedDeviceId: trustedDeviceId)
     )
 
     return try await apiClient.send(request).value.response

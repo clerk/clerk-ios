@@ -108,6 +108,38 @@ struct TrustedDeviceServiceTests {
   }
 
   @Test
+  func validateSignInCredential() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/trusted_devices/validate")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<TrustedDeviceValidation>(
+            response: .init(valid: true),
+            client: .mock
+          )
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      #expect(request.urlEncodedFormBody?["trusted_device_id"] == "tdc_123")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let validation = try await Clerk.shared.dependencies.trustedDeviceService.validateSignInCredential(
+      trustedDeviceId: "tdc_123"
+    )
+
+    #expect(requestHandled.value)
+    #expect(validation == .init(valid: true))
+  }
+
+  @Test
   func revoke() async throws {
     let trustedDevice = TrustedDevice.mock
     let requestHandled = LockIsolated(false)

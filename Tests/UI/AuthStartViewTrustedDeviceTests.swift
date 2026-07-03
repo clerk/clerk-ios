@@ -9,41 +9,54 @@ struct AuthStartViewTrustedDeviceTests {
     #expect(
       AuthStartTrustedDeviceRefreshState.state(
         trustedDeviceFeatureIsEnabled: false,
-        activeSessionID: nil
+        activeSessionID: nil,
+        clientID: nil
       ) == .disabled
     )
     #expect(
       AuthStartTrustedDeviceRefreshState.state(
         trustedDeviceFeatureIsEnabled: false,
-        activeSessionID: "sess_123"
+        activeSessionID: "sess_123",
+        clientID: "client_123"
       ) == .disabled
     )
     #expect(
       AuthStartTrustedDeviceRefreshState.state(
         trustedDeviceFeatureIsEnabled: true,
-        activeSessionID: nil
-      ) == .signedOut
+        activeSessionID: nil,
+        clientID: nil
+      ) == .signedOut(clientID: nil)
     )
     #expect(
       AuthStartTrustedDeviceRefreshState.state(
         trustedDeviceFeatureIsEnabled: true,
-        activeSessionID: "sess_123"
-      ) == .signedIn(activeSessionID: "sess_123")
+        activeSessionID: nil,
+        clientID: "client_123"
+      ) == .signedOut(clientID: "client_123")
+    )
+    #expect(
+      AuthStartTrustedDeviceRefreshState.state(
+        trustedDeviceFeatureIsEnabled: true,
+        activeSessionID: "sess_123",
+        clientID: "client_123"
+      ) == .disabled
     )
   }
 
   @Test
-  func activeSessionChangesTrustedDeviceAvailabilityRefreshTaskIdentity() {
-    let firstSessionTaskID = AuthStartTrustedDeviceRefreshState.state(
+  func signedOutClientChangesTrustedDeviceAvailabilityRefreshTaskIdentity() {
+    let missingClientTaskID = AuthStartTrustedDeviceRefreshState.state(
       trustedDeviceFeatureIsEnabled: true,
-      activeSessionID: "sess_123"
+      activeSessionID: nil,
+      clientID: nil
     )
-    let secondSessionTaskID = AuthStartTrustedDeviceRefreshState.state(
+    let restoredClientTaskID = AuthStartTrustedDeviceRefreshState.state(
       trustedDeviceFeatureIsEnabled: true,
-      activeSessionID: "sess_456"
+      activeSessionID: nil,
+      clientID: "client_123"
     )
 
-    #expect(firstSessionTaskID != secondSessionTaskID)
+    #expect(missingClientTaskID != restoredClientTaskID)
   }
 }
 

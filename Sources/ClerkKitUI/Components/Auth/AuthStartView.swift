@@ -303,29 +303,25 @@ struct AuthStartView: View {
 
 enum AuthStartTrustedDeviceRefreshState: Equatable {
   case disabled
-  case signedOut
-  case signedIn(activeSessionID: String)
+  case signedOut(clientID: String?)
 
   static func state(
     trustedDeviceFeatureIsEnabled: Bool,
-    activeSessionID: String?
+    activeSessionID: String?,
+    clientID: String?
   ) -> Self {
     guard trustedDeviceFeatureIsEnabled else {
       return .disabled
     }
-    guard let activeSessionID else {
-      return .signedOut
+    guard activeSessionID == nil else {
+      return .disabled
     }
-    return .signedIn(activeSessionID: activeSessionID)
+    return .signedOut(clientID: clientID)
   }
 }
 
 extension AuthStartView {
   private var trustedDeviceFeatureIsEnabled: Bool {
-    guard authState.allowsTrustedDeviceSignIn else {
-      return false
-    }
-
     guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
       return false
     }
@@ -343,7 +339,8 @@ extension AuthStartView {
   private var trustedDeviceAvailabilityRefreshState: AuthStartTrustedDeviceRefreshState {
     .state(
       trustedDeviceFeatureIsEnabled: trustedDeviceFeatureIsEnabled,
-      activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil
+      activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil,
+      clientID: clerk.client?.id
     )
   }
 }
@@ -719,14 +716,34 @@ extension AuthStartView {
       return
     }
 
-    trustedDeviceAvailability = try? await clerk.trustedDevices.availability()
+    guard clerk.session?.status != .active else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    guard let localAvailability = try? clerk.trustedDevices.localAvailability() else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    trustedDeviceAvailability = localAvailability
+    guard localAvailability.isAvailable else { return }
+
+    switch await clerk.trustedDevices.validateLocalCredentialIfPossible() {
+    case .valid:
+      trustedDeviceAvailability = .available
+    case let .invalid(reason):
+      trustedDeviceAvailability = .unavailable(reason)
+    case .inconclusive:
+      break
+    }
   }
 
   private func signInWithTrustedDevice() async {
     generalError = nil
 
     do {
-      let signIn = try await clerk.trustedDevices.signIn()
+      let signIn = try await clerk.auth.signInWithTrustedDevice()
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
       if error.isCancellationError {

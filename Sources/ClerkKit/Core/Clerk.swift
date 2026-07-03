@@ -221,6 +221,7 @@ public final class Clerk {
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
+      trustedDevices: trustedDevices,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
     )
