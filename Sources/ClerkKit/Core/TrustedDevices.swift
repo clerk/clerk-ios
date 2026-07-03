@@ -164,20 +164,6 @@ public struct TrustedDevices {
 
   /// Revokes the available local trusted-device credential for the current signed-in user.
   @discardableResult
-  package func revokeCurrentDeviceCredential(identifierHint: String?) async throws -> TrustedDevice? {
-    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
-      throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
-    }
-
-    switch try await selectedLocalCredential(id: nil, identifierHint: identifierHint, userID: nil) {
-    case let .available(localCredential):
-      return try await revoke(id: localCredential.id)
-    case .unavailable:
-      return nil
-    }
-  }
-
-  @discardableResult
   package func revokeCurrentDeviceCredential() async throws -> TrustedDevice? {
     guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
       throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
@@ -192,36 +178,6 @@ public struct TrustedDevices {
     case .unavailable:
       return nil
     }
-  }
-
-  /// Deletes locally stored trusted-device credentials matching an identifier hint.
-  ///
-  /// This is local cleanup only. Use ``revoke(id:)`` when the server-side trusted-device
-  /// credential should be revoked for an active user.
-  @discardableResult
-  package func forgetLocalCredentials(identifierHint: String?) throws -> Int {
-    let credentials = try storedLocalCredentialsForCurrentApp().filter { credential in
-      if let identifierHint {
-        credential.matches(identifierHint: identifierHint)
-      } else {
-        credential.identifierHint == nil
-      }
-    }
-
-    for credential in credentials {
-      try deleteLocalCredential(credential)
-    }
-
-    return credentials.count
-  }
-
-  @discardableResult
-  package func forgetCurrentUserLocalCredentials() throws -> Int {
-    guard let userID = Clerk.shared.user?.id else {
-      return 0
-    }
-
-    return try forgetLocalCredentialsForCurrentApp(userID: userID)
   }
 
   @discardableResult
@@ -248,7 +204,7 @@ public struct TrustedDevices {
   ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
   ///   - reason: The reason shown in the system biometric prompt.
   @discardableResult
-  public func signIn(
+  package func signIn(
     id: String? = nil,
     identifierHint: String? = nil,
     reason: String? = nil
@@ -299,6 +255,49 @@ public struct TrustedDevices {
 }
 
 extension TrustedDevices {
+  package func validateLocalCredentialIfPossible(
+    id: String? = nil,
+    identifierHint: String? = nil
+  ) async -> TrustedDeviceValidationResult {
+    if trustedDeviceFeatureUnavailableReason == .environmentUnavailable {
+      return .inconclusive
+    }
+
+    let localCredential: TrustedDeviceLocalCredential
+    do {
+      switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
+      case let .available(credentials):
+        localCredential = credentials[0]
+      case let .unavailable(reason):
+        return .invalid(reason)
+      }
+    } catch {
+      return .inconclusive
+    }
+
+    guard Clerk.shared.client != nil else {
+      return .inconclusive
+    }
+
+    do {
+      let validation = try await trustedDeviceService.validateSignInCredential(trustedDeviceId: localCredential.id)
+      guard validation.valid else {
+        try? deleteLocalCredential(localCredential)
+        return .invalid(.serverCredentialMissing)
+      }
+      return .valid
+    } catch {
+      if error.isMissingTrustedDeviceCredential {
+        try? deleteLocalCredential(localCredential)
+        return .invalid(.serverCredentialMissing)
+      }
+      if let unavailableReason = error.trustedDeviceValidationUnavailableReason {
+        return .invalid(unavailableReason)
+      }
+      return .inconclusive
+    }
+  }
+
   private var trustedDeviceFeatureUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
     guard let nativeSettings = Clerk.shared.environment?.authConfig.nativeSettings else {
       return .environmentUnavailable
@@ -545,6 +544,21 @@ extension Error {
 
     return error.code == "form_resource_not_found" &&
       error.meta?["param_name"]?.stringValue == "trusted_device_id"
+  }
+
+  fileprivate var trustedDeviceValidationUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
+    guard let error = self as? ClerkAPIError else {
+      return nil
+    }
+
+    switch error.code {
+    case "native_api_disabled":
+      return .nativeAPIDisabled
+    case "feature_not_enabled":
+      return .featureDisabled
+    default:
+      return nil
+    }
   }
 }
 
