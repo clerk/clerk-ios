@@ -42,6 +42,9 @@ final class AuthState {
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
 
+  /// Whether this UI flow should offer trusted-device sign-in.
+  private(set) var allowsTrustedDeviceSignIn = true
+
   private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
 
   private let userDefaults: UserDefaults
@@ -105,6 +108,7 @@ final class AuthState {
     hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
     prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
     unsafeMetadata = config.unsafeMetadata
+    allowsTrustedDeviceSignIn = config.allowsTrustedDeviceSignIn
 
     if !config.persistsIdentifiers {
       userDefaults.removeObject(forKey: Self.identifierStorageKey)

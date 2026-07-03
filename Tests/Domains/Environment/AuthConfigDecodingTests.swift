@@ -14,7 +14,9 @@ struct AuthConfigDecodingTests {
         "single_session_mode": false,
         "native_settings": {
           "api_enabled": true,
-          "trusted_device_sign_in_enabled": true
+          "trusted_device_sign_in_enabled": true,
+          "trusted_device_enrollment_prompt_after_sign_in_enabled": true,
+          "trusted_device_enrollment_prompt_after_sign_up_enabled": true
         }
       }
       """.utf8
@@ -25,6 +27,8 @@ struct AuthConfigDecodingTests {
     #expect(authConfig.singleSessionMode == false)
     #expect(authConfig.nativeSettings.apiEnabled == true)
     #expect(authConfig.nativeSettings.trustedDeviceSignInEnabled == true)
+    #expect(authConfig.nativeSettings.trustedDevicePromptAfterSignInEnabled == true)
+    #expect(authConfig.nativeSettings.trustedDevicePromptAfterSignUpEnabled == true)
   }
 
   @Test
@@ -49,7 +53,9 @@ struct AuthConfigDecodingTests {
       singleSessionMode: false,
       nativeSettings: .init(
         apiEnabled: true,
-        trustedDeviceSignInEnabled: true
+        trustedDeviceSignInEnabled: true,
+        trustedDevicePromptAfterSignInEnabled: true,
+        trustedDevicePromptAfterSignUpEnabled: true
       )
     )
 
@@ -60,5 +66,7 @@ struct AuthConfigDecodingTests {
     #expect(object["single_session_mode"] as? Bool == false)
     #expect(nativeSettings["api_enabled"] as? Bool == true)
     #expect(nativeSettings["trusted_device_sign_in_enabled"] as? Bool == true)
+    #expect(nativeSettings["trusted_device_enrollment_prompt_after_sign_in_enabled"] as? Bool == true)
+    #expect(nativeSettings["trusted_device_enrollment_prompt_after_sign_up_enabled"] as? Bool == true)
   }
 }

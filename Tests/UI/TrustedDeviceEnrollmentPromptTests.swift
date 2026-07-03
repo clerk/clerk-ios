@@ -14,6 +14,7 @@ struct TrustedDeviceEnrollmentPromptTests {
 
     #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
       userID: "user_123",
+      nativeSettings: nativeSettings(promptAfterSignIn: true),
       promptStore: store
     ))
 
@@ -21,6 +22,7 @@ struct TrustedDeviceEnrollmentPromptTests {
 
     #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
       userID: "user_123",
+      nativeSettings: nativeSettings(promptAfterSignIn: true),
       promptStore: store
     ) == false)
   }
@@ -35,8 +37,35 @@ struct TrustedDeviceEnrollmentPromptTests {
 
     #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
       userID: "user_123",
+      nativeSettings: nativeSettings(promptAfterSignUp: true),
       promptStore: store
     ))
+  }
+
+  @Test
+  func signInPromptIsSuppressedWhenEnvironmentSettingIsDisabled() throws {
+    let (store, suiteName) = try makePromptStore()
+    defer { removePromptStoreSuite(named: suiteName) }
+    let result = completedSignInResult()
+
+    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+      userID: "user_123",
+      nativeSettings: nativeSettings(promptAfterSignIn: false),
+      promptStore: store
+    ) == false)
+  }
+
+  @Test
+  func signUpPromptIsSuppressedWhenEnvironmentSettingIsDisabled() throws {
+    let (store, suiteName) = try makePromptStore()
+    defer { removePromptStoreSuite(named: suiteName) }
+    let result = completedSignUpResult()
+
+    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+      userID: "user_123",
+      nativeSettings: nativeSettings(promptAfterSignUp: false),
+      promptStore: store
+    ) == false)
   }
 
   @Test
@@ -60,6 +89,18 @@ struct TrustedDeviceEnrollmentPromptTests {
   private func removePromptStoreSuite(named suiteName: String) {
     UserDefaults.standard.removePersistentDomain(forName: suiteName)
     UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
+  }
+
+  private func nativeSettings(
+    promptAfterSignIn: Bool = false,
+    promptAfterSignUp: Bool = false
+  ) -> Clerk.Environment.AuthConfig.NativeSettings {
+    .init(
+      apiEnabled: true,
+      trustedDeviceSignInEnabled: true,
+      trustedDevicePromptAfterSignInEnabled: promptAfterSignIn,
+      trustedDevicePromptAfterSignUpEnabled: promptAfterSignUp
+    )
   }
 
   private func completedSignInResult() -> TransferFlowResult {
