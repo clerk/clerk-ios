@@ -542,7 +542,7 @@ extension Error {
       return false
     }
 
-    return error.code == "form_resource_not_found" &&
+    return ["form_resource_not_found", "trusted_device_not_registered"].contains(error.code) &&
       error.meta?["param_name"]?.stringValue == "trusted_device_id"
   }
 

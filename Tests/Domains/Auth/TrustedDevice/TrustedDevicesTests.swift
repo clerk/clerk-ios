@@ -1007,7 +1007,7 @@ struct TrustedDevicesTests {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = try makeTrustedDevicesWithLocalCredential(
       signInService: MockSignInService(
-        create: { _ in throw missingTrustedDeviceCredentialError() },
+        create: { _ in throw missingTrustedDeviceCredentialError(code: "trusted_device_not_registered") },
         attemptFirstFactor: { _, _ in
           attemptWasCalled.setValue(true)
           return .mockTrustedDeviceComplete
@@ -1205,10 +1205,11 @@ private func trustedDevice(
 }
 
 private func missingTrustedDeviceCredentialError(
+  code: String = "form_resource_not_found",
   paramName: String = "trusted_device_id"
 ) -> ClerkAPIError {
   ClerkAPIError(
-    code: "form_resource_not_found",
+    code: code,
     message: "is missing",
     longMessage: "The resource associated with the supplied trusted_device_id was not found.",
     meta: ["param_name": .string(paramName)],
