@@ -490,7 +490,7 @@ struct TrustedDevicesTests {
     )
 
     let trustedDevice = try await setup.trustedDevices.enroll(
-      name: "Sean's iPhone",
+      deviceName: "Sean's iPhone",
       identifierHint: "  Sean@Example.COM  ",
       reason: "Set up Face ID for future sign-ins.",
       policy: .biometryOrDevicePasscode
