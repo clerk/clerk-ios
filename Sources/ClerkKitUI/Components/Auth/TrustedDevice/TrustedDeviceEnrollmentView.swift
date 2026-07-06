@@ -91,7 +91,7 @@ extension TrustedDeviceEnrollmentView {
   }
 
   private var notNowButton: some View {
-    Button(action: continueAuthFlow) {
+    Button(action: continueAfterEnrollmentPrompt) {
       Text("Not now", bundle: .module)
     }
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
@@ -105,7 +105,7 @@ extension TrustedDeviceEnrollmentView {
         identifierHint: clerk.user?.trustedDeviceIdentifierHint,
         reason: enrollmentReason
       )
-      continueAuthFlow()
+      continueAfterEnrollmentPrompt()
     } catch {
       if error.isUserCancelledError {
         return
@@ -122,12 +122,12 @@ extension TrustedDeviceEnrollmentView {
     )
   }
 
-  private func continueAuthFlow() {
+  private func continueAfterEnrollmentPrompt() {
     guard !navigation.routeToSessionTaskStartIfNeeded(session: clerk.session) else {
       return
     }
 
-    navigation.completeAuthFlow()
+    navigation.markPostAuthStepsComplete()
   }
 }
 

@@ -171,9 +171,9 @@ public struct AuthView: View {
       for await event in clerk.auth.events {
         switch event {
         case .signInCompleted(let signIn):
-          await completeAuthFlow(after: .signIn(signIn))
+          await finishAuthFlow(after: .signIn(signIn))
         case .signUpCompleted(let signUp):
-          await completeAuthFlow(after: .signUp(signUp))
+          await finishAuthFlow(after: .signUp(signUp))
         case .signInNeedsContinuation(let signIn):
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
@@ -185,11 +185,9 @@ public struct AuthView: View {
         }
       }
     }
-    .onChange(of: navigation.allTasksComplete) { _, isComplete in
-      guard isComplete else { return }
-      Task {
-        await completeAuthFlowAfterSessionTasks()
-      }
+    .onChange(of: navigation.postAuthStepsComplete) { _, isComplete in
+      guard isComplete, let session = clerk.session else { return }
+      finishAuthFlow(with: session)
     }
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
@@ -253,7 +251,7 @@ extension AuthView {
     }
   }
 
-  private func completeAuthFlow(after result: TransferFlowResult) async {
+  private func finishAuthFlow(after result: TransferFlowResult) async {
     guard let session = clerk.session else {
       return
     }
@@ -268,18 +266,10 @@ extension AuthView {
       return
     }
 
-    completeAuthFlow(with: session)
+    finishAuthFlow(with: session)
   }
 
-  private func completeAuthFlowAfterSessionTasks() async {
-    guard let session = clerk.session else {
-      return
-    }
-
-    completeAuthFlow(with: session)
-  }
-
-  private func completeAuthFlow(with session: Session) {
+  private func finishAuthFlow(with session: Session) {
     if navigation.routeToSessionTaskStartIfNeeded(session: session) {
       return
     }

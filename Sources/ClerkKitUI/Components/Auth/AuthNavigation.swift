@@ -19,8 +19,8 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
-  /// Set to `true` when all session tasks are complete.
-  private(set) var allTasksComplete = false
+  /// Set to `true` when post-auth steps no longer need in-flow routing.
+  private(set) var postAuthStepsComplete = false
 
   /// Whether trusted-device enrollment has already been offered in this auth flow.
   private(set) var trustedDeviceEnrollmentWasOffered = false
@@ -101,12 +101,12 @@ final class AuthNavigation {
 
   /// Handles a completed session task by routing to the next task if present.
   ///
-  /// Sets `allTasksComplete` when there are no more pending tasks;
+  /// Marks post-auth steps complete when there are no more pending tasks;
   /// otherwise appends the next task start destination to `path`.
   @MainActor
   func handleSessionTaskCompletion(session: Session?) {
     guard let nextTask = nextPendingSessionTask(from: session) else {
-      completeAuthFlow()
+      markPostAuthStepsComplete()
       return
     }
 
@@ -114,8 +114,8 @@ final class AuthNavigation {
   }
 
   @MainActor
-  func completeAuthFlow() {
-    allTasksComplete = true
+  func markPostAuthStepsComplete() {
+    postAuthStepsComplete = true
   }
 
   @MainActor

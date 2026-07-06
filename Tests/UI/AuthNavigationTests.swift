@@ -12,18 +12,18 @@ struct AuthNavigationTests {
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path == [.sessionTaskStart(task: .setupMfa)])
-    #expect(navigation.allTasksComplete == false)
+    #expect(navigation.postAuthStepsComplete == false)
   }
 
   @Test
-  func handleSessionTaskCompletionMarksAllTasksCompleteWhenSessionHasNoPendingTasks() {
+  func handleSessionTaskCompletionMarksPostAuthStepsCompleteWhenSessionHasNoPendingTasks() {
     let navigation = AuthNavigation()
     let session = session(pendingTasks: [])
 
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path.isEmpty)
-    #expect(navigation.allTasksComplete)
+    #expect(navigation.postAuthStepsComplete)
   }
 
   @Test
