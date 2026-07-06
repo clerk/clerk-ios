@@ -68,8 +68,7 @@ public final class Clerk {
         cacheManager?.deleteClient(serverFetchDate: lastClientServerFetchDate)
       }
 
-      // Sync to watch app if enabled (sync both when client is set and when it's cleared)
-      watchConnectivityCoordinator?.sync()
+      emitInternalStateChange(.clientDidChange(previous: oldValue, current: client))
     }
   }
 
@@ -123,9 +122,9 @@ public final class Clerk {
   private var lastAppliedClientResponseSequence: Int?
 
   /// Server timestamp from the response that last updated the local client.
-  /// Used as a cross-device ordering key for watch sync, since it comes from a
+  /// Used as a cross-device ordering key, since it comes from a
   /// single clock (the server) and advances on every API response.
-  private(set) var lastClientServerFetchDate: Date?
+  var lastClientServerFetchDate: Date?
 
   /// Changes when local device-token ownership changes.
   /// Client responses prepared before this value changes must not update state.
@@ -133,9 +132,6 @@ public final class Clerk {
 
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
-
-  /// Shared refresh task used to coalesce watch-sync-triggered refreshes.
-  private var watchSyncRefreshTask: Task<Void, Never>?
 
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
@@ -154,8 +150,7 @@ public final class Clerk {
     didSet {
       if let environment {
         cacheManager?.saveEnvironment(environment)
-        // Sync to watch app if enabled
-        watchConnectivityCoordinator?.sync()
+        emitInternalStateChange(.environmentDidChange)
       }
     }
   }
@@ -178,7 +173,7 @@ public final class Clerk {
   }
 
   /// Coordinates task lifecycle and cleanup.
-  private var taskCoordinator: TaskCoordinator?
+  private var taskCoordinator: TaskCoordinator? = TaskCoordinator()
 
   /// Frontend API URL.
   var frontendApiUrl: String {
@@ -190,7 +185,7 @@ public final class Clerk {
   // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
 
   /// Manages caching of client and environment data.
-  private var cacheManager: CacheManager?
+  var cacheManager: CacheManager?
 
   /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
@@ -198,8 +193,8 @@ public final class Clerk {
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
-  /// Coordinates watch connectivity syncing.
-  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  /// Dispatches Clerk state changes to optional internal observers.
+  var internalStateChanges = ClerkInternalStateChangeEmitter()
 
   /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
@@ -284,6 +279,9 @@ extension Clerk {
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
+    taskCoordinator?.cancelAll()
+    internalStateChanges.removeAllObservers()
+
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
@@ -300,15 +298,16 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up watch connectivity coordinator only if enabled
-    if options.watchConnectivityEnabled {
-      watchConnectivityCoordinator = WatchConnectivityCoordinator()
-    }
-
     // Set up cache manager and load cached data synchronously
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
+
+    // Set up watch connectivity coordinator only after cache hydration.
+    // Restored cached state should not be versioned as a new local auth change.
+    if options.watchConnectivityEnabled {
+      internalStateChanges.addObserver(WatchConnectivityCoordinator())
+    }
 
     // Fire and forget: fetch fresh client and environment from API
     let retryPolicy = Self.startupRefreshRetryPolicy
@@ -604,8 +603,7 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
-    // Sync authentication state to watch app if enabled
-    watchConnectivityCoordinator?.sync()
+    emitInternalStateChange(.applicationDidEnterForeground)
 
     #if os(macOS)
     if WebAuthentication.consumePendingForegroundRefreshSuppression() {
@@ -648,6 +646,22 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  func emitInternalStateChange(_ change: ClerkInternalStateChange) {
+    do {
+      try internalStateChanges.emit(change, from: self)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to notify Clerk state observer")
+    }
+  }
+
+  @discardableResult
+  func scheduleManagedTask(
+    priority: TaskPriority = .userInitiated,
+    operation: @escaping @Sendable () async -> Void
+  ) -> Task<Void, Never>? {
+    taskCoordinator?.task(priority: priority, operation: operation)
+  }
+
   @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
@@ -766,25 +780,6 @@ extension Clerk {
     client = incoming
   }
 
-  func clearCachedClientStateAfterDeviceTokenChange() {
-    clientResponseGeneration = clientResponseGeneration.next()
-    lastAppliedClientResponseSequence = nil
-    lastClientServerFetchDate = nil
-    client = nil
-
-    for key in [
-      ClerkKeychainKey.cachedClient,
-      .cachedClientServerDate,
-      .cachedEnvironment,
-    ] {
-      do {
-        try dependencies.keychain.deleteItem(forKey: key.rawValue)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
-      }
-    }
-  }
-
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
     guard let serverDate, let lastClientServerFetchDate else {
       return false
@@ -801,69 +796,27 @@ extension Clerk {
     return incoming.updatedAt > client.updatedAt
   }
 
-  func applyWatchSyncedClient(
-    _ incoming: Client?,
-    incomingServerFetchDate: Date?,
-    incomingIsAuthoritative: Bool
-  ) {
-    if incomingIsAuthoritative {
-      if let incomingServerFetchDate {
-        lastClientServerFetchDate = incomingServerFetchDate
-      }
-      client = incoming
-      return
-    }
-
-    // Non-authoritative (watch → phone):
-    // Compare server fetch dates when available — both come from the same server
-    // clock, so there is no cross-device skew. The device whose client was confirmed
-    // by the server more recently has the fresher state.
-    // A nil incoming (missing or undecodable client field) is never accepted
-    // non-authoritatively since there is no client data to apply.
-    if let incoming, let incomingServerFetchDate, let lastClientServerFetchDate,
-       incomingServerFetchDate > lastClientServerFetchDate
-    {
-      self.lastClientServerFetchDate = incomingServerFetchDate
-      if incoming != client {
-        client = incoming
-      } else {
-        cacheManager?.saveServerFetchDate(incomingServerFetchDate)
-      }
-      return
-    }
-
-    // Phone has a client or a server-confirmed state to protect — defer to server.
-    if client != nil || lastClientServerFetchDate != nil {
-      scheduleWatchSyncRefresh()
-      return
-    }
-
-    // Phone has no client and no server-confirmed state at all
-    // (e.g. fresh install, cold launch with no cached data) —
-    // accept watch state as provisional.
-    if let incoming {
-      lastClientServerFetchDate = incomingServerFetchDate
-      client = incoming
-      scheduleWatchSyncRefresh()
-    }
+  func fenceClientResponsesAfterDeviceTokenChange() {
+    clientResponseGeneration = clientResponseGeneration.next()
+    lastAppliedClientResponseSequence = nil
   }
 
-  private func scheduleWatchSyncRefresh() {
-    guard watchSyncRefreshTask == nil else { return }
+  func clearCachedClientStateAfterDeviceTokenChange() {
+    fenceClientResponsesAfterDeviceTokenChange()
+    lastClientServerFetchDate = nil
+    client = nil
 
-    watchSyncRefreshTask = Task { [weak self] in
-      defer { self?.watchSyncRefreshTask = nil }
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+    ] {
       do {
-        try await self?.refreshClient()
+        try dependencies.keychain.deleteItem(forKey: key.rawValue)
       } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
+        ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
       }
     }
-  }
-
-  func storeDeviceToken(_ token: String) throws {
-    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    watchConnectivityCoordinator?.sync()
   }
 
   /// Cleans up managers that were started during configuration.
@@ -871,9 +824,9 @@ extension Clerk {
   package func cleanupManagers() {
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
-    watchSyncRefreshTask?.cancel()
-    watchSyncRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
+    cancelEnvironmentRefreshTask()
+    taskCoordinator?.cancelAll()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
@@ -884,9 +837,6 @@ extension Clerk {
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
-    watchSyncRefreshTask?.cancel()
-    await watchSyncRefreshTask?.value
-    watchSyncRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
 
     cancelEnvironmentRefreshTask()
@@ -926,7 +876,7 @@ extension Clerk {
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
-    watchConnectivityCoordinator = nil
+    internalStateChanges.removeAllObservers()
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

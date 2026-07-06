@@ -28,6 +28,12 @@ extension Clerk {
     }
   }
 
+  func storeDeviceToken(_ token: String) throws {
+    let previousToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: token))
+  }
+
   /// Updates the stored Clerk device token and refreshes native auth state.
   ///
   /// This is intended for framework integrations that need to hand a client token

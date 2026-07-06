@@ -19,11 +19,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   /// The WCSession instance used for communication.
   private let session: WCSession
 
-  /// The keychain storage used to read the deviceToken.
-  @MainActor
-  private var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
-  }
+  private let payloadHandler: @MainActor (WatchSyncPayload) -> Void
+  private let activationHandler: @MainActor () -> Void
 
   /// Whether the session is currently activated. Must be accessed from MainActor.
   @MainActor
@@ -34,8 +31,13 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   private var isProcessingSync = false
 
   /// Creates a new Watch Connectivity manager.
-  override init() {
+  init(
+    payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
+    activationHandler: @escaping @MainActor () -> Void
+  ) {
     session = WCSession.default
+    self.payloadHandler = payloadHandler
+    self.activationHandler = activationHandler
     super.init()
 
     if WCSession.isSupported() {
@@ -44,18 +46,13 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     }
   }
 
-  /// Syncs deviceToken, Client, and Environment to the watch app.
-  ///
-  /// This method reads the deviceToken from keychain and gets Client and Environment
-  /// from Clerk.shared, then sends them all together to the watch app using
-  /// updateApplicationContext for reliable delivery.
-  /// Must be called from MainActor context.
+  /// Sends Clerk's reduced watch-sync payload to the watch app.
   @MainActor
-  func syncAll() {
+  func sync(_ payload: WatchSyncPayload) {
     guard !isProcessingSync else { return }
     guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
 
-    let applicationContext = WatchSyncPayload(clerk: Clerk.shared, keychain: keychain).applicationContext
+    let applicationContext = payload.applicationContext
 
     guard !applicationContext.isEmpty else { return }
 
@@ -74,14 +71,17 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   private func applyPayload(_ payload: WatchSyncPayload) {
     isProcessingSync = true
     defer { isProcessingSync = false }
-    payload.apply(from: .watch, to: Clerk.shared, keychain: keychain)
+    payloadHandler(payload)
   }
 }
 
 #if os(iOS)
 @MainActor
-func createWatchConnectivityManager() -> any WatchConnectivitySyncing {
-  WatchConnectivityManager()
+func createWatchConnectivityManager(
+  payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
+  activationHandler: @escaping @MainActor () -> Void
+) -> any WatchConnectivitySyncing {
+  WatchConnectivityManager(payloadHandler: payloadHandler, activationHandler: activationHandler)
 }
 #endif
 
@@ -99,7 +99,7 @@ extension WatchConnectivityManager: WCSessionDelegate {
     Task { @MainActor in
       self.isSessionActivated = activationState == .activated
       if self.isSessionActivated {
-        self.syncAll()
+        self.activationHandler()
       }
     }
   }
