@@ -95,14 +95,14 @@ public struct TrustedDevices {
   ///
   /// This requires an active or pending Clerk session. The generated private key stays on the device.
   /// - Parameters:
-  ///   - name: A human-readable device name stored with the trusted-device credential.
+  ///   - deviceName: A human-readable device name stored with the trusted-device credential.
   ///   - identifierHint: A local-only user identifier hint for selecting this credential later.
   ///   - reason: The reason shown in the system biometric prompt.
   ///   - policy: The local authentication policy used to protect the generated private key.
   ///     Defaults to requiring biometric availability while allowing device passcode fallback during authentication.
   @discardableResult
   public func enroll(
-    name: String? = nil,
+    deviceName: String? = nil,
     identifierHint: String? = nil,
     reason: String? = nil,
     policy: TrustedDevicePolicy = .biometryOrDevicePasscode
@@ -123,7 +123,7 @@ public struct TrustedDevices {
     do {
       let challenge = try await trustedDeviceService.prepareEnrollment(params: .init(
         appIdentifier: appIdentifier,
-        name: name,
+        name: deviceName,
         publicKeyJWK: localKey.publicKeyJWK
       ))
       let signature = try keyManager.sign(
@@ -133,7 +133,7 @@ public struct TrustedDevices {
       )
       let trustedDevice = try await trustedDeviceService.attemptEnrollment(params: .init(
         appIdentifier: appIdentifier,
-        name: name,
+        name: deviceName,
         publicKeyJWK: localKey.publicKeyJWK,
         clientData: signature.clientData,
         signature: signature.signature
