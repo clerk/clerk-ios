@@ -744,6 +744,7 @@ extension AuthStartView {
 
     do {
       let signIn = try await clerk.auth.signInWithTrustedDevice()
+      guard !Task.isCancelled, navigation.path.isEmpty else { return }
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
       if error.isCancellationError {
