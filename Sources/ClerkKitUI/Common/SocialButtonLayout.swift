@@ -19,31 +19,32 @@ struct SocialButtonLayout: Layout {
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
     let containerWidth = proposal.width ?? 0
-    let itemsPerRow = maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
-    let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
+    let rowRanges = Self.rowRanges(
+      itemCount: subviews.count,
+      maxItemsPerRow: maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
+    )
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
-    let totalHeight = CGFloat(rowCount) * rowHeight + CGFloat(rowCount - 1) * spacing
+    let totalHeight = CGFloat(rowRanges.count) * rowHeight + CGFloat(max(0, rowRanges.count - 1)) * spacing
     return CGSize(width: containerWidth, height: totalHeight)
   }
 
   func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
     let containerWidth = bounds.width
-    let itemsPerRow = maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
+    let rowRanges = Self.rowRanges(
+      itemCount: subviews.count,
+      maxItemsPerRow: maxRowItemCount(containerWidth: containerWidth, subviewCount: subviews.count)
+    )
     let rowHeight = subviews.first?.sizeThatFits(.unspecified).height ?? 0
-    let rowCount = Int(ceil(Double(subviews.count) / Double(itemsPerRow)))
+    let referenceItemCount = rowRanges.first?.count ?? 1
 
-    // Calculate button width based on full row (fills container width)
-    let buttonWidth = (containerWidth - CGFloat(itemsPerRow - 1) * spacing) / CGFloat(itemsPerRow)
+    let buttonWidth = (containerWidth - CGFloat(referenceItemCount - 1) * spacing) / CGFloat(referenceItemCount)
 
-    for row in 0 ..< rowCount {
-      let startIndex = row * itemsPerRow
-      let endIndex = min(startIndex + itemsPerRow, subviews.count)
-      let rowSubviews = subviews[startIndex ..< endIndex]
+    for (row, rowRange) in rowRanges.enumerated() {
+      let rowSubviews = subviews[rowRange]
       let itemCount = rowSubviews.count
 
       let totalRowWidth = CGFloat(itemCount) * buttonWidth + CGFloat(itemCount - 1) * spacing
 
-      // Center partial rows, full rows naturally fill width
       let xOffset: CGFloat = switch alignment {
       case .leading:
         0
@@ -66,6 +67,28 @@ struct SocialButtonLayout: Layout {
     guard containerWidth >= minItemWidth else { return 1 }
     let count = (containerWidth + spacing) / (minItemWidth + spacing)
     return max(1, min(subviewCount, Int(count.rounded(.down))))
+  }
+
+  static func rowRanges(itemCount: Int, maxItemsPerRow: Int) -> [Range<Int>] {
+    guard itemCount > 0 else { return [] }
+
+    let maxItemsPerRow = max(1, maxItemsPerRow)
+    if itemCount <= maxItemsPerRow {
+      return [0 ..< itemCount]
+    }
+
+    let rowCount = Int(ceil(Double(itemCount) / Double(maxItemsPerRow)))
+    let itemsPerRow = Int(ceil(Double(itemCount) / Double(rowCount)))
+    var ranges: [Range<Int>] = []
+    var startIndex = 0
+
+    while startIndex < itemCount {
+      let endIndex = min(startIndex + itemsPerRow, itemCount)
+      ranges.append(startIndex ..< endIndex)
+      startIndex = endIndex
+    }
+
+    return ranges
   }
 }
 
