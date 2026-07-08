@@ -53,25 +53,18 @@ jobs:
               )
             }
 
-  checks:
-    name: Shared checks (with integration tests)
+  prepare-release:
+    name: Prepare release commit
     needs: authorize
+    runs-on: ubuntu-latest
     permissions:
-      actions: read
-      checks: write
-      contents: read
-    uses: ./.github/workflows/shared-checks.yml
-    with:
-      run_integration_tests: true
-    secrets: inherit
-
-  publish:
-    name: Bump, tag, and publish release
-    needs: checks
-    runs-on: macos-26
+      contents: write
     env:
       RELEASE_VERSION: ${{ inputs.version }}
-
+    outputs:
+      release_branch: ${{ steps.prepare.outputs.release_branch }}
+      release_sha: ${{ steps.prepare.outputs.release_sha }}
+      version_already_set: ${{ steps.prepare.outputs.version_already_set }}
     steps:
       - name: Checkout triggering commit
         uses: actions/checkout@v4
@@ -80,8 +73,8 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
 
-      - name: Validate version input and detect rerun state
-        id: release_state
+      - name: Validate version input and prepare release commit
+        id: prepare
         run: |
           set -euo pipefail
 
@@ -99,36 +92,200 @@ jobs:
           fi
 
           version_already_set="false"
+          release_branch=""
+
           if [ "$current_version" = "$RELEASE_VERSION" ]; then
             version_already_set="true"
             echo "ℹ️ $version_file already contains sdkVersion: String = \"$RELEASE_VERSION\"."
+          else
+            perl -0pi -e 's/(sdkVersion: String = ")[^"]*(")/$1$ENV{RELEASE_VERSION}$2/' "$version_file"
+
+            if ! grep -q "sdkVersion: String = \"$RELEASE_VERSION\"" "$version_file"; then
+              echo "❌ Failed to apply SDK version update in $version_file"
+              exit 1
+            fi
+
+            echo "Updated version file:"
+            grep -n "sdkVersion" "$version_file"
+
+            git config user.name "clerk-cookie"
+            git config user.email "cookie@clerk.dev"
+            git add "$version_file"
+
+            if git diff --cached --quiet; then
+              echo "❌ No changes to commit for release version bump"
+              exit 1
+            fi
+
+            git commit -m "chore(release): $RELEASE_VERSION"
+
+            release_branch="release-sdk/$RELEASE_VERSION"
+            remote_branch_sha="$(git ls-remote --heads origin "$release_branch" | awk '{print $1}')"
+            if [ -n "$remote_branch_sha" ]; then
+              git push --force-with-lease="refs/heads/$release_branch:$remote_branch_sha" origin "HEAD:refs/heads/$release_branch"
+            else
+              git push origin "HEAD:refs/heads/$release_branch"
+            fi
           fi
 
-          release_tag="$RELEASE_VERSION"
-          tag_already_exists="false"
-          if git rev-parse --verify "refs/tags/$release_tag" >/dev/null 2>&1; then
-            tag_already_exists="true"
-            echo "ℹ️ Tag '$release_tag' already exists locally; skipping git tag \"$release_tag\"."
-          fi
+          release_sha="$(git rev-parse HEAD)"
 
-          if git ls-remote --tags origin "refs/tags/$release_tag" | grep -q "$release_tag"; then
-            tag_already_exists="true"
-            echo "ℹ️ Tag '$release_tag' already exists on origin; skipping git push origin \"$release_tag\"."
-          fi
+          {
+            echo "release_branch=$release_branch"
+            echo "release_sha=$release_sha"
+            echo "version_already_set=$version_already_set"
+          } >> "$GITHUB_OUTPUT"
 
-          echo "version_already_set=$version_already_set" >> "$GITHUB_OUTPUT"
-          echo "tag_already_exists=$tag_already_exists" >> "$GITHUB_OUTPUT"
+          echo "Release commit: $release_sha"
 
-      - name: Update SDK version constant
-        if: steps.release_state.outputs.version_already_set != 'true'
+  start-manual-ci:
+    name: Start Manual CI check
+    needs: prepare-release
+    if: needs.prepare-release.outputs.version_already_set != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+    outputs:
+      manual_check_run_id: ${{ steps.start.outputs.manual_check_run_id }}
+    steps:
+      - name: Create or update Manual CI check
+        id: start
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ needs.prepare-release.outputs.release_sha }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
           set -euo pipefail
 
-          version_file="Sources/ClerkKit/Utils/Version.swift"
-          sed -i '' -E "s/(sdkVersion: String = \").*(\")/\\1$RELEASE_VERSION\\2/" "$version_file"
+          run_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID"
+          latest_manual_ci="$(
+            gh api --method GET "repos/$REPO/commits/$RELEASE_SHA/check-runs" \
+              -f check_name="Manual CI" \
+              --jq '.check_runs | sort_by(.started_at // .created_at) | last // {}'
+          )"
+          latest_manual_ci_id="$(jq -r '.id // ""' <<< "$latest_manual_ci")"
+          latest_manual_ci_status="$(jq -r '.status // ""' <<< "$latest_manual_ci")"
 
-          echo "Updated version file:"
-          grep -n "sdkVersion" "$version_file"
+          if [ -n "$latest_manual_ci_id" ] \
+            && { [ "$latest_manual_ci_status" = "queued" ] \
+              || [ "$latest_manual_ci_status" = "requested" ] \
+              || [ "$latest_manual_ci_status" = "waiting" ] \
+              || [ "$latest_manual_ci_status" = "pending" ] \
+              || [ "$latest_manual_ci_status" = "in_progress" ]; }; then
+            gh api --method PATCH "repos/$REPO/check-runs/$latest_manual_ci_id" \
+              -f status=in_progress \
+              -f details_url="$run_url" \
+              -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -f "output[title]=Manual CI" \
+              -f "output[summary]=Release CI is running for this commit."
+            manual_check_run_id="$latest_manual_ci_id"
+          else
+            manual_check_run_id="$(
+              gh api --method POST "repos/$REPO/check-runs" \
+                -f name="Manual CI" \
+                -f head_sha="$RELEASE_SHA" \
+                -f status=in_progress \
+                -f details_url="$run_url" \
+                -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                -f "output[title]=Manual CI" \
+                -f "output[summary]=Release CI is running for this commit." \
+                --jq '.id'
+            )"
+          fi
+
+          echo "manual_check_run_id=$manual_check_run_id" >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: Shared checks (with integration tests)
+    needs:
+      - prepare-release
+      - start-manual-ci
+    if: always() && needs.prepare-release.result == 'success' && (needs.start-manual-ci.result == 'success' || needs.start-manual-ci.result == 'skipped')
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      checkout_ref: ${{ needs.prepare-release.outputs.release_sha }}
+      report_check_runs: ${{ needs.prepare-release.outputs.version_already_set != 'true' }}
+      check_run_sha: ${{ needs.prepare-release.outputs.release_sha }}
+      check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      check_run_name_prefix: Manual CI
+      run_integration_tests: true
+    secrets: inherit
+
+  report-manual-ci:
+    name: Report Manual CI check
+    needs:
+      - prepare-release
+      - start-manual-ci
+      - checks
+    if: always() && needs.prepare-release.outputs.version_already_set != 'true' && needs.start-manual-ci.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: Report Manual CI result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_CHECK_RUN_ID: ${{ needs.start-manual-ci.outputs.manual_check_run_id }}
+          REPO: ${{ github.repository }}
+          RESULT: ${{ needs.checks.result }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+
+          case "$RESULT" in
+            success)
+              conclusion="success"
+              summary="Manual CI completed successfully."
+              exit_status=0
+              ;;
+            cancelled)
+              conclusion="cancelled"
+              summary="Manual CI was cancelled."
+              exit_status=1
+              ;;
+            *)
+              conclusion="failure"
+              summary="Manual CI failed."
+              exit_status=1
+              ;;
+          esac
+
+          gh api --method PATCH "repos/$REPO/check-runs/$MANUAL_CHECK_RUN_ID" \
+            -f status=completed \
+            -f conclusion="$conclusion" \
+            -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -f details_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID" \
+            -f "output[title]=Manual CI" \
+            -f "output[summary]=$summary"
+
+          exit "$exit_status"
+
+  publish:
+    name: Push, tag, and publish release
+    needs:
+      - prepare-release
+      - checks
+      - report-manual-ci
+    if: always() && needs.prepare-release.result == 'success' && needs.checks.result == 'success' && (needs.prepare-release.outputs.version_already_set == 'true' || needs.report-manual-ci.result == 'success')
+    runs-on: macos-26
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare-release.outputs.release_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
 
       - name: Verify version change is present
         run: |
@@ -140,26 +297,18 @@ jobs:
             exit 1
           fi
 
-      - name: Commit release version bump to main
+      - name: Push release commit to main
+        if: needs.prepare-release.outputs.version_already_set != 'true'
         run: |
           set -euo pipefail
+          git fetch origin main
 
-          if [ "${{ steps.release_state.outputs.version_already_set }}" = "true" ]; then
-            echo "ℹ️ Skipping commit because Sources/ClerkKit/Utils/Version.swift already matches $RELEASE_VERSION."
-            exit 0
-          fi
-
-          git config user.name "clerk-cookie"
-          git config user.email "cookie@clerk.dev"
-
-          git add Sources/ClerkKit/Utils/Version.swift
-
-          if git diff --cached --quiet; then
-            echo "❌ No changes to commit for release version bump"
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "❌ origin/main advanced after the release commit was prepared."
+            echo "   Rerun the release workflow from latest main so CI runs against the final release commit."
             exit 1
           fi
 
-          git commit -m "chore(release): $RELEASE_VERSION"
           git push origin HEAD:main
 
       - name: Create and push release tag
@@ -168,13 +317,24 @@ jobs:
 
           release_tag="$RELEASE_VERSION"
 
-          if [ "${{ steps.release_state.outputs.tag_already_exists }}" = "true" ]; then
-            echo "ℹ️ Skipping git tag \"$release_tag\" and push because tag already exists."
+          if git ls-remote --tags origin "refs/tags/$release_tag" | grep -q "$release_tag"; then
+            echo "ℹ️ Tag '$release_tag' already exists on origin; skipping git tag \"$release_tag\" and push."
             exit 0
           fi
 
-          git tag "$release_tag"
-          git push origin "$release_tag"
+          if ! git rev-parse --verify "refs/tags/$release_tag" >/dev/null 2>&1; then
+            git tag "$release_tag"
+          fi
+
+          git push origin "refs/tags/$release_tag"
+
+      - name: Delete temporary release branch
+        if: always() && needs.prepare-release.outputs.version_already_set != 'true' && needs.prepare-release.outputs.release_branch != ''
+        env:
+          RELEASE_BRANCH: ${{ needs.prepare-release.outputs.release_branch }}
+        run: |
+          set -euo pipefail
+          git push origin --delete "$RELEASE_BRANCH" || true
 
       - name: Determine prerelease flag
         id: prerelease
