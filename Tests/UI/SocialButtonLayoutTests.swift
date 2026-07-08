@@ -1,3 +1,4 @@
+@testable import ClerkKit
 @testable import ClerkKitUI
 import Testing
 
@@ -47,5 +48,90 @@ struct SocialButtonLayoutTests {
       0 ..< 3,
       3 ..< 6,
     ])
+  }
+
+  @Test
+  func rowRangesMatchWebChunkingForSevenItemsAcrossThreeRows() {
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 7, maxItemsPerRow: 3) == [
+      0 ..< 3,
+      3 ..< 6,
+      6 ..< 7,
+    ])
+  }
+
+  @Test
+  func socialButtonGroupShowsTitlesForCompactTwoProviderGroups() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: false,
+      hasLastUsedProvider: false,
+      remainingProviderCount: 2,
+      stacksTwoItemsInSingleColumn: true
+    ))
+  }
+
+  @Test
+  func socialButtonGroupKeepsTwoProviderWideRowsShort() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: false,
+      hasLastUsedProvider: false,
+      remainingProviderCount: 2,
+      stacksTwoItemsInSingleColumn: false
+    ) == false)
+  }
+
+  @Test
+  func socialButtonGroupKeepsCompactRemainingPairShortWhenLastUsedExists() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: false,
+      hasLastUsedProvider: true,
+      remainingProviderCount: 2,
+      stacksTwoItemsInSingleColumn: true
+    ) == false)
+  }
+
+  @Test
+  func socialButtonGroupKeepsWideRemainingPairShortWhenLastUsedExists() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: false,
+      hasLastUsedProvider: true,
+      remainingProviderCount: 2,
+      stacksTwoItemsInSingleColumn: false
+    ) == false)
+  }
+
+  @Test
+  func socialButtonGroupShowsTitleForLastUsedProvider() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: true,
+      hasLastUsedProvider: true,
+      remainingProviderCount: 2,
+      stacksTwoItemsInSingleColumn: false
+    ))
+  }
+
+  @Test
+  func socialButtonGroupShowsTitleForSingleRemainingProvider() {
+    #expect(SocialButtonGroup<Never>.showsTitle(
+      isLastUsed: false,
+      hasLastUsedProvider: true,
+      remainingProviderCount: 1,
+      stacksTwoItemsInSingleColumn: false
+    ))
+  }
+
+  @Test
+  func socialButtonGroupArrangesLastUsedProviderFirstWhenPresent() {
+    #expect(SocialButtonGroup<Never>.arrangedProviders(
+      providers: [.google, .apple],
+      lastUsedProvider: .apple
+    ) == [.apple, .google])
+  }
+
+  @Test
+  func socialButtonGroupIgnoresLastUsedProviderWhenItIsUnavailable() {
+    #expect(SocialButtonGroup<Never>.arrangedProviders(
+      providers: [.google, .apple],
+      lastUsedProvider: .github
+    ) == [.google, .apple])
   }
 }

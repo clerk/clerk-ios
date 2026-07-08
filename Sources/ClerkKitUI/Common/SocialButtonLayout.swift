@@ -27,9 +27,9 @@ struct SocialButtonLayout<Content: View>: View {
 
   private var stacksTwoItemsInSingleColumn: Bool {
     #if os(iOS)
-    horizontalSizeClass == .compact
+    SocialButtonLayoutConfiguration.stacksTwoItemsInSingleColumn(horizontalSizeClass: horizontalSizeClass)
     #else
-    false
+    SocialButtonLayoutConfiguration.stacksTwoItemsInSingleColumn()
     #endif
   }
 }
@@ -37,43 +37,28 @@ struct SocialButtonLayout<Content: View>: View {
 #Preview {
   ScrollView {
     VStack(spacing: 50) {
-      SocialButtonLayout {
-        SocialButton(provider: .google)
+      SocialButtonGroup(providers: [.google]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
 
-      SocialButtonLayout {
-        SocialButton(provider: .google, showsTitle: false)
-        SocialButton(provider: .apple, showsTitle: false)
+      SocialButtonGroup(providers: [.google, .apple]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
 
-      SocialButtonLayout {
-        SocialButton(provider: .google, showsTitle: false)
-        SocialButton(provider: .apple, showsTitle: false)
-        SocialButton(provider: .github, showsTitle: false)
+      SocialButtonGroup(providers: [.google, .apple, .github]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
 
-      SocialButtonLayout {
-        SocialButton(provider: .google, showsTitle: false)
-        SocialButton(provider: .apple, showsTitle: false)
-        SocialButton(provider: .github, showsTitle: false)
-        SocialButton(provider: .slack, showsTitle: false)
+      SocialButtonGroup(providers: [.google, .apple, .github, .slack]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
 
-      SocialButtonLayout {
-        SocialButton(provider: .google, showsTitle: false)
-        SocialButton(provider: .apple, showsTitle: false)
-        SocialButton(provider: .github, showsTitle: false)
-        SocialButton(provider: .slack, showsTitle: false)
-        SocialButton(provider: .facebook, showsTitle: false)
+      SocialButtonGroup(providers: [.google, .apple, .github, .slack, .facebook]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
 
-      SocialButtonLayout {
-        SocialButton(provider: .google, showsTitle: false)
-        SocialButton(provider: .apple, showsTitle: false)
-        SocialButton(provider: .github, showsTitle: false)
-        SocialButton(provider: .slack, showsTitle: false)
-        SocialButton(provider: .facebook, showsTitle: false)
-        SocialButton(provider: .discord, showsTitle: false)
+      SocialButtonGroup(providers: [.google, .apple, .github, .slack, .facebook, .discord]) { provider, showsTitle, _ in
+        SocialButton(provider: provider, showsTitle: showsTitle)
       }
     }
     .frame(maxWidth: .infinity)

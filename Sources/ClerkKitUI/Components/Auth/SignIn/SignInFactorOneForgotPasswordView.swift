@@ -97,17 +97,15 @@ struct SignInFactorOneForgotPasswordView: View {
 
           TextDivider(string: "Or, sign in with another method")
 
-          SocialButtonLayout {
-            ForEach(socialProviders) { provider in
-              SocialButton(
-                provider: provider,
-                transferable: authState.transferable,
-                showsTitle: socialProviders.count == 1
-              ) {
-                await signInWithProvider(provider)
-              }
-              .simultaneousGesture(TapGesture())
+          SocialButtonGroup(providers: socialProviders) { provider, showsTitle, _ in
+            SocialButton(
+              provider: provider,
+              transferable: authState.transferable,
+              showsTitle: showsTitle
+            ) {
+              await signInWithProvider(provider)
             }
+            .simultaneousGesture(TapGesture())
           }
 
           ForEach(alternativeFactors, id: \.self) { factor in
