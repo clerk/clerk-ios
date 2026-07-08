@@ -154,6 +154,11 @@ REQUIREMENTS_BY_KEY_NAME = {
   ],
 }.freeze
 
+SECRET_KEY_REQUIRED_KEY_NAMES = [
+  "auth-phone-code",
+  "session-task-reset-password",
+].freeze
+
 options = {
   keys_file: ".keys.json",
   timeout: 20,
@@ -275,7 +280,7 @@ key_names.each do |key_name|
     next
   end
 
-  if key_name == "session-task-reset-password" && blank?(secret_key_for(keys, key_name))
+  if SECRET_KEY_REQUIRED_KEY_NAMES.include?(key_name) && blank?(secret_key_for(keys, key_name))
     failures << "#{key_name}: missing secret key"
   end
 
