@@ -60,6 +60,27 @@ log_has_known_infrastructure_failure() {
     "$log_file"
 }
 
+log_has_retryable_test_infrastructure_failure() {
+  local log_file="$1"
+
+  grep -Eiq \
+    "Asynchronous wait failed: Exceeded timeout.*Backend API request|HTTP load failed.*error code: -1200|failed to connect 3:-9816" \
+    "$log_file"
+}
+
+should_retry_attempt() {
+  local log_file="$1"
+
+  log_has_known_infrastructure_failure "$log_file" || return 1
+
+  if log_has_test_assertion_failure "$log_file" &&
+    ! log_has_retryable_test_infrastructure_failure "$log_file"; then
+    return 1
+  fi
+
+  return 0
+}
+
 prepare_simulator_for_retry() {
   local simulator_id="${E2E_SIMULATOR_ID:-}"
 
@@ -90,8 +111,7 @@ while true; do
   fi
 
   if [[ "$attempt" -lt "$attempts" ]] &&
-    log_has_known_infrastructure_failure "$attempt_log" &&
-    ! log_has_test_assertion_failure "$attempt_log"; then
+    should_retry_attempt "$attempt_log"; then
     echo "E2E xcodebuild failed with a known infrastructure signature; retrying."
     if [[ -n "${E2E_RESULT_BUNDLE_PATH:-}" ]]; then
       rm -rf "$E2E_RESULT_BUNDLE_PATH"

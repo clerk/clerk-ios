@@ -581,7 +581,16 @@ extension E2EHostE2ETests {
     let maxAttempts = 4
 
     for attempt in 1 ... maxAttempts {
+      if waitForAuthStartInput(in: app, timeout: 2) {
+        return
+      }
+
       guard let signInButton = waitForHittableElement(withIdentifier: E2EIdentifier.signIn, in: app, timeout: 20) else {
+        if authSheetIsPresented(in: app), attempt < maxAttempts {
+          dismissAuthIfPresent(in: app)
+          continue
+        }
+
         attachAuthStartDiagnostics(
           in: app,
           reason: "Expected the E2EHost sign-in button.",
@@ -804,12 +813,41 @@ extension E2EHostE2ETests {
   }
 
   private func dismissAuthIfPresent(in app: XCUIApplication) {
-    guard let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) else {
+    guard let dismissButton = waitForHittableDismissButton(in: app, timeout: 5) else {
       return
     }
 
     dismissButton.tap()
-    _ = app.descendants(matching: .any)[E2EIdentifier.signIn].waitForExistence(timeout: 5)
+    _ = waitForHittableElement(withIdentifier: E2EIdentifier.signIn, in: app, timeout: 5)
+  }
+
+  private func authSheetIsPresented(in app: XCUIApplication) -> Bool {
+    app.descendants(matching: .any)[E2EIdentifier.dismissButton].exists
+  }
+
+  private func waitForHittableDismissButton(in app: XCUIApplication, timeout: TimeInterval) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      let button = app.buttons[E2EIdentifier.dismissButton]
+      if button.exists, button.isEnabled, button.isHittable {
+        return button
+      }
+
+      if let element = hittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app) {
+        return element
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    let button = app.buttons[E2EIdentifier.dismissButton]
+    if button.exists, button.isEnabled, button.isHittable {
+      return button
+    }
+
+    return hittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app)
   }
 
   private func relaunchSignedOutApp(

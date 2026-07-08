@@ -89,6 +89,28 @@ SH
   chmod +x "$path"
 }
 
+write_backend_api_infrastructure_flake_command() {
+  local path="$1"
+  cat > "$path" <<'SH'
+#!/usr/bin/env bash
+count="$(cat "${FAKE_COUNTER:?}" 2>/dev/null || echo 0)"
+count="$((count + 1))"
+echo "$count" > "$FAKE_COUNTER"
+
+if [[ "$count" -eq 1 ]]; then
+  echo "<unknown>:0: error: -[E2EHostE2ETests.E2EHostE2ETests testPhoneCodeSignUpThenPhoneCodeSignIn] : Asynchronous wait failed: Exceeded timeout of 30 seconds, with unfulfilled expectations: \"Backend API request\"."
+  echo "Test Case '-[E2EHostE2ETests.E2EHostE2ETests testPhoneCodeSignUpThenPhoneCodeSignIn]' failed (31.334 seconds)."
+  echo "Failing tests:"
+  echo "HTTP load failed, 0/0 bytes (error code: -1200 [3:-9816])"
+  exit 42
+fi
+
+echo "xcodebuild completed after backend API retry"
+exit 0
+SH
+  chmod +x "$path"
+}
+
 write_persistent_infrastructure_failure_command() {
   local path="$1"
   cat > "$path" <<'SH'
@@ -236,6 +258,24 @@ run_infrastructure_signature_matrix_test() {
   done
 }
 
+run_backend_api_test_failure_retry_test() {
+  local command="$tmpdir/backend-api-infra-flake.sh"
+  local output="$tmpdir/backend-api-infra-flake.out"
+  local counter="$tmpdir/backend-api-infra-counter"
+
+  write_backend_api_infrastructure_flake_command "$command"
+
+  env \
+    FAKE_COUNTER="$counter" \
+    E2E_XCODEBUILD_ATTEMPTS=2 \
+    E2E_XCODEBUILD_LOG_PATH="$tmpdir/logs/backend-api-infra.log" \
+    "$runner" "$command" > "$output" 2>&1
+
+  assert_equals "2" "$(cat "$counter")"
+  assert_contains "$output" "known infrastructure signature; retrying"
+  assert_file_exists "$tmpdir/logs/backend-api-infra-attempt-2.log"
+}
+
 run_assertion_failure_no_retry_test() {
   local command="$tmpdir/assertion-failure.sh"
   local output="$tmpdir/assertion-failure.out"
@@ -310,6 +350,7 @@ run_success_log_path_without_extension_test
 run_success_log_path_with_dotted_directory_test
 run_infrastructure_retry_test
 run_infrastructure_signature_matrix_test
+run_backend_api_test_failure_retry_test
 run_assertion_failure_no_retry_test
 run_unclassified_failure_no_retry_test
 run_invalid_attempts_fallback_test
