@@ -25,6 +25,7 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl == nil)
     #expect(options.keychainConfig.service == Bundle.main.bundleIdentifier ?? "")
     #expect(options.keychainConfig.accessGroup == nil)
+    #expect(options.sharedSessionSync == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
     #expect(options.middleware.request.isEmpty == true)
@@ -41,7 +42,8 @@ struct ClerkOptionsTests {
       telemetryEnabled: false,
       keychainConfig: keychainConfig,
       proxyUrl: "https://proxy.example.com/__clerk",
-      redirectConfig: redirectConfig
+      redirectConfig: redirectConfig,
+      sharedSessionSync: .enabled
     )
 
     #expect(options.logLevel == .debug)
@@ -51,6 +53,7 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
     #expect(options.redirectConfig.redirectUrl == "test://redirect")
     #expect(options.redirectConfig.callbackUrlScheme == "test")
+    #expect(options.sharedSessionSync == .enabled)
   }
 
   @Test

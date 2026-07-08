@@ -160,6 +160,15 @@ struct SystemKeychainTests {
     #expect(secItemClient.copyMatchingQueries.count == 1)
     #expect(hasDataProtectionKeychainFlag(secItemClient.copyMatchingQueries[0]))
   }
+
+  @Test
+  func missingEntitlementErrorIncludesAccessGroupGuidance() {
+    let error = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+
+    #expect(error.errorDescription == "Keychain operation failed with OSStatus \(errSecMissingEntitlement).")
+    #expect(error.failureReason?.contains("Keychain Sharing") == true)
+    #expect(error.failureReason?.contains("accessGroup") == true)
+  }
 }
 
 private final class SecItemClientSpy: @unchecked Sendable {
