@@ -27,6 +27,51 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func routeToSessionTaskStartRoutesResetPasswordTaskOnce() {
+    let navigation = AuthNavigation()
+    let session = session(pendingTasks: [.resetPassword])
+
+    let didRoute = navigation.routeToSessionTaskStartIfNeeded(session: session)
+    let didRouteAgain = navigation.routeToSessionTaskStartIfNeeded(session: session)
+
+    #expect(didRoute)
+    #expect(didRouteAgain)
+    #expect(navigation.path == [.sessionTaskStart(task: .resetPassword)])
+  }
+
+  @Test
+  func routeToSessionTaskStartRoutesChooseOrganizationTask() {
+    let navigation = AuthNavigation()
+    let session = session(pendingTasks: [.chooseOrganization])
+
+    let didRoute = navigation.routeToSessionTaskStartIfNeeded(session: session)
+
+    #expect(didRoute)
+    #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
+  }
+
+  @Test
+  func handleSessionTaskCompletionRoutesToChooseOrganizationWhenItIsNextPendingTask() {
+    let navigation = AuthNavigation()
+    let session = session(pendingTasks: [.chooseOrganization])
+
+    navigation.handleSessionTaskCompletion(session: session)
+
+    #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
+    #expect(navigation.allTasksComplete == false)
+  }
+
+  @Test
+  func signInNeedsNewPasswordRoutesToSetNewPassword() {
+    let navigation = AuthNavigation()
+    let signIn = SignIn(id: "sign_in_123", status: .needsNewPassword)
+
+    navigation.setToStepForStatus(signIn: signIn)
+
+    #expect(navigation.path == [.signInSetNewPassword])
+  }
+
+  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(
@@ -52,6 +97,34 @@ struct AuthNavigationTests {
     navigation.setToStepForStatus(signUp: signUp)
 
     #expect(navigation.path == [.signUpCode(.email("test@example.com"))])
+  }
+
+  @Test
+  func signUpLegalAcceptedMissingRequirementRoutesToCompleteProfile() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [.legalAccepted],
+      unverifiedFields: [],
+      verifications: [:]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCompleteProfile])
+  }
+
+  @Test
+  func signUpUsernameMissingRequirementRoutesToCollectUsernameBeforeCompleteProfile() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [.firstName, .legalAccepted, .username],
+      unverifiedFields: [],
+      verifications: [:]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCollectField(.username)])
   }
 
   private func session(pendingTasks: [Session.Task]) -> Session {

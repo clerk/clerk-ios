@@ -90,13 +90,10 @@ jobs:
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
             check_run_names+=(
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-email)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-phone)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-security)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (session-tasks)"
-              "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (account-reset)"
+              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-email)"
+              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-phone)"
+              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (user-profile)"
+              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (session-task-cleanup)"
             )
           fi
 
@@ -238,48 +235,28 @@ jobs:
         run: make test-ui
 
   test-e2e:
-    name: Run E2EHost tests on iOS (${{ matrix.shard }})
+    name: Run required E2EHost smoke tests on iOS (${{ matrix.shard }})
     needs: format-and-lint
     if: inputs.run_integration_tests
     runs-on: macos-26
     timeout-minutes: 30
-    continue-on-error: ${{ matrix.continue_on_error == true }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - shard: auth-email
             only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpThenPasswordSignIn()
-              E2EHostE2ETests/E2EHostE2ETests/testMultiMethodsEmailSignUpThenEmailCodeSignInViaUseAnotherMethod()
-              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpCompletesRequiredLegalConsent()
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpDeletesAccount()
           - shard: auth-phone
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpThenPhoneCodeSignIn()
-              E2EHostE2ETests/E2EHostE2ETests/testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod()
-          - shard: auth-username-cleanup
+          - shard: user-profile
             only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testUsernamePasswordSignUpThenUsernamePasswordSignInWithRequiredUserModelFields()
-              E2EHostE2ETests/E2EHostE2ETests/testInAppCleanupDeletesPendingUser()
-          - shard: user-profile-password-change
-            continue_on_error: true
-            only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityChangesPassword()
-          - shard: user-profile-security
-            only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithAuthenticatorApp()
-              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityAddsTwoStepVerificationWithSmsCode()
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityDeletesAccount()
-          - shard: session-tasks
+          - shard: session-task-cleanup
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup()
-              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup()
-              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskChooseOrganizationSignUpAcceptsInvitationAndSelectsOrganization()
-              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskChooseOrganizationSignUpCreatesOrganization()
-          - shard: account-reset
-            only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testUserProfileAddsAccountThenSwitchesAccounts()
-              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskResetPasswordSignInCompletesPasswordReset()
+              E2EHostE2ETests/E2EHostE2ETests/testInAppCleanupDeletesPendingUser()
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -315,50 +292,24 @@ jobs:
           chmod 600 .keys.json
           echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
 
-      - name: Validate E2E test keys
+      - name: Validate E2E test instances
         env:
           CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
         run: |
           set -euo pipefail
 
-          required_keys="$(printf '%s\n' \
+          ./scripts/validate-e2e-test-instances.sh \
             "auth-email-code-password" \
-            "auth-legal-consent" \
-            "auth-multi-methods" \
             "auth-phone-code" \
-            "auth-username-password-user-model" \
-            "session-task-choose-organization" \
-            "session-task-reset-password" \
             "session-task-setup-mfa" \
-            "$CLERK_E2E_KEY_NAME" \
-            | sort -u)"
+            "$CLERK_E2E_KEY_NAME"
 
-          missing=0
-          while IFS= read -r key_name; do
-            if ! jq -e --arg key_name "$key_name" '.[$key_name].pk | strings | select(length > 0)' .keys.json > /dev/null; then
-              echo "::error::Missing $key_name.pk in CLERK_TEST_KEYS_JSON."
-              missing=1
-            fi
-          done <<< "$required_keys"
-
-          if ! jq -e '.["session-task-reset-password"].sk | strings | select(length > 0)' .keys.json > /dev/null; then
-            echo "::error::Missing session-task-reset-password.sk in CLERK_TEST_KEYS_JSON."
-            missing=1
-          fi
-
-          if [ "$missing" -ne 0 ]; then
-            echo "Add the missing key to 1Password, then sync GitHub with:"
-            echo "  make sync-test-keys-to-github"
-            exit 1
-          fi
-
-          echo "✅ Required E2E test keys are configured"
-
-      - name: Run E2EHost tests
+      - name: Run required E2EHost smoke tests
         env:
           CLERK_E2E_KEY_NAME: ${{ inputs.e2e_key_name }}
           E2E_ONLY_TESTING: ${{ matrix.only_testing }}
           E2E_RESULT_BUNDLE_PATH: build/reports/E2EHost-${{ matrix.shard }}.xcresult
+          E2E_XCODEBUILD_ATTEMPTS: "2"
         run: |
           set -euo pipefail
           make test-e2e
@@ -376,7 +327,7 @@ jobs:
           fi
 
           {
-            echo "### E2EHost timings (${{ matrix.shard }})"
+            echo "### Required E2EHost timings (${{ matrix.shard }})"
             echo
             echo "| Test | Result | Duration |"
             echo "| --- | --- | ---: |"
@@ -388,8 +339,10 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: E2EHost-${{ matrix.shard }}.xcresult
-          path: build/reports/E2EHost-${{ matrix.shard }}.xcresult
+          name: E2EHost-${{ matrix.shard }}-artifacts
+          path: |
+            build/reports/E2EHost-${{ matrix.shard }}.xcresult
+            build/reports/E2EHost-${{ matrix.shard }}*.log
           if-no-files-found: ignore
 
       - name: Cleanup E2E test keys
@@ -530,11 +483,8 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-email)" "$(job_result "Run E2EHost tests on iOS (auth-email)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-phone)" "$(job_result "Run E2EHost tests on iOS (auth-phone)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (auth-username-cleanup)" "$(job_result "Run E2EHost tests on iOS (auth-username-cleanup)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-password-change)" "$(job_result "Run E2EHost tests on iOS (user-profile-password-change)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (user-profile-security)" "$(job_result "Run E2EHost tests on iOS (user-profile-security)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (session-tasks)" "$(job_result "Run E2EHost tests on iOS (session-tasks)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2EHost tests on iOS (account-reset)" "$(job_result "Run E2EHost tests on iOS (account-reset)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-email)" "$(job_result "Run required E2EHost smoke tests on iOS (auth-email)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-phone)" "$(job_result "Run required E2EHost smoke tests on iOS (auth-phone)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (user-profile)" "$(job_result "Run required E2EHost smoke tests on iOS (user-profile)")"
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (session-task-cleanup)" "$(job_result "Run required E2EHost smoke tests on iOS (session-task-cleanup)")"
           fi

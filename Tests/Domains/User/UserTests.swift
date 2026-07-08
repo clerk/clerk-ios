@@ -477,9 +477,16 @@ struct UserTests {
 
     configureService(service)
 
-    _ = try await User.mock.updatePassword(.init(newPassword: "newPassword123", signOutOfOtherSessions: true))
+    _ = try await User.mock.updatePassword(
+      .init(
+        currentPassword: "currentPassword123",
+        newPassword: "newPassword123",
+        signOutOfOtherSessions: true
+      )
+    )
 
     let params = try #require(captured.value)
+    #expect(params.currentPassword == "currentPassword123")
     #expect(params.newPassword == "newPassword123")
     #expect(params.signOutOfOtherSessions == true)
   }

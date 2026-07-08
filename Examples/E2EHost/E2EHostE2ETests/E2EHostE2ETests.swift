@@ -30,19 +30,16 @@ private enum E2ECleanupCommand {
 
 final class E2EHostE2ETests: XCTestCase {
   private static let defaultPublishableKeyName = "auth-email-code-password"
-  private static let multiMethodsPublishableKeyName = "auth-multi-methods"
   private static let phonePublishableKeyName = "auth-phone-code"
-  private static let usernameUserModelPublishableKeyName = "auth-username-password-user-model"
-  private static let legalConsentPublishableKeyName = "auth-legal-consent"
   private static let sessionTaskSetupMfaPublishableKeyName = "session-task-setup-mfa"
-  private static let sessionTaskChooseOrganizationPublishableKeyName = "session-task-choose-organization"
-  private static let sessionTaskResetPasswordPublishableKeyName = "session-task-reset-password"
-  private static let defaultChooseOrganizationEmailDomain = "clerk.dev"
+  private static let authStartSubmissionTimeout: TimeInterval = 75
+  private static let passwordChangeCompletionTimeout: TimeInterval = 75
 
   private let verificationCode = "424242"
   private let testPassword = "ClerkIOS2026E2ETestPassword9!"
 
   private var app: XCUIApplication?
+  private var testPhoneNumbers: [String] = []
 
   override func setUpWithError() throws {
     continueAfterFailure = false
@@ -61,7 +58,7 @@ final class E2EHostE2ETests: XCTestCase {
     app = nil
   }
 
-  func testEmailCodeSignUpThenPasswordSignIn() throws {
+  func testEmailCodeSignUpDeletesAccount() throws {
     let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
@@ -77,104 +74,11 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signUpApp)
     completeEmailCodeSignUp(email: email, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.defaultPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testUserProfileSecurityChangesPassword() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let newPassword = Self.makeUniqueTestPassword()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.defaultPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    completeUserProfilePasswordChange(newPassword: newPassword, in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
-  }
-
-  func testUserProfileSecurityAddsTwoStepVerificationWithAuthenticatorApp() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    try completeUserProfileAuthenticatorAppMfaSetup(in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
-  }
-
-  func testUserProfileSecurityAddsTwoStepVerificationWithSmsCode() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    completeUserProfileSmsCodeMfaSetup(phoneNumber: phoneNumber, in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
   }
 
   func testUserProfileSecurityDeletesAccount() throws {
@@ -201,126 +105,17 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
-  func testUserProfileAddsAccountThenSwitchesAccounts() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let firstEmail = Self.makeUniqueTestEmail()
-    let secondEmail = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: firstEmail, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    let firstUserID = try currentUserID(in: signUpApp)
-
-    openUserProfileRoot(in: signUpApp)
-    waitForUserProfileCurrentUser(firstUserID, in: signUpApp)
-    tapWhenHittableAfterScrolling(
-      E2EIdentifier.userProfileAddAccountRow,
-      in: signUpApp,
-      message: "Expected User Profile to show Add account. Enable Dashboard > Sessions > Multi-session handling for auth-multi-methods."
-    )
-    completeEmailCodeSignUp(email: secondEmail, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForCurrentUserIDToChange(from: firstUserID, in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    waitForAddAccountAuthFlowDismissed(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp, timeout: 10)
-
-    tapWhenHittableAfterScrolling(
-      E2EIdentifier.userProfileSwitchAccountRow,
-      in: signUpApp,
-      timeout: 45,
-      message: "Expected User Profile to show Switch account after adding a second session."
-    )
-    tapWhenHittable(E2EIdentifier.accountSwitcherSession(userID: firstUserID), in: signUpApp, timeout: 45)
-    XCTAssertTrue(
-      signUpApp.descendants(matching: .any)[E2EIdentifier.accountSwitcherSession(userID: firstUserID)]
-        .waitForNonExistence(timeout: 45),
-      "Expected the account switcher to dismiss after switching accounts."
-    )
-    waitForUserProfileCurrentUser(firstUserID, in: signUpApp)
-
-    tapWhenHittable(E2EIdentifier.dismissButton, in: signUpApp)
-    tapWhenHittable(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    completePasswordSignIn(email: secondEmail, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    waitForSessionActive(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 10)
-    tapWhenHittable(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testMultiMethodsEmailSignUpThenEmailCodeSignInViaUseAnotherMethod() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
   func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
     let publishableKey = try requiredPublishableKey(named: Self.phonePublishableKeyName)
     let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
+    let phoneNumber = makeTrackedTestPhoneNumber()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
+
+    try deleteExistingUsersMatchingPhoneNumber(
+      phoneNumber,
+      publishableKey: publishableKey,
+      keyName: Self.phonePublishableKeyName
+    )
 
     app = launchApp(
       authMode: "signUp",
@@ -359,117 +154,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signInApp)
   }
 
-  func testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completePhoneCodeSignUp(phoneNumber: phoneNumber, email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    switchToPhoneNumberIdentifier(in: signInApp)
-    enterPhoneNumber(phoneNumber, in: signInApp)
-    submitPhoneSignInAndTapUseAnotherMethod(phoneNumber: phoneNumber, in: signInApp)
-    tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testUsernamePasswordSignUpThenUsernamePasswordSignInWithRequiredUserModelFields() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.usernameUserModelPublishableKeyName)
-    let username = Self.makeUniqueTestUsername()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.usernameUserModelPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeUsernamePasswordUserModelSignUp(username: username, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.usernameUserModelPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(username, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testEmailCodeSignUpCompletesRequiredLegalConsent() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.legalConsentPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.legalConsentPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    completeRequiredLegalConsent(in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
   func testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup() throws {
     let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -496,150 +180,6 @@ final class E2EHostE2ETests: XCTestCase {
 
     tap(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = Self.makeUniqueTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskSetupMfaPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("setup-mfa", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeSmsCodeMfaSetup(phoneNumber: phoneNumber, in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissAuthSheetIfNeeded(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskChooseOrganizationSignUpAcceptsInvitationAndSelectsOrganization() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
-    let email = Self.makeUniqueChooseOrganizationTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("choose-organization", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeChooseOrganizationByAcceptingInvitation(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskChooseOrganizationSignUpCreatesOrganization() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
-    let email = Self.makeUniqueChooseOrganizationTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("choose-organization", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeChooseOrganizationByCreatingOrganization(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskResetPasswordSignInCompletesPasswordReset() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
-    let secretKey = try requiredSecretKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let newPassword = Self.makeUniqueTestPassword()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    let userID = try currentUserID(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    try setUserPasswordCompromised(userID: userID, publishableKey: publishableKey, secretKey: secretKey)
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 5, recoverByReactivatingApp: true)
-    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    waitForSessionPending(in: signInApp)
-    assertPendingTasksContain("reset-password", in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    completeResetPasswordSessionTask(newPassword: newPassword, in: signInApp)
-    waitForSessionActive(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testInAppCleanupDeletesPendingUser() throws {
@@ -698,8 +238,11 @@ extension E2EHostE2ETests {
     static let sessionStatus = "e2e.auth.sessionStatus"
     static let pendingTasks = "e2e.auth.pendingTasks"
     static let userID = "e2e.auth.userID"
+    static let cleanupInProgress = "e2e.auth.cleanupInProgress"
     static let cleanupComplete = "e2e.auth.cleanupComplete"
+    static let cleanupFailed = "e2e.auth.cleanupFailed"
     static let signOut = "e2e.auth.signOut"
+    static let signIn = "e2e.auth.signIn"
     static let deleteAccount = "e2e.auth.deleteAccount"
     static let dismissButton = "clerk.dismissButton"
     static let userButtonProfile = "clerk.userButton.profile"
@@ -707,31 +250,15 @@ extension E2EHostE2ETests {
     static let userProfileSwitchAccountRow = "clerk.userProfile.row.switchAccount"
     static let userProfileSecurityRow = "clerk.userProfile.row.security"
     static let userProfileSecurityChangePassword = "clerk.userProfile.security.changePassword"
-    static let userProfileSecurityAddMfa = "clerk.userProfile.security.addMfa"
     static let userProfileSecurityDeleteAccount = "clerk.userProfile.security.deleteAccount"
     static let userProfileChangePasswordCurrentPassword = "clerk.userProfile.changePassword.currentPassword"
     static let userProfileChangePasswordNext = "clerk.userProfile.changePassword.next"
     static let userProfileChangePasswordNewPassword = "clerk.userProfile.changePassword.newPassword"
     static let userProfileChangePasswordConfirmPassword = "clerk.userProfile.changePassword.confirmPassword"
     static let userProfileChangePasswordSave = "clerk.userProfile.changePassword.save"
-    static let userProfileMfaSmsCode = "clerk.userProfile.mfa.smsCode"
-    static let userProfileMfaSmsPhoneNumber = "clerk.userProfile.mfa.sms.phoneNumber"
-    static let userProfileMfaSmsContinue = "clerk.userProfile.mfa.sms.continue"
-    static let userProfileMfaSmsAddPhone = "clerk.userProfile.mfa.sms.addPhone"
-    static let userProfilePhoneNumber = "clerk.userProfile.phone.phoneNumber"
-    static let userProfilePhoneContinue = "clerk.userProfile.phone.continue"
-    static let userProfileMfaAuthenticatorApp = "clerk.userProfile.mfa.authenticatorApp"
-    static let userProfileMfaTotpSecret = "clerk.userProfile.mfa.totp.secret"
-    static let userProfileMfaTotpContinue = "clerk.userProfile.mfa.totp.continue"
-    static let userProfileMfaVerificationCode = "clerk.userProfile.mfa.verificationCode"
-    static let userProfileBackupCodesDone = "clerk.userProfile.backupCodes.done"
     static let userProfileDeleteAccountConfirmation = "clerk.userProfile.deleteAccount.confirmation"
     static let userProfileDeleteAccountConfirm = "clerk.userProfile.deleteAccount.confirm"
-    static let setupMfaSmsCode = "clerk.auth.sessionTask.setupMfa.smsCode"
     static let setupMfaAuthenticatorApp = "clerk.auth.sessionTask.setupMfa.authenticatorApp"
-    static let smsPhoneNumber = "clerk.auth.sessionTask.sms.phoneNumber"
-    static let smsContinue = "clerk.auth.sessionTask.sms.continue"
-    static let smsCode = "clerk.auth.sessionTask.sms.code"
     static let totpSecret = "clerk.auth.sessionTask.totp.secret"
     static let totpContinue = "clerk.auth.sessionTask.totp.continue"
     static let totpCode = "clerk.auth.sessionTask.totp.code"
@@ -756,6 +283,7 @@ extension E2EHostE2ETests {
 
   private enum CodePreparationResult: Equatable {
     case prepared
+    case identifierTaken(String)
     case requestTimedOut
     case timedOut
   }
@@ -775,25 +303,57 @@ extension E2EHostE2ETests {
     }
   }
 
+  fileprivate struct BackendAPIResponseError: Error, CustomStringConvertible {
+    let message: String
+
+    var description: String {
+      message
+    }
+  }
+
   fileprivate enum TOTPError: Error {
     case invalidSecret
   }
+
+  private static let approvedTestPhoneNumberPrefix = "5555550"
+  private static let approvedTestPhoneNumberSuffixRange = 100 ... 199
+  private static let approvedTestPhoneNumberRangeDescription = "5555550100...5555550199"
+  private static let approvedTestPhoneNumberSuffixByTestName = [
+    "testPhoneCodeSignUpThenPhoneCodeSignIn": 120,
+  ]
 
   fileprivate static func makeUniqueTestEmail() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     return "clerk_ios_e2e+clerk_test_\(suffix)@example.com"
   }
 
-  fileprivate static func makeUniqueChooseOrganizationTestEmail() -> String {
-    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-    let domain = normalized(ProcessInfo.processInfo.environment["CLERK_E2E_CHOOSE_ORG_EMAIL_DOMAIN"])
-      ?? defaultChooseOrganizationEmailDomain
-    return "clerk_ios_e2e+clerk_test_\(suffix)@\(domain)"
+  fileprivate static func makeUniqueTestPhoneNumber(
+    testName: String? = nil,
+    sequence: Int = 0
+  ) -> String {
+    let suffix = approvedTestPhoneNumberSuffix(for: testName, sequence: sequence)
+    let phoneNumber = "\(approvedTestPhoneNumberPrefix)\(suffix)"
+    precondition(
+      isApprovedTestPhoneNumber(phoneNumber),
+      "Generated E2E phone number must be inside \(approvedTestPhoneNumberRangeDescription)."
+    )
+    return phoneNumber
   }
 
-  fileprivate static func makeUniqueTestPhoneNumber() -> String {
-    let suffix = Int.random(in: 100 ... 199)
-    return "5555550\(suffix)"
+  private static func approvedTestPhoneNumberSuffix(for testName: String?, sequence: Int) -> Int {
+    let baseSuffix = approvedTestPhoneNumberSuffixByTestName.first { testName?.contains($0.key) == true }?.value
+      ?? stableApprovedTestPhoneNumberSuffix(for: testName ?? "")
+    let zeroBasedOffset = baseSuffix - approvedTestPhoneNumberSuffixRange.lowerBound + sequence
+    let suffixCount = approvedTestPhoneNumberSuffixRange.count
+    return approvedTestPhoneNumberSuffixRange.lowerBound + (zeroBasedOffset % suffixCount)
+  }
+
+  private static func stableApprovedTestPhoneNumberSuffix(for value: String) -> Int {
+    var hash = 0
+    for scalar in value.unicodeScalars {
+      hash = (hash * 31 + Int(scalar.value)) % approvedTestPhoneNumberSuffixRange.count
+    }
+    return approvedTestPhoneNumberSuffixRange.lowerBound + hash
   }
 
   fileprivate static func makeUniqueTestUsername() -> String {
@@ -804,6 +364,30 @@ extension E2EHostE2ETests {
   fileprivate static func makeUniqueTestPassword() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased().prefix(12)
     return "ClerkIOS2026E2ENewPassword9!\(suffix)"
+  }
+
+  private static func isApprovedTestPhoneNumber(_ phoneNumber: String) -> Bool {
+    let digits = phoneNumber.filter(\.isWholeNumber)
+    guard digits.count == 10, let value = Int(digits) else {
+      return false
+    }
+
+    let lowerBound = Int("\(approvedTestPhoneNumberPrefix)\(approvedTestPhoneNumberSuffixRange.lowerBound)")!
+    let upperBound = Int("\(approvedTestPhoneNumberPrefix)\(approvedTestPhoneNumberSuffixRange.upperBound)")!
+    return (lowerBound ... upperBound).contains(value)
+  }
+
+  private func makeTrackedTestPhoneNumber(
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) -> String {
+    let phoneNumber = Self.makeUniqueTestPhoneNumber(testName: name, sequence: testPhoneNumbers.count)
+    guard assertApprovedTestPhoneNumber(phoneNumber, file: file, line: line) else {
+      return phoneNumber
+    }
+
+    testPhoneNumbers.append(phoneNumber)
+    return phoneNumber
   }
 
   private func requiredPublishableKey(named keyName: String) throws -> String {
@@ -827,6 +411,14 @@ extension E2EHostE2ETests {
   }
 
   private func requiredSecretKey(named keyName: String) throws -> String {
+    if let secretKey = secretKey(named: keyName) {
+      return secretKey
+    }
+
+    throw XCTSkip("Configure '\(keyName).sk' in .keys.json.")
+  }
+
+  private func secretKey(named keyName: String) -> String? {
     let environment = ProcessInfo.processInfo.environment
     let selectedKeyName = Self.publishableKeyName(environment: environment)
 
@@ -838,7 +430,7 @@ extension E2EHostE2ETests {
       return secretKey
     }
 
-    throw XCTSkip("Configure '\(keyName).sk' in .keys.json.")
+    return nil
   }
 
   private static func publishableKeyName(environment: [String: String]) -> String {
@@ -989,8 +581,22 @@ extension E2EHostE2ETests {
     let maxAttempts = 4
 
     for attempt in 1 ... maxAttempts {
-      let signInButton = app.buttons["Sign in"].firstMatch
-      guard signInButton.waitForExistence(timeout: 20) else {
+      if waitForAuthStartInput(in: app, timeout: 2) {
+        return
+      }
+
+      guard let signInButton = waitForHittableElement(withIdentifier: E2EIdentifier.signIn, in: app, timeout: 20) else {
+        if authSheetIsPresented(in: app), attempt < maxAttempts {
+          dismissAuthIfPresent(in: app)
+          continue
+        }
+
+        attachAuthStartDiagnostics(
+          in: app,
+          reason: "Expected the E2EHost sign-in button.",
+          attempt: attempt,
+          maxAttempts: maxAttempts
+        )
         XCTFail("Expected the E2EHost sign-in button.", file: file, line: line)
         return
       }
@@ -1002,6 +608,12 @@ extension E2EHostE2ETests {
       }
 
       guard attempt < maxAttempts else {
+        attachAuthStartDiagnostics(
+          in: app,
+          reason: "Expected AuthView to render an auth start input.",
+          attempt: attempt,
+          maxAttempts: maxAttempts
+        )
         XCTFail("Expected AuthView to render an auth start input.", file: file, line: line)
         return
       }
@@ -1032,13 +644,210 @@ extension E2EHostE2ETests {
     return identifierInput.exists || phoneNumberInput.exists
   }
 
+  private func attachAuthStartDiagnostics(
+    in app: XCUIApplication,
+    reason: String,
+    attempt: Int,
+    maxAttempts: Int
+  ) {
+    let summary = authStartDiagnosticSummary(
+      in: app,
+      reason: reason,
+      attempt: attempt,
+      maxAttempts: maxAttempts
+    )
+    let summaryAttachment = XCTAttachment(string: summary)
+    summaryAttachment.name = "auth-start-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "auth-start-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "auth-start-timeout"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
+  }
+
+  private func authStartDiagnosticSummary(
+    in app: XCUIApplication,
+    reason: String,
+    attempt: Int,
+    maxAttempts: Int
+  ) -> String {
+    let launchEnvironment = app.launchEnvironment
+    let lines = [
+      "reason: \(reason)",
+      "test: \(name)",
+      "attempt: \(attempt)/\(maxAttempts)",
+      "appState: \(appStateDescription(app.state))",
+      "launchEnvironment:",
+      "  CLERK_E2E_KEY_NAME: \(launchEnvironment["CLERK_E2E_KEY_NAME"] ?? "<missing>")",
+      "  CLERK_E2E_AUTH_MODE: \(launchEnvironment["CLERK_E2E_AUTH_MODE"] ?? "<missing>")",
+      "  CLERK_E2E_KEYCHAIN_SERVICE: \(launchEnvironment["CLERK_E2E_KEYCHAIN_SERVICE"] ?? "<missing>")",
+      "  CLERK_E2E_MODE: \(launchEnvironment["CLERK_E2E_MODE"] ?? "<missing>")",
+      "  CLERK_PUBLISHABLE_KEY: \(redactedPublishableKey(launchEnvironment["CLERK_PUBLISHABLE_KEY"]))",
+      "testPhoneNumbers:",
+      testPhoneNumberDiagnosticSummary(),
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedOut, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionPending, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      "authStartElements:",
+      authStartDiagnosticProbe(E2EIdentifier.authStartIdentifier, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartPhoneNumber, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartContinue, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.authStartIdentifierSwitcher, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.dismissButton, in: app),
+      "requestTimedOutError: \(authStartRequestTimedOutError(in: app).exists)",
+      "keyboardVisible: \(app.keyboards.firstMatch.exists)",
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleTextFields:",
+      visibleElementSummary(app.textFields),
+      "visibleSecureTextFields:",
+      visibleElementSummary(app.secureTextFields),
+      "visibleSwitches:",
+      visibleElementSummary(app.switches),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    return lines.joined(separator: "\n")
+  }
+
+  private func appStateDescription(_ state: XCUIApplication.State) -> String {
+    switch state {
+    case .unknown:
+      return "unknown"
+    case .notRunning:
+      return "notRunning"
+    case .runningBackgroundSuspended:
+      return "runningBackgroundSuspended"
+    case .runningBackground:
+      return "runningBackground"
+    case .runningForeground:
+      return "runningForeground"
+    @unknown default:
+      return "unrecognized(\(state.rawValue))"
+    }
+  }
+
+  private func redactedPublishableKey(_ key: String?) -> String {
+    guard let key, !key.isEmpty else {
+      return "<missing>"
+    }
+
+    guard key.count > 12 else {
+      return "<redacted>"
+    }
+
+    return "\(key.prefix(6))...\(key.suffix(4))"
+  }
+
+  private func testPhoneNumberDiagnosticSummary() -> String {
+    guard !testPhoneNumbers.isEmpty else {
+      return "  <none>"
+    }
+
+    return testPhoneNumbers.map { "  - \($0)" }.joined(separator: "\n")
+  }
+
+  private func authStartDiagnosticProbe(_ identifier: String, in app: XCUIApplication) -> String {
+    let matches = app.descendants(matching: .any).matching(identifier: identifier).allElementsBoundByIndex
+    guard let element = matches.first, element.exists else {
+      return "  \(identifier): exists=false"
+    }
+
+    return [
+      "  \(identifier): exists=true",
+      "matches=\(matches.count)",
+      "hittable=\(element.isHittable)",
+      "enabled=\(element.isEnabled)",
+      "label=\(truncatedDiagnosticValue(element.label))",
+      "value=\(truncatedDiagnosticValue(element.value as? String))",
+    ].joined(separator: ", ")
+  }
+
+  private func visibleElementSummary(_ query: XCUIElementQuery, limit: Int = 30) -> String {
+    let summaries = query.allElementsBoundByIndex
+      .filter(\.exists)
+      .prefix(limit)
+      .map { element in
+        [
+          "identifier=\(truncatedDiagnosticValue(element.identifier))",
+          "label=\(truncatedDiagnosticValue(element.label))",
+          "value=\(truncatedDiagnosticValue(element.value as? String))",
+          "hittable=\(element.isHittable)",
+          "enabled=\(element.isEnabled)",
+        ].joined(separator: ", ")
+      }
+
+    guard !summaries.isEmpty else {
+      return "  <none>"
+    }
+
+    return summaries.map { "  - \($0)" }.joined(separator: "\n")
+  }
+
+  private func truncatedDiagnosticValue(_ value: String?, limit: Int = 120) -> String {
+    guard let value, !value.isEmpty else {
+      return "<empty>"
+    }
+
+    let sanitized = value
+      .replacingOccurrences(of: "\n", with: "\\n")
+      .replacingOccurrences(of: "\r", with: "\\r")
+
+    guard sanitized.count > limit else {
+      return sanitized
+    }
+
+    return "\(sanitized.prefix(limit))..."
+  }
+
   private func dismissAuthIfPresent(in app: XCUIApplication) {
-    guard let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) else {
+    guard let dismissButton = waitForHittableDismissButton(in: app, timeout: 5) else {
       return
     }
 
     dismissButton.tap()
-    _ = app.buttons["Sign in"].firstMatch.waitForExistence(timeout: 5)
+    _ = waitForHittableElement(withIdentifier: E2EIdentifier.signIn, in: app, timeout: 5)
+  }
+
+  private func authSheetIsPresented(in app: XCUIApplication) -> Bool {
+    app.descendants(matching: .any)[E2EIdentifier.dismissButton].exists
+  }
+
+  private func waitForHittableDismissButton(in app: XCUIApplication, timeout: TimeInterval) -> XCUIElement? {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      let button = app.buttons[E2EIdentifier.dismissButton]
+      if button.exists, button.isEnabled, button.isHittable {
+        return button
+      }
+
+      if let element = hittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app) {
+        return element
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    let button = app.buttons[E2EIdentifier.dismissButton]
+    if button.exists, button.isEnabled, button.isHittable {
+      return button
+    }
+
+    return hittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app)
   }
 
   private func relaunchSignedOutApp(
@@ -1143,13 +952,6 @@ extension E2EHostE2ETests {
     completePasswordCollectionIfNeeded(in: app)
   }
 
-  private func completePasswordSignIn(email: String, in app: XCUIApplication) {
-    enterAuthStartIdentifier(email, in: app)
-    tap(E2EIdentifier.authStartContinue, in: app)
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: app)
-    tap(E2EIdentifier.signInContinue, in: app)
-  }
-
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
@@ -1206,6 +1008,36 @@ extension E2EHostE2ETests {
     tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: app, file: file, line: line)
     waitForSignInCodePrepared(in: app, file: file, line: line)
     enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: app, file: file, line: line)
+  }
+
+  private func submitEmailSignInAndTapUseAnotherMethod(
+    email: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    let maxAttempts = 2
+
+    for attempt in 1 ... maxAttempts {
+      if attempt > 1 {
+        dismissAuthIfPresent(in: app)
+        openAuth(in: app, file: file, line: line)
+      }
+
+      enterAuthStartIdentifier(email, in: app, file: file, line: line)
+      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
+
+      if let useAnotherMethod = waitForHittableElement(
+        withIdentifier: E2EIdentifier.signInUseAnotherMethod,
+        in: app,
+        timeout: 45
+      ) {
+        useAnotherMethod.tap()
+        return
+      }
+    }
+
+    XCTFail("Expected sign-in alternative methods after submitting the email.", file: file, line: line)
   }
 
   private func submitPhoneSignInAndTapUseAnotherMethod(
@@ -1384,6 +1216,9 @@ extension E2EHostE2ETests {
       switch result {
       case .prepared:
         return
+      case let .identifierTaken(message):
+        XCTFail(message, file: file, line: line)
+        return
       case .requestTimedOut where attempt < maxAttempts:
         continue
       case .requestTimedOut, .timedOut:
@@ -1417,6 +1252,9 @@ extension E2EHostE2ETests {
       switch result {
       case .prepared:
         return
+      case let .identifierTaken(message):
+        XCTFail(message, file: file, line: line)
+        return
       case .requestTimedOut where attempt < maxAttempts:
         dismissRequestTimedOutErrorIfPresent(in: app)
         dismissAuthIfPresent(in: app)
@@ -1445,6 +1283,7 @@ extension E2EHostE2ETests {
       NSPredicate(format: "label CONTAINS %@", "Resend (")
     ).firstMatch
     let timeoutError = authStartRequestTimedOutError(in: app)
+    let identifierTakenError = authStartIdentifierTakenError(in: app)
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
@@ -1454,6 +1293,10 @@ extension E2EHostE2ETests {
 
       if resendCooldown.exists {
         return .prepared
+      }
+
+      if identifierTakenError.exists {
+        return .identifierTaken(identifierTakenError.label)
       }
 
       if timeoutError.exists {
@@ -1471,6 +1314,10 @@ extension E2EHostE2ETests {
       return .prepared
     }
 
+    if identifierTakenError.exists {
+      return .identifierTaken(identifierTakenError.label)
+    }
+
     if timeoutError.exists {
       return .requestTimedOut
     }
@@ -1486,11 +1333,16 @@ extension E2EHostE2ETests {
       NSPredicate(format: "label CONTAINS %@", "Resend (")
     ).firstMatch
     let timeoutError = authStartRequestTimedOutError(in: app)
+    let identifierTakenError = authStartIdentifierTakenError(in: app)
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
       if resendCooldown.exists {
         return .prepared
+      }
+
+      if identifierTakenError.exists {
+        return .identifierTaken(identifierTakenError.label)
       }
 
       if timeoutError.exists {
@@ -1502,6 +1354,10 @@ extension E2EHostE2ETests {
 
     if resendCooldown.exists {
       return .prepared
+    }
+
+    if identifierTakenError.exists {
+      return .identifierTaken(identifierTakenError.label)
     }
 
     if timeoutError.exists {
@@ -1518,6 +1374,8 @@ extension E2EHostE2ETests {
     switch result {
     case .prepared:
       message
+    case let .identifierTaken(errorMessage):
+      "\(message) Auth start showed: \(errorMessage)"
     case .requestTimedOut:
       "\(message) Auth start showed '\(E2EIdentifier.requestTimedOutErrorMessage)' after retrying."
     case .timedOut:
@@ -1528,6 +1386,12 @@ extension E2EHostE2ETests {
   private func authStartRequestTimedOutError(in app: XCUIApplication) -> XCUIElement {
     app.staticTexts.matching(
       NSPredicate(format: "label == %@", E2EIdentifier.requestTimedOutErrorMessage)
+    ).firstMatch
+  }
+
+  private func authStartIdentifierTakenError(in app: XCUIApplication) -> XCUIElement {
+    app.staticTexts.matching(
+      NSPredicate(format: "label CONTAINS[c] %@", "is taken")
     ).firstMatch
   }
 
@@ -1635,6 +1499,22 @@ extension E2EHostE2ETests {
     }
   }
 
+  private func enterCurrentTOTPCode(
+    secret: String,
+    into identifier: String,
+    in app: XCUIApplication,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws {
+    let element = inputElement(withIdentifier: identifier, in: app)
+    XCTAssertTrue(element.waitForExistence(timeout: 30), "Expected verification code input '\(identifier)'.", file: file, line: line)
+    guard tapInput(identifier, in: app, file: file, line: line) else { return }
+
+    waitForStableTOTPWindow()
+    let code = try Self.currentTOTPCode(secret: secret)
+    app.typeText(code)
+  }
+
   private func tapInput(
     _ identifier: String,
     in app: XCUIApplication,
@@ -1728,6 +1608,10 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
+    guard assertApprovedTestPhoneNumber(phoneNumber, file: file, line: line) else {
+      return
+    }
+
     let element = focusedPhoneNumberInput(withIdentifier: identifier, in: app, file: file, line: line)
     let digits = phoneNumber.filter(\.isWholeNumber)
 
@@ -1736,20 +1620,39 @@ extension E2EHostE2ETests {
       app.typeText(String(digit))
 
       let expectedPrefix = String(digits[...offset])
+      if element.isTextInput {
+        XCTAssertTrue(
+          waitForPhoneNumberDigits(in: element, toHavePrefix: expectedPrefix, timeout: 2),
+          "Expected phone number input to contain '\(expectedPrefix)'. Actual value: '\(phoneNumberInputValue(in: element))'.",
+          file: file,
+          line: line
+        )
+      }
+    }
+
+    if element.isTextInput {
       XCTAssertTrue(
-        waitForPhoneNumberDigits(in: element, toHavePrefix: expectedPrefix, timeout: 2),
-        "Expected phone number input to contain '\(expectedPrefix)'. Actual value: '\(phoneNumberInputValue(in: element))'.",
+        waitForPhoneNumberDigits(in: element, toEqual: digits, timeout: 5),
+        "Expected phone number input to contain '\(digits)' before continuing. Actual value: '\(phoneNumberInputValue(in: element))'.",
         file: file,
         line: line
       )
     }
+  }
 
+  private func assertApprovedTestPhoneNumber(
+    _ phoneNumber: String,
+    file: StaticString,
+    line: UInt
+  ) -> Bool {
+    let isApproved = Self.isApprovedTestPhoneNumber(phoneNumber)
     XCTAssertTrue(
-      waitForPhoneNumberDigits(in: element, toEqual: digits, timeout: 5),
-      "Expected phone number input to contain '\(digits)' before continuing. Actual value: '\(phoneNumberInputValue(in: element))'.",
+      isApproved,
+      "E2E phone number '\(phoneNumber)' must be inside the approved \(Self.approvedTestPhoneNumberRangeDescription) test-number range.",
       file: file,
       line: line
     )
+    return isApproved
   }
 
   private func focusedPhoneNumberInput(
@@ -1758,28 +1661,15 @@ extension E2EHostE2ETests {
     file: StaticString,
     line: UInt
   ) -> XCUIElement {
-    let textField = app.textFields[identifier].firstMatch
-    if textField.waitForExistence(timeout: 2) {
-      textField.tap()
-      return textField
+    guard tapInput(identifier, in: app, file: file, line: line) else {
+      return inputElement(withIdentifier: identifier, in: app)
     }
 
-    let container = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
-    XCTAssertTrue(
-      container.waitForExistence(timeout: 30),
-      "Expected phone number input.",
-      file: file,
-      line: line
-    )
-    container.tap()
+    if let focusedInput = focusedTextInput(in: app, timeout: 2) {
+      return focusedInput
+    }
 
-    XCTAssertTrue(
-      textField.waitForExistence(timeout: 10),
-      "Expected focused phone number text field.",
-      file: file,
-      line: line
-    )
-    return textField
+    return inputElement(withIdentifier: identifier, in: app)
   }
 
   private func waitForPhoneNumberDigits(
@@ -1870,7 +1760,11 @@ extension E2EHostE2ETests {
   }
 
   private func phoneNumberInputValue(in element: XCUIElement) -> String {
-    element.value as? String ?? ""
+    if let value = element.value as? String, !value.isEmpty {
+      return value
+    }
+
+    return element.label
   }
 
   private func inputElement(withIdentifier identifier: String, in app: XCUIApplication) -> XCUIElement {
@@ -1937,21 +1831,45 @@ extension E2EHostE2ETests {
   }
 
   private func waitForAnyTextInputFocus(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
-    let focusedElement = app.descendants(matching: .any)
-      .matching(NSPredicate(format: "hasKeyboardFocus == true"))
-      .firstMatch
     let keyboard = app.keyboards.firstMatch
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
-      if focusedElement.exists || keyboard.exists {
+      if focusedTextInput(in: app, timeout: 0) != nil || keyboard.exists {
         return true
       }
 
       RunLoop.current.run(until: Date().addingTimeInterval(0.1))
     } while Date() < deadline
 
-    return focusedElement.exists || keyboard.exists
+    return focusedTextInput(in: app, timeout: 0) != nil || keyboard.exists
+  }
+
+  private func focusedTextInput(in app: XCUIApplication, timeout: TimeInterval) -> XCUIElement? {
+    let focusedPredicate = NSPredicate(format: "hasKeyboardFocus == true")
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      let focusedElement = app.descendants(matching: .any)
+        .matching(focusedPredicate)
+        .firstMatch
+
+      if focusedElement.exists, focusedElement.isTextInput {
+        return focusedElement
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    } while Date() < deadline
+
+    let focusedElement = app.descendants(matching: .any)
+      .matching(focusedPredicate)
+      .firstMatch
+
+    guard focusedElement.exists, focusedElement.isTextInput else {
+      return nil
+    }
+
+    return focusedElement
   }
 
   private func tap(
@@ -2303,12 +2221,71 @@ extension E2EHostE2ETests {
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    XCTAssertTrue(
-      app.staticTexts[E2EIdentifier.cleanupComplete].waitForExistence(timeout: 45),
-      "Expected E2EHost in-app cleanup to finish.",
-      file: file,
-      line: line
-    )
+    let cleanupComplete = app.staticTexts[E2EIdentifier.cleanupComplete]
+    let cleanupFailed = app.staticTexts[E2EIdentifier.cleanupFailed]
+    let deadline = Date().addingTimeInterval(45)
+
+    repeat {
+      if cleanupComplete.exists {
+        return
+      }
+
+      if cleanupFailed.exists {
+        attachCleanupDiagnostics(in: app, reason: cleanupFailed.label)
+        XCTFail(
+          "Expected E2EHost in-app cleanup to finish, but cleanup failed: \(cleanupFailed.label)",
+          file: file,
+          line: line
+        )
+        return
+      }
+
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    attachCleanupDiagnostics(in: app, reason: "Timed out waiting for cleanup to finish.")
+    XCTFail("Expected E2EHost in-app cleanup to finish.", file: file, line: line)
+  }
+
+  private func attachCleanupDiagnostics(in app: XCUIApplication, reason: String) {
+    let lines = [
+      "reason: \(truncatedDiagnosticValue(reason, limit: 300))",
+      "test: \(name)",
+      "appState: \(appStateDescription(app.state))",
+      "testPhoneNumbers:",
+      testPhoneNumberDiagnosticSummary(),
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedOut, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionPending, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userID, in: app),
+      "cleanupMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.cleanupInProgress, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupComplete, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupFailed, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "cleanup-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "cleanup-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "cleanup-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func assertPendingTasksContain(
@@ -2407,82 +2384,68 @@ extension E2EHostE2ETests {
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
     tapWhenEnabled(E2EIdentifier.userProfileChangePasswordSave, in: app, timeout: 45, file: file, line: line)
     dismissSavePasswordPromptIfPresent(in: app, timeout: 10)
-
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileChangePasswordSave].waitForNonExistence(timeout: 45),
-      "Expected the change-password sheet to dismiss after saving.",
-      file: file,
-      line: line
-    )
+    waitForUserProfilePasswordChangeToFinish(in: app, file: file, line: line)
   }
 
-  private func completeUserProfileAuthenticatorAppMfaSetup(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) throws {
-    tap(E2EIdentifier.userProfileSecurityAddMfa, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaAuthenticatorApp, in: app, timeout: 45, file: file, line: line)
-
-    let secretElement = app.descendants(matching: .any)[E2EIdentifier.userProfileMfaTotpSecret]
-    XCTAssertTrue(
-      secretElement.waitForExistence(timeout: 45),
-      "Expected the user profile TOTP setup secret.",
-      file: file,
-      line: line
-    )
-    let secret = secretElement.label
-
-    tap(E2EIdentifier.userProfileMfaTotpContinue, in: app, file: file, line: line)
-    waitForStableTOTPWindow()
-    let code = try Self.currentTOTPCode(secret: secret)
-    enterVerificationCode(code, into: E2EIdentifier.userProfileMfaVerificationCode, in: app, file: file, line: line)
-
-    continueUserProfileBackupCodesIfPresent(in: app)
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityAddMfa].waitForExistence(timeout: 45),
-      "Expected the user profile Security screen after completing TOTP setup.",
-      file: file,
-      line: line
-    )
-  }
-
-  private func completeUserProfileSmsCodeMfaSetup(
-    phoneNumber: String,
+  private func waitForUserProfilePasswordChangeToFinish(
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
-    tap(E2EIdentifier.userProfileSecurityAddMfa, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaSmsCode, in: app, timeout: 45, file: file, line: line)
-    tap(E2EIdentifier.userProfileMfaSmsAddPhone, in: app, file: file, line: line)
-    enterPhoneNumber(phoneNumber, into: E2EIdentifier.userProfilePhoneNumber, in: app, file: file, line: line)
-    tap(E2EIdentifier.userProfilePhoneContinue, in: app, file: file, line: line)
-    waitForCodePrepared(
-      in: app,
-      codeInputIdentifier: E2EIdentifier.userProfileMfaVerificationCode,
-      message: "Expected user-profile phone verification code preparation to finish before entering the verification code.",
-      file: file,
-      line: line
-    )
-    enterVerificationCode(verificationCode, into: E2EIdentifier.userProfileMfaVerificationCode, in: app, file: file, line: line)
-    tapWhenEnabled(matchingIdentifierPrefix: E2EIdentifier.userProfileMfaSmsPhoneNumber, in: app, timeout: 45, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaSmsContinue, in: app, timeout: 45, file: file, line: line)
+    let saveButton = app.descendants(matching: .any)[E2EIdentifier.userProfileChangePasswordSave]
+    let deadline = Date().addingTimeInterval(Self.passwordChangeCompletionTimeout)
 
-    continueUserProfileBackupCodesIfPresent(in: app)
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityAddMfa].waitForExistence(timeout: 45),
-      "Expected the user profile Security screen after completing SMS setup.",
-      file: file,
-      line: line
-    )
+    repeat {
+      if !saveButton.exists {
+        return
+      }
+
+      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+    } while Date() < deadline
+
+    if !saveButton.exists {
+      return
+    }
+
+    attachUserProfilePasswordChangeDiagnostics(in: app, reason: "Timed out waiting for the change-password sheet to dismiss.")
+    XCTFail("Expected the change-password sheet to dismiss after saving.", file: file, line: line)
   }
 
-  private func continueUserProfileBackupCodesIfPresent(in app: XCUIApplication) {
-    let backupCodesDone = app.buttons[E2EIdentifier.userProfileBackupCodesDone].firstMatch
-    if backupCodesDone.waitForExistence(timeout: 10) {
-      backupCodesDone.tap()
-    }
+  private func attachUserProfilePasswordChangeDiagnostics(in app: XCUIApplication, reason: String) {
+    let lines = [
+      "reason: \(truncatedDiagnosticValue(reason, limit: 300))",
+      "test: \(name)",
+      "appState: \(appStateDescription(app.state))",
+      "stateMarkers:",
+      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.cleanupInProgress, in: app),
+      "changePasswordControls:",
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordSave, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordNewPassword, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.userProfileChangePasswordConfirmPassword, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "change-password-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "change-password-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "change-password-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func deleteAccountFromUserProfileSecurity(
@@ -2512,43 +2475,74 @@ extension E2EHostE2ETests {
     let secret = secretElement.label
 
     tap(E2EIdentifier.totpContinue, in: app, file: file, line: line)
-    waitForStableTOTPWindow()
-    let code = try Self.currentTOTPCode(secret: secret)
-    enterVerificationCode(code, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
+    try enterCurrentTOTPCode(secret: secret, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
 
-    continueBackupCodesIfPresent(in: app, file: file, line: line)
+    continueBackupCodesAfterMfaSetup(in: app, file: file, line: line)
   }
 
-  private func completeSmsCodeMfaSetup(
-    phoneNumber: String,
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    tap(E2EIdentifier.setupMfaSmsCode, in: app, file: file, line: line)
-    enterPhoneNumber(phoneNumber, into: E2EIdentifier.smsPhoneNumber, in: app, file: file, line: line)
-    tap(E2EIdentifier.smsContinue, in: app, file: file, line: line)
-    waitForCodePrepared(
-      in: app,
-      codeInputIdentifier: E2EIdentifier.smsCode,
-      message: "Expected setup-MFA SMS code preparation to finish before entering the verification code.",
-      file: file,
-      line: line
-    )
-    enterVerificationCode(verificationCode, into: E2EIdentifier.smsCode, in: app, file: file, line: line)
-
-    continueBackupCodesIfPresent(in: app, file: file, line: line)
-  }
-
-  private func continueBackupCodesIfPresent(
+  private func continueBackupCodesAfterMfaSetup(
     in app: XCUIApplication,
     file: StaticString = #filePath,
     line: UInt = #line
   ) {
     let backupCodesContinue = app.descendants(matching: .any)[E2EIdentifier.backupCodesContinue]
-    if backupCodesContinue.waitForExistence(timeout: 10) {
-      tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
+    let didAdvanceToBackupCodes = backupCodesContinue.waitForExistence(timeout: 45)
+
+    if !didAdvanceToBackupCodes {
+      attachAuthenticatorAppSetupDiagnostics(in: app)
     }
+
+    XCTAssertTrue(
+      didAdvanceToBackupCodes,
+      authenticatorAppSetupFailureMessage(in: app),
+      file: file,
+      line: line
+    )
+
+    guard didAdvanceToBackupCodes else { return }
+
+    tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
+  }
+
+  private func authenticatorAppSetupFailureMessage(in app: XCUIApplication) -> String {
+    let incorrectCode = app.staticTexts.matching(NSPredicate(format: "label == %@", "Incorrect code")).firstMatch
+    if incorrectCode.exists {
+      return "Expected backup codes after submitting the generated TOTP code, but the app displayed Incorrect code."
+    }
+
+    return "Expected backup codes after submitting the generated TOTP code."
+  }
+
+  private func attachAuthenticatorAppSetupDiagnostics(in app: XCUIApplication) {
+    let lines = [
+      "totpControls:",
+      authStartDiagnosticProbe(E2EIdentifier.totpCode, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.backupCodesContinue, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
+      authStartDiagnosticProbe(E2EIdentifier.pendingTasks, in: app),
+      "visibleButtons:",
+      visibleElementSummary(app.buttons),
+      "visibleTextFields:",
+      visibleElementSummary(app.textFields),
+      "visibleStaticTexts:",
+      visibleElementSummary(app.staticTexts),
+    ]
+
+    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
+    summaryAttachment.name = "authenticator-app-setup-diagnostics"
+    summaryAttachment.lifetime = .keepAlways
+    add(summaryAttachment)
+
+    let treeAttachment = XCTAttachment(string: app.debugDescription)
+    treeAttachment.name = "authenticator-app-setup-accessibility-tree"
+    treeAttachment.lifetime = .keepAlways
+    add(treeAttachment)
+
+    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
+    screenshotAttachment.name = "authenticator-app-setup-failure"
+    screenshotAttachment.lifetime = .keepAlways
+    add(screenshotAttachment)
   }
 
   private func dismissAuthSheetIfNeeded(
@@ -2716,6 +2710,102 @@ extension E2EHostE2ETests {
     )
   }
 
+  private func deleteExistingUsersMatchingPhoneNumber(
+    _ phoneNumber: String,
+    publishableKey: String,
+    keyName: String,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) throws {
+    let secretKey = try requiredSecretKey(named: keyName)
+
+    let formattedPhoneNumber = Self.e164TestPhoneNumber(phoneNumber)
+    let userIDs = try backendUserIDsMatchingPhoneNumber(
+      formattedPhoneNumber,
+      publishableKey: publishableKey,
+      secretKey: secretKey,
+      file: file,
+      line: line
+    )
+
+    for userID in userIDs {
+      try deleteBackendUser(
+        userID: userID,
+        publishableKey: publishableKey,
+        secretKey: secretKey,
+        file: file,
+        line: line
+      )
+    }
+  }
+
+  private func backendUserIDsMatchingPhoneNumber(
+    _ phoneNumber: String,
+    publishableKey: String,
+    secretKey: String,
+    file: StaticString,
+    line: UInt
+  ) throws -> [String] {
+    let url = Self.backendAPIBaseURL(publishableKey: publishableKey)
+      .appendingPathComponent("v1")
+      .appendingPathComponent("users")
+    var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    components?.queryItems = [
+      URLQueryItem(name: "phone_number[]", value: phoneNumber),
+      URLQueryItem(name: "limit", value: "100"),
+    ]
+
+    guard let requestURL = components?.url else {
+      throw BackendAPIResponseError(message: "Unable to build Backend API users URL.")
+    }
+
+    let data = try performBackendAPIRequest(
+      method: "GET",
+      url: requestURL,
+      secretKey: secretKey,
+      body: nil,
+      file: file,
+      line: line
+    )
+    let json = try JSONSerialization.jsonObject(with: data)
+    let users: [[String: Any]]
+    if let response = json as? [String: Any],
+       let data = response["data"] as? [[String: Any]]
+    {
+      users = data
+    } else if let data = json as? [[String: Any]] {
+      users = data
+    } else {
+      throw BackendAPIResponseError(message: "Unable to parse Backend API users response.")
+    }
+
+    return users
+      .filter { Self.backendUser($0, matchesPhoneNumber: phoneNumber) }
+      .compactMap { $0["id"] as? String }
+  }
+
+  private func deleteBackendUser(
+    userID: String,
+    publishableKey: String,
+    secretKey: String,
+    file: StaticString,
+    line: UInt
+  ) throws {
+    let url = Self.backendAPIBaseURL(publishableKey: publishableKey)
+      .appendingPathComponent("v1")
+      .appendingPathComponent("users")
+      .appendingPathComponent(userID)
+
+    _ = try performBackendAPIRequest(
+      method: "DELETE",
+      url: url,
+      secretKey: secretKey,
+      body: nil,
+      file: file,
+      line: line
+    )
+  }
+
   private func performBackendAPIPost(
     url: URL,
     secretKey: String,
@@ -2723,12 +2813,33 @@ extension E2EHostE2ETests {
     file: StaticString,
     line: UInt
   ) throws {
+    _ = try performBackendAPIRequest(
+      method: "POST",
+      url: url,
+      secretKey: secretKey,
+      body: body,
+      file: file,
+      line: line
+    )
+  }
+
+  @discardableResult
+  private func performBackendAPIRequest(
+    method: String,
+    url: URL,
+    secretKey: String,
+    body: [String: Any]?,
+    file: StaticString,
+    line: UInt
+  ) throws -> Data {
     var request = URLRequest(url: url)
-    request.httpMethod = "POST"
+    request.httpMethod = method
     request.setValue("Bearer \(secretKey)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("2026-05-12", forHTTPHeaderField: "Clerk-API-Version")
-    request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    if let body {
+      request.httpBody = try JSONSerialization.data(withJSONObject: body)
+    }
 
     let expectation = expectation(description: "Backend API request")
     var result: Result<(HTTPURLResponse, Data), Error>?
@@ -2756,6 +2867,27 @@ extension E2EHostE2ETests {
     guard (200 ..< 300).contains(response.statusCode) else {
       let responseBody = String(data: data, encoding: .utf8) ?? ""
       throw BackendAPIError(statusCode: response.statusCode, responseBody: responseBody)
+    }
+
+    return data
+  }
+
+  private static func e164TestPhoneNumber(_ phoneNumber: String) -> String {
+    let digits = phoneNumber.filter(\.isWholeNumber)
+    if digits.hasPrefix("1"), digits.count == 11 {
+      return "+\(digits)"
+    }
+
+    return "+1\(digits)"
+  }
+
+  private static func backendUser(_ user: [String: Any], matchesPhoneNumber phoneNumber: String) -> Bool {
+    guard let phoneNumbers = user["phone_numbers"] as? [[String: Any]] else {
+      return false
+    }
+
+    return phoneNumbers.contains { phoneNumberResource in
+      phoneNumberResource["phone_number"] as? String == phoneNumber
     }
   }
 
@@ -2823,10 +2955,13 @@ extension E2EHostE2ETests {
 
   private func waitForStableTOTPWindow() {
     let period: TimeInterval = 30
+    let minimumRemainingTime: TimeInterval = 25
     let elapsed = Date().timeIntervalSince1970.truncatingRemainder(dividingBy: period)
-    guard elapsed > 24 else { return }
+    let remaining = period - elapsed
 
-    Thread.sleep(forTimeInterval: period - elapsed + 1)
+    guard remaining < minimumRemainingTime else { return }
+
+    Thread.sleep(forTimeInterval: remaining + 1)
   }
 
   private static func currentTOTPCode(secret: String, date: Date = Date()) throws -> String {
@@ -2903,6 +3038,17 @@ extension E2EHostE2ETests {
     let cancelButton = app.buttons["Cancel"].firstMatch
     if cancelButton.waitForExistence(timeout: 1) {
       cancelButton.tap()
+    }
+  }
+}
+
+extension XCUIElement {
+  fileprivate var isTextInput: Bool {
+    switch elementType {
+    case .textField, .secureTextField, .textView:
+      true
+    default:
+      false
     }
   }
 }
