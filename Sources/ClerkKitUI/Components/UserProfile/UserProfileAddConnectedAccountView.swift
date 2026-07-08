@@ -47,14 +47,12 @@ struct UserProfileAddConnectedAccountView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
 
-          SocialButtonLayout {
-            ForEach(unconnectedProviders) { provider in
-              SocialButton(
-                provider: provider,
-                showsTitle: unconnectedProviders.count == 1
-              ) {
-                await connectExternalAccount(provider: provider)
-              }
+          SocialButtonGroup(providers: unconnectedProviders) { provider, showsTitle, _ in
+            SocialButton(
+              provider: provider,
+              showsTitle: showsTitle
+            ) {
+              await connectExternalAccount(provider: provider)
             }
           }
 

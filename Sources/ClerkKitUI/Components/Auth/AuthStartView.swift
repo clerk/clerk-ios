@@ -147,9 +147,12 @@ struct AuthStartView: View {
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
-    let providers = clerk.environment?.authenticatableSocialProviders ?? []
-    guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return providers }
-    return providers.filter { $0 != lastUsedSocialProvider }
+    guard let lastUsedSocialProvider = lastUsedAuth?.socialProvider else { return socialProviders }
+    return socialProviders.filter { $0 != lastUsedSocialProvider }
+  }
+
+  private var socialProviders: [OAuthProvider] {
+    clerk.environment?.authenticatableSocialProviders ?? []
   }
 
   private var lastUsedAuth: LastUsedAuth? {
@@ -378,41 +381,25 @@ extension AuthStartView {
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
       if lastUsedAuth?.socialProvider != nil || !socialProvidersMinusLastUsed.isEmpty {
-        SocialButtonLayout {
-          if let lastUsedProvider = lastUsedAuth?.socialProvider {
-            SocialButton(
-              provider: lastUsedProvider,
-              transferable: authState.transferable,
-              unsafeMetadata: authState.unsafeMetadata,
-              onStart: cancelAutomaticPasskeySignIn,
-              onSuccess: handleTransferFlowResult,
-              onError: { error in
-                generalError = error
-                restartAutomaticPasskeySignInIfNeeded()
-              },
-              onCancel: restartAutomaticPasskeySignInIfNeeded
-            )
-            .lastUsedAuthBadgeOverlay(true)
-            .layoutValue(key: SocialButtonLastUsedLayoutValueKey.self, value: true)
-            .simultaneousGesture(TapGesture())
-          }
-
-          ForEach(socialProvidersMinusLastUsed) { provider in
-            SocialButton(
-              provider: provider,
-              transferable: authState.transferable,
-              unsafeMetadata: authState.unsafeMetadata,
-              showsTitle: socialProvidersMinusLastUsed.count == 1,
-              onStart: cancelAutomaticPasskeySignIn,
-              onSuccess: handleTransferFlowResult,
-              onError: { error in
-                generalError = error
-                restartAutomaticPasskeySignInIfNeeded()
-              },
-              onCancel: restartAutomaticPasskeySignInIfNeeded
-            )
-            .simultaneousGesture(TapGesture())
-          }
+        SocialButtonGroup(
+          providers: socialProviders,
+          lastUsedProvider: lastUsedAuth?.socialProvider
+        ) { provider, showsTitle, isLastUsed in
+          SocialButton(
+            provider: provider,
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata,
+            showsTitle: showsTitle,
+            onStart: cancelAutomaticPasskeySignIn,
+            onSuccess: handleTransferFlowResult,
+            onError: { error in
+              generalError = error
+              restartAutomaticPasskeySignInIfNeeded()
+            },
+            onCancel: restartAutomaticPasskeySignInIfNeeded
+          )
+          .lastUsedAuthBadgeOverlay(isLastUsed)
+          .simultaneousGesture(TapGesture())
         }
       }
     }

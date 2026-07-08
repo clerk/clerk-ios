@@ -102,17 +102,15 @@ struct SignInFactorAlternativeMethodsView: View {
         .padding(.bottom, 32)
 
         VStack(spacing: 16) {
-          SocialButtonLayout {
-            ForEach(socialProviders) { provider in
-              SocialButton(
-                provider: provider,
-                transferable: authState.transferable,
-                showsTitle: socialProviders.count == 1
-              ) {
-                await signInWithProvider(provider)
-              }
-              .simultaneousGesture(TapGesture())
+          SocialButtonGroup(providers: socialProviders) { provider, showsTitle, _ in
+            SocialButton(
+              provider: provider,
+              transferable: authState.transferable,
+              showsTitle: showsTitle
+            ) {
+              await signInWithProvider(provider)
             }
+            .simultaneousGesture(TapGesture())
           }
 
           if !socialProviders.isEmpty, !alternativeFactors.isEmpty {
