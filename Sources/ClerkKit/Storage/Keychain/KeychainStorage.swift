@@ -9,7 +9,11 @@ enum KeychainError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .unexpectedStatus(let status):
-      "Keychain operation failed with OSStatus \(status)."
+      if let message = SecCopyErrorMessageString(status, nil) as String? {
+        "Keychain operation failed with OSStatus \(status): \(message)"
+      } else {
+        "Keychain operation failed with OSStatus \(status)."
+      }
     case .invalidStringEncoding:
       "Keychain item data could not be decoded as a UTF-8 string."
     }

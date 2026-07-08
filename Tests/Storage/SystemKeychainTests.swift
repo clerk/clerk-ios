@@ -165,9 +165,18 @@ struct SystemKeychainTests {
   func missingEntitlementErrorIncludesAccessGroupGuidance() {
     let error = KeychainError.unexpectedStatus(errSecMissingEntitlement)
 
-    #expect(error.errorDescription == "Keychain operation failed with OSStatus \(errSecMissingEntitlement).")
+    #expect(error.errorDescription?.contains("OSStatus \(errSecMissingEntitlement)") == true)
     #expect(error.failureReason?.contains("Keychain Sharing") == true)
     #expect(error.failureReason?.contains("accessGroup") == true)
+  }
+
+  @Test
+  func unexpectedStatusErrorIncludesSystemMessageWhenAvailable() throws {
+    let error = KeychainError.unexpectedStatus(errSecItemNotFound)
+    let systemMessage = try #require(SecCopyErrorMessageString(errSecItemNotFound, nil) as String?)
+
+    #expect(error.errorDescription?.contains("OSStatus \(errSecItemNotFound)") == true)
+    #expect(error.errorDescription?.contains(systemMessage) == true)
   }
 }
 

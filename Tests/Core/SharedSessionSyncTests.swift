@@ -16,7 +16,7 @@ struct SharedSessionSyncTests {
     clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
     try persistSharedClient(
       sharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 200),
       version: 1,
       keychain: keychain
@@ -40,7 +40,7 @@ struct SharedSessionSyncTests {
       responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 100)
     )
-    try persistSharedClient(nil, state: "cleared", serverFetchDate: Date(timeIntervalSince1970: 200), version: 1, keychain: keychain)
+    try persistSharedClient(nil, state: .cleared, serverFetchDate: Date(timeIntervalSince1970: 200), version: 1, keychain: keychain)
 
     let changed = await clerk.reloadFromSharedStorage()
 
@@ -61,7 +61,7 @@ struct SharedSessionSyncTests {
     let initialPostCount = notifier.postCount
     try persistSharedClient(
       staleSharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 100),
       version: 1,
       keychain: keychain
@@ -78,7 +78,7 @@ struct SharedSessionSyncTests {
     let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
     #expect(repairedClient.id == localClient.id)
     #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "set")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
     let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: repairedRevision) != nil)
   }
@@ -104,7 +104,7 @@ struct SharedSessionSyncTests {
     let initialPostCount = notifier.postCount
     try persistSharedClient(
       nil,
-      state: "cleared",
+      state: .cleared,
       serverFetchDate: Date(timeIntervalSince1970: 100),
       version: 1,
       keychain: keychain
@@ -120,7 +120,7 @@ struct SharedSessionSyncTests {
     let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
     #expect(repairedClient.id == localClient.id)
     #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "set")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
     let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: repairedRevision) != nil)
   }
@@ -138,7 +138,7 @@ struct SharedSessionSyncTests {
     let initialPostCount = notifier.postCount
     try persistSharedClient(
       staleSharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 100),
       version: 1,
       keychain: keychain
@@ -151,7 +151,7 @@ struct SharedSessionSyncTests {
     #expect(notifier.postCount == initialPostCount + 1)
     #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
     #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.cleared.rawValue)
     let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: repairedRevision) != nil)
   }
@@ -165,7 +165,7 @@ struct SharedSessionSyncTests {
 
     try persistSharedClient(
       sharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 200),
       version: 1,
       keychain: keychain
@@ -185,7 +185,7 @@ struct SharedSessionSyncTests {
     let initialGeneration = clerk.clientResponseGeneration
 
     try keychain.set("shared-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
+    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
 
     notifier.simulateNotification()
@@ -203,7 +203,7 @@ struct SharedSessionSyncTests {
 
     try persistSharedClient(
       sharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 200),
       version: 1,
       keychain: keychain
@@ -252,7 +252,7 @@ struct SharedSessionSyncTests {
     #expect(clerk.client == nil)
     #expect(notifier.postCount == initialPostCount + 1)
     #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.cleared.rawValue)
     let clearAuthRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: initialAuthRevision) != nil)
     #expect(UUID(uuidString: clearAuthRevision) != nil)
@@ -271,7 +271,7 @@ struct SharedSessionSyncTests {
     clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
 
     #expect(notifier.postCount == 1)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "set")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
     let authRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: authRevision) != nil)
     #expect(try keychain.string(forKey: ClerkKeychainKey.attestKeyId.rawValue) == "local-attest-key-id")
@@ -416,7 +416,7 @@ struct SharedSessionSyncTests {
     let initialPostCount = notifier.postCount
     try persistSharedClient(
       staleSharedClient,
-      state: "set",
+      state: .set,
       serverFetchDate: Date(timeIntervalSince1970: 200),
       version: 1,
       keychain: keychain
@@ -434,14 +434,14 @@ struct SharedSessionSyncTests {
     #expect(repairedClient.id == localClient.id)
     #expect(repairedClient.signIn?.id == localClient.signIn?.id)
     #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "set")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
     let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
     #expect(UUID(uuidString: repairedRevision) != nil)
   }
 
   private func persistSharedClient(
     _ client: Client?,
-    state: String,
+    state: SharedSessionSyncState,
     serverFetchDate: Date?,
     version: Int,
     keychain: InMemoryKeychain
@@ -458,7 +458,7 @@ struct SharedSessionSyncTests {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     }
 
-    try keychain.set(state, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
+    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set(String(version), forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
   }
 

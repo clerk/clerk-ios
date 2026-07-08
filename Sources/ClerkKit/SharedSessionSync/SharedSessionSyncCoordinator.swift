@@ -50,7 +50,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
     case let .deviceTokenDidChange(previousToken, token):
       guard !isApplyingSharedStorage, previousToken != token else { return }
-      try persistDeviceTokenState("set", version: .makeWriteRevision(), keychain: clerk.dependencies.keychain)
+      try persistDeviceTokenState(.set, version: .makeWriteRevision(), keychain: clerk.dependencies.keychain)
       notifier.post()
 
     case .applicationDidEnterForeground:
@@ -144,7 +144,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
       } else {
         try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
-      try persistAuthState("set", version: version, keychain: keychain)
+      try persistAuthState(.set, version: version, keychain: keychain)
     } else {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate = clerk.lastClientServerFetchDate {
@@ -152,17 +152,17 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
       } else {
         try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
-      try persistAuthState("cleared", version: version, keychain: keychain)
+      try persistAuthState(.cleared, version: version, keychain: keychain)
     }
   }
 
   private func persistAuthState(
-    _ state: String,
+    _ state: SharedSessionSyncState,
     version: SharedSessionSyncVersion,
     keychain: any KeychainStorage
   ) throws {
     authGeneration = version
-    try keychain.set(state, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
+    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set(version.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
   }
 
@@ -176,12 +176,12 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   }
 
   private func persistDeviceTokenState(
-    _ state: String,
+    _ state: SharedSessionSyncState,
     version: SharedSessionSyncVersion,
     keychain: any KeychainStorage
   ) throws {
     deviceTokenGeneration = version
-    try keychain.set(state, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
+    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
     try keychain.set(version.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
   }
 

@@ -6,7 +6,7 @@
 import Foundation
 
 private struct SharedSessionSyncClientSnapshot {
-  let state: String?
+  let state: SharedSessionSyncState?
   let client: Client?
   let serverFetchDate: Date?
 }
@@ -79,6 +79,7 @@ extension Clerk {
   private func loadSharedSessionSyncClientSnapshot() throws -> SharedSessionSyncClientSnapshot {
     let keychain = dependencies.keychain
     let state = try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
+      .flatMap(SharedSessionSyncState.init(rawValue:))
     let serverFetchDate = try loadSharedSessionSyncClientServerFetchDate()
 
     guard let clientData = try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
@@ -101,7 +102,7 @@ extension Clerk {
 
   @discardableResult
   private func applySharedSessionSyncClientSnapshot(_ snapshot: SharedSessionSyncClientSnapshot) throws -> SharedSessionSyncClientReloadResult {
-    if snapshot.state == "cleared" || (snapshot.client == nil && snapshot.serverFetchDate != nil) {
+    if snapshot.state == .cleared || (snapshot.client == nil && snapshot.serverFetchDate != nil) {
       return applySharedSessionSyncClientClear(serverFetchDate: snapshot.serverFetchDate)
     }
 
