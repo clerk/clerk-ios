@@ -162,10 +162,6 @@ extension Clerk {
     for incomingClient: Client,
     serverFetchDate: Date?
   ) -> SharedSessionSyncClientSnapshotDecision {
-    guard let client else {
-      return .apply
-    }
-
     if let serverFetchDate, let lastClientServerFetchDate {
       if serverFetchDate > lastClientServerFetchDate {
         return .apply
@@ -175,9 +171,19 @@ extension Clerk {
         return .rejectStale
       }
 
+      guard let client else {
+        return .apply
+      }
+
       return incomingClient.updatedAt > client.updatedAt || incomingClient != client
         ? .apply
         : .ignore
+    }
+
+    guard let client else {
+      return lastClientServerFetchDate == nil || serverFetchDate != nil
+        ? .apply
+        : .rejectStale
     }
 
     if serverFetchDate != nil {

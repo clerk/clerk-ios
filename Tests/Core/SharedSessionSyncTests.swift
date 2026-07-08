@@ -116,6 +116,37 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func notificationReloadDoesNotResurrectOlderSharedClientOverLocalClear() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000)
+    let staleSharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 3000)
+
+    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
+    clerk.applyResponseClient(nil, responseSequence: 2, serverDate: Date(timeIntervalSince1970: 200))
+    let initialPostCount = notifier.postCount
+    try persistSharedClient(
+      staleSharedClient,
+      state: "set",
+      serverFetchDate: Date(timeIntervalSince1970: 100),
+      version: 1,
+      keychain: keychain
+    )
+
+    notifier.simulateNotification()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == initialPostCount + 1)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
+    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "cleared")
+    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
+    #expect(UUID(uuidString: repairedRevision) != nil)
+  }
+
+  @Test
   func notificationReloadSuppressesEchoedPublish() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
