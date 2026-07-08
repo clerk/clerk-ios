@@ -130,6 +130,7 @@ REQUIREMENTS_BY_KEY_NAME = {
   ],
   "auth-phone-code" => [
     require_first_factor("phone_number"),
+    require_delete_self,
   ],
   "auth-username-password-user-model" => [
     require_first_factor("username"),
@@ -151,6 +152,7 @@ REQUIREMENTS_BY_KEY_NAME = {
     require_first_factor("email_address"),
     require_second_factor("authenticator_app"),
     require_second_factor("phone_number"),
+    require_delete_self,
   ],
 }.freeze
 
