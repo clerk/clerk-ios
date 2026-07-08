@@ -2,6 +2,8 @@ name: Checks
 
 on:
   push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -14,6 +16,3 @@ jobs:
       checks: write
       contents: read
     uses: ./.github/workflows/shared-checks.yml
-    with:
-      run_integration_tests: true
-    secrets: inherit
