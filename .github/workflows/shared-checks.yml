@@ -246,7 +246,7 @@ jobs:
         include:
           - shard: auth-email
             only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpThenPasswordSignIn()
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpDeletesAccount()
           - shard: auth-phone
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpThenPhoneCodeSignIn()

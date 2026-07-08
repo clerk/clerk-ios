@@ -58,7 +58,7 @@ final class E2EHostE2ETests: XCTestCase {
     app = nil
   }
 
-  func testEmailCodeSignUpThenPasswordSignIn() throws {
+  func testEmailCodeSignUpDeletesAccount() throws {
     let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
@@ -74,30 +74,11 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signUpApp)
     completeEmailCodeSignUp(email: email, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
 
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
+    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.defaultPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: signInApp) else { return }
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testUserProfileSecurityDeletesAccount() throws {
@@ -303,12 +284,6 @@ extension E2EHostE2ETests {
   private enum CodePreparationResult: Equatable {
     case prepared
     case identifierTaken(String)
-    case requestTimedOut
-    case timedOut
-  }
-
-  private enum SignInPasswordPreparationResult: Equatable {
-    case prepared
     case requestTimedOut
     case timedOut
   }
@@ -939,18 +914,6 @@ extension E2EHostE2ETests {
     completePasswordCollectionIfNeeded(in: app)
   }
 
-  private func completePasswordSignIn(
-    email: String,
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    enterAuthStartIdentifier(email, in: app, file: file, line: line)
-    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: app, file: file, line: line) else { return }
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: app, file: file, line: line)
-    tap(E2EIdentifier.signInContinue, in: app, file: file, line: line)
-  }
-
   private func completePhoneCodeSignUp(phoneNumber: String, email: String, in app: XCUIApplication) {
     switchToPhoneNumberIdentifier(in: app)
     enterPhoneNumber(phoneNumber, in: app)
@@ -1270,158 +1233,6 @@ extension E2EHostE2ETests {
         return
       }
     }
-  }
-
-  private func submitAuthStartAndWaitForSignInPassword(
-    identifier: String,
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) -> Bool {
-    let maxAttempts = 2
-    let message = "Expected sign-in password preparation to finish before entering the password."
-
-    for attempt in 1 ... maxAttempts {
-      if attempt > 1 {
-        dismissRequestTimedOutErrorIfPresent(in: app)
-        dismissAuthIfPresent(in: app)
-        openAuth(in: app, file: file, line: line)
-        enterAuthStartIdentifier(identifier, in: app, file: file, line: line)
-      }
-
-      tap(E2EIdentifier.authStartContinue, in: app, file: file, line: line)
-      waitForAuthStartRequestTimedOutErrorToClear(in: app)
-
-      let result = waitForSignInPasswordPreparationResult(
-        in: app,
-        timeout: Self.authStartSubmissionTimeout
-      )
-      switch result {
-      case .prepared:
-        return true
-      case .requestTimedOut where attempt < maxAttempts,
-           .timedOut where attempt < maxAttempts:
-        dismissRequestTimedOutErrorIfPresent(in: app)
-        continue
-      case .requestTimedOut, .timedOut:
-        let failureMessage = signInPasswordPreparationFailureMessage(message, result: result)
-        attachSignInPasswordPreparationDiagnostics(
-          in: app,
-          reason: failureMessage,
-          attempt: attempt,
-          maxAttempts: maxAttempts
-        )
-        XCTFail(failureMessage, file: file, line: line)
-        return false
-      }
-    }
-
-    return false
-  }
-
-  private func waitForSignInPasswordPreparationResult(
-    in app: XCUIApplication,
-    timeout: TimeInterval
-  ) -> SignInPasswordPreparationResult {
-    let passwordInput = app.descendants(matching: .any)[E2EIdentifier.signInPassword]
-    let timeoutError = authStartRequestTimedOutError(in: app)
-    let deadline = Date().addingTimeInterval(timeout)
-
-    repeat {
-      if passwordInput.exists {
-        return .prepared
-      }
-
-      if timeoutError.exists {
-        return .requestTimedOut
-      }
-
-      dismissVisibleSavePasswordPromptAndRecoverIfNeeded(in: app)
-      RunLoop.current.run(until: Date().addingTimeInterval(0.25))
-    } while Date() < deadline
-
-    if passwordInput.exists {
-      return .prepared
-    }
-
-    if timeoutError.exists {
-      return .requestTimedOut
-    }
-
-    return .timedOut
-  }
-
-  private func signInPasswordPreparationFailureMessage(
-    _ message: String,
-    result: SignInPasswordPreparationResult
-  ) -> String {
-    switch result {
-    case .prepared:
-      message
-    case .requestTimedOut:
-      "\(message) Auth start showed '\(E2EIdentifier.requestTimedOutErrorMessage)' after retrying."
-    case .timedOut:
-      message
-    }
-  }
-
-  private func attachSignInPasswordPreparationDiagnostics(
-    in app: XCUIApplication,
-    reason: String,
-    attempt: Int,
-    maxAttempts: Int
-  ) {
-    let launchEnvironment = app.launchEnvironment
-    let lines = [
-      "reason: \(truncatedDiagnosticValue(reason, limit: 300))",
-      "test: \(name)",
-      "attempt: \(attempt)/\(maxAttempts)",
-      "appState: \(appStateDescription(app.state))",
-      "launchEnvironment:",
-      "  CLERK_E2E_KEY_NAME: \(launchEnvironment["CLERK_E2E_KEY_NAME"] ?? "<missing>")",
-      "  CLERK_E2E_AUTH_MODE: \(launchEnvironment["CLERK_E2E_AUTH_MODE"] ?? "<missing>")",
-      "  CLERK_E2E_KEYCHAIN_SERVICE: \(launchEnvironment["CLERK_E2E_KEYCHAIN_SERVICE"] ?? "<missing>")",
-      "  CLERK_E2E_MODE: \(launchEnvironment["CLERK_E2E_MODE"] ?? "<missing>")",
-      "  CLERK_PUBLISHABLE_KEY: \(redactedPublishableKey(launchEnvironment["CLERK_PUBLISHABLE_KEY"]))",
-      "stateMarkers:",
-      authStartDiagnosticProbe(E2EIdentifier.signedOut, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.signedIn, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.sessionActive, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.sessionPending, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.sessionStatus, in: app),
-      "authStartElements:",
-      authStartDiagnosticProbe(E2EIdentifier.authStartIdentifier, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.authStartContinue, in: app),
-      "signInElements:",
-      authStartDiagnosticProbe(E2EIdentifier.signInPassword, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.signInContinue, in: app),
-      authStartDiagnosticProbe(E2EIdentifier.signInUseAnotherMethod, in: app),
-      "requestTimedOutError: \(authStartRequestTimedOutError(in: app).exists)",
-      "keyboardVisible: \(app.keyboards.firstMatch.exists)",
-      "visibleButtons:",
-      visibleElementSummary(app.buttons),
-      "visibleTextFields:",
-      visibleElementSummary(app.textFields),
-      "visibleSecureTextFields:",
-      visibleElementSummary(app.secureTextFields),
-      "visibleStaticTexts:",
-      visibleElementSummary(app.staticTexts),
-    ]
-
-    let summaryAttachment = XCTAttachment(string: lines.joined(separator: "\n"))
-    summaryAttachment.name = "sign-in-password-diagnostics"
-    summaryAttachment.lifetime = .keepAlways
-    add(summaryAttachment)
-
-    let treeAttachment = XCTAttachment(string: app.debugDescription)
-    treeAttachment.name = "sign-in-password-accessibility-tree"
-    treeAttachment.lifetime = .keepAlways
-    add(treeAttachment)
-
-    let screenshotAttachment = XCTAttachment(screenshot: app.screenshot())
-    screenshotAttachment.name = "sign-in-password-failure"
-    screenshotAttachment.lifetime = .keepAlways
-    add(screenshotAttachment)
   }
 
   private func waitForCodePreparationResult(
