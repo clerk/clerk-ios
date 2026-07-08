@@ -301,6 +301,14 @@ jobs:
         if: needs.prepare-release.outputs.version_already_set != 'true'
         run: |
           set -euo pipefail
+          git fetch origin main
+
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "❌ origin/main advanced after the release commit was prepared."
+            echo "   Rerun the release workflow from latest main so CI runs against the final release commit."
+            exit 1
+          fi
+
           git push origin HEAD:main
 
       - name: Create and push release tag
@@ -321,7 +329,7 @@ jobs:
           git push origin "refs/tags/$release_tag"
 
       - name: Delete temporary release branch
-        if: needs.prepare-release.outputs.version_already_set != 'true'
+        if: always() && needs.prepare-release.outputs.version_already_set != 'true' && needs.prepare-release.outputs.release_branch != ''
         env:
           RELEASE_BRANCH: ${{ needs.prepare-release.outputs.release_branch }}
         run: |
