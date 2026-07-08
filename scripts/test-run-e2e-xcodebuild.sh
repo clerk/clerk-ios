@@ -210,6 +210,9 @@ run_infrastructure_signature_matrix_test() {
     "Failed to launch XCTest test runner"
     "result bundle could not be written"
     "result bundle unable to open"
+    "Asynchronous wait failed: Exceeded timeout of 30 seconds, with unfulfilled expectations: \"Backend API request\"."
+    "HTTP load failed, 0/0 bytes (error code: -1200 [3:-9816])"
+    "Connection 1: failed to connect 3:-9816, reason -1"
   )
   local index=0
 

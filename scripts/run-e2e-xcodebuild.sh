@@ -56,7 +56,7 @@ log_has_known_infrastructure_failure() {
   local log_file="$1"
 
   grep -Eiq \
-    "Failed to start test runner|test runner failed to initialize|Test runner never began executing tests|Lost connection to test manager|Early unexpected exit.*bootstrapping|DTXProxyChannel|iOSSimulatorErrorDomain|CoreSimulator.*(failed|timed out|unavailable|crashed)|Timed out waiting for.*boot|Unable to boot|Failed to boot|Failed to install.*test runner|Failed to launch.*test runner|result bundle.*(failed|could not|unable)" \
+    "Failed to start test runner|test runner failed to initialize|Test runner never began executing tests|Lost connection to test manager|Early unexpected exit.*bootstrapping|DTXProxyChannel|iOSSimulatorErrorDomain|CoreSimulator.*(failed|timed out|unavailable|crashed)|Timed out waiting for.*boot|Unable to boot|Failed to boot|Failed to install.*test runner|Failed to launch.*test runner|result bundle.*(failed|could not|unable)|Asynchronous wait failed: Exceeded timeout.*Backend API request|HTTP load failed.*error code: -1200|failed to connect 3:-9816" \
     "$log_file"
 }
 
