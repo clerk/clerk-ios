@@ -206,9 +206,13 @@ def publishable_key_for(keys, key_name, allow_global_env_override: false)
   key_entry(keys, key_name)["pk"].to_s.strip
 end
 
-def secret_key_for(keys, key_name)
+def secret_key_for(keys, key_name, allow_global_env_override: false)
   selected_key_name = ENV["CLERK_E2E_KEY_NAME"]
   if selected_key_name == key_name && !blank?(ENV["CLERK_E2E_SECRET_KEY"])
+    return ENV["CLERK_E2E_SECRET_KEY"].strip
+  end
+
+  if allow_global_env_override && blank?(selected_key_name) && !blank?(ENV["CLERK_E2E_SECRET_KEY"])
     return ENV["CLERK_E2E_SECRET_KEY"].strip
   end
 
@@ -229,7 +233,7 @@ def frontend_api_url_for(publishable_key)
   raise "publishable key does not decode to a frontend API host" if blank?(host)
 
   URI("https://#{host}")
-rescue KeyError, ArgumentError
+rescue KeyError, ArgumentError, IndexError
   raise "publishable key could not be decoded"
 end
 
@@ -282,7 +286,12 @@ key_names.each do |key_name|
     next
   end
 
-  if SECRET_KEY_REQUIRED_KEY_NAMES.include?(key_name) && blank?(secret_key_for(keys, key_name))
+  secret_key = secret_key_for(
+    keys,
+    key_name,
+    allow_global_env_override: key_names.length == 1
+  )
+  if SECRET_KEY_REQUIRED_KEY_NAMES.include?(key_name) && blank?(secret_key)
     failures << "#{key_name}: missing secret key"
   end
 

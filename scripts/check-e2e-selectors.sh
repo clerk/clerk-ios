@@ -16,6 +16,18 @@ VISIBLE_TEXT_SELECTOR_EXCEPTIONS = Set[
   "Cancel",
 ].freeze
 
+VISIBLE_TEXT_SELECTOR_QUERIES = %w[
+  alerts
+  buttons
+  cells
+  images
+  otherElements
+  secureTextFields
+  staticTexts
+  switches
+  textFields
+].freeze
+
 SelectorLiteral = Struct.new(:value, :file, :line, keyword_init: true)
 
 def source_lines(relative_path)
@@ -78,7 +90,7 @@ quoted_literals(E2E_TEST_SOURCE, prefix: "e2e.").each do |literal|
 end
 
 source_lines(E2E_TEST_SOURCE).each_with_index do |line, index|
-  line.scan(/app\.(?:buttons|staticTexts|textFields|secureTextFields)\["([^"]+)"\]/).flatten.each do |visible_text|
+  line.scan(/app\.(?:#{VISIBLE_TEXT_SELECTOR_QUERIES.join("|")})\["([^"]+)"\]/).flatten.each do |visible_text|
     next if VISIBLE_TEXT_SELECTOR_EXCEPTIONS.include?(visible_text)
 
     failures << [
