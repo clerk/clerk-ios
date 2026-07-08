@@ -66,6 +66,15 @@ struct SocialButtonLayout<Content: View>: View {
         SocialButton(provider: .slack, showsTitle: false)
         SocialButton(provider: .facebook, showsTitle: false)
       }
+
+      SocialButtonLayout {
+        SocialButton(provider: .google, showsTitle: false)
+        SocialButton(provider: .apple, showsTitle: false)
+        SocialButton(provider: .github, showsTitle: false)
+        SocialButton(provider: .slack, showsTitle: false)
+        SocialButton(provider: .facebook, showsTitle: false)
+        SocialButton(provider: .discord, showsTitle: false)
+      }
     }
     .frame(maxWidth: .infinity)
     .padding()

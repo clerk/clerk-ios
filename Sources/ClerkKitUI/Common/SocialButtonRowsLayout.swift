@@ -14,6 +14,7 @@ struct SocialButtonRowsLayout: Layout {
 
   var alignment: Alignment = .center
   var stacksTwoItemsInSingleColumn = false
+  var maxItemsPerRow = 5
   var minItemWidth: CGFloat = 112
   var spacing: CGFloat = 8
 
@@ -63,11 +64,11 @@ struct SocialButtonRowsLayout: Layout {
     }
   }
 
-  private func maxRowItemCount(containerWidth: CGFloat, subviewCount: Int) -> Int {
+  func maxRowItemCount(containerWidth: CGFloat, subviewCount: Int) -> Int {
     guard subviewCount > 0 else { return 1 }
     guard containerWidth >= minItemWidth else { return 1 }
     let count = (containerWidth + spacing) / (minItemWidth + spacing)
-    return max(1, min(subviewCount, Int(count.rounded(.down))))
+    return max(1, min(subviewCount, maxItemsPerRow, Int(count.rounded(.down))))
   }
 
   private func shouldForceSingleColumn(itemCount: Int) -> Bool {

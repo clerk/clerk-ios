@@ -27,10 +27,25 @@ struct SocialButtonLayoutTests {
   }
 
   @Test
+  func maxRowItemCountCapsRowsAtFiveWhenContainerIsWide() {
+    let layout = SocialButtonRowsLayout()
+
+    #expect(layout.maxRowItemCount(containerWidth: 10000, subviewCount: 6) == 5)
+  }
+
+  @Test
   func rowRangesPreservePartialFinalRowsForUnevenCounts() {
     #expect(SocialButtonRowsLayout.rowRanges(itemCount: 5, maxItemsPerRow: 3) == [
       0 ..< 3,
       3 ..< 5,
+    ])
+  }
+
+  @Test
+  func rowRangesBalanceSixItemsAcrossTwoRowsWhenFiveFit() {
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 6, maxItemsPerRow: 5) == [
+      0 ..< 3,
+      3 ..< 6,
     ])
   }
 }
