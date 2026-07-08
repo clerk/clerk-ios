@@ -172,12 +172,14 @@ extension Clerk {
       }
 
       guard let client else {
+        return .rejectStale
+      }
+
+      if incomingClient.updatedAt > client.updatedAt {
         return .apply
       }
 
-      return incomingClient.updatedAt > client.updatedAt || incomingClient != client
-        ? .apply
-        : .ignore
+      return incomingClient == client ? .ignore : .rejectStale
     }
 
     guard let client else {

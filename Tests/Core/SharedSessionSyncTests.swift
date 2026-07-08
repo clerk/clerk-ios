@@ -84,6 +84,16 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func notificationReloadDoesNotRollBackEqualDateSharedClientWithOlderUpdatedAt() throws {
+    try assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: 2000)
+  }
+
+  @Test
+  func notificationReloadDoesNotRollBackEqualDateSharedClientWithEqualUpdatedAt() throws {
+    try assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: 3000)
+  }
+
+  @Test
   func notificationReloadRepairsStaleSharedClear() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
@@ -393,6 +403,40 @@ struct SharedSessionSyncTests {
       client.signIn = signIn
     }
     return client
+  }
+
+  private func assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: TimeInterval) throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000)
+    let staleSharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: sharedUpdatedAt)
+
+    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 200))
+    let initialPostCount = notifier.postCount
+    try persistSharedClient(
+      staleSharedClient,
+      state: "set",
+      serverFetchDate: Date(timeIntervalSince1970: 200),
+      version: 1,
+      keychain: keychain
+    )
+
+    notifier.simulateNotification()
+
+    #expect(clerk.client?.id == localClient.id)
+    #expect(clerk.client?.signIn?.id == localClient.signIn?.id)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == initialPostCount + 1)
+
+    let repairedClientData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue))
+    let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
+    #expect(repairedClient.id == localClient.id)
+    #expect(repairedClient.signIn?.id == localClient.signIn?.id)
+    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
+    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == "set")
+    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
+    #expect(UUID(uuidString: repairedRevision) != nil)
   }
 
   private func persistSharedClient(
