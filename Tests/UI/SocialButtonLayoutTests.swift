@@ -5,7 +5,7 @@ import Testing
 struct SocialButtonLayoutTests {
   @Test
   func rowRangesBalanceFourItemsAcrossTwoRowsWhenThreeFit() {
-    #expect(SocialButtonLayout.rowRanges(itemCount: 4, maxItemsPerRow: 3) == [
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 4, maxItemsPerRow: 3) == [
       0 ..< 2,
       2 ..< 4,
     ])
@@ -13,14 +13,22 @@ struct SocialButtonLayoutTests {
 
   @Test
   func rowRangesLeaveItemsInOneRowWhenTheyFit() {
-    #expect(SocialButtonLayout.rowRanges(itemCount: 4, maxItemsPerRow: 5) == [
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 4, maxItemsPerRow: 5) == [
       0 ..< 4,
     ])
   }
 
   @Test
+  func rowRangesCanForceSingleColumnForTwoItems() {
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 2, maxItemsPerRow: 2, forceSingleColumn: true) == [
+      0 ..< 1,
+      1 ..< 2,
+    ])
+  }
+
+  @Test
   func rowRangesPreservePartialFinalRowsForUnevenCounts() {
-    #expect(SocialButtonLayout.rowRanges(itemCount: 5, maxItemsPerRow: 3) == [
+    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 5, maxItemsPerRow: 3) == [
       0 ..< 3,
       3 ..< 5,
     ])

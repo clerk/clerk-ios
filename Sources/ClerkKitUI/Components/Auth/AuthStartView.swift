@@ -377,25 +377,26 @@ extension AuthStartView {
 
   private var socialButtonsSection: some View {
     VStack(spacing: 8) {
-      if let lastUsedProvider = lastUsedAuth?.socialProvider {
-        SocialButton(
-          provider: lastUsedProvider,
-          transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata,
-          onStart: cancelAutomaticPasskeySignIn,
-          onSuccess: handleTransferFlowResult,
-          onError: { error in
-            generalError = error
-            restartAutomaticPasskeySignInIfNeeded()
-          },
-          onCancel: restartAutomaticPasskeySignInIfNeeded
-        )
-        .lastUsedAuthBadgeOverlay(true)
-        .simultaneousGesture(TapGesture())
-      }
-
-      if !socialProvidersMinusLastUsed.isEmpty {
+      if lastUsedAuth?.socialProvider != nil || !socialProvidersMinusLastUsed.isEmpty {
         SocialButtonLayout {
+          if let lastUsedProvider = lastUsedAuth?.socialProvider {
+            SocialButton(
+              provider: lastUsedProvider,
+              transferable: authState.transferable,
+              unsafeMetadata: authState.unsafeMetadata,
+              onStart: cancelAutomaticPasskeySignIn,
+              onSuccess: handleTransferFlowResult,
+              onError: { error in
+                generalError = error
+                restartAutomaticPasskeySignInIfNeeded()
+              },
+              onCancel: restartAutomaticPasskeySignInIfNeeded
+            )
+            .lastUsedAuthBadgeOverlay(true)
+            .layoutValue(key: SocialButtonLastUsedLayoutValueKey.self, value: true)
+            .simultaneousGesture(TapGesture())
+          }
+
           ForEach(socialProvidersMinusLastUsed) { provider in
             SocialButton(
               provider: provider,
@@ -501,6 +502,7 @@ extension AuthStartView {
     }
   }
 
+  @discardableResult
   private func authenticateWithPasskey(
     signIn: SignIn,
     autofill: Bool,
