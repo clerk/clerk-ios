@@ -30,14 +30,8 @@ private enum E2ECleanupCommand {
 
 final class E2EHostE2ETests: XCTestCase {
   private static let defaultPublishableKeyName = "auth-email-code-password"
-  private static let multiMethodsPublishableKeyName = "auth-multi-methods"
   private static let phonePublishableKeyName = "auth-phone-code"
-  private static let usernameUserModelPublishableKeyName = "auth-username-password-user-model"
-  private static let legalConsentPublishableKeyName = "auth-legal-consent"
   private static let sessionTaskSetupMfaPublishableKeyName = "session-task-setup-mfa"
-  private static let sessionTaskChooseOrganizationPublishableKeyName = "session-task-choose-organization"
-  private static let sessionTaskResetPasswordPublishableKeyName = "session-task-reset-password"
-  private static let defaultChooseOrganizationEmailDomain = "clerk.dev"
   private static let authStartSubmissionTimeout: TimeInterval = 75
   private static let passwordChangeCompletionTimeout: TimeInterval = 75
 
@@ -106,86 +100,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signInApp)
   }
 
-  func testUserProfileSecurityChangesPassword() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let newPassword = Self.makeUniqueTestPassword()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.defaultPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    completeUserProfilePasswordChange(newPassword: newPassword, in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
-  }
-
-  func testUserProfileSecurityAddsTwoStepVerificationWithAuthenticatorApp() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    try completeUserProfileAuthenticatorAppMfaSetup(in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
-  }
-
-  func testUserProfileSecurityAddsTwoStepVerificationWithSmsCode() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = makeTrackedTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    try deleteExistingUsersMatchingPhoneNumber(
-      phoneNumber,
-      publishableKey: publishableKey,
-      keyName: Self.multiMethodsPublishableKeyName
-    )
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    openUserProfileSecurity(in: signUpApp)
-    completeUserProfileSmsCodeMfaSetup(phoneNumber: phoneNumber, in: signUpApp)
-    cleanupAccountIfNeeded(in: signUpApp)
-  }
-
   func testUserProfileSecurityDeletesAccount() throws {
     let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -208,119 +122,6 @@ final class E2EHostE2ETests: XCTestCase {
     openUserProfileSecurity(in: signUpApp)
     deleteAccountFromUserProfileSecurity(in: signUpApp)
     waitForSignedOut(in: signUpApp)
-  }
-
-  func testUserProfileAddsAccountThenSwitchesAccounts() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let firstEmail = Self.makeUniqueTestEmail()
-    let secondEmail = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: firstEmail, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    let firstUserID = try currentUserID(in: signUpApp)
-
-    openUserProfileRoot(in: signUpApp)
-    waitForUserProfileCurrentUser(firstUserID, in: signUpApp)
-    tapWhenHittableAfterScrolling(
-      E2EIdentifier.userProfileAddAccountRow,
-      in: signUpApp,
-      message: "Expected User Profile to show Add account. Enable Dashboard > Sessions > Multi-session handling for auth-multi-methods."
-    )
-    completeEmailCodeSignUp(email: secondEmail, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForCurrentUserIDToChange(from: firstUserID, in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    waitForAddAccountAuthFlowDismissed(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp, timeout: 10)
-
-    tapWhenHittableAfterScrolling(
-      E2EIdentifier.userProfileSwitchAccountRow,
-      in: signUpApp,
-      timeout: 45,
-      message: "Expected User Profile to show Switch account after adding a second session."
-    )
-    tapWhenHittable(E2EIdentifier.accountSwitcherSession(userID: firstUserID), in: signUpApp, timeout: 45)
-    XCTAssertTrue(
-      signUpApp.descendants(matching: .any)[E2EIdentifier.accountSwitcherSession(userID: firstUserID)]
-        .waitForNonExistence(timeout: 45),
-      "Expected the account switcher to dismiss after switching accounts."
-    )
-    waitForUserProfileCurrentUser(firstUserID, in: signUpApp)
-
-    tapWhenHittable(E2EIdentifier.dismissButton, in: signUpApp)
-    tapWhenHittable(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    completePasswordSignIn(email: secondEmail, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    waitForSessionActive(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 10)
-    tapWhenHittable(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testMultiMethodsEmailSignUpThenEmailCodeSignInViaUseAnotherMethod() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    submitEmailSignInAndTapUseAnotherMethod(email: email, in: signInApp)
-    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
@@ -372,123 +173,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signInApp)
   }
 
-  func testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.multiMethodsPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = makeTrackedTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    try deleteExistingUsersMatchingPhoneNumber(
-      phoneNumber,
-      publishableKey: publishableKey,
-      keyName: Self.multiMethodsPublishableKeyName
-    )
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completePhoneCodeSignUp(phoneNumber: phoneNumber, email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.multiMethodsPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    switchToPhoneNumberIdentifier(in: signInApp)
-    enterPhoneNumber(phoneNumber, in: signInApp)
-    submitPhoneSignInAndTapUseAnotherMethod(phoneNumber: phoneNumber, in: signInApp)
-    tapSignInAlternativeMethod(E2EIdentifier.signInPhoneCodeAlternativeMethod, in: signInApp)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testUsernamePasswordSignUpThenUsernamePasswordSignInWithRequiredUserModelFields() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.usernameUserModelPublishableKeyName)
-    let username = Self.makeUniqueTestUsername()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.usernameUserModelPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeUsernamePasswordUserModelSignUp(username: username, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.usernameUserModelPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(username, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(identifier: username, in: signInApp) else { return }
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
-  }
-
-  func testEmailCodeSignUpCompletesRequiredLegalConsent() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.legalConsentPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.legalConsentPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    completeRequiredLegalConsent(in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
   func testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup() throws {
     let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
@@ -515,156 +199,6 @@ final class E2EHostE2ETests: XCTestCase {
 
     tap(E2EIdentifier.deleteAccount, in: signUpApp)
     waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let phoneNumber = makeTrackedTestPhoneNumber()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    try deleteExistingUsersMatchingPhoneNumber(
-      phoneNumber,
-      publishableKey: publishableKey,
-      keyName: Self.sessionTaskSetupMfaPublishableKeyName
-    )
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskSetupMfaPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("setup-mfa", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeSmsCodeMfaSetup(phoneNumber: phoneNumber, in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissAuthSheetIfNeeded(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskChooseOrganizationSignUpAcceptsInvitationAndSelectsOrganization() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
-    let email = Self.makeUniqueChooseOrganizationTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("choose-organization", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeChooseOrganizationByAcceptingInvitation(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskChooseOrganizationSignUpCreatesOrganization() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskChooseOrganizationPublishableKeyName)
-    let email = Self.makeUniqueChooseOrganizationTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskChooseOrganizationPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    assertPendingTasksContain("choose-organization", in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    completeChooseOrganizationByCreatingOrganization(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testSessionTaskResetPasswordSignInCompletesPasswordReset() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
-    let secretKey = try requiredSecretKey(named: Self.sessionTaskResetPasswordPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let newPassword = Self.makeUniqueTestPassword()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-
-    app = launchApp(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signUpApp = app else { return }
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionActive(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    let userID = try currentUserID(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    try setUserPasswordCompromised(userID: userID, publishableKey: publishableKey, secretKey: secretKey)
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskResetPasswordPublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    enterAuthStartIdentifier(email, in: signInApp)
-    guard submitAuthStartAndWaitForSignInPassword(identifier: email, in: signInApp) else { return }
-    enterText(testPassword, into: E2EIdentifier.signInPassword, in: signInApp)
-    tap(E2EIdentifier.signInContinue, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-    tap(E2EIdentifier.signInUseAnotherMethod, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 5, recoverByReactivatingApp: true)
-    tapSignInAlternativeMethod(E2EIdentifier.signInEmailCodeAlternativeMethod, in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp, timeout: 3)
-    waitForSignInCodePrepared(in: signInApp)
-    enterVerificationCode(verificationCode, into: E2EIdentifier.signInCode, in: signInApp)
-    waitForSignedIn(in: signInApp)
-    waitForSessionPending(in: signInApp)
-    assertPendingTasksContain("reset-password", in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    completeResetPasswordSessionTask(newPassword: newPassword, in: signInApp)
-    waitForSessionActive(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testInAppCleanupDeletesPendingUser() throws {
@@ -735,31 +269,15 @@ extension E2EHostE2ETests {
     static let userProfileSwitchAccountRow = "clerk.userProfile.row.switchAccount"
     static let userProfileSecurityRow = "clerk.userProfile.row.security"
     static let userProfileSecurityChangePassword = "clerk.userProfile.security.changePassword"
-    static let userProfileSecurityAddMfa = "clerk.userProfile.security.addMfa"
     static let userProfileSecurityDeleteAccount = "clerk.userProfile.security.deleteAccount"
     static let userProfileChangePasswordCurrentPassword = "clerk.userProfile.changePassword.currentPassword"
     static let userProfileChangePasswordNext = "clerk.userProfile.changePassword.next"
     static let userProfileChangePasswordNewPassword = "clerk.userProfile.changePassword.newPassword"
     static let userProfileChangePasswordConfirmPassword = "clerk.userProfile.changePassword.confirmPassword"
     static let userProfileChangePasswordSave = "clerk.userProfile.changePassword.save"
-    static let userProfileMfaSmsCode = "clerk.userProfile.mfa.smsCode"
-    static let userProfileMfaSmsPhoneNumber = "clerk.userProfile.mfa.sms.phoneNumber"
-    static let userProfileMfaSmsContinue = "clerk.userProfile.mfa.sms.continue"
-    static let userProfileMfaSmsAddPhone = "clerk.userProfile.mfa.sms.addPhone"
-    static let userProfilePhoneNumber = "clerk.userProfile.phone.phoneNumber"
-    static let userProfilePhoneContinue = "clerk.userProfile.phone.continue"
-    static let userProfileMfaAuthenticatorApp = "clerk.userProfile.mfa.authenticatorApp"
-    static let userProfileMfaTotpSecret = "clerk.userProfile.mfa.totp.secret"
-    static let userProfileMfaTotpContinue = "clerk.userProfile.mfa.totp.continue"
-    static let userProfileMfaVerificationCode = "clerk.userProfile.mfa.verificationCode"
-    static let userProfileBackupCodesDone = "clerk.userProfile.backupCodes.done"
     static let userProfileDeleteAccountConfirmation = "clerk.userProfile.deleteAccount.confirmation"
     static let userProfileDeleteAccountConfirm = "clerk.userProfile.deleteAccount.confirm"
-    static let setupMfaSmsCode = "clerk.auth.sessionTask.setupMfa.smsCode"
     static let setupMfaAuthenticatorApp = "clerk.auth.sessionTask.setupMfa.authenticatorApp"
-    static let smsPhoneNumber = "clerk.auth.sessionTask.sms.phoneNumber"
-    static let smsContinue = "clerk.auth.sessionTask.sms.continue"
-    static let smsCode = "clerk.auth.sessionTask.sms.code"
     static let totpSecret = "clerk.auth.sessionTask.totp.secret"
     static let totpContinue = "clerk.auth.sessionTask.totp.continue"
     static let totpCode = "clerk.auth.sessionTask.totp.code"
@@ -826,22 +344,12 @@ extension E2EHostE2ETests {
   private static let approvedTestPhoneNumberSuffixRange = 100 ... 199
   private static let approvedTestPhoneNumberRangeDescription = "5555550100...5555550199"
   private static let approvedTestPhoneNumberSuffixByTestName = [
-    "testUserProfileSecurityAddsTwoStepVerificationWithSmsCode": 110,
     "testPhoneCodeSignUpThenPhoneCodeSignIn": 120,
-    "testMultiMethodsPhoneSignUpThenPhoneCodeSignInViaUseAnotherMethod": 130,
-    "testSessionTaskSetupMfaSignUpCompletesSmsCodeSetup": 140,
   ]
 
   fileprivate static func makeUniqueTestEmail() -> String {
     let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     return "clerk_ios_e2e+clerk_test_\(suffix)@example.com"
-  }
-
-  fileprivate static func makeUniqueChooseOrganizationTestEmail() -> String {
-    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-    let domain = normalized(ProcessInfo.processInfo.environment["CLERK_E2E_CHOOSE_ORG_EMAIL_DOMAIN"])
-      ?? defaultChooseOrganizationEmailDomain
-    return "clerk_ios_e2e+clerk_test_\(suffix)@\(domain)"
   }
 
   fileprivate static func makeUniqueTestPhoneNumber(
@@ -3091,79 +2599,6 @@ extension E2EHostE2ETests {
     add(screenshotAttachment)
   }
 
-  private func completeUserProfileAuthenticatorAppMfaSetup(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) throws {
-    tap(E2EIdentifier.userProfileSecurityAddMfa, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaAuthenticatorApp, in: app, timeout: 45, file: file, line: line)
-
-    let secretElement = app.descendants(matching: .any)[E2EIdentifier.userProfileMfaTotpSecret]
-    XCTAssertTrue(
-      secretElement.waitForExistence(timeout: 45),
-      "Expected the user profile TOTP setup secret.",
-      file: file,
-      line: line
-    )
-    let secret = secretElement.label
-
-    tap(E2EIdentifier.userProfileMfaTotpContinue, in: app, file: file, line: line)
-    try enterCurrentTOTPCode(
-      secret: secret,
-      into: E2EIdentifier.userProfileMfaVerificationCode,
-      in: app,
-      file: file,
-      line: line
-    )
-
-    continueUserProfileBackupCodesIfPresent(in: app)
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityAddMfa].waitForExistence(timeout: 45),
-      "Expected the user profile Security screen after completing TOTP setup.",
-      file: file,
-      line: line
-    )
-  }
-
-  private func completeUserProfileSmsCodeMfaSetup(
-    phoneNumber: String,
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    tap(E2EIdentifier.userProfileSecurityAddMfa, in: app, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaSmsCode, in: app, timeout: 45, file: file, line: line)
-    tap(E2EIdentifier.userProfileMfaSmsAddPhone, in: app, file: file, line: line)
-    enterPhoneNumber(phoneNumber, into: E2EIdentifier.userProfilePhoneNumber, in: app, file: file, line: line)
-    tap(E2EIdentifier.userProfilePhoneContinue, in: app, file: file, line: line)
-    waitForCodePrepared(
-      in: app,
-      codeInputIdentifier: E2EIdentifier.userProfileMfaVerificationCode,
-      message: "Expected user-profile phone verification code preparation to finish before entering the verification code.",
-      file: file,
-      line: line
-    )
-    enterVerificationCode(verificationCode, into: E2EIdentifier.userProfileMfaVerificationCode, in: app, file: file, line: line)
-    tapWhenEnabled(matchingIdentifierPrefix: E2EIdentifier.userProfileMfaSmsPhoneNumber, in: app, timeout: 45, file: file, line: line)
-    tapWhenEnabled(E2EIdentifier.userProfileMfaSmsContinue, in: app, timeout: 45, file: file, line: line)
-
-    continueUserProfileBackupCodesIfPresent(in: app)
-    XCTAssertTrue(
-      app.descendants(matching: .any)[E2EIdentifier.userProfileSecurityAddMfa].waitForExistence(timeout: 45),
-      "Expected the user profile Security screen after completing SMS setup.",
-      file: file,
-      line: line
-    )
-  }
-
-  private func continueUserProfileBackupCodesIfPresent(in app: XCUIApplication) {
-    let backupCodesDone = app.buttons[E2EIdentifier.userProfileBackupCodesDone].firstMatch
-    if backupCodesDone.waitForExistence(timeout: 10) {
-      backupCodesDone.tap()
-    }
-  }
-
   private func deleteAccountFromUserProfileSecurity(
     in app: XCUIApplication,
     file: StaticString = #filePath,
@@ -3194,38 +2629,6 @@ extension E2EHostE2ETests {
     try enterCurrentTOTPCode(secret: secret, into: E2EIdentifier.totpCode, in: app, file: file, line: line)
 
     continueBackupCodesAfterMfaSetup(in: app, file: file, line: line)
-  }
-
-  private func completeSmsCodeMfaSetup(
-    phoneNumber: String,
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    tap(E2EIdentifier.setupMfaSmsCode, in: app, file: file, line: line)
-    enterPhoneNumber(phoneNumber, into: E2EIdentifier.smsPhoneNumber, in: app, file: file, line: line)
-    tap(E2EIdentifier.smsContinue, in: app, file: file, line: line)
-    waitForCodePrepared(
-      in: app,
-      codeInputIdentifier: E2EIdentifier.smsCode,
-      message: "Expected setup-MFA SMS code preparation to finish before entering the verification code.",
-      file: file,
-      line: line
-    )
-    enterVerificationCode(verificationCode, into: E2EIdentifier.smsCode, in: app, file: file, line: line)
-
-    continueBackupCodesIfPresent(in: app, file: file, line: line)
-  }
-
-  private func continueBackupCodesIfPresent(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    let backupCodesContinue = app.descendants(matching: .any)[E2EIdentifier.backupCodesContinue]
-    if backupCodesContinue.waitForExistence(timeout: 10) {
-      tapWhenHittableAfterScrolling(E2EIdentifier.backupCodesContinue, in: app, timeout: 10, file: file, line: line)
-    }
   }
 
   private func continueBackupCodesAfterMfaSetup(

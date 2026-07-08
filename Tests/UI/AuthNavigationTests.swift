@@ -113,6 +113,20 @@ struct AuthNavigationTests {
     #expect(navigation.path == [.signUpCompleteProfile])
   }
 
+  @Test
+  func signUpUsernameMissingRequirementRoutesToCollectUsernameBeforeCompleteProfile() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [.firstName, .legalAccepted, .username],
+      unverifiedFields: [],
+      verifications: [:]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCollectField(.username)])
+  }
+
   private func session(pendingTasks: [Session.Task]) -> Session {
     var session = Session.mock
     session.tasks = pendingTasks

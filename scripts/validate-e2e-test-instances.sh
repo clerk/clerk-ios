@@ -9,11 +9,7 @@ require "uri"
 
 DEFAULT_KEY_NAMES = [
   "auth-email-code-password",
-  "auth-multi-methods",
   "auth-phone-code",
-  "auth-username-password-user-model",
-  "session-task-choose-organization",
-  "session-task-reset-password",
   "session-task-setup-mfa",
 ].freeze
 

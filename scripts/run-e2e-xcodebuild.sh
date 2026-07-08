@@ -25,11 +25,22 @@ mkdir -p "$(dirname "$log_path")"
 attempt_log_path() {
   local path="$1"
   local attempt="$2"
+  local directory
+  local filename
 
-  if [[ "$path" == *.* ]]; then
-    printf "%s-attempt-%s.%s" "${path%.*}" "$attempt" "${path##*.}"
+  directory="$(dirname "$path")"
+  filename="$(basename "$path")"
+
+  if [[ "$filename" == *.* ]]; then
+    filename="${filename%.*}-attempt-${attempt}.${filename##*.}"
   else
-    printf "%s-attempt-%s" "$path" "$attempt"
+    filename="${filename}-attempt-${attempt}"
+  fi
+
+  if [[ "$directory" == "." ]]; then
+    printf "%s" "$filename"
+  else
+    printf "%s/%s" "$directory" "$filename"
   fi
 }
 

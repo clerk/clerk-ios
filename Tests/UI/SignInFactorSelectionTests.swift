@@ -212,6 +212,47 @@ struct SignInFactorSelectionTests {
     #expect(factors.map(\.strategy) == [.emailCode])
     #expect(factors.first?.emailAddressId == "email_123")
   }
+
+  @Test
+  func alternativeFirstFactorsKeepCodeAlternativesAndFilterNonInlineMethods() {
+    let passwordFactor = Factor(strategy: .password)
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "user@example.com",
+      supportedFirstFactors: [
+        passwordFactor,
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "email_123",
+          safeIdentifier: "user@example.com"
+        ),
+        Factor(
+          strategy: .phoneCode,
+          phoneNumberId: "phone_123",
+          safeIdentifier: "+15555550100"
+        ),
+        Factor(
+          strategy: .resetPasswordEmailCode,
+          emailAddressId: "email_123",
+          safeIdentifier: "user@example.com"
+        ),
+        Factor(strategy: .oauth(.google)),
+        Factor(strategy: .enterpriseSSO),
+        Factor(strategy: .saml),
+      ]
+    )
+
+    let strategies = signIn.alternativeFirstFactors(currentFactor: passwordFactor).map(\.strategy)
+
+    #expect(strategies.contains(.emailCode))
+    #expect(strategies.contains(.phoneCode))
+    #expect(!strategies.contains(.password))
+    #expect(!strategies.contains(.resetPasswordEmailCode))
+    #expect(!strategies.contains(.oauth(.google)))
+    #expect(!strategies.contains(.enterpriseSSO))
+    #expect(!strategies.contains(.saml))
+  }
 }
 
 #endif

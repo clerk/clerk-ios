@@ -129,6 +129,35 @@ run_success_log_path_test() {
   assert_contains "$log_path" "xcodebuild completed"
 }
 
+run_success_log_path_without_extension_test() {
+  local command="$tmpdir/success-no-extension.sh"
+  local output="$tmpdir/success-no-extension.out"
+  local log_path="$tmpdir/logs/E2EHost"
+
+  write_success_command "$command"
+
+  env E2E_XCODEBUILD_LOG_PATH="$log_path" "$runner" "$command" > "$output" 2>&1
+
+  assert_file_exists "$tmpdir/logs/E2EHost-attempt-1"
+  assert_file_exists "$log_path"
+  assert_contains "$log_path" "xcodebuild completed"
+}
+
+run_success_log_path_with_dotted_directory_test() {
+  local command="$tmpdir/success-dotted-directory.sh"
+  local output="$tmpdir/success-dotted-directory.out"
+  local log_path="$tmpdir/logs.v2/E2EHost"
+
+  write_success_command "$command"
+
+  env E2E_XCODEBUILD_LOG_PATH="$log_path" "$runner" "$command" > "$output" 2>&1
+
+  assert_file_exists "$tmpdir/logs.v2/E2EHost-attempt-1"
+  assert_file_missing "$tmpdir/logs-attempt-1.v2/E2EHost"
+  assert_file_exists "$log_path"
+  assert_contains "$log_path" "xcodebuild completed"
+}
+
 run_infrastructure_retry_test() {
   local command="$tmpdir/infra-flake.sh"
   local output="$tmpdir/infra-flake.out"
@@ -274,6 +303,8 @@ run_invalid_attempts_fallback_test() {
 }
 
 run_success_log_path_test
+run_success_log_path_without_extension_test
+run_success_log_path_with_dotted_directory_test
 run_infrastructure_retry_test
 run_infrastructure_signature_matrix_test
 run_assertion_failure_no_retry_test
