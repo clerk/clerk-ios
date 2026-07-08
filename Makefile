@@ -229,7 +229,10 @@ test-ui:
 test-e2e:
 	@echo "Running E2EHost tests on iOS Simulator..."
 	@mkdir -p build/reports
-	@key_name="$(CLERK_E2E_KEY_NAME)"; \
+	@set -e; \
+	key_name="$(CLERK_E2E_KEY_NAME)"; \
+	e2e_started_at="$$(date +%s)"; \
+	echo "E2E timing: make test-e2e started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
 	if [ -z "$$key_name" ]; then \
 		key_name="auth-email-code-password"; \
 	fi; \
@@ -286,10 +289,14 @@ test-e2e:
 	fi; \
 	echo "Using simulator destination: $$destination"; \
 	if [ -n "$$simulator_id" ]; then \
+		simulator_started_at="$$(date +%s)"; \
+		echo "E2E timing: simulator preparation started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
 		echo "Preparing simulator keyboard preferences..."; \
 		xcrun simctl boot "$$simulator_id" >/dev/null 2>&1 || true; \
 		xcrun simctl bootstatus "$$simulator_id" -b >/dev/null; \
 		xcrun simctl spawn "$$simulator_id" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES; \
+		simulator_finished_at="$$(date +%s)"; \
+		echo "E2E timing: simulator preparation finished in $$((simulator_finished_at - simulator_started_at))s"; \
 	else \
 		echo "Skipping simulator keyboard preference setup; destination does not include an explicit simulator id."; \
 	fi; \
@@ -312,7 +319,14 @@ test-e2e:
 	chmod 600 build/reports/E2EHostPublishableKey.txt; \
 	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path"
+	echo "E2E timing: xcodebuild test started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
+	set +e; \
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
+	xcodebuild_status="$$?"; \
+	set -e; \
+	e2e_finished_at="$$(date +%s)"; \
+	echo "E2E timing: make test-e2e finished in $$((e2e_finished_at - e2e_started_at))s"; \
+	exit "$$xcodebuild_status"
 	@echo "✅ E2EHost tests completed!"
 
 # Run only integration tests

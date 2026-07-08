@@ -22,6 +22,10 @@ fi
 
 mkdir -p "$(dirname "$log_path")"
 
+timestamp_utc() {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
 attempt_log_path() {
   local path="$1"
   local attempt="$2"
@@ -98,6 +102,8 @@ attempt=1
 while true; do
   attempt_log="$(attempt_log_path "$log_path" "$attempt")"
   echo "Running E2E xcodebuild attempt $attempt/$attempts..."
+  attempt_started_at="$(date +%s)"
+  echo "E2E timing: xcodebuild attempt $attempt/$attempts started at $(timestamp_utc)"
 
   set +e
   "$@" 2>&1 | tee "$attempt_log"
@@ -105,6 +111,8 @@ while true; do
   set -e
 
   cp "$attempt_log" "$log_path"
+  attempt_finished_at="$(date +%s)"
+  echo "E2E timing: xcodebuild attempt $attempt/$attempts finished with status $status in $((attempt_finished_at - attempt_started_at))s"
 
   if [[ "$status" -eq 0 ]]; then
     exit 0
