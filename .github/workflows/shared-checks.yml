@@ -273,7 +273,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: build/xcode-source-packages
-          key: swiftpm-e2e-${{ hashFiles('Package.resolved') }}
+          key: swiftpm-e2e-${{ hashFiles('Package.swift') }}
           restore-keys: swiftpm-e2e-
 
       - name: Setup E2E test keys
