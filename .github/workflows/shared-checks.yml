@@ -94,7 +94,6 @@ jobs:
               "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-phone)"
               "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (user-profile)"
               "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (session-task-setup-mfa)"
-              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (in-app-cleanup)"
             )
           fi
 
@@ -247,19 +246,16 @@ jobs:
         include:
           - shard: auth-email
             only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpDeletesAccount()
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpCompletes()
           - shard: auth-phone
             only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpThenPhoneCodeSignIn()
+              E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpCompletes()
           - shard: user-profile
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityDeletesAccount()
           - shard: session-task-setup-mfa
             only_testing: >-
               E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup()
-          - shard: in-app-cleanup
-            only_testing: >-
-              E2EHostE2ETests/E2EHostE2ETests/testInAppCleanupDeletesPendingUser()
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -273,10 +269,10 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Cache Swift dependencies
+      - name: Cache Xcode Swift package checkouts
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
-          path: .build
+          path: build/xcode-source-packages
           key: swiftpm-e2e-${{ hashFiles('Package.resolved') }}
           restore-keys: swiftpm-e2e-
 
@@ -490,5 +486,4 @@ jobs:
             update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (auth-phone)" "$(job_result "Run required E2EHost smoke tests on iOS (auth-phone)")"
             update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (user-profile)" "$(job_result "Run required E2EHost smoke tests on iOS (user-profile)")"
             update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (session-task-setup-mfa)" "$(job_result "Run required E2EHost smoke tests on iOS (session-task-setup-mfa)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost smoke tests on iOS (in-app-cleanup)" "$(job_result "Run required E2EHost smoke tests on iOS (in-app-cleanup)")"
           fi

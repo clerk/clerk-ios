@@ -6,6 +6,7 @@ IOS_SIMULATOR_DESTINATION ?=
 CLERK_E2E_KEY_NAME ?= auth-email-code-password
 E2E_ONLY_TESTING ?= E2EHostE2ETests
 E2E_RESULT_BUNDLE_PATH ?= build/reports/E2EHost.xcresult
+E2E_XCODE_SOURCE_PACKAGES_PATH ?= build/xcode-source-packages
 MACOS_DESTINATION ?= platform=macOS
 
 
@@ -266,7 +267,7 @@ test-e2e:
 					echo "❌ ruby is required to resolve IOS_SIMULATOR_DESTINATION name=$$simulator_name."; \
 					exit 1; \
 				fi; \
-				simulator_id="$$(xcrun simctl list devices available -j | ruby -rjson -e 'target = ARGV.fetch(0).downcase; candidates = []; JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|; version = runtime[/SimRuntime[.]iOS-(.*)$$/, 1]; next unless version; version_parts = version.split("-").map(&:to_i); devices.each do |device|; next unless device["isAvailable"] && device["name"].downcase == target; candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]; end; end; selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }; puts selected[2] if selected' "$$simulator_name")"; \
+				simulator_id="$$(xcrun simctl list devices available -j | ruby -rjson -e 'target = ARGV.fetch(0).downcase; candidates = []; JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|; version = runtime[/SimRuntime[.]iOS-(.*)$$/, 1]; next unless version; version_parts = version.split("-").map(&:to_i); devices.each do |device|; next unless device["isAvailable"] && device["name"].downcase == target; candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]; end; end; selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }; puts selected[2] if selected' "$$simulator_name" || true)"; \
 				if [ -z "$$simulator_id" ]; then \
 					echo "❌ Unable to find an available iOS simulator named '$$simulator_name'."; \
 					exit 1; \
@@ -303,6 +304,8 @@ test-e2e:
 	result_bundle_path="$(E2E_RESULT_BUNDLE_PATH)"; \
 	rm -rf "$$result_bundle_path"; \
 	mkdir -p "$$(dirname "$$result_bundle_path")"; \
+	source_packages_path="$(E2E_XCODE_SOURCE_PACKAGES_PATH)"; \
+	mkdir -p "$$source_packages_path"; \
 	only_testing="$(E2E_ONLY_TESTING)"; \
 	only_testing_flags=""; \
 	set -f; \
@@ -321,7 +324,7 @@ test-e2e:
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
 	echo "E2E timing: xcodebuild test started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
 	set +e; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -clonedSourcePackagesDirPath "$$source_packages_path" -onlyUsePackageVersionsFromResolvedFile -enableCodeCoverage NO $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
 	xcodebuild_status="$$?"; \
 	set -e; \
 	e2e_finished_at="$$(date +%s)"; \

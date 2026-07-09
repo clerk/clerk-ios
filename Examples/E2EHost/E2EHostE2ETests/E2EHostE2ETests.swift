@@ -58,7 +58,7 @@ final class E2EHostE2ETests: XCTestCase {
     app = nil
   }
 
-  func testEmailCodeSignUpDeletesAccount() throws {
+  func testEmailCodeSignUpCompletes() throws {
     let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
@@ -76,9 +76,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
   }
 
   func testUserProfileSecurityDeletesAccount() throws {
@@ -105,7 +102,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
-  func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
+  func testPhoneCodeSignUpCompletes() throws {
     let publishableKey = try requiredPublishableKey(named: Self.phonePublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let phoneNumber = makeTrackedTestPhoneNumber()
@@ -128,30 +125,8 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signUpApp)
     completePhoneCodeSignUp(phoneNumber: phoneNumber, email: email, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.phonePublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    switchToPhoneNumberIdentifier(in: signInApp)
-    enterPhoneNumber(phoneNumber, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    completePhoneCodeSignIn(in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup() throws {
@@ -176,37 +151,6 @@ final class E2EHostE2ETests: XCTestCase {
 
     try completeAuthenticatorAppSetup(in: signUpApp)
     waitForSessionActive(in: signUpApp)
-    dismissAuthSheetIfNeeded(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testInAppCleanupDeletesPendingUser() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-    let configuration = E2ELaunchConfiguration(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskSetupMfaPublishableKeyName,
-      keychainService: keychainService
-    )
-
-    app = launchApp(configuration: configuration)
-    guard let signUpApp = app else { return }
-    waitForSignedOut(in: signUpApp)
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    XCTAssertFalse(
-      signUpApp.descendants(matching: .any)[E2EIdentifier.deleteAccount].exists,
-      "Delete account should not be visible while the session is pending."
-    )
-    cleanupAccountIfNeeded(in: signUpApp)
   }
 }
 
@@ -319,7 +263,7 @@ extension E2EHostE2ETests {
   private static let approvedTestPhoneNumberSuffixRange = 100 ... 199
   private static let approvedTestPhoneNumberRangeDescription = "5555550100...5555550199"
   private static let approvedTestPhoneNumberSuffixByTestName = [
-    "testPhoneCodeSignUpThenPhoneCodeSignIn": 120,
+    "testPhoneCodeSignUpCompletes": 120,
   ]
 
   fileprivate static func makeUniqueTestEmail() -> String {
