@@ -94,24 +94,28 @@ final class PasskeyHelper: NSObject {
     Self.cancelCurrentAuthorization()
     let helperID = ObjectIdentifier(self)
 
-    return try await withTaskCancellationHandler {
-      try Task.checkCancellation()
-      return try await withCheckedThrowingContinuation { continuation in
-        self.continuation = continuation
-        Self.activeHelper = self
+    return try await withTaskCancellationHandler(
+      operation: {
+        try Task.checkCancellation()
+        return try await withCheckedThrowingContinuation { continuation in
+          self.continuation = continuation
+          Self.activeHelper = self
 
-        let authController = ASAuthorizationController(authorizationRequests: requests)
-        authController.delegate = self
-        authController.presentationContextProvider = self
-        Self.controller = authController
+          let authController = ASAuthorizationController(authorizationRequests: requests)
+          authController.delegate = self
+          authController.presentationContextProvider = self
+          Self.controller = authController
 
-        start(authController)
-      }
-    } onCancel: {
-      Task { @MainActor in
-        Self.cancelAuthorization(for: helperID)
-      }
-    }
+          start(authController)
+        }
+      },
+      onCancel: {
+        Task { @MainActor in
+          Self.cancelAuthorization(for: helperID)
+        }
+      },
+      isolation: MainActor.shared
+    )
   }
 
   @MainActor
