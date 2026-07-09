@@ -117,7 +117,7 @@ jobs:
 
   format-and-lint:
     name: Check formatting and linting
-    runs-on: macos-26
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

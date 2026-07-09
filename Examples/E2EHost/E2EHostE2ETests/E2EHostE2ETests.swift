@@ -187,7 +187,6 @@ extension E2EHostE2ETests {
     static let cleanupFailed = "e2e.auth.cleanupFailed"
     static let signOut = "e2e.auth.signOut"
     static let signIn = "e2e.auth.signIn"
-    static let deleteAccount = "e2e.auth.deleteAccount"
     static let dismissButton = "clerk.dismissButton"
     static let userButtonProfile = "clerk.userButton.profile"
     static let userProfileAddAccountRow = "clerk.userProfile.row.addAccount"
@@ -2487,31 +2486,6 @@ extension E2EHostE2ETests {
     screenshotAttachment.name = "authenticator-app-setup-failure"
     screenshotAttachment.lifetime = .keepAlways
     add(screenshotAttachment)
-  }
-
-  private func dismissAuthSheetIfNeeded(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    if hittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app) != nil {
-      return
-    }
-
-    if let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) {
-      dismissButton.tap()
-    } else {
-      let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
-      let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
-      start.press(forDuration: 0.1, thenDragTo: end)
-    }
-
-    XCTAssertNotNil(
-      waitForHittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app, timeout: 10),
-      "Expected the auth sheet to dismiss after completing the session task.",
-      file: file,
-      line: line
-    )
   }
 
   private func completeChooseOrganizationByAcceptingInvitation(
