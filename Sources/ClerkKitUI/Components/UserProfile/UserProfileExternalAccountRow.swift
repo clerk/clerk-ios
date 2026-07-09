@@ -11,6 +11,7 @@ import SwiftUI
 
 struct UserProfileExternalAccountRow: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.colorScheme) private var colorScheme
   @Environment(\.clerkUserProfileOAuthConfig) private var oauthConfig
   @Environment(\.clerkTheme) private var theme
 
@@ -30,7 +31,7 @@ struct UserProfileExternalAccountRow: View {
       VStack(alignment: .leading, spacing: 4) {
         WrappingHStack(alignment: .leading) {
           HStack(spacing: 8) {
-            LazyImage(url: externalAccount.oauthProvider.iconImageUrl) { state in
+            LazyImage(url: externalAccount.oauthProvider.iconImageUrl(colorScheme: colorScheme)) { state in
               if let image = state.image {
                 ProviderIconView(
                   provider: externalAccount.oauthProvider,

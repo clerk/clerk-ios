@@ -11,6 +11,7 @@ import SwiftUI
 
 struct SocialButton: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.colorScheme) private var colorScheme
   @Environment(\.clerkTheme) private var theme
 
   let provider: OAuthProvider
@@ -38,7 +39,7 @@ struct SocialButton: View {
   }
 
   private var providerLabel: some View {
-    LazyImage(url: provider.iconImageUrl) { state in
+    LazyImage(url: provider.iconImageUrl(colorScheme: colorScheme)) { state in
       if let image = state.image {
         ViewThatFits(in: .horizontal) {
           if showsTitle {
