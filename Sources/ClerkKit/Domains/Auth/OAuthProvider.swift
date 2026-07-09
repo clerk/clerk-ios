@@ -31,7 +31,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   case box
   case slack
   case linear
-  case x
+  case x // swiftlint:disable:this identifier_name
   case huggingFace
   case vercel
   case custom(_ strategy: String)
