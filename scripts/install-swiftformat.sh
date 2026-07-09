@@ -36,6 +36,8 @@ case "$(uname -s)" in
     ;;
 esac
 
+archive_binary_name="${asset_name%.zip}"
+
 if [ -x "$binary_path" ] && [ "$("$binary_path" --version)" = "$version" ]; then
   mkdir -p "$bin_dir"
   ln -sfn "../swiftformat/$version/swiftformat" "$link_path"
@@ -51,6 +53,9 @@ mkdir -p "$install_root" "$bin_dir"
 curl -fsSL "$archive_url" -o "$tmp_dir/$asset_name"
 echo "$asset_checksum  $tmp_dir/$asset_name" | shasum -a 256 -c >/dev/null
 unzip -oq "$tmp_dir/$asset_name" -d "$install_root"
+if [ "$archive_binary_name" != "swiftformat" ]; then
+  mv "$install_root/$archive_binary_name" "$binary_path"
+fi
 chmod +x "$binary_path"
 ln -sfn "../swiftformat/$version/swiftformat" "$link_path"
 
