@@ -86,6 +86,26 @@ final class PasskeyHelper: NSObject {
   }
 
   @MainActor
+  private func beginAuthorization(
+    requests: [ASAuthorizationRequest],
+    start: @escaping @MainActor (ASAuthorizationController) -> Void
+  ) async throws -> ASAuthorization {
+    try Task.checkCancellation()
+
+    return try await withCheckedThrowingContinuation { continuation in
+      self.continuation = continuation
+      Self.activeHelper = self
+
+      let authController = ASAuthorizationController(authorizationRequests: requests)
+      authController.delegate = self
+      authController.presentationContextProvider = self
+      Self.controller = authController
+
+      start(authController)
+    }
+  }
+
+  @MainActor
   private func performAuthorization(
     requests: [ASAuthorizationRequest],
     start: @escaping @MainActor (ASAuthorizationController) -> Void
@@ -94,24 +114,17 @@ final class PasskeyHelper: NSObject {
     Self.cancelCurrentAuthorization()
     let helperID = ObjectIdentifier(self)
 
-    return try await withTaskCancellationHandler {
-      try Task.checkCancellation()
-      return try await withCheckedThrowingContinuation { continuation in
-        self.continuation = continuation
-        Self.activeHelper = self
-
-        let authController = ASAuthorizationController(authorizationRequests: requests)
-        authController.delegate = self
-        authController.presentationContextProvider = self
-        Self.controller = authController
-
-        start(authController)
-      }
-    } onCancel: {
-      Task { @MainActor in
-        Self.cancelAuthorization(for: helperID)
-      }
-    }
+    return try await withTaskCancellationHandler(
+      operation: {
+        try await beginAuthorization(requests: requests, start: start)
+      },
+      onCancel: {
+        Task { @MainActor in
+          Self.cancelAuthorization(for: helperID)
+        }
+      },
+      isolation: MainActor.shared
+    )
   }
 
   @MainActor
