@@ -101,6 +101,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
 
   private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
@@ -163,6 +164,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             profileContent(user: user)
               .navigationDestination(for: Route.self) { route in
                 view(for: route)
+                  .embeddedNavigationBarHidden()
                   .environment(sheetNavigation)
                   .environment(codeLimiter)
                   .environment(
@@ -196,6 +198,19 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       .onFirstAppear {
         initialPathCount = navigationPath?.wrappedValue.count ?? 0
       }
+      .onAppear {
+        guard let embeddedNavigation else { return }
+        embeddedNavigation.register { toRoot in
+          popForEmbeddedNavigation(toRoot: toRoot)
+        }
+        embeddedNavigation.reportDepth(embeddedNavigationDepth)
+      }
+      .onDisappear {
+        embeddedNavigation?.unregister()
+      }
+      .onChange(of: embeddedNavigationDepth) {
+        embeddedNavigation?.reportDepth(embeddedNavigationDepth)
+      }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
         #if os(iOS)
@@ -209,7 +224,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
+        // The add-account sheet is modal over the host, so it keeps Clerk's own
+        // navigation chrome even when this profile is embedded.
         AuthView()
+          .environment(\.clerkEmbeddedNavigation, nil)
       }
       .task {
         for await event in clerk.auth.events {
@@ -336,8 +354,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       #endif
     }
+    .embeddedNavigationBarHidden()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
+        .embeddedNavigationBarHidden()
         .environment(sheetNavigation)
         .environment(codeLimiter)
         .environment(
@@ -586,6 +606,27 @@ extension UserProfileView {
 
     rows.append(contentsOf: sectionEndRows.map(nextCustomRow))
     return rows
+  }
+}
+
+// MARK: - Embedded Navigation
+
+extension UserProfileView {
+  /// Screens pushed above this profile's root, regardless of who owns the stack.
+  fileprivate var embeddedNavigationDepth: Int {
+    let count = navigationPath?.wrappedValue.count ?? internalPath.count
+    return max(count - initialPathCount, 0)
+  }
+
+  fileprivate func popForEmbeddedNavigation(toRoot: Bool) {
+    guard embeddedNavigationDepth > 0 else { return }
+    if toRoot {
+      dismissAction(.popToRoot)
+    } else if let navigationPath {
+      navigationPath.wrappedValue.removeLast()
+    } else {
+      internalPath.removeLast()
+    }
   }
 }
 

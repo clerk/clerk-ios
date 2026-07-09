@@ -65,6 +65,7 @@ public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
 
@@ -129,6 +130,7 @@ public struct AuthView: View {
           dismissToolbarItem
         }
         #endif
+        .embeddedNavigationBarHidden()
         .navigationDestination(for: Destination.self) {
           $0.view
             #if os(iOS)
@@ -136,6 +138,7 @@ public struct AuthView: View {
               dismissToolbarItem
             }
             #endif
+            .embeddedNavigationBarHidden()
             .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
             .environment(navigation)
             .environment(authState)
@@ -162,6 +165,23 @@ public struct AuthView: View {
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
+      if let embeddedNavigation {
+        embeddedNavigation.register { [navigation] toRoot in
+          guard !navigation.path.isEmpty else { return }
+          if toRoot {
+            navigation.path = []
+          } else {
+            navigation.path.removeLast()
+          }
+        }
+        embeddedNavigation.reportDepth(navigation.path.count)
+      }
+    }
+    .onDisappear {
+      embeddedNavigation?.unregister()
+    }
+    .onChange(of: navigation.path.count) { _, newCount in
+      embeddedNavigation?.reportDepth(newCount)
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
