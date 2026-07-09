@@ -67,6 +67,17 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
   }
 
+  var hasShadow: Bool {
+    switch config.emphasis {
+    case .none:
+      false
+    case .low:
+      true
+    case .high:
+      true
+    }
+  }
+
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .font(font)
@@ -80,6 +91,14 @@ struct SecondaryButtonStyle: ButtonStyle {
             RoundedRectangle(cornerRadius: theme.design.borderRadius)
               .strokeBorder(borderColor, lineWidth: borderWidth)
           }
+      }
+      .background {
+        if hasShadow {
+          RoundedRectangle(cornerRadius: theme.design.borderRadius)
+            .fill(backgroundColor(configuration: configuration))
+            .shadow(color: theme.colors.shadow, radius: 0.5, x: 0, y: 1)
+            .opacity(0.30)
+        }
       }
       .opacity(isEnabled ? 1 : 0.5)
       .animation(.default, value: isEnabled)
