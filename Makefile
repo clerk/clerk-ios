@@ -324,7 +324,7 @@ test-e2e:
 	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
 	echo "E2E timing: xcodebuild test started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
 	set +e; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -clonedSourcePackagesDirPath "$$source_packages_path" -onlyUsePackageVersionsFromResolvedFile -enableCodeCoverage NO $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
+	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -clonedSourcePackagesDirPath "$$source_packages_path" -enableCodeCoverage NO $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
 	xcodebuild_status="$$?"; \
 	set -e; \
 	e2e_finished_at="$$(date +%s)"; \
