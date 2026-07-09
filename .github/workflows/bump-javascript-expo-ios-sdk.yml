@@ -195,6 +195,10 @@ jobs:
               --body-file "$pr_body")"
           fi
 
+          if ! gh pr edit "$pr_url" --add-reviewer wobsoriano; then
+            echo "::warning::Could not request review from wobsoriano; continuing without a reviewer."
+          fi
+
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
 
   notify-slack-release:
