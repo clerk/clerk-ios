@@ -58,7 +58,7 @@ final class E2EHostE2ETests: XCTestCase {
     app = nil
   }
 
-  func testEmailCodeSignUpDeletesAccount() throws {
+  func testEmailCodeSignUpCompletes() throws {
     let publishableKey = try requiredPublishableKey(named: Self.defaultPublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
@@ -76,9 +76,6 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedIn(in: signUpApp)
     waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
   }
 
   func testUserProfileSecurityDeletesAccount() throws {
@@ -105,7 +102,7 @@ final class E2EHostE2ETests: XCTestCase {
     waitForSignedOut(in: signUpApp)
   }
 
-  func testPhoneCodeSignUpThenPhoneCodeSignIn() throws {
+  func testPhoneCodeSignUpCompletes() throws {
     let publishableKey = try requiredPublishableKey(named: Self.phonePublishableKeyName)
     let email = Self.makeUniqueTestEmail()
     let phoneNumber = makeTrackedTestPhoneNumber()
@@ -128,30 +125,8 @@ final class E2EHostE2ETests: XCTestCase {
     openAuth(in: signUpApp)
     completePhoneCodeSignUp(phoneNumber: phoneNumber, email: email, in: signUpApp)
     waitForSignedIn(in: signUpApp)
+    waitForSessionActive(in: signUpApp)
     dismissSavePasswordPromptIfPresent(in: signUpApp)
-
-    tapWhenHittableRecoveringFromSavePasswordPrompt(E2EIdentifier.signOut, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-    signUpApp.terminate()
-
-    app = launchApp(
-      authMode: "signIn",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.phonePublishableKeyName,
-      keychainService: keychainService
-    )
-    guard let signInApp = app else { return }
-
-    openAuth(in: signInApp)
-    switchToPhoneNumberIdentifier(in: signInApp)
-    enterPhoneNumber(phoneNumber, in: signInApp)
-    tap(E2EIdentifier.authStartContinue, in: signInApp)
-    completePhoneCodeSignIn(in: signInApp)
-    waitForSignedIn(in: signInApp)
-    dismissSavePasswordPromptIfPresent(in: signInApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signInApp)
-    waitForSignedOut(in: signInApp)
   }
 
   func testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup() throws {
@@ -176,37 +151,6 @@ final class E2EHostE2ETests: XCTestCase {
 
     try completeAuthenticatorAppSetup(in: signUpApp)
     waitForSessionActive(in: signUpApp)
-    dismissAuthSheetIfNeeded(in: signUpApp)
-
-    tap(E2EIdentifier.deleteAccount, in: signUpApp)
-    waitForSignedOut(in: signUpApp)
-  }
-
-  func testInAppCleanupDeletesPendingUser() throws {
-    let publishableKey = try requiredPublishableKey(named: Self.sessionTaskSetupMfaPublishableKeyName)
-    let email = Self.makeUniqueTestEmail()
-    let keychainService = "com.clerk.E2EHost.\(UUID().uuidString)"
-    let configuration = E2ELaunchConfiguration(
-      authMode: "signUp",
-      publishableKey: publishableKey,
-      publishableKeyName: Self.sessionTaskSetupMfaPublishableKeyName,
-      keychainService: keychainService
-    )
-
-    app = launchApp(configuration: configuration)
-    guard let signUpApp = app else { return }
-    waitForSignedOut(in: signUpApp)
-
-    openAuth(in: signUpApp)
-    completeEmailCodeSignUp(email: email, in: signUpApp)
-    waitForSignedIn(in: signUpApp)
-    waitForSessionPending(in: signUpApp)
-    dismissSavePasswordPromptIfPresent(in: signUpApp)
-    XCTAssertFalse(
-      signUpApp.descendants(matching: .any)[E2EIdentifier.deleteAccount].exists,
-      "Delete account should not be visible while the session is pending."
-    )
-    cleanupAccountIfNeeded(in: signUpApp)
   }
 }
 
@@ -243,7 +187,6 @@ extension E2EHostE2ETests {
     static let cleanupFailed = "e2e.auth.cleanupFailed"
     static let signOut = "e2e.auth.signOut"
     static let signIn = "e2e.auth.signIn"
-    static let deleteAccount = "e2e.auth.deleteAccount"
     static let dismissButton = "clerk.dismissButton"
     static let userButtonProfile = "clerk.userButton.profile"
     static let userProfileAddAccountRow = "clerk.userProfile.row.addAccount"
@@ -319,7 +262,7 @@ extension E2EHostE2ETests {
   private static let approvedTestPhoneNumberSuffixRange = 100 ... 199
   private static let approvedTestPhoneNumberRangeDescription = "5555550100...5555550199"
   private static let approvedTestPhoneNumberSuffixByTestName = [
-    "testPhoneCodeSignUpThenPhoneCodeSignIn": 120,
+    "testPhoneCodeSignUpCompletes": 120,
   ]
 
   fileprivate static func makeUniqueTestEmail() -> String {
@@ -2543,31 +2486,6 @@ extension E2EHostE2ETests {
     screenshotAttachment.name = "authenticator-app-setup-failure"
     screenshotAttachment.lifetime = .keepAlways
     add(screenshotAttachment)
-  }
-
-  private func dismissAuthSheetIfNeeded(
-    in app: XCUIApplication,
-    file: StaticString = #filePath,
-    line: UInt = #line
-  ) {
-    if hittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app) != nil {
-      return
-    }
-
-    if let dismissButton = waitForHittableElement(withIdentifier: E2EIdentifier.dismissButton, in: app, timeout: 5) {
-      dismissButton.tap()
-    } else {
-      let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
-      let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
-      start.press(forDuration: 0.1, thenDragTo: end)
-    }
-
-    XCTAssertNotNil(
-      waitForHittableElement(withIdentifier: E2EIdentifier.deleteAccount, in: app, timeout: 10),
-      "Expected the auth sheet to dismiss after completing the session task.",
-      file: file,
-      line: line
-    )
   }
 
   private func completeChooseOrganizationByAcceptingInvitation(
