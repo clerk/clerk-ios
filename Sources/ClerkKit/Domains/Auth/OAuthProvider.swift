@@ -31,6 +31,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   case box
   case slack
   case linear
+  case x
   case huggingFace
   case vercel
   case custom(_ strategy: String)
@@ -67,6 +68,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
       .box,
       .slack,
       .linear,
+      .x,
       .huggingFace,
       .vercel,
     ]
@@ -131,7 +133,7 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   /// Indicates whether this provider icon can be rendered as a tinted template mask.
   public var supportsTintedIconMask: Bool {
     switch self {
-    case .apple, .github, .vercel:
+    case .apple, .github, .vercel, .x:
       true
     default:
       false
@@ -301,6 +303,12 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
         provider: "linear",
         strategy: "oauth_linear",
         name: "Linear"
+      )
+    case .x:
+      .init(
+        provider: "x",
+        strategy: "oauth_x",
+        name: "X / Twitter"
       )
     case .huggingFace:
       .init(

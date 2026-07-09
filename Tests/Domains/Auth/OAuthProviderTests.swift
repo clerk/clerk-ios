@@ -14,8 +14,16 @@ struct OAuthProviderTests {
     #expect(OAuthProvider.apple.supportsTintedIconMask == true)
     #expect(OAuthProvider.github.supportsTintedIconMask == true)
     #expect(OAuthProvider.vercel.supportsTintedIconMask == true)
+    #expect(OAuthProvider.x.supportsTintedIconMask == true)
     #expect(OAuthProvider.google.supportsTintedIconMask == false)
+    #expect(OAuthProvider.twitter.supportsTintedIconMask == false)
     #expect(OAuthProvider.custom("oauth_custom_acme").supportsTintedIconMask == false)
+  }
+
+  @Test
+  func xProviderUsesOAuthXStrategy() {
+    #expect(OAuthProvider.x.strategy == "oauth_x")
+    #expect(OAuthProvider(strategy: "oauth_x") == .x)
   }
 
   @Test
@@ -67,6 +75,15 @@ private func makeEnvironmentWithSocialLogos() -> Clerk.Environment {
     notSelectable: false,
     name: "Vercel",
     logoUrl: "https://img.clerk.com/static/vercel.png"
+  )
+  environment.userSettings.social["oauth_x"] = .init(
+    enabled: true,
+    required: false,
+    authenticatable: true,
+    strategy: "oauth_x",
+    notSelectable: false,
+    name: "X / Twitter",
+    logoUrl: "https://img.clerk.com/static/x.png"
   )
   environment.userSettings.social["oauth_custom_acme"] = .init(
     enabled: true,

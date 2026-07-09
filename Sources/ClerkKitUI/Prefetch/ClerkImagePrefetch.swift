@@ -14,7 +14,7 @@ extension Clerk {
   ///
   /// Call this method after Clerk is configured and the environment is loaded
   /// to ensure images are cached before they're displayed in the UI.
-  /// OAuth provider logos are prefetched once.
+  /// Both light and dark mode variants of OAuth provider logos are prefetched when available.
   ///
   /// Example:
   /// ```swift
@@ -34,9 +34,7 @@ extension Clerk {
 
     // OAuth provider logos (all enabled providers)
     for provider in environment.allSocialProviders {
-      if let logoUrl = provider.iconImageUrl {
-        urls.insert(logoUrl)
-      }
+      urls.formUnion(provider.iconImageUrlsForPrefetch)
     }
 
     guard !urls.isEmpty else { return }
@@ -53,7 +51,7 @@ extension View {
   ///
   /// This modifier automatically waits for the Clerk environment to load before prefetching.
   /// Images are cached by Nuke and will load instantly when displayed in Clerk UI components.
-  /// OAuth provider logos are prefetched once.
+  /// OAuth provider logo variants are prefetched once.
   ///
   /// Example:
   /// ```swift
