@@ -219,8 +219,6 @@ struct AuthStartView: View {
     ScrollView {
       VStack(spacing: 0) {
         AppLogoView()
-          .frame(maxHeight: 44)
-          .padding(.bottom, 24)
 
         headerSection
 
