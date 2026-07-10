@@ -28,7 +28,8 @@ struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
       }
     }
 
-    if let body = request.httpBody,
+    if request.shouldLogClerkBodies,
+       let body = request.httpBody,
        let bodyString = String(data: body, encoding: .utf8),
        !bodyString.isEmpty
     {
@@ -53,7 +54,8 @@ struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
     ClerkLogger.info(basicMessage)
 
     // Log response body at verbose level
-    if !data.isEmpty,
+    if request.shouldLogClerkBodies,
+       !data.isEmpty,
        let body = String(data: data, encoding: .utf8),
        !body.isEmpty
     {

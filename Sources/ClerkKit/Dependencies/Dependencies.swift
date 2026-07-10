@@ -25,6 +25,9 @@ protocol Dependencies: AnyObject {
   /// Service for client-related operations.
   var clientService: ClientServiceProtocol { get }
 
+  /// Service for hosted authentication operations.
+  var hostedAuthService: HostedAuthServiceProtocol { get }
+
   /// Service for user-related operations.
   var userService: UserServiceProtocol { get }
 

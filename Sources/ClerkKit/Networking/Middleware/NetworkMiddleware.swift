@@ -128,6 +128,8 @@ extension HTTPURLResponse {
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
+  private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
+  private static let clerkBodyLoggingKey = "com.clerk.body-logging"
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
@@ -137,6 +139,14 @@ extension URLRequest {
     ClientResponseGeneration(
       propertyListValue: URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self)
     )
+  }
+
+  var shouldAutomaticallySyncClerkClient: Bool {
+    URLProtocol.property(forKey: Self.clerkAutomaticClientSyncKey, in: self) as? Bool ?? true
+  }
+
+  var shouldLogClerkBodies: Bool {
+    URLProtocol.property(forKey: Self.clerkBodyLoggingKey, in: self) as? Bool ?? true
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -159,6 +169,26 @@ extension URLRequest {
       forKey: Self.clerkClientResponseGenerationKey,
       in: mutableRequest
     )
+    self = mutableRequest as URLRequest
+  }
+
+  mutating func disableAutomaticClerkClientSync() {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+
+    URLProtocol.setProperty(false, forKey: Self.clerkAutomaticClientSyncKey, in: mutableRequest)
+    self = mutableRequest as URLRequest
+  }
+
+  mutating func disableClerkBodyLogging() {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+
+    URLProtocol.setProperty(false, forKey: Self.clerkBodyLoggingKey, in: mutableRequest)
     self = mutableRequest as URLRequest
   }
 }
