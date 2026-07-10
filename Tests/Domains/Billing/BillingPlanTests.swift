@@ -45,17 +45,17 @@ struct BillingPlanTests {
         {
           "store": "apple",
           "product_id": "com.acme.pro.monthly",
-          "period": "month"
+          "purchase_option_id": null
         },
         {
           "store": "apple",
           "product_id": "com.acme.pro.annual",
-          "period": "annual"
+          "purchase_option_id": null
         },
         {
           "store": "google",
-          "product_id": "acme_pro_monthly",
-          "period": "month"
+          "product_id": "acme_pro",
+          "purchase_option_id": "monthly"
         }
       ]
     }
@@ -76,6 +76,8 @@ struct BillingPlanTests {
     #expect(plan.features?.count == 1)
     #expect(plan.features?.first?.slug == "unlimited-widgets")
     #expect(plan.storeProducts?.count == 3)
+    #expect(plan.storeProducts(for: .apple).map(\.productId) == ["com.acme.pro.monthly", "com.acme.pro.annual"])
+    #expect(plan.storeProducts(for: .google).first?.purchaseOptionId == "monthly")
   }
 
   @Test
@@ -92,31 +94,80 @@ struct BillingPlanTests {
 
     #expect(plan.id == "cplan_123")
     #expect(plan.storeProducts == nil)
-    #expect(plan.storeProductId(for: .apple, period: .month) == nil)
+    #expect(plan.storeProducts(for: .apple).isEmpty)
   }
 
   @Test
-  func storeProductLookupMatchesStoreAndPeriod() {
+  func resolveStoreProductReturnsSingleMappedProduct() throws {
+    let plan = BillingPlan(
+      id: "cplan_123",
+      name: "Pro",
+      slug: "pro",
+      storeProducts: [
+        BillingPlanStoreProduct(store: .apple, productId: "com.acme.pro.monthly"),
+        BillingPlanStoreProduct(store: .google, productId: "acme_pro", purchaseOptionId: "monthly"),
+      ]
+    )
+
+    let storeProduct = try plan.resolveStoreProduct(for: .apple)
+
+    #expect(storeProduct.productId == "com.acme.pro.monthly")
+  }
+
+  @Test
+  func resolveStoreProductSelectsByProductId() throws {
     let plan = BillingPlan.mock
 
-    #expect(plan.storeProductId(for: .apple, period: .month) == "com.example.pro.monthly")
-    #expect(plan.storeProductId(for: .apple, period: .annual) == "com.example.pro.annual")
-    #expect(plan.storeProductId(for: .google, period: .month) == nil)
+    let storeProduct = try plan.resolveStoreProduct(for: .apple, productId: "com.example.pro.annual")
+
+    #expect(storeProduct.productId == "com.example.pro.annual")
   }
 
   @Test
-  func decodesUnknownStoreAndPeriodValues() throws {
+  func resolveStoreProductThrowsWhenNoProductIsMapped() {
+    let plan = BillingPlan(id: "cplan_123", name: "Free", slug: "free")
+
+    #expect(throws: ClerkBillingError.storeProductNotConfigured(planId: "cplan_123", productId: nil)) {
+      try plan.resolveStoreProduct(for: .apple)
+    }
+  }
+
+  @Test
+  func resolveStoreProductThrowsWhenRequestedProductIsNotMapped() {
+    let plan = BillingPlan.mock
+
+    #expect(throws: ClerkBillingError.storeProductNotConfigured(planId: plan.id, productId: "com.example.other")) {
+      try plan.resolveStoreProduct(for: .apple, productId: "com.example.other")
+    }
+  }
+
+  @Test
+  func resolveStoreProductThrowsWhenMultipleProductsAreMapped() {
+    let plan = BillingPlan.mock
+
+    #expect(
+      throws: ClerkBillingError.ambiguousStoreProduct(
+        planId: plan.id,
+        productIds: ["com.example.pro.monthly", "com.example.pro.annual"]
+      )
+    ) {
+      try plan.resolveStoreProduct(for: .apple)
+    }
+  }
+
+  @Test
+  func decodesUnknownStoreValues() throws {
     let json = """
     {
       "store": "amazon",
       "product_id": "acme_pro",
-      "period": "week"
+      "purchase_option_id": null
     }
     """
 
     let storeProduct = try JSONDecoder.clerkDecoder.decode(BillingPlanStoreProduct.self, from: Data(json.utf8))
 
     #expect(storeProduct.store == .unknown("amazon"))
-    #expect(storeProduct.period == .unknown("week"))
+    #expect(storeProduct.purchaseOptionId == nil)
   }
 }

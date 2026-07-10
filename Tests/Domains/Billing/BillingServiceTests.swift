@@ -35,7 +35,7 @@ struct BillingServiceTests {
     #expect(requestHandled.value)
     #expect(plans.data.count == 1)
     #expect(plans.data.first?.id == BillingPlan.mock.id)
-    #expect(plans.data.first?.storeProductId(for: .apple, period: .month) == "com.example.pro.monthly")
+    #expect(plans.data.first?.storeProducts(for: .apple).map(\.productId) == ["com.example.pro.monthly", "com.example.pro.annual"])
   }
 
   @Test

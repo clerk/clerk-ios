@@ -16,7 +16,7 @@ import UIKit
 ///
 /// ```swift
 /// let plans = try await clerk.billing.plans()
-/// let item = try await clerk.billing.purchase(plan: plans[0], period: .month)
+/// let item = try await clerk.billing.purchase(plan: plans[0])
 /// ```
 ///
 /// Call ``startObservingTransactionUpdates()`` early in your app's lifecycle so that
@@ -38,7 +38,7 @@ public struct Billing {
   /// Retrieves the billing plans available to users of the instance.
   ///
   /// Each plan includes the store product identifiers mapped to it in the Clerk Dashboard,
-  /// so the returned plans can be passed directly to ``products(for:)`` or ``purchase(plan:period:)``.
+  /// so the returned plans can be passed directly to ``products(for:)`` or ``purchase(plan:productId:)``.
   ///
   /// - Returns: The available ``BillingPlan`` objects.
   public func plans() async throws -> [BillingPlan] {
@@ -77,14 +77,22 @@ public struct Billing {
   /// and the session token is refreshed so new feature claims are available immediately.
   /// The StoreKit transaction is finished only after Clerk accepts it.
   ///
+  /// A plan can map any number of App Store products (each billed on its own store term):
+  /// with exactly one mapped product no selector is needed; with several, name the one to
+  /// buy via `productId` (see ``BillingPlan/storeProducts(for:)``).
+  ///
   /// - Parameters:
-  ///   - plan: The plan to purchase. Must have an App Store product mapped for `period`.
-  ///   - period: The billing period to purchase. Defaults to `.month`.
+  ///   - plan: The plan to purchase. Must have an App Store product mapped in the Clerk Dashboard.
+  ///   - productId: The App Store product to purchase when the plan maps more than one.
   /// - Returns: The ``BillingSubscriptionItem`` created or activated by the purchase.
-  /// - Throws: ``ClerkBillingError`` for purchase-flow failures, or ``ClerkAPIError`` if Clerk rejects the transaction.
+  /// - Throws: ``ClerkBillingError`` for purchase-flow failures — for example
+  ///   ``ClerkBillingError/storeProductNotConfigured(planId:productId:)`` when the plan has no
+  ///   matching product mapped, or ``ClerkBillingError/ambiguousStoreProduct(planId:productIds:)``
+  ///   when several are mapped and no `productId` was given — or ``ClerkAPIError`` if Clerk
+  ///   rejects the transaction.
   @discardableResult
-  public func purchase(plan: BillingPlan, period: BillingPlanPeriod = .month) async throws -> BillingSubscriptionItem {
-    let (product, appAccountToken) = try await preparePurchase(plan: plan, period: period)
+  public func purchase(plan: BillingPlan, productId: String? = nil) async throws -> BillingSubscriptionItem {
+    let (product, appAccountToken) = try await preparePurchase(plan: plan, productId: productId)
     let result = try await product.purchase(options: [.appAccountToken(appAccountToken)])
     return try await handlePurchaseResult(result)
   }
@@ -96,15 +104,23 @@ public struct Billing {
   /// and the session token is refreshed so new feature claims are available immediately.
   /// The StoreKit transaction is finished only after Clerk accepts it.
   ///
+  /// A plan can map any number of App Store products (each billed on its own store term):
+  /// with exactly one mapped product no selector is needed; with several, name the one to
+  /// buy via `productId` (see ``BillingPlan/storeProducts(for:)``).
+  ///
   /// - Parameters:
-  ///   - plan: The plan to purchase. Must have an App Store product mapped for `period`.
-  ///   - period: The billing period to purchase. Defaults to `.month`.
+  ///   - plan: The plan to purchase. Must have an App Store product mapped in the Clerk Dashboard.
+  ///   - productId: The App Store product to purchase when the plan maps more than one.
   ///   - scene: The scene to display the purchase confirmation UI in.
   /// - Returns: The ``BillingSubscriptionItem`` created or activated by the purchase.
-  /// - Throws: ``ClerkBillingError`` for purchase-flow failures, or ``ClerkAPIError`` if Clerk rejects the transaction.
+  /// - Throws: ``ClerkBillingError`` for purchase-flow failures — for example
+  ///   ``ClerkBillingError/storeProductNotConfigured(planId:productId:)`` when the plan has no
+  ///   matching product mapped, or ``ClerkBillingError/ambiguousStoreProduct(planId:productIds:)``
+  ///   when several are mapped and no `productId` was given — or ``ClerkAPIError`` if Clerk
+  ///   rejects the transaction.
   @discardableResult
-  public func purchase(plan: BillingPlan, period: BillingPlanPeriod = .month, confirmIn scene: UIScene) async throws -> BillingSubscriptionItem {
-    let (product, appAccountToken) = try await preparePurchase(plan: plan, period: period)
+  public func purchase(plan: BillingPlan, productId: String? = nil, confirmIn scene: UIScene) async throws -> BillingSubscriptionItem {
+    let (product, appAccountToken) = try await preparePurchase(plan: plan, productId: productId)
     let result = try await product.purchase(confirmIn: scene, options: [.appAccountToken(appAccountToken)])
     return try await handlePurchaseResult(result)
   }
@@ -196,17 +212,15 @@ public struct Billing {
   // MARK: - Private Helpers
 
   /// Resolves the StoreKit product and app account token for a purchase.
-  private func preparePurchase(plan: BillingPlan, period: BillingPlanPeriod) async throws -> (Product, UUID) {
+  private func preparePurchase(plan: BillingPlan, productId: String?) async throws -> (Product, UUID) {
     guard let user = Clerk.shared.user else {
       throw ClerkBillingError.notSignedIn
     }
 
-    guard let productId = plan.storeProductId(for: .apple, period: period) else {
-      throw ClerkBillingError.storeProductNotConfigured(planId: plan.id, period: period)
-    }
+    let storeProduct = try plan.resolveStoreProduct(for: .apple, productId: productId)
 
-    guard let product = try await Product.products(for: [productId]).first else {
-      throw ClerkBillingError.productNotFound(productId: productId)
+    guard let product = try await Product.products(for: [storeProduct.productId]).first else {
+      throw ClerkBillingError.productNotFound(productId: storeProduct.productId)
     }
 
     return (product, Self.appAccountToken(forUserId: user.id))

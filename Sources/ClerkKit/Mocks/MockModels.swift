@@ -1101,13 +1101,11 @@ extension BillingPlan {
       storeProducts: [
         BillingPlanStoreProduct(
           store: .apple,
-          productId: "com.example.pro.monthly",
-          period: .month
+          productId: "com.example.pro.monthly"
         ),
         BillingPlanStoreProduct(
           store: .apple,
-          productId: "com.example.pro.annual",
-          period: .annual
+          productId: "com.example.pro.annual"
         ),
       ]
     )

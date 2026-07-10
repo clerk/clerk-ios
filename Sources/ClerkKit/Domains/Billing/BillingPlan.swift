@@ -59,11 +59,12 @@ public struct BillingPlan: Codable, Equatable, Sendable, Identifiable {
   /// The features included in the plan.
   public var features: [BillingFeature]?
 
-  /// The store products mapped to this plan, keyed by store and billing period.
+  /// The store products mapped to this plan.
   ///
   /// Populated from the plan → store product mapping configured in the Clerk Dashboard.
-  /// Use ``storeProductId(for:period:)`` to resolve the product identifier to request
-  /// from StoreKit or Play Billing.
+  /// A plan can map any number of store products per store; each product's own store
+  /// configuration governs how it is billed. Use ``storeProducts(for:)`` to get the
+  /// products mapped for a specific store.
   public var storeProducts: [BillingPlanStoreProduct]?
 
   public init(
@@ -106,14 +107,36 @@ public struct BillingPlan: Codable, Equatable, Sendable, Identifiable {
 }
 
 extension BillingPlan {
-  /// Returns the store product mapped to this plan for the given store and billing period, if one is configured.
-  public func storeProduct(for store: BillingStore, period: BillingPlanPeriod) -> BillingPlanStoreProduct? {
-    storeProducts?.first { $0.store == store && $0.period == period }
+  /// Returns the store products mapped to this plan for the given store.
+  public func storeProducts(for store: BillingStore) -> [BillingPlanStoreProduct] {
+    storeProducts?.filter { $0.store == store } ?? []
   }
 
-  /// Returns the store product identifier mapped to this plan for the given store and billing period, if one is configured.
-  public func storeProductId(for store: BillingStore, period: BillingPlanPeriod) -> String? {
-    storeProduct(for: store, period: period)?.productId
+  /// Resolves the store product to purchase for the given store.
+  ///
+  /// With exactly one product mapped, it is the product; with several, the caller must
+  /// identify the product to purchase via `productId`.
+  ///
+  /// - Parameters:
+  ///   - store: The store to resolve a product for.
+  ///   - productId: The store product identifier to select when the plan maps more than one product.
+  /// - Returns: The single ``BillingPlanStoreProduct`` to purchase.
+  /// - Throws: ``ClerkBillingError/storeProductNotConfigured(planId:productId:)`` when no mapped
+  ///   product matches, or ``ClerkBillingError/ambiguousStoreProduct(planId:productIds:)`` when
+  ///   several match and `productId` does not narrow them to one.
+  func resolveStoreProduct(for store: BillingStore, productId: String? = nil) throws -> BillingPlanStoreProduct {
+    var candidates = storeProducts(for: store)
+    if let productId {
+      candidates = candidates.filter { $0.productId == productId }
+    }
+
+    guard let candidate = candidates.first else {
+      throw ClerkBillingError.storeProductNotConfigured(planId: id, productId: productId)
+    }
+    guard candidates.count == 1 else {
+      throw ClerkBillingError.ambiguousStoreProduct(planId: id, productIds: candidates.map(\.productId))
+    }
+    return candidate
   }
 }
 
@@ -184,17 +207,19 @@ public struct BillingPlanStoreProduct: Codable, Equatable, Sendable {
   /// The store product identifier (for example `com.acme.pro.monthly`).
   public var productId: String
 
-  /// The billing period the store product represents.
-  public var period: BillingPlanPeriod
+  /// The store purchase option identifier, when the store models one.
+  ///
+  /// Google Play base plan / purchase option identifier; `nil` for App Store products.
+  public var purchaseOptionId: String?
 
   public init(
     store: BillingStore,
     productId: String,
-    period: BillingPlanPeriod
+    purchaseOptionId: String? = nil
   ) {
     self.store = store
     self.productId = productId
-    self.period = period
+    self.purchaseOptionId = purchaseOptionId
   }
 }
 

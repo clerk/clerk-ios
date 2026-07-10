@@ -10,10 +10,18 @@ public enum ClerkBillingError: Error, LocalizedError, Equatable, Sendable {
   /// A purchase was attempted without a signed-in user.
   case notSignedIn
 
-  /// No store product is mapped to the plan for the requested period.
+  /// No store product matching the request is mapped to the plan.
   ///
-  /// Map a store product to the plan in the Clerk Dashboard.
-  case storeProductNotConfigured(planId: String, period: BillingPlanPeriod)
+  /// When `productId` is `nil`, the plan has no App Store product mapped at all; when it is
+  /// non-`nil`, the requested product is not among the plan's mappings. Map the store product
+  /// to the plan in the Clerk Dashboard.
+  case storeProductNotConfigured(planId: String, productId: String?)
+
+  /// The plan maps multiple store products and no `productId` narrowed them to one.
+  ///
+  /// The associated `productIds` lists the mapped products. Pass one of them to
+  /// ``Billing/purchase(plan:productId:)`` to choose which product to buy.
+  case ambiguousStoreProduct(planId: String, productIds: [String])
 
   /// The mapped store product could not be loaded from the App Store.
   case productNotFound(productId: String)
@@ -40,8 +48,14 @@ public enum ClerkBillingError: Error, LocalizedError, Equatable, Sendable {
     switch self {
     case .notSignedIn:
       "A user must be signed in to complete a purchase."
-    case .storeProductNotConfigured(let planId, let period):
-      "No App Store product is mapped to plan \(planId) for the \(period.rawValue) period."
+    case .storeProductNotConfigured(let planId, let productId):
+      if let productId {
+        "Plan \(planId) has no App Store mapping for product \(productId)."
+      } else {
+        "Plan \(planId) has no App Store product mapped."
+      }
+    case .ambiguousStoreProduct(let planId, let productIds):
+      "Plan \(planId) maps multiple App Store products (\(productIds.joined(separator: ", "))). Pass a productId to purchase(plan:productId:) to choose one."
     case .productNotFound(let productId):
       "The App Store product \(productId) could not be loaded."
     case .purchaseCancelled:
