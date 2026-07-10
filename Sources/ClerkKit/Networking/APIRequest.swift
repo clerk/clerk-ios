@@ -68,6 +68,8 @@ struct Request<Response: Decodable & Sendable> {
 
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
+  private let automaticallySyncClient: Bool
+  private let logBodies: Bool
   private let decodeClosure: @Sendable (Data, JSONDecoder) throws -> Response
 
   init(
@@ -77,6 +79,8 @@ struct Request<Response: Decodable & Sendable> {
     canEstablishClientWhenTokenless: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
+    automaticallySyncClient: Bool = true,
+    logBodies: Bool = true,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
       if Response.self == EmptyResponse.self {
         guard let response = EmptyResponse() as? Response else {
@@ -95,6 +99,8 @@ struct Request<Response: Decodable & Sendable> {
     self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
+    self.automaticallySyncClient = automaticallySyncClient
+    self.logBodies = logBodies
     decodeClosure = decode
   }
 
@@ -144,6 +150,13 @@ struct Request<Response: Decodable & Sendable> {
       if !hasContentTypeHeader {
         urlRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
       }
+    }
+
+    if !automaticallySyncClient {
+      urlRequest.disableAutomaticClerkClientSync()
+    }
+    if !logBodies {
+      urlRequest.disableClerkBodyLogging()
     }
 
     return urlRequest
