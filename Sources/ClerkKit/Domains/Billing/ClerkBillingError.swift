@@ -38,10 +38,13 @@ public enum ClerkBillingError: Error, LocalizedError, Equatable, Sendable {
   /// StoreKit could not verify the transaction's signature.
   case verificationFailed
 
-  /// The user already has an active subscription to the plan through another payment processor.
+  /// The user already has an active subscription managed by another payment processor.
   ///
-  /// The associated value identifies the processor that manages the existing subscription
-  /// (for example `clerk`, `apple`, or `google`) when the API provides it.
+  /// Purchasing another App Store product while the active subscription is also managed by
+  /// the App Store is a plan change, not a conflict, so this error only occurs across
+  /// processors — for example when the active subscription is managed by `stripe` or
+  /// `google`. The associated value identifies the processor that manages the existing
+  /// subscription when the API provides it.
   case alreadySubscribed(via: String?)
 
   public var errorDescription: String? {
@@ -66,9 +69,9 @@ public enum ClerkBillingError: Error, LocalizedError, Equatable, Sendable {
       "The App Store transaction could not be verified."
     case .alreadySubscribed(let via):
       if let via {
-        "The user is already subscribed to this plan via \(via)."
+        "The user already has an active subscription managed by \(via)."
       } else {
-        "The user is already subscribed to this plan through another payment processor."
+        "The user already has an active subscription managed by another payment processor."
       }
     }
   }

@@ -16,6 +16,9 @@ package final class MockBillingService: BillingServiceProtocol {
   /// Custom handler for the `getSubscriptionItems()` method.
   package nonisolated(unsafe) var getSubscriptionItemsHandler: (() async throws -> ClerkPaginatedResponse<BillingSubscriptionItem>)?
 
+  /// Custom handler for the `preflightStorePurchase(store:productId:purchaseOptionId:)` method.
+  package nonisolated(unsafe) var preflightStorePurchaseHandler: ((BillingStore, String, String?) async throws -> BillingStorePurchasePreflight)?
+
   /// Custom handler for the `createStorePurchase(store:payload:)` method.
   package nonisolated(unsafe) var createStorePurchaseHandler: ((BillingStore, String) async throws -> BillingSubscriptionItem)?
 
@@ -35,6 +38,14 @@ package final class MockBillingService: BillingServiceProtocol {
       return try await handler()
     }
     return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
+  }
+
+  @MainActor
+  package func preflightStorePurchase(store: BillingStore, productId: String, purchaseOptionId: String?) async throws -> BillingStorePurchasePreflight {
+    if let handler = preflightStorePurchaseHandler {
+      return try await handler(store, productId, purchaseOptionId)
+    }
+    return BillingStorePurchasePreflight(allowed: true)
   }
 
   @MainActor

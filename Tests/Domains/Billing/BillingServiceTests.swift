@@ -70,6 +70,77 @@ struct BillingServiceTests {
   }
 
   @Test
+  func preflightStorePurchaseSendsStoreAndProductId() async throws {
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases/preflight")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<BillingStorePurchasePreflight>(response: BillingStorePurchasePreflight(allowed: true), client: nil)
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      let body = request.urlEncodedFormBody
+      #expect(body?["store"] == "apple")
+      #expect(body?["product_id"] == "com.example.pro.monthly")
+      #expect(body?["purchase_option_id"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let preflight = try await Clerk.shared.dependencies.billingService.preflightStorePurchase(
+      store: .apple,
+      productId: "com.example.pro.monthly",
+      purchaseOptionId: nil
+    )
+
+    #expect(requestHandled.value)
+    #expect(preflight.allowed)
+  }
+
+  @Test
+  func preflightStorePurchaseMapsAlreadySubscribedError() async throws {
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases/preflight")!
+
+    let errorJSON = """
+    {
+      "errors": [
+        {
+          "code": "already_subscribed",
+          "message": "Already subscribed",
+          "long_message": "The user already has an active subscription managed by another payment processor.",
+          "meta": {
+            "already_subscribed_via": "stripe"
+          }
+        }
+      ],
+      "clerk_trace_id": "trace_1"
+    }
+    """
+
+    let mock = Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 422,
+      data: [
+        .post: Data(errorJSON.utf8),
+      ]
+    )
+    mock.register()
+
+    await #expect(throws: ClerkBillingError.alreadySubscribed(via: "stripe")) {
+      try await Clerk.shared.dependencies.billingService.preflightStorePurchase(
+        store: .apple,
+        productId: "com.example.pro.monthly",
+        purchaseOptionId: nil
+      )
+    }
+  }
+
+  @Test
   func createStorePurchaseSendsStoreAndPayload() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/store_purchases")!
