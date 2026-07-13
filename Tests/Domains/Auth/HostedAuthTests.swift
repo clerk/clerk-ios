@@ -117,6 +117,35 @@ struct HostedAuthProtocolTests {
       try HostedAuthCallback(url: duplicateState, redirect: redirect, state: "state_123")
     }
   }
+
+  @Test
+  func callbackStateValidationDistinguishesMissingDuplicatedAndMismatchedState() throws {
+    let redirect = try HostedAuthRedirect("myapp:///hosted-auth-callback")
+    let cases: [(query: String, expectedMessage: String)] = [
+      (
+        "rotating_token_nonce=nonce_123&created_session_id=sess_123",
+        "Hosted auth callback did not include a state parameter."
+      ),
+      (
+        "state=state_123&state=state_123&rotating_token_nonce=nonce_123&created_session_id=sess_123",
+        "Hosted auth callback included more than one state parameter."
+      ),
+      (
+        "state=other_state&rotating_token_nonce=nonce_123&created_session_id=sess_123",
+        "Hosted auth callback state did not match the initiated state."
+      ),
+    ]
+
+    for (query, expectedMessage) in cases {
+      let url = try #require(URL(string: "myapp:///hosted-auth-callback?\(query)"))
+      do {
+        _ = try HostedAuthCallback(url: url, redirect: redirect, state: "state_123")
+        Issue.record("Expected state validation to throw for query: \(query)")
+      } catch let error as ClerkClientError {
+        #expect(error.message == expectedMessage)
+      }
+    }
+  }
 }
 
 @MainActor

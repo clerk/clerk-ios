@@ -125,7 +125,14 @@ struct HostedAuthCallback: Equatable {
     }
 
     let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-    guard Self.singleValue(named: "state", in: queryItems) == state else {
+    let stateItems = queryItems.filter { $0.name == "state" }
+    guard !stateItems.isEmpty else {
+      throw ClerkClientError(message: "Hosted auth callback did not include a state parameter.")
+    }
+    guard stateItems.count == 1 else {
+      throw ClerkClientError(message: "Hosted auth callback included more than one state parameter.")
+    }
+    guard stateItems[0].value == state else {
       throw ClerkClientError(message: "Hosted auth callback state did not match the initiated state.")
     }
     guard let rotatingTokenNonce = Self.nonEmptySingleValue(named: "rotating_token_nonce", in: queryItems) else {
