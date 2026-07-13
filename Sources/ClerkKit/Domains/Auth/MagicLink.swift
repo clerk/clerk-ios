@@ -3,9 +3,7 @@
 //  Clerk
 //
 
-import CryptoKit
 import Foundation
-import Security
 
 struct MagicLinkCompleteParams: Encodable {
   let flowId: String
@@ -125,28 +123,6 @@ struct MagicLinkCallback: Equatable {
   }
 
   static let requiredParams = Set(Param.allCases.map(\.rawValue))
-}
-
-enum MagicLinkPKCE {
-  static let codeChallengeMethod = "S256"
-
-  struct Pair: Equatable {
-    let verifier: String
-    let challenge: String
-  }
-
-  static func generatePair() throws -> Pair {
-    var randomBytes = [UInt8](repeating: 0, count: 32)
-    let status = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
-    guard status == errSecSuccess else {
-      throw ClerkClientError(message: "Unable to generate a secure magic link verifier.")
-    }
-
-    let verifier = Data(randomBytes).base64EncodedString().base64URLFromBase64String()
-    let digest = SHA256.hash(data: Data(verifier.utf8))
-    let challenge = Data(digest).base64EncodedString().base64URLFromBase64String()
-    return Pair(verifier: verifier, challenge: challenge)
-  }
 }
 
 final class MagicLinkStore {

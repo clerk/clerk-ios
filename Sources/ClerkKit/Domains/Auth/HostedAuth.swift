@@ -3,9 +3,7 @@
 //  Clerk
 //
 
-import CryptoKit
 import Foundation
-import Security
 
 /// The Account Portal screen shown when hosted authentication starts.
 public enum HostedAuthMode: String, Codable, Sendable {
@@ -57,38 +55,10 @@ struct HostedAuthResource: Codable {
   }
 }
 
-enum HostedAuthPKCE {
-  struct Pair: Equatable {
-    let verifier: String
-    let challenge: String
-  }
-
-  static func generatePair() throws -> Pair {
-    let randomBytes = try HostedAuthRandom.bytes(count: 32)
-    let verifier = Data(randomBytes).base64EncodedString().base64URLFromBase64String()
-    return Pair(verifier: verifier, challenge: challenge(for: verifier))
-  }
-
-  static func challenge(for verifier: String) -> String {
-    let digest = SHA256.hash(data: Data(verifier.utf8))
-    return Data(digest).base64EncodedString().base64URLFromBase64String()
-  }
-}
-
 enum HostedAuthState {
   static func generate() throws -> String {
-    let randomBytes = try HostedAuthRandom.bytes(count: 16)
+    let randomBytes = try SecureRandom.bytes(count: 16)
     return Data(randomBytes).base64EncodedString().base64URLFromBase64String()
-  }
-}
-
-private enum HostedAuthRandom {
-  static func bytes(count: Int) throws -> [UInt8] {
-    var bytes = [UInt8](repeating: 0, count: count)
-    guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-      throw ClerkClientError(message: "Unable to generate secure random data for hosted auth.")
-    }
-    return bytes
   }
 }
 

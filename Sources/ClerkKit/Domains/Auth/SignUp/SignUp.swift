@@ -173,7 +173,7 @@ extension SignUp {
       throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-up verification.")
     }
 
-    let pkcePair = try MagicLinkPKCE.generatePair()
+    let pkcePair = try PKCE.generatePair()
     try magicLinkStore.save(kind: .signUp, flowId: id, codeVerifier: pkcePair.verifier)
 
     return try await signUpService.prepareVerification(
@@ -183,7 +183,7 @@ extension SignUp {
         emailAddressId: nil,
         redirectUri: resolvedRedirectUri,
         codeChallenge: pkcePair.challenge,
-        codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
+        codeChallengeMethod: PKCE.codeChallengeMethod
       )
     )
   }
