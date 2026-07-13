@@ -73,6 +73,25 @@ struct HostedAuthProtocolTests {
   }
 
   @Test
+  func redirectInitRejectsNonCustomSchemeAndMalformedValues() {
+    for rawValue in [
+      "http://example.com/callback",
+      "https://example.com/callback",
+      "HTTPS://example.com/callback",
+      "",
+      "callback-without-scheme",
+      "/callback",
+      " myapp://callback",
+      "myapp://callback ",
+      "myapp://callback\n",
+    ] {
+      #expect(throws: ClerkClientError.self, "Expected redirect to be rejected: \(rawValue)") {
+        try HostedAuthRedirect(rawValue)
+      }
+    }
+  }
+
+  @Test
   func tripleSlashRedirectRejectsInjectedOrMissingAuthority() throws {
     let redirect = try HostedAuthRedirect("myapp:///hosted-auth-callback")
     let valid = try #require(URL(string: "myapp:///hosted-auth-callback?state=state_123"))
@@ -417,6 +436,202 @@ struct HostedAuthFlowTests {
       #expect(Clerk.shared.client == .mockSignedOut)
     }
   }
+
+  @Test
+  func failedFlowReleasesInFlightGateForSubsequentAttempts() async throws {
+    let createCalls = LockIsolated(0)
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock]
+    redeemedClient.lastActiveSessionId = Session.mock.id
+
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createCalls.withValue { $0 += 1 }
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+      }
+    )
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      initialClient: .mockSignedOut
+    )
+
+    let auth = Clerk.shared.auth
+    await #expect(throws: CancellationError.self) {
+      try await auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in throw CancellationError() }
+      )
+    }
+
+    let session = try await auth.performHostedAuth(
+      mode: nil,
+      redirectUrl: "myapp://callback",
+      prefersEphemeralWebBrowserSession: false,
+      webAuthentication: { _, _, _ in
+        try makeHostedAuthCallbackUrl(
+          redirectUrl: "myapp://callback",
+          state: #require(createParams.value?.state),
+          rotatingTokenNonce: "nonce_123",
+          createdSessionId: Session.mock.id
+        )
+      }
+    )
+
+    #expect(createCalls.value == 2)
+    #expect(session.id == Session.mock.id)
+  }
+
+  @Test
+  func reconfigurationWhileBrowserOpenFailsBeforeRedeem() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let redeemCalled = LockIsolated(false)
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        redeemCalled.setValue(true)
+        return ClientServiceResponse(client: .mock, requestSequence: nil, serverDate: nil)
+      }
+    )
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      initialClient: .mockSignedOut
+    )
+
+    let runtimeState = Clerk.shared.runtimeState
+    defer { runtimeState.endReconfiguration() }
+
+    await #expect(throws: CancellationError.self) {
+      try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          runtimeState.beginReconfiguration()
+          return try makeHostedAuthCallbackUrl(
+            redirectUrl: "myapp://callback",
+            state: #require(createParams.value?.state),
+            rotatingTokenNonce: "nonce_123",
+            createdSessionId: Session.mock.id
+          )
+        }
+      )
+    }
+    #expect(!redeemCalled.value)
+  }
+
+  @Test
+  func generationChangeWhileBrowserOpenDiscardsRedeemedClient() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let setActiveCalled = LockIsolated(false)
+    let initialClient = Client.mockSignedOut
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock]
+    redeemedClient.lastActiveSessionId = Session.mock.id
+
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+      }
+    )
+    let sessionService = MockSessionService(setActive: { _, _ in
+      setActiveCalled.setValue(true)
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: sessionService,
+      initialClient: initialClient
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          Clerk.shared.fenceClientResponsesAfterDeviceTokenChange()
+          return try makeHostedAuthCallbackUrl(
+            redirectUrl: "myapp://callback",
+            state: #require(createParams.value?.state),
+            rotatingTokenNonce: "nonce_123",
+            createdSessionId: Session.mock.id
+          )
+        }
+      )
+      Issue.record("Expected stale client response generation to throw")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Hosted auth completion could not update the current client.")
+      #expect(!setActiveCalled.value)
+      #expect(Clerk.shared.client == initialClient)
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
+  }
+
+  @Test
+  func nilRedirectUrlFallsBackToConfiguredRedirectUrl() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let browserInputs = LockIsolated<HostedAuthBrowserInputs?>(nil)
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock]
+    redeemedClient.lastActiveSessionId = Session.mock.id
+
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+      }
+    )
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      initialClient: .mockSignedOut,
+      options: Clerk.Options(
+        redirectConfig: .init(redirectUrl: "fallbackapp://hosted-callback", callbackUrlScheme: "fallbackapp")
+      )
+    )
+
+    let session = try await Clerk.shared.auth.performHostedAuth(
+      mode: nil,
+      redirectUrl: nil,
+      prefersEphemeralWebBrowserSession: false,
+      webAuthentication: { url, callbackUrlScheme, prefersEphemeral in
+        browserInputs.setValue(HostedAuthBrowserInputs(
+          url: url,
+          callbackUrlScheme: callbackUrlScheme,
+          prefersEphemeralWebBrowserSession: prefersEphemeral
+        ))
+        return try makeHostedAuthCallbackUrl(
+          redirectUrl: "fallbackapp://hosted-callback",
+          state: #require(createParams.value?.state),
+          rotatingTokenNonce: "nonce_123",
+          createdSessionId: Session.mock.id
+        )
+      }
+    )
+
+    #expect(createParams.value?.redirectUrl == "fallbackapp://hosted-callback")
+    #expect(browserInputs.value?.callbackUrlScheme == "fallbackapp")
+    #expect(session.id == Session.mock.id)
+  }
 }
 
 private struct HostedAuthBrowserInputs: Equatable {
@@ -434,7 +649,8 @@ private struct HostedAuthSetActiveCall: Equatable {
 private func configureHostedAuthForTesting(
   hostedAuthService: some HostedAuthServiceProtocol,
   sessionService: some SessionServiceProtocol,
-  initialClient: Client
+  initialClient: Client,
+  options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
@@ -442,6 +658,9 @@ private func configureHostedAuthForTesting(
     hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: options)
   Clerk.shared.client = initialClient
 }
 
