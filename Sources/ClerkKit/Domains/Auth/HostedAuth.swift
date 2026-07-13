@@ -24,6 +24,8 @@ struct HostedAuthCreateParams: Encodable {
 struct HostedAuthRedeemParams: Encodable {
   let rotatingTokenNonce: String
   let codeVerifier: String
+  /// FAPI method-override tunnel: routes the redeem as a client GET while keeping
+  /// the nonce and PKCE verifier in the POST body, per the hosted-auth contract.
   let method = "GET"
 
   private enum CodingKeys: String, CodingKey {

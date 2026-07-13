@@ -32,6 +32,13 @@ private enum HostedAuthInFlightGate {
 extension Auth {
   /// Opens Clerk's hosted authentication flow and activates the created session.
   ///
+  /// Completion is observable through the returned ``Session`` and ``AuthEvent/sessionChanged(oldValue:newValue:)``
+  /// events; hosted authentication does not emit ``AuthEvent/signInCompleted(signIn:)`` or
+  /// ``AuthEvent/signUpCompleted(signUp:)`` events.
+  ///
+  /// Only custom-scheme callback URLs are supported; `http`, `https`, and universal-link
+  /// callback URLs are rejected.
+  ///
   /// - Parameters:
   ///   - mode: The Account Portal screen to open. When omitted, Account Portal opens sign-in.
   ///   - redirectUrl: A custom-scheme callback URL. Defaults to Clerk's configured redirect URL,
