@@ -193,6 +193,9 @@ public final class Clerk {
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
+  /// Coordinates shared persisted auth state between sibling apps.
+  var sharedSessionSyncCoordinator: SharedSessionSyncCoordinator?
+
   /// Dispatches Clerk state changes to optional internal observers.
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
@@ -281,6 +284,7 @@ extension Clerk {
   func performConfiguration(dependencies: any Dependencies) {
     taskCoordinator?.cancelAll()
     internalStateChanges.removeAllObservers()
+    sharedSessionSyncCoordinator = nil
 
     // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
@@ -302,6 +306,22 @@ extension Clerk {
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
+
+    if options.sharedSessionSync != nil {
+      if let accessGroup = options.keychainConfig.accessGroup, !accessGroup.isEmpty {
+        let coordinator = SharedSessionSyncCoordinator(
+          keychainConfig: options.keychainConfig,
+          clerk: self,
+          keychain: dependencies.keychain
+        )
+        sharedSessionSyncCoordinator = coordinator
+        internalStateChanges.addObserver(coordinator)
+      } else {
+        ClerkLogger.error(
+          "Shared session sync requires a Keychain access group. Configure Clerk.Options.keychainConfig with the same service and accessGroup in every participating app."
+        )
+      }
+    }
 
     // Set up watch connectivity coordinator only after cache hydration.
     // Restored cached state should not be versioned as a new local auth change.
@@ -877,6 +897,7 @@ extension Clerk {
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
     internalStateChanges.removeAllObservers()
+    sharedSessionSyncCoordinator = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

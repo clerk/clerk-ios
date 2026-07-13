@@ -1,9 +1,34 @@
 import Foundation
+import Security
 
 /// Errors that can occur when interacting with the keychain.
-enum KeychainError: Error {
+enum KeychainError: Error, LocalizedError {
   case unexpectedStatus(OSStatus)
   case invalidStringEncoding
+
+  var errorDescription: String? {
+    switch self {
+    case .unexpectedStatus(let status):
+      if let message = SecCopyErrorMessageString(status, nil) as String? {
+        "Keychain operation failed with OSStatus \(status): \(message)"
+      } else {
+        "Keychain operation failed with OSStatus \(status)."
+      }
+    case .invalidStringEncoding:
+      "Keychain item data could not be decoded as a UTF-8 string."
+    }
+  }
+
+  var failureReason: String? {
+    switch self {
+    case .unexpectedStatus(errSecMissingEntitlement):
+      "The app is not signed with the configured Keychain access group. Enable Keychain Sharing and make sure Clerk.Options.keychainConfig.accessGroup matches a signed keychain-access-groups entitlement."
+    case .unexpectedStatus:
+      nil
+    case .invalidStringEncoding:
+      "The stored Keychain item is not valid UTF-8 data."
+    }
+  }
 }
 
 /// Lightweight interface describing the operations the Clerk SDK needs from a keychain.

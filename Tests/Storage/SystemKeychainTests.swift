@@ -160,6 +160,24 @@ struct SystemKeychainTests {
     #expect(secItemClient.copyMatchingQueries.count == 1)
     #expect(hasDataProtectionKeychainFlag(secItemClient.copyMatchingQueries[0]))
   }
+
+  @Test
+  func missingEntitlementErrorIncludesAccessGroupGuidance() {
+    let error = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+
+    #expect(error.errorDescription?.contains("OSStatus \(errSecMissingEntitlement)") == true)
+    #expect(error.failureReason?.contains("Keychain Sharing") == true)
+    #expect(error.failureReason?.contains("accessGroup") == true)
+  }
+
+  @Test
+  func unexpectedStatusErrorIncludesSystemMessageWhenAvailable() throws {
+    let error = KeychainError.unexpectedStatus(errSecItemNotFound)
+    let systemMessage = try #require(SecCopyErrorMessageString(errSecItemNotFound, nil) as String?)
+
+    #expect(error.errorDescription?.contains("OSStatus \(errSecItemNotFound)") == true)
+    #expect(error.errorDescription?.contains(systemMessage) == true)
+  }
 }
 
 private final class SecItemClientSpy: @unchecked Sendable {
