@@ -63,7 +63,11 @@ extension Auth {
     try HostedAuthInFlightGate.acquire()
     defer { HostedAuthInFlightGate.release() }
 
-    let redirect = try HostedAuthRedirect(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl)
+    let clerk = Clerk.shared
+    let runtime = clerk.runtimeScope
+    let clientResponseGeneration = clerk.clientResponseGeneration
+
+    let redirect = try HostedAuthRedirect(redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
     let state = try HostedAuthState.generate()
     let pkce = try PKCE.generatePair()
 
@@ -82,9 +86,10 @@ extension Auth {
     )
     let callback = try HostedAuthCallback(url: callbackUrl, redirect: redirect, state: state)
 
-    let clerk = Clerk.shared
-    let runtime = clerk.runtimeScope
-    let clientResponseGeneration = clerk.clientResponseGeneration
+    // A reconfiguration while the browser was open invalidates this flow; fail
+    // before the redeem request consumes the single-use rotating token nonce.
+    try runtime.validateStableRuntime()
+
     let response = try await hostedAuthService.redeem(params: HostedAuthRedeemParams(
       rotatingTokenNonce: callback.rotatingTokenNonce,
       codeVerifier: pkce.verifier
