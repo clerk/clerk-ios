@@ -65,7 +65,7 @@ extension Auth {
 
     let redirect = try HostedAuthRedirect(redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl)
     let state = try HostedAuthState.generate()
-    let pkce = try HostedAuthPKCE.generatePair()
+    let pkce = try PKCE.generatePair()
 
     let hostedAuth = try await hostedAuthService.create(params: HostedAuthCreateParams(
       redirectUrl: redirect.rawValue,
