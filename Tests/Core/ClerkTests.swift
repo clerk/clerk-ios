@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Observation
 import Testing
 
 @MainActor
@@ -375,6 +376,215 @@ struct ClerkTests {
     #expect(Clerk.shared.isLoaded == false)
   }
 
+  // MARK: - isAuthFlowComplete Tests
+
+  @Test
+  func isAuthFlowCompleteReturnsFalseWhenSignedOut() {
+    let clerk = Clerk.mockSignedOut
+
+    #expect(clerk.isAuthFlowComplete == false)
+  }
+
+  @Test
+  func isAuthFlowCompleteReturnsFalseWhenSessionIsPending() {
+    var client = Client.mock
+    client.sessions[0].status = .pending
+    client.sessions[0].tasks = [.setupMfa]
+    let clerk = Clerk.mock
+    clerk.client = client
+
+    #expect(clerk.user != nil)
+    #expect(clerk.isAuthFlowComplete == false)
+  }
+
+  @Test
+  func isAuthFlowCompleteReturnsFalseWhenActiveSessionHasNoUser() {
+    var client = Client.mock
+    client.sessions[0].user = nil
+    let clerk = Clerk.mock
+    clerk.client = client
+
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete == false)
+  }
+
+  @Test
+  func isAuthFlowCompleteReturnsTrueWhenUserHasActiveSession() {
+    let clerk = Clerk.mock
+
+    #expect(clerk.user != nil)
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete)
+  }
+
+  @Test
+  func registerAuthFlowDoesNotRegisterAnExistingActiveSession() {
+    let clerk = Clerk.mock
+
+    let registration = clerk.registerAuthFlow()
+    clerk.markAuthFlowPending()
+
+    #expect(registration == nil)
+    #expect(clerk.isAuthFlowComplete)
+  }
+
+  @Test
+  func refreshedActiveSessionDoesNotHoldARegisteredAuthFlow() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+
+    clerk.applyResponseClient(.mock)
+
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func completedAuthenticationDoesNotHoldAnUnregisteredAuthFlow() {
+    let clerk = Clerk.mockSignedOut
+
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+
+    #expect(clerk.isAuthFlowComplete)
+    #expect(clerk.pendingAuthFlowCompletion == nil)
+  }
+
+  @Test
+  func completedAuthenticationHoldsAuthFlowUntilPostAuthCompletes() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    #expect(clerk.readyPendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+
+    clerk.consumePendingAuthFlowCompletion()
+    #expect(clerk.pendingAuthFlowCompletion == nil)
+    #expect(clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+
+    clerk.markAuthFlowComplete()
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func completedAuthenticationWaitsForCreatedSessionToBecomeCurrent() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let completedAuthFlow = completedAuthFlow()
+    var pendingActivationClient = Client.mock
+    pendingActivationClient.sessions[0].status = .unknown("pending_activation")
+    pendingActivationClient.lastActiveSessionId = nil
+
+    clerk.applyResponseClient(
+      pendingActivationClient,
+      completedAuthFlow: completedAuthFlow
+    )
+
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == completedAuthFlow.flowId)
+    #expect(clerk.readyPendingAuthFlowCompletion == nil)
+
+    var differentSession = Client.mock.sessions[0]
+    differentSession.id = "different_session"
+    var differentSessionClient = Client.mock
+    differentSessionClient.sessions.append(differentSession)
+    differentSessionClient.lastActiveSessionId = differentSession.id
+    clerk.applyResponseClient(differentSessionClient)
+
+    #expect(clerk.session?.id == differentSession.id)
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == completedAuthFlow.flowId)
+    #expect(clerk.readyPendingAuthFlowCompletion == nil)
+
+    let didChange = LockIsolated(false)
+    _ = withObservationTracking {
+      clerk.readyPendingAuthFlowCompletion?.flowId
+    } onChange: {
+      didChange.setValue(true)
+    }
+
+    var activatedClient = Client.mock
+    activatedClient.sessions[0].status = .pending
+    activatedClient.sessions[0].tasks = [.setupMfa]
+    clerk.applyResponseClient(activatedClient)
+
+    #expect(didChange.value)
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == completedAuthFlow.flowId)
+    #expect(clerk.readyPendingAuthFlowCompletion?.flowId == completedAuthFlow.flowId)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func restoredPendingSessionHoldsAuthFlowAfterSessionBecomesActive() throws {
+    var pendingClient = Client.mock
+    pendingClient.sessions[0].status = .pending
+    pendingClient.sessions[0].tasks = [.setupMfa]
+    let clerk = Clerk.mock
+    clerk.client = pendingClient
+    let registration = try #require(clerk.registerAuthFlow())
+
+    clerk.applyResponseClient(.mock)
+
+    #expect(clerk.isAuthFlowComplete == false)
+
+    clerk.markAuthFlowComplete()
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func isAuthFlowCompleteIsObservableWhenPendingFlowChanges() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    clerk.client = .mock
+    let didChange = LockIsolated(false)
+    let initialValue = withObservationTracking {
+      clerk.isAuthFlowComplete
+    } onChange: {
+      didChange.setValue(true)
+    }
+
+    #expect(initialValue)
+
+    clerk.markAuthFlowPending()
+
+    #expect(didChange.value)
+    #expect(clerk.isAuthFlowComplete == false)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func releasingAuthFlowRegistrationClearsPendingHold() async throws {
+    let clerk = Clerk.mockSignedOut
+    var registration = clerk.registerAuthFlow()
+    _ = try #require(registration)
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+
+    registration = nil
+    await Task.yield()
+
+    #expect(clerk.isAuthFlowComplete)
+    #expect(clerk.pendingAuthFlowCompletion == nil)
+  }
+
+  @Test
+  func delayedRegistrationReleaseDoesNotClearANewerAuthFlow() async throws {
+    let clerk = Clerk.mockSignedOut
+    var previousRegistration = clerk.registerAuthFlow()
+    _ = try #require(previousRegistration)
+
+    previousRegistration = nil
+    let currentRegistration = try #require(clerk.registerAuthFlow())
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    await Task.yield()
+
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    withExtendedLifetime(currentRegistration) {}
+  }
+
   @Test
   func handleReturnsFalseForUnrecognizedURL() async throws {
     let url = try #require(URL(string: "https://example.com/not-clerk"))
@@ -583,6 +793,13 @@ struct ClerkTests {
     )
 
     #expect(Clerk.shared.user?.id == User.mock.id)
+  }
+
+  private func completedAuthFlow() -> TransferFlowResult {
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+    return .signIn(signIn)
   }
 
   private func environment(

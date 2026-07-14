@@ -15,6 +15,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     let responseSequence = request.clerkRequestSequence
     let serverDate = response.serverDate
+    let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
 
     if let client = Self.decodeClient(from: data) {
       try await runtimeScope.withCurrentClerk {
@@ -22,7 +23,8 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
           client,
           responseSequence: responseSequence,
           serverDate: serverDate,
-          clientResponseGeneration: request.clerkClientResponseGeneration
+          clientResponseGeneration: request.clerkClientResponseGeneration,
+          completedAuthFlow: completedAuthFlow
         )
       }
     } else if hasExplicitNullClientField(in: data) {

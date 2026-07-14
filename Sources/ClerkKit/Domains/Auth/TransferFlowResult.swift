@@ -34,6 +34,15 @@ public enum TransferFlowResult: Sendable {
 }
 
 extension TransferFlowResult {
+  package var flowId: String {
+    switch self {
+    case .signIn(let signIn):
+      signIn.id
+    case .signUp(let signUp):
+      signUp.id
+    }
+  }
+
   package var createdSessionId: String? {
     switch self {
     case .signIn(let signIn):

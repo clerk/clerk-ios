@@ -101,6 +101,20 @@ public final class Clerk {
     session?.user
   }
 
+  /// Whether Clerk currently has a user-backed active session.
+  private var hasActiveUserSession: Bool {
+    user != nil && session?.status == .active
+  }
+
+  /// Whether authentication and any Clerk-owned post-authentication steps are complete.
+  ///
+  /// Use this value when choosing between a root authentication view and authenticated content.
+  /// It becomes `true` when there is a current user, the current session is active, and a
+  /// non-dismissible `AuthView` is no longer completing a post-authentication step.
+  public var isAuthFlowComplete: Bool {
+    hasActiveUserSession && !isAuthFlowPending
+  }
+
   /// The current user's membership in the active organization.
   public var organizationMembership: OrganizationMembership? {
     guard let activeOrganizationId = session?.lastActiveOrganizationId else {
@@ -210,6 +224,34 @@ public final class Clerk {
   /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
+  /// The non-dismissible auth view currently managing authentication.
+  private var authFlowRegistrationId: UUID?
+
+  /// Whether that auth view is completing Clerk-owned post-authentication work.
+  private var isAuthFlowPending = false
+
+  /// The completed authentication result awaiting that view's post-authentication work.
+  package private(set) var pendingAuthFlowCompletion: TransferFlowResult?
+
+  /// The pending completion once its user-backed session is current and ready for post-auth work.
+  package var readyPendingAuthFlowCompletion: TransferFlowResult? {
+    guard let pendingAuthFlowCompletion else { return nil }
+
+    guard let createdSessionId = pendingAuthFlowCompletion.createdSessionId else {
+      return pendingAuthFlowCompletion
+    }
+
+    guard let session,
+          session.user != nil,
+          session.status == .active || session.status == .pending,
+          createdSessionId == session.id
+    else {
+      return nil
+    }
+
+    return pendingAuthFlowCompletion
+  }
+
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
@@ -229,6 +271,46 @@ public final class Clerk {
 
   package func setCallbackContinuation(_ result: TransferFlowResult?) {
     callbackContinuation = result
+  }
+
+  package func registerAuthFlow() -> AuthFlowRegistration? {
+    guard !hasActiveUserSession else { return nil }
+
+    let registrationId = UUID()
+    authFlowRegistrationId = registrationId
+    isAuthFlowPending = session?.status == .pending
+
+    return AuthFlowRegistration { [weak self] in
+      self?.unregisterAuthFlow(registrationId: registrationId)
+    }
+  }
+
+  package func markAuthFlowPending() {
+    guard authFlowRegistrationId != nil else { return }
+    isAuthFlowPending = true
+  }
+
+  package func markAuthFlowComplete() {
+    guard authFlowRegistrationId != nil else { return }
+    pendingAuthFlowCompletion = nil
+    isAuthFlowPending = false
+  }
+
+  package func consumePendingAuthFlowCompletion() {
+    pendingAuthFlowCompletion = nil
+  }
+
+  private func holdAuthFlowCompletion(_ result: TransferFlowResult) {
+    guard authFlowRegistrationId != nil else { return }
+    isAuthFlowPending = true
+    pendingAuthFlowCompletion = result
+  }
+
+  private func unregisterAuthFlow(registrationId: UUID) {
+    guard authFlowRegistrationId == registrationId else { return }
+    authFlowRegistrationId = nil
+    pendingAuthFlowCompletion = nil
+    isAuthFlowPending = false
   }
 
   /// The main entry point for organization operations.
@@ -595,6 +677,8 @@ extension Clerk {
     await SessionTokenFetcher.shared.reset()
     await SessionTokensCache.shared.clear()
 
+    pendingAuthFlowCompletion = nil
+    isAuthFlowPending = false
     client = nil
     environment = nil
     sessionsByUserId = [:]
@@ -783,7 +867,8 @@ extension Clerk {
     _ incoming: Client?,
     responseSequence: Int? = nil,
     serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    completedAuthFlow: TransferFlowResult? = nil
   ) {
     if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
       ClerkLogger.debug(
@@ -808,6 +893,9 @@ extension Clerk {
 
     if let serverDate {
       lastClientServerFetchDate = serverDate
+    }
+    if let completedAuthFlow {
+      holdAuthFlowCompletion(completedAuthFlow)
     }
     client = incoming
   }

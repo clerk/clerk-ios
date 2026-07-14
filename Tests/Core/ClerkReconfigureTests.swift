@@ -53,6 +53,32 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigurePreservesRegisteredAuthFlow() async throws {
+    Clerk.shared.client = nil
+    var registration = Clerk.shared.registerAuthFlow()
+    _ = try #require(registration)
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "registered-auth-flow.clerk.example.com")
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+    reconfigured.applyResponseClient(.mock, completedAuthFlow: .signIn(signIn))
+
+    #expect(reconfigured.isAuthFlowComplete == false)
+
+    reconfigured.markAuthFlowComplete()
+
+    #expect(reconfigured.isAuthFlowComplete)
+
+    registration = nil
+    await Task.yield()
+  }
+
+  @Test
   func invalidReconfigureLeavesCurrentInstanceUntouched() async throws {
     let original = Clerk.shared
     let originalDependencies = Clerk.shared.dependencies

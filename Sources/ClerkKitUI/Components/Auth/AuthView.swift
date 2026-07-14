@@ -52,7 +52,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     Group {
-///       if clerk.user != nil {
+///       if clerk.isAuthFlowComplete {
 ///         UserProfileView(isDismissible: false)
 ///       } else {
 ///         AuthView(isDismissible: false)
@@ -76,6 +76,9 @@ public struct AuthView: View {
 
   /// Error to present to the user.
   @State private var error: Error?
+
+  /// Keeps a non-dismissible auth flow registered for this view's lifetime.
+  @State private var authFlowRegistration: AuthFlowRegistration?
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -158,7 +161,10 @@ public struct AuthView: View {
     .environment(authState)
     .environment(codeLimiter)
     .onAppear {
-      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+      if !isDismissible, authFlowRegistration == nil {
+        authFlowRegistration = clerk.registerAuthFlow()
+      }
+      routeToSessionTaskStartIfNeeded(session: clerk.session)
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
@@ -171,9 +177,13 @@ public struct AuthView: View {
       for await event in clerk.auth.events {
         switch event {
         case .signInCompleted(let signIn):
-          await finishAuthFlow(after: .signIn(signIn))
+          if isDismissible || authFlowRegistration == nil {
+            await finishAuthFlow(after: .signIn(signIn))
+          }
         case .signUpCompleted(let signUp):
-          await finishAuthFlow(after: .signUp(signUp))
+          if isDismissible || authFlowRegistration == nil {
+            await finishAuthFlow(after: .signUp(signUp))
+          }
         case .signInNeedsContinuation(let signIn):
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
@@ -185,12 +195,24 @@ public struct AuthView: View {
         }
       }
     }
+    .task(id: clerk.readyPendingAuthFlowCompletion?.flowId) {
+      guard !isDismissible,
+            let pendingAuthFlowCompletion = clerk.readyPendingAuthFlowCompletion
+      else {
+        return
+      }
+      await finishAuthFlow(after: pendingAuthFlowCompletion)
+    }
     .onChange(of: navigation.postAuthStepsComplete) { _, isComplete in
       guard isComplete, let session = clerk.session else { return }
       finishAuthFlow(with: session)
     }
     .onChange(of: clerk.user) { _, newUser in
-      guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
+      guard newUser == nil,
+            navigation.hasSessionTaskStartInPath || navigation.hasTrustedDeviceEnrollmentInPath
+      else {
+        return
+      }
       if isDismissible {
         dismiss()
       } else {
@@ -253,6 +275,9 @@ extension AuthView {
 
   private func finishAuthFlow(after result: TransferFlowResult) async {
     guard let session = clerk.session else {
+      if result.createdSessionId == nil {
+        markAuthFlowComplete()
+      }
       return
     }
 
@@ -262,8 +287,18 @@ extension AuthView {
       return
     }
 
+    guard !Task.isCancelled else { return }
+
     if await presentTrustedDeviceEnrollmentIfNeeded(after: result) {
+      if !isDismissible {
+        clerk.consumePendingAuthFlowCompletion()
+      }
       return
+    }
+    guard !Task.isCancelled else { return }
+
+    if !isDismissible {
+      clerk.consumePendingAuthFlowCompletion()
     }
 
     finishAuthFlow(with: session)
@@ -274,17 +309,54 @@ extension AuthView {
       return
     }
 
+    markAuthFlowComplete()
+
     if isDismissible {
       dismiss()
     }
   }
 
   private func routeToExistingSessionTaskStartIfNeeded(oldValue: Session?, newValue: Session?) {
-    guard oldValue?.id == newValue?.id || navigation.hasSessionTaskStartInPath else {
+    if navigation.hasTrustedDeviceEnrollmentInPath {
       return
     }
 
-    navigation.routeToSessionTaskStartIfNeeded(session: newValue)
+    if !isDismissible,
+       let completion = clerk.pendingAuthFlowCompletion,
+       completion.createdSessionId == nil || completion.createdSessionId == newValue?.id
+    {
+      return
+    }
+
+    if !isDismissible,
+       newValue?.status == .active,
+       !clerk.isAuthFlowComplete
+    {
+      return
+    }
+
+    let shouldAdoptPendingSession = !isDismissible && newValue?.status == .pending
+
+    guard oldValue?.id == newValue?.id ||
+      navigation.hasSessionTaskStartInPath ||
+      shouldAdoptPendingSession
+    else {
+      return
+    }
+
+    routeToSessionTaskStartIfNeeded(session: newValue)
+  }
+
+  private func routeToSessionTaskStartIfNeeded(session: Session?) {
+    guard navigation.routeToSessionTaskStartIfNeeded(session: session) else { return }
+    if !isDismissible {
+      clerk.markAuthFlowPending()
+    }
+  }
+
+  private func markAuthFlowComplete() {
+    guard !isDismissible else { return }
+    clerk.markAuthFlowComplete()
   }
 
   @discardableResult
