@@ -225,7 +225,8 @@ extension ClerkIdentityController {
     _ incoming: Client?,
     responseSequence: Int? = nil,
     serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    completedAuthFlow: TransferFlowResult? = nil
   ) {
     guard let clerk,
           case .legacy = persistenceMode(for: clerk),
@@ -241,6 +242,9 @@ extension ClerkIdentityController {
     }
 
     recordAcceptedServerDate(serverDate)
+    if let completedAuthFlow {
+      clerk.holdAuthFlowCompletion(completedAuthFlow)
+    }
     setClient(incoming, on: clerk)
     responseOrderingGate.record(sequence: responseSequence)
   }
@@ -502,7 +506,8 @@ extension ClerkIdentityController {
     _ identity: ClerkIdentitySnapshot,
     through localIdentityIO: SharedSessionLocalIdentityIO,
     operationRevision: UInt64,
-    fenceAllClientResponses: Bool
+    fenceAllClientResponses: Bool,
+    completedAuthFlow: TransferFlowResult? = nil
   ) async throws -> Bool {
     guard let clerk else { return false }
     let identity = try identity.validated()
@@ -523,6 +528,9 @@ extension ClerkIdentityController {
 
     let previousToken = currentDeviceToken
     localDeviceToken = identity.deviceToken
+    if let completedAuthFlow {
+      clerk.holdAuthFlowCompletion(completedAuthFlow)
+    }
     applyIdentityToMemory(
       identity,
       clerk: clerk,
@@ -862,7 +870,8 @@ extension ClerkIdentityController {
         identity,
         through: localIdentityIO,
         operationRevision: operationRevision,
-        fenceAllClientResponses: false
+        fenceAllClientResponses: false,
+        completedAuthFlow: context.completedAuthFlow
       )
       if didApply {
         responseOrderingGate.record(sequence: context.responseSequence)
@@ -895,6 +904,9 @@ extension ClerkIdentityController {
 
     let deviceTokenChanged = currentDeviceToken != identity.deviceToken
     try persistLegacyIdentity(identity, clerk: clerk)
+    if let completedAuthFlow = context.completedAuthFlow {
+      clerk.holdAuthFlowCompletion(completedAuthFlow)
+    }
     applyIdentityToMemory(
       identity,
       clerk: clerk,

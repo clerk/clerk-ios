@@ -13,13 +13,15 @@ extension Clerk {
     _ incoming: Client?,
     responseSequence: Int? = nil,
     serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    completedAuthFlow: TransferFlowResult? = nil
   ) {
     identityController.applyLegacyResponseClient(
       incoming,
       responseSequence: responseSequence,
       serverDate: serverDate,
-      clientResponseGeneration: clientResponseGeneration
+      clientResponseGeneration: clientResponseGeneration,
+      completedAuthFlow: completedAuthFlow
     )
   }
 }
