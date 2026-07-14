@@ -25,7 +25,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     Group {
-///       if clerk.user != nil {
+///       if clerk.isAuthFlowComplete {
 ///         UserProfileView(isDismissible: false)
 ///       } else {
 ///         AuthView(isDismissible: false)

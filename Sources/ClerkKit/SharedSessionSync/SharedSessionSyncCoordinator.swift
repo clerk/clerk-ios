@@ -35,6 +35,27 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     let baseGeneration: UInt64?
     let checkpoint: PublicationCheckpoint
     let clientPresentationPolicy: SharedSessionClientPresentationPolicy
+    let completedAuthFlow: TransferFlowResult?
+
+    init(
+      state: SharedSessionIdentityEvent.State,
+      deviceToken: String?,
+      client: Client?,
+      serverDate: Date?,
+      baseGeneration: UInt64?,
+      checkpoint: PublicationCheckpoint,
+      clientPresentationPolicy: SharedSessionClientPresentationPolicy,
+      completedAuthFlow: TransferFlowResult? = nil
+    ) {
+      self.state = state
+      self.deviceToken = deviceToken
+      self.client = client
+      self.serverDate = serverDate
+      self.baseGeneration = baseGeneration
+      self.checkpoint = checkpoint
+      self.clientPresentationPolicy = clientPresentationPolicy
+      self.completedAuthFlow = completedAuthFlow
+    }
   }
 
   struct NetworkResponseLineage {
@@ -210,7 +231,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
             baseGeneration: baseGeneration,
             requestDeviceToken: context.requestDeviceToken
           ),
-          clientPresentationPolicy: .replaceWithIdentity
+          clientPresentationPolicy: .replaceWithIdentity,
+          completedAuthFlow: context.completedAuthFlow
         )
       }
       if didApply {
@@ -417,7 +439,10 @@ extension SharedSessionSyncCoordinator {
             eventID: event.id
           ),
           provisionalClientPreservingEventID: publication.clientPresentationPolicy
-            == .preserveProvisional ? event.id : nil
+            == .preserveProvisional ? event.id : nil,
+          completedAuthFlowCandidate: publication.completedAuthFlow.map {
+            (eventID: event.id, flow: $0)
+          }
         )
       }
       notifier.post()
@@ -772,7 +797,8 @@ extension SharedSessionSyncCoordinator {
   private func reduceApplyAndReplicate(
     clearingPendingPublicationID pendingPublicationID: UUID? = nil,
     networkResponseCandidate: (eventID: UUID, rootGeneration: UInt64)? = nil,
-    provisionalClientPreservingEventID: UUID? = nil
+    provisionalClientPreservingEventID: UUID? = nil,
+    completedAuthFlowCandidate: (eventID: UUID, flow: TransferFlowResult)? = nil
   ) async throws -> Bool {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
       throw CancellationError()
@@ -838,6 +864,11 @@ extension SharedSessionSyncCoordinator {
     let previousAcceptedEventID = acceptedEventID
     let didChange = winner.id != previousAcceptedEventID
     if didChange {
+      if let completedAuthFlowCandidate,
+         completedAuthFlowCandidate.eventID == winner.id
+      {
+        clerk.holdAuthFlowCompletion(completedAuthFlowCandidate.flow)
+      }
       applyToMemory(
         winner,
         clerk: clerk,
