@@ -342,6 +342,185 @@ struct HostedAuthFlowTests {
   }
 
   @Test
+  func signedOutCreateRefreshesClientAndRetriesOnceWithSameParams() async throws {
+    let createCalls = LockIsolated(0)
+    let firstCreateParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let refreshCalls = LockIsolated(0)
+    let reconciledClient = Client.mockSignedOut
+    let hostedAuthService = MockHostedAuthService(create: { params in
+      let call = createCalls.withValue { calls in
+        defer { calls += 1 }
+        return calls
+      }
+      if call == 0 {
+        firstCreateParams.setValue(params)
+        throw hostedAuthAPIError(code: "signed_out")
+      }
+
+      let firstParams = try #require(firstCreateParams.value)
+      #expect(params.redirectUrl == firstParams.redirectUrl)
+      #expect(params.codeChallenge == firstParams.codeChallenge)
+      #expect(params.state == firstParams.state)
+      #expect(params.mode == firstParams.mode)
+      #expect(Clerk.shared.client == reconciledClient)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    })
+    let clientService = HostedAuthClientService(get: {
+      refreshCalls.withValue { $0 += 1 }
+      return reconciledClient
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      clientService: clientService,
+      initialClient: .mock
+    )
+
+    await #expect(throws: CancellationError.self) {
+      try await Clerk.shared.auth.performHostedAuth(
+        mode: .signUp,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in throw CancellationError() }
+      )
+    }
+
+    #expect(createCalls.value == 2)
+    #expect(refreshCalls.value == 1)
+    #expect(clientService.skipClientIdValues.value == [true])
+  }
+
+  @Test
+  func secondSignedOutCreateIsNotRetried() async throws {
+    let createCalls = LockIsolated(0)
+    let refreshCalls = LockIsolated(0)
+    let browserCalled = LockIsolated(false)
+    let hostedAuthService = MockHostedAuthService(create: { _ in
+      createCalls.withValue { $0 += 1 }
+      throw hostedAuthAPIError(code: "signed_out")
+    })
+    let clientService = MockClientService(get: {
+      refreshCalls.withValue { $0 += 1 }
+      return .mockSignedOut
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      clientService: clientService,
+      initialClient: .mock
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          browserCalled.setValue(true)
+          throw CancellationError()
+        }
+      )
+      Issue.record("Expected the second signed_out error to propagate")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "signed_out")
+    } catch {
+      Issue.record("Expected ClerkAPIError, got \(error)")
+    }
+
+    #expect(createCalls.value == 2)
+    #expect(refreshCalls.value == 1)
+    #expect(!browserCalled.value)
+  }
+
+  @Test
+  func nonSignedOutCreateErrorIsNotRetried() async throws {
+    let createCalls = LockIsolated(0)
+    let refreshCalls = LockIsolated(0)
+    let hostedAuthService = MockHostedAuthService(create: { _ in
+      createCalls.withValue { $0 += 1 }
+      throw hostedAuthAPIError(code: "resource_not_found")
+    })
+    let clientService = MockClientService(get: {
+      refreshCalls.withValue { $0 += 1 }
+      return .mockSignedOut
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      clientService: clientService,
+      initialClient: .mock
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in throw CancellationError() }
+      )
+      Issue.record("Expected create error to propagate")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "resource_not_found")
+    } catch {
+      Issue.record("Expected ClerkAPIError, got \(error)")
+    }
+
+    #expect(createCalls.value == 1)
+    #expect(refreshCalls.value == 0)
+  }
+
+  @Test
+  func signedOutRedeemErrorIsNotRetriedOrReconciled() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let redeemCalls = LockIsolated(0)
+    let refreshCalls = LockIsolated(0)
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        redeemCalls.withValue { $0 += 1 }
+        throw hostedAuthAPIError(code: "signed_out")
+      }
+    )
+    let clientService = MockClientService(get: {
+      refreshCalls.withValue { $0 += 1 }
+      return .mockSignedOut
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(),
+      clientService: clientService,
+      initialClient: .mockSignedOut
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          try makeHostedAuthCallbackUrl(
+            redirectUrl: "myapp://callback",
+            state: #require(createParams.value?.state),
+            rotatingTokenNonce: "nonce_123",
+            createdSessionId: Session.mock.id
+          )
+        }
+      )
+      Issue.record("Expected redeem error to propagate")
+    } catch let error as ClerkAPIError {
+      #expect(error.code == "signed_out")
+    } catch {
+      Issue.record("Expected ClerkAPIError, got \(error)")
+    }
+
+    #expect(redeemCalls.value == 1)
+    #expect(refreshCalls.value == 0)
+  }
+
+  @Test
   func missingCallbackSessionDoesNotApplyClientOrActivateAnotherSession() async throws {
     let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
     let setActiveCalled = LockIsolated(false)
@@ -645,16 +824,37 @@ private struct HostedAuthSetActiveCall: Equatable {
   let organizationId: String?
 }
 
+private final class HostedAuthClientService: ClientServiceProtocol {
+  let skipClientIdValues = LockIsolated<[Bool]>([])
+  let getHandler: @Sendable () async throws -> Client?
+
+  init(get: @escaping @Sendable () async throws -> Client?) {
+    getHandler = get
+  }
+
+  @MainActor
+  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
+    skipClientIdValues.withValue { $0.append(skipClientId) }
+    return try await ClientServiceResponse(
+      client: getHandler(),
+      requestSequence: nil,
+      serverDate: nil
+    )
+  }
+}
+
 @MainActor
 private func configureHostedAuthForTesting(
   hostedAuthService: some HostedAuthServiceProtocol,
   sessionService: some SessionServiceProtocol,
+  clientService: (any ClientServiceProtocol)? = nil,
   initialClient: Client,
   options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: Clerk.shared.dependencies.apiClient,
+    clientService: clientService,
     hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )
@@ -682,4 +882,14 @@ private func makeHostedAuthCallbackUrl(
     throw ClerkClientError(message: "Invalid callback URL in test.")
   }
   return url
+}
+
+private func hostedAuthAPIError(code: String) -> ClerkAPIError {
+  ClerkAPIError(
+    code: code,
+    message: code,
+    longMessage: nil,
+    meta: nil,
+    clerkTraceId: nil
+  )
 }

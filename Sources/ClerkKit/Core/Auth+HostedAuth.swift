@@ -78,12 +78,20 @@ extension Auth {
     let state = try HostedAuthState.generate()
     let pkce = try PKCE.generatePair()
 
-    let hostedAuth = try await hostedAuthService.create(params: HostedAuthCreateParams(
+    let createParams = HostedAuthCreateParams(
       redirectUrl: redirect.rawValue,
       codeChallenge: pkce.challenge,
       state: state,
       mode: mode
-    ))
+    )
+    let hostedAuth: HostedAuthResource
+    do {
+      hostedAuth = try await hostedAuthService.create(params: createParams)
+    } catch let error as ClerkAPIError where error.code == "signed_out" {
+      // Reconcile an abandoned handoff before retrying once with the same request inputs.
+      try await clerk.refreshClient(skipClientId: true)
+      hostedAuth = try await hostedAuthService.create(params: createParams)
+    }
     let hostedAuthUrl = try hostedAuth.authenticationUrl()
 
     let callbackUrl = try await webAuthentication(
