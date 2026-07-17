@@ -200,7 +200,7 @@ struct ClientTests {
     clerk.internalStateChanges.addObserver(observer)
 
     try clerk.storeDeviceToken(" first-token\n")
-    #expect(clerk.applyResponseClient(Client.mock, responseDeviceToken: " response-token\n"))
+    #expect(try clerk.applyResponseClient(Client.mock, responseDeviceToken: " response-token\n"))
     try clerk.storeDeviceToken(" \n")
 
     #expect(clerk.deviceToken == nil)

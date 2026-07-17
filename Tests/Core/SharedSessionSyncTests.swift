@@ -1,5 +1,7 @@
 @_spi(FrameworkIntegration) @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
+import Mocker
 import Testing
 
 @MainActor
@@ -231,7 +233,7 @@ struct SharedSessionSyncTests {
     )
     let signedOutClient = client(id: "signed-out-client", updatedAt: 100)
 
-    signedOutClerk.applyResponseClient(
+    try signedOutClerk.applyResponseClient(
       signedOutClient,
       responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 100),
@@ -287,7 +289,7 @@ struct SharedSessionSyncTests {
     #expect(try makeStore(sharedKeychain).load() == nil)
     #expect(try SharedSessionSyncAdoption.isAdopted(in: stableIdentityKeychain))
 
-    signedInClerk.applyResponseClient(
+    try signedInClerk.applyResponseClient(
       expectedSignedInClient,
       responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 200),
@@ -1131,40 +1133,86 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func clientResponseRetriesAfterDeviceTokenPersistenceFailure() throws {
+  func refreshClientRetriesAfterDeviceTokenPersistenceFailure() async throws {
     let sharedKeychain = InMemoryKeychain()
     let identityKeychain = ControllableSetFailingKeychain()
     let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(
+    let clerk = Clerk()
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    let dependencies = MockDependencyContainer(
+      apiClient: apiClient,
       keychain: sharedKeychain,
-      notifier: notifier,
-      identityKeychain: identityKeychain
+      identityKeychain: identityKeychain,
+      clientService: ClientService(apiClient: apiClient)
     )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.service",
+          accessGroup: "test.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: dependencies.configurationManager.options.keychainConfig,
+      namespace: namespace,
+      clerk: clerk,
+      keychain: sharedKeychain,
+      identityKeychain: identityKeychain,
+      notifier: notifier
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    clerk.internalStateChanges.addObserver(coordinator)
+
     let expectedClient = signedInClient(id: "client_1", updatedAt: 100)
+    let requestCount = LockIsolated(0)
+    let url = try #require(URL(string: mockBaseUrl.absoluteString + "/v1/client"))
+    var mock = try Mock(
+      url: url,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<Client?>(
+            response: expectedClient,
+            client: expectedClient
+          )
+        ),
+      ],
+      additionalHeaders: [
+        "Authorization": "device-token",
+        "Date": "Thu, 01 Jan 1970 00:01:40 GMT",
+      ]
+    )
+    mock.onRequestHandler = OnRequestHandler { @Sendable _ in
+      let attempt = requestCount.withValue {
+        $0 += 1
+        return $0
+      }
+      if attempt == 2 {
+        identityKeychain.setShouldFail(false)
+      }
+    }
+    mock.register()
 
     identityKeychain.setShouldFail(true)
-    let firstAttempt = clerk.applyResponseClient(
-      expectedClient,
-      responseSequence: 1,
-      serverDate: Date(timeIntervalSince1970: 100),
-      responseDeviceToken: "device-token"
-    )
+    let refreshedClient = try await retryingOperation(
+      policy: RetryPolicy(
+        maxAttempts: 2,
+        initialDelay: .zero,
+        maximumDelay: .zero
+      ),
+      operationName: "test client refresh"
+    ) {
+      try await clerk.refreshClient()
+    }
 
-    #expect(!firstAttempt)
-    #expect(clerk.client == nil)
-    #expect(clerk.deviceToken == nil)
-    #expect(clerk.lastClientServerFetchDate == nil)
-    #expect(try makeStore(sharedKeychain).load() == nil)
-
-    identityKeychain.setShouldFail(false)
-    let retry = clerk.applyResponseClient(
-      expectedClient,
-      responseSequence: 1,
-      serverDate: Date(timeIntervalSince1970: 100),
-      responseDeviceToken: "device-token"
-    )
-
-    #expect(retry)
+    #expect(requestCount.value == 2)
+    #expect(refreshedClient == expectedClient)
     #expect(clerk.client == expectedClient)
     #expect(clerk.deviceToken == "device-token")
     let envelope = try #require(try makeStore(sharedKeychain).load())

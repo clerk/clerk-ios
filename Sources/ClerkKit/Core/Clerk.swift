@@ -848,9 +848,33 @@ extension Clerk {
     _ incoming: Client?,
     responseSequence: Int? = nil,
     serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil,
-    responseDeviceToken: String? = nil
+    clientResponseGeneration: ClientResponseGeneration? = nil
   ) -> Bool {
+    do {
+      return try applyResponseClient(
+        incoming,
+        responseSequence: responseSequence,
+        serverDate: serverDate,
+        clientResponseGeneration: clientResponseGeneration,
+        responseDeviceToken: nil
+      )
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to apply a client response without a device-token update"
+      )
+      return false
+    }
+  }
+
+  @discardableResult
+  func applyResponseClient(
+    _ incoming: Client?,
+    responseSequence: Int? = nil,
+    serverDate: Date? = nil,
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    responseDeviceToken: String?
+  ) throws -> Bool {
     if !canApplyClientResponse(
       preparedWith: clientResponseGeneration,
       serverDate: serverDate
@@ -876,15 +900,7 @@ extension Clerk {
     let previousDeviceToken = deviceToken
     var storedResponseDeviceToken: String?
     if let responseDeviceToken {
-      do {
-        storedResponseDeviceToken = try replaceStoredDeviceToken(responseDeviceToken)
-      } catch {
-        ClerkLogger.logError(
-          error,
-          message: "Failed to persist the device token from an accepted client response"
-        )
-        return false
-      }
+      storedResponseDeviceToken = try replaceStoredDeviceToken(responseDeviceToken)
     }
 
     if let responseSequence {
