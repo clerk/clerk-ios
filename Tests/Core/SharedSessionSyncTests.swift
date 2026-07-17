@@ -1351,6 +1351,49 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func differentTokenSignedOutEnvelopeClearsCachedClientMetadata() async throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let cacheManager = CacheManager(
+      coordinator: clerk,
+      keychain: appLocalKeychain
+    )
+    clerk.cacheManager = cacheManager
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      client(id: "local-client", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    clerk.environment = Clerk.Environment.mock
+
+    try makeStore(sharedKeychain).save(
+      deviceToken: "shared-token",
+      client: nil,
+      serverDate: nil
+    )
+    notifier.simulateNotification()
+    await cacheManager.shutdownAndDrain()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+    ] {
+      #expect(try appLocalKeychain.data(forKey: key.rawValue) == nil)
+    }
+  }
+
+  @Test
   func sameTokenEnvelopeAllowsProvablyNewerFencedResponse() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()

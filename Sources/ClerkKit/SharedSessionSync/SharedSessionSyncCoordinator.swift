@@ -349,6 +349,7 @@ extension SharedSessionSyncCoordinator {
     try persistIdentityDeviceToken(envelope.deviceToken)
     if previousToken != envelope.deviceToken {
       clerk.hardFenceClientResponses()
+      clerk.clearPersistedClientStateAfterDeviceTokenChange()
     } else {
       clerk.fenceClientResponsesAfterSharedIdentityChange()
     }

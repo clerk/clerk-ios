@@ -966,6 +966,10 @@ extension Clerk {
       client = nil
     }
 
+    clearPersistedClientStateAfterDeviceTokenChange()
+  }
+
+  func clearPersistedClientStateAfterDeviceTokenChange() {
     if let cacheManager {
       cacheManager.clearClientStateAfterDeviceTokenChange()
     } else {
