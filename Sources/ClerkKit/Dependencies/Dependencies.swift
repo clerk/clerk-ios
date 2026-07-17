@@ -77,3 +77,14 @@ protocol Dependencies: AnyObject {
   /// Manages logging of session status changes.
   var sessionStatusLogger: SessionStatusLogger { get }
 }
+
+extension Dependencies {
+  /// App-local Watch sync metadata with a fallback that migrates values stored
+  /// by earlier SDK versions in the configured Keychain.
+  var watchSyncKeychain: any KeychainStorage {
+    MigratingKeychainStorage(
+      primary: appLocalKeychain,
+      fallback: keychain
+    )
+  }
+}

@@ -50,7 +50,7 @@ extension WatchConnectivityCoordinator {
       if let serverFetchDate = update.serverFetchDate {
         clerk.lastClientServerFetchDate = serverFetchDate
       }
-      noteAppliedAuthState(update, keychain: clerk.dependencies.appLocalKeychain)
+      noteAppliedAuthState(update, keychain: clerk.dependencies.watchSyncKeychain)
       clerk.client = update.client
       return true
     }
@@ -61,7 +61,7 @@ extension WatchConnectivityCoordinator {
        serverFetchDate > lastClientServerFetchDate
     {
       clerk.lastClientServerFetchDate = serverFetchDate
-      noteAppliedAuthState(update, keychain: clerk.dependencies.appLocalKeychain)
+      noteAppliedAuthState(update, keychain: clerk.dependencies.watchSyncKeychain)
       if client != clerk.client {
         clerk.client = client
       } else {
@@ -80,7 +80,7 @@ extension WatchConnectivityCoordinator {
     }
 
     clerk.lastClientServerFetchDate = update.serverFetchDate
-    noteAppliedAuthState(update, keychain: clerk.dependencies.appLocalKeychain)
+    noteAppliedAuthState(update, keychain: clerk.dependencies.watchSyncKeychain)
     clerk.client = client
     scheduleRefresh(for: clerk)
     return true
@@ -95,7 +95,7 @@ extension WatchConnectivityCoordinator {
     if let serverFetchDate = update.serverFetchDate {
       clerk.lastClientServerFetchDate = serverFetchDate
     }
-    noteAppliedAuthState(update, keychain: clerk.dependencies.appLocalKeychain)
+    noteAppliedAuthState(update, keychain: clerk.dependencies.watchSyncKeychain)
     if clerk.client != nil || clerk.lastClientServerFetchDate != nil {
       scheduleRefresh(for: clerk)
     }
@@ -129,7 +129,7 @@ extension WatchConnectivityCoordinator {
     for update: WatchSyncClientApplication,
     clerk: Clerk
   ) -> RemoteClientUpdateDecision {
-    let currentVersion = currentAuthVersion(keychain: clerk.dependencies.appLocalKeychain)
+    let currentVersion = currentAuthVersion(keychain: clerk.dependencies.watchSyncKeychain)
 
     if let serverFetchDate = update.serverFetchDate,
        let lastClientServerFetchDate = clerk.lastClientServerFetchDate,

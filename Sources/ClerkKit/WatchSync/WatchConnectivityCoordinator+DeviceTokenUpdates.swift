@@ -12,7 +12,7 @@ extension WatchConnectivityCoordinator {
     to clerk: Clerk,
     allowNonAuthoritativeUpdate: Bool = true
   ) {
-    let keychain = clerk.dependencies.appLocalKeychain
+    let keychain = clerk.dependencies.watchSyncKeychain
 
     switch update {
     case .notIncluded:

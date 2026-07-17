@@ -22,6 +22,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var currentDeviceToken: String?
   private var shouldRetryIdentityDeviceTokenLoad = false
   private var isApplyingSharedEnvelope = false
+  private var persistenceDeferralDepth = 0
   private var canPublishSharedIdentity = false
   private(set) var requiresClientRefresh = false
 
@@ -121,6 +122,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     switch change {
     case let .clientDidChange(previousClient, client):
       guard !isApplyingSharedEnvelope,
+            persistenceDeferralDepth == 0,
             !requiresClientRefresh,
             client != nil || previousClient != nil || clerk.lastClientServerFetchDate != nil
       else {
@@ -169,7 +171,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   }
 
   func persistCurrentIdentityIfNeeded() throws {
-    guard !requiresClientRefresh,
+    guard persistenceDeferralDepth == 0,
+          !requiresClientRefresh,
           let clerk,
           canPublishSharedIdentity || clerk.client?.activeSessions.isEmpty == false
     else {
@@ -186,6 +189,12 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     }
 
     try persistCurrentIdentity(from: clerk)
+  }
+
+  func withDeferredPersistence(_ updates: () -> Void) {
+    persistenceDeferralDepth += 1
+    defer { persistenceDeferralDepth -= 1 }
+    updates()
   }
 
   func didApplyClientResponse() {
