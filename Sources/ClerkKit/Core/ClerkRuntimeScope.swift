@@ -68,7 +68,7 @@ struct ClerkConfigurationEpoch: Equatable {
   }
 }
 
-struct ClientResponseGeneration: Equatable {
+struct ClientResponseGeneration: Comparable {
   static let initial = ClientResponseGeneration(rawValue: 0)
 
   private let rawValue: Int
@@ -96,6 +96,13 @@ struct ClientResponseGeneration: Equatable {
 
   func next() -> ClientResponseGeneration {
     ClientResponseGeneration(rawValue: rawValue + 1)
+  }
+
+  static func < (
+    lhs: ClientResponseGeneration,
+    rhs: ClientResponseGeneration
+  ) -> Bool {
+    lhs.rawValue < rhs.rawValue
   }
 }
 

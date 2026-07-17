@@ -50,8 +50,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
       try persistAuthState(
         client == nil ? "cleared" : "set",
-        version: nextAuthVersion(keychain: clerk.dependencies.keychain),
-        keychain: clerk.dependencies.keychain
+        version: nextAuthVersion(keychain: clerk.dependencies.appLocalKeychain),
+        keychain: clerk.dependencies.appLocalKeychain
       )
       syncCurrentState(from: clerk)
     case .environmentDidChange:
@@ -61,8 +61,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       if previousToken != token {
         try persistDeviceTokenState(
           "set",
-          version: nextDeviceTokenVersion(keychain: clerk.dependencies.keychain),
-          keychain: clerk.dependencies.keychain
+          version: nextDeviceTokenVersion(keychain: clerk.dependencies.appLocalKeychain),
+          keychain: clerk.dependencies.appLocalKeychain
         )
       }
 
@@ -75,10 +75,11 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   func syncCurrentState(from clerk: Clerk) {
     guard let watchConnectivitySync else { return }
 
-    authGeneration = max(authGeneration, readAuthVersion(keychain: clerk.dependencies.keychain))
+    let keychain = clerk.dependencies.appLocalKeychain
+    authGeneration = max(authGeneration, readAuthVersion(keychain: keychain))
     let payload = WatchSyncPayload(
       clerk: clerk,
-      keychain: clerk.dependencies.keychain,
+      keychain: keychain,
       authGeneration: authGeneration
     )
     watchConnectivitySync.sync(payload)
@@ -89,6 +90,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     isApplyingRemotePayload = true
     defer { isApplyingRemotePayload = wasApplyingRemotePayload }
 
+    let previousDeviceToken = clerk.deviceToken
     applyDeviceTokenUpdate(
       payload.deviceTokenUpdate,
       from: source,
@@ -105,6 +107,14 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     }
 
     applyClientUpdate(payload.clientUpdate, from: source, to: clerk)
+
+    if previousDeviceToken != clerk.deviceToken {
+      do {
+        try clerk.sharedSessionSyncCoordinator?.persistCurrentIdentityIfNeeded()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to persist deviceToken from \(source.sourceDescription)")
+      }
+    }
   }
 
   private func shouldApplyNonAuthoritativeDeviceTokenUpdate(

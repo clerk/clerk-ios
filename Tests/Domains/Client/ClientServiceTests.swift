@@ -49,5 +49,6 @@ struct ClientServiceTests {
 
     #expect(response.client?.id == Client.mock.id)
     #expect(response.requestSequence == 1)
+    #expect(response.wasAppliedByResponseMiddleware)
   }
 }

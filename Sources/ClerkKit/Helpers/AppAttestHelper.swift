@@ -21,7 +21,7 @@ enum AppAttestHelper {
   /// The keychain storage for secure data persistence.
   @MainActor
   private static var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
+    Clerk.shared.dependencies.appLocalKeychain
   }
 
   /// Errors that can occur during the attestation process.
@@ -177,7 +177,13 @@ enum AppAttestHelper {
   /// the app wont have a client yet
   @MainActor
   static var clientId: String? {
-    guard let clientData = try? keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
+    if let clientId = Clerk.shared.client?.id {
+      return clientId
+    }
+
+    guard let clientData = try? Clerk.shared.dependencies.identityKeychain.data(
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    ) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder

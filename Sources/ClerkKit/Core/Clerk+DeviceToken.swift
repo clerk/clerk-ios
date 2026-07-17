@@ -20,8 +20,14 @@ extension Clerk {
   /// The currently stored Clerk device token, if one is available.
   @_spi(FrameworkIntegration)
   public var deviceToken: String? {
+    if let sharedSessionSyncCoordinator {
+      return sharedSessionSyncCoordinator.deviceToken
+    }
+
     do {
-      return try dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      return try dependencies.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
     } catch {
       ClerkLogger.logError(error, message: "Failed to read device token from keychain")
       return nil
@@ -29,9 +35,25 @@ extension Clerk {
   }
 
   func storeDeviceToken(_ token: String) throws {
-    let previousToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let previousToken = deviceToken
+    try replaceStoredDeviceToken(token)
     emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: token))
+  }
+
+  func replaceStoredDeviceToken(_ token: String?) throws {
+    let normalizedToken = token.nilIfEmpty
+    if let normalizedToken {
+      try dependencies.identityKeychain.set(
+        normalizedToken,
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+    } else {
+      try dependencies.identityKeychain.deleteItem(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+    }
+
+    sharedSessionSyncCoordinator?.updateDeviceToken(normalizedToken)
   }
 
   /// Updates the stored Clerk device token and refreshes native auth state.

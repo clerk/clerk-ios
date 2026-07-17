@@ -16,8 +16,13 @@ final class SharedSessionSyncDarwinNotifier: SharedSessionSyncNotifying {
   private let notificationName: CFNotificationName
   private var handler: (@MainActor () -> Void)?
 
-  init(keychainConfig: Clerk.Options.KeychainConfig) {
-    notificationName = CFNotificationName(Self.notificationName(for: keychainConfig) as CFString)
+  init(
+    keychainConfig: Clerk.Options.KeychainConfig,
+    namespace: SharedSessionSyncNamespace
+  ) {
+    notificationName = CFNotificationName(
+      Self.notificationName(for: keychainConfig, namespace: namespace) as CFString
+    )
     CFNotificationCenterAddObserver(
       CFNotificationCenterGetDarwinNotifyCenter(),
       Unmanaged.passUnretained(self).toOpaque(),
@@ -57,18 +62,12 @@ final class SharedSessionSyncDarwinNotifier: SharedSessionSyncNotifying {
     }
   }
 
-  static func notificationName(for keychainConfig: Clerk.Options.KeychainConfig) -> String {
-    let seed = "\(keychainConfig.service)\u{1F}\(keychainConfig.accessGroup ?? "")"
-    return "com.clerk.shared-session-sync.\(stableFingerprint(for: seed))"
-  }
-
-  private static func stableFingerprint(for value: String) -> String {
-    var hash: UInt64 = 0xCBF2_9CE4_8422_2325
-    for byte in value.utf8 {
-      hash ^= UInt64(byte)
-      hash = hash &* 0x0100_0000_01B3
-    }
-    return String(hash, radix: 16)
+  static func notificationName(
+    for keychainConfig: Clerk.Options.KeychainConfig,
+    namespace: SharedSessionSyncNamespace
+  ) -> String {
+    let seed = "\(keychainConfig.service)\u{1F}\(keychainConfig.accessGroup ?? "")\u{1F}\(namespace.fingerprint)"
+    return "com.clerk.shared-session-sync.\(SharedSessionSyncNamespace.fingerprint(for: seed))"
   }
 }
 

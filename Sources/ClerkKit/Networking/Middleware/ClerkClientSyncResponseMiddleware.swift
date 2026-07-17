@@ -15,27 +15,35 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     let responseSequence = request.clerkRequestSequence
     let serverDate = response.serverDate
+    let deviceToken = response.value(forHTTPHeaderField: "Authorization")
 
     if let client = Self.decodeClient(from: data) {
-      try await runtimeScope.withCurrentClerk {
+      _ = try await runtimeScope.withCurrentClerk {
         $0.applyResponseClient(
           client,
           responseSequence: responseSequence,
           serverDate: serverDate,
-          clientResponseGeneration: request.clerkClientResponseGeneration
+          clientResponseGeneration: request.clerkClientResponseGeneration,
+          responseDeviceToken: deviceToken
         )
       }
-    } else if hasExplicitNullClientField(in: data) {
+    } else if Self.hasExplicitNullClientField(in: data) {
       ClerkLogger.debug("API response explicitly returned client: null. Clearing local client state.")
-      try await runtimeScope.withCurrentClerk {
+      _ = try await runtimeScope.withCurrentClerk {
         $0.applyResponseClient(
           nil,
           responseSequence: responseSequence,
           serverDate: serverDate,
-          clientResponseGeneration: request.clerkClientResponseGeneration
+          clientResponseGeneration: request.clerkClientResponseGeneration,
+          responseDeviceToken: deviceToken
         )
       }
     }
+  }
+
+  static func containsClientUpdate(in jsonData: Data) -> Bool {
+    decodeClient(from: jsonData) != nil
+      || containsClientField(in: jsonData)
   }
 
   static func decodeClient(from jsonData: Data) -> Client? {
@@ -82,7 +90,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
   }
 
-  private func hasExplicitNullClientField(in jsonData: Data) -> Bool {
+  private static func hasExplicitNullClientField(in jsonData: Data) -> Bool {
     struct ClientFieldProbe: Decodable {
       let hasExplicitNullClientField: Bool
 
@@ -101,5 +109,19 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     }
 
     return (try? JSONDecoder.clerkDecoder.decode(ClientFieldProbe.self, from: jsonData))?.hasExplicitNullClientField == true
+  }
+
+  private static func containsClientField(in jsonData: Data) -> Bool {
+    guard let object = try? JSONSerialization.jsonObject(with: jsonData),
+          let payload = object as? [String: Any]
+    else {
+      return false
+    }
+
+    if payload.keys.contains("client") {
+      return true
+    }
+
+    return (payload["meta"] as? [String: Any])?.keys.contains("client") == true
   }
 }

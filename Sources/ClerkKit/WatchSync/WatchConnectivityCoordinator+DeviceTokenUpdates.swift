@@ -12,7 +12,7 @@ extension WatchConnectivityCoordinator {
     to clerk: Clerk,
     allowNonAuthoritativeUpdate: Bool = true
   ) {
-    let keychain = clerk.dependencies.keychain
+    let keychain = clerk.dependencies.appLocalKeychain
 
     switch update {
     case .notIncluded:
@@ -22,14 +22,15 @@ extension WatchConnectivityCoordinator {
         version: version,
         from: source,
         allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+        currentToken: clerk.deviceToken,
         keychain: keychain
       ) else {
         return
       }
 
       do {
-        let previousToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-        try keychain.set(deviceToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        let previousToken = clerk.deviceToken
+        try clerk.replaceStoredDeviceToken(deviceToken)
         if previousToken != deviceToken {
           handleAppliedDeviceTokenChange(from: source, clerk: clerk)
         }
@@ -44,13 +45,14 @@ extension WatchConnectivityCoordinator {
         version: version,
         from: source,
         allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+        currentToken: clerk.deviceToken,
         keychain: keychain
       ) else {
         return
       }
 
       do {
-        try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        try clerk.replaceStoredDeviceToken(nil)
         try persistDeviceTokenState("cleared", version: version, keychain: keychain)
         try markDeviceTokenSynced(keychain: keychain)
         try persistAuthState(
@@ -84,10 +86,10 @@ extension WatchConnectivityCoordinator {
     version incomingVersion: WatchSyncVersion?,
     from source: WatchSyncSource,
     allowNonAuthoritativeUpdate: Bool,
+    currentToken: String?,
     keychain: any KeychainStorage
   ) -> Bool {
     let currentVersion = readDeviceTokenVersion(keychain: keychain)
-    let currentToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let currentState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
 
     if !source.incomingDeviceIsAuthoritative, !allowNonAuthoritativeUpdate {
@@ -163,7 +165,7 @@ extension WatchConnectivityCoordinator {
     if source.incomingDeviceIsAuthoritative {
       clerk.clearCachedClientStateAfterDeviceTokenChange()
     } else {
-      clerk.fenceClientResponsesAfterDeviceTokenChange()
+      clerk.hardFenceClientResponses()
     }
   }
 }

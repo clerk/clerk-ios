@@ -10,10 +10,20 @@ import Foundation
 /// This class manages the lifecycle of all dependencies and provides them
 /// through the `Dependencies` protocol for dependency injection.
 final class DependencyContainer: Dependencies {
+  private struct KeychainStorages {
+    let shared: any KeychainStorage
+    let appLocal: any KeychainStorage
+    let identity: any KeychainStorage
+    let legacyAppLocal: (any KeychainStorage)?
+  }
+
   // MARK: - Core Dependencies
 
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
+  let appLocalKeychain: any KeychainStorage
+  let identityKeychain: any KeychainStorage
+  let legacyAppLocalKeychain: (any KeychainStorage)?
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -82,9 +92,17 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    keychain = Self.makeKeychainStorage(config: options.keychainConfig)
+    let keychainStorages = try Self.makeKeychainStorages(
+      options: options,
+      frontendApiUrl: configurationManager.frontendApiUrl,
+      readAdoptionMarker: !publishableKey.isEmpty
+    )
+    keychain = keychainStorages.shared
+    appLocalKeychain = keychainStorages.appLocal
+    identityKeychain = keychainStorages.identity
+    legacyAppLocalKeychain = keychainStorages.legacyAppLocal
 
-    magicLinkStore = MagicLinkStore(keychain: keychain)
+    magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
@@ -119,19 +137,112 @@ final class DependencyContainer: Dependencies {
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {
-    let legacyKeychain = SystemKeychain(
+    makeKeychainStorage(
       service: config.service,
       accessGroup: config.accessGroup
     )
+  }
+
+  private static func makeKeychainStorages(
+    options: Clerk.Options,
+    frontendApiUrl: String,
+    readAdoptionMarker: Bool
+  ) throws -> KeychainStorages {
+    let config = options.keychainConfig
+    let shared = makeKeychainStorage(config: config)
+    let appLocal: any KeychainStorage = if config.accessGroup?.isEmpty == false {
+      makeKeychainStorage(service: config.service, accessGroup: nil)
+    } else {
+      shared
+    }
+    let syncEnabled = options.sharedSessionSync != nil
+      && config.accessGroup.nilIfEmpty != nil
+    let legacyAppLocal = syncEnabled
+      ? makeLegacyAppLocalKeychain(configuredService: config.service)
+      : nil
+
+    let stableIdentity = makeKeychainStorage(
+      service: stableIdentityService(
+        configuredService: config.service,
+        frontendApiUrl: frontendApiUrl
+      ),
+      accessGroup: nil
+    )
+    let identity = if readAdoptionMarker {
+      try SharedSessionSyncAdoption.identityKeychain(
+        shared: shared,
+        appLocal: stableIdentity,
+        syncEnabled: syncEnabled
+      )
+    } else {
+      shared
+    }
+
+    return KeychainStorages(
+      shared: shared,
+      appLocal: appLocal,
+      identity: identity,
+      legacyAppLocal: legacyAppLocal
+    )
+  }
+
+  private static func makeLegacyAppLocalKeychain(
+    configuredService: String
+  ) -> (any KeychainStorage)? {
+    guard let service = legacyAppLocalService(
+      configuredService: configuredService,
+      bundleIdentifier: Bundle.main.bundleIdentifier
+    ) else {
+      return nil
+    }
+
+    return makeKeychainStorage(
+      service: service,
+      accessGroup: nil
+    )
+  }
+
+  static func legacyAppLocalService(
+    configuredService: String,
+    bundleIdentifier: String?
+  ) -> String? {
+    guard let bundleIdentifier = bundleIdentifier.nilIfEmpty,
+          bundleIdentifier != configuredService
+    else {
+      return nil
+    }
+    return bundleIdentifier
+  }
+
+  static func stableIdentityService(
+    configuredService: String,
+    frontendApiUrl: String
+  ) -> String {
+    let appIdentifier = Bundle.main.bundleIdentifier.nilIfEmpty
+      ?? configuredService
+    let instanceFingerprint = SharedSessionSyncNamespace(
+      frontendApiUrl: frontendApiUrl
+    ).fingerprint
+    return "\(appIdentifier).clerk.identity.\(instanceFingerprint)"
+  }
+
+  private static func makeKeychainStorage(
+    service: String,
+    accessGroup: String?
+  ) -> any KeychainStorage {
+    let legacyKeychain = SystemKeychain(
+      service: service,
+      accessGroup: accessGroup
+    )
 
     #if os(macOS)
-    guard config.accessGroup != nil else {
+    guard accessGroup != nil else {
       return legacyKeychain
     }
 
     let dataProtectionKeychain = SystemKeychain(
-      service: config.service,
-      accessGroup: config.accessGroup,
+      service: service,
+      accessGroup: accessGroup,
       useDataProtectionKeychain: true
     )
 

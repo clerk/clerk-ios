@@ -1,475 +1,2033 @@
-@testable import ClerkKit
+@_spi(FrameworkIntegration) @testable import ClerkKit
 import Foundation
-import Mocker
 import Testing
 
 @MainActor
 @Suite(.serialized)
 struct SharedSessionSyncTests {
   @Test
-  func publicReloadAppliesNewerSharedClientSnapshot() async throws {
+  func activeEnvelopeRoundTripsAsOneKeychainItem() throws {
     let keychain = InMemoryKeychain()
-    let clerk = makeIsolatedClerk(keychain: keychain)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000)
-    let sharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 2000)
+    let store = makeStore(keychain)
+    let expectedClient = client(id: "client_1", updatedAt: 100)
+    let expectedDate = Date(timeIntervalSince1970: 200)
 
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
-    try persistSharedClient(
-      sharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 200),
-      version: 1,
-      keychain: keychain
+    let saved = try store.save(
+      deviceToken: "device-token",
+      client: expectedClient,
+      serverDate: expectedDate
     )
+    let loaded = try #require(try store.load())
 
-    let changed = await clerk.reloadFromSharedStorage()
-
-    #expect(changed)
-    #expect(clerk.client?.id == sharedClient.id)
-    #expect(clerk.client?.signIn?.id == sharedClient.signIn?.id)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(loaded == saved)
+    #expect(loaded.state == .active)
+    #expect(loaded.deviceToken == "device-token")
+    #expect(loaded.client == expectedClient)
+    #expect(loaded.serverDate == expectedDate)
+    #expect(try keychain.hasItem(forKey: store.storageKey))
+    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
   }
 
   @Test
-  func publicReloadAppliesNewerSharedClear() async throws {
-    let keychain = InMemoryKeychain()
-    let clerk = makeIsolatedClerk(keychain: keychain)
+  func signedOutEnvelopeRoundTripsExplicitly() throws {
+    let store = makeStore(InMemoryKeychain())
 
-    clerk.applyResponseClient(
-      client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000),
+    let saved = try store.save(
+      deviceToken: "device-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    let loaded = try #require(try store.load())
+
+    #expect(loaded == saved)
+    #expect(loaded.state == .signedOut)
+    #expect(loaded.client == nil)
+    #expect(loaded.deviceToken == "device-token")
+  }
+
+  @Test
+  func activeEnvelopeRequiresDeviceToken() {
+    let store = makeStore(InMemoryKeychain())
+
+    #expect(throws: SharedSessionSyncEnvelopeError.self) {
+      try store.save(
+        deviceToken: nil,
+        client: client(id: "client_1", updatedAt: 100),
+        serverDate: nil
+      )
+    }
+  }
+
+  @Test
+  func envelopeRejectsMismatchedInstance() throws {
+    let keychain = InMemoryKeychain()
+    let store = makeStore(keychain)
+    let envelope = SharedSessionSyncEnvelope(
+      schemaVersion: SharedSessionSyncEnvelope.schemaVersion,
+      instanceFingerprint: "different-instance",
+      revision: UUID(),
+      state: .signedOut,
+      deviceToken: nil,
+      client: nil,
+      serverDate: nil
+    )
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(envelope),
+      forKey: store.storageKey
+    )
+
+    #expect(throws: SharedSessionSyncEnvelopeError.self) {
+      try store.load()
+    }
+  }
+
+  @Test
+  func namespaceSeparatesClerkInstances() {
+    let first = SharedSessionSyncStore(
+      keychain: InMemoryKeychain(),
+      namespace: SharedSessionSyncNamespace(
+        frontendApiUrl: "https://first.clerk.accounts.dev"
+      )
+    )
+    let second = SharedSessionSyncStore(
+      keychain: InMemoryKeychain(),
+      namespace: SharedSessionSyncNamespace(
+        frontendApiUrl: "https://second.clerk.accounts.dev"
+      )
+    )
+
+    #expect(first.storageKey != second.storageKey)
+  }
+
+  @Test
+  func adoptionCopiesLegacySharedStateWithoutPublishingEnvelope() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let legacyClient = client(id: "legacy-client", updatedAt: 100)
+    try sharedKeychain.set(
+      JSONEncoder.clerkEncoder.encode(legacyClient),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try sharedKeychain.set(
+      "200",
+      forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+    )
+    try sharedKeychain.set(
+      "legacy-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    try sharedKeychain.set(
+      "set",
+      forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue
+    )
+    try sharedKeychain.set(
+      "legacy-auth-revision",
+      forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue
+    )
+    try sharedKeychain.set(
+      JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+    try sharedKeychain.set(
+      "legacy-environment-revision",
+      forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue
+    )
+    try sharedKeychain.set(
+      "set",
+      forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue
+    )
+    try sharedKeychain.set(
+      "legacy-device-token-revision",
+      forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue
+    )
+
+    try SharedSessionSyncAdoption(
+      destination: appLocalKeychain,
+      sources: [sharedKeychain],
+      legacySharedKeychain: sharedKeychain
+    ).migrateIfNeeded()
+
+    let migratedClientData = try #require(
+      try appLocalKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue)
+    )
+    #expect(
+      try JSONDecoder.clerkDecoder.decode(
+        Client.self,
+        from: migratedClientData
+      ) == legacyClient
+    )
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "legacy-token"
+    )
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+      ) == "200"
+    )
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: appLocalKeychain))
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+      .clerkDeviceToken,
+      .sharedSessionSyncAuthState,
+      .sharedSessionSyncAuthVersion,
+      .sharedSessionSyncEnvironmentVersion,
+      .sharedSessionSyncDeviceTokenState,
+      .sharedSessionSyncDeviceTokenVersion,
+    ] {
+      #expect(try sharedKeychain.hasItem(forKey: key.rawValue) == false)
+    }
+  }
+
+  @Test
+  func firstAdoptionPreservesExistingAppSessionWithoutPublishingIt() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let expectedClient = signedInClient(id: "existing-client", updatedAt: 100)
+    try seedCache(
+      appLocalKeychain,
+      deviceToken: "existing-token",
+      client: expectedClient,
+      serverDate: Date(timeIntervalSince1970: 100),
+      environment: .mock
+    )
+
+    let clerk = Clerk()
+    let dependencies = try makePersistenceDependencies(
+      clerk: clerk,
+      sharedKeychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      syncEnabled: true,
+      refreshedClient: expectedClient
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client == expectedClient)
+    #expect(clerk.deviceToken == "existing-token")
+    #expect(clerk.environment == .mock)
+    #expect(clerk.isLoaded)
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: appLocalKeychain))
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "existing-token"
+    )
+  }
+
+  @Test
+  func signedOutSiblingLaunchingFirstDoesNotOverrideMigratedSession() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let signedOutNotifier = TestSharedSessionSyncNotifier()
+    let signedOutClerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      notifier: signedOutNotifier
+    )
+    let signedOutClient = client(id: "signed-out-client", updatedAt: 100)
+
+    signedOutClerk.applyResponseClient(
+      signedOutClient,
       responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100),
+      responseDeviceToken: "signed-out-token"
+    )
+
+    #expect(signedOutClerk.client == signedOutClient)
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(signedOutNotifier.postCount == 0)
+
+    let legacyAppLocalKeychain = InMemoryKeychain()
+    let configuredAppLocalKeychain = InMemoryKeychain()
+    let stableIdentityKeychain = InMemoryKeychain()
+    let expectedSignedInClient = signedInClient(
+      id: "existing-signed-in-client",
+      updatedAt: 200
+    )
+    try seedCache(
+      legacyAppLocalKeychain,
+      deviceToken: "signed-in-token",
+      client: expectedSignedInClient,
+      serverDate: Date(timeIntervalSince1970: 200),
+      environment: .mock
+    )
+
+    let signedInClerk = Clerk()
+    let signedInDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: signedInClerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: configuredAppLocalKeychain,
+      identityKeychain: stableIdentityKeychain,
+      legacyAppLocalKeychain: legacyAppLocalKeychain,
+      clientService: MockClientService(get: { expectedSignedInClient })
+    )
+    try signedInDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.shared.service",
+          accessGroup: "test.shared.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    try Clerk.prepareSharedSessionAdoptionIfNeeded(
+      dependencies: signedInDependencies
+    )
+    signedInClerk.performConfiguration(dependencies: signedInDependencies)
+    defer { signedInClerk.cleanupManagers() }
+
+    #expect(signedInClerk.client == expectedSignedInClient)
+    #expect(signedInClerk.deviceToken == "signed-in-token")
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: stableIdentityKeychain))
+
+    signedInClerk.applyResponseClient(
+      expectedSignedInClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 200),
+      responseDeviceToken: "signed-in-token"
+    )
+
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.client == expectedSignedInClient)
+    #expect(envelope.deviceToken == "signed-in-token")
+    #expect(signedOutClerk.sharedSessionSyncCoordinator?.reloadFromSharedStorage(
+      force: true,
+      to: signedOutClerk
+    ) == true)
+    #expect(signedOutClerk.client == expectedSignedInClient)
+    #expect(signedOutClerk.deviceToken == "signed-in-token")
+  }
+
+  @Test
+  func sharedLegacyEnvironmentIsCopiedBeforeEnvelopeCleanup() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let expectedClient = client(id: "shared-client", updatedAt: 200)
+    try seedCache(
+      sharedKeychain,
+      deviceToken: "shared-token",
+      client: expectedClient,
+      serverDate: Date(timeIntervalSince1970: 200),
+      environment: .mock
+    )
+
+    let clerk = Clerk()
+    let dependencies = try makePersistenceDependencies(
+      clerk: clerk,
+      sharedKeychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      syncEnabled: true,
+      refreshedClient: expectedClient
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client == expectedClient)
+    #expect(clerk.environment == .mock)
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(
+      try appLocalKeychain.data(
+        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+      ) != nil
+    )
+    #expect(
+      try sharedKeychain.data(
+        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
+  func disablingSyncAfterAdoptionContinuesUsingAppLocalIdentity() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let expectedClient = client(id: "local-client", updatedAt: 300)
+    try seedCache(
+      appLocalKeychain,
+      deviceToken: "local-token",
+      client: expectedClient,
+      serverDate: Date(timeIntervalSince1970: 300),
+      environment: .mock
+    )
+    try appLocalKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    try makeStore(sharedKeychain).save(
+      deviceToken: "old-shared-token",
+      client: client(id: "old-shared-client", updatedAt: 100),
       serverDate: Date(timeIntervalSince1970: 100)
     )
-    try persistSharedClient(nil, state: .cleared, serverFetchDate: Date(timeIntervalSince1970: 200), version: 1, keychain: keychain)
 
-    let changed = await clerk.reloadFromSharedStorage()
+    let clerk = Clerk()
+    let dependencies = try makePersistenceDependencies(
+      clerk: clerk,
+      sharedKeychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      syncEnabled: false,
+      refreshedClient: expectedClient
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
 
-    #expect(changed)
-    #expect(clerk.client == nil)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+    #expect(clerk.client == expectedClient)
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.environment == .mock)
   }
 
   @Test
-  func notificationReloadDoesNotRollBackNewerLocalClient() throws {
-    let keychain = InMemoryKeychain()
+  func startupDefersProvablyOlderSharedEnvelopeUntilClientRefresh() async throws {
     let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000)
-    let staleSharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 4000)
+    let state = try makeStaleStartupState(notifier: notifier)
 
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 200))
-    let initialPostCount = notifier.postCount
-    try persistSharedClient(
-      staleSharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 100),
-      version: 1,
-      keychain: keychain
+    #expect(state.clerk.client == state.localClient)
+    #expect(state.clerk.deviceToken == "local-token")
+    #expect(state.coordinator.requiresClientRefresh)
+    #expect(try makeStore(state.sharedKeychain).load() == state.sharedEnvelope)
+    #expect(notifier.postCount == 0)
+
+    let middleware = ClerkHeaderRequestMiddleware(
+      runtimeScope: .current(clerkProvider: { state.clerk })
+    )
+    var request = try URLRequest(
+      url: #require(URL(string: "https://example.com/v1/client"))
+    )
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "Authorization") == "local-token")
+    #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == nil)
+
+    let refreshedClient = client(id: "refreshed-client", updatedAt: 400)
+    state.clerk.applyResponseClient(
+      refreshedClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 400)
     )
 
-    notifier.simulateNotification()
-
-    #expect(clerk.client?.id == localClient.id)
-    #expect(clerk.client?.signIn?.id == localClient.signIn?.id)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
-    #expect(notifier.postCount == initialPostCount + 1)
-
-    let repairedClientData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue))
-    let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
-    #expect(repairedClient.id == localClient.id)
-    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
-    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: repairedRevision) != nil)
+    #expect(!state.coordinator.requiresClientRefresh)
+    #expect(state.clerk.client == refreshedClient)
+    let published = try #require(try makeStore(state.sharedKeychain).load())
+    #expect(published.revision != state.sharedEnvelope.revision)
+    #expect(published.deviceToken == "local-token")
+    #expect(published.client == refreshedClient)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 400))
+    #expect(notifier.postCount == 1)
   }
 
   @Test
-  func notificationReloadDoesNotRollBackEqualDateSharedClientWithOlderUpdatedAt() throws {
-    try assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: 2000)
-  }
-
-  @Test
-  func notificationReloadDoesNotRollBackEqualDateSharedClientWithEqualUpdatedAt() throws {
-    try assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: 3000)
-  }
-
-  @Test
-  func notificationReloadRepairsStaleSharedClear() throws {
-    let keychain = InMemoryKeychain()
+  func staleStartupDoesNotPublishTokenOnlyOrForcedReload() async throws {
     let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000)
-
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 200))
-    let initialPostCount = notifier.postCount
-    try persistSharedClient(
-      nil,
-      state: .cleared,
-      serverFetchDate: Date(timeIntervalSince1970: 100),
-      version: 1,
-      keychain: keychain
+    let state = try makeStaleStartupState(notifier: notifier)
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: ["Authorization": "new-token"]
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkClientResponseGeneration(
+      state.clerk.clientResponseGeneration
     )
 
-    notifier.simulateNotification()
+    try await ClerkDeviceTokenResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { state.clerk })
+    ).validate(response, data: Data(), for: request)
 
-    #expect(clerk.client?.id == localClient.id)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
-    #expect(notifier.postCount == initialPostCount + 1)
+    #expect(state.coordinator.requiresClientRefresh)
+    #expect(state.clerk.deviceToken == "new-token")
+    #expect(try makeStore(state.sharedKeychain).load() == state.sharedEnvelope)
+    #expect(notifier.postCount == 0)
 
-    let repairedClientData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue))
-    let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
-    #expect(repairedClient.id == localClient.id)
-    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
-    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: repairedRevision) != nil)
-  }
-
-  @Test
-  func notificationReloadDoesNotResurrectOlderSharedClientOverLocalClear() throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000)
-    let staleSharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 3000)
-
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
-    clerk.applyResponseClient(nil, responseSequence: 2, serverDate: Date(timeIntervalSince1970: 200))
-    let initialPostCount = notifier.postCount
-    try persistSharedClient(
-      staleSharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 100),
-      version: 1,
-      keychain: keychain
+    #expect(
+      state.coordinator.reloadFromSharedStorage(
+        force: true,
+        to: state.clerk
+      ) == false
     )
-
-    notifier.simulateNotification()
-
-    #expect(clerk.client == nil)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
-    #expect(notifier.postCount == initialPostCount + 1)
-    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
-    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.cleared.rawValue)
-    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: repairedRevision) != nil)
-  }
-
-  @Test
-  func notificationReloadSuppressesEchoedPublish() throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let sharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 2000)
-
-    try persistSharedClient(
-      sharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 200),
-      version: 1,
-      keychain: keychain
-    )
-
-    notifier.simulateNotification()
-
-    #expect(clerk.client?.id == sharedClient.id)
+    #expect(state.coordinator.requiresClientRefresh)
+    #expect(try makeStore(state.sharedKeychain).load() == state.sharedEnvelope)
     #expect(notifier.postCount == 0)
   }
 
   @Test
-  func notificationReloadFencesDeviceTokenOnlyChange() throws {
-    let keychain = InMemoryKeychain()
+  func clearingKeychainInvalidatesLiveSharedTokenAndFencesResponses() async throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
     let initialGeneration = clerk.clientResponseGeneration
+    #expect(try makeStore(sharedKeychain).load() != nil)
 
-    try keychain.set("shared-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
-    try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
+    Clerk.clearAllKeychainItems(in: clerk)
 
-    notifier.simulateNotification()
-
+    #expect(clerk.client == localClient)
+    #expect(clerk.deviceToken == nil)
     #expect(clerk.clientResponseGeneration != initialGeneration)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "shared-token")
-  }
-
-  @Test
-  func foregroundReloadAppliesSharedClientSnapshot() throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let sharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: 2000)
-
-    try persistSharedClient(
-      sharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 200),
-      version: 1,
-      keychain: keychain
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(try makeStore(sharedKeychain).load() == nil)
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == nil
     )
 
-    clerk.emitInternalStateChange(.applicationDidEnterForeground)
+    let middleware = ClerkHeaderRequestMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    )
+    var request = try URLRequest(
+      url: #require(URL(string: "https://example.com/v1/client"))
+    )
+    try await middleware.prepare(&request)
 
-    #expect(clerk.client?.id == sharedClient.id)
-    #expect(clerk.client?.signIn?.id == sharedClient.signIn?.id)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == nil)
   }
 
   @Test
-  func signOutResponsePublishesSharedClear() async throws {
+  func reenablingSyncAppliesNewerSharedEnvelope() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let localClient = client(id: "local-client", updatedAt: 100)
+    let sharedClient = client(id: "shared-client", updatedAt: 300)
+    try seedCache(
+      appLocalKeychain,
+      deviceToken: "local-token",
+      client: localClient,
+      serverDate: Date(timeIntervalSince1970: 100),
+      environment: .mock
+    )
+    try appLocalKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    try makeStore(sharedKeychain).save(
+      deviceToken: "shared-token",
+      client: sharedClient,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+
+    let clerk = Clerk()
+    let dependencies = try makePersistenceDependencies(
+      clerk: clerk,
+      sharedKeychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      syncEnabled: true,
+      refreshedClient: sharedClient
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client == sharedClient)
+    #expect(clerk.deviceToken == "shared-token")
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "shared-token"
+    )
+  }
+
+  @Test
+  func reenablingSyncWithoutSharedEnvelopeKeepsLocalIdentityProvisional() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let localClient = client(id: "local-client", updatedAt: 300)
+    try seedCache(
+      appLocalKeychain,
+      deviceToken: "local-token",
+      client: localClient,
+      serverDate: Date(timeIntervalSince1970: 300),
+      environment: .mock
+    )
+    try appLocalKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    let reenabledClerk = Clerk()
+    let reenabledDependencies = try makePersistenceDependencies(
+      clerk: reenabledClerk,
+      sharedKeychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      syncEnabled: true,
+      refreshedClient: localClient
+    )
+    reenabledClerk.performConfiguration(
+      dependencies: reenabledDependencies
+    )
+    defer { reenabledClerk.cleanupManagers() }
+
+    #expect(reenabledClerk.client == localClient)
+    #expect(reenabledClerk.deviceToken == "local-token")
+    #expect(reenabledClerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 300))
+    #expect(try makeStore(sharedKeychain).load() == nil)
+  }
+
+  @Test
+  func ordinaryAccessGroupStorageRemainsSharedUntilSyncIsAdopted() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+
+    let ordinaryIdentity = try SharedSessionSyncAdoption.identityKeychain(
+      shared: sharedKeychain,
+      appLocal: appLocalKeychain,
+      syncEnabled: false
+    )
+    try ordinaryIdentity.set("shared", forKey: "identity-selection")
+    #expect(try sharedKeychain.string(forKey: "identity-selection") == "shared")
+    #expect(try appLocalKeychain.string(forKey: "identity-selection") == nil)
+
+    try appLocalKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    let adoptedIdentity = try SharedSessionSyncAdoption.identityKeychain(
+      shared: sharedKeychain,
+      appLocal: appLocalKeychain,
+      syncEnabled: false
+    )
+    try adoptedIdentity.set("local", forKey: "identity-selection")
+    #expect(try appLocalKeychain.string(forKey: "identity-selection") == "local")
+  }
+
+  @Test
+  func adoptedIdentityRemainsStableWhenConfiguredSharedStorageChanges() throws {
+    let stableIdentityKeychain = InMemoryKeychain()
+    let customSharedKeychain = InMemoryKeychain()
+    let defaultSharedKeychain = InMemoryKeychain()
+    try stableIdentityKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+
+    let beforeConfigurationRemoval = try SharedSessionSyncAdoption.identityKeychain(
+      shared: customSharedKeychain,
+      appLocal: stableIdentityKeychain,
+      syncEnabled: false
+    )
+    try beforeConfigurationRemoval.set(
+      "stable",
+      forKey: "identity-selection"
+    )
+
+    let afterConfigurationRemoval = try SharedSessionSyncAdoption.identityKeychain(
+      shared: defaultSharedKeychain,
+      appLocal: stableIdentityKeychain,
+      syncEnabled: false
+    )
+
+    #expect(
+      try afterConfigurationRemoval.string(
+        forKey: "identity-selection"
+      ) == "stable"
+    )
+    #expect(
+      try defaultSharedKeychain.string(
+        forKey: "identity-selection"
+      ) == nil
+    )
+  }
+
+  @Test
+  func clearingAuthenticationPreservesAdoptedStorageRouting() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let stableIdentityKeychain = InMemoryKeychain()
+    try stableIdentityKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    try stableIdentityKeychain.set(
+      "old-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    try Clerk.clearAllKeychainItemsStrictly(in: stableIdentityKeychain)
+
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: stableIdentityKeychain))
+    #expect(
+      try stableIdentityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == nil
+    )
+
+    let selectedIdentity = try SharedSessionSyncAdoption.identityKeychain(
+      shared: sharedKeychain,
+      appLocal: stableIdentityKeychain,
+      syncEnabled: false
+    )
+    try selectedIdentity.set(
+      "new-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    let relaunchedIdentity = try SharedSessionSyncAdoption.identityKeychain(
+      shared: sharedKeychain,
+      appLocal: stableIdentityKeychain,
+      syncEnabled: false
+    )
+    #expect(
+      try relaunchedIdentity.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "new-token"
+    )
+    #expect(
+      try sharedKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
+  func adoptionMarkerReadFailureDoesNotFallbackToSharedIdentity() {
+    #expect(throws: SharedSessionSyncTestError.self) {
+      _ = try SharedSessionSyncAdoption.identityKeychain(
+        shared: InMemoryKeychain(),
+        appLocal: FailingKeychain(),
+        syncEnabled: false
+      )
+    }
+  }
+
+  @Test
+  func adoptionMigrationFailureDoesNotContinueWithAnEmptyLocalCache() throws {
+    let appLocalKeychain = InMemoryKeychain()
+
+    #expect(throws: SharedSessionSyncTestError.self) {
+      try SharedSessionSyncAdoption(
+        destination: appLocalKeychain,
+        sources: [FailingKeychain()],
+        legacySharedKeychain: InMemoryKeychain()
+      ).migrateIfNeeded()
+    }
+    #expect(
+      try !SharedSessionSyncAdoption.isAdopted(in: appLocalKeychain)
+    )
+  }
+
+  @Test
+  func deviceTokenAloneDoesNotPublishPartialIdentity() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+
+    try clerk.storeDeviceToken("device-token")
+
+    #expect(try makeStore(keychain).load() == nil)
+    #expect(notifier.postCount == 0)
+  }
+
+  @Test
+  func tokenOnlyResponsePersistsCurrentIdentity() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let expectedClient = signedInClient(id: "client_1", updatedAt: 100)
+
+    try clerk.storeDeviceToken("old-token")
+    clerk.applyResponseClient(
+      expectedClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: ["Authorization": "new-token"]
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+
+    try await ClerkDeviceTokenResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    ).validate(response, data: Data(), for: request)
+
+    let envelope = try #require(try makeStore(keychain).load())
+    #expect(envelope.deviceToken == "new-token")
+    #expect(envelope.client == expectedClient)
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 100))
+    #expect(notifier.postCount == 2)
+
+    let relaunched = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: TestSharedSessionSyncNotifier()
+    )
+    #expect(relaunched.sharedSessionSyncCoordinator?.deviceToken == "new-token")
+    #expect(relaunched.client == expectedClient)
+    #expect(relaunched.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
+  }
+
+  @Test
+  func responseClientPublishesOneCompleteEnvelope() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let expectedClient = signedInClient(id: "client_1", updatedAt: 100)
+    let data = try JSONEncoder.clerkEncoder.encode(expectedClient)
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: [
+        "Authorization": "device-token",
+        "Date": "Thu, 01 Jan 1970 00:03:20 GMT",
+      ]
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+
+    try await ClerkDeviceTokenResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    ).validate(response, data: data, for: request)
+
+    #expect(try makeStore(keychain).load() == nil)
+    #expect(notifier.postCount == 0)
+
+    try await ClerkClientSyncResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    ).validate(response, data: data, for: request)
+
+    let envelope = try #require(try makeStore(keychain).load())
+    #expect(envelope.deviceToken == "device-token")
+    #expect(envelope.client == expectedClient)
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == 1)
+  }
+
+  @Test
+  func rejectedOlderClientResponseDoesNotReplaceAcceptedDeviceToken() async throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let tokenMiddleware = ClerkDeviceTokenResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    )
+    let clientMiddleware = ClerkClientSyncResponseMiddleware(
+      runtimeScope: .current(clerkProvider: { clerk })
+    )
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let newerClient = signedInClient(id: "newer-client", updatedAt: 200)
+    let olderClient = signedInClient(id: "older-client", updatedAt: 100)
+    let newerData = try JSONEncoder.clerkEncoder.encode(newerClient)
+    let olderData = try JSONEncoder.clerkEncoder.encode(olderClient)
+    let newerResponse = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: [
+        "Authorization": "newer-token",
+        "Date": "Thu, 01 Jan 1970 00:03:20 GMT",
+      ]
+    ))
+    let olderResponse = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: [
+        "Authorization": "older-token",
+        "Date": "Thu, 01 Jan 1970 00:01:40 GMT",
+      ]
+    ))
+    var newerRequest = URLRequest(url: url)
+    newerRequest.setClerkRequestSequence(2)
+    newerRequest.setClerkClientResponseGeneration(
+      clerk.clientResponseGeneration
+    )
+    var olderRequest = URLRequest(url: url)
+    olderRequest.setClerkRequestSequence(1)
+    olderRequest.setClerkClientResponseGeneration(
+      clerk.clientResponseGeneration
+    )
+
+    try await tokenMiddleware.validate(
+      newerResponse,
+      data: newerData,
+      for: newerRequest
+    )
+    try await clientMiddleware.validate(
+      newerResponse,
+      data: newerData,
+      for: newerRequest
+    )
+    try await tokenMiddleware.validate(
+      olderResponse,
+      data: olderData,
+      for: olderRequest
+    )
+    try await clientMiddleware.validate(
+      olderResponse,
+      data: olderData,
+      for: olderRequest
+    )
+
+    #expect(clerk.client == newerClient)
+    #expect(clerk.deviceToken == "newer-token")
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "newer-token"
+    )
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.client == newerClient)
+    #expect(envelope.deviceToken == "newer-token")
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == 1)
+  }
+
+  @Test
+  func clientResponseRetriesAfterDeviceTokenPersistenceFailure() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let identityKeychain = ControllableSetFailingKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      notifier: notifier,
+      identityKeychain: identityKeychain
+    )
+    let expectedClient = signedInClient(id: "client_1", updatedAt: 100)
+
+    identityKeychain.setShouldFail(true)
+    let firstAttempt = clerk.applyResponseClient(
+      expectedClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100),
+      responseDeviceToken: "device-token"
+    )
+
+    #expect(!firstAttempt)
+    #expect(clerk.client == nil)
+    #expect(clerk.deviceToken == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(try makeStore(sharedKeychain).load() == nil)
+
+    identityKeychain.setShouldFail(false)
+    let retry = clerk.applyResponseClient(
+      expectedClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100),
+      responseDeviceToken: "device-token"
+    )
+
+    #expect(retry)
+    #expect(clerk.client == expectedClient)
+    #expect(clerk.deviceToken == "device-token")
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.client == expectedClient)
+    #expect(envelope.deviceToken == "device-token")
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 100))
+    #expect(notifier.postCount == 1)
+  }
+
+  @Test
+  func failedDeviceTokenRefreshKeepsClearedTransitionDurable() async throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
     let clerk = makeIsolatedClerk(
       keychain: keychain,
       notifier: notifier,
-      useNetworkSessionService: true
+      clientService: MockClientService(get: {
+        throw SharedSessionSyncTestError.refreshFailed
+      })
     )
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000)
 
-    clerk.applyResponseClient(localClient, serverDate: Date(timeIntervalSince1970: 100))
-    let initialPostCount = notifier.postCount
-    let initialAuthRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-
-    let responseData = try #require("""
-    {"response":null,"client":null}
-    """.data(using: .utf8))
-    let originalURL = try #require(URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions"))
-    var mock = Mock(
-      url: originalURL,
-      ignoreQuery: true,
-      contentType: .json,
-      statusCode: 200,
-      data: [.delete: responseData]
-    )
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "DELETE")
-    }
-    mock.register()
-
-    try await clerk.auth.signOut()
-
-    #expect(clerk.client == nil)
-    #expect(notifier.postCount == initialPostCount + 1)
-    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.cleared.rawValue)
-    let clearAuthRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: initialAuthRevision) != nil)
-    #expect(UUID(uuidString: clearAuthRevision) != nil)
-    #expect(clearAuthRevision != initialAuthRevision)
-  }
-
-  @Test
-  func localClientChangePublishesOnlySharedAuthMetadata() throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 1000)
-    try keychain.set("local-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
-    try keychain.set("pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
-
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 100))
-
-    #expect(notifier.postCount == 1)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
-    let authRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: authRevision) != nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.attestKeyId.rawValue) == "local-attest-key-id")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == "pending-flow")
-
-    let cachedClientData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue))
-    let cachedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: cachedClientData)
-    #expect(cachedClient.id == localClient.id)
-  }
-
-  @Test
-  func independentCoordinatorsPublishDistinctOpaqueAuthRevisions() throws {
-    let keychain = InMemoryKeychain()
-    let firstClerk = makeIsolatedClerk(keychain: keychain, notifier: TestSharedSessionSyncNotifier())
-    let secondClerk = makeIsolatedClerk(keychain: keychain, notifier: TestSharedSessionSyncNotifier())
-
-    firstClerk.applyResponseClient(
-      client(id: "client-first", signInId: "sign-in-first", updatedAt: 1000),
+    try clerk.storeDeviceToken("old-token")
+    clerk.applyResponseClient(
+      signedInClient(id: "old-client", updatedAt: 100),
+      responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 100)
     )
-    let firstRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
 
-    secondClerk.applyResponseClient(
-      client(id: "client-second", signInId: "sign-in-second", updatedAt: 2000),
-      serverDate: Date(timeIntervalSince1970: 200)
+    await #expect(throws: SharedSessionSyncTestError.refreshFailed) {
+      try await clerk.updateDeviceToken("new-token")
+    }
+
+    let transition = try #require(try makeStore(keychain).load())
+    #expect(transition.state == .signedOut)
+    #expect(transition.deviceToken == "new-token")
+    #expect(transition.client == nil)
+    #expect(transition.serverDate == nil)
+
+    let relaunched = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: TestSharedSessionSyncNotifier()
     )
-    let secondRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-
-    #expect(UUID(uuidString: firstRevision) != nil)
-    #expect(UUID(uuidString: secondRevision) != nil)
-    #expect(secondRevision != firstRevision)
+    #expect(relaunched.sharedSessionSyncCoordinator?.deviceToken == "new-token")
+    #expect(relaunched.client == nil)
+    #expect(relaunched.lastClientServerFetchDate == nil)
   }
 
   @Test
-  func environmentChangePublishesSharedEnvironmentVersion() throws {
+  func watchPayloadReadsDeviceTokenFromSharedEnvelopeCoordinator() throws {
+    let keychain = InMemoryKeychain()
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: TestSharedSessionSyncNotifier()
+    )
+
+    try clerk.storeDeviceToken("device-token")
+    let payload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: clerk.dependencies.appLocalKeychain,
+      authGeneration: .initial
+    )
+
+    #expect(payload.deviceToken == "device-token")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+  }
+
+  @Test
+  func standaloneWatchDeviceTokenPersistsAcrossRelaunch() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    try makeStore(sharedKeychain).save(
+      deviceToken: "existing-token",
+      client: nil,
+      serverDate: nil
+    )
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "watch-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .watch, to: clerk)
+
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.state == .signedOut)
+    #expect(envelope.deviceToken == "watch-token")
+    #expect(envelope.client == nil)
+    #expect(envelope.serverDate == nil)
+    #expect(notifier.postCount == 1)
+
+    let relaunched = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: InMemoryKeychain(),
+      notifier: TestSharedSessionSyncNotifier()
+    )
+    #expect(relaunched.sharedSessionSyncCoordinator?.deviceToken == "watch-token")
+    #expect(relaunched.client == nil)
+  }
+
+  @Test
+  func clientChangePublishesCompleteEnvelopeOnce() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let expectedClient = signedInClient(id: "client_1", updatedAt: 100)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      expectedClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+
+    let envelope = try #require(try makeStore(keychain).load())
+    #expect(envelope.state == .active)
+    #expect(envelope.deviceToken == "device-token")
+    #expect(envelope.client == expectedClient)
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == 1)
+  }
+
+  @Test
+  func signOutPublishesExplicitSignedOutEnvelope() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
     let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
 
-    clerk.environment = .mock
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      signedInClient(id: "client_1", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    clerk.applyResponseClient(
+      nil,
+      responseSequence: 2,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
 
-    #expect(notifier.postCount == 1)
-    let environmentRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue))
-    #expect(UUID(uuidString: environmentRevision) != nil)
-    let environmentData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
-    #expect(try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) == .mock)
+    let envelope = try #require(try makeStore(keychain).load())
+    #expect(envelope.state == .signedOut)
+    #expect(envelope.client == nil)
+    #expect(envelope.deviceToken == "device-token")
+    #expect(envelope.serverDate == Date(timeIntervalSince1970: 200))
+    #expect(notifier.postCount == 2)
   }
 
   @Test
-  func configurationSkipsSharedSyncWithoutAccessGroup() throws {
+  func notificationAppliesEnvelopeWithoutEchoAndFencesResponsesForNewToken() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      client(id: "local-client", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let initialGeneration = clerk.clientResponseGeneration
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "shared-token",
+      client: client(id: "shared-client", updatedAt: 200),
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client?.id == "shared-client")
+    #expect(clerk.sharedSessionSyncCoordinator?.deviceToken == "shared-token")
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(clerk.clientResponseGeneration != initialGeneration)
+    #expect(notifier.postCount == initialPostCount)
+  }
+
+  @Test
+  func sameTokenEnvelopeAllowsProvablyNewerFencedResponse() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      client(id: "local-client", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let initialGeneration = clerk.clientResponseGeneration
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "device-token",
+      client: client(id: "shared-client", updatedAt: 200),
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client?.id == "shared-client")
+    #expect(clerk.clientResponseGeneration != initialGeneration)
+    #expect(notifier.postCount == initialPostCount)
+
+    let newerClient = client(id: "newer-client", updatedAt: 300)
+    clerk.applyResponseClient(
+      newerClient,
+      responseSequence: 2,
+      serverDate: Date(timeIntervalSince1970: 300),
+      clientResponseGeneration: initialGeneration
+    )
+
+    #expect(clerk.client == newerClient)
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.client == newerClient)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func sameTokenEnvelopeRejectsOlderFencedResponse() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let staleClient = client(id: "stale-client", updatedAt: 200)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      client(id: "local-client", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let requestGeneration = clerk.clientResponseGeneration
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "device-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.clientResponseGeneration != requestGeneration)
+
+    let didApply = clerk.applyResponseClient(
+      staleClient,
+      responseSequence: 2,
+      serverDate: Date(timeIntervalSince1970: 200),
+      clientResponseGeneration: requestGeneration
+    )
+
+    #expect(!didApply)
+    #expect(clerk.client == nil)
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.state == .signedOut)
+    #expect(published.client == nil)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount)
+  }
+
+  @Test
+  func provablyOlderSharedWriteIsRejectedAndRepaired() throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
+    let localClient = client(id: "local-client", updatedAt: 300)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+    let initialPostCount = notifier.postCount
+
+    let staleEnvelope = try makeStore(keychain).save(
+      deviceToken: "stale-token",
+      client: client(id: "stale-client", updatedAt: 100),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client == localClient)
+    #expect(clerk.sharedSessionSyncCoordinator?.deviceToken == "local-token")
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount + 1)
+
+    let repaired = try #require(try makeStore(keychain).load())
+    #expect(repaired.revision != staleEnvelope.revision)
+    #expect(repaired.client == localClient)
+    #expect(repaired.deviceToken == "local-token")
+    #expect(repaired.serverDate == Date(timeIntervalSince1970: 300))
+  }
+
+  @Test
+  func envelopeApplicationRetriesAfterIdentityTokenPersistenceFailure() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let identityKeychain = ControllableSetFailingKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      notifier: notifier,
+      identityKeychain: identityKeychain
+    )
+    let expectedClient = client(id: "shared-client", updatedAt: 200)
+
+    try makeStore(sharedKeychain).save(
+      deviceToken: "shared-token",
+      client: expectedClient,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    identityKeychain.setShouldFail(true)
+    notifier.simulateNotification()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.deviceToken == nil)
+
+    identityKeychain.setShouldFail(false)
+    notifier.simulateNotification()
+
+    #expect(clerk.client == expectedClient)
+    #expect(clerk.deviceToken == "shared-token")
+    #expect(
+      try identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "shared-token"
+    )
+    #expect(notifier.postCount == 0)
+  }
+
+  @Test
+  func equalDateActiveEnvelopeRefreshesInsteadOfReplacingLocalClear() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let serverDate = Date(timeIntervalSince1970: 200)
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: notifier,
+      clientService: TestClientResponseService(
+        response: ClientServiceResponse(
+          client: nil,
+          requestSequence: 3,
+          serverDate: Date(timeIntervalSince1970: 300)
+        )
+      )
+    )
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      client(id: "local-client", updatedAt: 100),
+      responseSequence: 1,
+      serverDate: serverDate
+    )
+    clerk.applyResponseClient(
+      nil,
+      responseSequence: 2,
+      serverDate: serverDate
+    )
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "stale-token",
+      client: client(id: "stale-client", updatedAt: 300),
+      serverDate: serverDate
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(notifier.postCount == initialPostCount)
+
+    try await waitUntil {
+      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
+    }
+
+    #expect(clerk.client == nil)
+    #expect(clerk.deviceToken == "local-token")
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.state == .signedOut)
+    #expect(published.deviceToken == "local-token")
+    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func missingDateConflictRefreshesInsteadOfApplyingEnvelope() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let refreshedClient = client(id: "refreshed-client", updatedAt: 300)
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: notifier,
+      clientService: TestClientResponseService(
+        response: ClientServiceResponse(
+          client: refreshedClient,
+          requestSequence: 2,
+          serverDate: Date(timeIntervalSince1970: 300)
+        )
+      )
+    )
+    let localClient = client(id: "local-client", updatedAt: 100)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "device-token",
+      client: client(id: "unknown-order-client", updatedAt: 400),
+      serverDate: nil
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.client == localClient)
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(notifier.postCount == initialPostCount)
+
+    try await waitUntil {
+      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
+    }
+
+    #expect(clerk.client == refreshedClient)
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.client == refreshedClient)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func ambiguousEnvelopeFencesResponsesStartedBeforeRefresh() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let refreshService = SuspendedClientResponseService(
+      response: ClientServiceResponse(
+        client: nil,
+        requestSequence: 3,
+        serverDate: Date(timeIntervalSince1970: 400)
+      )
+    )
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: notifier,
+      clientService: refreshService
+    )
+    let serverDate = Date(timeIntervalSince1970: 200)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      nil,
+      responseSequence: 1,
+      serverDate: serverDate
+    )
+    let preConflictGeneration = clerk.clientResponseGeneration
+    let initialPostCount = notifier.postCount
+
+    try makeStore(keychain).save(
+      deviceToken: "device-token",
+      client: client(id: "ambiguous-client", updatedAt: 200),
+      serverDate: serverDate
+    )
+    notifier.simulateNotification()
+
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(clerk.clientResponseGeneration != preConflictGeneration)
+
+    let didApplyOldResponse = clerk.applyResponseClient(
+      client(id: "old-response-client", updatedAt: 300),
+      responseSequence: 2,
+      serverDate: Date(timeIntervalSince1970: 300),
+      clientResponseGeneration: preConflictGeneration
+    )
+
+    #expect(!didApplyOldResponse)
+    #expect(clerk.client == nil)
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(notifier.postCount == initialPostCount)
+
+    try await waitUntil {
+      refreshService.isWaiting
+    }
+    refreshService.resume()
+
+    try await waitUntil {
+      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
+    }
+
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.state == .signedOut)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 400))
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func failedStaleEnvelopeRepairRetriesTheSameRevision() throws {
+    let keychain = ControllableSetFailingKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 300)
+    let localServerDate = Date(timeIntervalSince1970: 300)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: localServerDate
+    )
+    let initialPostCount = notifier.postCount
+    let staleEnvelope = try makeStore(keychain).save(
+      deviceToken: "stale-token",
+      client: signedInClient(id: "stale-client", updatedAt: 100),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+
+    keychain.setShouldFail(true)
+    notifier.simulateNotification()
+
+    #expect(try makeStore(keychain).load() == staleEnvelope)
+    #expect(notifier.postCount == initialPostCount)
+
+    keychain.setShouldFail(false)
+    notifier.simulateNotification()
+
+    let repairedEnvelope = try #require(try makeStore(keychain).load())
+    #expect(repairedEnvelope.revision != staleEnvelope.revision)
+    #expect(repairedEnvelope.deviceToken == "local-token")
+    #expect(repairedEnvelope.client == localClient)
+    #expect(repairedEnvelope.serverDate == localServerDate)
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func failedAmbiguousRefreshRetriesTheSameRevision() async throws {
+    let keychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let refreshedClient = signedInClient(id: "refreshed-client", updatedAt: 300)
+    let refreshService = SequencedClientResponseService(results: [
+      .failure(.refreshFailed),
+      .success(ClientServiceResponse(
+        client: refreshedClient,
+        requestSequence: 3,
+        serverDate: Date(timeIntervalSince1970: 300)
+      )),
+    ])
+    let clerk = makeIsolatedClerk(
+      keychain: keychain,
+      notifier: notifier,
+      clientService: refreshService
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 200)
+    let ambiguousDate = Date(timeIntervalSince1970: 200)
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: ambiguousDate
+    )
+    let initialPostCount = notifier.postCount
+    let ambiguousEnvelope = try makeStore(keychain).save(
+      deviceToken: "device-token",
+      client: signedInClient(id: "ambiguous-client", updatedAt: 200),
+      serverDate: ambiguousDate
+    )
+
+    notifier.simulateNotification()
+    try await waitUntil {
+      refreshService.callCount == 1
+    }
+
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(try makeStore(keychain).load() == ambiguousEnvelope)
+    #expect(notifier.postCount == initialPostCount)
+
+    notifier.simulateNotification()
+    try await waitUntil {
+      refreshService.callCount == 2
+        && clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
+    }
+
+    let published = try #require(try makeStore(keychain).load())
+    #expect(published.revision != ambiguousEnvelope.revision)
+    #expect(published.deviceToken == "device-token")
+    #expect(published.client == refreshedClient)
+    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
+  func appLocalCachePersistsClientKeysWhileSharedSyncUsesEnvelope() async throws {
+    let keychain = InMemoryKeychain()
     let clerk = Clerk()
-    let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: InMemoryKeychain()
-    )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: .init(sharedSessionSync: .enabled)
+    let cacheManager = CacheManager(
+      coordinator: clerk,
+      keychain: keychain
     )
 
-    clerk.performConfiguration(dependencies: dependencies)
+    cacheManager.saveClient(
+      client(id: "delayed-client", updatedAt: 100),
+      serverFetchDate: Date(timeIntervalSince1970: 100)
+    )
+    cacheManager.deleteClient(serverFetchDate: Date(timeIntervalSince1970: 200))
+    await cacheManager.shutdownAndDrain()
 
-    #expect(clerk.sharedSessionSyncCoordinator == nil)
-    #expect(clerk.cacheManager != nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
+    #expect(
+      try keychain.string(
+        forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+      ) == "200.0"
+    )
   }
 
   @Test
-  func notificationNameIsDerivedFromSharedKeychainConfig() {
+  func magicLinkStateUsesAppLocalKeychain() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain
+    )
+
+    try dependencies.magicLinkStore.save(
+      kind: .signIn,
+      flowId: "flow_1",
+      codeVerifier: "verifier"
+    )
+
+    #expect(
+      try appLocalKeychain.hasItem(
+        forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue
+      )
+    )
+    #expect(
+      try sharedKeychain.hasItem(
+        forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue
+      ) == false
+    )
+  }
+
+  @Test
+  func watchSyncMetadataUsesAppLocalKeychain() throws {
+    configureClerkForTesting()
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain
+    )
+
+    try WatchConnectivityCoordinator().handle(
+      .deviceTokenDidChange(previous: nil, current: "device-token"),
+      from: clerk
+    )
+
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
+      ) == "set"
+    )
+    #expect(
+      try sharedKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
+  func nonAuthoritativeWatchClearMetadataUsesAppLocalKeychain() throws {
+    configureClerkForTesting()
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .notIncluded,
+      clientUpdate: .cleared(
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .watch, to: clerk)
+
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthState.rawValue
+      ) == "cleared"
+    )
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+      ) == "3"
+    )
+    #expect(
+      try sharedKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthState.rawValue
+      ) == nil
+    )
+    #expect(
+      try sharedKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
+  func publicReloadRequiresSharedSync() async {
+    let clerk = Clerk()
+
+    #expect(await clerk.reloadFromSharedStorage() == false)
+  }
+
+  @Test
+  func notificationNameIncludesInstanceNamespace() {
     let config = Clerk.Options.KeychainConfig(
       service: "com.example.clerk",
       accessGroup: "TEAMID.com.example.clerk"
     )
-    let matchingConfig = Clerk.Options.KeychainConfig(
-      service: "com.example.clerk",
-      accessGroup: "TEAMID.com.example.clerk"
+    let firstNamespace = SharedSessionSyncNamespace(
+      frontendApiUrl: "https://first.clerk.accounts.dev"
     )
-    let differentConfig = Clerk.Options.KeychainConfig(
-      service: "com.example.clerk",
-      accessGroup: "TEAMID.com.example.other"
+    let secondNamespace = SharedSessionSyncNamespace(
+      frontendApiUrl: "https://second.clerk.accounts.dev"
     )
 
-    let notificationName = SharedSessionSyncDarwinNotifier.notificationName(for: config)
+    let firstName = SharedSessionSyncDarwinNotifier.notificationName(
+      for: config,
+      namespace: firstNamespace
+    )
 
-    #expect(notificationName == SharedSessionSyncDarwinNotifier.notificationName(for: matchingConfig))
-    #expect(notificationName != SharedSessionSyncDarwinNotifier.notificationName(for: differentConfig))
-    #expect(notificationName.contains("TEAMID.com.example.clerk") == false)
+    #expect(
+      firstName == SharedSessionSyncDarwinNotifier.notificationName(
+        for: config,
+        namespace: firstNamespace
+      )
+    )
+    #expect(
+      firstName != SharedSessionSyncDarwinNotifier.notificationName(
+        for: config,
+        namespace: secondNamespace
+      )
+    )
+    #expect(firstName.contains("TEAMID.com.example.clerk") == false)
   }
 
   private func makeIsolatedClerk(
-    keychain: InMemoryKeychain,
-    notifier: TestSharedSessionSyncNotifier? = nil,
-    useNetworkSessionService: Bool = false
+    keychain: any KeychainStorage,
+    appLocalKeychain: InMemoryKeychain? = nil,
+    notifier: TestSharedSessionSyncNotifier,
+    clientService: (any ClientServiceProtocol)? = nil,
+    identityKeychain: (any KeychainStorage)? = nil
   ) -> Clerk {
     configureClerkForTesting()
 
     let clerk = Clerk()
-    let apiClient = createMockAPIClient(runtimeScope: .current(clerkProvider: { clerk }))
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: apiClient,
+    let appLocalKeychain = appLocalKeychain ?? InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
-      clientService: MockClientService(get: { nil }),
-      sessionService: useNetworkSessionService ? SessionService(apiClient: apiClient) : nil
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: identityKeychain,
+      clientService: clientService ?? MockClientService(get: { nil })
     )
-    try! (clerk.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-
-    if let notifier {
-      let coordinator = SharedSessionSyncCoordinator(
-        keychainConfig: .init(service: "test.service", accessGroup: "test.group"),
-        clerk: clerk,
-        keychain: keychain,
-        notifier: notifier
+    try! dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.service",
+          accessGroup: "test.group"
+        ),
+        sharedSessionSync: .enabled
       )
-      clerk.sharedSessionSyncCoordinator = coordinator
-      clerk.internalStateChanges.addObserver(coordinator)
-    }
+    )
+    clerk.dependencies = dependencies
 
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: dependencies.configurationManager.options.keychainConfig,
+      namespace: namespace,
+      clerk: clerk,
+      keychain: keychain,
+      identityKeychain: dependencies.identityKeychain,
+      notifier: notifier
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    clerk.internalStateChanges.addObserver(coordinator)
     return clerk
   }
 
-  private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval) -> Client {
+  private func makeStaleStartupState(
+    notifier: TestSharedSessionSyncNotifier
+  ) throws -> (
+    clerk: Clerk,
+    coordinator: SharedSessionSyncCoordinator,
+    sharedKeychain: InMemoryKeychain,
+    sharedEnvelope: SharedSessionSyncEnvelope,
+    localClient: Client
+  ) {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let clerk = Clerk()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: appLocalKeychain,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.service",
+          accessGroup: "test.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+
+    let localClient = client(id: "local-client", updatedAt: 300)
+    try appLocalKeychain.set(
+      "local-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 300)
+    clerk.client = localClient
+
+    let sharedEnvelope = try makeStore(sharedKeychain).save(
+      deviceToken: "shared-token",
+      client: client(id: "shared-client", updatedAt: 100),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: dependencies.configurationManager.options.keychainConfig,
+      namespace: namespace,
+      clerk: clerk,
+      keychain: sharedKeychain,
+      identityKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    clerk.internalStateChanges.addObserver(coordinator)
+
+    return (
+      clerk,
+      coordinator,
+      sharedKeychain,
+      sharedEnvelope,
+      localClient
+    )
+  }
+
+  private func makePersistenceDependencies(
+    clerk: Clerk,
+    sharedKeychain: InMemoryKeychain,
+    appLocalKeychain: InMemoryKeychain,
+    syncEnabled: Bool,
+    refreshedClient: Client
+  ) throws -> MockDependencyContainer {
+    let identityKeychain = try SharedSessionSyncAdoption.identityKeychain(
+      shared: sharedKeychain,
+      appLocal: appLocalKeychain,
+      syncEnabled: syncEnabled
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: identityKeychain,
+      clientService: MockClientService(get: { refreshedClient })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.shared.service",
+          accessGroup: "test.shared.group"
+        ),
+        sharedSessionSync: syncEnabled ? .enabled : nil
+      )
+    )
+    if syncEnabled {
+      try Clerk.prepareSharedSessionAdoptionIfNeeded(
+        dependencies: dependencies
+      )
+    }
+    return dependencies
+  }
+
+  private func seedCache(
+    _ keychain: any KeychainStorage,
+    deviceToken: String,
+    client: Client,
+    serverDate: Date,
+    environment: Clerk.Environment
+  ) throws {
+    try keychain.set(
+      deviceToken,
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(client),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try keychain.set(
+      String(serverDate.timeIntervalSince1970),
+      forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+    )
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(environment),
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+  }
+
+  private var namespace: SharedSessionSyncNamespace {
+    SharedSessionSyncNamespace(frontendApiUrl: mockBaseUrl.absoluteString)
+  }
+
+  private func makeStore(_ keychain: any KeychainStorage) -> SharedSessionSyncStore {
+    SharedSessionSyncStore(keychain: keychain, namespace: namespace)
+  }
+
+  private func client(id: String, updatedAt: TimeInterval) -> Client {
     var client = Client.mockSignedOut
     client.id = id
     client.updatedAt = Date(timeIntervalSince1970: updatedAt)
-    if let signInId {
-      var signIn = SignIn.mock
-      signIn.id = signInId
-      client.signIn = signIn
-    }
     return client
   }
 
-  private func assertEqualDateSharedClientDoesNotReplaceLocalClient(sharedUpdatedAt: TimeInterval) throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let clerk = makeIsolatedClerk(keychain: keychain, notifier: notifier)
-    let localClient = client(id: "client-local", signInId: "sign-in-local", updatedAt: 3000)
-    let staleSharedClient = client(id: "client-shared", signInId: "sign-in-shared", updatedAt: sharedUpdatedAt)
-
-    clerk.applyResponseClient(localClient, responseSequence: 1, serverDate: Date(timeIntervalSince1970: 200))
-    let initialPostCount = notifier.postCount
-    try persistSharedClient(
-      staleSharedClient,
-      state: .set,
-      serverFetchDate: Date(timeIntervalSince1970: 200),
-      version: 1,
-      keychain: keychain
-    )
-
-    notifier.simulateNotification()
-
-    #expect(clerk.client?.id == localClient.id)
-    #expect(clerk.client?.signIn?.id == localClient.signIn?.id)
-    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
-    #expect(notifier.postCount == initialPostCount + 1)
-
-    let repairedClientData = try #require(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue))
-    let repairedClient = try JSONDecoder.clerkDecoder.decode(Client.self, from: repairedClientData)
-    #expect(repairedClient.id == localClient.id)
-    #expect(repairedClient.signIn?.id == localClient.signIn?.id)
-    #expect(try loadClientServerFetchDate(from: keychain) == Date(timeIntervalSince1970: 200))
-    #expect(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue) == SharedSessionSyncState.set.rawValue)
-    let repairedRevision = try #require(try keychain.string(forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue))
-    #expect(UUID(uuidString: repairedRevision) != nil)
+  private func signedInClient(id: String, updatedAt: TimeInterval) -> Client {
+    let mock = Client.mock
+    var client = (try? JSONDecoder.clerkDecoder.decode(
+      Client.self,
+      from: JSONEncoder.clerkEncoder.encode(mock)
+    )) ?? mock
+    client.id = id
+    client.updatedAt = Date(timeIntervalSince1970: updatedAt)
+    return client
   }
 
-  private func persistSharedClient(
-    _ client: Client?,
-    state: SharedSessionSyncState,
-    serverFetchDate: Date?,
-    version: Int,
-    keychain: InMemoryKeychain
-  ) throws {
-    if let client {
-      try keychain.set(JSONEncoder.clerkEncoder.encode(client), forKey: ClerkKeychainKey.cachedClient.rawValue)
-    } else {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+  private func waitUntil(
+    timeout: Duration = .milliseconds(500),
+    condition: @MainActor () -> Bool
+  ) async throws {
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+      if condition() {
+        return
+      }
+      try await Task.sleep(for: .milliseconds(10))
     }
 
-    if let serverFetchDate {
-      try keychain.set(String(serverFetchDate.timeIntervalSince1970), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    } else {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    }
+    #expect(condition())
+  }
+}
 
-    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
-    try keychain.set(String(version), forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
+private enum SharedSessionSyncTestError: Error {
+  case keychainFailed
+  case refreshFailed
+}
+
+private final class TestClientResponseService: ClientServiceProtocol {
+  private let response: ClientServiceResponse
+
+  init(response: ClientServiceResponse) {
+    self.response = response
   }
 
-  private func loadClientServerFetchDate(from keychain: InMemoryKeychain) throws -> Date? {
-    guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
-          let timeInterval = TimeInterval(dateString)
-    else {
-      return nil
-    }
+  @MainActor
+  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
+    response
+  }
+}
 
-    return Date(timeIntervalSince1970: timeInterval)
+@MainActor
+private final class SequencedClientResponseService: ClientServiceProtocol {
+  private var results: [Result<ClientServiceResponse, SharedSessionSyncTestError>]
+  private(set) var callCount = 0
+
+  init(results: [Result<ClientServiceResponse, SharedSessionSyncTestError>]) {
+    self.results = results
+  }
+
+  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
+    callCount += 1
+    precondition(!results.isEmpty, "Missing test client response")
+    return try results.removeFirst().get()
+  }
+}
+
+@MainActor
+private final class SuspendedClientResponseService: ClientServiceProtocol {
+  private let response: ClientServiceResponse
+  private var continuation: CheckedContinuation<ClientServiceResponse, Never>?
+
+  var isWaiting: Bool {
+    continuation != nil
+  }
+
+  init(response: ClientServiceResponse) {
+    self.response = response
+  }
+
+  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
+    await withCheckedContinuation { continuation in
+      self.continuation = continuation
+    }
+  }
+
+  func resume() {
+    continuation?.resume(returning: response)
+    continuation = nil
+  }
+}
+
+private final class ControllableSetFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case set
+  }
+
+  private let keychain = InMemoryKeychain()
+  private let lock = NSLock()
+  private var shouldFail = false
+
+  func setShouldFail(_ shouldFail: Bool) {
+    lock.lock()
+    self.shouldFail = shouldFail
+    lock.unlock()
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    let shouldFail = shouldFail
+    lock.unlock()
+
+    if shouldFail {
+      throw Failure.set
+    }
+    try keychain.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try keychain.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try keychain.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try keychain.hasItem(forKey: key)
+  }
+}
+
+private struct FailingKeychain: KeychainStorage {
+  func set(_: Data, forKey _: String) throws {
+    throw SharedSessionSyncTestError.keychainFailed
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw SharedSessionSyncTestError.keychainFailed
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw SharedSessionSyncTestError.keychainFailed
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw SharedSessionSyncTestError.keychainFailed
   }
 }
 

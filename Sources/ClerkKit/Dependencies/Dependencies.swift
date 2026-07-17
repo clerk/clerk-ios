@@ -19,6 +19,16 @@ protocol Dependencies: AnyObject {
   /// The keychain storage for secure data persistence.
   var keychain: any KeychainStorage { get }
 
+  /// Keychain storage scoped to the current app rather than the shared access group.
+  var appLocalKeychain: any KeychainStorage { get }
+
+  /// Keychain storage used for this app's persisted authentication state.
+  var identityKeychain: any KeychainStorage { get }
+
+  /// The app's pre-configuration bundle-identifier Keychain, when different
+  /// from the configured app-local Keychain.
+  var legacyAppLocalKeychain: (any KeychainStorage)? { get }
+
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 

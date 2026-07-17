@@ -8,14 +8,17 @@
 import Foundation
 
 extension Clerk {
-  /// Clears all Clerk-stored keychain items.
+  /// Clears Clerk authentication and cache items from the keychain.
   ///
-  /// This method deletes all keychain items that Clerk uses to store data, including:
+  /// This method deletes Clerk data including:
   /// - Cached client data
   /// - Cached environment data
   /// - Device authentication token
   /// - Device token sync status
   /// - App Attest key ID
+  ///
+  /// Clerk preserves its internal shared-session adoption marker so subsequent
+  /// writes continue using the same app-local storage after the reset.
   ///
   /// This method uses a best-effort approach - errors are logged but don't prevent deletion
   /// of other items. Clerk must be configured before calling this method.
@@ -35,14 +38,25 @@ extension Clerk {
   /// ```
   @MainActor
   public static func clearAllKeychainItems() {
-    let keychain = Clerk.shared.dependencies.keychain
-    clearAllKeychainItems(in: keychain)
+    clearAllKeychainItems(in: Clerk.shared)
+  }
+
+  @MainActor
+  static func clearAllKeychainItems(in clerk: Clerk) {
+    let dependencies = clerk.dependencies
+    clearSharedSessionEnvelope(in: dependencies)
+    for keychain in identityKeychains(in: dependencies) {
+      clearAllKeychainItems(in: keychain)
+    }
+    clerk.hardFenceClientResponses()
+    clerk.sharedSessionSyncCoordinator?
+      .invalidateCachedIdentityAfterKeychainClear()
   }
 
   @MainActor
   static func clearAllKeychainItems(in keychain: any KeychainStorage) {
     // Iterate over all keychain keys and delete each one
-    for key in ClerkKeychainKey.allCases {
+    for key in ClerkKeychainKey.allCases where key != .sharedSessionSyncAdopted {
       do {
         try keychain.deleteItem(forKey: key.rawValue)
       } catch {
@@ -59,7 +73,7 @@ extension Clerk {
   static func clearAllKeychainItemsStrictly(in keychain: any KeychainStorage) throws {
     var failures: [String] = []
 
-    for key in ClerkKeychainKey.allCases {
+    for key in ClerkKeychainKey.allCases where key != .sharedSessionSyncAdopted {
       do {
         try keychain.deleteItem(forKey: key.rawValue)
       } catch {
@@ -76,5 +90,71 @@ extension Clerk {
         message: "Unable to clear Clerk keychain items during reconfiguration."
       )
     }
+  }
+
+  @MainActor
+  static func clearAllKeychainItemsStrictly(in dependencies: any Dependencies) throws {
+    var didFail = false
+
+    do {
+      try sharedSessionStore(in: dependencies).delete()
+    } catch {
+      didFail = true
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete the shared Clerk auth envelope during reconfiguration."
+      )
+    }
+
+    for keychain in identityKeychains(in: dependencies) {
+      do {
+        try clearAllKeychainItemsStrictly(in: keychain)
+      } catch {
+        didFail = true
+      }
+    }
+
+    guard !didFail else {
+      throw ClerkClientError(
+        message: "Unable to clear Clerk keychain items during reconfiguration."
+      )
+    }
+  }
+
+  @MainActor
+  private static func clearSharedSessionEnvelope(in dependencies: any Dependencies) {
+    do {
+      try sharedSessionStore(in: dependencies).delete()
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete the shared Clerk auth envelope. This is non-critical."
+      )
+    }
+  }
+
+  private static func sharedSessionStore(
+    in dependencies: any Dependencies
+  ) -> SharedSessionSyncStore {
+    SharedSessionSyncStore(
+      keychain: dependencies.keychain,
+      namespace: SharedSessionSyncNamespace(
+        frontendApiUrl: dependencies.configurationManager.frontendApiUrl
+      )
+    )
+  }
+
+  private static func identityKeychains(
+    in dependencies: any Dependencies
+  ) -> [any KeychainStorage] {
+    var keychains: [any KeychainStorage] = [
+      dependencies.keychain,
+      dependencies.appLocalKeychain,
+      dependencies.identityKeychain,
+    ]
+    if let legacyAppLocalKeychain = dependencies.legacyAppLocalKeychain {
+      keychains.append(legacyAppLocalKeychain)
+    }
+    return keychains
   }
 }

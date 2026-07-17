@@ -21,11 +21,14 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     let skipClientId = request.value(forHTTPHeaderField: Self.skipClientIdHeader) == "1"
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
 
-    if let deviceToken = try? clerk.dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
+    if let deviceToken = clerk.deviceToken {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
-    if !skipClientId, let clientId = clerk.client?.id {
+    if !skipClientId,
+       clerk.sharedSessionSyncCoordinator?.requiresClientRefresh != true,
+       let clientId = clerk.client?.id
+    {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 

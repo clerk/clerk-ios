@@ -168,7 +168,10 @@ package struct WatchSyncPayload {
 
   @MainActor
   init(clerk: Clerk, keychain: any KeychainStorage, authGeneration: WatchSyncVersion) {
-    deviceTokenUpdate = Self.deviceTokenUpdate(keychain: keychain)
+    deviceTokenUpdate = Self.deviceTokenUpdate(
+      deviceToken: clerk.deviceToken,
+      keychain: keychain
+    )
     let persistedAuthState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     if let client = clerk.client {
       clientUpdate = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
@@ -298,9 +301,12 @@ package struct WatchSyncPayload {
     return nil
   }
 
-  private static func deviceTokenUpdate(keychain: any KeychainStorage) -> WatchSyncDeviceTokenUpdate {
+  private static func deviceTokenUpdate(
+    deviceToken: String?,
+    keychain: any KeychainStorage
+  ) -> WatchSyncDeviceTokenUpdate {
     let version = readDeviceTokenVersion(keychain: keychain)
-    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
+    if let deviceToken {
       return .tokenSet(token: deviceToken, version: version)
     }
 

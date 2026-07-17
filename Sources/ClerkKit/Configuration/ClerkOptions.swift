@@ -31,8 +31,10 @@ extension Clerk {
 
     /// Configuration object that enables Clerk auth state synchronization between sibling apps.
     ///
-    /// Participating apps must also configure ``KeychainConfig`` with the same Keychain
-    /// service and access group so Clerk auth state is readable across those apps.
+    /// Participating apps must use the same Clerk publishable key and configure
+    /// ``KeychainConfig`` with the same Keychain service and access group.
+    /// Shared authentication is stored as one atomic envelope. A newer server-dated
+    /// write wins, an older write loses, and ambiguous conflicts trigger a client refresh.
     public struct SharedSessionSyncConfig: Sendable, Equatable {
       /// Enables synchronization of persisted Clerk auth state through the shared Keychain.
       public static let enabled = Self()

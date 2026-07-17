@@ -130,6 +130,10 @@ public final class Clerk {
   /// Client responses prepared before this value changes must not update state.
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
 
+  /// The oldest response generation that may cross a same-token sibling-state
+  /// fence when its server date proves it is newer than the adopted state.
+  private var peerResponseGenerationFloor: ClientResponseGeneration?
+
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
@@ -276,6 +280,7 @@ extension Clerk {
       runtimeScope: runtimeScope
     )
 
+    try Self.prepareSharedSessionAdoptionIfNeeded(dependencies: dependencies)
     performConfiguration(dependencies: dependencies)
   }
 
@@ -283,6 +288,8 @@ extension Clerk {
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
     taskCoordinator?.cancelAll()
+    cacheManager?.shutdown()
+    cacheManager = nil
     internalStateChanges.removeAllObservers()
     sharedSessionSyncCoordinator = nil
 
@@ -302,26 +309,7 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up cache manager and load cached data synchronously
-    let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
-    self.cacheManager = cacheManager
-    cacheManager.loadCachedData()
-
-    if options.sharedSessionSync != nil {
-      if let accessGroup = options.keychainConfig.accessGroup, !accessGroup.isEmpty {
-        let coordinator = SharedSessionSyncCoordinator(
-          keychainConfig: options.keychainConfig,
-          clerk: self,
-          keychain: dependencies.keychain
-        )
-        sharedSessionSyncCoordinator = coordinator
-        internalStateChanges.addObserver(coordinator)
-      } else {
-        ClerkLogger.error(
-          "Shared session sync requires a Keychain access group. Configure Clerk.Options.keychainConfig with the same service and accessGroup in every participating app."
-        )
-      }
-    }
+    configurePersistence(dependencies: dependencies)
 
     // Set up watch connectivity coordinator only after cache hydration.
     // Restored cached state should not be versioned as a new local auth change.
@@ -355,6 +343,56 @@ extension Clerk {
         ClerkLogger.logError(error, message: "Failed to load client or environment")
       }
     }
+  }
+
+  private func configurePersistence(dependencies: any Dependencies) {
+    let cacheManager = CacheManager(
+      coordinator: self,
+      keychain: dependencies.identityKeychain
+    )
+    self.cacheManager = cacheManager
+    cacheManager.loadCachedData()
+
+    guard options.sharedSessionSync != nil else { return }
+    guard options.keychainConfig.accessGroup.nilIfEmpty != nil else {
+      ClerkLogger.error(
+        "Shared session sync requires a Keychain access group. Configure Clerk.Options.keychainConfig with the same service and accessGroup in every participating app."
+      )
+      return
+    }
+
+    let namespace = SharedSessionSyncNamespace(frontendApiUrl: frontendApiUrl)
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: options.keychainConfig,
+      namespace: namespace,
+      clerk: self,
+      keychain: dependencies.keychain,
+      identityKeychain: dependencies.identityKeychain
+    )
+    sharedSessionSyncCoordinator = coordinator
+    internalStateChanges.addObserver(coordinator)
+  }
+
+  static func prepareSharedSessionAdoptionIfNeeded(
+    dependencies: any Dependencies
+  ) throws {
+    let options = dependencies.configurationManager.options
+    guard options.sharedSessionSync != nil,
+          options.keychainConfig.accessGroup.nilIfEmpty != nil
+    else {
+      return
+    }
+
+    try SharedSessionSyncAdoption(
+      destination: dependencies.identityKeychain,
+      sources: [
+        dependencies.legacyAppLocalKeychain,
+        dependencies.appLocalKeychain,
+        dependencies.keychain,
+      ].compactMap { $0 },
+      legacySharedKeychain: dependencies.keychain
+    )
+    .migrateIfNeeded()
   }
 
   /// Configures the shared Clerk instance.
@@ -434,17 +472,16 @@ extension Clerk {
         options: options,
         runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
       )
-      let oldKeychain = existing.dependencies.keychain
-      let newKeychain = newDependencies.keychain
       let rollbackState = existing.captureReconfigurationRollbackState()
 
-      try clearAllKeychainItemsStrictly(in: newKeychain)
+      try clearAllKeychainItemsStrictly(in: newDependencies)
 
       existing.setConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndDrainCache()
 
       do {
-        try clearAllKeychainItemsStrictly(in: oldKeychain)
+        try clearAllKeychainItemsStrictly(in: rollbackState.dependencies)
+        try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
       } catch {
         existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
@@ -462,7 +499,8 @@ extension Clerk {
       runtimeScope: clerk.runtimeScope
     )
 
-    try clearAllKeychainItemsStrictly(in: newDependencies.keychain)
+    try clearAllKeychainItemsStrictly(in: newDependencies)
+    try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
 
     clerk.performConfiguration(dependencies: newDependencies)
     _shared = clerk
@@ -503,12 +541,14 @@ extension Clerk {
     let clientResponseGeneration = clientResponseGeneration
     let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
-    applyResponseClient(
-      response.client,
-      responseSequence: response.requestSequence,
-      serverDate: response.serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    )
+    if !response.wasAppliedByResponseMiddleware {
+      applyResponseClient(
+        response.client,
+        responseSequence: response.requestSequence,
+        serverDate: response.serverDate,
+        clientResponseGeneration: clientResponseGeneration
+      )
+    }
     return client
   }
 
@@ -767,17 +807,22 @@ extension Clerk {
     return task
   }
 
+  @discardableResult
   func applyResponseClient(
     _ incoming: Client?,
     responseSequence: Int? = nil,
     serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil
-  ) {
-    if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    responseDeviceToken: String? = nil
+  ) -> Bool {
+    if !canApplyClientResponse(
+      preparedWith: clientResponseGeneration,
+      serverDate: serverDate
+    ) {
       ClerkLogger.debug(
-        "Ignoring client response from stale device token generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(clientResponseGeneration)"
+        "Ignoring client response from a superseded identity generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(String(describing: clientResponseGeneration))"
       )
-      return
+      return false
     }
 
     if let responseSequence {
@@ -788,9 +833,24 @@ extension Clerk {
         ClerkLogger.debug(
           "Ignoring stale client response. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
         )
-        return
+        return false
       }
+    }
 
+    let previousDeviceToken = deviceToken
+    if let responseDeviceToken {
+      do {
+        try replaceStoredDeviceToken(responseDeviceToken)
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to persist the device token from an accepted client response"
+        )
+        return false
+      }
+    }
+
+    if let responseSequence {
       lastAppliedClientResponseSequence = max(lastAppliedClientResponseSequence ?? responseSequence, responseSequence)
     }
 
@@ -798,6 +858,16 @@ extension Clerk {
       lastClientServerFetchDate = serverDate
     }
     client = incoming
+    sharedSessionSyncCoordinator?.didApplyClientResponse()
+    if let responseDeviceToken {
+      emitInternalStateChange(
+        .deviceTokenDidChange(
+          previous: previousDeviceToken,
+          current: responseDeviceToken
+        )
+      )
+    }
+    return true
   }
 
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
@@ -816,13 +886,47 @@ extension Clerk {
     return incoming.updatedAt > client.updatedAt
   }
 
-  func fenceClientResponsesAfterDeviceTokenChange() {
+  func hardFenceClientResponses() {
+    clientResponseGeneration = clientResponseGeneration.next()
+    lastAppliedClientResponseSequence = nil
+    peerResponseGenerationFloor = nil
+  }
+
+  func fenceClientResponsesAfterSharedIdentityChange() {
+    if peerResponseGenerationFloor == nil {
+      peerResponseGenerationFloor = clientResponseGeneration
+    }
     clientResponseGeneration = clientResponseGeneration.next()
     lastAppliedClientResponseSequence = nil
   }
 
+  private func canApplyClientResponse(
+    preparedWith generation: ClientResponseGeneration?,
+    serverDate: Date?
+  ) -> Bool {
+    guard let generation, generation != clientResponseGeneration else {
+      return true
+    }
+
+    guard let peerResponseGenerationFloor,
+          generation >= peerResponseGenerationFloor,
+          let serverDate,
+          let lastClientServerFetchDate
+    else {
+      return false
+    }
+
+    return serverDate > lastClientServerFetchDate
+  }
+
   func clearCachedClientStateAfterDeviceTokenChange() {
-    fenceClientResponsesAfterDeviceTokenChange()
+    if let sharedSessionSyncCoordinator {
+      hardFenceClientResponses()
+      sharedSessionSyncCoordinator.clearClientForDeviceTokenChange()
+      return
+    }
+
+    hardFenceClientResponses()
     lastClientServerFetchDate = nil
     client = nil
 
@@ -832,7 +936,7 @@ extension Clerk {
       .cachedEnvironment,
     ] {
       do {
-        try dependencies.keychain.deleteItem(forKey: key.rawValue)
+        try dependencies.identityKeychain.deleteItem(forKey: key.rawValue)
       } catch {
         ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
       }
@@ -878,6 +982,7 @@ extension Clerk {
     callbackContinuation = nil
     lastAppliedClientResponseSequence = nil
     lastClientServerFetchDate = nil
+    peerResponseGenerationFloor = nil
   }
 
   private func cancelEnvironmentRefreshTask() {

@@ -9,6 +9,19 @@ package struct ClientServiceResponse {
   let client: Client?
   let requestSequence: Int?
   let serverDate: Date?
+  let wasAppliedByResponseMiddleware: Bool
+
+  init(
+    client: Client?,
+    requestSequence: Int?,
+    serverDate: Date?,
+    wasAppliedByResponseMiddleware: Bool = false
+  ) {
+    self.client = client
+    self.requestSequence = requestSequence
+    self.serverDate = serverDate
+    self.wasAppliedByResponseMiddleware = wasAppliedByResponseMiddleware
+  }
 }
 
 protocol ClientServiceProtocol: Sendable {
@@ -55,7 +68,8 @@ final class ClientService: ClientServiceProtocol {
     return ClientServiceResponse(
       client: response.value.response,
       requestSequence: response.requestSequence,
-      serverDate: response.serverDate
+      serverDate: response.serverDate,
+      wasAppliedByResponseMiddleware: true
     )
   }
 }

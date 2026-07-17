@@ -111,6 +111,44 @@ struct ClientTests {
   }
 
   @Test
+  func refreshClientDoesNotReapplyResponseOwnedByMiddleware() async throws {
+    configureClerkForTesting()
+    Clerk.shared.cleanupManagers()
+
+    let current = Client(
+      id: "middleware-applied-client",
+      sessions: [],
+      lastActiveSessionId: "session-current",
+      updatedAt: Date(timeIntervalSince1970: 2000)
+    )
+    let duplicate = Client(
+      id: "duplicate-client",
+      sessions: [],
+      lastActiveSessionId: "session-duplicate",
+      updatedAt: Date(timeIntervalSince1970: 3000)
+    )
+
+    Clerk.shared.applyResponseClient(current, responseSequence: 1)
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: SequencedClientService(
+        response: ClientServiceResponse(
+          client: duplicate,
+          requestSequence: 2,
+          serverDate: Date(timeIntervalSince1970: 3000),
+          wasAppliedByResponseMiddleware: true
+        )
+      )
+    )
+
+    let client = try await Clerk.shared.refreshClient()
+
+    #expect(client?.id == current.id)
+    #expect(Clerk.shared.client?.id == current.id)
+    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
+  }
+
+  @Test
   func updateDeviceTokenStoresTokenAndRefreshesWithoutClientId() async throws {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()

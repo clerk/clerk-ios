@@ -70,7 +70,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDeletesAllKeys() throws {
+  func clearAllKeychainItemsDeletesAuthenticationAndPreservesAdoption() throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -83,13 +83,14 @@ struct ClerkTests {
     try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set(#require("test-date-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
+    try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
@@ -105,9 +106,12 @@ struct ClerkTests {
     // Clear all keychain items
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted
+    // Verify authentication data is deleted while storage-routing metadata remains.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == false)
+      #expect(
+        try keychain.hasItem(forKey: key.rawValue)
+          == (key == .sharedSessionSyncAdopted)
+      )
     }
   }
 

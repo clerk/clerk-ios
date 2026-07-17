@@ -21,6 +21,9 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached environment data.
   case cachedEnvironment
 
+  /// Key indicating that this app has adopted app-local shared-session persistence.
+  case sharedSessionSyncAdopted = "clerkSharedSessionSyncAdoptedV1"
+
   /// Key for the last explicit sibling-app auth sync state.
   case sharedSessionSyncAuthState
 
