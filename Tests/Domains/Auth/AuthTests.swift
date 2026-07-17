@@ -343,6 +343,7 @@ struct AuthTests {
     _ = try await Clerk.shared.auth.signInWithTicket("mock_ticket_value")
 
     let params = try #require(signInParams.value)
+    #expect(params.strategy == .ticket)
     #expect(params.ticket == "mock_ticket_value")
   }
 

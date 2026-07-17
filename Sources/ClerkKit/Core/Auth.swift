@@ -375,6 +375,10 @@ public struct Auth {
 
   /// Signs in with a ticket generated from the Backend API.
   ///
+  /// If the ticket is scoped to an organization, the resulting session activates that
+  /// organization. After sign-in succeeds, access the organization ID through
+  /// ``Clerk/session`` and ``Session/lastActiveOrganizationId``.
+  ///
   /// - Parameter ticket: The ticket string from the Backend API.
   /// - Returns: A `SignIn` object representing the sign-in attempt.
   /// - Throws: An error if the ticket sign-in fails.

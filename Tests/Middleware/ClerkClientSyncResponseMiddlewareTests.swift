@@ -67,7 +67,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
-  func validateAppliesClientFromClientResponseEnvelope() async throws {
+  func validateAppliesOrganizationScopedTicketSessionFromClientResponseEnvelope() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
@@ -76,8 +76,11 @@ struct ClerkClientSyncResponseMiddlewareTests {
     var expectedClient = Client.mock
     expectedClient.lastActiveSessionId = session.id
     expectedClient.sessions = [session]
-    let data = try JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: expectedClient))
-    let url = try #require(URL(string: "https://example.com/v1/client/sessions/\(session.id)/touch"))
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = session.id
+    let data = try JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: signIn, client: expectedClient))
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ins"))
     let response = try #require(HTTPURLResponse(
       url: url,
       statusCode: 200,
