@@ -30,8 +30,8 @@ extension WatchConnectivityCoordinator {
 
       do {
         let previousToken = clerk.deviceToken
-        try clerk.replaceStoredDeviceToken(deviceToken)
-        if previousToken != deviceToken {
+        let currentToken = try clerk.replaceStoredDeviceToken(deviceToken)
+        if previousToken != currentToken {
           handleAppliedDeviceTokenChange(from: source, clerk: clerk)
         }
         try persistDeviceTokenState("set", version: version, keychain: keychain)

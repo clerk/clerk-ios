@@ -384,6 +384,22 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func identityTokenReadFailureRequiresRefreshAndRetriesTheRead() throws {
+    let identityKeychain = try ReadFailingOnceKeychain(
+      deviceToken: "local-token"
+    )
+    let clerk = makeIsolatedClerk(
+      keychain: InMemoryKeychain(),
+      notifier: TestSharedSessionSyncNotifier(),
+      identityKeychain: identityKeychain
+    )
+
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+  }
+
+  @Test
   func startupDefersProvablyOlderSharedEnvelopeUntilClientRefresh() async throws {
     let notifier = TestSharedSessionSyncNotifier()
     let state = try makeStaleStartupState(notifier: notifier)
@@ -1603,7 +1619,8 @@ struct SharedSessionSyncTests {
       appLocalKeychain: appLocalKeychain
     )
 
-    try WatchConnectivityCoordinator().handle(
+    let coordinator = WatchConnectivityCoordinator()
+    try coordinator.handle(
       .deviceTokenDidChange(previous: nil, current: "device-token"),
       from: clerk
     )
@@ -1617,6 +1634,17 @@ struct SharedSessionSyncTests {
       try sharedKeychain.string(
         forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
       ) == nil
+    )
+
+    try coordinator.handle(
+      .deviceTokenDidChange(previous: "device-token", current: nil),
+      from: clerk
+    )
+
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
+      ) == "cleared"
     )
   }
 
@@ -2002,6 +2030,39 @@ private final class ControllableSetFailingKeychain: @unchecked Sendable, Keychai
 
   func data(forKey key: String) throws -> Data? {
     try keychain.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try keychain.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try keychain.hasItem(forKey: key)
+  }
+}
+
+private final class ReadFailingOnceKeychain: @unchecked Sendable, KeychainStorage {
+  private let keychain = InMemoryKeychain()
+  private var shouldFailRead = true
+
+  init(deviceToken: String) throws {
+    try keychain.set(
+      deviceToken,
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try keychain.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    if shouldFailRead {
+      shouldFailRead = false
+      throw SharedSessionSyncTestError.keychainFailed
+    }
+
+    return try keychain.data(forKey: key)
   }
 
   func deleteItem(forKey key: String) throws {

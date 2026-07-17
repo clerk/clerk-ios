@@ -874,9 +874,10 @@ extension Clerk {
     }
 
     let previousDeviceToken = deviceToken
+    var storedResponseDeviceToken: String?
     if let responseDeviceToken {
       do {
-        try replaceStoredDeviceToken(responseDeviceToken)
+        storedResponseDeviceToken = try replaceStoredDeviceToken(responseDeviceToken)
       } catch {
         ClerkLogger.logError(
           error,
@@ -895,11 +896,11 @@ extension Clerk {
     }
     client = incoming
     sharedSessionSyncCoordinator?.didApplyClientResponse()
-    if let responseDeviceToken {
+    if responseDeviceToken != nil {
       emitInternalStateChange(
         .deviceTokenDidChange(
           previous: previousDeviceToken,
-          current: responseDeviceToken
+          current: storedResponseDeviceToken
         )
       )
     }

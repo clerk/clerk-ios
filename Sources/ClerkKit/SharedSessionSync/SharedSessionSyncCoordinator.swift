@@ -21,6 +21,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
   private var currentRevision: UUID?
   private var currentDeviceToken: String?
+  private var shouldRetryIdentityDeviceTokenLoad = false
   private var isApplyingSharedEnvelope = false
   private var isRefreshScheduled = false
   private var canPublishSharedIdentity = false
@@ -47,11 +48,13 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     self.clerk = clerk
     canPublishSharedIdentity = clerk.client?.activeSessions.isEmpty == false
 
-    let identityDeviceToken = try? identityKeychain
-      .string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-      .nilIfEmpty
-
-    currentDeviceToken = identityDeviceToken
+    do {
+      try loadIdentityDeviceToken()
+    } catch {
+      shouldRetryIdentityDeviceTokenLoad = true
+      requiresClientRefresh = true
+      ClerkLogger.logError(error, message: "Failed to load the shared Clerk identity device token")
+    }
 
     do {
       if let initialEnvelope = try store.load() {
@@ -75,11 +78,20 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   }
 
   var deviceToken: String? {
-    currentDeviceToken
+    if shouldRetryIdentityDeviceTokenLoad {
+      do {
+        try loadIdentityDeviceToken()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to reload the shared Clerk identity device token")
+      }
+    }
+
+    return currentDeviceToken
   }
 
   func updateDeviceToken(_ token: String?) {
     currentDeviceToken = token.nilIfEmpty
+    shouldRetryIdentityDeviceTokenLoad = false
   }
 
   func clearClientForDeviceTokenChange() {
@@ -103,6 +115,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   func invalidateCachedIdentityAfterKeychainClear() {
     currentRevision = nil
     currentDeviceToken = nil
+    shouldRetryIdentityDeviceTokenLoad = false
     requiresClientRefresh = true
   }
 
@@ -205,6 +218,13 @@ extension SharedSessionSyncCoordinator {
     reloadFromSharedStorage(to: clerk)
   }
 
+  private func loadIdentityDeviceToken() throws {
+    currentDeviceToken = try identityKeychain
+      .string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      .nilIfEmpty
+    shouldRetryIdentityDeviceTokenLoad = false
+  }
+
   private func scheduleRefresh(for clerk: Clerk) {
     guard !isRefreshScheduled else { return }
     isRefreshScheduled = true
@@ -292,6 +312,7 @@ extension SharedSessionSyncCoordinator {
        envelope.serverDate == clerk.lastClientServerFetchDate
     {
       try persistIdentityDeviceToken(envelope.deviceToken)
+      updateDeviceToken(envelope.deviceToken)
       canPublishSharedIdentity = true
       currentRevision = envelope.revision
       return false
@@ -308,7 +329,7 @@ extension SharedSessionSyncCoordinator {
       clerk.fenceClientResponsesAfterSharedIdentityChange()
     }
     isApplyingSharedEnvelope = true
-    currentDeviceToken = envelope.deviceToken
+    updateDeviceToken(envelope.deviceToken)
     clerk.lastClientServerFetchDate = envelope.serverDate
     clerk.client = envelope.client
     isApplyingSharedEnvelope = false

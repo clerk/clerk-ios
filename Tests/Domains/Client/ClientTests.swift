@@ -188,6 +188,30 @@ struct ClientTests {
   }
 
   @Test
+  func deviceTokenChangesEmitStoredNormalizedValues() throws {
+    configureClerkForTesting()
+    let keychain = InMemoryKeychain()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    let observer = RecordingDeviceTokenChangeObserver()
+    clerk.internalStateChanges.addObserver(observer)
+
+    try clerk.storeDeviceToken(" first-token\n")
+    #expect(clerk.applyResponseClient(Client.mock, responseDeviceToken: " response-token\n"))
+    try clerk.storeDeviceToken(" \n")
+
+    #expect(clerk.deviceToken == nil)
+    #expect(observer.changes == [
+      .init(previous: nil, current: "first-token"),
+      .init(previous: "first-token", current: "response-token"),
+      .init(previous: "response-token", current: nil),
+    ])
+  }
+
+  @Test
   func updateDeviceTokenContinuesWhenInternalStateObserverThrows() async throws {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
@@ -317,5 +341,23 @@ private final class ThrowingInternalStateChangeObserver: ClerkInternalStateChang
   @MainActor
   func handle(_: ClerkInternalStateChange, from _: Clerk) throws {
     throw Failure.failed
+  }
+}
+
+private struct RecordedDeviceTokenChange: Equatable {
+  let previous: String?
+  let current: String?
+}
+
+private final class RecordingDeviceTokenChangeObserver: ClerkInternalStateChangeObserver {
+  var changes: [RecordedDeviceTokenChange] = []
+
+  @MainActor
+  func handle(_ change: ClerkInternalStateChange, from _: Clerk) {
+    guard case let .deviceTokenDidChange(previous, current) = change else {
+      return
+    }
+
+    changes.append(.init(previous: previous, current: current))
   }
 }

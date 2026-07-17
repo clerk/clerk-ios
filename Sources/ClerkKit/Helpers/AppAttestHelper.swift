@@ -21,7 +21,11 @@ enum AppAttestHelper {
   /// The keychain storage for secure data persistence.
   @MainActor
   private static var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.appLocalKeychain
+    let dependencies = Clerk.shared.dependencies
+    return MigratingKeychainStorage(
+      primary: dependencies.appLocalKeychain,
+      fallback: dependencies.keychain
+    )
   }
 
   /// Errors that can occur during the attestation process.
@@ -152,7 +156,7 @@ enum AppAttestHelper {
   @MainActor
   static var hasKeyId: Bool {
     do {
-      return try keychain.hasItem(forKey: keychainKey)
+      return try keychain.data(forKey: keychainKey) != nil
     } catch {
       return false
     }
@@ -171,10 +175,8 @@ enum AppAttestHelper {
     try keychain.deleteItem(forKey: keychainKey)
   }
 
-  /// Retrieves the stored attestation client ID from the keychain.
-  ///
-  /// This needs to come from the keychain, because if the initial client request is blocked on app load,
-  /// the app wont have a client yet
+  /// Returns the current in-memory client ID, falling back to the cached
+  /// client in the identity keychain when no in-memory client is available.
   @MainActor
   static var clientId: String? {
     if let clientId = Clerk.shared.client?.id {

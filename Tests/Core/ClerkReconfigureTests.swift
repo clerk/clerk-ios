@@ -234,6 +234,48 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func keychainSnapshotRestoreDoesNotOverwriteNewerSharedEnvelope() throws {
+    let keychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: keychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
+    let store = SharedSessionSyncStore(
+      keychain: keychain,
+      namespace: SharedSessionSyncNamespace(
+        frontendApiUrl: dependencies.configurationManager.frontendApiUrl
+      )
+    )
+
+    try keychain.set("original-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    _ = try store.save(
+      deviceToken: "original-shared-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let snapshot = try Clerk.captureKeychainSnapshot(in: [dependencies])
+
+    try keychain.set("changed-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let newerEnvelope = try store.save(
+      deviceToken: "newer-shared-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+
+    try snapshot.restore()
+
+    #expect(
+      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        == "original-device-token"
+    )
+    #expect(try store.load()?.revision == newerEnvelope.revision)
+  }
+
+  @Test
   func failedAdoptionRestoresPreviousAndTargetKeychains() async throws {
     let original = Clerk.shared
     let previousEpoch = original.configurationEpoch
@@ -251,21 +293,30 @@ struct ClerkReconfigureTests {
     original.performConfiguration(dependencies: previousDependencies)
     defer { original.cleanupManagers() }
 
-    let targetKeychain = AdoptionMarkerFailingKeychain()
-    let targetEnvironmentData = try JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)
-    try targetKeychain.set(
-      targetEnvironmentData,
-      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    let targetSharedKeychain = InMemoryKeychain()
+    let targetAppLocalKeychain = InMemoryKeychain()
+    let targetIdentityKeychain = AdoptionMarkerFailingKeychain()
+    try seedIdentityCache(in: targetSharedKeychain)
+    try targetAppLocalKeychain.set(
+      "pending-flow",
+      forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue
     )
+    try targetIdentityKeychain.set(
+      "existing-attest-key",
+      forKey: ClerkKeychainKey.attestKeyId.rawValue
+    )
+    let targetSharedState = try keychainContents(in: targetSharedKeychain)
+    let targetAppLocalState = try keychainContents(in: targetAppLocalKeychain)
+    let targetIdentityState = try keychainContents(in: targetIdentityKeychain)
 
     let nextEpoch = original.nextConfigurationEpoch
     let targetDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(
         runtimeScope: .init(epoch: nextEpoch, runtimeState: original.runtimeState)
       ),
-      keychain: targetKeychain,
-      appLocalKeychain: targetKeychain,
-      identityKeychain: targetKeychain,
+      keychain: targetSharedKeychain,
+      appLocalKeychain: targetAppLocalKeychain,
+      identityKeychain: targetIdentityKeychain,
       telemetryCollector: original.dependencies.telemetryCollector
     )
     try targetDependencies.configurationManager.configure(
@@ -297,12 +348,64 @@ struct ClerkReconfigureTests {
     #expect(original.dependencies === previousDependencies)
     #expect(original.client?.id == Client.mock.id)
     #expect(original.environment == .mock)
-    #expect(
-      try targetKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-        == targetEnvironmentData
-    )
+    #expect(try keychainContents(in: targetSharedKeychain) == targetSharedState)
+    #expect(try keychainContents(in: targetAppLocalKeychain) == targetAppLocalState)
+    #expect(try keychainContents(in: targetIdentityKeychain) == targetIdentityState)
 
     try expectIdentityCache(in: previousKeychain)
+  }
+
+  @Test
+  func failedAdoptionSnapshotRestoreRemovesPartiallyCopiedIdentity() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let identityKeychain = AdoptionMarkerFailingKeychain()
+    try seedIdentityCache(in: sharedKeychain)
+    try appLocalKeychain.set(
+      "pending-flow",
+      forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue
+    )
+    try identityKeychain.set(
+      "original-identity-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: identityKeychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.shared.service",
+          accessGroup: "test.shared.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    let sharedState = try keychainContents(in: sharedKeychain)
+    let appLocalState = try keychainContents(in: appLocalKeychain)
+    let identityState = try keychainContents(in: identityKeychain)
+    let snapshot = try Clerk.captureKeychainSnapshot(in: [dependencies])
+
+    #expect(throws: AdoptionMarkerFailingKeychain.WriteError.self) {
+      try Clerk.prepareSharedSessionAdoptionIfNeeded(dependencies: dependencies)
+    }
+    #expect(
+      try identityKeychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        == "persisted-device-token"
+    )
+    #expect(try identityKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue))
+    #expect(try identityKeychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
+
+    try snapshot.restore()
+
+    #expect(try keychainContents(in: sharedKeychain) == sharedState)
+    #expect(try keychainContents(in: appLocalKeychain) == appLocalState)
+    #expect(try keychainContents(in: identityKeychain) == identityState)
   }
 
   @Test
@@ -683,6 +786,16 @@ struct ClerkReconfigureTests {
     #expect(
       try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) == .mock
     )
+  }
+
+  private func keychainContents(
+    in keychain: any KeychainStorage
+  ) throws -> [String: Data] {
+    try ClerkKeychainKey.allCases.reduce(into: [:]) { contents, key in
+      if let data = try keychain.data(forKey: key.rawValue) {
+        contents[key.rawValue] = data
+      }
+    }
   }
 
   private func unexpiredJWT() throws -> String {

@@ -60,7 +60,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     case let .deviceTokenDidChange(previousToken, token):
       if previousToken != token {
         try persistDeviceTokenState(
-          "set",
+          token == nil ? "cleared" : "set",
           version: nextDeviceTokenVersion(keychain: clerk.dependencies.appLocalKeychain),
           keychain: clerk.dependencies.appLocalKeychain
         )

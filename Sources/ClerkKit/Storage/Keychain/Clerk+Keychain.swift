@@ -167,15 +167,6 @@ extension Clerk {
     var items: [ClerkKeychainSnapshot.Item] = []
 
     for dependencies in dependencies {
-      let sharedStore = sharedSessionStore(in: dependencies)
-      try items.append(
-        ClerkKeychainSnapshot.Item(
-          keychain: dependencies.keychain,
-          key: sharedStore.storageKey,
-          data: dependencies.keychain.data(forKey: sharedStore.storageKey)
-        )
-      )
-
       for keychain in identityKeychains(in: dependencies) {
         for key in ClerkKeychainKey.allCases {
           try items.append(

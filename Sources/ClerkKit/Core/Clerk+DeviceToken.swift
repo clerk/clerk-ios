@@ -36,11 +36,12 @@ extension Clerk {
 
   func storeDeviceToken(_ token: String) throws {
     let previousToken = deviceToken
-    try replaceStoredDeviceToken(token)
-    emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: token))
+    let currentToken = try replaceStoredDeviceToken(token)
+    emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: currentToken))
   }
 
-  func replaceStoredDeviceToken(_ token: String?) throws {
+  @discardableResult
+  func replaceStoredDeviceToken(_ token: String?) throws -> String? {
     let normalizedToken = token.nilIfEmpty
     if let normalizedToken {
       try dependencies.identityKeychain.set(
@@ -54,6 +55,7 @@ extension Clerk {
     }
 
     sharedSessionSyncCoordinator?.updateDeviceToken(normalizedToken)
+    return normalizedToken
   }
 
   /// Updates the stored Clerk device token and refreshes native auth state.
