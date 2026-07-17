@@ -7,6 +7,25 @@
 
 import Foundation
 
+private let clientStateKeys: [ClerkKeychainKey] = [
+  .cachedClient,
+  .cachedClientServerDate,
+  .cachedEnvironment,
+]
+
+private func clearCachedClientState(in keychain: any KeychainStorage) {
+  for key in clientStateKeys {
+    do {
+      try keychain.deleteItem(forKey: key.rawValue)
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to clear cached Clerk data after device token update"
+      )
+    }
+  }
+}
+
 private final class CachePersistenceState: @unchecked Sendable {
   private let lock = NSLock()
   private var generation = 0
@@ -102,6 +121,10 @@ private actor CachePersistenceWorker {
         message: "Failed to delete cached client from keychain. This is non-critical."
       )
     }
+  }
+
+  func clearClientStateAfterDeviceTokenChange() {
+    clearCachedClientState(in: keychain)
   }
 }
 
@@ -249,6 +272,17 @@ final class CacheManager {
     enqueuePersistence { worker in
       await worker.deleteClient(serverFetchDate: serverFetchDate)
     }
+  }
+
+  func clearClientStateAfterDeviceTokenChange() {
+    Self.clearClientStateAfterDeviceTokenChange(in: keychain)
+    enqueuePersistence { worker in
+      await worker.clearClientStateAfterDeviceTokenChange()
+    }
+  }
+
+  static func clearClientStateAfterDeviceTokenChange(in keychain: any KeychainStorage) {
+    clearCachedClientState(in: keychain)
   }
 
   func shutdown() {

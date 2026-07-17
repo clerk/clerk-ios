@@ -957,26 +957,19 @@ extension Clerk {
   }
 
   func clearCachedClientStateAfterDeviceTokenChange() {
+    hardFenceClientResponses()
+
     if let sharedSessionSyncCoordinator {
-      hardFenceClientResponses()
       sharedSessionSyncCoordinator.clearClientForDeviceTokenChange()
-      return
+    } else {
+      lastClientServerFetchDate = nil
+      client = nil
     }
 
-    hardFenceClientResponses()
-    lastClientServerFetchDate = nil
-    client = nil
-
-    for key in [
-      ClerkKeychainKey.cachedClient,
-      .cachedClientServerDate,
-      .cachedEnvironment,
-    ] {
-      do {
-        try dependencies.identityKeychain.deleteItem(forKey: key.rawValue)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
-      }
+    if let cacheManager {
+      cacheManager.clearClientStateAfterDeviceTokenChange()
+    } else {
+      CacheManager.clearClientStateAfterDeviceTokenChange(in: dependencies.identityKeychain)
     }
   }
 

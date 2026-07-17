@@ -182,6 +182,27 @@ struct CacheManagerTests {
   }
 
   @Test
+  func deviceTokenChangeClearsClientMetadataAfterEarlierWrites() async throws {
+    let (keychain, _, cacheManager) = createTestSetup()
+
+    cacheManager.saveClient(
+      Client.mock,
+      serverFetchDate: Date(timeIntervalSince1970: 100)
+    )
+    cacheManager.saveEnvironment(Clerk.Environment.mock)
+    cacheManager.clearClientStateAfterDeviceTokenChange()
+    await cacheManager.shutdownAndDrain()
+
+    for key in [
+      ClerkKeychainKey.cachedClient,
+      .cachedClientServerDate,
+      .cachedEnvironment,
+    ] {
+      #expect(try keychain.data(forKey: key.rawValue) == nil)
+    }
+  }
+
+  @Test
   func shutdownIgnoresFuturePersistenceRequests() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
