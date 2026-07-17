@@ -1951,6 +1951,86 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func rejectedWatchTokenOnlyBlocksPairedClientWhenTokenDiffers() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let matchingTokenClient = signedInClient(id: "matching-token-client", updatedAt: 200)
+    let differentTokenClient = signedInClient(id: "different-token-client", updatedAt: 300)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try appLocalKeychain.set(
+      "3",
+      forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue
+    )
+    try appLocalKeychain.set(
+      "1",
+      forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+    )
+    let initialPostCount = notifier.postCount
+    let watchCoordinator = WatchConnectivityCoordinator()
+
+    watchCoordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "local-token",
+          version: WatchSyncVersion(rawValue: 2)
+        ),
+        clientUpdate: .snapshot(
+          client: matchingTokenClient,
+          serverFetchDate: Date(timeIntervalSince1970: 200),
+          version: WatchSyncVersion(rawValue: 2)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.client == matchingTokenClient)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    let matchingEnvelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(matchingEnvelope.deviceToken == "local-token")
+    #expect(matchingEnvelope.client == matchingTokenClient)
+    #expect(notifier.postCount == initialPostCount + 1)
+
+    watchCoordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "different-token",
+          version: WatchSyncVersion(rawValue: 2)
+        ),
+        clientUpdate: .snapshot(
+          client: differentTokenClient,
+          serverFetchDate: Date(timeIntervalSince1970: 300),
+          version: WatchSyncVersion(rawValue: 3)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.client == matchingTokenClient)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(try makeStore(sharedKeychain).load() == matchingEnvelope)
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
   func dateLessAuthoritativeWatchClearRemovesInheritedServerDate() async throws {
     let sharedKeychain = InMemoryKeychain()
     let appLocalKeychain = InMemoryKeychain()

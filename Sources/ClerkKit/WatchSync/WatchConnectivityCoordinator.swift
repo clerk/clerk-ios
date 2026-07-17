@@ -96,7 +96,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let applyUpdates = { [self] in
       let shouldApplyPairedClientUpdate: Bool
       do {
-        try applyDeviceTokenUpdate(
+        shouldApplyPairedClientUpdate = try applyDeviceTokenUpdate(
           payload.deviceTokenUpdate,
           from: source,
           to: clerk,
@@ -105,8 +105,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
             from: source,
             to: clerk
           )
-        )
-        shouldApplyPairedClientUpdate = true
+        ).allowsPairedClientUpdate
       } catch {
         shouldApplyPairedClientUpdate = false
         ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")

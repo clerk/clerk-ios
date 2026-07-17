@@ -6,62 +6,53 @@
 import Foundation
 
 extension WatchConnectivityCoordinator {
+  enum DeviceTokenUpdateOutcome {
+    case compatibleWithPairedClient
+    case rejectedDifferentToken
+
+    var allowsPairedClientUpdate: Bool {
+      switch self {
+      case .compatibleWithPairedClient:
+        true
+      case .rejectedDifferentToken:
+        false
+      }
+    }
+  }
+
   func applyDeviceTokenUpdate(
     _ update: WatchSyncDeviceTokenUpdate,
     from source: WatchSyncSource,
     to clerk: Clerk,
     allowNonAuthoritativeUpdate: Bool = true
-  ) throws {
-    let keychain = clerk.dependencies.watchSyncKeychain
-
+  ) throws -> DeviceTokenUpdateOutcome {
     switch update {
     case .notIncluded:
-      return
+      return .compatibleWithPairedClient
     case let .tokenSet(deviceToken, version):
       let deviceToken = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !deviceToken.isEmpty else {
-        try applyDeviceTokenUpdate(
+        return try applyDeviceTokenUpdate(
           .tokenCleared(version: version),
           from: source,
           to: clerk,
           allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate
         )
-        return
       }
 
-      guard shouldApplyDeviceTokenUpdate(
-        version: version,
-        from: source,
-        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
-        currentToken: clerk.deviceToken,
-        keychain: keychain
-      ) else {
-        return
-      }
-
-      try applyTokenSet(
+      return try applyTokenSet(
         deviceToken,
         version: version,
         from: source,
         to: clerk,
-        keychain: keychain
+        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate
       )
     case let .tokenCleared(version):
-      guard shouldApplyDeviceTokenUpdate(
-        version: version,
-        from: source,
-        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
-        currentToken: clerk.deviceToken,
-        keychain: keychain
-      ) else {
-        return
-      }
-
-      try applyTokenClear(
+      return try applyTokenClear(
         version: version,
         from: source,
         to: clerk,
-        keychain: keychain
+        allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate
       )
     }
   }
@@ -71,8 +62,22 @@ extension WatchConnectivityCoordinator {
     version: WatchSyncVersion?,
     from source: WatchSyncSource,
     to clerk: Clerk,
-    keychain: any KeychainStorage
-  ) throws {
+    allowNonAuthoritativeUpdate: Bool
+  ) throws -> DeviceTokenUpdateOutcome {
+    let keychain = clerk.dependencies.watchSyncKeychain
+    guard shouldApplyDeviceTokenUpdate(
+      version: version,
+      from: source,
+      allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+      currentToken: clerk.deviceToken,
+      keychain: keychain
+    ) else {
+      return rejectedUpdateOutcome(
+        incomingToken: deviceToken,
+        currentToken: clerk.deviceToken
+      )
+    }
+
     let previousToken = clerk.deviceToken
     let currentToken = try clerk.replaceStoredDeviceToken(deviceToken)
     if previousToken != currentToken {
@@ -86,14 +91,30 @@ extension WatchConnectivityCoordinator {
     } catch {
       ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
     }
+
+    return .compatibleWithPairedClient
   }
 
   private func applyTokenClear(
     version: WatchSyncVersion?,
     from source: WatchSyncSource,
     to clerk: Clerk,
-    keychain: any KeychainStorage
-  ) throws {
+    allowNonAuthoritativeUpdate: Bool
+  ) throws -> DeviceTokenUpdateOutcome {
+    let keychain = clerk.dependencies.watchSyncKeychain
+    guard shouldApplyDeviceTokenUpdate(
+      version: version,
+      from: source,
+      allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate,
+      currentToken: clerk.deviceToken,
+      keychain: keychain
+    ) else {
+      return rejectedUpdateOutcome(
+        incomingToken: nil,
+        currentToken: clerk.deviceToken
+      )
+    }
+
     try clerk.replaceStoredDeviceToken(nil)
     handleAppliedDeviceTokenChange(from: source, clerk: clerk)
 
@@ -109,6 +130,17 @@ extension WatchConnectivityCoordinator {
     } catch {
       ClerkLogger.logError(error, message: "Failed to store cleared deviceToken sync state")
     }
+
+    return .compatibleWithPairedClient
+  }
+
+  private func rejectedUpdateOutcome(
+    incomingToken: String?,
+    currentToken: String?
+  ) -> DeviceTokenUpdateOutcome {
+    incomingToken == currentToken
+      ? .compatibleWithPairedClient
+      : .rejectedDifferentToken
   }
 
   func nextDeviceTokenVersion(keychain: any KeychainStorage) -> WatchSyncVersion {
