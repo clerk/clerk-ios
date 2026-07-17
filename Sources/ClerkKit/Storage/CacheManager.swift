@@ -114,6 +114,8 @@ private actor CachePersistenceWorker {
       try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate {
         saveServerFetchDate(serverFetchDate)
+      } else {
+        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
     } catch {
       ClerkLogger.logError(

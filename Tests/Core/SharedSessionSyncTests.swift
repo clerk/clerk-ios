@@ -1901,6 +1901,104 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func failedWatchDeviceTokenPersistenceDoesNotApplyPairedClient() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let identityKeychain = ControllableSetFailingKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier,
+      identityKeychain: identityKeychain
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let localServerDate = Date(timeIntervalSince1970: 100)
+    let phoneClient = signedInClient(id: "phone-client", updatedAt: 200)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: localServerDate
+    )
+    let initialEnvelope = try #require(try makeStore(sharedKeychain).load())
+    let initialPostCount = notifier.postCount
+
+    identityKeychain.setShouldFail(true)
+    WatchConnectivityCoordinator().apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "phone-token",
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        clientUpdate: .snapshot(
+          client: phoneClient,
+          serverFetchDate: Date(timeIntervalSince1970: 200),
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.client == localClient)
+    #expect(clerk.lastClientServerFetchDate == localServerDate)
+    #expect(try makeStore(sharedKeychain).load() == initialEnvelope)
+    #expect(notifier.postCount == initialPostCount)
+  }
+
+  @Test
+  func dateLessAuthoritativeWatchClearRemovesInheritedServerDate() async throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let cacheManager = CacheManager(coordinator: clerk, keychain: appLocalKeychain)
+    clerk.cacheManager = cacheManager
+
+    try clerk.storeDeviceToken("device-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+
+    WatchConnectivityCoordinator().apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .notIncluded,
+        clientUpdate: .cleared(
+          serverFetchDate: nil,
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+    await cacheManager.shutdownAndDrain()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(
+      try appLocalKeychain.data(
+        forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+      ) == nil
+    )
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.deviceToken == "device-token")
+    #expect(envelope.client == nil)
+    #expect(envelope.serverDate == nil)
+  }
+
+  @Test
   func failedWatchEnvelopePersistenceRetriesOnForeground() throws {
     let sharedKeychain = ControllableSetFailingKeychain()
     let appLocalKeychain = InMemoryKeychain()

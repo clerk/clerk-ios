@@ -47,9 +47,7 @@ extension WatchConnectivityCoordinator {
     }
 
     if update.isAuthoritative {
-      if let serverFetchDate = update.serverFetchDate {
-        clerk.lastClientServerFetchDate = serverFetchDate
-      }
+      clerk.lastClientServerFetchDate = update.serverFetchDate
       noteAppliedAuthState(update, keychain: clerk.dependencies.watchSyncKeychain)
       clerk.client = update.client
       return true

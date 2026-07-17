@@ -94,22 +94,31 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let previousServerFetchDate = clerk.lastClientServerFetchDate
 
     let applyUpdates = { [self] in
-      applyDeviceTokenUpdate(
-        payload.deviceTokenUpdate,
-        from: source,
-        to: clerk,
-        allowNonAuthoritativeUpdate: shouldApplyNonAuthoritativeDeviceTokenUpdate(
-          matching: payload.clientUpdate,
+      let shouldApplyPairedClientUpdate: Bool
+      do {
+        try applyDeviceTokenUpdate(
+          payload.deviceTokenUpdate,
           from: source,
-          to: clerk
+          to: clerk,
+          allowNonAuthoritativeUpdate: shouldApplyNonAuthoritativeDeviceTokenUpdate(
+            matching: payload.clientUpdate,
+            from: source,
+            to: clerk
+          )
         )
-      )
+        shouldApplyPairedClientUpdate = true
+      } catch {
+        shouldApplyPairedClientUpdate = false
+        ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")
+      }
 
       if let environment = payload.environment {
         clerk.environment = environment
       }
 
-      applyClientUpdate(payload.clientUpdate, from: source, to: clerk)
+      if shouldApplyPairedClientUpdate {
+        applyClientUpdate(payload.clientUpdate, from: source, to: clerk)
+      }
     }
 
     if let coordinator = clerk.sharedSessionSyncCoordinator {

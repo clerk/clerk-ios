@@ -11,7 +11,7 @@ extension WatchConnectivityCoordinator {
     from source: WatchSyncSource,
     to clerk: Clerk,
     allowNonAuthoritativeUpdate: Bool = true
-  ) {
+  ) throws {
     let keychain = clerk.dependencies.watchSyncKeychain
 
     switch update {
@@ -20,7 +20,7 @@ extension WatchConnectivityCoordinator {
     case let .tokenSet(deviceToken, version):
       let deviceToken = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !deviceToken.isEmpty else {
-        applyDeviceTokenUpdate(
+        try applyDeviceTokenUpdate(
           .tokenCleared(version: version),
           from: source,
           to: clerk,
@@ -39,18 +39,13 @@ extension WatchConnectivityCoordinator {
         return
       }
 
-      do {
-        let previousToken = clerk.deviceToken
-        let currentToken = try clerk.replaceStoredDeviceToken(deviceToken)
-        if previousToken != currentToken {
-          handleAppliedDeviceTokenChange(from: source, clerk: clerk)
-        }
-        try persistDeviceTokenState("set", version: version, keychain: keychain)
-        try markDeviceTokenSynced(keychain: keychain)
-        syncCurrentState(from: clerk)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to store deviceToken from \(source.sourceDescription)")
-      }
+      try applyTokenSet(
+        deviceToken,
+        version: version,
+        from: source,
+        to: clerk,
+        keychain: keychain
+      )
     case let .tokenCleared(version):
       guard shouldApplyDeviceTokenUpdate(
         version: version,
@@ -62,20 +57,57 @@ extension WatchConnectivityCoordinator {
         return
       }
 
-      do {
-        try clerk.replaceStoredDeviceToken(nil)
-        try persistDeviceTokenState("cleared", version: version, keychain: keychain)
-        try markDeviceTokenSynced(keychain: keychain)
-        try persistAuthState(
-          "cleared",
-          version: max(version ?? .initial, nextAuthVersion(keychain: keychain)),
-          keychain: keychain
-        )
-        handleAppliedDeviceTokenChange(from: source, clerk: clerk)
-        syncCurrentState(from: clerk)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to clear deviceToken from \(source.sourceDescription)")
-      }
+      try applyTokenClear(
+        version: version,
+        from: source,
+        to: clerk,
+        keychain: keychain
+      )
+    }
+  }
+
+  private func applyTokenSet(
+    _ deviceToken: String,
+    version: WatchSyncVersion?,
+    from source: WatchSyncSource,
+    to clerk: Clerk,
+    keychain: any KeychainStorage
+  ) throws {
+    let previousToken = clerk.deviceToken
+    let currentToken = try clerk.replaceStoredDeviceToken(deviceToken)
+    if previousToken != currentToken {
+      handleAppliedDeviceTokenChange(from: source, clerk: clerk)
+    }
+
+    do {
+      try persistDeviceTokenState("set", version: version, keychain: keychain)
+      try markDeviceTokenSynced(keychain: keychain)
+      syncCurrentState(from: clerk)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to store deviceToken sync state")
+    }
+  }
+
+  private func applyTokenClear(
+    version: WatchSyncVersion?,
+    from source: WatchSyncSource,
+    to clerk: Clerk,
+    keychain: any KeychainStorage
+  ) throws {
+    try clerk.replaceStoredDeviceToken(nil)
+    handleAppliedDeviceTokenChange(from: source, clerk: clerk)
+
+    do {
+      try persistDeviceTokenState("cleared", version: version, keychain: keychain)
+      try markDeviceTokenSynced(keychain: keychain)
+      try persistAuthState(
+        "cleared",
+        version: max(version ?? .initial, nextAuthVersion(keychain: keychain)),
+        keychain: keychain
+      )
+      syncCurrentState(from: clerk)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to store cleared deviceToken sync state")
     }
   }
 
