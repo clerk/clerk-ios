@@ -95,7 +95,7 @@ final class DependencyContainer: Dependencies {
     let keychainStorages = try Self.makeKeychainStorages(
       options: options,
       frontendApiUrl: configurationManager.frontendApiUrl,
-      readAdoptionMarker: !publishableKey.isEmpty
+      readAdoptionMarker: !publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests
     )
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
@@ -174,6 +174,8 @@ final class DependencyContainer: Dependencies {
         appLocal: stableIdentity,
         syncEnabled: syncEnabled
       )
+    } else if syncEnabled {
+      appLocal
     } else {
       shared
     }

@@ -11,7 +11,6 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     case apply
     case acceptRevision
     case rejectOlder
-    case refresh
   }
 
   private let store: SharedSessionSyncStore
@@ -23,7 +22,6 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var currentDeviceToken: String?
   private var shouldRetryIdentityDeviceTokenLoad = false
   private var isApplyingSharedEnvelope = false
-  private var isRefreshScheduled = false
   private var canPublishSharedIdentity = false
   private(set) var requiresClientRefresh = false
 
@@ -64,7 +62,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
           _ = try apply(initialEnvelope, to: clerk)
         case .acceptRevision:
           currentRevision = initialEnvelope.revision
-        case .rejectOlder, .refresh:
+        case .rejectOlder:
           requiresClientRefresh = true
         }
       }
@@ -163,13 +161,6 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         }
         try persistCurrentIdentity(from: clerk)
         return false
-      case .refresh:
-        if !requiresClientRefresh {
-          clerk.hardFenceClientResponses()
-          requiresClientRefresh = true
-        }
-        scheduleRefresh(for: clerk)
-        return false
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to reload the shared Clerk auth envelope")
@@ -225,30 +216,6 @@ extension SharedSessionSyncCoordinator {
     shouldRetryIdentityDeviceTokenLoad = false
   }
 
-  private func scheduleRefresh(for clerk: Clerk) {
-    guard !isRefreshScheduled else { return }
-    isRefreshScheduled = true
-
-    let task = clerk.scheduleManagedTask { @MainActor [weak self, weak clerk] in
-      defer { self?.isRefreshScheduled = false }
-
-      do {
-        try await clerk?.refreshClient()
-      } catch is CancellationError {
-        // Managed cleanup cancels this task during Clerk reconfiguration.
-      } catch {
-        ClerkLogger.logError(
-          error,
-          message: "Failed to refresh client after an ambiguous shared auth update"
-        )
-      }
-    }
-
-    if task == nil {
-      isRefreshScheduled = false
-    }
-  }
-
   private func persistCurrentIdentity(from clerk: Clerk) throws {
     let envelope = try store.save(
       deviceToken: currentDeviceToken,
@@ -284,23 +251,14 @@ extension SharedSessionSyncCoordinator {
         : .acceptRevision
     }
 
-    if currentDeviceToken == nil,
-       clerk.client == nil,
-       currentServerDate == nil
+    if let incomingServerDate,
+       let currentServerDate,
+       incomingServerDate < currentServerDate
     {
-      return .apply
+      return .rejectOlder
     }
 
-    guard let incomingServerDate, let currentServerDate else {
-      return .refresh
-    }
-
-    if incomingServerDate > currentServerDate {
-      return .apply
-    }
-    return incomingServerDate < currentServerDate
-      ? .rejectOlder
-      : .refresh
+    return .apply
   }
 
   private func apply(

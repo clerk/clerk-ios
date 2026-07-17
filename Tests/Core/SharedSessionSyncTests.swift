@@ -1291,20 +1291,13 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func equalDateActiveEnvelopeRefreshesInsteadOfReplacingLocalClear() async throws {
+  func equalDateActiveEnvelopeAppliesLastCompleteWrite() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
     let serverDate = Date(timeIntervalSince1970: 200)
     let clerk = makeIsolatedClerk(
       keychain: keychain,
-      notifier: notifier,
-      clientService: TestClientResponseService(
-        response: ClientServiceResponse(
-          client: nil,
-          requestSequence: 3,
-          serverDate: Date(timeIntervalSince1970: 300)
-        )
-      )
+      notifier: notifier
     )
 
     try clerk.storeDeviceToken("local-token")
@@ -1320,46 +1313,28 @@ struct SharedSessionSyncTests {
     )
     let initialPostCount = notifier.postCount
 
-    try makeStore(keychain).save(
-      deviceToken: "stale-token",
-      client: client(id: "stale-client", updatedAt: 300),
+    let envelope = try makeStore(keychain).save(
+      deviceToken: "peer-token",
+      client: client(id: "peer-client", updatedAt: 300),
       serverDate: serverDate
     )
     notifier.simulateNotification()
 
-    #expect(clerk.client == nil)
-    #expect(clerk.deviceToken == "local-token")
-    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(clerk.client == envelope.client)
+    #expect(clerk.deviceToken == "peer-token")
+    #expect(clerk.lastClientServerFetchDate == serverDate)
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false)
     #expect(notifier.postCount == initialPostCount)
-
-    try await waitUntil {
-      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
-    }
-
-    #expect(clerk.client == nil)
-    #expect(clerk.deviceToken == "local-token")
-    let published = try #require(try makeStore(keychain).load())
-    #expect(published.state == .signedOut)
-    #expect(published.deviceToken == "local-token")
-    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
-    #expect(notifier.postCount == initialPostCount + 1)
+    #expect(try makeStore(keychain).load() == envelope)
   }
 
   @Test
-  func missingDateConflictRefreshesInsteadOfApplyingEnvelope() async throws {
+  func missingDateConflictAppliesLastCompleteWrite() throws {
     let keychain = InMemoryKeychain()
     let notifier = TestSharedSessionSyncNotifier()
-    let refreshedClient = client(id: "refreshed-client", updatedAt: 300)
     let clerk = makeIsolatedClerk(
       keychain: keychain,
-      notifier: notifier,
-      clientService: TestClientResponseService(
-        response: ClientServiceResponse(
-          client: refreshedClient,
-          requestSequence: 2,
-          serverDate: Date(timeIntervalSince1970: 300)
-        )
-      )
+      notifier: notifier
     )
     let localClient = client(id: "local-client", updatedAt: 100)
 
@@ -1371,90 +1346,19 @@ struct SharedSessionSyncTests {
     )
     let initialPostCount = notifier.postCount
 
-    try makeStore(keychain).save(
+    let envelope = try makeStore(keychain).save(
       deviceToken: "device-token",
       client: client(id: "unknown-order-client", updatedAt: 400),
       serverDate: nil
     )
     notifier.simulateNotification()
 
-    #expect(clerk.client == localClient)
-    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+    #expect(clerk.client == envelope.client)
+    #expect(clerk.deviceToken == "device-token")
+    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false)
     #expect(notifier.postCount == initialPostCount)
-
-    try await waitUntil {
-      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
-    }
-
-    #expect(clerk.client == refreshedClient)
-    let published = try #require(try makeStore(keychain).load())
-    #expect(published.client == refreshedClient)
-    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
-    #expect(notifier.postCount == initialPostCount + 1)
-  }
-
-  @Test
-  func ambiguousEnvelopeFencesResponsesStartedBeforeRefresh() async throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let refreshService = SuspendedClientResponseService(
-      response: ClientServiceResponse(
-        client: nil,
-        requestSequence: 3,
-        serverDate: Date(timeIntervalSince1970: 400)
-      )
-    )
-    let clerk = makeIsolatedClerk(
-      keychain: keychain,
-      notifier: notifier,
-      clientService: refreshService
-    )
-    let serverDate = Date(timeIntervalSince1970: 200)
-
-    try clerk.storeDeviceToken("device-token")
-    clerk.applyResponseClient(
-      nil,
-      responseSequence: 1,
-      serverDate: serverDate
-    )
-    let preConflictGeneration = clerk.clientResponseGeneration
-    let initialPostCount = notifier.postCount
-
-    try makeStore(keychain).save(
-      deviceToken: "device-token",
-      client: client(id: "ambiguous-client", updatedAt: 200),
-      serverDate: serverDate
-    )
-    notifier.simulateNotification()
-
-    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
-    #expect(clerk.clientResponseGeneration != preConflictGeneration)
-
-    let didApplyOldResponse = clerk.applyResponseClient(
-      client(id: "old-response-client", updatedAt: 300),
-      responseSequence: 2,
-      serverDate: Date(timeIntervalSince1970: 300),
-      clientResponseGeneration: preConflictGeneration
-    )
-
-    #expect(!didApplyOldResponse)
-    #expect(clerk.client == nil)
-    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
-    #expect(notifier.postCount == initialPostCount)
-
-    try await waitUntil {
-      refreshService.isWaiting
-    }
-    refreshService.resume()
-
-    try await waitUntil {
-      clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
-    }
-
-    let published = try #require(try makeStore(keychain).load())
-    #expect(published.state == .signedOut)
-    #expect(published.serverDate == Date(timeIntervalSince1970: 400))
-    #expect(notifier.postCount == initialPostCount + 1)
+    #expect(try makeStore(keychain).load() == envelope)
   }
 
   @Test
@@ -1495,63 +1399,6 @@ struct SharedSessionSyncTests {
     #expect(repairedEnvelope.deviceToken == "local-token")
     #expect(repairedEnvelope.client == localClient)
     #expect(repairedEnvelope.serverDate == localServerDate)
-    #expect(notifier.postCount == initialPostCount + 1)
-  }
-
-  @Test
-  func failedAmbiguousRefreshRetriesTheSameRevision() async throws {
-    let keychain = InMemoryKeychain()
-    let notifier = TestSharedSessionSyncNotifier()
-    let refreshedClient = signedInClient(id: "refreshed-client", updatedAt: 300)
-    let refreshService = SequencedClientResponseService(results: [
-      .failure(.refreshFailed),
-      .success(ClientServiceResponse(
-        client: refreshedClient,
-        requestSequence: 3,
-        serverDate: Date(timeIntervalSince1970: 300)
-      )),
-    ])
-    let clerk = makeIsolatedClerk(
-      keychain: keychain,
-      notifier: notifier,
-      clientService: refreshService
-    )
-    let localClient = signedInClient(id: "local-client", updatedAt: 200)
-    let ambiguousDate = Date(timeIntervalSince1970: 200)
-
-    try clerk.storeDeviceToken("device-token")
-    clerk.applyResponseClient(
-      localClient,
-      responseSequence: 1,
-      serverDate: ambiguousDate
-    )
-    let initialPostCount = notifier.postCount
-    let ambiguousEnvelope = try makeStore(keychain).save(
-      deviceToken: "device-token",
-      client: signedInClient(id: "ambiguous-client", updatedAt: 200),
-      serverDate: ambiguousDate
-    )
-
-    notifier.simulateNotification()
-    try await waitUntil {
-      refreshService.callCount == 1
-    }
-
-    #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
-    #expect(try makeStore(keychain).load() == ambiguousEnvelope)
-    #expect(notifier.postCount == initialPostCount)
-
-    notifier.simulateNotification()
-    try await waitUntil {
-      refreshService.callCount == 2
-        && clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false
-    }
-
-    let published = try #require(try makeStore(keychain).load())
-    #expect(published.revision != ambiguousEnvelope.revision)
-    #expect(published.deviceToken == "device-token")
-    #expect(published.client == refreshedClient)
-    #expect(published.serverDate == Date(timeIntervalSince1970: 300))
     #expect(notifier.postCount == initialPostCount + 1)
   }
 

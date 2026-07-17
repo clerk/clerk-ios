@@ -6,7 +6,7 @@ import Testing
 @Suite(.serialized)
 struct AppAttestHelperTests {
   @Test
-  func legacySharedKeyIdMigratesToAppLocalStorage() throws {
+  func legacySharedKeyIdIsIgnored() throws {
     configureClerkForTesting()
     let sharedKeychain = InMemoryKeychain()
     let appLocalKeychain = InMemoryKeychain()
@@ -20,16 +20,16 @@ struct AppAttestHelperTests {
       appLocalKeychain: appLocalKeychain
     )
 
-    #expect(AppAttestHelper.hasKeyId)
+    #expect(!AppAttestHelper.hasKeyId)
     #expect(
       try appLocalKeychain.string(
         forKey: ClerkKeychainKey.attestKeyId.rawValue
-      ) == "legacy-attest-key"
+      ) == nil
     )
   }
 
   @Test
-  func removingKeyIdDeletesAppLocalAndLegacyCopies() throws {
+  func removingKeyIdDeletesOnlyAppLocalCopy() throws {
     configureClerkForTesting()
     let sharedKeychain = InMemoryKeychain()
     let appLocalKeychain = InMemoryKeychain()
@@ -55,9 +55,9 @@ struct AppAttestHelperTests {
       ) == false
     )
     #expect(
-      try sharedKeychain.hasItem(
+      try sharedKeychain.string(
         forKey: ClerkKeychainKey.attestKeyId.rawValue
-      ) == false
+      ) == "legacy-attest-key"
     )
   }
 }

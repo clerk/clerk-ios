@@ -21,11 +21,7 @@ enum AppAttestHelper {
   /// The keychain storage for secure data persistence.
   @MainActor
   private static var keychain: any KeychainStorage {
-    let dependencies = Clerk.shared.dependencies
-    return MigratingKeychainStorage(
-      primary: dependencies.appLocalKeychain,
-      fallback: dependencies.keychain
-    )
+    Clerk.shared.dependencies.appLocalKeychain
   }
 
   /// Errors that can occur during the attestation process.

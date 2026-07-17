@@ -33,8 +33,8 @@ extension Clerk {
     ///
     /// Participating apps must use the same Clerk publishable key and configure
     /// ``KeychainConfig`` with the same Keychain service and access group.
-    /// Shared authentication is stored as one atomic envelope. A newer server-dated
-    /// write wins, an older write loses, and ambiguous conflicts trigger a client refresh.
+    /// Shared authentication is stored as one atomic envelope. A complete shared write
+    /// wins unless its server date is provably older than the current local state.
     public struct SharedSessionSyncConfig: Sendable, Equatable {
       /// Enables synchronization of persisted Clerk auth state through the shared Keychain.
       public static let enabled = Self()
