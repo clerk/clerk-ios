@@ -24,6 +24,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var isApplyingSharedEnvelope = false
   private var persistenceDeferralDepth = 0
   private var hasPendingIdentityPersistence = false
+  private var hasUnresolvedSharedEnvelope = false
   private var canPublishSharedIdentity = false
   private(set) var requiresClientRefresh = false
 
@@ -58,17 +59,21 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
     do {
       if let initialEnvelope = try store.load() {
-        canPublishSharedIdentity = true
+        hasUnresolvedSharedEnvelope = true
         switch reconciliationDecision(for: initialEnvelope, clerk: clerk) {
         case .apply:
           _ = try apply(initialEnvelope, to: clerk)
         case .acceptRevision:
+          hasUnresolvedSharedEnvelope = false
+          canPublishSharedIdentity = true
           currentRevision = initialEnvelope.revision
         case .rejectOlder:
+          hasUnresolvedSharedEnvelope = false
           requiresClientRefresh = true
         }
       }
     } catch {
+      hasUnresolvedSharedEnvelope = true
       ClerkLogger.logError(error, message: "Failed to initialize shared Clerk auth state")
     }
 
@@ -116,6 +121,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     currentRevision = nil
     currentDeviceToken = nil
     shouldRetryIdentityDeviceTokenLoad = false
+    hasUnresolvedSharedEnvelope = false
     requiresClientRefresh = true
   }
 
@@ -124,6 +130,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     case let .clientDidChange(previousClient, client):
       guard !isApplyingSharedEnvelope,
             persistenceDeferralDepth == 0,
+            !hasUnresolvedSharedEnvelope,
             !requiresClientRefresh,
             client != nil || previousClient != nil || clerk.lastClientServerFetchDate != nil
       else {
@@ -147,6 +154,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   func reloadFromSharedStorage(force: Bool = false, to clerk: Clerk) -> Bool {
     do {
       guard let envelope = try store.load() else {
+        hasUnresolvedSharedEnvelope = false
         try retryPendingIdentityPersistenceIfNeeded()
         return false
       }
@@ -159,10 +167,13 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
       case .apply:
         return try apply(envelope, to: clerk)
       case .acceptRevision:
+        hasUnresolvedSharedEnvelope = false
+        canPublishSharedIdentity = true
         currentRevision = envelope.revision
         try retryPendingIdentityPersistenceIfNeeded()
         return false
       case .rejectOlder:
+        hasUnresolvedSharedEnvelope = false
         guard !requiresClientRefresh else {
           return false
         }
@@ -177,6 +188,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
   func persistCurrentIdentityIfNeeded() throws {
     guard persistenceDeferralDepth == 0,
+          !hasUnresolvedSharedEnvelope,
           !requiresClientRefresh,
           let clerk,
           canPublishSharedIdentity || clerk.client?.activeSessions.isEmpty == false
@@ -209,7 +221,12 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   }
 
   func didApplyClientResponse() {
-    guard requiresClientRefresh, let clerk else { return }
+    guard requiresClientRefresh,
+          !hasUnresolvedSharedEnvelope,
+          let clerk
+    else {
+      return
+    }
 
     do {
       try persistCurrentIdentity(from: clerk)
@@ -249,6 +266,7 @@ extension SharedSessionSyncCoordinator {
       throw error
     }
     hasPendingIdentityPersistence = false
+    hasUnresolvedSharedEnvelope = false
     canPublishSharedIdentity = true
     currentRevision = envelope.revision
     notifier.post()
@@ -304,6 +322,7 @@ extension SharedSessionSyncCoordinator {
       try persistIdentityDeviceToken(envelope.deviceToken)
       updateDeviceToken(envelope.deviceToken)
       hasPendingIdentityPersistence = false
+      hasUnresolvedSharedEnvelope = false
       canPublishSharedIdentity = true
       currentRevision = envelope.revision
       return false
@@ -325,6 +344,7 @@ extension SharedSessionSyncCoordinator {
     clerk.client = envelope.client
     isApplyingSharedEnvelope = false
     hasPendingIdentityPersistence = false
+    hasUnresolvedSharedEnvelope = false
     canPublishSharedIdentity = true
     requiresClientRefresh = false
     currentRevision = envelope.revision
