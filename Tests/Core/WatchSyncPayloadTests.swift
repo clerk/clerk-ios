@@ -427,6 +427,35 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func emptyDeviceTokenSetIsAppliedAndPropagatedAsClear() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("local-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "", version: WatchSyncVersion(rawValue: 3)),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+
+    let outgoingPayload = WatchSyncPayload(
+      clerk: clerk,
+      keychain: keychain,
+      authGeneration: .initial
+    )
+    #expect(
+      outgoingPayload.deviceTokenUpdate
+        == .tokenCleared(version: WatchSyncVersion(rawValue: 3))
+    )
+  }
+
+  @Test
   func explicitDeviceTokenClearWinsOverSameVersionNonAuthoritativeSet() throws {
     configureClerkForTesting()
     let clerk = Clerk()

@@ -18,6 +18,17 @@ extension WatchConnectivityCoordinator {
     case .notIncluded:
       return
     case let .tokenSet(deviceToken, version):
+      let deviceToken = deviceToken.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard !deviceToken.isEmpty else {
+        applyDeviceTokenUpdate(
+          .tokenCleared(version: version),
+          from: source,
+          to: clerk,
+          allowNonAuthoritativeUpdate: allowNonAuthoritativeUpdate
+        )
+        return
+      }
+
       guard shouldApplyDeviceTokenUpdate(
         version: version,
         from: source,
