@@ -1344,6 +1344,7 @@ struct SharedSessionSyncTests {
       responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 200)
     )
+    let preNotificationGeneration = clerk.clientResponseGeneration
     let initialPostCount = notifier.postCount
 
     let envelope = try makeStore(keychain).save(
@@ -1353,12 +1354,25 @@ struct SharedSessionSyncTests {
     )
     notifier.simulateNotification()
 
+    #expect(clerk.clientResponseGeneration != preNotificationGeneration)
     #expect(clerk.client == envelope.client)
     #expect(clerk.deviceToken == "device-token")
     #expect(clerk.lastClientServerFetchDate == nil)
     #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == false)
     #expect(notifier.postCount == initialPostCount)
     #expect(try makeStore(keychain).load() == envelope)
+
+    let didApplyStaleResponse = clerk.applyResponseClient(
+      client(id: "stale-response-client", updatedAt: 500),
+      responseSequence: 2,
+      serverDate: nil,
+      clientResponseGeneration: preNotificationGeneration
+    )
+
+    #expect(!didApplyStaleResponse)
+    #expect(clerk.client == envelope.client)
+    #expect(try makeStore(keychain).load() == envelope)
+    #expect(notifier.postCount == initialPostCount)
   }
 
   @Test
