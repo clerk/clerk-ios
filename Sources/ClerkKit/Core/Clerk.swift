@@ -472,24 +472,11 @@ extension Clerk {
         options: options,
         runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
       )
-      let rollbackState = existing.captureReconfigurationRollbackState()
-
-      try clearAllKeychainItemsStrictly(in: newDependencies)
-
-      existing.setConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersAndDrainCache()
-
-      do {
-        try clearAllKeychainItemsStrictly(in: rollbackState.dependencies)
-        try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
-      } catch {
-        existing.restoreAfterFailedReconfiguration(rollbackState)
-        throw error
-      }
-
-      await existing.resetRuntimeStateForReconfiguration()
-      existing.performConfiguration(dependencies: newDependencies)
-      return existing
+      return try await applyReconfiguration(
+        to: existing,
+        dependencies: newDependencies,
+        nextEpoch: nextEpoch
+      )
     }
 
     let clerk = Clerk()
@@ -499,12 +486,61 @@ extension Clerk {
       runtimeScope: clerk.runtimeScope
     )
 
-    try clearAllKeychainItemsStrictly(in: newDependencies)
-    try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
+    let keychainSnapshot = try captureKeychainSnapshot(in: [newDependencies])
+    do {
+      try clearAllKeychainItemsStrictly(in: newDependencies)
+      try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
+    } catch {
+      let originalError = error
+      do {
+        try keychainSnapshot.restore()
+      } catch let restorationError {
+        throw restorationError
+      }
+      throw originalError
+    }
 
     clerk.performConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
+  }
+
+  static func applyReconfiguration(
+    to existing: Clerk,
+    dependencies newDependencies: any Dependencies,
+    nextEpoch: ClerkConfigurationEpoch
+  ) async throws -> Clerk {
+    let rollbackState = existing.captureReconfigurationRollbackState()
+    existing.setConfigurationEpoch(to: nextEpoch)
+    await existing.cleanupManagersAndDrainCache()
+
+    do {
+      let keychainSnapshot = try captureKeychainSnapshot(in: [
+        newDependencies,
+        rollbackState.dependencies,
+      ])
+
+      do {
+        try clearAllKeychainItemsStrictly(in: newDependencies)
+        try clearAllKeychainItemsStrictly(in: rollbackState.dependencies)
+        try prepareSharedSessionAdoptionIfNeeded(dependencies: newDependencies)
+      } catch {
+        let originalError = error
+        do {
+          try keychainSnapshot.restore()
+        } catch let restorationError {
+          throw restorationError
+        }
+        throw originalError
+      }
+
+      await existing.resetRuntimeStateForReconfiguration()
+      existing.performConfiguration(dependencies: newDependencies)
+      return existing
+    } catch {
+      existing.restoreAfterFailedReconfiguration(rollbackState)
+      throw error
+    }
   }
 
   @MainActor

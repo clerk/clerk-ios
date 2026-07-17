@@ -7,6 +7,45 @@
 
 import Foundation
 
+struct ClerkKeychainSnapshot {
+  struct Item {
+    let keychain: any KeychainStorage
+    let key: String
+    let data: Data?
+  }
+
+  let items: [Item]
+
+  func restore() throws {
+    var didFail = false
+
+    for item in items {
+      do {
+        let currentData = try item.keychain.data(forKey: item.key)
+        guard currentData != item.data else { continue }
+
+        if let data = item.data {
+          try item.keychain.set(data, forKey: item.key)
+        } else {
+          try item.keychain.deleteItem(forKey: item.key)
+        }
+      } catch {
+        didFail = true
+        ClerkLogger.logError(
+          error,
+          message: "Failed to restore keychain item '\(item.key)' after Clerk reconfiguration failed."
+        )
+      }
+    }
+
+    guard !didFail else {
+      throw ClerkClientError(
+        message: "Clerk reconfiguration failed and the previous keychain state could not be fully restored."
+      )
+    }
+  }
+}
+
 extension Clerk {
   /// Clears Clerk authentication and cache items from the keychain.
   ///
@@ -119,6 +158,38 @@ extension Clerk {
         message: "Unable to clear Clerk keychain items during reconfiguration."
       )
     }
+  }
+
+  @MainActor
+  static func captureKeychainSnapshot(
+    in dependencies: [any Dependencies]
+  ) throws -> ClerkKeychainSnapshot {
+    var items: [ClerkKeychainSnapshot.Item] = []
+
+    for dependencies in dependencies {
+      let sharedStore = sharedSessionStore(in: dependencies)
+      try items.append(
+        ClerkKeychainSnapshot.Item(
+          keychain: dependencies.keychain,
+          key: sharedStore.storageKey,
+          data: dependencies.keychain.data(forKey: sharedStore.storageKey)
+        )
+      )
+
+      for keychain in identityKeychains(in: dependencies) {
+        for key in ClerkKeychainKey.allCases {
+          try items.append(
+            ClerkKeychainSnapshot.Item(
+              keychain: keychain,
+              key: key.rawValue,
+              data: keychain.data(forKey: key.rawValue)
+            )
+          )
+        }
+      }
+    }
+
+    return ClerkKeychainSnapshot(items: items)
   }
 
   @MainActor

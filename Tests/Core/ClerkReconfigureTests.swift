@@ -163,34 +163,45 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
+  func failedReconfigureRestoresPartiallyDeletedOverlappingKeychain() async throws {
     let original = Clerk.shared
     let previousEpoch = Clerk.shared.configurationEpoch
-    let throwingKeychain = ThrowingDeleteKeychain()
+    let throwingKeychain = PartiallyFailingDeleteKeychain(
+      successfulDeletesBeforeFailure: 3
+    )
+    try seedIdentityCache(in: throwingKeychain)
     let previousDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: throwingKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
+    try previousDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
     original.performConfiguration(dependencies: previousDependencies)
-    original.client = .mock
-    original.environment = .mock
     defer { original.cleanupManagers() }
 
-    let targetService = "com.clerk.tests.failed-reconfigure.\(UUID().uuidString)"
-    let targetKeychain = SystemKeychain(service: targetService)
-    defer {
-      for key in ClerkKeychainKey.allCases {
-        try? targetKeychain.deleteItem(forKey: key.rawValue)
-      }
-    }
+    let nextEpoch = original.nextConfigurationEpoch
+    let targetDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: original.runtimeState)
+      ),
+      keychain: throwingKeychain,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    try targetDependencies.configurationManager.configure(
+      publishableKey: publishableKey(for: "failed-rollback.clerk.example.com"),
+      options: .init()
+    )
 
     do {
-      _ = try await Clerk.reconfigure(
-        publishableKey: publishableKey(for: "failed-rollback.clerk.example.com"),
-        options: Clerk.Options(keychainConfig: .init(service: targetService))
+      _ = try await Clerk.applyReconfiguration(
+        to: original,
+        dependencies: targetDependencies,
+        nextEpoch: nextEpoch
       )
-      Issue.record("Expected reconfigure to throw when old keychain clearing fails")
+      Issue.record("Expected reconfigure to throw when overlapping keychain clearing fails")
     } catch let error as ClerkClientError {
       #expect(error.message?.contains("Unable to clear Clerk keychain items") == true)
     } catch {
@@ -203,6 +214,95 @@ struct ClerkReconfigureTests {
     #expect(dependenciesUnchanged)
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)
+
+    try expectIdentityCache(in: throwingKeychain)
+
+    let relaunched = Clerk()
+    let relaunchedDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: relaunched.runtimeScope),
+      keychain: throwingKeychain
+    )
+    try relaunchedDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
+    relaunched.performConfiguration(dependencies: relaunchedDependencies)
+    defer { relaunched.cleanupManagers() }
+
+    #expect(relaunched.client?.id == Client.mock.id)
+    #expect(relaunched.environment == .mock)
+  }
+
+  @Test
+  func failedAdoptionRestoresPreviousAndTargetKeychains() async throws {
+    let original = Clerk.shared
+    let previousEpoch = original.configurationEpoch
+    let previousKeychain = InMemoryKeychain()
+    try seedIdentityCache(in: previousKeychain)
+    let previousDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
+      keychain: previousKeychain,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    try previousDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
+    original.performConfiguration(dependencies: previousDependencies)
+    defer { original.cleanupManagers() }
+
+    let targetKeychain = AdoptionMarkerFailingKeychain()
+    let targetEnvironmentData = try JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)
+    try targetKeychain.set(
+      targetEnvironmentData,
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+
+    let nextEpoch = original.nextConfigurationEpoch
+    let targetDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: original.runtimeState)
+      ),
+      keychain: targetKeychain,
+      appLocalKeychain: targetKeychain,
+      identityKeychain: targetKeychain,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    try targetDependencies.configurationManager.configure(
+      publishableKey: publishableKey(for: "failed-adoption.clerk.example.com"),
+      options: .init(
+        keychainConfig: .init(
+          service: "test.shared.service",
+          accessGroup: "test.shared.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+
+    do {
+      _ = try await Clerk.applyReconfiguration(
+        to: original,
+        dependencies: targetDependencies,
+        nextEpoch: nextEpoch
+      )
+      Issue.record("Expected shared-session adoption to fail")
+    } catch is AdoptionMarkerFailingKeychain.WriteError {
+      // Expected.
+    } catch {
+      Issue.record("Expected adoption marker write error, got \(error)")
+    }
+
+    #expect(Clerk.shared === original)
+    #expect(original.configurationEpoch == previousEpoch)
+    #expect(original.dependencies === previousDependencies)
+    #expect(original.client?.id == Client.mock.id)
+    #expect(original.environment == .mock)
+    #expect(
+      try targetKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+        == targetEnvironmentData
+    )
+
+    try expectIdentityCache(in: previousKeychain)
   }
 
   @Test
@@ -542,6 +642,49 @@ struct ClerkReconfigureTests {
     return "\(live ? "pk_live" : "pk_test")_\(encoded)"
   }
 
+  private func seedIdentityCache(
+    in keychain: any KeychainStorage
+  ) throws {
+    let values = try [
+      ClerkKeychainKey.clerkDeviceToken.rawValue: Data("persisted-device-token".utf8),
+      ClerkKeychainKey.cachedClient.rawValue: JSONEncoder.clerkEncoder.encode(Client.mock),
+      ClerkKeychainKey.cachedClientServerDate.rawValue: Data("100".utf8),
+      ClerkKeychainKey.cachedEnvironment.rawValue: JSONEncoder.clerkEncoder.encode(
+        Clerk.Environment.mock
+      ),
+    ]
+
+    for (key, data) in values {
+      try keychain.set(data, forKey: key)
+    }
+  }
+
+  private func expectIdentityCache(
+    in keychain: any KeychainStorage
+  ) throws {
+    #expect(
+      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        == "persisted-device-token"
+    )
+
+    let clientData = try #require(
+      try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue)
+    )
+    #expect(try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData).id == Client.mock.id)
+
+    let serverDate = try #require(
+      try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    )
+    #expect(TimeInterval(serverDate) == 100)
+
+    let environmentData = try #require(
+      try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    )
+    #expect(
+      try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: environmentData) == .mock
+    )
+  }
+
   private func unexpiredJWT() throws -> String {
     try [
       base64URLEncodedJSON(["alg": "none", "typ": "JWT"]),
@@ -637,13 +780,18 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
   }
 }
 
-private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable {
+private final class PartiallyFailingDeleteKeychain: KeychainStorage, @unchecked Sendable {
   private enum DeleteError: Error {
     case failed
   }
 
   private let lock = NSLock()
+  private var successfulDeletesBeforeFailure: Int?
   private var storage: [String: Data] = [:]
+
+  init(successfulDeletesBeforeFailure: Int) {
+    self.successfulDeletesBeforeFailure = successfulDeletesBeforeFailure
+  }
 
   func set(_ data: Data, forKey key: String) throws {
     lock.lock()
@@ -657,8 +805,56 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     return storage[key]
   }
 
-  func deleteItem(forKey _: String) throws {
-    throw DeleteError.failed
+  func deleteItem(forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+
+    if let remaining = successfulDeletesBeforeFailure {
+      if remaining == 0 {
+        successfulDeletesBeforeFailure = nil
+        throw DeleteError.failed
+      }
+      successfulDeletesBeforeFailure = remaining - 1
+    }
+
+    storage[key] = nil
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return storage[key] != nil
+  }
+}
+
+private final class AdoptionMarkerFailingKeychain: KeychainStorage, @unchecked Sendable {
+  enum WriteError: Error {
+    case markerWriteFailed
+  }
+
+  private let lock = NSLock()
+  private var storage: [String: Data] = [:]
+
+  func set(_ data: Data, forKey key: String) throws {
+    guard key != ClerkKeychainKey.sharedSessionSyncAdopted.rawValue else {
+      throw WriteError.markerWriteFailed
+    }
+
+    lock.lock()
+    defer { lock.unlock() }
+    storage[key] = data
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    lock.lock()
+    defer { lock.unlock() }
+    return storage[key]
+  }
+
+  func deleteItem(forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    storage[key] = nil
   }
 
   func hasItem(forKey key: String) throws -> Bool {

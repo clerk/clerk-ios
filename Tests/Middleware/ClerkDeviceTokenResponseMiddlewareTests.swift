@@ -163,4 +163,38 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "current-token")
   }
+
+  @Test
+  func validateStoresDeviceTokenWithoutClearingClientWhenErrorMetaClientIsNull() async throws {
+    configureClerkForTesting()
+    let keychain = InMemoryKeychain()
+    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let existingClient = Client.mock
+    clerk.client = existingClient
+    let deviceTokenMiddleware = ClerkDeviceTokenResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let clientSyncMiddleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ins"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 400,
+      httpVersion: nil,
+      headerFields: ["Authorization": "new-token"]
+    ))
+    let data = try #require("""
+    {"errors":[],"meta":{"client":null}}
+    """.data(using: .utf8))
+    let request = URLRequest(url: url)
+
+    try await deviceTokenMiddleware.validate(response, data: data, for: request)
+    try await clientSyncMiddleware.validate(response, data: data, for: request)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
+    #expect(clerk.client?.id == existingClient.id)
+  }
 }

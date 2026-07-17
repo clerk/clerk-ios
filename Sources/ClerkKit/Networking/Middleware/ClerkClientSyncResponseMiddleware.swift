@@ -122,6 +122,10 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       return true
     }
 
-    return (payload["meta"] as? [String: Any])?.keys.contains("client") == true
+    guard let metaClient = (payload["meta"] as? [String: Any])?["client"] else {
+      return false
+    }
+
+    return !(metaClient is NSNull)
   }
 }
