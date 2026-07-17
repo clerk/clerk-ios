@@ -400,7 +400,7 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func identityTokenReadFailureDefersSharedEnvelopeReconciliation() throws {
+  func identityTokenReadRecoveryReconcilesBeforePreparingRequest() async throws {
     configureClerkForTesting()
     let sharedKeychain = InMemoryKeychain()
     let identityKeychain = try ReadFailingKeychain(
@@ -458,9 +458,12 @@ struct SharedSessionSyncTests {
     #expect(clerk.lastClientServerFetchDate == localServerDate)
     #expect(coordinator.requiresClientRefresh)
 
-    #expect(clerk.deviceToken == "local-token")
-    notifier.simulateNotification()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client")))
+    try await middleware.prepare(&request)
 
+    #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
+    #expect(request.clerkClientResponseGeneration == clerk.clientResponseGeneration)
     #expect(clerk.deviceToken == nil)
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == nil)
@@ -527,6 +530,80 @@ struct SharedSessionSyncTests {
 
     identityKeychain.setShouldFail(false)
     clerk.emitInternalStateChange(.applicationDidEnterForeground)
+
+    #expect(clerk.deviceToken == "shared-token")
+    #expect(clerk.client == sharedClient)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    #expect(try makeStore(sharedKeychain).load() == sharedEnvelope)
+    #expect(notifier.postCount == 0)
+  }
+
+  @Test
+  func failedRuntimeEnvelopeApplicationCannotPublishStaleLocalIdentity() throws {
+    configureClerkForTesting()
+    let sharedKeychain = InMemoryKeychain()
+    let identityKeychain = ControllableSetFailingKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = Clerk()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: InMemoryKeychain(),
+      identityKeychain: identityKeychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.service",
+          accessGroup: "test.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let changedLocalClient = signedInClient(id: "changed-local-client", updatedAt: 150)
+    let sharedClient = signedInClient(id: "shared-client", updatedAt: 200)
+    try identityKeychain.set(
+      "local-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 100)
+    clerk.client = localClient
+
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: dependencies.configurationManager.options.keychainConfig,
+      namespace: namespace,
+      clerk: clerk,
+      keychain: sharedKeychain,
+      identityKeychain: identityKeychain,
+      notifier: notifier
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    clerk.internalStateChanges.addObserver(coordinator)
+
+    let sharedEnvelope = try makeStore(sharedKeychain).save(
+      deviceToken: "shared-token",
+      client: sharedClient,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    identityKeychain.setShouldFail(true)
+    notifier.simulateNotification()
+
+    #expect(clerk.deviceToken == "local-token")
+    #expect(clerk.client == localClient)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
+
+    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 150)
+    clerk.client = changedLocalClient
+
+    #expect(try makeStore(sharedKeychain).load() == sharedEnvelope)
+    #expect(notifier.postCount == 0)
+
+    identityKeychain.setShouldFail(false)
+    notifier.simulateNotification()
 
     #expect(clerk.deviceToken == "shared-token")
     #expect(clerk.client == sharedClient)

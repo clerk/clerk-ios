@@ -89,6 +89,9 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     if shouldRetryIdentityDeviceTokenLoad {
       do {
         try loadIdentityDeviceToken()
+        if let clerk {
+          reloadFromSharedStorage(force: true, to: clerk)
+        }
       } catch {
         ClerkLogger.logError(error, message: "Failed to reload the shared Clerk identity device token")
       }
@@ -155,6 +158,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
   @discardableResult
   func reloadFromSharedStorage(force: Bool = false, to clerk: Clerk) -> Bool {
+    hasUnresolvedSharedEnvelope = true
+
     do {
       if shouldRetryIdentityDeviceTokenLoad {
         try loadIdentityDeviceToken()
@@ -166,6 +171,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         return false
       }
       guard force || envelope.revision != currentRevision else {
+        hasUnresolvedSharedEnvelope = false
         try retryPendingIdentityPersistenceIfNeeded()
         return false
       }
@@ -188,6 +194,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         return false
       }
     } catch {
+      hasUnresolvedSharedEnvelope = true
       ClerkLogger.logError(error, message: "Failed to reload the shared Clerk auth envelope")
       return false
     }

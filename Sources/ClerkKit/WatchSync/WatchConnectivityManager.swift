@@ -105,6 +105,20 @@ extension WatchConnectivityManager: WCSessionDelegate {
   }
 
   #if os(iOS)
+  nonisolated func sessionWatchStateDidChange(_: WCSession) {
+    Task { @MainActor [weak self] in
+      guard let self,
+            isSessionActivated,
+            session.isPaired,
+            session.isWatchAppInstalled
+      else {
+        return
+      }
+
+      activationHandler()
+    }
+  }
+
   nonisolated func sessionDidBecomeInactive(_: WCSession) {
     Task { @MainActor in
       self.isSessionActivated = false
