@@ -23,6 +23,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var shouldRetryIdentityDeviceTokenLoad = false
   private var isApplyingSharedEnvelope = false
   private var persistenceDeferralDepth = 0
+  private var hasPendingIdentityPersistence = false
   private var canPublishSharedIdentity = false
   private(set) var requiresClientRefresh = false
 
@@ -145,9 +146,12 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   @discardableResult
   func reloadFromSharedStorage(force: Bool = false, to clerk: Clerk) -> Bool {
     do {
-      guard let envelope = try store.load(),
-            force || envelope.revision != currentRevision
-      else {
+      guard let envelope = try store.load() else {
+        try retryPendingIdentityPersistenceIfNeeded()
+        return false
+      }
+      guard force || envelope.revision != currentRevision else {
+        try retryPendingIdentityPersistenceIfNeeded()
         return false
       }
 
@@ -156,6 +160,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         return try apply(envelope, to: clerk)
       case .acceptRevision:
         currentRevision = envelope.revision
+        try retryPendingIdentityPersistenceIfNeeded()
         return false
       case .rejectOlder:
         guard !requiresClientRefresh else {
@@ -179,16 +184,22 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
       return
     }
 
-    if let envelope = try store.load(),
-       envelope.deviceToken == currentDeviceToken,
-       envelope.client == clerk.client,
-       envelope.serverDate == clerk.lastClientServerFetchDate
-    {
-      currentRevision = envelope.revision
-      return
-    }
+    do {
+      if let envelope = try store.load(),
+         envelope.deviceToken == currentDeviceToken,
+         envelope.client == clerk.client,
+         envelope.serverDate == clerk.lastClientServerFetchDate
+      {
+        hasPendingIdentityPersistence = false
+        currentRevision = envelope.revision
+        return
+      }
 
-    try persistCurrentIdentity(from: clerk)
+      try persistCurrentIdentity(from: clerk)
+    } catch {
+      hasPendingIdentityPersistence = true
+      throw error
+    }
   }
 
   func withDeferredPersistence(_ updates: () -> Void) {
@@ -226,14 +237,26 @@ extension SharedSessionSyncCoordinator {
   }
 
   private func persistCurrentIdentity(from clerk: Clerk) throws {
-    let envelope = try store.save(
-      deviceToken: currentDeviceToken,
-      client: clerk.client,
-      serverDate: clerk.lastClientServerFetchDate
-    )
+    let envelope: SharedSessionSyncEnvelope
+    do {
+      envelope = try store.save(
+        deviceToken: currentDeviceToken,
+        client: clerk.client,
+        serverDate: clerk.lastClientServerFetchDate
+      )
+    } catch {
+      hasPendingIdentityPersistence = true
+      throw error
+    }
+    hasPendingIdentityPersistence = false
     canPublishSharedIdentity = true
     currentRevision = envelope.revision
     notifier.post()
+  }
+
+  private func retryPendingIdentityPersistenceIfNeeded() throws {
+    guard hasPendingIdentityPersistence else { return }
+    try persistCurrentIdentityIfNeeded()
   }
 
   private func reconciliationDecision(
@@ -280,6 +303,7 @@ extension SharedSessionSyncCoordinator {
     {
       try persistIdentityDeviceToken(envelope.deviceToken)
       updateDeviceToken(envelope.deviceToken)
+      hasPendingIdentityPersistence = false
       canPublishSharedIdentity = true
       currentRevision = envelope.revision
       return false
@@ -300,6 +324,7 @@ extension SharedSessionSyncCoordinator {
     clerk.lastClientServerFetchDate = envelope.serverDate
     clerk.client = envelope.client
     isApplyingSharedEnvelope = false
+    hasPendingIdentityPersistence = false
     canPublishSharedIdentity = true
     requiresClientRefresh = false
     currentRevision = envelope.revision

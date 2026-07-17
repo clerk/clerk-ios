@@ -565,6 +565,89 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
   }
 
+  @Test
+  func legacySharedWatchTombstonesPreventStalePayloadAfterUpgrade() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    try sharedKeychain.set(
+      "cleared",
+      forKey: ClerkKeychainKey.watchSyncAuthState.rawValue
+    )
+    try sharedKeychain.set(
+      "3",
+      forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+    )
+    try sharedKeychain.set(
+      "cleared",
+      forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
+    )
+    try sharedKeychain.set(
+      "3",
+      forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain
+    )
+    let coordinator = WatchConnectivityCoordinator()
+
+    coordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "stale-token",
+          version: WatchSyncVersion(rawValue: 2)
+        ),
+        clientUpdate: .notIncluded,
+        environment: nil
+      ),
+      from: .watch,
+      to: clerk
+    )
+    coordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .notIncluded,
+        clientUpdate: .snapshot(
+          client: client(id: "stale-client", updatedAt: 100),
+          serverFetchDate: nil,
+          version: WatchSyncVersion(rawValue: 2)
+        ),
+        environment: nil
+      ),
+      from: .watch,
+      to: clerk
+    )
+
+    #expect(
+      try clerk.dependencies.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == nil
+    )
+    #expect(clerk.client == nil)
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue
+      ) == "cleared"
+    )
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue
+      ) == "3"
+    )
+    #expect(
+      try clerk.dependencies.watchSyncKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthState.rawValue
+      ) == "cleared"
+    )
+    #expect(
+      try appLocalKeychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+      ) == "3"
+    )
+  }
+
   private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
     var client = Client.mockSignedOut
     client.id = id

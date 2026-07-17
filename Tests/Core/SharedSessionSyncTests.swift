@@ -1554,6 +1554,105 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func phonePayloadPublishesOneCompleteSharedEnvelope() throws {
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let phoneClient = signedInClient(id: "phone-client", updatedAt: 200)
+    let phoneServerDate = Date(timeIntervalSince1970: 200)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let initialPostCount = notifier.postCount
+
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "phone-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .snapshot(
+        client: phoneClient,
+        serverFetchDate: phoneServerDate,
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+    WatchConnectivityCoordinator().apply(payload, from: .phone, to: clerk)
+
+    #expect(notifier.postCount == initialPostCount + 1)
+    let envelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(envelope.deviceToken == "phone-token")
+    #expect(envelope.client == phoneClient)
+    #expect(envelope.serverDate == phoneServerDate)
+  }
+
+  @Test
+  func failedWatchEnvelopePersistenceRetriesOnForeground() throws {
+    let sharedKeychain = ControllableSetFailingKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = makeIsolatedClerk(
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      notifier: notifier
+    )
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let phoneClient = signedInClient(id: "phone-client", updatedAt: 200)
+    let phoneServerDate = Date(timeIntervalSince1970: 200)
+
+    try clerk.storeDeviceToken("local-token")
+    clerk.applyResponseClient(
+      localClient,
+      responseSequence: 1,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let initialEnvelope = try #require(try makeStore(sharedKeychain).load())
+    let initialPostCount = notifier.postCount
+
+    sharedKeychain.setShouldFail(true)
+    WatchConnectivityCoordinator().apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "phone-token",
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        clientUpdate: .snapshot(
+          client: phoneClient,
+          serverFetchDate: phoneServerDate,
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+
+    #expect(clerk.deviceToken == "phone-token")
+    #expect(clerk.client == phoneClient)
+    #expect(try makeStore(sharedKeychain).load() == initialEnvelope)
+    #expect(notifier.postCount == initialPostCount)
+
+    sharedKeychain.setShouldFail(false)
+    clerk.emitInternalStateChange(.applicationDidEnterForeground)
+
+    let retriedEnvelope = try #require(try makeStore(sharedKeychain).load())
+    #expect(retriedEnvelope.deviceToken == "phone-token")
+    #expect(retriedEnvelope.client == phoneClient)
+    #expect(retriedEnvelope.serverDate == phoneServerDate)
+    #expect(notifier.postCount == initialPostCount + 1)
+  }
+
+  @Test
   func publicReloadRequiresSharedSync() async {
     let clerk = Clerk()
 
