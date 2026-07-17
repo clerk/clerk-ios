@@ -53,28 +53,31 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
       try loadIdentityDeviceToken()
     } catch {
       shouldRetryIdentityDeviceTokenLoad = true
+      hasUnresolvedSharedEnvelope = true
       requiresClientRefresh = true
       ClerkLogger.logError(error, message: "Failed to load the shared Clerk identity device token")
     }
 
-    do {
-      if let initialEnvelope = try store.load() {
-        hasUnresolvedSharedEnvelope = true
-        switch reconciliationDecision(for: initialEnvelope, clerk: clerk) {
-        case .apply:
-          _ = try apply(initialEnvelope, to: clerk)
-        case .acceptRevision:
-          hasUnresolvedSharedEnvelope = false
-          canPublishSharedIdentity = true
-          currentRevision = initialEnvelope.revision
-        case .rejectOlder:
-          hasUnresolvedSharedEnvelope = false
-          requiresClientRefresh = true
+    if !shouldRetryIdentityDeviceTokenLoad {
+      do {
+        if let initialEnvelope = try store.load() {
+          hasUnresolvedSharedEnvelope = true
+          switch reconciliationDecision(for: initialEnvelope, clerk: clerk) {
+          case .apply:
+            _ = try apply(initialEnvelope, to: clerk)
+          case .acceptRevision:
+            hasUnresolvedSharedEnvelope = false
+            canPublishSharedIdentity = true
+            currentRevision = initialEnvelope.revision
+          case .rejectOlder:
+            hasUnresolvedSharedEnvelope = false
+            requiresClientRefresh = true
+          }
         }
+      } catch {
+        hasUnresolvedSharedEnvelope = true
+        ClerkLogger.logError(error, message: "Failed to initialize shared Clerk auth state")
       }
-    } catch {
-      hasUnresolvedSharedEnvelope = true
-      ClerkLogger.logError(error, message: "Failed to initialize shared Clerk auth state")
     }
 
     self.notifier.setHandler { [weak self] in
@@ -153,6 +156,10 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   @discardableResult
   func reloadFromSharedStorage(force: Bool = false, to clerk: Clerk) -> Bool {
     do {
+      if shouldRetryIdentityDeviceTokenLoad {
+        try loadIdentityDeviceToken()
+      }
+
       guard let envelope = try store.load() else {
         hasUnresolvedSharedEnvelope = false
         try retryPendingIdentityPersistenceIfNeeded()

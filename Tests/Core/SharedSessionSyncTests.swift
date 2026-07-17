@@ -385,7 +385,7 @@ struct SharedSessionSyncTests {
 
   @Test
   func identityTokenReadFailureRequiresRefreshAndRetriesTheRead() throws {
-    let identityKeychain = try ReadFailingOnceKeychain(
+    let identityKeychain = try ReadFailingKeychain(
       deviceToken: "local-token"
     )
     let clerk = makeIsolatedClerk(
@@ -397,6 +397,74 @@ struct SharedSessionSyncTests {
     #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
     #expect(clerk.deviceToken == "local-token")
     #expect(clerk.sharedSessionSyncCoordinator?.requiresClientRefresh == true)
+  }
+
+  @Test
+  func identityTokenReadFailureDefersSharedEnvelopeReconciliation() throws {
+    configureClerkForTesting()
+    let sharedKeychain = InMemoryKeychain()
+    let identityKeychain = try ReadFailingKeychain(
+      deviceToken: "local-token",
+      failureCount: 2
+    )
+    let notifier = TestSharedSessionSyncNotifier()
+    let clerk = Clerk()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sharedKeychain,
+      appLocalKeychain: InMemoryKeychain(),
+      identityKeychain: identityKeychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "test.service",
+          accessGroup: "test.group"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+
+    let localClient = signedInClient(id: "local-client", updatedAt: 100)
+    let localServerDate = Date(timeIntervalSince1970: 100)
+    clerk.lastClientServerFetchDate = localServerDate
+    clerk.client = localClient
+    try makeStore(sharedKeychain).save(
+      deviceToken: nil,
+      client: nil,
+      serverDate: nil
+    )
+
+    let coordinator = SharedSessionSyncCoordinator(
+      keychainConfig: dependencies.configurationManager.options.keychainConfig,
+      namespace: namespace,
+      clerk: clerk,
+      keychain: sharedKeychain,
+      identityKeychain: identityKeychain,
+      notifier: notifier
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    clerk.internalStateChanges.addObserver(coordinator)
+
+    #expect(clerk.client == localClient)
+    #expect(clerk.lastClientServerFetchDate == localServerDate)
+    #expect(coordinator.requiresClientRefresh)
+
+    notifier.simulateNotification()
+
+    #expect(clerk.client == localClient)
+    #expect(clerk.lastClientServerFetchDate == localServerDate)
+    #expect(coordinator.requiresClientRefresh)
+
+    #expect(clerk.deviceToken == "local-token")
+    notifier.simulateNotification()
+
+    #expect(clerk.deviceToken == nil)
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(!coordinator.requiresClientRefresh)
   }
 
   @Test
@@ -2069,11 +2137,12 @@ private final class ControllableSetFailingKeychain: @unchecked Sendable, Keychai
   }
 }
 
-private final class ReadFailingOnceKeychain: @unchecked Sendable, KeychainStorage {
+private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
   private let keychain = InMemoryKeychain()
-  private var shouldFailRead = true
+  private var remainingReadFailures: Int
 
-  init(deviceToken: String) throws {
+  init(deviceToken: String, failureCount: Int = 1) throws {
+    remainingReadFailures = failureCount
     try keychain.set(
       deviceToken,
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
@@ -2085,8 +2154,8 @@ private final class ReadFailingOnceKeychain: @unchecked Sendable, KeychainStorag
   }
 
   func data(forKey key: String) throws -> Data? {
-    if shouldFailRead {
-      shouldFailRead = false
+    if remainingReadFailures > 0 {
+      remainingReadFailures -= 1
       throw SharedSessionSyncTestError.keychainFailed
     }
 
