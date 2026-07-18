@@ -49,7 +49,10 @@ final class ClientService: ClientServiceProtocol {
   func getResponse(skipClientId: Bool = false) async throws -> ClientServiceResponse {
     let request = Request<ClientResponse<Client?>>(
       path: "/v1/client",
-      headers: skipClientId ? [ClerkHeaderRequestMiddleware.skipClientIdHeader: "1"] : [:]
+      headers: [
+        ClerkHeaderRequestMiddleware.canonicalClientRequestHeader: "1",
+        ClerkHeaderRequestMiddleware.skipClientIdHeader: skipClientId ? "1" : "0",
+      ]
     )
     let response = try await apiClient.send(request)
     return ClientServiceResponse(

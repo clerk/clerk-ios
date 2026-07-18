@@ -2,6 +2,34 @@ import Foundation
 
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
+  private struct ClerkRequestContext {
+    let clientResponseGeneration: ClientResponseGeneration?
+    let sharedSessionBaseGeneration: UInt64?
+    let isCanonicalClientRequest: Bool
+    let authorization: String?
+    let clientID: String?
+
+    init(request: URLRequest) {
+      clientResponseGeneration = request.clerkClientResponseGeneration
+      sharedSessionBaseGeneration = request.clerkSharedSessionBaseGeneration
+      isCanonicalClientRequest = request.clerkIsCanonicalClientRequest
+      authorization = request.value(forHTTPHeaderField: "Authorization")
+      clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
+    }
+
+    func apply(to request: inout URLRequest) {
+      if let clientResponseGeneration {
+        request.setClerkClientResponseGeneration(clientResponseGeneration)
+      }
+      if let sharedSessionBaseGeneration {
+        request.setClerkSharedSessionBaseGeneration(sharedSessionBaseGeneration)
+      }
+      request.setClerkCanonicalClientRequest(isCanonicalClientRequest)
+      request.setValue(authorization, forHTTPHeaderField: "Authorization")
+      request.setValue(clientID, forHTTPHeaderField: "x-clerk-client-id")
+    }
+  }
+
   struct Configuration {
     var sessionConfiguration: URLSessionConfiguration = {
       let configuration = URLSessionConfiguration.default
@@ -31,7 +59,7 @@ actor APIClient {
   init(
     baseURL: URL?,
     runtimeScope: ClerkRuntimeScope,
-    configure: (inout Configuration) -> Void = { _ in }
+    configure: @Sendable (inout Configuration) -> Void = { _ in }
   ) {
     var configuration = Configuration(runtimeScope: runtimeScope)
     configure(&configuration)
@@ -63,6 +91,7 @@ actor APIClient {
   ) async throws -> APIResponse<Value> {
     var attempts = 0
     let requestSequence = makeRequestSequence()
+    var clerkRequestContext: ClerkRequestContext?
 
     while true {
       try ensureCurrentRuntimeScope()
@@ -70,7 +99,13 @@ actor APIClient {
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
-      try await pipeline.prepare(&urlRequest)
+      try await pipeline.prepareClerkRequest(&urlRequest)
+      if let clerkRequestContext {
+        clerkRequestContext.apply(to: &urlRequest)
+      } else {
+        clerkRequestContext = ClerkRequestContext(request: urlRequest)
+      }
+      try await pipeline.prepareCustomRequest(&urlRequest)
       try ensureCurrentRuntimeScope()
 
       do {

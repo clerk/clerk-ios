@@ -9,12 +9,19 @@ import ClerkKit
 import ClerkKitUI
 import SwiftUI
 
+private let sharedSessionKeychainService = "com.clerk.shared-session-sync.examples"
+private let sharedSessionKeychainAccessGroup = "L8SD6SB282.com.clerk.shared-session-sync.examples"
+
 @main
 struct WatchExampleApp: App {
   init() {
-    // Configure Clerk with Watch Connectivity sync enabled
     let options = Clerk.Options(
-      watchConnectivityEnabled: true
+      keychainConfig: .init(
+        service: sharedSessionKeychainService,
+        accessGroup: sharedSessionKeychainAccessGroup
+      ),
+      watchConnectivityEnabled: true,
+      sharedSessionSync: .enabled
     )
 
     Clerk.configure(

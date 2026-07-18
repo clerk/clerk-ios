@@ -5,196 +5,798 @@
 
 import Foundation
 
+enum SharedSessionSyncCoordinatorError: Error, Equatable {
+  case initialReconciliationFailed
+  case reconciliationFailed
+  case missingWinnerForPendingPublication
+  case pendingPublicationOwnerMismatch
+}
+
+struct SharedSessionRequestIdentitySnapshot {
+  let baseGeneration: UInt64
+  let deviceToken: String?
+  let clientID: String?
+  let clientResponseGeneration: ClientResponseGeneration
+}
+
 @MainActor
 final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
+  private enum PublicationCheckpoint {
+    case none
+    case response(
+      baseGeneration: UInt64,
+      requestDeviceToken: String?
+    )
+  }
+
+  private struct Publication {
+    let state: SharedSessionIdentityEvent.State
+    let deviceToken: String?
+    let client: Client?
+    let serverDate: Date?
+    let baseGeneration: UInt64?
+    let checkpoint: PublicationCheckpoint
+  }
+
+  private struct NetworkResponseLineage {
+    let rootGeneration: UInt64
+    let frontierGeneration: UInt64
+    let deviceToken: String?
+  }
+
+  private struct ReconciliationResult {
+    let didChange: Bool
+    let succeeded: Bool
+  }
+
+  private let ownerIdentifier: String
+  private let instanceFingerprint: String
+  private let slotIO: SharedSessionSlotIO
+  private let localIdentityIO: SharedSessionLocalIdentityIO
   private let notifier: any SharedSessionSyncNotifying
+  private let configurationEpoch: ClerkConfigurationEpoch
+  private let logError: (any Error, String) -> Void
   private weak var clerk: Clerk?
-  private var authGeneration: SharedSessionSyncVersion
-  private var environmentGeneration: SharedSessionSyncVersion
-  private var deviceTokenGeneration: SharedSessionSyncVersion
-  private var isApplyingSharedStorage = false
+
+  private(set) var acceptedEventID: UUID?
+  private(set) var currentMaximumGeneration: UInt64 = 0
+  private(set) var currentDeviceToken: String?
+  private var reconciliationTask: Task<Bool, Never>?
+  private var reconciliationTaskID: UUID?
+  private var initialReconciliationTask: Task<Bool, Never>?
+  private var initialReconciliationTaskID: UUID?
+  private var initialReconciliationSucceeded: Bool?
+  private var serializedOperationTail: Task<Void, Never>?
+  private var reconcileAgain = false
+  private var isInstalled = true
+  private var operationRevision: UInt64 = 0
+  private var lastHandledResponseSequence: Int?
+  private var lastHandledResponseServerDate: Date?
+  private var networkResponseLineage: NetworkResponseLineage?
+  private var isLocalClearInProgress = false
+  private var requiresSuccessfulReconciliation = false
 
   init(
-    keychainConfig: Clerk.Options.KeychainConfig,
+    ownerIdentifier: String,
+    instanceFingerprint: String,
+    slotStore: any SharedSessionSlotStoring,
+    localIdentityStore: any SharedSessionLocalIdentityStoring,
+    localIdentityIO: SharedSessionLocalIdentityIO? = nil,
+    notifier: any SharedSessionSyncNotifying,
+    configurationEpoch: ClerkConfigurationEpoch,
     clerk: Clerk,
-    keychain: any KeychainStorage,
-    notifier: (any SharedSessionSyncNotifying)? = nil
+    logError: @escaping (any Error, String) -> Void = {
+      ClerkLogger.logError($0, message: $1)
+    }
   ) {
-    self.notifier = notifier ?? SharedSessionSyncDarwinNotifier(keychainConfig: keychainConfig)
+    self.ownerIdentifier = ownerIdentifier
+    self.instanceFingerprint = instanceFingerprint
+    slotIO = SharedSessionSlotIO(store: slotStore)
+    self.localIdentityIO = localIdentityIO ?? SharedSessionLocalIdentityIO(store: localIdentityStore)
+    self.notifier = notifier
+    self.configurationEpoch = configurationEpoch
+    self.logError = logError
     self.clerk = clerk
-    authGeneration = Self.readVersion(forKey: .sharedSessionSyncAuthVersion, keychain: keychain)
-    environmentGeneration = Self.readVersion(forKey: .sharedSessionSyncEnvironmentVersion, keychain: keychain)
-    deviceTokenGeneration = Self.readVersion(forKey: .sharedSessionSyncDeviceTokenVersion, keychain: keychain)
+    currentDeviceToken = clerk.deviceToken
 
-    self.notifier.setHandler { [weak self] in
-      self?.reloadFromSharedStorageIfNeeded()
+    notifier.setHandler { [weak self] in
+      self?.requestReconciliation()
     }
   }
 
-  func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
-    switch change {
-    case let .clientDidChange(previousClient, client):
-      guard !isApplyingSharedStorage,
-            shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
+  func start() -> Task<Bool, Never> {
+    if let initialReconciliationTask {
+      return initialReconciliationTask
+    }
+    let task = scheduleReconciliation()
+    initialReconciliationTask = task
+    initialReconciliationTaskID = reconciliationTaskID
+    initialReconciliationSucceeded = nil
+    return task
+  }
+
+  func waitForInitialReconciliation() async throws {
+    _ = await start().value
+    guard initialReconciliationSucceeded == true else {
+      initialReconciliationTask = nil
+      initialReconciliationTaskID = nil
+      initialReconciliationSucceeded = nil
+      throw SharedSessionSyncCoordinatorError.initialReconciliationFailed
+    }
+  }
+
+  func waitForPendingOperations() async {
+    _ = await serializedOperationTail?.value
+  }
+
+  func captureRequestIdentity() async throws -> SharedSessionRequestIdentitySnapshot {
+    let task = enqueueSerializedOperation { [weak self] in
+      guard let self,
+            let clerk,
+            isCurrent(clerk: clerk),
+            !isLocalClearInProgress
       else {
-        return
+        throw CancellationError()
       }
+      try await ensureSuccessfulReconciliationIfNeeded()
+      return SharedSessionRequestIdentitySnapshot(
+        baseGeneration: currentMaximumGeneration,
+        deviceToken: currentDeviceToken,
+        clientID: clerk.client?.id,
+        clientResponseGeneration: clerk.clientResponseGeneration
+      )
+    }
+    return try await task.value
+  }
 
-      try persistAuthSnapshot(from: clerk, version: .makeWriteRevision())
-      notifier.post()
-
-    case .environmentDidChange:
-      guard !isApplyingSharedStorage else { return }
-      try persistEnvironmentSnapshot(from: clerk, version: .makeWriteRevision())
-      notifier.post()
-
-    case let .deviceTokenDidChange(previousToken, token):
-      guard !isApplyingSharedStorage, previousToken != token else { return }
-      try persistDeviceTokenState(.set, version: .makeWriteRevision(), keychain: clerk.dependencies.keychain)
-      notifier.post()
-
+  func handle(_ change: ClerkInternalStateChange, from _: Clerk) throws {
+    switch change {
     case .applicationDidEnterForeground:
-      reloadFromSharedStorageIfNeeded(clerk: clerk)
+      requestReconciliation()
+    case .clientDidChange, .deviceTokenDidChange, .environmentDidChange,
+         .sharedSessionIdentityDidChange, .localStorageDidClear:
+      break
     }
   }
 
   @discardableResult
-  func reloadFromSharedStorage(force: Bool = false, to clerk: Clerk) -> Bool {
-    let keychain = clerk.dependencies.keychain
-    let incomingAuthVersion = Self.readVersion(forKey: .sharedSessionSyncAuthVersion, keychain: keychain)
-    let incomingEnvironmentVersion = Self.readVersion(forKey: .sharedSessionSyncEnvironmentVersion, keychain: keychain)
-    let incomingDeviceTokenVersion = Self.readVersion(forKey: .sharedSessionSyncDeviceTokenVersion, keychain: keychain)
-    let authVersionChanged = incomingAuthVersion != authGeneration
-    let environmentVersionChanged = incomingEnvironmentVersion != environmentGeneration
-    let deviceTokenVersionChanged = incomingDeviceTokenVersion != deviceTokenGeneration
+  func reloadFromSharedStorage() async -> Bool {
+    await scheduleReconciliation().value
+  }
 
-    guard force
-      || authVersionChanged
-      || environmentVersionChanged
-      || deviceTokenVersionChanged
-    else {
-      return false
+  func handleNetworkResponse(_ context: ClientSyncResponseContext) async throws {
+    guard let clerk, isCurrent(clerk: clerk) else {
+      throw CancellationError()
+    }
+    if let clientResponseGeneration = context.clientResponseGeneration,
+       clientResponseGeneration != clerk.clientResponseGeneration
+    {
+      return
+    }
+    guard let baseGeneration = context.baseGeneration else { return }
+
+    if context.update == .invalid {
+      return
     }
 
-    let wasApplyingSharedStorage = isApplyingSharedStorage
-    isApplyingSharedStorage = true
-    defer { isApplyingSharedStorage = wasApplyingSharedStorage }
+    guard responseCanPublish(
+      from: baseGeneration,
+      requestDeviceToken: context.requestDeviceToken
+    ) else { return }
+    guard let identity = try context.resolvedIdentityPayload(
+      currentDeviceToken: currentDeviceToken,
+      currentClient: clerk.client,
+      currentServerDate: clerk.lastClientServerFetchDate
+    ) else { return }
+    guard acceptResponse(
+      sequence: context.responseSequence,
+      serverDate: context.serverDate
+    ) else { return }
 
+    try await enqueuePublication(
+      Publication(
+        state: identity.state,
+        deviceToken: identity.deviceToken,
+        client: identity.client,
+        serverDate: identity.serverDate,
+        baseGeneration: nil,
+        checkpoint: .response(
+          baseGeneration: baseGeneration,
+          requestDeviceToken: context.requestDeviceToken
+        )
+      )
+    )
+  }
+
+  func publishLocalIdentity(
+    state: SharedSessionIdentityEvent.State,
+    deviceToken: String?,
+    client: Client?,
+    serverDate: Date?,
+    baseGeneration: UInt64? = nil
+  ) async throws {
+    try await enqueuePublication(
+      Publication(
+        state: state,
+        deviceToken: deviceToken,
+        client: client,
+        serverDate: serverDate,
+        baseGeneration: baseGeneration,
+        checkpoint: .none
+      )
+    )
+  }
+
+  func enqueueSerializedLocalIdentityOperation(
+    _ operation: @escaping @MainActor @Sendable () async -> Void
+  ) -> Task<Void, Error> {
+    enqueueSerializedOperation(operation)
+  }
+
+  func publishReservedLocalIdentity(
+    state: SharedSessionIdentityEvent.State,
+    deviceToken: String?,
+    client: Client?,
+    serverDate: Date?,
+    baseGeneration: UInt64? = nil
+  ) async throws {
+    try await performPublication(
+      Publication(
+        state: state,
+        deviceToken: deviceToken,
+        client: client,
+        serverDate: serverDate,
+        baseGeneration: baseGeneration,
+        checkpoint: .none
+      )
+    )
+  }
+}
+
+extension SharedSessionSyncCoordinator {
+  private func enqueuePublication(_ publication: Publication) async throws {
+    let task = enqueueSerializedOperation { [weak self] in
+      guard let self else { throw CancellationError() }
+      try await performPublication(publication)
+    }
+    try await withTaskCancellationHandler {
+      try await task.value
+    } onCancel: {
+      task.cancel()
+    }
+  }
+
+  private func performPublication(_ publication: Publication) async throws {
+    guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+      throw CancellationError()
+    }
+
+    try await ensureSuccessfulReconciliationIfNeeded()
+    _ = try await resumePendingPublicationIfNeeded()
+    guard isCurrent(clerk: clerk),
+          !isLocalClearInProgress,
+          checkpointAllowsPublication(publication.checkpoint)
+    else {
+      return
+    }
+
+    operationRevision &+= 1
+    let publicationRevision = operationRevision
+    let generation = try SharedSessionIdentityEvent.nextGeneration(
+      after: publication.baseGeneration ?? currentMaximumGeneration
+    )
+    let event = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: ownerIdentifier,
+      generation: generation,
+      state: publication.state,
+      deviceToken: normalizedToken(publication.deviceToken),
+      client: publication.client,
+      serverDate: publication.serverDate
+    ).validated()
+
+    var didStage = false
+    do {
+      try await localIdentityIO.stagePendingPublication(event)
+      didStage = true
+      requiresSuccessfulReconciliation = true
+      try Task.checkCancellation()
+      guard isCurrent(clerk: clerk), publicationRevision == operationRevision else {
+        throw CancellationError()
+      }
+
+      do {
+        try await saveOwn(event)
+      } catch let error as SharedSessionOwnerSlotStoreError {
+        if case .futureSchemaVersion = error {
+          try await localIdentityIO.clearPendingPublication()
+          didStage = false
+          _ = try await reduceApplyAndReplicate()
+          return
+        }
+        throw error
+      }
+      try Task.checkCancellation()
+      guard isCurrent(clerk: clerk), publicationRevision == operationRevision else {
+        throw CancellationError()
+      }
+
+      _ = try await reduceApplyAndReplicate(
+        clearingPendingPublicationID: event.id,
+        networkResponseCandidate: networkResponseCandidate(
+          for: publication.checkpoint,
+          eventID: event.id
+        )
+      )
+      guard isCurrent(clerk: clerk), publicationRevision == operationRevision else {
+        throw CancellationError()
+      }
+      notifier.post()
+    } catch {
+      if didStage, canScheduleRecovery(clerk: clerk) {
+        requestReconciliation()
+      }
+      throw error
+    }
+  }
+
+  func deactivate() {
+    isInstalled = false
+    operationRevision &+= 1
+    lastHandledResponseSequence = nil
+    lastHandledResponseServerDate = nil
+    networkResponseLineage = nil
+    notifier.setHandler {}
+    reconciliationTask?.cancel()
+  }
+
+  func shutdown(deleteOwnSlot: Bool) async {
+    deactivate()
+    _ = await reconciliationTask?.value
+    reconciliationTask = nil
+    reconciliationTaskID = nil
+    _ = await serializedOperationTail?.value
+    serializedOperationTail = nil
+    reconcileAgain = false
+
+    guard deleteOwnSlot else { return }
+    do {
+      try await slotIO.deleteOwnSlot()
+    } catch {
+      logError(error, "Failed to delete this app's shared-session owner slot")
+    }
+    do {
+      try await localIdentityIO.clearPendingPublication()
+    } catch {
+      logError(error, "Failed to discard the pending shared-session publication")
+    }
+  }
+
+  func beginLocalClear() {
+    guard !isLocalClearInProgress else { return }
+    isLocalClearInProgress = true
+    operationRevision &+= 1
+    lastHandledResponseSequence = nil
+    lastHandledResponseServerDate = nil
+    networkResponseLineage = nil
+    acceptedEventID = nil
+    currentDeviceToken = nil
+    reconciliationTask?.cancel()
+    reconcileAgain = false
+  }
+
+  func deleteOwnSlotAfterLocalClear() async {
+    beginLocalClear()
+    let task = enqueueSerializedOperation { [weak self] in
+      guard let self else { return }
+      defer { isLocalClearInProgress = false }
+      do {
+        try await slotIO.deleteOwnSlot()
+      } catch {
+        logError(error, "Failed to delete this app's shared-session owner slot")
+      }
+      do {
+        try await localIdentityIO.clearPendingPublication()
+      } catch {
+        logError(error, "Failed to discard the pending shared-session publication")
+      }
+    }
+    _ = try? await task.value
+  }
+}
+
+extension SharedSessionSyncCoordinator {
+  private func requestReconciliation() {
+    _ = scheduleReconciliation()
+  }
+
+  private func scheduleReconciliation() -> Task<Bool, Never> {
+    if let reconciliationTask {
+      reconcileAgain = true
+      return reconciliationTask
+    }
+
+    let taskID = UUID()
+    let operation = enqueueSerializedOperation { [weak self] in
+      guard let self else {
+        return ReconciliationResult(didChange: false, succeeded: false)
+      }
+      let result = await runReconciliationLoop()
+      recordInitialReconciliationResult(result, taskID: taskID)
+      finishReconciliationTask(taskID)
+      return result
+    }
+    let task = Task { @MainActor in
+      let result = await (try? operation.value)
+        ?? ReconciliationResult(didChange: false, succeeded: false)
+      return result.didChange
+    }
+    reconciliationTaskID = taskID
+    reconciliationTask = task
+    return task
+  }
+
+  private func finishReconciliationTask(_ taskID: UUID) {
+    guard reconciliationTaskID == taskID else { return }
+    let shouldScheduleFollowup = reconcileAgain
+      && isInstalled
+      && !isLocalClearInProgress
+    reconcileAgain = false
+    reconciliationTask = nil
+    reconciliationTaskID = nil
+    if shouldScheduleFollowup {
+      requestReconciliation()
+    }
+  }
+
+  private func recordInitialReconciliationResult(
+    _ result: ReconciliationResult,
+    taskID: UUID
+  ) {
+    if result.succeeded {
+      initialReconciliationSucceeded = true
+    } else if initialReconciliationTaskID == taskID,
+              initialReconciliationSucceeded != true
+    {
+      initialReconciliationSucceeded = false
+    }
+  }
+
+  private func runReconciliationLoop() async -> ReconciliationResult {
     var didChange = false
 
-    if deviceTokenVersionChanged {
-      deviceTokenGeneration = incomingDeviceTokenVersion
-      clerk.fenceClientResponsesAfterDeviceTokenChange()
-      didChange = true
+    repeat {
+      reconcileAgain = false
+      guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+        return ReconciliationResult(didChange: didChange, succeeded: false)
+      }
+
+      do {
+        if try await resumePendingPublicationIfNeeded() {
+          didChange = true
+        } else if try await reduceApplyAndReplicate() {
+          didChange = true
+        }
+      } catch is CancellationError {
+        requiresSuccessfulReconciliation = true
+        return ReconciliationResult(didChange: didChange, succeeded: false)
+      } catch {
+        requiresSuccessfulReconciliation = true
+        logError(error, "Failed to reconcile shared-session owner slots")
+        return ReconciliationResult(didChange: didChange, succeeded: false)
+      }
+    } while reconcileAgain
+
+    requiresSuccessfulReconciliation = false
+    return ReconciliationResult(didChange: didChange, succeeded: true)
+  }
+
+  private func ensureSuccessfulReconciliationIfNeeded() async throws {
+    guard requiresSuccessfulReconciliation else { return }
+    let result = await runReconciliationLoop()
+    guard result.succeeded else {
+      throw SharedSessionSyncCoordinatorError.reconciliationFailed
+    }
+  }
+
+  @discardableResult
+  private func resumePendingPublicationIfNeeded() async throws -> Bool {
+    guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+      throw CancellationError()
+    }
+    guard let pending = try await localIdentityIO.loadRecord()?.pendingPublication else {
+      return false
+    }
+    try Task.checkCancellation()
+    guard isCurrent(clerk: clerk) else {
+      throw CancellationError()
+    }
+    guard pending.originOwnerIdentifier == ownerIdentifier else {
+      throw SharedSessionSyncCoordinatorError.pendingPublicationOwnerMismatch
     }
 
-    if force || authVersionChanged {
-      switch clerk.applySharedSessionSyncClientSnapshot() {
-      case .changed:
-        didChange = true
-        authGeneration = incomingAuthVersion
-      case .unchanged:
-        authGeneration = incomingAuthVersion
-      case .rejectedStale:
-        repairSharedAuthSnapshot(from: clerk)
+    let observedSlots = try await slotIO.loadAllSlots()
+    try Task.checkCancellation()
+    guard isCurrent(clerk: clerk) else {
+      throw CancellationError()
+    }
+
+    let prospectiveReduction = SharedSessionIdentityReducer.reduce(
+      events: observedSlots.map(\.event) + [pending]
+    )
+    if prospectiveReduction.conflictingEventIDs.contains(pending.id) {
+      try await localIdentityIO.clearPendingPublication()
+      return try await reduceApplyAndReplicate()
+    }
+    var pendingWasPeerVisible = observedSlots.contains {
+      $0.slotOwnerIdentifier == ownerIdentifier && $0.event == pending
+    }
+    if prospectiveReduction.winner == pending, !pendingWasPeerVisible {
+      do {
+        try await saveOwn(pending)
+      } catch let error as SharedSessionOwnerSlotStoreError {
+        guard case .futureSchemaVersion = error else { throw error }
+        try await localIdentityIO.clearPendingPublication()
+        return try await reduceApplyAndReplicate()
+      }
+      pendingWasPeerVisible = true
+      try Task.checkCancellation()
+      guard isCurrent(clerk: clerk) else {
+        throw CancellationError()
       }
     }
 
-    if force || environmentVersionChanged {
-      if clerk.applySharedSessionSyncEnvironmentSnapshot() {
-        didChange = true
-      }
-      environmentGeneration = incomingEnvironmentVersion
+    let didChange = try await reduceApplyAndReplicate(
+      clearingPendingPublicationID: pending.id
+    )
+    if pendingWasPeerVisible {
+      notifier.post()
     }
-
     return didChange
   }
 
-  private func reloadFromSharedStorageIfNeeded() {
-    guard let clerk else { return }
-    reloadFromSharedStorageIfNeeded(clerk: clerk)
-  }
-
-  private func reloadFromSharedStorageIfNeeded(clerk: Clerk) {
-    reloadFromSharedStorage(to: clerk)
-  }
-
-  private func shouldPublishLocalAuthChange(previousClient: Client?, client: Client?, clerk: Clerk) -> Bool {
-    client != nil || previousClient != nil || clerk.lastClientServerFetchDate != nil
-  }
-
-  private func repairSharedAuthSnapshot(from clerk: Clerk) {
-    do {
-      try persistAuthSnapshot(from: clerk, version: .makeWriteRevision())
-      notifier.post()
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to repair stale shared Clerk auth state")
+  @discardableResult
+  private func reduceApplyAndReplicate(
+    clearingPendingPublicationID pendingPublicationID: UUID? = nil,
+    networkResponseCandidate: (eventID: UUID, rootGeneration: UInt64)? = nil
+  ) async throws -> Bool {
+    guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+      throw CancellationError()
     }
-  }
+    let reductionRevision = operationRevision
+    let slots = try await slotIO.loadAllSlots()
+    try Task.checkCancellation()
+    guard isCurrent(clerk: clerk) else {
+      throw CancellationError()
+    }
+    guard reductionRevision == operationRevision else {
+      reconcileAgain = true
+      return false
+    }
 
-  private func persistAuthSnapshot(from clerk: Clerk, version: SharedSessionSyncVersion) throws {
-    let keychain = clerk.dependencies.keychain
-
-    // Only known auth cache keys participate in sibling-app sync. App Attest
-    // key IDs and pending magic-link state are intentionally excluded.
-    if let client = clerk.client {
-      try keychain.set(JSONEncoder.clerkEncoder.encode(client), forKey: ClerkKeychainKey.cachedClient.rawValue)
-      if let serverFetchDate = clerk.lastClientServerFetchDate {
-        try keychain.set(String(serverFetchDate.timeIntervalSince1970), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-      } else {
-        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+    let reduction = SharedSessionIdentityReducer.reduce(slots)
+    currentMaximumGeneration = max(
+      currentMaximumGeneration,
+      reduction.maximumGeneration
+    )
+    guard let winner = reduction.winner else {
+      if pendingPublicationID != nil {
+        throw SharedSessionSyncCoordinatorError.missingWinnerForPendingPublication
       }
-      try persistAuthState(.set, version: version, keychain: keychain)
+      return false
+    }
+    requiresSuccessfulReconciliation = true
+
+    let identity = try SharedSessionLocalIdentity(
+      state: winner.state,
+      deviceToken: winner.deviceToken,
+      client: winner.client,
+      serverDate: winner.serverDate
+    ).validated()
+
+    let ownSlot = slots.first { $0.slotOwnerIdentifier == ownerIdentifier }
+    if ownSlot?.event != winner {
+      _ = try await replicateOwnIfCompatible(winner)
+      try Task.checkCancellation()
+      guard isCurrent(clerk: clerk) else {
+        throw CancellationError()
+      }
+    }
+    guard reductionRevision == operationRevision else {
+      reconcileAgain = true
+      return false
+    }
+
+    if let pendingPublicationID {
+      try await localIdentityIO.commitAcceptedIdentity(
+        identity,
+        clearingPendingPublicationID: pendingPublicationID
+      )
     } else {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
-      if let serverFetchDate = clerk.lastClientServerFetchDate {
-        try keychain.set(String(serverFetchDate.timeIntervalSince1970), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-      } else {
-        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-      }
-      try persistAuthState(.cleared, version: version, keychain: keychain)
+      try await localIdentityIO.saveAcceptedIdentity(identity)
+    }
+    try Task.checkCancellation()
+    guard isCurrent(clerk: clerk), reductionRevision == operationRevision else {
+      throw CancellationError()
+    }
+
+    let previousAcceptedEventID = acceptedEventID
+    let didChange = winner.id != previousAcceptedEventID
+    if didChange {
+      applyToMemory(winner, clerk: clerk)
+    }
+    updateNetworkResponseLineage(
+      winner: winner,
+      previousAcceptedEventID: previousAcceptedEventID,
+      candidate: networkResponseCandidate
+    )
+    requiresSuccessfulReconciliation = false
+    return didChange
+  }
+
+  private func applyToMemory(_ event: SharedSessionIdentityEvent, clerk: Clerk) {
+    let previousToken = currentDeviceToken
+    currentDeviceToken = event.deviceToken
+    clerk.localIdentityDeviceToken = event.deviceToken
+    if previousToken != currentDeviceToken {
+      clerk.fenceClientResponsesAfterDeviceTokenChange()
+      lastHandledResponseSequence = nil
+      lastHandledResponseServerDate = nil
+    }
+
+    clerk.isApplyingSharedSessionIdentity = true
+    clerk.lastClientServerFetchDate = event.serverDate
+    if clerk.client != event.client {
+      clerk.client = event.client
+    }
+    acceptedEventID = event.id
+    currentMaximumGeneration = max(currentMaximumGeneration, event.generation)
+    clerk.isApplyingSharedSessionIdentity = false
+    clerk.emitInternalStateChange(.sharedSessionIdentityDidChange)
+  }
+
+  private func saveOwn(_ event: SharedSessionIdentityEvent) async throws {
+    try await slotIO.saveOwnSlot(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: instanceFingerprint,
+        slotOwnerIdentifier: ownerIdentifier,
+        event: event
+      )
+    )
+  }
+
+  @discardableResult
+  private func replicateOwnIfCompatible(_ event: SharedSessionIdentityEvent) async throws -> Bool {
+    do {
+      try await saveOwn(event)
+      return true
+    } catch let error as SharedSessionOwnerSlotStoreError {
+      guard case .futureSchemaVersion = error else { throw error }
+      return false
     }
   }
 
-  private func persistAuthState(
-    _ state: SharedSessionSyncState,
-    version: SharedSessionSyncVersion,
-    keychain: any KeychainStorage
-  ) throws {
-    authGeneration = version
-    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
-    try keychain.set(version.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
+  private func enqueueSerializedOperation<T: Sendable>(
+    _ operation: @escaping @MainActor @Sendable () async throws -> T
+  ) -> Task<T, Error> {
+    let predecessor = serializedOperationTail
+    let task = Task { @MainActor in
+      _ = await predecessor?.value
+      try Task.checkCancellation()
+      return try await operation()
+    }
+    serializedOperationTail = Task { @MainActor in
+      _ = await task.result
+    }
+    return task
   }
 
-  private func persistEnvironmentSnapshot(from clerk: Clerk, version: SharedSessionSyncVersion) throws {
-    guard let environment = clerk.environment else { return }
-
-    let keychain = clerk.dependencies.keychain
-    try keychain.set(JSONEncoder.clerkEncoder.encode(environment), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-    environmentGeneration = version
-    try keychain.set(version.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue)
+  private func isCurrent(clerk: Clerk) -> Bool {
+    isInstalled
+      && !Task.isCancelled
+      && clerk.sharedSessionSyncCoordinator === self
+      && clerk.isCurrentConfigurationEpoch(configurationEpoch)
   }
 
-  private func persistDeviceTokenState(
-    _ state: SharedSessionSyncState,
-    version: SharedSessionSyncVersion,
-    keychain: any KeychainStorage
-  ) throws {
-    deviceTokenGeneration = version
-    try keychain.set(state.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
-    try keychain.set(version.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
+  private func canScheduleRecovery(clerk: Clerk) -> Bool {
+    isInstalled
+      && !isLocalClearInProgress
+      && clerk.sharedSessionSyncCoordinator === self
+      && clerk.isCurrentConfigurationEpoch(configurationEpoch)
   }
+}
 
-  private static func readVersion(
-    forKey key: ClerkKeychainKey,
-    keychain: any KeychainStorage
-  ) -> SharedSessionSyncVersion {
-    guard let versionString = try? keychain.string(forKey: key.rawValue),
-          !versionString.isEmpty
+extension SharedSessionSyncCoordinator {
+  private func normalizedToken(_ token: String?) -> String? {
+    guard let token = token?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !token.isEmpty
     else {
-      return .initial
+      return nil
+    }
+    return token
+  }
+
+  private func acceptResponse(sequence: Int?, serverDate: Date?) -> Bool {
+    guard let sequence else { return true }
+
+    if let lastHandledResponseSequence,
+       sequence <= lastHandledResponseSequence,
+       !responseDateIsNewer(serverDate)
+    {
+      return false
     }
 
-    return SharedSessionSyncVersion(rawValue: versionString)
+    lastHandledResponseSequence = max(lastHandledResponseSequence ?? sequence, sequence)
+    if let serverDate {
+      lastHandledResponseServerDate = serverDate
+    }
+    return true
+  }
+
+  private func checkpointAllowsPublication(_ checkpoint: PublicationCheckpoint) -> Bool {
+    switch checkpoint {
+    case .none:
+      true
+    case let .response(baseGeneration, requestDeviceToken):
+      responseCanPublish(
+        from: baseGeneration,
+        requestDeviceToken: requestDeviceToken
+      )
+    }
+  }
+
+  private func responseCanPublish(
+    from baseGeneration: UInt64,
+    requestDeviceToken: String?
+  ) -> Bool {
+    guard requestDeviceToken == currentDeviceToken else { return false }
+    if baseGeneration == currentMaximumGeneration {
+      return true
+    }
+    guard let networkResponseLineage else { return false }
+    return baseGeneration >= networkResponseLineage.rootGeneration
+      && baseGeneration <= networkResponseLineage.frontierGeneration
+      && networkResponseLineage.frontierGeneration == currentMaximumGeneration
+      && networkResponseLineage.deviceToken == currentDeviceToken
+  }
+
+  private func networkResponseCandidate(
+    for checkpoint: PublicationCheckpoint,
+    eventID: UUID
+  ) -> (eventID: UUID, rootGeneration: UInt64)? {
+    guard case .response(let baseGeneration, _) = checkpoint else { return nil }
+    return (eventID, baseGeneration)
+  }
+
+  private func updateNetworkResponseLineage(
+    winner: SharedSessionIdentityEvent,
+    previousAcceptedEventID: UUID?,
+    candidate: (eventID: UUID, rootGeneration: UInt64)?
+  ) {
+    if let candidate, winner.id == candidate.eventID {
+      let rootGeneration = if let networkResponseLineage,
+                              networkResponseLineage.deviceToken == currentDeviceToken,
+                              networkResponseLineage.frontierGeneration < winner.generation,
+                              candidate.rootGeneration >= networkResponseLineage.rootGeneration,
+                              candidate.rootGeneration <= networkResponseLineage.frontierGeneration
+      {
+        networkResponseLineage.rootGeneration
+      } else {
+        candidate.rootGeneration
+      }
+      networkResponseLineage = NetworkResponseLineage(
+        rootGeneration: rootGeneration,
+        frontierGeneration: winner.generation,
+        deviceToken: currentDeviceToken
+      )
+    } else if candidate != nil || winner.id != previousAcceptedEventID {
+      networkResponseLineage = nil
+    }
+  }
+
+  private func responseDateIsNewer(_ serverDate: Date?) -> Bool {
+    guard let serverDate, let lastHandledResponseServerDate else { return false }
+    return serverDate > lastHandledResponseServerDate
   }
 }

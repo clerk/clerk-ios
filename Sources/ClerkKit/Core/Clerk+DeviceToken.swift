@@ -21,17 +21,17 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   public var deviceToken: String? {
     do {
-      return try dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      if let sharedSessionSyncCoordinator {
+        return sharedSessionSyncCoordinator.currentDeviceToken
+      }
+      if dependencies.sharedSessionLocalIdentityStore != nil {
+        return localIdentityDeviceToken
+      }
+      return try dependencies.identityKeychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     } catch {
       ClerkLogger.logError(error, message: "Failed to read device token from keychain")
       return nil
     }
-  }
-
-  func storeDeviceToken(_ token: String) throws {
-    let previousToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: token))
   }
 
   /// Updates the stored Clerk device token and refreshes native auth state.
@@ -48,16 +48,59 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   @discardableResult
   public func updateDeviceToken(_ token: String) async throws -> Client? {
+    try runtimeScope.validateStableRuntime()
     let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !normalizedToken.isEmpty else {
       throw DeviceTokenError.emptyToken
     }
 
     let previousToken = deviceToken
-    try storeDeviceToken(normalizedToken)
+    if previousToken != normalizedToken,
+       let sharedSessionSyncCoordinator
+    {
+      try await sharedSessionSyncCoordinator.publishLocalIdentity(
+        state: .cleared,
+        deviceToken: normalizedToken,
+        client: nil,
+        serverDate: nil
+      )
+      return try await refreshClient(skipClientId: true)
+    }
+
+    if let localIdentityIO = dependencies.sharedSessionLocalIdentityIO {
+      if previousToken != normalizedToken {
+        let identity = try SharedSessionLocalIdentity(
+          state: .cleared,
+          deviceToken: normalizedToken,
+          client: nil,
+          serverDate: nil
+        ).validated()
+        let task = enqueueLocalIdentityOperation { [weak self] operationRevision in
+          guard let self else { throw CancellationError() }
+          return try await persistAndApplyAtomicLocalIdentity(
+            identity,
+            through: localIdentityIO,
+            operationRevision: operationRevision,
+            fenceAllClientResponses: false
+          )
+        }
+        guard try await task.value else {
+          throw CancellationError()
+        }
+      }
+      return try await refreshClient(skipClientId: true)
+    }
 
     if previousToken != normalizedToken {
+      try dependencies.identityKeychain.set(
+        normalizedToken,
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+      let wasApplyingSharedSessionIdentity = isApplyingSharedSessionIdentity
+      isApplyingSharedSessionIdentity = true
       clearCachedClientStateAfterDeviceTokenChange()
+      isApplyingSharedSessionIdentity = wasApplyingSharedSessionIdentity
+      emitInternalStateChange(.sharedSessionIdentityDidChange)
     }
 
     return try await refreshClient(skipClientId: true)

@@ -9,7 +9,9 @@ import Foundation
 enum ClerkInternalStateChange {
   case clientDidChange(previous: Client?, current: Client?)
   case environmentDidChange
-  case deviceTokenDidChange(previous: String?, current: String)
+  case deviceTokenDidChange(previous: String?, current: String?)
+  case sharedSessionIdentityDidChange
+  case localStorageDidClear
   case applicationDidEnterForeground
 }
 

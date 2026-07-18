@@ -70,7 +70,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDeletesAllKeys() throws {
+  func clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker() throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -83,13 +83,15 @@ struct ClerkTests {
     try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set(#require("test-date-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
+    try keychain.set("2", forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    try keychain.set("{}", forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(SharedSessionSyncState.set.rawValue, forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncDeviceTokenVersion.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
@@ -105,10 +107,306 @@ struct ClerkTests {
     // Clear all keychain items
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted
+    // The adoption marker remains so disabling sync never falls back to legacy shared state.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == false)
+      #expect(
+        try keychain.hasItem(forKey: key.rawValue) == (key == .sharedSessionSyncAdopted)
+      )
     }
+  }
+
+  @Test
+  func clearAllKeychainItemsClearsAtomicLiveIdentity() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    try identityStore.save(
+      SharedSessionLocalIdentity(
+        state: .present,
+        deviceToken: "token",
+        client: Client.mock,
+        serverDate: Date(timeIntervalSince1970: 100)
+      )
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      sharedSessionLocalIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      clientService: MockClientService(get: { nil })
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+    clerk.client = Client.mock
+    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 100)
+
+    await clerk.clearAllKeychainItemsAndWait()
+
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(try identityStore.loadRecord() == nil)
+  }
+
+  @Test
+  func synchronousClearRemainsCallableFromAsyncCodeAndOverlappingCallsCoalesce() async {
+    let synchronousAPI: @MainActor () -> Void = Clerk.clearAllKeychainItems
+    _ = synchronousAPI
+
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: InMemoryKeychain(),
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+
+    let revision = clerk.localIdentityOperationRevision
+    let firstClear = Clerk.startKeychainClearIfNeeded(for: clerk)
+    let secondClear = Clerk.startKeychainClearIfNeeded(for: clerk)
+
+    #expect(firstClear == secondClear)
+    #expect(clerk.localIdentityOperationRevision == revision + 1)
+    await firstClear.value
+
+    #expect(clerk.keychainClearTask == nil)
+  }
+
+  @Test
+  func strictReconfigurationClearPreservesNewWatchTombstone() async throws {
+    let legacyShared = InMemoryKeychain()
+    let appLocal = InMemoryKeychain()
+    let identityKeychain = InMemoryKeychain()
+    try WatchSyncMetadataStore(keychain: legacyShared).save(
+      WatchSyncMetadataRecord(
+        deviceTokenState: "set",
+        deviceTokenVersion: 9,
+        authState: "set",
+        authVersion: 9
+      )
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: legacyShared,
+      appLocalKeychain: appLocal,
+      identityKeychain: identityKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+
+    try await Clerk.clearLocalClerkStorageStrictly(
+      in: dependencies,
+      deleteSharedSessionOwnerSlot: false
+    )
+
+    let metadata = try WatchSyncMetadataStore(keychain: appLocal).load()
+    let clearVersion = try #require(metadata.authVersion)
+    #expect(clearVersion > 9)
+    #expect(metadata.deviceTokenVersion == clearVersion)
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.authState == "cleared")
+    #expect(!metadata.hasPendingIdentityMetadata)
+  }
+
+  @Test
+  func awaitedClearWithdrawsOwnerSlotBeforeReturning() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      sharedSessionLocalIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.dependencies = dependencies
+    let slotStore = ClearTrackingSlotStore()
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.clear",
+      instanceFingerprint: "instance",
+      slotStore: slotStore,
+      localIdentityStore: identityStore,
+      localIdentityIO: dependencies.sharedSessionLocalIdentityIO,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    defer { clerk.sharedSessionSyncCoordinator = nil }
+    let identity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: .mock,
+      serverDate: nil
+    )
+    try identityStore.save(identity)
+    clerk.setSharedSessionIdentityIfNeeded(identity)
+    try slotStore.saveOwnSlot(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.clear",
+        event: SharedSessionIdentityEvent(
+          id: UUID(),
+          originOwnerIdentifier: "app.clear",
+          generation: 1,
+          state: .present,
+          deviceToken: "token",
+          client: .mock,
+          serverDate: nil
+        )
+      )
+    )
+
+    await clerk.clearAllKeychainItemsAndWait()
+
+    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(try identityStore.loadRecord() == nil)
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func awaitedClearCannotBeUndoneByPreviouslySuspendedIdentitySave() async throws {
+    let clerk = Clerk()
+    clerk.sharedSessionSyncCoordinator = nil
+    let keychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+    try store.save(
+      SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "initial-token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      sharedSessionLocalIdentityStore: store,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.dependencies = dependencies
+    let localIdentityIO = try #require(dependencies.sharedSessionLocalIdentityIO)
+    let identity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "stale-token",
+      client: .mock,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let gate = LocalIdentityOperationGate()
+    let saveTask = clerk.enqueueLocalIdentityOperation { operationRevision in
+      await gate.suspend()
+      return try await clerk.persistAndApplyAtomicLocalIdentity(
+        identity,
+        through: localIdentityIO,
+        operationRevision: operationRevision,
+        fenceAllClientResponses: false
+      )
+    }
+    try await waitUntil { gate.isSuspended }
+
+    let clearTask = Task { @MainActor in
+      await clerk.clearAllKeychainItemsAndWait()
+    }
+    await Task.yield()
+    #expect(clerk.localIdentityDeviceToken == nil)
+    #expect(clerk.client == nil)
+    gate.resume()
+
+    _ = try? await saveTask.value
+    await clearTask.value
+
+    #expect(try store.loadRecord() == nil)
+    #expect(clerk.localIdentityDeviceToken == nil)
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func awaitedClearDrainsSuspendedCacheWriterBeforeFinalDeletion() async throws {
+    let clerk = Clerk()
+    let keychain = SuspendingCacheKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+    keychain.suspendNextSet(forKey: ClerkKeychainKey.cachedClient.rawValue)
+    clerk.client = .mock
+    try await waitUntil { keychain.isSetSuspended }
+
+    var didComplete = false
+    let clearTask = Task { @MainActor in
+      await clerk.clearAllKeychainItemsAndWait()
+      didComplete = true
+    }
+    await Task.yield()
+    #expect(!didComplete)
+
+    keychain.resumeSuspendedSet()
+    await clearTask.value
+
+    #expect(didComplete)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == nil)
+  }
+
+  @Test
+  func adoptedWatchTransitionFencesOlderQueuedNetworkResponse() async throws {
+    let clerk = Clerk()
+    clerk.sharedSessionSyncCoordinator = nil
+    let store = SuspendingIdentityStore()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: .mock,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try store.save(initialIdentity)
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      sharedSessionLocalIdentityStore: store,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.setSharedSessionIdentityIfNeeded(initialIdentity)
+    let capturedResponseGeneration = clerk.clientResponseGeneration
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .cleared(
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+    let watchCoordinator = WatchConnectivityCoordinator()
+    store.suspendNextSave()
+    watchCoordinator.apply(payload, from: .phone, to: clerk)
+    try await waitUntil { store.isSaveSuspended }
+
+    let responseTask = Task { @MainActor in
+      try await clerk.applyLocalIdentityResponse(
+        ClientSyncResponseContext(
+          update: .client(.mock),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 300),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: capturedResponseGeneration,
+          responseSequence: 1
+        )
+      )
+    }
+    store.resumeSuspendedSave()
+
+    await watchCoordinator.waitForIdentityPublications()
+    try await responseTask.value
+
+    #expect(clerk.client == nil)
+    #expect(try store.load()?.client == nil)
   }
 
   @Test
@@ -461,4 +759,175 @@ struct ClerkTests {
     environment.displayConfig.instanceEnvironmentType = type
     return environment
   }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for identity operation.")
+  }
+}
+
+private final class SuspendingCacheKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let condition = NSCondition()
+  private var suspendedKey: String?
+  private var shouldResume = false
+  private var setIsSuspended = false
+
+  var isSetSuspended: Bool {
+    condition.withLock { setIsSuspended }
+  }
+
+  func suspendNextSet(forKey key: String) {
+    condition.withLock {
+      suspendedKey = key
+      shouldResume = false
+    }
+  }
+
+  func resumeSuspendedSet() {
+    condition.withLock {
+      shouldResume = true
+      condition.broadcast()
+    }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    condition.lock()
+    if suspendedKey == key {
+      suspendedKey = nil
+      setIsSuspended = true
+      condition.broadcast()
+      while !shouldResume {
+        condition.wait()
+      }
+      setIsSuspended = false
+    }
+    condition.unlock()
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+@MainActor
+private final class LocalIdentityOperationGate {
+  private(set) var isSuspended = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func suspend() async {
+    isSuspended = true
+    await withCheckedContinuation { continuation in
+      self.continuation = continuation
+    }
+    isSuspended = false
+  }
+
+  func resume() {
+    continuation?.resume()
+    continuation = nil
+  }
+}
+
+private final class SuspendingIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
+  private let stateLock = NSLock()
+  private let suspension = NSCondition()
+  private var record: SharedSessionLocalIdentityRecord?
+  private var shouldSuspendNextSave = false
+  private var shouldResumeSave = false
+  private var saveIsSuspended = false
+  private var deletionCount = 0
+
+  var isSaveSuspended: Bool {
+    suspension.withLock { saveIsSuspended }
+  }
+
+  var deleteCount: Int {
+    stateLock.withLock { deletionCount }
+  }
+
+  func suspendNextSave() {
+    suspension.withLock {
+      shouldSuspendNextSave = true
+      shouldResumeSave = false
+    }
+  }
+
+  func resumeSuspendedSave() {
+    suspension.withLock {
+      shouldResumeSave = true
+      suspension.broadcast()
+    }
+  }
+
+  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
+    stateLock.withLock { record }
+  }
+
+  func updateRecord(
+    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
+  ) throws {
+    let current = stateLock.withLock { record }
+    let updated = try update(current)
+
+    suspension.lock()
+    let shouldSuspend = shouldSuspendNextSave && updated != nil
+    if shouldSuspend {
+      shouldSuspendNextSave = false
+      saveIsSuspended = true
+      suspension.broadcast()
+      while !shouldResumeSave {
+        suspension.wait()
+      }
+      saveIsSuspended = false
+    }
+    suspension.unlock()
+
+    stateLock.withLock {
+      record = updated
+      if updated == nil {
+        deletionCount += 1
+      }
+    }
+  }
+}
+
+private final class ClearTrackingSlotStore: @unchecked Sendable, SharedSessionSlotStoring {
+  private let lock = NSLock()
+  private var slot: SharedSessionOwnerSlot?
+
+  func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
+    lock.withLock { slot }
+  }
+
+  func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
+    lock.withLock { slot.map { [$0] } ?? [] }
+  }
+
+  func saveOwnSlot(_ slot: SharedSessionOwnerSlot) throws {
+    lock.withLock { self.slot = slot }
+  }
+
+  func deleteOwnSlot() throws {
+    lock.withLock { slot = nil }
+  }
+}
+
+@MainActor
+private final class SilentSharedSessionNotifier: SharedSessionSyncNotifying {
+  func setHandler(_: @escaping @MainActor () -> Void) {}
+  func post() {}
 }

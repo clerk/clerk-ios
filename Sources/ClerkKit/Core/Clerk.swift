@@ -196,6 +196,30 @@ public final class Clerk {
   /// Coordinates shared persisted auth state between sibling apps.
   var sharedSessionSyncCoordinator: SharedSessionSyncCoordinator?
 
+  /// Coordinates authentication state exchanged with a paired Apple Watch.
+  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+
+  /// Hydrated token for the app-local atomic identity record.
+  /// Shared transport keeps its own frontier-bound copy while installed.
+  var localIdentityDeviceToken: String?
+
+  /// Orders app-local atomic identity writes that suspend off the main actor.
+  var localIdentityOperationRevision: UInt64 = 0
+  var localIdentityInvalidatedThroughRevision: UInt64 = 0
+
+  /// Serializes complete app-local identity transitions before they cross the
+  /// off-main persistence boundary.
+  private var localIdentityOperationTail: Task<Void, Never>?
+
+  /// Coalesces overlapping public Keychain clears so persistence remains frozen
+  /// until the single clear transaction has completed.
+  var keychainClearTask: Task<Void, Never>?
+  var keychainClearTaskID: UUID?
+
+  /// Prevents observers from seeing the token and client halves of a shared identity
+  /// transition as independent local changes.
+  var isApplyingSharedSessionIdentity = false
+
   /// Dispatches Clerk state changes to optional internal observers.
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
@@ -282,7 +306,10 @@ extension Clerk {
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
+    localIdentityOperationRevision &+= 1
     taskCoordinator?.cancelAll()
+    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
+    watchConnectivityCoordinator = nil
     internalStateChanges.removeAllObservers()
     sharedSessionSyncCoordinator = nil
 
@@ -290,6 +317,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    localIdentityDeviceToken = nil
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -303,22 +331,54 @@ extension Clerk {
     lifecycleManager?.startObserving()
 
     // Set up cache manager and load cached data synchronously
-    let cacheManager = CacheManager(coordinator: self, keychain: dependencies.keychain)
+    let cacheManager = CacheManager(
+      coordinator: self,
+      identityKeychain: dependencies.identityKeychain,
+      environmentKeychain: dependencies.appLocalKeychain,
+      sharedSessionLocalIdentityStore: dependencies.sharedSessionLocalIdentityStore
+    )
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
 
+    var initialSharedSessionReconciliation: Task<Bool, Never>?
     if options.sharedSessionSync != nil {
-      if let accessGroup = options.keychainConfig.accessGroup, !accessGroup.isEmpty {
-        let coordinator = SharedSessionSyncCoordinator(
-          keychainConfig: options.keychainConfig,
-          clerk: self,
-          keychain: dependencies.keychain
-        )
-        sharedSessionSyncCoordinator = coordinator
-        internalStateChanges.addObserver(coordinator)
+      if options.keychainConfig.normalizedAccessGroup != nil,
+         let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
+         !ownerIdentifier.isEmpty,
+         let localIdentityStore = dependencies.sharedSessionLocalIdentityStore
+      {
+        do {
+          let namespace = SharedSessionNamespace(
+            frontendApiUrl: frontendApiUrl,
+            publishableKey: publishableKey
+          )
+          let slotStore = try SharedSessionOwnerSlotStore(
+            keychainConfig: options.keychainConfig,
+            namespace: namespace,
+            ownerIdentifier: ownerIdentifier
+          )
+          let coordinator = SharedSessionSyncCoordinator(
+            ownerIdentifier: ownerIdentifier,
+            instanceFingerprint: namespace.fingerprint,
+            slotStore: slotStore,
+            localIdentityStore: localIdentityStore,
+            localIdentityIO: dependencies.sharedSessionLocalIdentityIO,
+            notifier: SharedSessionSyncDarwinNotifier(
+              keychainConfig: options.keychainConfig,
+              instanceFingerprint: namespace.fingerprint
+            ),
+            configurationEpoch: configurationEpoch,
+            clerk: self
+          )
+          sharedSessionSyncCoordinator = coordinator
+          internalStateChanges.addObserver(coordinator)
+          initialSharedSessionReconciliation = coordinator.start()
+        } catch {
+          ClerkLogger.logError(error, message: "Failed to install shared session sync")
+        }
       } else {
         ClerkLogger.error(
-          "Shared session sync requires a Keychain access group. Configure Clerk.Options.keychainConfig with the same service and accessGroup in every participating app."
+          "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
         )
       }
     }
@@ -326,7 +386,9 @@ extension Clerk {
     // Set up watch connectivity coordinator only after cache hydration.
     // Restored cached state should not be versioned as a new local auth change.
     if options.watchConnectivityEnabled {
-      internalStateChanges.addObserver(WatchConnectivityCoordinator())
+      let coordinator = WatchConnectivityCoordinator()
+      watchConnectivityCoordinator = coordinator
+      internalStateChanges.addObserver(coordinator)
     }
 
     // Fire and forget: fetch fresh client and environment from API
@@ -334,12 +396,6 @@ extension Clerk {
     taskCoordinator?.task { @MainActor [weak self] in
       do {
         guard let self else { return }
-        async let client = retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try await self.refreshClient()
-        }
         async let environment = retryingOperation(
           policy: retryPolicy,
           operationName: "environment refresh"
@@ -347,8 +403,16 @@ extension Clerk {
           try await self.refreshEnvironment()
         }
 
+        _ = await initialSharedSessionReconciliation?.value
+        let client = try await retryingOperation(
+          policy: retryPolicy,
+          operationName: "client refresh"
+        ) {
+          try await self.refreshClient()
+        }
+
         _ = try await environment
-        _ = try await client
+        _ = client
       } catch is CancellationError {
         return
       } catch {
@@ -398,9 +462,10 @@ extension Clerk {
 
   /// Reconfigures the shared Clerk instance with a new publishable key and options.
   ///
-  /// This method validates the new configuration, clears local Clerk state, and then
-  /// installs the new configuration on the existing shared instance. Any user currently
-  /// signed in should be expected to sign in again after reconfiguration.
+  /// This method validates and installs the new configuration. Changing the publishable
+  /// key clears local Clerk state. Reconfiguring shared-session transport for the same
+  /// publishable key preserves the adopted app-local identity while updating this app's
+  /// shared owner slot as needed.
   ///
   /// If Clerk has not been configured yet, this method creates and installs the shared
   /// instance without going through the fallback ``Clerk/shared`` getter.
@@ -428,23 +493,40 @@ extension Clerk {
     defer { endRuntimeReconfiguration() }
 
     if let existing = _shared {
+      // A public Keychain clear owns deletion of the current atomic identity.
+      // Let that transaction commit before reconfiguration invalidates the old
+      // runtime's identity queue or decides whether local state can be reused.
+      await existing.keychainClearTask?.value
+
       let nextEpoch = existing.nextConfigurationEpoch
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState),
+        deferSharedSessionAdoption: true
       )
-      let oldKeychain = existing.dependencies.keychain
-      let newKeychain = newDependencies.keychain
+      let preservesAdoptedLocalState = existing.publishableKey
+        == newDependencies.configurationManager.publishableKey
+        && (existing.options.sharedSessionSync != nil || options.sharedSessionSync != nil)
+      let preservesSharedSessionOwnerSlot = existing.canReuseSharedSessionOwnerSlot(
+        with: newDependencies
+      )
       let rollbackState = existing.captureReconfigurationRollbackState()
 
-      try clearAllKeychainItemsStrictly(in: newKeychain)
-
       existing.setConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersAndDrainCache()
+      await existing.cleanupManagersAndDrainCache(
+        deleteSharedSessionOwnerSlot: false
+      )
 
       do {
-        try clearAllKeychainItemsStrictly(in: oldKeychain)
+        try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
+        if !preservesAdoptedLocalState {
+          try await clearLocalClerkStorageStrictly(in: newDependencies)
+          try await clearLocalClerkStorageStrictly(
+            in: rollbackState.dependencies,
+            deleteSharedSessionOwnerSlot: false
+          )
+        }
       } catch {
         existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
@@ -452,6 +534,9 @@ extension Clerk {
 
       await existing.resetRuntimeStateForReconfiguration()
       existing.performConfiguration(dependencies: newDependencies)
+      if !preservesSharedSessionOwnerSlot {
+        await deleteSharedSessionOwnerSlotIfAccessible(in: rollbackState.dependencies)
+      }
       return existing
     }
 
@@ -462,8 +547,7 @@ extension Clerk {
       runtimeScope: clerk.runtimeScope
     )
 
-    try clearAllKeychainItemsStrictly(in: newDependencies.keychain)
-
+    try await clearLocalClerkStorageStrictly(in: newDependencies)
     clerk.performConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
@@ -503,12 +587,14 @@ extension Clerk {
     let clientResponseGeneration = clientResponseGeneration
     let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try runtime.validateStableRuntime()
-    applyResponseClient(
-      response.client,
-      responseSequence: response.requestSequence,
-      serverDate: response.serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    )
+    if sharedSessionSyncCoordinator == nil, let responseClient = response.client {
+      applyResponseClient(
+        responseClient,
+        responseSequence: response.requestSequence,
+        serverDate: response.serverDate,
+        clientResponseGeneration: clientResponseGeneration
+      )
+    }
     return client
   }
 
@@ -595,6 +681,15 @@ extension Clerk {
 }
 
 extension Clerk: CacheCoordinator {
+  func setSharedSessionIdentityIfNeeded(_ identity: SharedSessionLocalIdentity) {
+    localIdentityDeviceToken = identity.deviceToken
+    guard client == nil else { return }
+    lastClientServerFetchDate = identity.serverDate
+    if identity.client != nil {
+      client = identity.client
+    }
+  }
+
   func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
     guard self.client == nil else { return }
     if let serverFetchDate {
@@ -680,6 +775,51 @@ extension Clerk {
     operation: @escaping @Sendable () async -> Void
   ) -> Task<Void, Never>? {
     taskCoordinator?.task(priority: priority, operation: operation)
+  }
+
+  func enqueueLocalIdentityOperation<T: Sendable>(
+    _ operation: @escaping @MainActor @Sendable (_ operationRevision: UInt64) async throws -> T
+  ) -> Task<T, Error> {
+    localIdentityOperationRevision &+= 1
+    let operationRevision = localIdentityOperationRevision
+    let predecessor = localIdentityOperationTail
+    let task = Task { @MainActor in
+      _ = await predecessor?.value
+      try Task.checkCancellation()
+      guard operationRevision > self.localIdentityInvalidatedThroughRevision else {
+        throw CancellationError()
+      }
+      return try await operation(operationRevision)
+    }
+    localIdentityOperationTail = Task { @MainActor in
+      _ = await task.result
+    }
+    return task
+  }
+
+  func waitForPendingLocalIdentityOperations() async {
+    await localIdentityOperationTail?.value
+  }
+
+  func captureLocalRequestIdentity() async throws -> SharedSessionRequestIdentitySnapshot {
+    guard dependencies.sharedSessionLocalIdentityIO != nil else {
+      return SharedSessionRequestIdentitySnapshot(
+        baseGeneration: 0,
+        deviceToken: deviceToken,
+        clientID: client?.id,
+        clientResponseGeneration: clientResponseGeneration
+      )
+    }
+    let task = enqueueLocalIdentityOperation { [weak self] _ in
+      guard let self else { throw CancellationError() }
+      return SharedSessionRequestIdentitySnapshot(
+        baseGeneration: 0,
+        deviceToken: deviceToken,
+        clientID: client?.id,
+        clientResponseGeneration: clientResponseGeneration
+      )
+    }
+    return try await task.value
   }
 
   @MainActor
@@ -773,11 +913,163 @@ extension Clerk {
     serverDate: Date? = nil,
     clientResponseGeneration: ClientResponseGeneration? = nil
   ) {
+    guard acceptClientResponse(
+      incoming,
+      responseSequence: responseSequence,
+      serverDate: serverDate,
+      clientResponseGeneration: clientResponseGeneration
+    ) else { return }
+
+    if let serverDate {
+      lastClientServerFetchDate = serverDate
+    }
+    client = incoming
+  }
+
+  func applyLocalIdentityResponse(_ context: ClientSyncResponseContext) async throws {
+    if dependencies.sharedSessionLocalIdentityStore != nil {
+      _ = try await applyAtomicLocalIdentityResponse(context)
+    } else {
+      try applyLegacyLocalIdentityResponse(context)
+    }
+  }
+
+  @discardableResult
+  private func applyAtomicLocalIdentityResponse(_ context: ClientSyncResponseContext) async throws -> Bool {
+    guard let localIdentityIO = dependencies.sharedSessionLocalIdentityIO else { return false }
+    guard let identity = try context.resolvedIdentityPayload(
+      currentDeviceToken: deviceToken,
+      currentClient: client,
+      currentServerDate: lastClientServerFetchDate
+    ) else { return false }
+
+    guard acceptClientResponse(
+      identity.client,
+      responseSequence: context.responseSequence,
+      serverDate: context.serverDate,
+      clientResponseGeneration: context.clientResponseGeneration
+    ) else { return false }
+
+    let identityToApply = try identity.validated()
+    let task = enqueueLocalIdentityOperation { [weak self] operationRevision in
+      guard let self else { throw CancellationError() }
+      if let clientResponseGeneration = context.clientResponseGeneration,
+         clientResponseGeneration != self.clientResponseGeneration
+      {
+        return false
+      }
+      return try await persistAndApplyAtomicLocalIdentity(
+        identityToApply,
+        through: localIdentityIO,
+        operationRevision: operationRevision,
+        fenceAllClientResponses: false
+      )
+    }
+    return try await task.value
+  }
+
+  func persistAndApplyAtomicLocalIdentity(
+    _ identity: SharedSessionLocalIdentity,
+    through localIdentityIO: SharedSessionLocalIdentityIO,
+    operationRevision: UInt64,
+    fenceAllClientResponses: Bool
+  ) async throws -> Bool {
+    let identity = try identity.validated()
+    guard operationRevision > localIdentityInvalidatedThroughRevision else {
+      return false
+    }
+    guard try await localIdentityIO.saveAcceptedIdentity(
+      identity,
+      operationRevision: operationRevision
+    ) else {
+      return false
+    }
+    guard operationRevision > localIdentityInvalidatedThroughRevision,
+          dependencies.sharedSessionLocalIdentityIO === localIdentityIO
+    else {
+      return false
+    }
+
+    let previousToken = deviceToken
+    if fenceAllClientResponses || previousToken != identity.deviceToken {
+      fenceClientResponsesAfterDeviceTokenChange()
+    }
+    let wasApplyingSharedSessionIdentity = isApplyingSharedSessionIdentity
+    isApplyingSharedSessionIdentity = true
+    localIdentityDeviceToken = identity.deviceToken
+    lastClientServerFetchDate = identity.serverDate
+    client = identity.client
+    isApplyingSharedSessionIdentity = wasApplyingSharedSessionIdentity
+    emitInternalStateChange(.sharedSessionIdentityDidChange)
+    return true
+  }
+
+  private func applyLegacyLocalIdentityResponse(_ context: ClientSyncResponseContext) throws {
+    let responseTokenUpdate = context.deviceTokenUpdate
+    let incomingClient: Client?
+    let appliesClientUpdate: Bool
+    switch context.update {
+    case .client(let client):
+      incomingClient = client
+      appliesClientUpdate = true
+    case .explicitClear:
+      incomingClient = nil
+      appliesClientUpdate = true
+    case .absent:
+      guard !context.isCanonicalClientRequest, responseTokenUpdate != .absent else { return }
+      incomingClient = client
+      appliesClientUpdate = false
+    case .invalid:
+      return
+    }
+
+    guard acceptClientResponse(
+      incomingClient,
+      responseSequence: context.responseSequence,
+      serverDate: context.serverDate,
+      clientResponseGeneration: context.clientResponseGeneration
+    ) else { return }
+
+    let previousToken = deviceToken
+    let resultingToken: String?
+    switch responseTokenUpdate {
+    case .absent:
+      resultingToken = previousToken
+    case .set(let token):
+      try dependencies.identityKeychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      resultingToken = token
+    case .clear:
+      try dependencies.identityKeychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      resultingToken = nil
+    }
+
+    let wasApplyingSharedSessionIdentity = isApplyingSharedSessionIdentity
+    isApplyingSharedSessionIdentity = true
+    if let serverDate = context.serverDate, appliesClientUpdate {
+      lastClientServerFetchDate = serverDate
+    }
+    if appliesClientUpdate {
+      client = incomingClient
+    }
+    isApplyingSharedSessionIdentity = wasApplyingSharedSessionIdentity
+
+    if previousToken != resultingToken {
+      fenceClientResponsesAfterDeviceTokenChange()
+    }
+    emitInternalStateChange(.sharedSessionIdentityDidChange)
+  }
+
+  private func acceptClientResponse(
+    _ incoming: Client?,
+    responseSequence: Int?,
+    serverDate: Date?,
+    clientResponseGeneration: ClientResponseGeneration?
+  ) -> Bool {
     if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
       ClerkLogger.debug(
         "Ignoring client response from stale device token generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(clientResponseGeneration)"
       )
-      return
+      return false
     }
 
     if let responseSequence {
@@ -788,16 +1080,15 @@ extension Clerk {
         ClerkLogger.debug(
           "Ignoring stale client response. Current sequence: \(lastAppliedClientResponseSequence), incoming sequence: \(responseSequence)"
         )
-        return
+        return false
       }
 
-      lastAppliedClientResponseSequence = max(lastAppliedClientResponseSequence ?? responseSequence, responseSequence)
+      lastAppliedClientResponseSequence = max(
+        lastAppliedClientResponseSequence ?? responseSequence,
+        responseSequence
+      )
     }
-
-    if let serverDate {
-      lastClientServerFetchDate = serverDate
-    }
-    client = incoming
+    return true
   }
 
   private func responseIsNewerThanCurrent(_ incoming: Client?, serverDate: Date?) -> Bool {
@@ -826,13 +1117,35 @@ extension Clerk {
     lastClientServerFetchDate = nil
     client = nil
 
+    if let sharedSessionLocalIdentityStore = dependencies.sharedSessionLocalIdentityStore {
+      if let localIdentityIO = dependencies.sharedSessionLocalIdentityIO {
+        let task = enqueueLocalIdentityOperation { operationRevision in
+          _ = try await localIdentityIO.delete(operationRevision: operationRevision)
+        }
+        Task { @MainActor in
+          do {
+            try await task.value
+          } catch {
+            ClerkLogger.logError(error, message: "Failed to clear cached Clerk identity after device token update")
+          }
+        }
+      } else {
+        do {
+          try sharedSessionLocalIdentityStore.delete()
+        } catch {
+          ClerkLogger.logError(error, message: "Failed to clear cached Clerk identity after device token update")
+        }
+      }
+      localIdentityDeviceToken = nil
+      return
+    }
+
     for key in [
       ClerkKeychainKey.cachedClient,
       .cachedClientServerDate,
-      .cachedEnvironment,
     ] {
       do {
-        try dependencies.keychain.deleteItem(forKey: key.rawValue)
+        try dependencies.identityKeychain.deleteItem(forKey: key.rawValue)
       } catch {
         ClerkLogger.logError(error, message: "Failed to clear cached Clerk data after device token update")
       }
@@ -842,32 +1155,79 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
+    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
+    localIdentityOperationRevision &+= 1
+    localIdentityInvalidatedThroughRevision = localIdentityOperationRevision
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
     cancelEnvironmentRefreshTask()
     taskCoordinator?.cancelAll()
+    sharedSessionSyncCoordinator?.deactivate()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
     cacheManager?.shutdown()
     cacheManager = nil
     teardownNonCacheManagers()
   }
 
-  private func cleanupManagersAndDrainCache() async {
+  private func cleanupManagersAndDrainCache(
+    deleteSharedSessionOwnerSlot: Bool = true
+  ) async {
+    let watchConnectivityCoordinator = watchConnectivityCoordinator
+    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
+    localIdentityOperationRevision &+= 1
+    localIdentityInvalidatedThroughRevision = localIdentityOperationRevision
+    await dependencies.sharedSessionLocalIdentityIO?.invalidateOperations(
+      through: localIdentityOperationRevision
+    )
+    await localIdentityOperationTail?.value
+    localIdentityOperationTail = nil
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
 
     cancelEnvironmentRefreshTask()
+    let sharedSessionSyncCoordinator = sharedSessionSyncCoordinator
+    await sharedSessionSyncCoordinator?.shutdown(
+      deleteOwnSlot: deleteSharedSessionOwnerSlot
+    )
     // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
     // from enqueuing new writes during the drain.
     await taskCoordinator?.cancelAllAndWait()
+    await watchConnectivityCoordinator?.waitForIdentityPublications()
 
     resetManagerStateForCleanup(finishAuthEventStreams: false)
     await cacheManager?.shutdownAndDrain()
     cacheManager = nil
     teardownNonCacheManagers()
+  }
+
+  func canReuseSharedSessionOwnerSlot(
+    with newDependencies: any Dependencies
+  ) -> Bool {
+    let currentOptions = dependencies.configurationManager.options
+    let newOptions = newDependencies.configurationManager.options
+    guard dependencies.configurationManager.publishableKey
+      == newDependencies.configurationManager.publishableKey,
+      currentOptions.sharedSessionSync != nil,
+      newOptions.sharedSessionSync != nil,
+      currentOptions.keychainConfig.service == newOptions.keychainConfig.service,
+      currentOptions.keychainConfig.normalizedAccessGroup
+      == newOptions.keychainConfig.normalizedAccessGroup,
+      dependencies.sharedSessionOwnerIdentifier
+      == newDependencies.sharedSessionOwnerIdentifier
+    else {
+      return false
+    }
+
+    return SharedSessionNamespace(
+      frontendApiUrl: dependencies.configurationManager.frontendApiUrl,
+      publishableKey: dependencies.configurationManager.publishableKey
+    ) == SharedSessionNamespace(
+      frontendApiUrl: newDependencies.configurationManager.frontendApiUrl,
+      publishableKey: newDependencies.configurationManager.publishableKey
+    )
   }
 
   private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {
@@ -898,6 +1258,7 @@ extension Clerk {
     lifecycleManager = nil
     internalStateChanges.removeAllObservers()
     sharedSessionSyncCoordinator = nil
+    watchConnectivityCoordinator = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

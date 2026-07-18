@@ -10,10 +10,25 @@ import Foundation
 /// This class manages the lifecycle of all dependencies and provides them
 /// through the `Dependencies` protocol for dependency injection.
 final class DependencyContainer: Dependencies {
+  private struct KeychainStorages {
+    let shared: any KeychainStorage
+    let appLocal: any KeychainStorage
+    let identity: any KeychainStorage
+    let legacyAppLocal: (any KeychainStorage)?
+    let localIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  }
+
   // MARK: - Core Dependencies
 
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
+  let appLocalKeychain: any KeychainStorage
+  let identityKeychain: any KeychainStorage
+  let legacyAppLocalKeychain: (any KeychainStorage)?
+  let sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  let sharedSessionLocalIdentityIO: SharedSessionLocalIdentityIO?
+  let sharedSessionOwnerIdentifier: String?
+  private let persistentAdoptionEnabled: Bool
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -54,7 +69,9 @@ final class DependencyContainer: Dependencies {
   init(
     publishableKey: String,
     options: Clerk.Options,
-    runtimeScope: ClerkRuntimeScope
+    runtimeScope: ClerkRuntimeScope,
+    deferSharedSessionAdoption: Bool = false,
+    ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
     // Create and configure ConfigurationManager first (needed to determine baseURL)
@@ -82,9 +99,27 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    keychain = Self.makeKeychainStorage(config: options.keychainConfig)
+    sharedSessionOwnerIdentifier = ownerIdentifierProvider()?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    persistentAdoptionEnabled = !publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests
+    let keychainStorages = try Self.makeKeychainStorages(
+      options: options,
+      frontendApiUrl: configurationManager.frontendApiUrl,
+      publishableKey: configurationManager.publishableKey,
+      ownerIdentifier: sharedSessionOwnerIdentifier,
+      usePersistentAdoptionState: persistentAdoptionEnabled,
+      performPersistentAdoption: !deferSharedSessionAdoption
+    )
+    keychain = keychainStorages.shared
+    appLocalKeychain = keychainStorages.appLocal
+    identityKeychain = keychainStorages.identity
+    legacyAppLocalKeychain = keychainStorages.legacyAppLocal
+    sharedSessionLocalIdentityStore = keychainStorages.localIdentityStore
+    sharedSessionLocalIdentityIO = keychainStorages.localIdentityStore.map {
+      SharedSessionLocalIdentityIO(store: $0)
+    }
 
-    magicLinkStore = MagicLinkStore(keychain: keychain)
+    magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
@@ -101,7 +136,10 @@ final class DependencyContainer: Dependencies {
     }
 
     // Phase 3: Telemetry collector (depends on options)
-    telemetryCollector = Self.createTelemetryCollector(publishableKey: publishableKey, options: options)
+    telemetryCollector = Self.createTelemetryCollector(
+      publishableKey: configurationManager.publishableKey,
+      options: options
+    )
 
     // Phase 4: Services (depend on apiClient and other dependencies)
     clientService = ClientService(apiClient: apiClient)
@@ -119,19 +157,150 @@ final class DependencyContainer: Dependencies {
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {
+    makeKeychainStorage(service: config.service, accessGroup: config.normalizedAccessGroup)
+  }
+
+  private static func makeKeychainStorages(
+    options: Clerk.Options,
+    frontendApiUrl: String,
+    publishableKey: String,
+    ownerIdentifier: String?,
+    usePersistentAdoptionState: Bool,
+    performPersistentAdoption: Bool
+  ) throws -> KeychainStorages {
+    let config = options.keychainConfig
+    let shared = makeKeychainStorage(config: config)
+    let syncEnabled = options.sharedSessionSync != nil
+    if syncEnabled, config.normalizedAccessGroup == nil {
+      throw ClerkClientError(
+        message: "Shared session sync requires a nonempty Keychain access group."
+      )
+    }
+    if syncEnabled, ownerIdentifier?.isEmpty != false {
+      throw ClerkClientError(
+        message: "Shared session sync requires a nonempty application bundle identifier."
+      )
+    }
+
+    let configuredAppLocal: any KeychainStorage = if config.normalizedAccessGroup != nil {
+      makeKeychainStorage(service: config.service, accessGroup: nil)
+    } else {
+      shared
+    }
+    let previousAppLocal = makePreviousAppLocalKeychain(
+      configuredService: config.service,
+      bundleIdentifier: ownerIdentifier,
+      configuredAppLocal: configuredAppLocal
+    )
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: frontendApiUrl,
+      publishableKey: publishableKey
+    )
+    let stableIdentity = makeKeychainStorage(
+      service: stableIdentityService(
+        configuredService: config.service,
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      accessGroup: nil
+    )
+
+    if syncEnabled {
+      if usePersistentAdoptionState, performPersistentAdoption {
+        try SharedSessionSyncAdoption(
+          destinationIdentity: stableIdentity,
+          destinationPrivate: configuredAppLocal,
+          configuredAppLocalIdentity: configuredAppLocal,
+          previousAppLocalIdentity: previousAppLocal,
+          legacyShared: shared
+        ).migrateIfNeeded()
+      }
+      return KeychainStorages(
+        shared: shared,
+        appLocal: configuredAppLocal,
+        identity: stableIdentity,
+        legacyAppLocal: previousAppLocal,
+        localIdentityStore: SharedSessionLocalIdentityStore(keychain: stableIdentity)
+      )
+    }
+
+    let wasAdopted = usePersistentAdoptionState
+      ? try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
+      : false
+    let adoptedIdentityStore = wasAdopted
+      ? SharedSessionLocalIdentityStore(keychain: stableIdentity)
+      : nil
+    try adoptedIdentityStore?.clearPendingPublication()
+    return KeychainStorages(
+      shared: shared,
+      appLocal: wasAdopted ? configuredAppLocal : shared,
+      identity: wasAdopted ? stableIdentity : shared,
+      legacyAppLocal: previousAppLocal,
+      localIdentityStore: adoptedIdentityStore
+    )
+  }
+
+  @MainActor
+  func performDeferredSharedSessionAdoptionIfNeeded() throws {
+    guard persistentAdoptionEnabled,
+          configurationManager.options.sharedSessionSync != nil
+    else {
+      return
+    }
+
+    try SharedSessionSyncAdoption(
+      destinationIdentity: identityKeychain,
+      destinationPrivate: appLocalKeychain,
+      configuredAppLocalIdentity: appLocalKeychain,
+      previousAppLocalIdentity: legacyAppLocalKeychain,
+      legacyShared: keychain
+    ).migrateIfNeeded()
+  }
+
+  private static func makePreviousAppLocalKeychain(
+    configuredService: String,
+    bundleIdentifier: String?,
+    configuredAppLocal: any KeychainStorage
+  ) -> (any KeychainStorage)? {
+    guard let bundleIdentifier, !bundleIdentifier.isEmpty else {
+      return nil
+    }
+    guard bundleIdentifier != configuredService else {
+      return configuredAppLocal
+    }
+    return makeKeychainStorage(service: bundleIdentifier, accessGroup: nil)
+  }
+
+  static func stableIdentityService(
+    configuredService: String,
+    instanceFingerprint: String,
+    ownerIdentifier: String?
+  ) -> String {
+    let owner = if let ownerIdentifier, !ownerIdentifier.isEmpty {
+      ownerIdentifier
+    } else {
+      configuredService
+    }
+    return "\(owner).clerk.identity.v2.\(instanceFingerprint)"
+  }
+
+  private static func makeKeychainStorage(
+    service: String,
+    accessGroup: String?
+  ) -> any KeychainStorage {
     let legacyKeychain = SystemKeychain(
-      service: config.service,
-      accessGroup: config.accessGroup
+      service: service,
+      accessGroup: accessGroup
     )
 
     #if os(macOS)
-    guard config.accessGroup != nil else {
+    guard accessGroup != nil else {
       return legacyKeychain
     }
 
     let dataProtectionKeychain = SystemKeychain(
-      service: config.service,
-      accessGroup: config.accessGroup,
+      service: service,
+      accessGroup: accessGroup,
       useDataProtectionKeychain: true
     )
 

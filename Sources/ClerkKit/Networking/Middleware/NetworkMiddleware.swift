@@ -29,21 +29,35 @@ protocol NetworkRetryMiddleware: Sendable {
 /// Describes the order of execution for networking middleware.
 struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
+  private let customRequestMiddleware: [any ClerkRequestMiddleware]
   private let responseMiddleware: [any ClerkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
     requestMiddleware: [any ClerkRequestMiddleware] = [],
+    customRequestMiddleware: [any ClerkRequestMiddleware] = [],
     responseMiddleware: [any ClerkResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
     self.requestMiddleware = requestMiddleware
+    self.customRequestMiddleware = customRequestMiddleware
     self.responseMiddleware = responseMiddleware
     self.retryMiddleware = retryMiddleware
   }
 
   func prepare(_ request: inout URLRequest) async throws {
+    try await prepareClerkRequest(&request)
+    try await prepareCustomRequest(&request)
+  }
+
+  func prepareClerkRequest(_ request: inout URLRequest) async throws {
     for middleware in requestMiddleware {
+      try await middleware.prepare(&request)
+    }
+  }
+
+  func prepareCustomRequest(_ request: inout URLRequest) async throws {
+    for middleware in customRequestMiddleware {
       try await middleware.prepare(&request)
     }
   }
@@ -70,7 +84,8 @@ struct NetworkingPipeline {
 extension NetworkingPipeline {
   func appendingRequestMiddleware(_ middleware: [any ClerkRequestMiddleware]) -> NetworkingPipeline {
     NetworkingPipeline(
-      requestMiddleware: requestMiddleware + middleware,
+      requestMiddleware: requestMiddleware,
+      customRequestMiddleware: customRequestMiddleware + middleware,
       responseMiddleware: responseMiddleware,
       retryMiddleware: retryMiddleware
     )
@@ -79,6 +94,7 @@ extension NetworkingPipeline {
   func appendingResponseMiddleware(_ middleware: [any ClerkResponseMiddleware]) -> NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
+      customRequestMiddleware: customRequestMiddleware,
       responseMiddleware: middleware + responseMiddleware,
       retryMiddleware: retryMiddleware
     )
@@ -97,7 +113,6 @@ extension NetworkingPipeline {
       ],
       responseMiddleware: [
         ClerkResponseLoggingMiddleware(),
-        ClerkDeviceTokenResponseMiddleware(runtimeScope: runtimeScope),
         ClerkClientSyncResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAuthEventEmitterResponseMiddleware(runtimeScope: runtimeScope),
         ClerkInvalidAuthResponseMiddleware(runtimeScope: runtimeScope),
@@ -128,6 +143,8 @@ extension HTTPURLResponse {
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
+  private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
+  private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
@@ -137,6 +154,20 @@ extension URLRequest {
     ClientResponseGeneration(
       propertyListValue: URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self)
     )
+  }
+
+  var clerkSharedSessionBaseGeneration: UInt64? {
+    (URLProtocol.property(
+      forKey: Self.clerkSharedSessionBaseGenerationKey,
+      in: self
+    ) as? NSNumber)?.uint64Value
+  }
+
+  var clerkIsCanonicalClientRequest: Bool {
+    (URLProtocol.property(
+      forKey: Self.clerkCanonicalClientRequestKey,
+      in: self
+    ) as? NSNumber)?.boolValue == true
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -159,6 +190,29 @@ extension URLRequest {
       forKey: Self.clerkClientResponseGenerationKey,
       in: mutableRequest
     )
+    self = mutableRequest as URLRequest
+  }
+
+  mutating func setClerkSharedSessionBaseGeneration(_ generation: UInt64) {
+    setClerkProperty(
+      NSNumber(value: generation),
+      key: Self.clerkSharedSessionBaseGenerationKey
+    )
+  }
+
+  mutating func setClerkCanonicalClientRequest(_ isCanonical: Bool) {
+    setClerkProperty(
+      NSNumber(value: isCanonical),
+      key: Self.clerkCanonicalClientRequestKey
+    )
+  }
+
+  private mutating func setClerkProperty(_ value: Any, key: String) {
+    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+      assertionFailure("Failed to create mutable URLRequest copy.")
+      return
+    }
+    URLProtocol.setProperty(value, forKey: key, in: mutableRequest)
     self = mutableRequest as URLRequest
   }
 }
