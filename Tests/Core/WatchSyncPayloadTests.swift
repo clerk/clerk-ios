@@ -1186,6 +1186,47 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func legacyDeviceTokenStateWithoutVersionMigratesAsVersionZero() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+
+    let record = try store.load()
+
+    #expect(record.deviceTokenState == .set)
+    #expect(record.deviceTokenVersion == 0)
+    #expect(record.authState == nil)
+    #expect(record.authVersion == nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) != nil)
+  }
+
+  @Test
+  func legacyAuthStateWithoutVersionMigratesAsVersionZero() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    try keychain.set("cleared", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+
+    let record = try store.load()
+
+    #expect(record.deviceTokenState == nil)
+    #expect(record.deviceTokenVersion == nil)
+    #expect(record.authState == .cleared)
+    #expect(record.authVersion == 0)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) != nil)
+  }
+
+  @Test
+  func legacyVersionWithoutStateIsCorrupt() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+
+    #expect(throws: WatchSyncMetadataStoreError.corrupt) {
+      try store.load()
+    }
+  }
+
+  @Test
   func clearTombstonePropagatesMetadataReadFailure() {
     let store = WatchSyncMetadataStore(keychain: ReadFailingKeychain())
 

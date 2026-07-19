@@ -101,21 +101,23 @@ struct WatchSyncMetadataStore {
       return record
     }
 
-    let deviceTokenVersion = try decodeLegacyVersion(
-      keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
+    let deviceToken = try decodeLegacyPair(
+      state: keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue),
+      version: keychain.string(
+        forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue
+      )
     )
-    let authVersion = try decodeLegacyVersion(
-      keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+    let auth = try decodeLegacyPair(
+      state: keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue),
+      version: keychain.string(
+        forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
+      )
     )
-    let legacy = try WatchSyncMetadataRecord(
-      deviceTokenState: decodeLegacyState(
-        keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
-      ),
-      deviceTokenVersion: deviceTokenVersion,
-      authState: decodeLegacyState(
-        keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
-      ),
-      authVersion: authVersion
+    let legacy = WatchSyncMetadataRecord(
+      deviceTokenState: deviceToken.state,
+      deviceTokenVersion: deviceToken.version,
+      authState: auth.state,
+      authVersion: auth.version
     )
     guard isValid(legacy) else {
       throw WatchSyncMetadataStoreError.corrupt
@@ -221,6 +223,25 @@ struct WatchSyncMetadataStore {
     }
     guard let version, let fingerprint else { return true }
     return version >= (acceptedVersion ?? 0) && !fingerprint.isEmpty
+  }
+
+  private func decodeLegacyPair(
+    state rawState: String?,
+    version rawVersion: String?
+  ) throws -> (state: WatchSyncMetadataState?, version: Int?) {
+    let state = try decodeLegacyState(rawState)
+    let version = try decodeLegacyVersion(rawVersion)
+
+    switch (state, version) {
+    case let (.some(state), .some(version)):
+      return (state, version)
+    case let (.some(state), nil):
+      return (state, WatchSyncVersion.initial.rawValue)
+    case (nil, nil):
+      return (nil, nil)
+    case (nil, .some):
+      throw WatchSyncMetadataStoreError.corrupt
+    }
   }
 
   private func decodeLegacyState(_ value: String?) throws -> WatchSyncMetadataState? {
