@@ -169,6 +169,7 @@ final class CacheManager {
   /// The keychain storage for persisting cached data.
   private let identityKeychain: any KeychainStorage
   private let environmentKeychain: any KeychainStorage
+  private let provisionalClientKeychains: [any KeychainStorage]
   private let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
 
   /// Creates a new cache manager.
@@ -186,6 +187,7 @@ final class CacheManager {
     self.coordinator = coordinator
     identityKeychain = keychain
     environmentKeychain = keychain
+    provisionalClientKeychains = []
     atomicIdentityStore = nil
   }
 
@@ -193,6 +195,7 @@ final class CacheManager {
     coordinator: any CacheCoordinator,
     identityKeychain: any KeychainStorage,
     environmentKeychain: any KeychainStorage,
+    provisionalClientKeychains: [any KeychainStorage] = [],
     atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   ) {
     persistenceWorker = CachePersistenceWorker(
@@ -203,6 +206,7 @@ final class CacheManager {
     self.coordinator = coordinator
     self.identityKeychain = identityKeychain
     self.environmentKeychain = environmentKeychain
+    self.provisionalClientKeychains = provisionalClientKeychains
     self.atomicIdentityStore = atomicIdentityStore
   }
 
@@ -219,6 +223,27 @@ final class CacheManager {
     loadCachedEnvironment()
   }
 
+  /// Loads the legacy cached client for immediate presentation during shared-session adoption.
+  ///
+  /// This is intentionally separate from identity hydration: the legacy Client is provisional UI
+  /// only, while shared-session reconciliation remains authoritative for request identity.
+  func loadProvisionalLegacyClientForPresentation() {
+    do {
+      for keychain in provisionalClientKeychains {
+        guard try loadDeviceTokenFromKeychain(keychain) != nil else { continue }
+        guard let cachedClient = try loadClientFromKeychain(keychain) else { continue }
+        let serverFetchDate = try loadClientServerFetchDateFromKeychain(keychain)
+        coordinator?.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+        return
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to load provisional cached client from keychain. This is non-critical and initialization will continue."
+      )
+    }
+  }
+
   /// Loads cached client data from keychain if available.
   ///
   /// The cached client is only set if no client is currently set, preventing
@@ -232,11 +257,11 @@ final class CacheManager {
         return
       }
 
-      let serverFetchDate = try loadClientServerFetchDateFromKeychain()
+      let serverFetchDate = try loadClientServerFetchDateFromKeychain(identityKeychain)
 
       guard let coordinator else { return }
 
-      if let cachedClient = try loadClientFromKeychain() {
+      if let cachedClient = try loadClientFromKeychain(identityKeychain) {
         // Only set cached client if we don't already have one
         // This prevents overwriting fresh data during load()
         coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
@@ -342,9 +367,21 @@ final class CacheManager {
 
   // MARK: - Private Keychain Operations
 
+  /// Loads a valid device token from keychain.
+  private func loadDeviceTokenFromKeychain(_ keychain: any KeychainStorage) throws -> String? {
+    guard let token = try keychain.string(
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !token.isEmpty
+    else {
+      return nil
+    }
+    return token
+  }
+
   /// Loads client data from keychain.
-  private func loadClientFromKeychain() throws -> Client? {
-    guard let clientData = try identityKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
+  private func loadClientFromKeychain(_ keychain: any KeychainStorage) throws -> Client? {
+    guard let clientData = try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder
@@ -352,8 +389,8 @@ final class CacheManager {
   }
 
   /// Loads the server fetch date persisted alongside the cached client.
-  private func loadClientServerFetchDateFromKeychain() throws -> Date? {
-    guard let dateString = try identityKeychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
+  private func loadClientServerFetchDateFromKeychain(_ keychain: any KeychainStorage) throws -> Date? {
+    guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
           let timeInterval = TimeInterval(dateString)
     else {
       return nil

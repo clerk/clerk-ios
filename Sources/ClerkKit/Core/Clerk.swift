@@ -330,10 +330,18 @@ extension Clerk {
       coordinator: self,
       identityKeychain: dependencies.identityKeychain,
       environmentKeychain: dependencies.appLocalKeychain,
+      provisionalClientKeychains: [
+        dependencies.appLocalKeychain,
+        dependencies.legacyAppLocalKeychain,
+        dependencies.keychain,
+      ].compactMap { $0 },
       atomicIdentityStore: dependencies.atomicIdentityStore
     )
     self.cacheManager = cacheManager
     cacheManager.loadCachedData(hydrateIdentity: !usesSharedSessionSync)
+    if usesSharedSessionSync, dependencies.shouldHydrateProvisionalLegacyClient {
+      cacheManager.loadProvisionalLegacyClientForPresentation()
+    }
 
     var initialSharedSessionReconciliation: Task<Bool, Never>?
     if usesSharedSessionSync {

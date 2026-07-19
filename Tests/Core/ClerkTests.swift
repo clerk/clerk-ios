@@ -180,6 +180,77 @@ struct ClerkTests {
   }
 
   @Test
+  func sharedConfigurationHydratesProvisionalLegacyClientAfterAdoption() throws {
+    let clerk = Clerk()
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let stableIdentityKeychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: stableIdentityKeychain)
+    let serverDate = Date(timeIntervalSince1970: 100)
+    try appLocalKeychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try appLocalKeychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try appLocalKeychain.set(
+      String(serverDate.timeIntervalSince1970),
+      forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: stableIdentityKeychain,
+      atomicIdentityStore: localStore,
+      shouldHydrateProvisionalLegacyClient: true,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(sharedSessionSync: .enabled)
+    )
+
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client?.id == Client.mock.id)
+    #expect(clerk.lastClientServerFetchDate == serverDate)
+    #expect(try localStore.load() == nil)
+  }
+
+  @Test
+  func sharedConfigurationDoesNotHydrateLegacyClientAfterAdoptionWindow() throws {
+    let clerk = Clerk()
+    let sharedKeychain = InMemoryKeychain()
+    let appLocalKeychain = InMemoryKeychain()
+    let stableIdentityKeychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: stableIdentityKeychain)
+    try appLocalKeychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: sharedKeychain,
+      appLocalKeychain: appLocalKeychain,
+      identityKeychain: stableIdentityKeychain,
+      atomicIdentityStore: localStore,
+      shouldHydrateProvisionalLegacyClient: false,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(sharedSessionSync: .enabled)
+    )
+
+    clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.client == nil)
+    #expect(try localStore.load() == nil)
+  }
+
+  @Test
   func synchronousClearCannotBeUndoneByPreviouslySuspendedIdentitySave() async throws {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()

@@ -21,6 +21,14 @@ final class MockCacheCoordinator: CacheCoordinator {
   private var serverFetchDate: Date?
   private var environment: Clerk.Environment?
 
+  var clientID: String? {
+    client?.id
+  }
+
+  var currentServerFetchDate: Date? {
+    serverFetchDate
+  }
+
   func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot) {
     identityHydrated.setValue(true)
     setClientIfNeeded(identity.client, serverFetchDate: identity.serverDate)
@@ -172,6 +180,62 @@ struct CacheManagerTests {
     #expect(coordinator.identityHydrated.value == false)
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.environmentSet.value == true)
+  }
+
+  @Test
+  func provisionalLegacyClientHydrationUsesExplicitSources() throws {
+    let stableKeychain = InMemoryKeychain()
+    let legacyKeychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: stableKeychain)
+    let serverDate = Date(timeIntervalSince1970: 100)
+    try legacyKeychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try legacyKeychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try legacyKeychain.set(
+      String(serverDate.timeIntervalSince1970),
+      forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+    )
+    let coordinator = MockCacheCoordinator()
+    let cacheManager = CacheManager(
+      coordinator: coordinator,
+      identityKeychain: stableKeychain,
+      environmentKeychain: stableKeychain,
+      provisionalClientKeychains: [legacyKeychain],
+      atomicIdentityStore: store
+    )
+
+    cacheManager.loadCachedData(hydrateIdentity: false)
+    #expect(coordinator.clientSet.value == false)
+
+    cacheManager.loadProvisionalLegacyClientForPresentation()
+
+    #expect(coordinator.clientSet.value == true)
+    #expect(coordinator.clientID == Client.mock.id)
+    #expect(coordinator.currentServerFetchDate == serverDate)
+  }
+
+  @Test
+  func provisionalLegacyClientHydrationRequiresTokenInSameSource() throws {
+    let stableKeychain = InMemoryKeychain()
+    let legacyKeychain = InMemoryKeychain()
+    let coordinator = MockCacheCoordinator()
+    let cacheManager = CacheManager(
+      coordinator: coordinator,
+      identityKeychain: stableKeychain,
+      environmentKeychain: stableKeychain,
+      provisionalClientKeychains: [legacyKeychain],
+      atomicIdentityStore: SharedSessionLocalIdentityStore(keychain: stableKeychain)
+    )
+    try legacyKeychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+
+    cacheManager.loadProvisionalLegacyClientForPresentation()
+
+    #expect(coordinator.clientSet.value == false)
   }
 
   @Test

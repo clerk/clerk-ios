@@ -16,6 +16,7 @@ final class DependencyContainer: Dependencies {
     let identity: any KeychainStorage
     let legacyAppLocal: (any KeychainStorage)?
     let localIdentityStore: (any SharedSessionLocalIdentityStoring)?
+    let shouldHydrateProvisionalLegacyClient: Bool
   }
 
   // MARK: - Core Dependencies
@@ -28,6 +29,7 @@ final class DependencyContainer: Dependencies {
   let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   let atomicIdentityIO: SharedSessionLocalIdentityIO?
   let sharedSessionOwnerIdentifier: String?
+  let shouldHydrateProvisionalLegacyClient: Bool
   private let persistentAdoptionEnabled: Bool
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
@@ -117,6 +119,7 @@ final class DependencyContainer: Dependencies {
     identityKeychain = keychainStorages.identity
     legacyAppLocalKeychain = keychainStorages.legacyAppLocal
     atomicIdentityStore = keychainStorages.localIdentityStore
+    shouldHydrateProvisionalLegacyClient = keychainStorages.shouldHydrateProvisionalLegacyClient
     atomicIdentityIO = keychainStorages.localIdentityStore.map {
       SharedSessionLocalIdentityIO(store: $0)
     }
@@ -208,7 +211,9 @@ final class DependencyContainer: Dependencies {
     )
 
     if syncEnabled {
+      var shouldHydrateProvisionalLegacyClient = false
       if usePersistentAdoptionState, performPersistentAdoption {
+        let wasAdopted = try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
         try SharedSessionSyncAdoption(
           destinationIdentity: stableIdentity,
           destinationPrivate: configuredAppLocal,
@@ -216,13 +221,15 @@ final class DependencyContainer: Dependencies {
           previousAppLocalIdentity: previousAppLocal,
           legacyShared: shared
         ).migrateIfNeeded()
+        shouldHydrateProvisionalLegacyClient = !wasAdopted
       }
       return KeychainStorages(
         shared: shared,
         appLocal: configuredAppLocal,
         identity: stableIdentity,
         legacyAppLocal: previousAppLocal,
-        localIdentityStore: SharedSessionLocalIdentityStore(keychain: stableIdentity)
+        localIdentityStore: SharedSessionLocalIdentityStore(keychain: stableIdentity),
+        shouldHydrateProvisionalLegacyClient: shouldHydrateProvisionalLegacyClient
       )
     }
 
@@ -237,7 +244,8 @@ final class DependencyContainer: Dependencies {
       appLocal: wasAdopted ? configuredAppLocal : shared,
       identity: wasAdopted ? stableIdentity : shared,
       legacyAppLocal: previousAppLocal,
-      localIdentityStore: adoptedIdentityStore
+      localIdentityStore: adoptedIdentityStore,
+      shouldHydrateProvisionalLegacyClient: false
     )
   }
 
