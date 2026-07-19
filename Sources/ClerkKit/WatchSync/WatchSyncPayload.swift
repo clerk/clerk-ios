@@ -72,7 +72,7 @@ package enum WatchSyncClientUpdate: Equatable {
   }
 }
 
-package enum WatchSyncSource {
+package enum WatchSyncSource: String, Codable {
   case phone
   case watch
 

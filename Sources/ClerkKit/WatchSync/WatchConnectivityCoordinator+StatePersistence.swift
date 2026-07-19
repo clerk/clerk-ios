@@ -7,6 +7,7 @@ import CryptoKit
 import Foundation
 
 struct WatchSyncPendingMetadataIntent {
+  let source: WatchSyncSource
   let deviceToken: String?
   let client: Client?
   let serverDate: Date?
@@ -23,15 +24,19 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
   var deviceTokenState: WatchSyncMetadataState?
   var deviceTokenVersion: Int?
   var deviceTokenFingerprint: String?
+  var deviceTokenSource: WatchSyncSource?
   var authState: WatchSyncMetadataState?
   var authVersion: Int?
   var authFingerprint: String?
+  var authSource: WatchSyncSource?
   var pendingDeviceTokenState: WatchSyncMetadataState?
   var pendingDeviceTokenVersion: Int?
   var pendingDeviceTokenFingerprint: String?
+  var pendingDeviceTokenSource: WatchSyncSource?
   var pendingAuthState: WatchSyncMetadataState?
   var pendingAuthVersion: Int?
   var pendingAuthFingerprint: String?
+  var pendingAuthSource: WatchSyncSource?
 
   static let empty = WatchSyncMetadataRecord()
 
@@ -43,6 +48,18 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
     max(authVersion ?? 0, pendingAuthVersion ?? 0)
   }
 
+  var effectiveDeviceTokenSource: WatchSyncSource? {
+    guard let pendingDeviceTokenVersion else { return deviceTokenSource }
+    guard let deviceTokenVersion else { return pendingDeviceTokenSource }
+    return pendingDeviceTokenVersion >= deviceTokenVersion ? pendingDeviceTokenSource : deviceTokenSource
+  }
+
+  var effectiveAuthSource: WatchSyncSource? {
+    guard let pendingAuthVersion else { return authSource }
+    guard let authVersion else { return pendingAuthSource }
+    return pendingAuthVersion >= authVersion ? pendingAuthSource : authSource
+  }
+
   var hasPendingIdentityMetadata: Bool {
     pendingDeviceTokenVersion != nil || pendingAuthVersion != nil
   }
@@ -52,9 +69,11 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
     deviceTokenState = pendingDeviceTokenState
     deviceTokenVersion = pendingDeviceTokenVersion
     deviceTokenFingerprint = pendingDeviceTokenFingerprint
+    deviceTokenSource = pendingDeviceTokenSource
     pendingDeviceTokenState = nil
     pendingDeviceTokenVersion = nil
     pendingDeviceTokenFingerprint = nil
+    pendingDeviceTokenSource = nil
   }
 
   mutating func promotePendingAuth(version: WatchSyncVersion) {
@@ -62,21 +81,25 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
     authState = pendingAuthState
     authVersion = pendingAuthVersion
     authFingerprint = pendingAuthFingerprint
+    authSource = pendingAuthSource
     pendingAuthState = nil
     pendingAuthVersion = nil
     pendingAuthFingerprint = nil
+    pendingAuthSource = nil
   }
 
   mutating func discardPendingDeviceToken() {
     pendingDeviceTokenState = nil
     pendingDeviceTokenVersion = nil
     pendingDeviceTokenFingerprint = nil
+    pendingDeviceTokenSource = nil
   }
 
   mutating func discardPendingAuth() {
     pendingAuthState = nil
     pendingAuthVersion = nil
     pendingAuthFingerprint = nil
+    pendingAuthSource = nil
   }
 }
 
@@ -172,8 +195,18 @@ struct WatchSyncMetadataStore {
         state: record.deviceTokenState,
         version: record.deviceTokenVersion
       )
+      && isValidAcceptedSource(
+        record.deviceTokenSource,
+        state: record.deviceTokenState,
+        version: record.deviceTokenVersion
+      )
       && isValidAcceptedFingerprint(
         record.authFingerprint,
+        state: record.authState,
+        version: record.authVersion
+      )
+      && isValidAcceptedSource(
+        record.authSource,
         state: record.authState,
         version: record.authVersion
       )
@@ -181,12 +214,14 @@ struct WatchSyncMetadataStore {
         state: record.pendingDeviceTokenState,
         version: record.pendingDeviceTokenVersion,
         fingerprint: record.pendingDeviceTokenFingerprint,
+        source: record.pendingDeviceTokenSource,
         acceptedVersion: record.deviceTokenVersion
       )
       && isValidPendingTriple(
         state: record.pendingAuthState,
         version: record.pendingAuthVersion,
         fingerprint: record.pendingAuthFingerprint,
+        source: record.pendingAuthSource,
         acceptedVersion: record.authVersion
       )
   }
@@ -206,10 +241,20 @@ struct WatchSyncMetadataStore {
     return state != nil && version != nil && !fingerprint.isEmpty
   }
 
+  private func isValidAcceptedSource(
+    _ source: WatchSyncSource?,
+    state: WatchSyncMetadataState?,
+    version: Int?
+  ) -> Bool {
+    guard source != nil else { return true }
+    return state != nil && version != nil
+  }
+
   private func isValidPendingTriple(
     state: WatchSyncMetadataState?,
     version: Int?,
     fingerprint: String?,
+    source: WatchSyncSource?,
     acceptedVersion: Int?
   ) -> Bool {
     guard (state == nil) == (version == nil),
@@ -217,6 +262,7 @@ struct WatchSyncMetadataStore {
     else {
       return false
     }
+    guard source == nil || version != nil else { return false }
     guard let version, let fingerprint else { return true }
     return version >= (acceptedVersion ?? 0) && !fingerprint.isEmpty
   }
@@ -305,6 +351,11 @@ extension WatchConnectivityCoordinator {
     var record = try store.load()
     if let tokenVersion = intent.tokenVersion {
       let fingerprint = Self.deviceTokenFingerprint(intent.deviceToken)
+      resetAcceptedDeviceTokenWatermarkIfNeeded(
+        in: &record,
+        version: tokenVersion,
+        source: intent.source
+      )
       guard record.pendingDeviceTokenVersion != tokenVersion.rawValue
         || record.pendingDeviceTokenFingerprint == fingerprint
       else {
@@ -313,11 +364,17 @@ extension WatchConnectivityCoordinator {
       record.pendingDeviceTokenState = intent.deviceToken == nil ? .cleared : .set
       record.pendingDeviceTokenVersion = tokenVersion.rawValue
       record.pendingDeviceTokenFingerprint = fingerprint
+      record.pendingDeviceTokenSource = intent.source
     }
     if let authVersion = intent.authVersion {
       let fingerprint = try Self.authFingerprint(
         client: intent.client,
         serverDate: intent.serverDate
+      )
+      resetAcceptedAuthWatermarkIfNeeded(
+        in: &record,
+        version: authVersion,
+        source: intent.source
       )
       guard record.pendingAuthVersion != authVersion.rawValue
         || record.pendingAuthFingerprint == fingerprint
@@ -327,8 +384,45 @@ extension WatchConnectivityCoordinator {
       record.pendingAuthState = intent.client == nil ? .cleared : .set
       record.pendingAuthVersion = authVersion.rawValue
       record.pendingAuthFingerprint = fingerprint
+      record.pendingAuthSource = intent.source
     }
     try store.save(record)
+  }
+
+  private func resetAcceptedDeviceTokenWatermarkIfNeeded(
+    in record: inout WatchSyncMetadataRecord,
+    version: WatchSyncVersion,
+    source: WatchSyncSource
+  ) {
+    guard source.incomingDeviceIsAuthoritative,
+          version.rawValue < record.effectiveDeviceTokenVersion,
+          record.effectiveDeviceTokenSource != source
+    else {
+      return
+    }
+    record.deviceTokenState = nil
+    record.deviceTokenVersion = nil
+    record.deviceTokenFingerprint = nil
+    record.deviceTokenSource = nil
+    record.discardPendingDeviceToken()
+  }
+
+  private func resetAcceptedAuthWatermarkIfNeeded(
+    in record: inout WatchSyncMetadataRecord,
+    version: WatchSyncVersion,
+    source: WatchSyncSource
+  ) {
+    guard source.incomingDeviceIsAuthoritative,
+          version.rawValue < record.effectiveAuthVersion,
+          record.effectiveAuthSource != source
+    else {
+      return
+    }
+    record.authState = nil
+    record.authVersion = nil
+    record.authFingerprint = nil
+    record.authSource = nil
+    record.discardPendingAuth()
   }
 
   func promotePendingWatchMetadata(

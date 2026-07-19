@@ -30,6 +30,9 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   @MainActor
   private var isProcessingSync = false
 
+  @MainActor
+  private var pendingPayload: WatchSyncPayload?
+
   /// Creates a new Watch Connectivity manager.
   init(
     payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
@@ -50,21 +53,8 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   @MainActor
   func sync(_ payload: WatchSyncPayload) {
     guard !isProcessingSync else { return }
-    guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
-
-    let applicationContext = payload.applicationContext
-
-    guard !applicationContext.isEmpty else { return }
-
-    do {
-      try session.updateApplicationContext(applicationContext)
-    } catch {
-      let nsError = error as NSError
-      if nsError.domain == "WCErrorDomain", nsError.code == 7006 || nsError.code == 7001 {
-        return
-      }
-      ClerkLogger.logError(error, message: "Failed to sync data to watch app")
-    }
+    pendingPayload = payload
+    syncPendingPayloadIfPossible()
   }
 
   @MainActor
@@ -72,6 +62,30 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     isProcessingSync = true
     defer { isProcessingSync = false }
     payloadHandler(payload)
+  }
+
+  @MainActor
+  private func syncPendingPayloadIfPossible() {
+    guard isSessionActivated, session.isPaired, session.isWatchAppInstalled else { return }
+    guard let payload = pendingPayload else { return }
+
+    let applicationContext = payload.applicationContext
+
+    guard !applicationContext.isEmpty else {
+      pendingPayload = nil
+      return
+    }
+
+    do {
+      try session.updateApplicationContext(applicationContext)
+      pendingPayload = nil
+    } catch {
+      let nsError = error as NSError
+      if nsError.domain == "WCErrorDomain", nsError.code == 7006 || nsError.code == 7001 {
+        return
+      }
+      ClerkLogger.logError(error, message: "Failed to sync data to watch app")
+    }
   }
 }
 
@@ -100,6 +114,7 @@ extension WatchConnectivityManager: WCSessionDelegate {
       self.isSessionActivated = activationState == .activated
       if self.isSessionActivated {
         self.activationHandler()
+        self.syncPendingPayloadIfPossible()
       }
     }
   }
@@ -114,6 +129,13 @@ extension WatchConnectivityManager: WCSessionDelegate {
   nonisolated func sessionDidDeactivate(_: WCSession) {
     Task { @MainActor in
       self.session.activate()
+    }
+  }
+
+  nonisolated func sessionWatchStateDidChange(_: WCSession) {
+    Task { @MainActor in
+      self.activationHandler()
+      self.syncPendingPayloadIfPossible()
     }
   }
 
