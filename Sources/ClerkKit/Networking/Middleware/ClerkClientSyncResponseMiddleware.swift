@@ -104,19 +104,20 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     let deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
       authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
     )
+    let checkpoint = request.clerkRequestCheckpoint
     let context = ClientSyncResponseContext(
       update: Self.classifyClientUpdate(
         from: data,
-        isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
+        isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
         deviceTokenUpdate: deviceTokenUpdate
       ),
       deviceTokenUpdate: deviceTokenUpdate,
-      requestDeviceToken: request.clerkRequestDeviceToken,
-      baseGeneration: request.clerkSharedSessionBaseGeneration,
+      requestDeviceToken: checkpoint.requestDeviceToken,
+      baseGeneration: checkpoint.sharedSessionBaseGeneration,
       serverDate: response.serverDate,
-      isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
-      clientResponseGeneration: request.clerkClientResponseGeneration,
-      responseSequence: request.clerkRequestSequence
+      isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
+      clientResponseGeneration: checkpoint.clientResponseGeneration,
+      responseSequence: checkpoint.requestSequence
     )
 
     let clerk = try await runtimeScope.requireCurrentClerk()

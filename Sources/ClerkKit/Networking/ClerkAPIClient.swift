@@ -3,33 +3,18 @@ import Foundation
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
   private struct ClerkRequestContext: Equatable {
-    let clientResponseGeneration: ClientResponseGeneration?
-    let sharedSessionBaseGeneration: UInt64?
-    let isCanonicalClientRequest: Bool
-    let requestDeviceToken: String?
+    let checkpoint: ClerkRequestCheckpoint
     let authorization: String?
     let clientID: String?
 
     init(request: URLRequest) {
-      clientResponseGeneration = request.clerkClientResponseGeneration
-      sharedSessionBaseGeneration = request.clerkSharedSessionBaseGeneration
-      isCanonicalClientRequest = request.clerkIsCanonicalClientRequest
-      requestDeviceToken = request.clerkRequestDeviceToken
+      checkpoint = request.clerkRequestCheckpoint
       authorization = request.value(forHTTPHeaderField: "Authorization")
       clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
     }
 
     func apply(to request: inout URLRequest) {
-      if let clientResponseGeneration {
-        request.setClerkClientResponseGeneration(clientResponseGeneration)
-      }
-      if let sharedSessionBaseGeneration {
-        request.setClerkSharedSessionBaseGeneration(sharedSessionBaseGeneration)
-      }
-      request.setClerkCanonicalClientRequest(isCanonicalClientRequest)
-      if let requestDeviceToken {
-        request.setClerkRequestDeviceToken(requestDeviceToken)
-      }
+      checkpoint.apply(to: &request)
       request.setValue(authorization, forHTTPHeaderField: "Authorization")
       request.setValue(clientID, forHTTPHeaderField: "x-clerk-client-id")
     }

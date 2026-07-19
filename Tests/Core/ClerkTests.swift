@@ -261,9 +261,9 @@ struct ClerkTests {
     let identityKeychain = InMemoryKeychain()
     try WatchSyncMetadataStore(keychain: legacyShared).save(
       WatchSyncMetadataRecord(
-        deviceTokenState: "set",
+        deviceTokenState: .set,
         deviceTokenVersion: 9,
-        authState: "set",
+        authState: .set,
         authVersion: 9
       )
     )
@@ -296,8 +296,8 @@ struct ClerkTests {
     let clearVersion = try #require(metadata.authVersion)
     #expect(clearVersion > 9)
     #expect(metadata.deviceTokenVersion == clearVersion)
-    #expect(metadata.deviceTokenState == "cleared")
-    #expect(metadata.authState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
+    #expect(metadata.authState == .cleared)
     #expect(!metadata.hasPendingIdentityMetadata)
     #expect(
       try legacyShared.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil

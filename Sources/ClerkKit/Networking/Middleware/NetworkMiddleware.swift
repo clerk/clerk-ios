@@ -140,12 +140,52 @@ extension HTTPURLResponse {
   }
 }
 
+struct ClerkRequestCheckpoint: Equatable {
+  let requestSequence: Int?
+  let clientResponseGeneration: ClientResponseGeneration?
+  let sharedSessionBaseGeneration: UInt64?
+  let isCanonicalClientRequest: Bool
+  let requestDeviceToken: String?
+
+  init(
+    requestSequence: Int?,
+    clientResponseGeneration: ClientResponseGeneration?,
+    sharedSessionBaseGeneration: UInt64?,
+    isCanonicalClientRequest: Bool,
+    requestDeviceToken: String?
+  ) {
+    self.requestSequence = requestSequence
+    self.clientResponseGeneration = clientResponseGeneration
+    self.sharedSessionBaseGeneration = sharedSessionBaseGeneration
+    self.isCanonicalClientRequest = isCanonicalClientRequest
+    self.requestDeviceToken = requestDeviceToken
+  }
+
+  init(request: URLRequest) {
+    self.init(
+      requestSequence: request.clerkRequestSequence,
+      clientResponseGeneration: request.clerkClientResponseGeneration,
+      sharedSessionBaseGeneration: request.clerkSharedSessionBaseGeneration,
+      isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
+      requestDeviceToken: request.clerkRequestDeviceToken
+    )
+  }
+
+  func apply(to request: inout URLRequest) {
+    request.setClerkRequestCheckpoint(self)
+  }
+}
+
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
   private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
+
+  var clerkRequestCheckpoint: ClerkRequestCheckpoint {
+    ClerkRequestCheckpoint(request: self)
+  }
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
@@ -204,12 +244,41 @@ extension URLRequest {
     setClerkProperty(deviceToken, key: Self.clerkRequestDeviceTokenKey)
   }
 
-  private mutating func setClerkProperty(_ value: Any, key: String) {
+  mutating func setClerkRequestCheckpoint(_ checkpoint: ClerkRequestCheckpoint) {
+    setClerkProperties([
+      (value: checkpoint.requestSequence, key: Self.clerkRequestSequenceKey),
+      (
+        value: checkpoint.clientResponseGeneration?.propertyListValue,
+        key: Self.clerkClientResponseGenerationKey
+      ),
+      (
+        value: checkpoint.sharedSessionBaseGeneration.map { NSNumber(value: $0) },
+        key: Self.clerkSharedSessionBaseGenerationKey
+      ),
+      (
+        value: NSNumber(value: checkpoint.isCanonicalClientRequest),
+        key: Self.clerkCanonicalClientRequestKey
+      ),
+      (value: checkpoint.requestDeviceToken, key: Self.clerkRequestDeviceTokenKey),
+    ])
+  }
+
+  private mutating func setClerkProperty(_ value: Any?, key: String) {
+    setClerkProperties([(value: value, key: key)])
+  }
+
+  private mutating func setClerkProperties(_ properties: [(value: Any?, key: String)]) {
     guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
       assertionFailure("Failed to create mutable URLRequest copy.")
       return
     }
-    URLProtocol.setProperty(value, forKey: key, in: mutableRequest)
+    for (value, key) in properties {
+      if let value {
+        URLProtocol.setProperty(value, forKey: key, in: mutableRequest)
+      } else {
+        URLProtocol.removeProperty(forKey: key, in: mutableRequest)
+      }
+    }
     self = mutableRequest as URLRequest
   }
 }

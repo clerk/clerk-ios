@@ -484,7 +484,7 @@ struct ClerkResponseClientStateTests {
 
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == clearServerDate)
-    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == "cleared")
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == .cleared)
     #expect(try WatchSyncMetadataStore(keychain: keychain).load().authVersion == 3)
 
     applyRemoteAuthPayload(
@@ -496,7 +496,7 @@ struct ClerkResponseClientStateTests {
     )
 
     #expect(clerk.client == nil)
-    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == "cleared")
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == .cleared)
     #expect(try WatchSyncMetadataStore(keychain: keychain).load().authVersion == 3)
   }
 

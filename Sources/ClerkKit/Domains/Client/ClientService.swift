@@ -7,7 +7,6 @@ import Foundation
 
 package enum ClientServiceUpdate: Equatable {
   case client(Client)
-  case cleared
   case preserve
 
   var client: Client? {

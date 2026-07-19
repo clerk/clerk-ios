@@ -166,7 +166,7 @@ struct WatchSyncPayloadTests {
     try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try WatchSyncMetadataStore(keychain: keychain).save(
       WatchSyncMetadataRecord(
-        deviceTokenState: "set",
+        deviceTokenState: .set,
         deviceTokenVersion: 7,
         authState: nil,
         authVersion: nil
@@ -195,9 +195,9 @@ struct WatchSyncPayloadTests {
     try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try WatchSyncMetadataStore(keychain: keychain).save(
       WatchSyncMetadataRecord(
-        deviceTokenState: "set",
+        deviceTokenState: .set,
         deviceTokenVersion: 7,
-        authState: "cleared",
+        authState: .cleared,
         authVersion: 7
       )
     )
@@ -392,9 +392,9 @@ struct WatchSyncPayloadTests {
     try identityStore.save(initialIdentity)
     try WatchSyncMetadataStore(keychain: legacyShared).save(
       WatchSyncMetadataRecord(
-        deviceTokenState: "set",
+        deviceTokenState: .set,
         deviceTokenVersion: 9,
-        authState: "set",
+        authState: .set,
         authVersion: 9
       )
     )
@@ -414,8 +414,8 @@ struct WatchSyncPayloadTests {
     let clearVersion = try #require(metadata.authVersion)
     #expect(clearVersion > 9)
     #expect(metadata.deviceTokenVersion == clearVersion)
-    #expect(metadata.deviceTokenState == "cleared")
-    #expect(metadata.authState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
+    #expect(metadata.authState == .cleared)
     #expect(!metadata.hasPendingIdentityMetadata)
 
     let stalePayload = WatchSyncPayload(
@@ -564,7 +564,7 @@ struct WatchSyncPayloadTests {
     #expect(clerk.clientResponseGeneration != originalGeneration)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "watch-token")
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
-    #expect(metadata.deviceTokenState == "set")
+    #expect(metadata.deviceTokenState == .set)
     #expect(metadata.deviceTokenVersion == 1)
   }
 
@@ -755,9 +755,9 @@ struct WatchSyncPayloadTests {
     clerk.client = currentClient
     try WatchSyncMetadataStore(keychain: keychain).save(
       WatchSyncMetadataRecord(
-        deviceTokenState: "set",
+        deviceTokenState: .set,
         deviceTokenVersion: 3,
-        authState: "set",
+        authState: .set,
         authVersion: 1
       )
     )
@@ -824,7 +824,7 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
-    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
     #expect(metadata.deviceTokenVersion == 3)
   }
 
@@ -850,7 +850,7 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
-    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
     #expect(metadata.deviceTokenVersion == 3)
   }
 
@@ -877,7 +877,7 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
-    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
     #expect(metadata.deviceTokenVersion == 3)
   }
 
@@ -1059,7 +1059,7 @@ struct WatchSyncPayloadTests {
     let previousClient = client(id: "previous", updatedAt: 100)
     let nextClient = client(id: "next", updatedAt: 200)
     var record = WatchSyncMetadataRecord.empty
-    record.authState = "set"
+    record.authState = .set
     record.authVersion = 1
     record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
       client: previousClient,
@@ -1069,7 +1069,7 @@ struct WatchSyncPayloadTests {
 
     #expect(throws: PromotionFailingKeychain.Failure.self) {
       _ = try coordinator.persistAuthState(
-        "set",
+        .set,
         version: WatchSyncVersion(rawValue: 2),
         client: nextClient,
         serverDate: Date(timeIntervalSince1970: 200),
@@ -1082,7 +1082,7 @@ struct WatchSyncPayloadTests {
 
     keychain.failWrites = false
     _ = try coordinator.persistAuthState(
-      "set",
+      .set,
       version: WatchSyncVersion(rawValue: 2),
       client: nextClient,
       serverDate: Date(timeIntervalSince1970: 200),
@@ -1104,7 +1104,7 @@ struct WatchSyncPayloadTests {
     let previousClient = client(id: "previous", updatedAt: 100)
     let nextClient = client(id: "next", updatedAt: 200)
     var record = WatchSyncMetadataRecord.empty
-    record.authState = "set"
+    record.authState = .set
     record.authVersion = 1
     record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
       client: previousClient,
@@ -1147,10 +1147,10 @@ struct WatchSyncPayloadTests {
     let store = WatchSyncMetadataStore(keychain: keychain)
     let client = client(id: "stale", updatedAt: 100)
     let existing = try WatchSyncMetadataRecord(
-      deviceTokenState: "set",
+      deviceTokenState: .set,
       deviceTokenVersion: 4,
       deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
-      authState: "set",
+      authState: .set,
       authVersion: 4,
       authFingerprint: WatchConnectivityCoordinator.authFingerprint(
         client: client,
@@ -1178,9 +1178,9 @@ struct WatchSyncPayloadTests {
 
     let tombstone = try store.saveClearTombstone(minimumVersion: 10)
 
-    #expect(tombstone.deviceTokenState == "cleared")
+    #expect(tombstone.deviceTokenState == .cleared)
     #expect(tombstone.deviceTokenVersion == 10)
-    #expect(tombstone.authState == "cleared")
+    #expect(tombstone.authState == .cleared)
     #expect(tombstone.authVersion == 10)
     #expect(try store.load() == tombstone)
   }
@@ -1344,7 +1344,7 @@ struct WatchSyncPayloadTests {
     clerk.client = currentClient
     clerk.identityController.lastServerDate = currentDate
     var record = WatchSyncMetadataRecord.empty
-    record.authState = "set"
+    record.authState = .set
     record.authVersion = 0
     record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
       client: currentClient,
@@ -1431,10 +1431,10 @@ struct WatchSyncPayloadTests {
     let staleClient = client(id: "stale-client", updatedAt: 400)
     let staleDate = Date(timeIntervalSince1970: 400)
     try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
-      deviceTokenState: "set",
+      deviceTokenState: .set,
       deviceTokenVersion: 4,
       deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
-      authState: "set",
+      authState: .set,
       authVersion: 4,
       authFingerprint: WatchConnectivityCoordinator.authFingerprint(
         client: staleClient,
@@ -1472,10 +1472,10 @@ struct WatchSyncPayloadTests {
     )
     let staleClient = client(id: "stale-client", updatedAt: 400)
     try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
-      deviceTokenState: "set",
+      deviceTokenState: .set,
       deviceTokenVersion: 4,
       deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
-      authState: "set",
+      authState: .set,
       authVersion: 4,
       authFingerprint: WatchConnectivityCoordinator.authFingerprint(
         client: staleClient,
@@ -1489,8 +1489,8 @@ struct WatchSyncPayloadTests {
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
     let tokenVersion = try #require(metadata.deviceTokenVersion)
     let authVersion = try #require(metadata.authVersion)
-    #expect(metadata.deviceTokenState == "cleared")
-    #expect(metadata.authState == "cleared")
+    #expect(metadata.deviceTokenState == .cleared)
+    #expect(metadata.authState == .cleared)
     #expect(tokenVersion > 4)
     #expect(authVersion == tokenVersion)
     #expect(!metadata.hasPendingIdentityMetadata)

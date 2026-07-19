@@ -153,9 +153,7 @@ package struct WatchSyncPayload {
       return nil
     }
     if hasDeviceTokenState {
-      guard let state = applicationContext[Self.deviceTokenStateKey] as? String,
-            state == "set" || state == "cleared"
-      else {
+      guard Self.decodeMetadataState(applicationContext[Self.deviceTokenStateKey]) != nil else {
         return nil
       }
       if let rawVersion = applicationContext[Self.deviceTokenVersionKey] {
@@ -165,9 +163,7 @@ package struct WatchSyncPayload {
       }
     }
     if hasAuthState {
-      guard let state = applicationContext[Self.authStateKey] as? String,
-            state == "set" || state == "cleared"
-      else {
+      guard Self.decodeMetadataState(applicationContext[Self.authStateKey]) != nil else {
         return nil
       }
       if let rawVersion = applicationContext[Self.authVersionKey] {
@@ -233,7 +229,7 @@ package struct WatchSyncPayload {
     let persistedAuthState = metadata.authState
     if let client = clerk.client {
       clientUpdate = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
-    } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == "cleared" {
+    } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == .cleared {
       clientUpdate = .cleared(serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else {
       clientUpdate = .notIncluded
@@ -250,12 +246,12 @@ package struct WatchSyncPayload {
     case let .tokenSet(deviceToken, version):
       applicationContext[Self.deviceTokenKey] = deviceToken
       if let version {
-        applicationContext[Self.deviceTokenStateKey] = "set"
+        applicationContext[Self.deviceTokenStateKey] = WatchSyncMetadataState.set.rawValue
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
     case let .tokenCleared(version):
       if let version {
-        applicationContext[Self.deviceTokenStateKey] = "cleared"
+        applicationContext[Self.deviceTokenStateKey] = WatchSyncMetadataState.cleared.rawValue
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
     }
@@ -273,7 +269,7 @@ package struct WatchSyncPayload {
         applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
       }
       if let version {
-        applicationContext[Self.authStateKey] = "set"
+        applicationContext[Self.authStateKey] = WatchSyncMetadataState.set.rawValue
         applicationContext[Self.authVersionKey] = version.rawValue
       }
     case let .cleared(clientServerFetchDate, version):
@@ -281,7 +277,7 @@ package struct WatchSyncPayload {
         applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
       }
       if let version {
-        applicationContext[Self.authStateKey] = "cleared"
+        applicationContext[Self.authStateKey] = WatchSyncMetadataState.cleared.rawValue
         applicationContext[Self.authVersionKey] = version.rawValue
       }
     }
@@ -298,15 +294,15 @@ package struct WatchSyncPayload {
   }
 
   private static func decodeDeviceTokenUpdate(from applicationContext: [String: Any]) -> WatchSyncDeviceTokenUpdate {
-    let state = applicationContext[deviceTokenStateKey] as? String
+    let state = decodeMetadataState(applicationContext[deviceTokenStateKey])
     let version = decodeVersion(applicationContext[deviceTokenVersionKey])
     let deviceToken = applicationContext[deviceTokenKey] as? String
 
     switch state {
-    case "set":
+    case .set:
       guard let deviceToken else { return .notIncluded }
       return .tokenSet(token: deviceToken, version: version)
-    case "cleared":
+    case .cleared:
       return .tokenCleared(version: version)
     default:
       return deviceToken.map { .tokenSet(token: $0, version: nil) } ?? .notIncluded
@@ -318,18 +314,18 @@ package struct WatchSyncPayload {
     clientData: Data?,
     clientServerFetchDate: Date?
   ) -> WatchSyncClientUpdate {
-    let state = applicationContext[authStateKey] as? String
+    let state = decodeMetadataState(applicationContext[authStateKey])
     let version = decodeVersion(applicationContext[authVersionKey])
 
     switch state {
-    case "set":
+    case .set:
       guard let clientData, !clientData.isEmpty else { return .notIncluded }
       guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
         return .notIncluded
       }
       return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: version)
-    case "cleared":
+    case .cleared:
       return .cleared(serverFetchDate: clientServerFetchDate, version: version)
     default:
       guard let clientData, !clientData.isEmpty else {
@@ -363,6 +359,11 @@ package struct WatchSyncPayload {
     return nil
   }
 
+  private static func decodeMetadataState(_ value: Any?) -> WatchSyncMetadataState? {
+    guard let value = value as? String else { return nil }
+    return WatchSyncMetadataState(rawValue: value)
+  }
+
   private static func deviceTokenUpdate(
     deviceToken: String?,
     metadata: WatchSyncMetadataRecord
@@ -372,7 +373,7 @@ package struct WatchSyncPayload {
       return .tokenSet(token: deviceToken, version: version)
     }
 
-    if metadata.deviceTokenState == "cleared" {
+    if metadata.deviceTokenState == .cleared {
       return .tokenCleared(version: version)
     }
 

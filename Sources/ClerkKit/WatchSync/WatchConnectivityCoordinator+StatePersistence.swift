@@ -14,17 +14,22 @@ struct WatchSyncPendingMetadataIntent {
   let authVersion: WatchSyncVersion?
 }
 
+enum WatchSyncMetadataState: String, Codable, Equatable {
+  case set
+  case cleared
+}
+
 struct WatchSyncMetadataRecord: Codable, Equatable {
-  var deviceTokenState: String?
+  var deviceTokenState: WatchSyncMetadataState?
   var deviceTokenVersion: Int?
   var deviceTokenFingerprint: String?
-  var authState: String?
+  var authState: WatchSyncMetadataState?
   var authVersion: Int?
   var authFingerprint: String?
-  var pendingDeviceTokenState: String?
+  var pendingDeviceTokenState: WatchSyncMetadataState?
   var pendingDeviceTokenVersion: Int?
   var pendingDeviceTokenFingerprint: String?
-  var pendingAuthState: String?
+  var pendingAuthState: WatchSyncMetadataState?
   var pendingAuthVersion: Int?
   var pendingAuthFingerprint: String?
 
@@ -103,9 +108,13 @@ struct WatchSyncMetadataStore {
       keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
     )
     let legacy = try WatchSyncMetadataRecord(
-      deviceTokenState: keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue),
+      deviceTokenState: decodeLegacyState(
+        keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+      ),
       deviceTokenVersion: deviceTokenVersion,
-      authState: keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue),
+      authState: decodeLegacyState(
+        keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+      ),
       authVersion: authVersion
     )
     guard isValid(legacy) else {
@@ -142,10 +151,10 @@ struct WatchSyncMetadataStore {
     let wallClockVersion = Int(Date().timeIntervalSince1970 * 1000)
     let clearVersion = max(currentVersion + 1, minimumVersion ?? wallClockVersion)
 
-    record.deviceTokenState = "cleared"
+    record.deviceTokenState = .cleared
     record.deviceTokenVersion = clearVersion
     record.deviceTokenFingerprint = WatchConnectivityCoordinator.deviceTokenFingerprint(nil)
-    record.authState = "cleared"
+    record.authState = .cleared
     record.authVersion = clearVersion
     record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
       client: nil,
@@ -184,15 +193,15 @@ struct WatchSyncMetadataStore {
       )
   }
 
-  private func isValidPair(state: String?, version: Int?) -> Bool {
+  private func isValidPair(state: WatchSyncMetadataState?, version: Int?) -> Bool {
     guard (state == nil) == (version == nil) else { return false }
-    guard let state, let version else { return true }
-    return (state == "set" || state == "cleared") && version >= 0
+    guard let version else { return true }
+    return version >= 0
   }
 
   private func isValidAcceptedFingerprint(
     _ fingerprint: String?,
-    state: String?,
+    state: WatchSyncMetadataState?,
     version: Int?
   ) -> Bool {
     guard let fingerprint else { return true }
@@ -200,7 +209,7 @@ struct WatchSyncMetadataStore {
   }
 
   private func isValidPendingTriple(
-    state: String?,
+    state: WatchSyncMetadataState?,
     version: Int?,
     fingerprint: String?,
     acceptedVersion: Int?
@@ -210,10 +219,16 @@ struct WatchSyncMetadataStore {
     else {
       return false
     }
-    guard let state, let version, let fingerprint else { return true }
-    return (state == "set" || state == "cleared")
-      && version >= (acceptedVersion ?? 0)
-      && !fingerprint.isEmpty
+    guard let version, let fingerprint else { return true }
+    return version >= (acceptedVersion ?? 0) && !fingerprint.isEmpty
+  }
+
+  private func decodeLegacyState(_ value: String?) throws -> WatchSyncMetadataState? {
+    guard let value else { return nil }
+    guard let state = WatchSyncMetadataState(rawValue: value) else {
+      throw WatchSyncMetadataStoreError.corrupt
+    }
+    return state
   }
 
   private func decodeLegacyVersion(_ value: String?) throws -> Int? {
@@ -233,7 +248,7 @@ extension WatchConnectivityCoordinator {
   }
 
   func persistAuthState(
-    _ state: String,
+    _ state: WatchSyncMetadataState,
     version: WatchSyncVersion?,
     client: Client?,
     serverDate: Date?,
@@ -270,7 +285,7 @@ extension WatchConnectivityCoordinator {
       else {
         throw ClerkClientError(message: "Conflicting Watch token payload reused a pending version.")
       }
-      record.pendingDeviceTokenState = intent.deviceToken == nil ? "cleared" : "set"
+      record.pendingDeviceTokenState = intent.deviceToken == nil ? .cleared : .set
       record.pendingDeviceTokenVersion = tokenVersion.rawValue
       record.pendingDeviceTokenFingerprint = fingerprint
     }
@@ -284,7 +299,7 @@ extension WatchConnectivityCoordinator {
       else {
         throw ClerkClientError(message: "Conflicting Watch auth payload reused a pending version.")
       }
-      record.pendingAuthState = intent.client == nil ? "cleared" : "set"
+      record.pendingAuthState = intent.client == nil ? .cleared : .set
       record.pendingAuthVersion = authVersion.rawValue
       record.pendingAuthFingerprint = fingerprint
     }

@@ -5,7 +5,7 @@
 
 extension WatchConnectivityCoordinator {
   func persistDeviceTokenState(
-    _ state: String,
+    _ state: WatchSyncMetadataState,
     deviceToken: String?,
     version: WatchSyncVersion?,
     keychain: any KeychainStorage

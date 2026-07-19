@@ -51,29 +51,6 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientClearsClientWhenResponseIsAuthoritativeClear() async throws {
-    configureClerkForTesting()
-
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: SequencedClientService(
-        response: ClientServiceResponse(
-          update: .cleared,
-          requestSequence: 1,
-          serverDate: Date(timeIntervalSince1970: 2000)
-        )
-      )
-    )
-    Clerk.shared.client = Client.mock
-
-    let client = try await Clerk.shared.refreshClient()
-
-    #expect(client == nil)
-    #expect(Clerk.shared.client == nil)
-    #expect(Clerk.shared.lastClientServerFetchDate == Date(timeIntervalSince1970: 2000))
-  }
-
-  @Test
   func refreshClientPreservesAdoptedAtomicIdentityWhenCanonicalResponseRequestsPreserve() async throws {
     configureClerkForTesting()
     let keychain = InMemoryKeychain()
@@ -155,37 +132,6 @@ struct ClientTests {
       apiClient: createMockAPIClient(),
       clientService: SequencedClientService(
         response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
-      )
-    )
-
-    let client = try await Clerk.shared.refreshClient()
-
-    #expect(client?.id == current.id)
-    #expect(Clerk.shared.client?.id == current.id)
-    #expect(Clerk.shared.client?.lastActiveSessionId == "session-current")
-  }
-
-  @Test
-  func refreshClientIgnoresStaleAuthoritativeClearResponseSequence() async throws {
-    configureClerkForTesting()
-    Clerk.shared.cleanupManagers()
-
-    let current = Client(
-      id: "current-client",
-      sessions: [],
-      lastActiveSessionId: "session-current",
-      updatedAt: Date(timeIntervalSince1970: 2000)
-    )
-
-    Clerk.shared.applyResponseClient(current, responseSequence: 2)
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: SequencedClientService(
-        response: ClientServiceResponse(
-          update: .cleared,
-          requestSequence: 1,
-          serverDate: nil
-        )
       )
     )
 

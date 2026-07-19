@@ -84,7 +84,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       }
 
       let metadata = try persistAuthState(
-        client == nil ? "cleared" : "set",
+        client == nil ? .cleared : .set,
         version: nil,
         client: client,
         serverDate: clerk.lastClientServerFetchDate,
@@ -97,7 +97,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     case let .deviceTokenDidChange(previousToken, token):
       let metadata: WatchSyncMetadataRecord? = if previousToken != token {
         try persistDeviceTokenState(
-          token == nil ? "cleared" : "set",
+          token == nil ? .cleared : .set,
           deviceToken: token,
           version: nil,
           keychain: clerk.dependencies.watchSyncKeychain
@@ -561,11 +561,11 @@ extension WatchConnectivityCoordinator {
       ) ?? .initial
     ).next()
 
-    record.deviceTokenState = clerk.deviceToken == nil ? "cleared" : "set"
+    record.deviceTokenState = clerk.deviceToken == nil ? .cleared : .set
     record.deviceTokenVersion = deviceTokenVersion.rawValue
     record.deviceTokenFingerprint = Self.deviceTokenFingerprint(clerk.deviceToken)
     record.discardPendingDeviceToken()
-    record.authState = clerk.client == nil ? "cleared" : "set"
+    record.authState = clerk.client == nil ? .cleared : .set
     record.authVersion = authVersion.rawValue
     record.authFingerprint = try Self.authFingerprint(
       client: clerk.client,

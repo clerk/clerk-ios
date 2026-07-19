@@ -278,21 +278,6 @@ extension ClerkIdentityController {
       clientResponseGeneration: clientResponseGeneration
     )
   }
-
-  func applyDecodedClientClearFallback(
-    responseSequence: Int?,
-    serverDate: Date?,
-    clientResponseGeneration: ClientResponseGeneration
-  ) {
-    guard let clerk else { return }
-    guard case .legacy = persistenceMode(for: clerk) else { return }
-    applyLegacyResponseClient(
-      nil,
-      responseSequence: responseSequence,
-      serverDate: serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    )
-  }
 }
 
 extension ClerkIdentityController {

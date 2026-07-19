@@ -25,13 +25,19 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     let isCanonicalClientRequest = request.value(
       forHTTPHeaderField: Self.canonicalClientRequestHeader
     ) == "1"
-    request.setClerkCanonicalClientRequest(isCanonicalClientRequest)
     request.setValue(nil, forHTTPHeaderField: Self.canonicalClientRequestHeader)
     let skipClientId = request.value(forHTTPHeaderField: Self.skipClientIdHeader) == "1"
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
 
+    request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
+      requestSequence: request.clerkRequestSequence,
+      clientResponseGeneration: identity.clientResponseGeneration,
+      sharedSessionBaseGeneration: identity.baseGeneration,
+      isCanonicalClientRequest: isCanonicalClientRequest,
+      requestDeviceToken: identity.deviceToken
+    ))
+
     if let deviceToken = identity.deviceToken {
-      request.setClerkRequestDeviceToken(deviceToken)
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 

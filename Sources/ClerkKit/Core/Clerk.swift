@@ -605,12 +605,6 @@ extension Clerk {
         serverDate: response.serverDate,
         clientResponseGeneration: clientResponseGeneration
       )
-    case .cleared:
-      identityController.applyDecodedClientClearFallback(
-        responseSequence: response.requestSequence,
-        serverDate: response.serverDate,
-        clientResponseGeneration: clientResponseGeneration
-      )
     case .preserve:
       break
     }
