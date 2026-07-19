@@ -345,6 +345,7 @@ extension ClerkIdentityController {
           operationRevision: operationRevision,
           fenceAllClientResponses: transition.fenceAllClientResponses
         ) else {
+          transition.didNotApply()
           return
         }
         transition.didApply()
@@ -888,12 +889,14 @@ extension ClerkIdentityController {
       return
     }
 
+    let deviceTokenChanged = currentDeviceToken != identity.deviceToken
     try persistLegacyIdentity(identity, clerk: clerk)
     applyIdentityToMemory(
       identity,
       clerk: clerk,
-      fenceAllClientResponses: false,
-      emitIdentityChange: true
+      fenceAllClientResponses: deviceTokenChanged,
+      emitIdentityChange: true,
+      fenceTokenChange: false
     )
     recordAcceptedResponse(sequence: context.responseSequence)
   }

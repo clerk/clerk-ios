@@ -941,6 +941,7 @@ struct WatchSyncPayloadTests {
       ["watchSyncAuthState": "unknown", "watchSyncAuthVersion": 1],
       ["watchSyncDeviceTokenState": "set", "watchSyncDeviceTokenVersion": -1],
       ["watchSyncDeviceTokenState": "set", "watchSyncDeviceTokenVersion": 1.5],
+      ["watchSyncDeviceTokenState": "cleared", "watchSyncDeviceTokenVersion": Double(Int.max)],
       [
         "watchSyncAuthState": "cleared",
         "watchSyncAuthVersion": 1,
@@ -1279,6 +1280,43 @@ struct WatchSyncPayloadTests {
     #expect(metadata.deviceTokenVersion == 1)
     #expect(metadata.authVersion == 1)
     #expect(!metadata.hasPendingIdentityMetadata)
+  }
+
+  @Test
+  func versionlessAuthoritativeAuthPayloadCannotOverrideAcceptedVersionZero() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let currentClient = client(id: "accepted-zero-client", updatedAt: 400)
+    let currentDate = Date(timeIntervalSince1970: 400)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.client = currentClient
+    clerk.identityController.lastServerDate = currentDate
+    var record = WatchSyncMetadataRecord.empty
+    record.authState = "set"
+    record.authVersion = 0
+    record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
+      client: currentClient,
+      serverDate: currentDate
+    )
+    try WatchSyncMetadataStore(keychain: keychain).save(record)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .notIncluded,
+      clientUpdate: .cleared(
+        serverFetchDate: Date(timeIntervalSince1970: 500),
+        version: nil
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .phone, to: clerk)
+
+    #expect(clerk.client?.id == currentClient.id)
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authVersion == 0)
   }
 
   @Test

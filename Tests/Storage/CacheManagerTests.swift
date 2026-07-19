@@ -116,6 +116,28 @@ struct CacheManagerTests {
   }
 
   @Test
+  func atomicIdentityStorePreventsLegacyClientFallbackWhenEmpty() throws {
+    let keychain = InMemoryKeychain()
+    let coordinator = MockCacheCoordinator()
+    let cacheManager = CacheManager(
+      coordinator: coordinator,
+      identityKeychain: keychain,
+      environmentKeychain: keychain,
+      atomicIdentityStore: SharedSessionLocalIdentityStore(keychain: keychain)
+    )
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try keychain.set("100", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+
+    cacheManager.loadCachedData()
+
+    #expect(coordinator.clientSet.value == false)
+    #expect(coordinator.serverFetchDateSet.value == false)
+  }
+
+  @Test
   func loadCachedEnvironment() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 

@@ -8,6 +8,7 @@ import Foundation
 import Testing
 
 @MainActor
+@Suite(.serialized)
 struct ClerkIdentityControllerTests {
   private enum StageFailure: Error {
     case expected
@@ -118,6 +119,45 @@ struct ClerkIdentityControllerTests {
     }
     #expect(try store.load() == previous)
     #expect(clerk.identityController.currentDeviceToken == previous.deviceToken)
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func rejectedAtomicExternalTransitionRollsBackStagedState() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+    try store.invalidateOperations(through: UInt64.max)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      atomicIdentityStore: store
+    )
+    let identity = ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "rejected-token",
+      client: .mock,
+      serverDate: Date(timeIntervalSince1970: 350)
+    )
+    var didStage = false
+    var didApply = false
+    var didNotApply = false
+
+    let task = try #require(try clerk.identityController.submitExternalTransition {
+      ClerkIdentityController.ExternalTransition(
+        identity: identity,
+        stage: { didStage = true },
+        didApply: { didApply = true },
+        didNotApply: { didNotApply = true }
+      )
+    })
+    try await task.value
+
+    #expect(didStage)
+    #expect(!didApply)
+    #expect(didNotApply)
+    #expect(try store.load() == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(clerk.client == nil)
   }
 
@@ -286,6 +326,52 @@ struct ClerkIdentityControllerTests {
 
     #expect(clerk.client == nil)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+  }
+
+  @Test
+  func legacyResponseTokenRotationFencesOldTokenResponses() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    let previousGeneration = clerk.clientResponseGeneration
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(makeClient(id: "new-client")),
+        deviceTokenUpdate: .set("new-token"),
+        requestDeviceToken: "old-token",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 100),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: previousGeneration,
+        responseSequence: 1
+      )
+    )
+
+    #expect(clerk.client?.id == "new-client")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
+    #expect(clerk.clientResponseGeneration != previousGeneration)
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(makeClient(id: "old-client")),
+        deviceTokenUpdate: .absent,
+        requestDeviceToken: "old-token",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 200),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: previousGeneration,
+        responseSequence: 2
+      )
+    )
+
+    #expect(clerk.client?.id == "new-client")
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
   }
 
   @Test

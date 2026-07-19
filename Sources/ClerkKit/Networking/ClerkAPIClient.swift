@@ -6,6 +6,7 @@ actor APIClient {
     let clientResponseGeneration: ClientResponseGeneration?
     let sharedSessionBaseGeneration: UInt64?
     let isCanonicalClientRequest: Bool
+    let requestDeviceToken: String?
     let authorization: String?
     let clientID: String?
 
@@ -13,6 +14,7 @@ actor APIClient {
       clientResponseGeneration = request.clerkClientResponseGeneration
       sharedSessionBaseGeneration = request.clerkSharedSessionBaseGeneration
       isCanonicalClientRequest = request.clerkIsCanonicalClientRequest
+      requestDeviceToken = request.clerkRequestDeviceToken
       authorization = request.value(forHTTPHeaderField: "Authorization")
       clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
     }
@@ -25,6 +27,9 @@ actor APIClient {
         request.setClerkSharedSessionBaseGeneration(sharedSessionBaseGeneration)
       }
       request.setClerkCanonicalClientRequest(isCanonicalClientRequest)
+      if let requestDeviceToken {
+        request.setClerkRequestDeviceToken(requestDeviceToken)
+      }
       request.setValue(authorization, forHTTPHeaderField: "Authorization")
       request.setValue(clientID, forHTTPHeaderField: "x-clerk-client-id")
     }

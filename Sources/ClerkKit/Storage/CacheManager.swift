@@ -223,8 +223,10 @@ final class CacheManager {
   /// cached data from overwriting fresh data loaded from the API.
   private func loadCachedClient() {
     do {
-      if let identity = try atomicIdentityStore?.load() {
-        coordinator?.hydrateIdentityIfNeeded(identity)
+      if let atomicIdentityStore {
+        if let identity = try atomicIdentityStore.load() {
+          coordinator?.hydrateIdentityIfNeeded(identity)
+        }
         return
       }
 

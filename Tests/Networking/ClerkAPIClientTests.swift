@@ -323,7 +323,7 @@ struct ClerkAPIClientTests {
   @Test
   func retryPreservesFirstPreparedSharedIdentityContext() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-context")!
     let mock = try Mock(
       url: testURL,
@@ -354,13 +354,14 @@ struct ClerkAPIClientTests {
     #expect(observedContexts.value.count == 2)
     #expect(observedContexts.value.allSatisfy {
       $0.0 == 1 && $0.1 == "token-1" && $0.2 == "client-1" && $0.3
+        && $0.4 == "request-token-1"
     })
   }
 
   @Test
   func retryRestoresFrozenClerkContextBeforeCustomSigningMiddleware() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
     let signedAuthorizations = LockIsolated<[String?]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-signature")!
     let mock = try Mock(
@@ -398,7 +399,7 @@ struct ClerkAPIClientTests {
   @Test
   func retryIsCancelledWhenPreparedClerkIdentityChanges() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-identity-change")!
     let mock = try Mock(
       url: testURL,
@@ -428,11 +429,50 @@ struct ClerkAPIClientTests {
     #expect(prepareCount.value == 2)
     #expect(observedContexts.value.count == 1)
   }
+
+  @Test
+  func retryIsCancelledWhenRequestDeviceTokenPropertyChanges() async throws {
+    let prepareCount = LockIsolated(0)
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-request-token-change")!
+    let mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    mock.register()
+    let pipeline = NetworkingPipeline(
+      requestMiddleware: [ChangingSharedIdentityContextMiddleware(
+        count: prepareCount,
+        changesBetweenAttempts: false,
+        requestDeviceTokenChangesBetweenAttempts: true
+      )],
+      responseMiddleware: [RecordingRetryContextMiddleware(contexts: observedContexts)],
+      retryMiddleware: [RetryFirstContextFailureMiddleware()]
+    )
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = pipeline
+    }
+
+    await #expect(throws: APIClientError.self) {
+      _ = try await apiClient.send(
+        Request<EmptyResponse>(path: "/v1/retry-request-token-change")
+      )
+    }
+    #expect(prepareCount.value == 2)
+    #expect(observedContexts.value.count == 1)
+  }
 }
 
 private struct ChangingSharedIdentityContextMiddleware: ClerkRequestMiddleware {
   let count: LockIsolated<Int>
   var changesBetweenAttempts = true
+  var requestDeviceTokenChangesBetweenAttempts = false
 
   func prepare(_ request: inout URLRequest) async throws {
     let attempt = count.withValue {
@@ -440,8 +480,10 @@ private struct ChangingSharedIdentityContextMiddleware: ClerkRequestMiddleware {
       return $0
     }
     let contextAttempt = changesBetweenAttempts ? attempt : 1
+    let requestTokenAttempt = requestDeviceTokenChangesBetweenAttempts ? attempt : contextAttempt
     request.setClerkSharedSessionBaseGeneration(UInt64(contextAttempt))
     request.setClerkCanonicalClientRequest(contextAttempt == 1)
+    request.setClerkRequestDeviceToken("request-token-\(requestTokenAttempt)")
     request.setValue("token-\(contextAttempt)", forHTTPHeaderField: "Authorization")
     request.setValue("client-\(contextAttempt)", forHTTPHeaderField: "x-clerk-client-id")
   }
@@ -462,7 +504,7 @@ private struct RecordingRetryContextMiddleware: ClerkResponseMiddleware {
     case firstAttempt
   }
 
-  let contexts: LockIsolated<[(UInt64?, String?, String?, Bool)]>
+  let contexts: LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>
 
   func validate(_: HTTPURLResponse, data _: Data, for request: URLRequest) async throws {
     let count = contexts.withValue {
@@ -470,7 +512,8 @@ private struct RecordingRetryContextMiddleware: ClerkResponseMiddleware {
         request.clerkSharedSessionBaseGeneration,
         request.value(forHTTPHeaderField: "Authorization"),
         request.value(forHTTPHeaderField: "x-clerk-client-id"),
-        request.clerkIsCanonicalClientRequest
+        request.clerkIsCanonicalClientRequest,
+        request.clerkRequestDeviceToken
       ))
       return $0.count
     }

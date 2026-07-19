@@ -70,7 +70,7 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker() throws {
+  func clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker() async throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -113,6 +113,7 @@ struct ClerkTests {
         try keychain.hasItem(forKey: key.rawValue) == (key == .sharedSessionSyncAdopted)
       )
     }
+    _ = try? await Clerk.shared.keychainClearTask?.value
   }
 
   @Test

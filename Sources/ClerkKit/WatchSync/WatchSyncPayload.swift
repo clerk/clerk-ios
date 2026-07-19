@@ -353,10 +353,9 @@ package struct WatchSyncPayload {
     if let value = value as? Double,
        value.isFinite,
        value.rounded(.towardZero) == value,
-       value >= Double(Int.min),
-       value <= Double(Int.max)
+       let intValue = Int(exactly: value)
     {
-      return WatchSyncVersion(rawValue: Int(value))
+      return WatchSyncVersion(rawValue: intValue)
     }
     if let value = value as? String, let intValue = Int(value) {
       return WatchSyncVersion(rawValue: intValue)

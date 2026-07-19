@@ -110,15 +110,17 @@ struct ClerkHeaderRequestMiddlewareTests {
     }
     try await gate.waitUntilSuspended()
 
+    let requestStarted = RequestStartSignal()
     var didPrepare = false
     let requestTask = Task { @MainActor in
       var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+      await requestStarted.signal()
       try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
         .prepare(&request)
       didPrepare = true
       return request
     }
-    await Task.yield()
+    await requestStarted.wait()
     #expect(!didPrepare)
 
     gate.resume()
@@ -274,6 +276,24 @@ private final class RequestIdentityOperationGate {
   func resume() {
     continuation?.resume()
     continuation = nil
+  }
+}
+
+private actor RequestStartSignal {
+  private var didStart = false
+  private var continuations: [CheckedContinuation<Void, Never>] = []
+
+  func signal() {
+    didStart = true
+    continuations.forEach { $0.resume() }
+    continuations.removeAll()
+  }
+
+  func wait() async {
+    guard !didStart else { return }
+    await withCheckedContinuation { continuation in
+      continuations.append(continuation)
+    }
   }
 }
 
