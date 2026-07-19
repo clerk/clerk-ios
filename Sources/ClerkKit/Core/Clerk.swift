@@ -307,6 +307,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    let usesSharedSessionSync = options.sharedSessionSync != nil
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -327,10 +328,10 @@ extension Clerk {
       atomicIdentityStore: dependencies.atomicIdentityStore
     )
     self.cacheManager = cacheManager
-    cacheManager.loadCachedData()
+    cacheManager.loadCachedData(hydrateIdentity: !usesSharedSessionSync)
 
     var initialSharedSessionReconciliation: Task<Bool, Never>?
-    if options.sharedSessionSync != nil {
+    if usesSharedSessionSync {
       if options.keychainConfig.normalizedAccessGroup != nil,
          let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
          !ownerIdentifier.isEmpty,
@@ -361,6 +362,7 @@ extension Clerk {
           )
           sharedSessionSyncCoordinator = coordinator
           internalStateChanges.addObserver(coordinator)
+          coordinator.hydrateInitialSharedState()
           initialSharedSessionReconciliation = coordinator.start()
         } catch {
           ClerkLogger.logError(error, message: "Failed to install shared session sync")

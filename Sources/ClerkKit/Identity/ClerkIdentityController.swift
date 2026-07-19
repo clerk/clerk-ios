@@ -314,18 +314,23 @@ extension ClerkIdentityController {
         else {
           return
         }
-        try transition.stage()
-        let identity = try transition.identity.validated()
-        let didApply = try await coordinator.publishReservedLocalIdentity(
-          state: identity.state,
-          deviceToken: identity.deviceToken,
-          client: identity.client,
-          serverDate: identity.serverDate
-        )
-        if didApply {
-          transition.didApply()
-        } else {
+        do {
+          try transition.stage()
+          let identity = try transition.identity.validated()
+          let didApply = try await coordinator.publishReservedLocalIdentity(
+            state: identity.state,
+            deviceToken: identity.deviceToken,
+            client: identity.client,
+            serverDate: identity.serverDate
+          )
+          if didApply {
+            transition.didApply()
+          } else {
+            transition.didNotApply()
+          }
+        } catch {
           transition.didNotApply()
+          throw error
         }
       }
     case .atomicLocal(let localIdentityIO):
@@ -338,29 +343,39 @@ extension ClerkIdentityController {
         else {
           return
         }
-        try transition.stage()
-        guard try await persistAndApplyAtomicIdentity(
-          transition.identity,
-          through: localIdentityIO,
-          operationRevision: operationRevision,
-          fenceAllClientResponses: transition.fenceAllClientResponses
-        ) else {
+        do {
+          try transition.stage()
+          guard try await persistAndApplyAtomicIdentity(
+            transition.identity,
+            through: localIdentityIO,
+            operationRevision: operationRevision,
+            fenceAllClientResponses: transition.fenceAllClientResponses
+          ) else {
+            transition.didNotApply()
+            return
+          }
+          transition.didApply()
+        } catch {
           transition.didNotApply()
-          return
+          throw error
         }
-        transition.didApply()
       }
     case .legacy:
       guard let transition = try prepare() else { return nil }
-      try transition.stage()
-      try persistLegacyIdentity(transition.identity, clerk: clerk)
-      applyIdentityToMemory(
-        transition.identity,
-        clerk: clerk,
-        fenceAllClientResponses: transition.fenceAllClientResponses,
-        emitIdentityChange: false
-      )
-      transition.didApply()
+      do {
+        try transition.stage()
+        try persistLegacyIdentity(transition.identity, clerk: clerk)
+        applyIdentityToMemory(
+          transition.identity,
+          clerk: clerk,
+          fenceAllClientResponses: transition.fenceAllClientResponses,
+          emitIdentityChange: false
+        )
+        transition.didApply()
+      } catch {
+        transition.didNotApply()
+        throw error
+      }
       return nil
     }
   }

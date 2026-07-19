@@ -34,6 +34,80 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func initialSharedHydrationAppliesPeerClearInsteadOfStaleLocalClient() throws {
+    let backend = TestSlotBackend()
+    let staleIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "stale-local"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.custom-flows",
+      backend: backend,
+      initialIdentity: staleIdentity,
+      hydrateInitialIdentity: false
+    )
+    let peerClear = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.quickstart",
+      generation: 2,
+      state: .cleared,
+      deviceToken: "token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.quickstart",
+        event: peerClear
+      ),
+      owner: "app.quickstart"
+    )
+
+    #expect(node.clerk.client == nil)
+
+    node.coordinator.hydrateInitialSharedState()
+
+    #expect(node.clerk.client == nil)
+    #expect(try node.localStore.load()?.state == .cleared)
+    #expect(node.coordinator.currentMaximumGeneration == 2)
+    #expect(
+      backend.allSlots()
+        .first { $0.slotOwnerIdentifier == "app.custom-flows" }?.event == peerClear
+    )
+  }
+
+  @Test
+  func initialSharedHydrationSeedsLocalTokenWithoutExposingLocalClient() async throws {
+    let backend = TestSlotBackend()
+    let staleIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "stale-local"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.custom-flows",
+      backend: backend,
+      initialIdentity: staleIdentity,
+      hydrateInitialIdentity: false
+    )
+
+    #expect(node.clerk.client == nil)
+    #expect(node.coordinator.currentDeviceToken == "token")
+
+    _ = await node.coordinator.start().value
+    let snapshot = try await node.clerk.identityController.captureRequestIdentity()
+
+    #expect(snapshot.deviceToken == "token")
+    #expect(snapshot.clientID == nil)
+    #expect(node.clerk.client == nil)
+  }
+
+  @Test
   func competingWritesRemainDiscoverableUntilConvergence() async throws {
     let backend = TestSlotBackend()
     let first = try makeNode(owner: "app.a", backend: backend)
@@ -1309,6 +1383,42 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func failedSharedWatchPublicationDiscardsPendingWatchMetadata() async throws {
+    configureClerkForTesting()
+    let backend = TestSlotBackend()
+    backend.failSavesForOwners = ["app.phone"]
+    let node = try makeNode(owner: "app.phone", backend: backend)
+    let watchCoordinator = WatchConnectivityCoordinator()
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "watch-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .snapshot(
+        client: makeClient(id: "watch-client"),
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    watchCoordinator.apply(payload, from: .phone, to: node.clerk)
+    await watchCoordinator.waitForIdentityPublications()
+
+    let metadata = try WatchSyncMetadataStore(
+      keychain: node.clerk.dependencies.watchSyncKeychain
+    ).load()
+    #expect(node.clerk.client == nil)
+    #expect(backend.allSlots().isEmpty)
+    #expect(!metadata.hasPendingIdentityMetadata)
+    _ = try WatchSyncPayload(
+      clerk: node.clerk,
+      metadata: metadata,
+      authGeneration: .initial
+    )
+  }
+
+  @Test
   func watchIdentityPayloadsPublishSeriallyInArrivalOrder() async throws {
     let backend = TestSlotBackend()
     backend.suspendNextSave()
@@ -1938,6 +2048,7 @@ struct SharedSessionSyncTests {
     owner: String,
     backend: TestSlotBackend,
     initialIdentity: SharedSessionLocalIdentity? = nil,
+    hydrateInitialIdentity: Bool = true,
     localStore suppliedLocalStore: TestLocalIdentityStore? = nil,
     clientService: (any ClientServiceProtocol)? = nil
   ) throws -> TestNode {
@@ -1963,7 +2074,7 @@ struct SharedSessionSyncTests {
       options: .init()
     )
     clerk.dependencies = dependencies
-    if let initialIdentity {
+    if hydrateInitialIdentity, let initialIdentity {
       clerk.hydrateIdentityIfNeeded(initialIdentity)
     }
 

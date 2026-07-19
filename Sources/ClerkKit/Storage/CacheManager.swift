@@ -212,8 +212,10 @@ final class CacheManager {
   /// the current state allows them to be set (i.e., no fresh data exists).
   ///
   /// Errors are logged but do not prevent initialization from proceeding.
-  func loadCachedData() {
-    loadCachedClient()
+  func loadCachedData(hydrateIdentity: Bool = true) {
+    if hydrateIdentity {
+      loadCachedClient()
+    }
     loadCachedEnvironment()
   }
 

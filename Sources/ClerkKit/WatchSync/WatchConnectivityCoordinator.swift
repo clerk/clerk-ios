@@ -122,7 +122,10 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       clientRefreshTaskID = nil
       isApplyingRemotePayload = false
       isRefreshScheduled = false
-      syncCurrentState(from: clerk)
+      let metadata = try WatchSyncMetadataStore(
+        keychain: clerk.dependencies.watchSyncKeychain
+      ).saveClearTombstone()
+      try syncCurrentState(from: clerk, metadata: metadata)
     case .applicationDidEnterForeground:
       syncCurrentState(from: clerk)
     }

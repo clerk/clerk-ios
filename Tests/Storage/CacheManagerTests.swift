@@ -16,9 +16,15 @@ final class MockCacheCoordinator: CacheCoordinator {
   var clientSet = LockIsolated(false)
   var serverFetchDateSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
+  var identityHydrated = LockIsolated(false)
   private var client: Client?
   private var serverFetchDate: Date?
   private var environment: Clerk.Environment?
+
+  func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot) {
+    identityHydrated.setValue(true)
+    setClientIfNeeded(identity.client, serverFetchDate: identity.serverDate)
+  }
 
   func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
     guard self.client == nil else { return }
@@ -135,6 +141,37 @@ struct CacheManagerTests {
 
     #expect(coordinator.clientSet.value == false)
     #expect(coordinator.serverFetchDateSet.value == false)
+  }
+
+  @Test
+  func loadCachedDataCanSkipAtomicIdentityHydration() throws {
+    let keychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+    try store.save(
+      SharedSessionLocalIdentity(
+        state: .present,
+        deviceToken: "token",
+        client: Client.mock,
+        serverDate: Date(timeIntervalSince1970: 100)
+      )
+    )
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+    let coordinator = MockCacheCoordinator()
+    let cacheManager = CacheManager(
+      coordinator: coordinator,
+      identityKeychain: keychain,
+      environmentKeychain: keychain,
+      atomicIdentityStore: store
+    )
+
+    cacheManager.loadCachedData(hydrateIdentity: false)
+
+    #expect(coordinator.identityHydrated.value == false)
+    #expect(coordinator.clientSet.value == false)
+    #expect(coordinator.environmentSet.value == true)
   }
 
   @Test

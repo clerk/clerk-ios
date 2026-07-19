@@ -1267,8 +1267,12 @@ struct WatchSyncPayloadTests {
 
     var metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
     #expect(clerk.client == nil)
-    #expect(metadata.pendingDeviceTokenVersion == 1)
-    #expect(metadata.pendingAuthVersion == 1)
+    #expect(!metadata.hasPendingIdentityMetadata)
+    _ = try WatchSyncPayload(
+      clerk: clerk,
+      metadata: metadata,
+      authGeneration: .initial
+    )
 
     coordinator.apply(payload, from: .watch, to: clerk)
     await coordinator.waitForIdentityPublications()
@@ -1411,6 +1415,50 @@ struct WatchSyncPayloadTests {
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
     #expect(clerk.client == nil)
+  }
+
+  @Test
+  func localStorageClearPersistsWatchClearMetadata() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let staleClient = client(id: "stale-client", updatedAt: 400)
+    try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
+      deviceTokenState: "set",
+      deviceTokenVersion: 4,
+      deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
+      authState: "set",
+      authVersion: 4,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: staleClient,
+        serverDate: Date(timeIntervalSince1970: 400)
+      )
+    ))
+    let coordinator = WatchConnectivityCoordinator()
+
+    try coordinator.handle(.localStorageDidClear, from: clerk)
+
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    let tokenVersion = try #require(metadata.deviceTokenVersion)
+    let authVersion = try #require(metadata.authVersion)
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.authState == "cleared")
+    #expect(tokenVersion > 4)
+    #expect(authVersion == tokenVersion)
+    #expect(!metadata.hasPendingIdentityMetadata)
+
+    let payload = try WatchSyncPayload(
+      clerk: clerk,
+      metadata: metadata,
+      authGeneration: WatchSyncVersion(rawValue: authVersion)
+    )
+    #expect(payload.deviceTokenUpdate == .tokenCleared(version: WatchSyncVersion(rawValue: tokenVersion)))
+    #expect(payload.clientUpdate == .cleared(serverFetchDate: nil, version: WatchSyncVersion(rawValue: authVersion)))
   }
 
   @Test

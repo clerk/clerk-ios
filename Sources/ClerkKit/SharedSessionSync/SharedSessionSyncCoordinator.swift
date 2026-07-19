@@ -44,7 +44,9 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
   private let ownerIdentifier: String
   private let instanceFingerprint: String
+  private let slotStore: any SharedSessionSlotStoring
   private let slotIO: SharedSessionSlotIO
+  private let localIdentityStore: any SharedSessionLocalIdentityStoring
   private let localIdentityIO: SharedSessionLocalIdentityIO
   private let notifier: any SharedSessionSyncNotifying
   private let configurationEpoch: ClerkConfigurationEpoch
@@ -84,16 +86,36 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   ) {
     self.ownerIdentifier = ownerIdentifier
     self.instanceFingerprint = instanceFingerprint
+    self.slotStore = slotStore
     slotIO = SharedSessionSlotIO(store: slotStore)
+    self.localIdentityStore = localIdentityStore
     self.localIdentityIO = localIdentityIO ?? SharedSessionLocalIdentityIO(store: localIdentityStore)
     self.notifier = notifier
     self.configurationEpoch = configurationEpoch
     self.logError = logError
     self.clerk = clerk
-    currentDeviceToken = clerk.deviceToken
+    currentDeviceToken = (try? localIdentityStore.load()?.deviceToken) ?? clerk.deviceToken
 
     notifier.setHandler { [weak self] in
       self?.requestReconciliation()
+    }
+  }
+
+  @discardableResult
+  func hydrateInitialSharedState() -> Bool {
+    guard initialReconciliationTask == nil,
+          reconciliationTask == nil,
+          serializedOperationTail == nil
+    else {
+      return false
+    }
+
+    do {
+      return try reduceApplyAndReplicateSynchronously()
+    } catch {
+      requiresSuccessfulReconciliation = true
+      logError(error, "Failed to hydrate initial shared-session owner slots")
+      return false
     }
   }
 
@@ -508,6 +530,58 @@ extension SharedSessionSyncCoordinator {
     return ReconciliationResult(didChange: didChange, succeeded: true)
   }
 
+  @discardableResult
+  private func reduceApplyAndReplicateSynchronously() throws -> Bool {
+    guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+      return false
+    }
+    guard try localIdentityStore.loadPendingPublication() == nil else {
+      return false
+    }
+
+    let slots = try slotStore.loadAllSlots()
+    let reduction = SharedSessionIdentityReducer.reduce(slots)
+    currentMaximumGeneration = max(
+      currentMaximumGeneration,
+      reduction.maximumGeneration
+    )
+
+    guard let winner = reduction.winner else {
+      if let identity = try localIdentityStore.load() {
+        currentDeviceToken = identity.deviceToken
+      }
+      return false
+    }
+    requiresSuccessfulReconciliation = true
+
+    let identity = try ClerkIdentitySnapshot(
+      state: winner.state,
+      deviceToken: winner.deviceToken,
+      client: winner.client,
+      serverDate: winner.serverDate
+    ).validated()
+
+    let ownSlot = slots.first { $0.slotOwnerIdentifier == ownerIdentifier }
+    if ownSlot?.event != winner {
+      _ = try replicateOwnIfCompatibleSynchronously(winner)
+    }
+
+    try localIdentityStore.save(identity)
+
+    let previousAcceptedEventID = acceptedEventID
+    let didChange = winner.id != previousAcceptedEventID
+    if didChange {
+      applyToMemory(winner, clerk: clerk)
+    }
+    updateNetworkResponseLineage(
+      winner: winner,
+      previousAcceptedEventID: previousAcceptedEventID,
+      candidate: nil
+    )
+    requiresSuccessfulReconciliation = false
+    return didChange
+  }
+
   private func ensureSuccessfulReconciliationIfNeeded() async throws {
     guard requiresSuccessfulReconciliation else { return }
     let result = await runReconciliationLoop()
@@ -671,10 +745,32 @@ extension SharedSessionSyncCoordinator {
     )
   }
 
+  private func saveOwnSynchronously(_ event: SharedSessionIdentityEvent) throws {
+    try slotStore.saveOwnSlot(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: instanceFingerprint,
+        slotOwnerIdentifier: ownerIdentifier,
+        event: event
+      )
+    )
+  }
+
   @discardableResult
   private func replicateOwnIfCompatible(_ event: SharedSessionIdentityEvent) async throws -> Bool {
     do {
       try await saveOwn(event)
+      return true
+    } catch let error as SharedSessionOwnerSlotStoreError {
+      guard case .futureSchemaVersion = error else { throw error }
+      return false
+    }
+  }
+
+  @discardableResult
+  private func replicateOwnIfCompatibleSynchronously(_ event: SharedSessionIdentityEvent) throws -> Bool {
+    do {
+      try saveOwnSynchronously(event)
       return true
     } catch let error as SharedSessionOwnerSlotStoreError {
       guard case .futureSchemaVersion = error else { throw error }
