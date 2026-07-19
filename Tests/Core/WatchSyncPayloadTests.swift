@@ -1186,6 +1186,24 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func clearTombstoneReplacesMalformedLegacyStringMetadata() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    try keychain.set(
+      Data([0xFF]),
+      forKey: ClerkKeychainKey.watchSyncAuthState.rawValue
+    )
+
+    let tombstone = try store.saveClearTombstone(minimumVersion: 10)
+
+    #expect(tombstone.deviceTokenState == .cleared)
+    #expect(tombstone.deviceTokenVersion == 10)
+    #expect(tombstone.authState == .cleared)
+    #expect(tombstone.authVersion == 10)
+    #expect(try store.load() == tombstone)
+  }
+
+  @Test
   func legacyDeviceTokenStateWithoutVersionMigratesAsVersionZero() throws {
     let keychain = InMemoryKeychain()
     let store = WatchSyncMetadataStore(keychain: keychain)

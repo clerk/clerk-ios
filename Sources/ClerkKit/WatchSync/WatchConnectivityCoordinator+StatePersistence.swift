@@ -102,16 +102,12 @@ struct WatchSyncMetadataStore {
     }
 
     let deviceToken = try decodeLegacyPair(
-      state: keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue),
-      version: keychain.string(
-        forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue
-      )
+      state: legacyString(for: .watchSyncDeviceTokenState),
+      version: legacyString(for: .watchSyncDeviceTokenVersion)
     )
     let auth = try decodeLegacyPair(
-      state: keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue),
-      version: keychain.string(
-        forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue
-      )
+      state: legacyString(for: .watchSyncAuthState),
+      version: legacyString(for: .watchSyncAuthVersion)
     )
     let legacy = WatchSyncMetadataRecord(
       deviceTokenState: deviceToken.state,
@@ -223,6 +219,14 @@ struct WatchSyncMetadataStore {
     }
     guard let version, let fingerprint else { return true }
     return version >= (acceptedVersion ?? 0) && !fingerprint.isEmpty
+  }
+
+  private func legacyString(for key: ClerkKeychainKey) throws -> String? {
+    do {
+      return try keychain.string(forKey: key.rawValue)
+    } catch KeychainError.invalidStringEncoding {
+      throw WatchSyncMetadataStoreError.corrupt
+    }
   }
 
   private func decodeLegacyPair(
