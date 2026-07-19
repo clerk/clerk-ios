@@ -488,7 +488,8 @@ struct AuthTests {
             client: syncedClient
           )
         ),
-      ]
+      ],
+      additionalHeaders: ["Authorization": "completed-sign-up-token"]
     )
     completionMock.register()
 
@@ -642,7 +643,8 @@ struct AuthTests {
             client: syncedClient
           )
         ),
-      ]
+      ],
+      additionalHeaders: ["Authorization": "completed-sign-up-token"]
     )
     completionMock.register()
 

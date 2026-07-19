@@ -41,6 +41,109 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigureWaitsForActiveKeychainClear() async throws {
+    let clerk = Clerk.shared
+    let gate = ReconfigurationClearGate()
+    var clearFinished = false
+    clerk.keychainClearTask = Task { @MainActor in
+      await gate.suspend()
+      clearFinished = true
+    }
+    try await gate.waitUntilSuspended()
+
+    var reconfigureFinished = false
+    let reconfiguration = Task { @MainActor in
+      defer { reconfigureFinished = true }
+      return try await Clerk.reconfigure(
+        publishableKey: clerk.publishableKey,
+        options: clerk.options
+      )
+    }
+    await Task.yield()
+    #expect(!reconfigureFinished)
+    #expect(!clearFinished)
+
+    gate.resume()
+    _ = try await reconfiguration.value
+    clerk.keychainClearTask = nil
+
+    #expect(clearFinished)
+    #expect(reconfigureFinished)
+  }
+
+  @Test
+  func ownerSlotReuseRequiresIdenticalEnabledTopology() throws {
+    let clerk = Clerk.shared
+    let originalDependencies = clerk.dependencies
+    defer { clerk.dependencies = originalDependencies }
+    let publishableKey = publishableKey(for: "same-topology.clerk.example.com")
+    let options = Clerk.Options(
+      keychainConfig: .init(
+        service: "com.example.clerk",
+        accessGroup: "TEAMID.com.example.shared"
+      ),
+      sharedSessionSync: .enabled
+    )
+    let current = try makeDependencies(
+      publishableKey: publishableKey,
+      options: options,
+      owner: "com.example.app"
+    )
+    clerk.dependencies = current
+
+    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: publishableKey,
+      options: options,
+      owner: "com.example.app"
+    )))
+    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: "  \(publishableKey)\n",
+      options: options,
+      owner: "com.example.app"
+    )))
+    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(
+          service: "com.example.clerk",
+          accessGroup: "  TEAMID.com.example.shared\n"
+        ),
+        sharedSessionSync: .enabled
+      ),
+      owner: "com.example.app"
+    )))
+    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: options.keychainConfig,
+        sharedSessionSync: nil
+      ),
+      owner: "com.example.app"
+    )))
+    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(
+          service: "com.example.changed",
+          accessGroup: "TEAMID.com.example.shared"
+        ),
+        sharedSessionSync: .enabled
+      ),
+      owner: "com.example.app"
+    )))
+    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: publishableKey,
+      options: options,
+      owner: "com.example.other-app"
+    )))
+    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
+      publishableKey: self.publishableKey(for: "same-topology.clerk.example.com", live: true),
+      options: options,
+      owner: "com.example.app"
+    )))
+  }
+
+  @Test
   func reconfigureUpdatesInstanceTypeForLiveKey() async throws {
     let publishableKey = publishableKey(for: "live.clerk.example.com", live: true)
 
@@ -206,6 +309,57 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func failedReconfigurePreservesPreviousOwnerSlotForRollback() async throws {
+    let original = Clerk.shared
+    let throwingKeychain = ThrowingDeleteKeychain()
+    let localIdentityStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let previousDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
+      keychain: throwingKeychain,
+      atomicIdentityStore: localIdentityStore,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    original.performConfiguration(dependencies: previousDependencies)
+    let ownerSlotStore = RollbackOwnerSlotStore(
+      slot: SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "rollback-instance",
+        slotOwnerIdentifier: "com.example.app",
+        event: SharedSessionIdentityEvent(
+          id: UUID(),
+          originOwnerIdentifier: "com.example.app",
+          generation: 1,
+          state: .present,
+          deviceToken: "rollback-token",
+          client: .mock,
+          serverDate: nil
+        )
+      )
+    )
+    original.sharedSessionSyncCoordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "com.example.app",
+      instanceFingerprint: "rollback-instance",
+      slotStore: ownerSlotStore,
+      localIdentityStore: localIdentityStore,
+      notifier: RollbackSharedSessionNotifier(),
+      configurationEpoch: original.configurationEpoch,
+      clerk: original
+    )
+    defer { original.cleanupManagers() }
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: publishableKey(for: "failed-slot-rollback.clerk.example.com")
+      )
+      Issue.record("Expected reconfigure to throw when old keychain clearing fails")
+    } catch let error as ClerkClientError {
+      #expect(error.message?.contains("Unable to clear Clerk keychain items") == true)
+    }
+
+    #expect(try ownerSlotStore.loadOwnSlot()?.event.deviceToken == "rollback-token")
+  }
+
+  @Test
   func reconfigureDrainsPendingCacheWritesBeforeClearingOldKeychain() async throws {
     let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
@@ -341,6 +495,38 @@ struct ClerkReconfigureTests {
 
     #expect(Clerk.shared === configured)
     #expect(configured.publishableKey == publishableKey(for: "initial-reconfigure.clerk.example.com"))
+  }
+
+  @Test
+  func reconfigureBeforeConfigureClearsPersistedCredentials() async throws {
+    await Clerk.resetSharedInstanceForTesting()
+    defer { configureClerkForTesting() }
+
+    let service = "com.clerk.tests.initial-reconfigure.\(UUID().uuidString)"
+    let keychain = SystemKeychain(service: service)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? keychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try keychain.set(
+      "stale-device-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    let configured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "initial-clear.clerk.example.com"),
+      options: .init(keychainConfig: .init(service: service))
+    )
+    defer { configured.cleanupManagers() }
+
+    #expect(configured.client == nil)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
   }
 
   @Test
@@ -532,6 +718,23 @@ struct ClerkReconfigureTests {
     }
   }
 
+  private func makeDependencies(
+    publishableKey: String,
+    options: Clerk.Options,
+    owner: String
+  ) throws -> MockDependencyContainer {
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      sharedSessionOwnerIdentifier: owner,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: publishableKey,
+      options: options
+    )
+    return dependencies
+  }
+
   private func publishableKey(for host: String, live: Bool = false) -> String {
     let data = Data("\(host)$".utf8)
     let encoded = data.base64EncodedString()
@@ -602,6 +805,32 @@ struct ClerkReconfigureTests {
   }
 }
 
+@MainActor
+private final class ReconfigurationClearGate {
+  private(set) var isSuspended = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func suspend() async {
+    isSuspended = true
+    await withCheckedContinuation { continuation = $0 }
+    isSuspended = false
+  }
+
+  func waitUntilSuspended() async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if isSuspended { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for Keychain clear.")
+  }
+
+  func resume() {
+    continuation?.resume()
+    continuation = nil
+  }
+}
+
 private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
   private let delay: TimeInterval
   private let lock = NSLock()
@@ -666,4 +895,35 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     defer { lock.unlock() }
     return storage[key] != nil
   }
+}
+
+private final class RollbackOwnerSlotStore: SharedSessionSlotStoring, @unchecked Sendable {
+  private let lock = NSLock()
+  private var slot: SharedSessionOwnerSlot?
+
+  init(slot: SharedSessionOwnerSlot) {
+    self.slot = slot
+  }
+
+  func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
+    lock.withLock { slot }
+  }
+
+  func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
+    lock.withLock { slot.map { [$0] } ?? [] }
+  }
+
+  func saveOwnSlot(_ slot: SharedSessionOwnerSlot) throws {
+    lock.withLock { self.slot = slot }
+  }
+
+  func deleteOwnSlot() throws {
+    lock.withLock { slot = nil }
+  }
+}
+
+@MainActor
+private final class RollbackSharedSessionNotifier: SharedSessionSyncNotifying {
+  func setHandler(_: @escaping @MainActor () -> Void) {}
+  func post() {}
 }

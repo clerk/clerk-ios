@@ -19,6 +19,24 @@ protocol Dependencies: AnyObject {
   /// The keychain storage for secure data persistence.
   var keychain: any KeychainStorage { get }
 
+  /// Keychain storage scoped to this app rather than the configured shared access group.
+  var appLocalKeychain: any KeychainStorage { get }
+
+  /// Stable app-local storage for the atomic token and client identity.
+  var identityKeychain: any KeychainStorage { get }
+
+  /// The previous bundle-identifier app-local cache used only during adoption.
+  var legacyAppLocalKeychain: (any KeychainStorage)? { get }
+
+  /// Atomic app-local identity storage used after shared-session adoption.
+  var atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? { get }
+
+  /// Serialized off-main access to the atomic app-local identity storage.
+  var atomicIdentityIO: SharedSessionLocalIdentityIO? { get }
+
+  /// Stable owner used for this app's discoverable shared-session slot.
+  var sharedSessionOwnerIdentifier: String? { get }
+
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
@@ -66,4 +84,10 @@ protocol Dependencies: AnyObject {
 
   /// Manages logging of session status changes.
   var sessionStatusLogger: SessionStatusLogger { get }
+}
+
+extension Dependencies {
+  var watchSyncKeychain: any KeychainStorage {
+    MigratingKeychainStorage(primary: appLocalKeychain, fallback: keychain)
+  }
 }

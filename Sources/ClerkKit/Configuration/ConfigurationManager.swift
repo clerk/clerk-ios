@@ -34,14 +34,16 @@ final class ConfigurationManager {
   ///
   /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
   func configure(publishableKey: String, options: Clerk.Options) throws {
-    // Validate publishable key early for fail-fast behavior
-    try validatePublishableKey(publishableKey)
+    let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    state.publishableKey = publishableKey
+    // Validate publishable key early for fail-fast behavior
+    try validatePublishableKey(normalizedPublishableKey)
+
+    state.publishableKey = normalizedPublishableKey
     state.options = options
 
     // Extract frontend API URL from publishable key
-    state.frontendApiUrl = try extractFrontendApiUrl(from: publishableKey)
+    state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
 
     // Set proxy URL from options
     state.proxyUrl = options.proxyUrl
@@ -103,14 +105,12 @@ final class ConfigurationManager {
   /// - Parameter key: The publishable key to validate.
   /// - Throws: `ClerkInitializationError` if the key is empty or has an invalid format.
   private func validatePublishableKey(_ key: String) throws {
-    let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    guard !trimmedKey.isEmpty else {
+    guard !key.isEmpty else {
       throw ClerkInitializationError.missingPublishableKey
     }
 
-    guard trimmedKey.starts(with: "pk_test_") || trimmedKey.starts(with: "pk_live_") else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: trimmedKey)
+    guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
+      throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
     }
   }
 

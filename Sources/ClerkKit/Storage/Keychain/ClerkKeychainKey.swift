@@ -21,6 +21,9 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached environment data.
   case cachedEnvironment
 
+  /// Key indicating that this app adopted stable app-local shared-session persistence.
+  case sharedSessionSyncAdopted = "clerkSharedSessionSyncAdoptedV2"
+
   /// Key for the last explicit sibling-app auth sync state.
   case sharedSessionSyncAuthState
 
@@ -32,6 +35,9 @@ enum ClerkKeychainKey: String, CaseIterable {
 
   /// Key for the last explicit watch auth sync state.
   case watchSyncAuthState
+
+  /// Atomic app-local Watch identity ordering metadata.
+  case watchSyncMetadata = "clerkWatchSyncMetadataV2"
 
   /// Key for ordering explicit watch auth sync events.
   case watchSyncAuthVersion

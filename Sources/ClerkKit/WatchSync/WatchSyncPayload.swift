@@ -6,12 +6,17 @@
 import Foundation
 
 package struct WatchSyncVersion: Hashable, Comparable {
+  package enum Error: Swift.Error, Equatable {
+    case exhausted
+  }
+
   static let initial = WatchSyncVersion(rawValue: 0)
 
   let rawValue: Int
 
-  func next() -> WatchSyncVersion {
-    WatchSyncVersion(rawValue: rawValue + 1)
+  func next() throws -> WatchSyncVersion {
+    guard rawValue < Int.max else { throw Error.exhausted }
+    return WatchSyncVersion(rawValue: rawValue + 1)
   }
 
   package static func < (lhs: WatchSyncVersion, rhs: WatchSyncVersion) -> Bool {
@@ -138,15 +143,61 @@ package struct WatchSyncPayload {
   }
 
   init?(applicationContext: [String: Any]) {
+    let hasDeviceTokenState = applicationContext.keys.contains(Self.deviceTokenStateKey)
+    let hasDeviceTokenVersion = applicationContext.keys.contains(Self.deviceTokenVersionKey)
+    let hasAuthState = applicationContext.keys.contains(Self.authStateKey)
+    let hasAuthVersion = applicationContext.keys.contains(Self.authVersionKey)
+    guard !hasDeviceTokenVersion || hasDeviceTokenState,
+          !hasAuthVersion || hasAuthState
+    else {
+      return nil
+    }
+    if hasDeviceTokenState {
+      guard let state = applicationContext[Self.deviceTokenStateKey] as? String,
+            state == "set" || state == "cleared"
+      else {
+        return nil
+      }
+      if let rawVersion = applicationContext[Self.deviceTokenVersionKey] {
+        guard let version = Self.decodeVersion(rawVersion), version >= .initial else {
+          return nil
+        }
+      }
+    }
+    if hasAuthState {
+      guard let state = applicationContext[Self.authStateKey] as? String,
+            state == "set" || state == "cleared"
+      else {
+        return nil
+      }
+      if let rawVersion = applicationContext[Self.authVersionKey] {
+        guard let version = Self.decodeVersion(rawVersion), version >= .initial else {
+          return nil
+        }
+      }
+    }
+
     let deviceTokenUpdate = Self.decodeDeviceTokenUpdate(from: applicationContext)
     let clientData = applicationContext[Self.clientKey] as? Data
     let environmentData = applicationContext[Self.environmentKey] as? Data
-    let clientServerFetchDate = (applicationContext[Self.clientServerFetchDateKey] as? Double).map(Date.init(timeIntervalSince1970:))
+    let clientServerFetchDate: Date?
+    if let rawServerFetchDate = applicationContext[Self.clientServerFetchDateKey] as? Double {
+      guard rawServerFetchDate.isFinite else { return nil }
+      clientServerFetchDate = Date(timeIntervalSince1970: rawServerFetchDate)
+    } else {
+      clientServerFetchDate = nil
+    }
     let clientUpdate = Self.decodeClientUpdate(
       from: applicationContext,
       clientData: clientData,
       clientServerFetchDate: clientServerFetchDate
     )
+
+    guard !hasDeviceTokenState || deviceTokenUpdate != .notIncluded,
+          !hasAuthState || clientUpdate != .notIncluded
+    else {
+      return nil
+    }
 
     guard deviceTokenUpdate != .notIncluded || clientUpdate != .notIncluded || environmentData != nil else {
       return nil
@@ -167,9 +218,19 @@ package struct WatchSyncPayload {
   }
 
   @MainActor
-  init(clerk: Clerk, keychain: any KeychainStorage, authGeneration: WatchSyncVersion) {
-    deviceTokenUpdate = Self.deviceTokenUpdate(keychain: keychain)
-    let persistedAuthState = try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+  init(
+    clerk: Clerk,
+    metadata: WatchSyncMetadataRecord,
+    authGeneration: WatchSyncVersion
+  ) throws {
+    guard !metadata.hasPendingIdentityMetadata else {
+      throw ClerkClientError(message: "Cannot publish unresolved Watch identity metadata.")
+    }
+    deviceTokenUpdate = Self.deviceTokenUpdate(
+      deviceToken: clerk.deviceToken,
+      metadata: metadata
+    )
+    let persistedAuthState = metadata.authState
     if let client = clerk.client {
       clientUpdate = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == "cleared" {
@@ -188,13 +249,13 @@ package struct WatchSyncPayload {
       break
     case let .tokenSet(deviceToken, version):
       applicationContext[Self.deviceTokenKey] = deviceToken
-      applicationContext[Self.deviceTokenStateKey] = "set"
       if let version {
+        applicationContext[Self.deviceTokenStateKey] = "set"
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
     case let .tokenCleared(version):
-      applicationContext[Self.deviceTokenStateKey] = "cleared"
       if let version {
+        applicationContext[Self.deviceTokenStateKey] = "cleared"
         applicationContext[Self.deviceTokenVersionKey] = version.rawValue
       }
     }
@@ -203,7 +264,6 @@ package struct WatchSyncPayload {
     case .notIncluded:
       break
     case let .snapshot(client, clientServerFetchDate, version):
-      applicationContext[Self.authStateKey] = "set"
       do {
         applicationContext[Self.clientKey] = try JSONEncoder.clerkEncoder.encode(client)
       } catch {
@@ -213,14 +273,15 @@ package struct WatchSyncPayload {
         applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
       }
       if let version {
+        applicationContext[Self.authStateKey] = "set"
         applicationContext[Self.authVersionKey] = version.rawValue
       }
     case let .cleared(clientServerFetchDate, version):
-      applicationContext[Self.authStateKey] = "cleared"
       if let clientServerFetchDate {
         applicationContext[Self.clientServerFetchDateKey] = clientServerFetchDate.timeIntervalSince1970
       }
       if let version {
+        applicationContext[Self.authStateKey] = "cleared"
         applicationContext[Self.authVersionKey] = version.rawValue
       }
     }
@@ -289,7 +350,12 @@ package struct WatchSyncPayload {
     if let value = value as? Int {
       return WatchSyncVersion(rawValue: value)
     }
-    if let value = value as? Double {
+    if let value = value as? Double,
+       value.isFinite,
+       value.rounded(.towardZero) == value,
+       value >= Double(Int.min),
+       value <= Double(Int.max)
+    {
       return WatchSyncVersion(rawValue: Int(value))
     }
     if let value = value as? String, let intValue = Int(value) {
@@ -298,27 +364,19 @@ package struct WatchSyncPayload {
     return nil
   }
 
-  private static func deviceTokenUpdate(keychain: any KeychainStorage) -> WatchSyncDeviceTokenUpdate {
-    let version = readDeviceTokenVersion(keychain: keychain)
-    if let deviceToken = try? keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
+  private static func deviceTokenUpdate(
+    deviceToken: String?,
+    metadata: WatchSyncMetadataRecord
+  ) -> WatchSyncDeviceTokenUpdate {
+    let version = WatchSyncVersion(rawValue: metadata.deviceTokenVersion ?? 0)
+    if let deviceToken {
       return .tokenSet(token: deviceToken, version: version)
     }
 
-    let state = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
-    if state == "cleared" {
+    if metadata.deviceTokenState == "cleared" {
       return .tokenCleared(version: version)
     }
 
     return .notIncluded
-  }
-
-  private static func readDeviceTokenVersion(keychain: any KeychainStorage) -> WatchSyncVersion {
-    guard let versionString = try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue),
-          let version = Int(versionString)
-    else {
-      return .initial
-    }
-
-    return WatchSyncVersion(rawValue: version)
   }
 }

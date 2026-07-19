@@ -280,26 +280,15 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func configureWithKeyContainingWhitespace() {
+  func configureNormalizesSurroundingPublishableKeyWhitespace() throws {
     let manager = ConfigurationManager()
-    // Key with leading/trailing whitespace will pass validation (trims internally)
-    // but will fail extraction because extraction uses the original key
     let testKey = createTestPublishableKey(for: "clerk.example.com")
     let options = Clerk.Options()
 
-    let keyWithWhitespace = "  \(testKey)  "
+    try manager.configure(publishableKey: "  \(testKey)\n", options: options)
 
-    do {
-      try manager.configure(publishableKey: keyWithWhitespace, options: options)
-      Issue.record("Expected invalidPublishableKeyFormat error during URL extraction")
-    } catch let error as ClerkInitializationError {
-      if case .invalidPublishableKeyFormat = error {
-        // Expected error - extraction fails because key has whitespace
-      } else {
-        Issue.record("Wrong error type")
-      }
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
+    #expect(manager.publishableKey == testKey)
+    #expect(manager.frontendApiUrl == "https://clerk.example.com")
+    #expect(manager.instanceType == .development)
   }
 }

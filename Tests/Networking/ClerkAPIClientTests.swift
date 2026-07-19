@@ -319,4 +319,174 @@ struct ClerkAPIClientTests {
       #expect(requestHandled.value)
     }
   }
+
+  @Test
+  func retryPreservesFirstPreparedSharedIdentityContext() async throws {
+    let prepareCount = LockIsolated(0)
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-context")!
+    let mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    mock.register()
+    let pipeline = NetworkingPipeline(
+      requestMiddleware: [ChangingSharedIdentityContextMiddleware(
+        count: prepareCount,
+        changesBetweenAttempts: false
+      )],
+      responseMiddleware: [RecordingRetryContextMiddleware(contexts: observedContexts)],
+      retryMiddleware: [RetryFirstContextFailureMiddleware()]
+    )
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = pipeline
+    }
+
+    _ = try await apiClient.send(Request<EmptyResponse>(path: "/v1/retry-context"))
+
+    #expect(prepareCount.value == 2)
+    #expect(observedContexts.value.count == 2)
+    #expect(observedContexts.value.allSatisfy {
+      $0.0 == 1 && $0.1 == "token-1" && $0.2 == "client-1" && $0.3
+    })
+  }
+
+  @Test
+  func retryRestoresFrozenClerkContextBeforeCustomSigningMiddleware() async throws {
+    let prepareCount = LockIsolated(0)
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let signedAuthorizations = LockIsolated<[String?]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-signature")!
+    let mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    mock.register()
+    let pipeline = NetworkingPipeline(
+      requestMiddleware: [ChangingSharedIdentityContextMiddleware(
+        count: prepareCount,
+        changesBetweenAttempts: false
+      )],
+      responseMiddleware: [RecordingRetryContextMiddleware(contexts: observedContexts)],
+      retryMiddleware: [RetryFirstContextFailureMiddleware()]
+    ).appendingRequestMiddleware([
+      SigningFrozenContextMiddleware(authorizations: signedAuthorizations),
+    ])
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = pipeline
+    }
+
+    _ = try await apiClient.send(Request<EmptyResponse>(path: "/v1/retry-signature"))
+
+    #expect(prepareCount.value == 2)
+    #expect(signedAuthorizations.value == ["token-1", "token-1"])
+    #expect(observedContexts.value.allSatisfy { $0.1 == "token-1" })
+  }
+
+  @Test
+  func retryIsCancelledWhenPreparedClerkIdentityChanges() async throws {
+    let prepareCount = LockIsolated(0)
+    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool)]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-identity-change")!
+    let mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    mock.register()
+    let pipeline = NetworkingPipeline(
+      requestMiddleware: [ChangingSharedIdentityContextMiddleware(count: prepareCount)],
+      responseMiddleware: [RecordingRetryContextMiddleware(contexts: observedContexts)],
+      retryMiddleware: [RetryFirstContextFailureMiddleware()]
+    )
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = pipeline
+    }
+
+    await #expect(throws: APIClientError.self) {
+      _ = try await apiClient.send(
+        Request<EmptyResponse>(path: "/v1/retry-identity-change")
+      )
+    }
+    #expect(prepareCount.value == 2)
+    #expect(observedContexts.value.count == 1)
+  }
+}
+
+private struct ChangingSharedIdentityContextMiddleware: ClerkRequestMiddleware {
+  let count: LockIsolated<Int>
+  var changesBetweenAttempts = true
+
+  func prepare(_ request: inout URLRequest) async throws {
+    let attempt = count.withValue {
+      $0 += 1
+      return $0
+    }
+    let contextAttempt = changesBetweenAttempts ? attempt : 1
+    request.setClerkSharedSessionBaseGeneration(UInt64(contextAttempt))
+    request.setClerkCanonicalClientRequest(contextAttempt == 1)
+    request.setValue("token-\(contextAttempt)", forHTTPHeaderField: "Authorization")
+    request.setValue("client-\(contextAttempt)", forHTTPHeaderField: "x-clerk-client-id")
+  }
+}
+
+private struct SigningFrozenContextMiddleware: ClerkRequestMiddleware {
+  let authorizations: LockIsolated<[String?]>
+
+  func prepare(_ request: inout URLRequest) async throws {
+    let authorization = request.value(forHTTPHeaderField: "Authorization")
+    authorizations.withValue { $0.append(authorization) }
+    request.setValue("signed:\(authorization ?? "none")", forHTTPHeaderField: "X-Test-Signature")
+  }
+}
+
+private struct RecordingRetryContextMiddleware: ClerkResponseMiddleware {
+  enum Failure: Error {
+    case firstAttempt
+  }
+
+  let contexts: LockIsolated<[(UInt64?, String?, String?, Bool)]>
+
+  func validate(_: HTTPURLResponse, data _: Data, for request: URLRequest) async throws {
+    let count = contexts.withValue {
+      $0.append((
+        request.clerkSharedSessionBaseGeneration,
+        request.value(forHTTPHeaderField: "Authorization"),
+        request.value(forHTTPHeaderField: "x-clerk-client-id"),
+        request.clerkIsCanonicalClientRequest
+      ))
+      return $0.count
+    }
+    if count == 1 {
+      throw Failure.firstAttempt
+    }
+  }
+}
+
+private struct RetryFirstContextFailureMiddleware: NetworkRetryMiddleware {
+  func shouldRetry(
+    request _: URLRequest,
+    response _: HTTPURLResponse?,
+    error: any Error,
+    attempts: Int
+  ) async throws -> Bool {
+    error is RecordingRetryContextMiddleware.Failure && attempts == 1
+  }
 }

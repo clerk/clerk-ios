@@ -5,10 +5,47 @@
 
 import Foundation
 
+package enum ClientServiceUpdate: Equatable {
+  case client(Client)
+  case cleared
+  case preserve
+
+  var client: Client? {
+    guard case .client(let client) = self else { return nil }
+    return client
+  }
+}
+
 package struct ClientServiceResponse {
-  let client: Client?
+  let update: ClientServiceUpdate
   let requestSequence: Int?
   let serverDate: Date?
+
+  var client: Client? {
+    update.client
+  }
+
+  init(
+    update: ClientServiceUpdate,
+    requestSequence: Int?,
+    serverDate: Date?
+  ) {
+    self.update = update
+    self.requestSequence = requestSequence
+    self.serverDate = serverDate
+  }
+
+  init(
+    client: Client?,
+    requestSequence: Int?,
+    serverDate: Date?
+  ) {
+    self.init(
+      update: client.map(ClientServiceUpdate.client) ?? .preserve,
+      requestSequence: requestSequence,
+      serverDate: serverDate
+    )
+  }
 }
 
 protocol ClientServiceProtocol: Sendable {
@@ -49,11 +86,14 @@ final class ClientService: ClientServiceProtocol {
   func getResponse(skipClientId: Bool = false) async throws -> ClientServiceResponse {
     let request = Request<ClientResponse<Client?>>(
       path: "/v1/client",
-      headers: skipClientId ? [ClerkHeaderRequestMiddleware.skipClientIdHeader: "1"] : [:]
+      headers: [
+        ClerkHeaderRequestMiddleware.canonicalClientRequestHeader: "1",
+        ClerkHeaderRequestMiddleware.skipClientIdHeader: skipClientId ? "1" : "0",
+      ]
     )
     let response = try await apiClient.send(request)
     return ClientServiceResponse(
-      client: response.value.response,
+      update: response.value.response.map(ClientServiceUpdate.client) ?? .preserve,
       requestSequence: response.requestSequence,
       serverDate: response.serverDate
     )

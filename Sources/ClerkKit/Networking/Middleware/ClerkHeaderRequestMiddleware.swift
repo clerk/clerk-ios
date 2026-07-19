@@ -7,6 +7,7 @@ import Foundation
 
 struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   static let skipClientIdHeader = "X-Clerk-SDK-Skip-Client-Id"
+  static let canonicalClientRequestHeader = "X-Clerk-SDK-Canonical-Client-Request"
 
   private let runtimeScope: ClerkRuntimeScope
 
@@ -17,15 +18,24 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
     let clerk = try runtimeScope.requireCurrentClerk()
-    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+    let identity = try await clerk.identityController.captureRequestIdentity()
+    _ = try runtimeScope.requireCurrentClerk()
+    request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
+    request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
+    let isCanonicalClientRequest = request.value(
+      forHTTPHeaderField: Self.canonicalClientRequestHeader
+    ) == "1"
+    request.setClerkCanonicalClientRequest(isCanonicalClientRequest)
+    request.setValue(nil, forHTTPHeaderField: Self.canonicalClientRequestHeader)
     let skipClientId = request.value(forHTTPHeaderField: Self.skipClientIdHeader) == "1"
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
 
-    if let deviceToken = try? clerk.dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) {
+    if let deviceToken = identity.deviceToken {
+      request.setClerkRequestDeviceToken(deviceToken)
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
-    if !skipClientId, let clientId = clerk.client?.id {
+    if !skipClientId, let clientId = identity.clientID {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 

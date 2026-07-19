@@ -8,11 +8,14 @@ import Foundation
 extension Clerk {
   @_spi(FrameworkIntegration) public enum DeviceTokenError: Error, LocalizedError {
     case emptyToken
+    case updateRejected
 
     public var errorDescription: String? {
       switch self {
       case .emptyToken:
         "Device token must not be empty."
+      case .updateRejected:
+        "The device token update lost shared identity reconciliation and was not applied."
       }
     }
   }
@@ -20,18 +23,7 @@ extension Clerk {
   /// The currently stored Clerk device token, if one is available.
   @_spi(FrameworkIntegration)
   public var deviceToken: String? {
-    do {
-      return try dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to read device token from keychain")
-      return nil
-    }
-  }
-
-  func storeDeviceToken(_ token: String) throws {
-    let previousToken = try? dependencies.keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try dependencies.keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    emitInternalStateChange(.deviceTokenDidChange(previous: previousToken, current: token))
+    identityController.currentDeviceToken
   }
 
   /// Updates the stored Clerk device token and refreshes native auth state.
@@ -48,18 +40,16 @@ extension Clerk {
   @_spi(FrameworkIntegration)
   @discardableResult
   public func updateDeviceToken(_ token: String) async throws -> Client? {
+    try runtimeScope.validateStableRuntime()
     let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !normalizedToken.isEmpty else {
       throw DeviceTokenError.emptyToken
     }
 
-    let previousToken = deviceToken
-    try storeDeviceToken(normalizedToken)
-
-    if previousToken != normalizedToken {
-      clearCachedClientStateAfterDeviceTokenChange()
+    let result = try await identityController.updateDeviceToken(to: normalizedToken)
+    guard result != .rejected else {
+      throw DeviceTokenError.updateRejected
     }
-
     return try await refreshClient(skipClientId: true)
   }
 }

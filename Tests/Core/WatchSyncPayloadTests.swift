@@ -6,6 +6,17 @@ import Testing
 @Suite(.serialized)
 struct WatchSyncPayloadTests {
   @Test
+  func watchVersionAdvancementFailsAtMaximumValue() throws {
+    #expect(
+      try WatchSyncVersion(rawValue: Int.max - 1).next()
+        == WatchSyncVersion(rawValue: Int.max)
+    )
+    #expect(throws: WatchSyncVersion.Error.exhausted) {
+      try WatchSyncVersion(rawValue: Int.max).next()
+    }
+  }
+
+  @Test
   func applicationContextRoundTripsPayloadValues() throws {
     let serverFetchDate = Date(timeIntervalSince1970: 123)
     let payload = WatchSyncPayload(
@@ -85,7 +96,6 @@ struct WatchSyncPayloadTests {
     #expect(clerk.client?.signIn?.id == "sign-in-phone")
     #expect(clerk.environment == .mock)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -149,6 +159,244 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func outgoingPayloadReadsDeviceTokenVersionFromMetadataRecord() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(
+      WatchSyncMetadataRecord(
+        deviceTokenState: "set",
+        deviceTokenVersion: 7,
+        authState: nil,
+        authVersion: nil
+      )
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+
+    let payload = try WatchSyncPayload(
+      clerk: clerk,
+      metadata: WatchSyncMetadataStore(keychain: keychain).load(),
+      authGeneration: .initial
+    )
+
+    #expect(payload.deviceTokenUpdate.version == WatchSyncVersion(rawValue: 7))
+  }
+
+  @Test
+  func sharedIdentityChangeUsesOneMetadataSnapshot() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = MetadataReadCountingKeychain()
+    try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(
+      WatchSyncMetadataRecord(
+        deviceTokenState: "set",
+        deviceTokenVersion: 7,
+        authState: "cleared",
+        authVersion: 7
+      )
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let coordinator = WatchConnectivityCoordinator()
+    keychain.resetMetadataReadCount()
+
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    #expect(keychain.metadataReadCount == 1)
+  }
+
+  @Test
+  func watchTokenClearCannotSignOutAnActivePhone() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let phoneClient = client(id: "phone-client", updatedAt: 100)
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      clientService: MockClientService { throw CancellationError() }
+    )
+    clerk.client = phoneClient
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .watch, to: clerk)
+    await Task.yield()
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.client?.id == phoneClient.id)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
+  }
+
+  @Test
+  func stoppedCoordinatorDropsPayloadWaitingForLocalIdentityQueue() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let gate = AsyncGate()
+    let blocker = clerk.identityController.enqueueLocalOperation { _ in
+      await gate.wait()
+    }
+    let coordinator = WatchConnectivityCoordinator()
+    coordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "stale-token",
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        clientUpdate: .snapshot(
+          client: client(id: "stale-client", updatedAt: 100),
+          serverFetchDate: Date(timeIntervalSince1970: 100),
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+
+    coordinator.stopAcceptingIdentityUpdates()
+    await gate.open()
+    _ = try? await blocker.value
+    await coordinator.waitForIdentityPublications()
+
+    #expect(try identityStore.load() == nil)
+    #expect(clerk.client == nil)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+  }
+
+  @Test
+  func invalidatedQueuedWatchOperationStillReleasesPublicationTracking() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let gate = AsyncGate()
+    let blocker = clerk.identityController.enqueueLocalOperation { _ in
+      await gate.wait()
+    }
+    let coordinator = WatchConnectivityCoordinator()
+    coordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "stale-token",
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        clientUpdate: .snapshot(
+          client: client(id: "stale-client", updatedAt: 100),
+          serverFetchDate: Date(timeIntervalSince1970: 100),
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: clerk
+    )
+    #expect(coordinator.activeIdentityPublicationCount == 1)
+    clerk.identityController.invalidatedThroughRevision = clerk.identityController.localOperationRevision
+
+    await gate.open()
+    _ = try? await blocker.value
+    await coordinator.waitForIdentityPublications()
+
+    #expect(coordinator.activeIdentityPublicationCount == 0)
+    #expect(try identityStore.load() == nil)
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func awaitedClearPersistsWatchTombstoneAndRejectsStalePeerIdentity() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let legacyShared = InMemoryKeychain()
+    let appLocal = InMemoryKeychain()
+    let identityKeychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: identityKeychain)
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "current-token",
+      client: client(id: "current-client", updatedAt: 100),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try identityStore.save(initialIdentity)
+    try WatchSyncMetadataStore(keychain: legacyShared).save(
+      WatchSyncMetadataRecord(
+        deviceTokenState: "set",
+        deviceTokenVersion: 9,
+        authState: "set",
+        authVersion: 9
+      )
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: legacyShared,
+      appLocalKeychain: appLocal,
+      identityKeychain: identityKeychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
+
+    try await clerk.clearAllKeychainItemsAndWait()
+
+    let metadata = try WatchSyncMetadataStore(keychain: appLocal).load()
+    let clearVersion = try #require(metadata.authVersion)
+    #expect(clearVersion > 9)
+    #expect(metadata.deviceTokenVersion == clearVersion)
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.authState == "cleared")
+    #expect(!metadata.hasPendingIdentityMetadata)
+
+    let stalePayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "stale-token",
+        version: WatchSyncVersion(rawValue: 9)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "stale-client", updatedAt: 90),
+        serverFetchDate: Date(timeIntervalSince1970: 90),
+        version: WatchSyncVersion(rawValue: 9)
+      ),
+      environment: nil
+    )
+    let coordinator = WatchConnectivityCoordinator()
+    coordinator.apply(stalePayload, from: .watch, to: clerk)
+    await coordinator.waitForIdentityPublications()
+
+    #expect(clerk.identityController.localDeviceToken == nil)
+    #expect(clerk.client == nil)
+    #expect(try identityStore.load() == nil)
+  }
+
+  @Test
   func watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -172,7 +420,6 @@ struct WatchSyncPayloadTests {
     #expect(clerk.client?.id == "client-local")
     #expect(clerk.client?.signIn?.id == "sign-in-local")
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -207,7 +454,6 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == phoneServerDate)
     #expect(clerk.clientResponseGeneration == originalGeneration)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -243,7 +489,6 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == phoneServerDate)
     #expect(clerk.clientResponseGeneration == originalGeneration)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -256,7 +501,7 @@ struct WatchSyncPayloadTests {
     let originalGeneration = clerk.clientResponseGeneration
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch")
     clerk.client = nil
-    clerk.lastClientServerFetchDate = phoneServerDate
+    clerk.identityController.lastServerDate = phoneServerDate
 
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "watch-token", version: WatchSyncVersion(rawValue: 1)),
@@ -275,8 +520,9 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == watchServerDate)
     #expect(clerk.clientResponseGeneration != originalGeneration)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "watch-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "set")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "1")
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenState == "set")
+    #expect(metadata.deviceTokenVersion == 1)
   }
 
   @Test
@@ -288,7 +534,7 @@ struct WatchSyncPayloadTests {
     let originalGeneration = clerk.clientResponseGeneration
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch")
     clerk.client = nil
-    clerk.lastClientServerFetchDate = phoneServerDate
+    clerk.identityController.lastServerDate = phoneServerDate
 
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "watch-token", version: WatchSyncVersion(rawValue: 1)),
@@ -306,7 +552,6 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == phoneServerDate)
     #expect(clerk.clientResponseGeneration == originalGeneration)
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue) == "true")
   }
 
   @Test
@@ -318,7 +563,7 @@ struct WatchSyncPayloadTests {
     let watchServerDate = Date(timeIntervalSince1970: 100)
 
     let payload = WatchSyncPayload(
-      deviceToken: nil,
+      deviceToken: "watch-token",
       client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch"),
       clientServerFetchDate: watchServerDate,
       environment: .mock
@@ -356,27 +601,140 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func watchPayloadWithNewerServerFetchDateUpdatesPhoneClient() {
+  func clientSnapshotWithoutPairedTokenDoesNotReuseLocalToken() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
+    try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.applyResponseClient(
       client(id: "client-local", signInId: "sign-in-local", updatedAt: 4000, lastActiveSessionId: "session-local"),
       responseSequence: 1,
       serverDate: Date(timeIntervalSince1970: 100)
     )
 
+    let localClient = try #require(clerk.client)
     let payload = WatchSyncPayload(
-      deviceToken: nil,
-      client: client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch"),
-      clientServerFetchDate: Date(timeIntervalSince1970: 200),
+      deviceTokenUpdate: .notIncluded,
+      clientUpdate: .snapshot(
+        client: client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 3000, lastActiveSessionId: "session-phone"),
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
       environment: nil
     )
 
-    apply(payload, from: .watch, to: clerk, keychain: keychain)
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
 
-    #expect(clerk.client?.id == "client-watch")
-    #expect(clerk.client?.signIn?.id == "sign-in-watch")
+    #expect(clerk.client?.id == localClient.id)
+    #expect(clerk.client?.signIn?.id == localClient.signIn?.id)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+  }
+
+  @Test
+  func changedTokenWithoutClientClearsOldClientBeforeRefresh() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.client = client(id: "old-client", updatedAt: 100)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      clientService: MockClientService(get: { throw CancellationError() })
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "new-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .phone, to: clerk)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
+    #expect(clerk.client == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
+  }
+
+  @Test
+  func adoptedIdentityWatchUpdateRefreshesHydratedToken() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "old-token",
+      client: client(id: "old-client", updatedAt: 100),
+      serverDate: Date(timeIntervalSince1970: 50)
+    )
+    try identityStore.save(previous)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.hydrateIdentityIfNeeded(previous)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "new-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "new-client", updatedAt: 200),
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    let coordinator = WatchConnectivityCoordinator()
+    coordinator.apply(payload, from: .phone, to: clerk)
+    await coordinator.waitForIdentityPublications()
+
+    #expect(clerk.identityController.localDeviceToken == "new-token")
+    #expect(try identityStore.load()?.deviceToken == "new-token")
+    #expect(clerk.client?.id == "new-client")
+  }
+
+  @Test
+  func rejectedTokenUpdateSuppressesPairedClient() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let currentClient = client(id: "current-client", updatedAt: 100)
+    clerk.client = currentClient
+    try WatchSyncMetadataStore(keychain: keychain).save(
+      WatchSyncMetadataRecord(
+        deviceTokenState: "set",
+        deviceTokenVersion: 3,
+        authState: "set",
+        authVersion: 1
+      )
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "rejected-token",
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "rejected-client", updatedAt: 200),
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "current-token")
+    #expect(clerk.client?.id == currentClient.id)
   }
 
   @Test
@@ -422,8 +780,9 @@ struct WatchSyncPayloadTests {
     apply(stalePayload, from: .phone, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenVersion == 3)
   }
 
   @Test
@@ -447,8 +806,9 @@ struct WatchSyncPayloadTests {
     apply(sameVersionPayload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenVersion == 3)
   }
 
   @Test
@@ -473,8 +833,9 @@ struct WatchSyncPayloadTests {
     apply(legacyPayload, from: .watch, to: clerk, keychain: keychain)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue) == "3")
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenState == "cleared")
+    #expect(metadata.deviceTokenVersion == 3)
   }
 
   @Test
@@ -536,6 +897,572 @@ struct WatchSyncPayloadTests {
     #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
   }
 
+  @Test
+  func legacyVersionlessDeviceTokenStatePayloadIsAccepted() throws {
+    let tokenSetPayload = try #require(WatchSyncPayload(applicationContext: [
+      "watchSyncDeviceTokenState": "set",
+      "clerkDeviceToken": "legacy-token",
+    ]))
+    #expect(tokenSetPayload.deviceTokenUpdate == .tokenSet(token: "legacy-token", version: nil))
+
+    let tokenClearedPayload = try #require(WatchSyncPayload(applicationContext: [
+      "watchSyncDeviceTokenState": "cleared",
+    ]))
+    #expect(tokenClearedPayload.deviceTokenUpdate == .tokenCleared(version: nil))
+  }
+
+  @Test
+  func legacyVersionlessAuthStatePayloadIsAccepted() throws {
+    let serverFetchDate = Date(timeIntervalSince1970: 300)
+    let payloadClient = client(id: "client-legacy", updatedAt: 4000)
+    let snapshotPayload = try #require(try WatchSyncPayload(applicationContext: [
+      "watchSyncAuthState": "set",
+      "clerkClient": JSONEncoder.clerkEncoder.encode(payloadClient),
+      "clerkClientServerFetchDate": serverFetchDate.timeIntervalSince1970,
+    ]))
+    #expect(snapshotPayload.client?.id == payloadClient.id)
+    #expect(snapshotPayload.clientUpdate.version == nil)
+    #expect(snapshotPayload.clientServerFetchDate == serverFetchDate)
+
+    let clearedPayload = try #require(WatchSyncPayload(applicationContext: [
+      "watchSyncAuthState": "cleared",
+      "clerkClientServerFetchDate": serverFetchDate.timeIntervalSince1970,
+    ]))
+    #expect(clearedPayload.client == nil)
+    #expect(clearedPayload.clientUpdate.version == nil)
+    #expect(clearedPayload.clientServerFetchDate == serverFetchDate)
+  }
+
+  @Test
+  func partialUnknownOrInvalidMetadataIsRejected() {
+    let invalidContexts: [[String: Any]] = [
+      ["watchSyncAuthState": "set"],
+      ["watchSyncAuthVersion": 1],
+      ["watchSyncAuthState": "unknown", "watchSyncAuthVersion": 1],
+      ["watchSyncDeviceTokenState": "set", "watchSyncDeviceTokenVersion": -1],
+      ["watchSyncDeviceTokenState": "set", "watchSyncDeviceTokenVersion": 1.5],
+      [
+        "watchSyncAuthState": "cleared",
+        "watchSyncAuthVersion": 1,
+        "clerkClientServerFetchDate": Double.infinity,
+      ],
+    ]
+    for context in invalidContexts {
+      #expect(WatchSyncPayload(applicationContext: context) == nil)
+    }
+  }
+
+  @Test
+  func tokenWriteFailureSuppressesPairedClient() {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let previousClient = client(id: "previous", updatedAt: 100)
+    clerk.client = previousClient
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: InMemoryKeychain(),
+      identityKeychain: SetFailingKeychain(),
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "new-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: client(id: "new-client", updatedAt: 200),
+        serverFetchDate: nil,
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .phone, to: clerk)
+
+    #expect(clerk.client?.id == previousClient.id)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 50))
+  }
+
+  @Test
+  func metadataReadFailureRejectsPairedIdentityUpdate() {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let previousClient = client(id: "previous", updatedAt: 100)
+    clerk.client = previousClient
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: ReadFailingKeychain(),
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "new-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: client(id: "new-client", updatedAt: 200),
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(payload, from: .phone, to: clerk)
+
+    #expect(clerk.client?.id == previousClient.id)
+  }
+
+  @Test
+  func failedAuthMetadataSaveDoesNotAdvanceAcceptedGeneration() throws {
+    let keychain = PromotionFailingKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    let coordinator = WatchConnectivityCoordinator()
+    let previousClient = client(id: "previous", updatedAt: 100)
+    let nextClient = client(id: "next", updatedAt: 200)
+    var record = WatchSyncMetadataRecord.empty
+    record.authState = "set"
+    record.authVersion = 1
+    record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
+      client: previousClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try store.save(record)
+
+    #expect(throws: PromotionFailingKeychain.Failure.self) {
+      try coordinator.persistAuthState(
+        "set",
+        version: WatchSyncVersion(rawValue: 2),
+        client: nextClient,
+        serverDate: Date(timeIntervalSince1970: 200),
+        keychain: keychain
+      )
+    }
+
+    #expect(try coordinator.currentAuthVersion(keychain: keychain) == WatchSyncVersion(rawValue: 1))
+    #expect(try store.load().authVersion == 1)
+
+    keychain.failWrites = false
+    try coordinator.persistAuthState(
+      "set",
+      version: WatchSyncVersion(rawValue: 2),
+      client: nextClient,
+      serverDate: Date(timeIntervalSince1970: 200),
+      keychain: keychain
+    )
+
+    #expect(try coordinator.currentAuthVersion(keychain: keychain) == WatchSyncVersion(rawValue: 2))
+    #expect(try store.load().authVersion == 2)
+  }
+
+  @Test
+  func failedSharedIdentityMetadataSaveDoesNotAdvanceAcceptedGeneration() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let metadataKeychain = PromotionFailingKeychain()
+    let fallbackKeychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: metadataKeychain)
+    let coordinator = WatchConnectivityCoordinator()
+    let previousClient = client(id: "previous", updatedAt: 100)
+    let nextClient = client(id: "next", updatedAt: 200)
+    var record = WatchSyncMetadataRecord.empty
+    record.authState = "set"
+    record.authVersion = 1
+    record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
+      client: previousClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try store.save(record)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: fallbackKeychain,
+      appLocalKeychain: metadataKeychain,
+      identityKeychain: fallbackKeychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.client = nextClient
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 200)
+
+    #expect(throws: PromotionFailingKeychain.Failure.self) {
+      try coordinator.handle(.identityDidChange, from: clerk)
+    }
+
+    #expect(
+      try coordinator.currentAuthVersion(keychain: clerk.dependencies.watchSyncKeychain)
+        == WatchSyncVersion(rawValue: 1)
+    )
+    #expect(try store.load().authVersion == 1)
+
+    metadataKeychain.failWrites = false
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    #expect(
+      try coordinator.currentAuthVersion(keychain: clerk.dependencies.watchSyncKeychain)
+        == WatchSyncVersion(rawValue: 2)
+    )
+    #expect(try store.load().authVersion == 2)
+  }
+
+  @Test
+  func clearTombstoneWriteFailurePreservesExistingWatermark() throws {
+    let keychain = UpdateFailingKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    let client = client(id: "stale", updatedAt: 100)
+    let existing = try WatchSyncMetadataRecord(
+      deviceTokenState: "set",
+      deviceTokenVersion: 4,
+      deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
+      authState: "set",
+      authVersion: 4,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: client,
+        serverDate: Date(timeIntervalSince1970: 100)
+      )
+    )
+    try store.save(existing)
+    keychain.failNextExistingItemWrite()
+
+    #expect(throws: UpdateFailingKeychain.Failure.update) {
+      try store.saveClearTombstone(minimumVersion: 10)
+    }
+
+    #expect(try store.load() == existing)
+  }
+
+  @Test
+  func clearTombstoneReplacesCorruptMetadata() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    try keychain.set(
+      Data("not-json".utf8),
+      forKey: ClerkKeychainKey.watchSyncMetadata.rawValue
+    )
+
+    let tombstone = try store.saveClearTombstone(minimumVersion: 10)
+
+    #expect(tombstone.deviceTokenState == "cleared")
+    #expect(tombstone.deviceTokenVersion == 10)
+    #expect(tombstone.authState == "cleared")
+    #expect(tombstone.authVersion == 10)
+    #expect(try store.load() == tombstone)
+  }
+
+  @Test
+  func clearTombstonePropagatesMetadataReadFailure() {
+    let store = WatchSyncMetadataStore(keychain: ReadFailingKeychain())
+
+    #expect(throws: ReadFailingKeychain.Failure.read) {
+      try store.saveClearTombstone(minimumVersion: 10)
+    }
+  }
+
+  @Test
+  func pendingMetadataWatermarkRejectsRollbackAfterFinalWriteFailure() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let metadataKeychain = PromotionFailingKeychain()
+    let identityKeychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: metadataKeychain,
+      appLocalKeychain: metadataKeychain,
+      identityKeychain: identityKeychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let accepted = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "version-3-token",
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "version-3-client", updatedAt: 300),
+        serverFetchDate: Date(timeIntervalSince1970: 300),
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(accepted, from: .phone, to: clerk)
+
+    var metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
+    #expect(clerk.client?.id == "version-3-client")
+    #expect(metadata.authVersion == nil)
+    #expect(metadata.pendingAuthVersion == 3)
+    #expect(metadata.pendingDeviceTokenVersion == 3)
+
+    let stale = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "version-2-token",
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "version-2-client", updatedAt: 200),
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      environment: nil
+    )
+    WatchConnectivityCoordinator().apply(stale, from: .phone, to: clerk)
+
+    #expect(clerk.client?.id == "version-3-client")
+    #expect(try identityKeychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "version-3-token")
+
+    let conflictingSameVersion = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "conflicting-token",
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "conflicting-client", updatedAt: 301),
+        serverFetchDate: Date(timeIntervalSince1970: 301),
+        version: WatchSyncVersion(rawValue: 3)
+      ),
+      environment: nil
+    )
+    WatchConnectivityCoordinator().apply(conflictingSameVersion, from: .phone, to: clerk)
+
+    #expect(clerk.client?.id == "version-3-client")
+    #expect(try identityKeychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "version-3-token")
+
+    metadataKeychain.failWrites = false
+    WatchConnectivityCoordinator().apply(accepted, from: .phone, to: clerk)
+
+    metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
+    #expect(metadata.authVersion == 3)
+    #expect(metadata.deviceTokenVersion == 3)
+    #expect(!metadata.hasPendingIdentityMetadata)
+  }
+
+  @Test
+  func nonAuthoritativeExactRetryCanCompletePendingIdentityAfterSaveFailure() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let metadataKeychain = InMemoryKeychain()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: nil,
+      client: nil,
+      serverDate: nil
+    )
+    let identityStore = FailingOnceIdentityStore(identity: initialIdentity)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: metadataKeychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      clientService: MockClientService(get: { throw CancellationError() })
+    )
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "watch-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "watch-client", updatedAt: 100),
+        serverFetchDate: Date(timeIntervalSince1970: 100),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+    let coordinator = WatchConnectivityCoordinator()
+
+    coordinator.apply(payload, from: .watch, to: clerk)
+    await coordinator.waitForIdentityPublications()
+
+    var metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
+    #expect(clerk.client == nil)
+    #expect(metadata.pendingDeviceTokenVersion == 1)
+    #expect(metadata.pendingAuthVersion == 1)
+
+    coordinator.apply(payload, from: .watch, to: clerk)
+    await coordinator.waitForIdentityPublications()
+
+    metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
+    #expect(clerk.identityController.localDeviceToken == "watch-token")
+    #expect(clerk.client?.id == "watch-client")
+    #expect(try identityStore.load()?.client?.id == "watch-client")
+    #expect(metadata.deviceTokenVersion == 1)
+    #expect(metadata.authVersion == 1)
+    #expect(!metadata.hasPendingIdentityMetadata)
+  }
+
+  @Test
+  func acceptedAuthoritativeVersionIsIdempotentButRejectsDifferentPayload() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let accepted = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "accepted-token",
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "accepted-client", updatedAt: 400),
+        serverFetchDate: Date(timeIntervalSince1970: 400),
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      environment: nil
+    )
+    let coordinator = WatchConnectivityCoordinator()
+
+    coordinator.apply(accepted, from: .phone, to: clerk)
+    coordinator.apply(accepted, from: .phone, to: clerk)
+
+    var metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenFingerprint != nil)
+    #expect(metadata.authFingerprint != nil)
+
+    let conflicting = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "conflicting-token",
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "conflicting-client", updatedAt: 401),
+        serverFetchDate: Date(timeIntervalSince1970: 401),
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      environment: nil
+    )
+    coordinator.apply(conflicting, from: .phone, to: clerk)
+
+    metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "accepted-token")
+    #expect(clerk.client?.id == "accepted-client")
+    #expect(metadata.deviceTokenVersion == 4)
+    #expect(metadata.authVersion == 4)
+  }
+
+  @Test
+  func acceptedMetadataCannotReplayAfterDurableIdentityWasCleared() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let staleClient = client(id: "stale-client", updatedAt: 400)
+    let staleDate = Date(timeIntervalSince1970: 400)
+    try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
+      deviceTokenState: "set",
+      deviceTokenVersion: 4,
+      deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-token"),
+      authState: "set",
+      authVersion: 4,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: staleClient,
+        serverDate: staleDate
+      )
+    ))
+    let stalePayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "stale-token",
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      clientUpdate: .snapshot(
+        client: staleClient,
+        serverFetchDate: staleDate,
+        version: WatchSyncVersion(rawValue: 4)
+      ),
+      environment: nil
+    )
+
+    WatchConnectivityCoordinator().apply(stalePayload, from: .phone, to: clerk)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func canceledRefreshCompletionCannotClearReplacementRefreshState() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let coordinator = WatchConnectivityCoordinator()
+    let canceledTaskID = UUID()
+    let replacementTaskID = UUID()
+
+    #expect(coordinator.markRefreshScheduled(canceledTaskID))
+    try coordinator.handle(.localStorageDidClear, from: clerk)
+    #expect(coordinator.markRefreshScheduled(replacementTaskID))
+
+    coordinator.clearRefreshScheduled(canceledTaskID)
+
+    #expect(!coordinator.markRefreshScheduled(UUID()))
+    coordinator.clearRefreshScheduled(replacementTaskID)
+  }
+
+  @Test
+  func corruptedMetadataRejectsPairedIdentityUpdate() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set(Data("not-json".utf8), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    let previousClient = client(id: "previous", updatedAt: 100)
+    clerk.client = previousClient
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "new-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: client(id: "new-client", updatedAt: 200),
+        serverFetchDate: Date(timeIntervalSince1970: 200),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == previousClient.id)
+  }
+
+  @Test
+  func acceptedPayloadWithoutServerDateClearsPreviousDate() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(token: "new-token", version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: client(id: "new-client", updatedAt: 200),
+        serverFetchDate: nil,
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == "new-client")
+    #expect(clerk.lastClientServerFetchDate == nil)
+  }
+
+  @Test
+  func tokenClearPairedWithActiveClientIsRejectedAsOneTransition() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    let previousClient = client(id: "previous", updatedAt: 100)
+    clerk.client = previousClient
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 1)),
+      clientUpdate: .snapshot(
+        client: client(id: "invalid", updatedAt: 200),
+        serverFetchDate: nil,
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == previousClient.id)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "old-token")
+  }
+
   private func client(id: String, signInId: String? = nil, updatedAt: TimeInterval, lastActiveSessionId: String? = nil) -> Client {
     var client = Client.mockSignedOut
     client.id = id
@@ -561,5 +1488,179 @@ struct WatchSyncPayloadTests {
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
+  }
+}
+
+private final class MetadataReadCountingKeychain: @unchecked Sendable, KeychainStorage {
+  private let lock = NSLock()
+  private let backing = InMemoryKeychain()
+  private var metadataReads = 0
+
+  var metadataReadCount: Int {
+    lock.withLock { metadataReads }
+  }
+
+  func resetMetadataReadCount() {
+    lock.withLock { metadataReads = 0 }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    if key == ClerkKeychainKey.watchSyncMetadata.rawValue {
+      lock.withLock { metadataReads += 1 }
+    }
+    return try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+private actor AsyncGate {
+  private var isOpen = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func wait() async {
+    guard !isOpen else { return }
+    await withCheckedContinuation { continuation = $0 }
+  }
+
+  func open() {
+    isOpen = true
+    continuation?.resume()
+    continuation = nil
+  }
+}
+
+private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case read
+  }
+
+  func set(_: Data, forKey _: String) throws {}
+
+  func data(forKey _: String) throws -> Data? {
+    throw Failure.read
+  }
+
+  func deleteItem(forKey _: String) throws {}
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw Failure.read
+  }
+}
+
+private final class FailingOnceIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
+  enum Failure: Error {
+    case save
+  }
+
+  private let lock = NSLock()
+  private var record: SharedSessionLocalIdentityRecord?
+  private var shouldFailNextSave = true
+
+  init(identity: SharedSessionLocalIdentity) {
+    record = SharedSessionLocalIdentityRecord(
+      acceptedIdentity: identity,
+      pendingPublication: nil
+    )
+  }
+
+  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
+    lock.withLock { record }
+  }
+
+  func updateRecord(
+    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
+  ) throws {
+    try lock.withLock {
+      let updated = try update(record)
+      if shouldFailNextSave, updated?.acceptedIdentity != record?.acceptedIdentity {
+        shouldFailNextSave = false
+        throw Failure.save
+      }
+      record = updated
+    }
+  }
+}
+
+private final class PromotionFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case write
+  }
+
+  private let lock = NSLock()
+  private let backing = InMemoryKeychain()
+  private var successfulWrites = 0
+  var failWrites = true
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    if failWrites, successfulWrites >= 1 {
+      throw Failure.write
+    }
+    try backing.set(data, forKey: key)
+    successfulWrites += 1
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+private final class UpdateFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case update
+  }
+
+  private let lock = NSLock()
+  private let backing = InMemoryKeychain()
+  private var shouldFailNextExistingItemWrite = false
+
+  func failNextExistingItemWrite() {
+    lock.withLock {
+      shouldFailNextExistingItemWrite = true
+    }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try lock.withLock {
+      if shouldFailNextExistingItemWrite,
+         try backing.hasItem(forKey: key)
+      {
+        shouldFailNextExistingItemWrite = false
+        throw Failure.update
+      }
+      try backing.set(data, forKey: key)
+    }
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
   }
 }
