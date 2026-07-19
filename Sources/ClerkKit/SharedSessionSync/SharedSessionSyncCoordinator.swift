@@ -460,14 +460,13 @@ extension SharedSessionSyncCoordinator {
       guard let self else {
         return ReconciliationResult(didChange: false, succeeded: false)
       }
-      let result = await runReconciliationLoop()
-      recordInitialReconciliationResult(result, taskID: taskID)
-      finishReconciliationTask(taskID)
-      return result
+      return await runReconciliationLoop()
     }
-    let task = Task { @MainActor in
+    let task = Task { @MainActor [weak self] in
       let result = await (try? operation.value)
         ?? ReconciliationResult(didChange: false, succeeded: false)
+      self?.recordInitialReconciliationResult(result, taskID: taskID)
+      self?.finishReconciliationTask(taskID)
       return result.didChange
     }
     reconciliationTaskID = taskID

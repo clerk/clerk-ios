@@ -27,6 +27,11 @@ public final class Clerk {
   /// Private shared instance that is set during configuration.
   private static var _shared: Clerk?
 
+  /// The installed logging configuration, when Clerk has completed configuration.
+  static var installedLoggingConfiguration: ClerkLogger.Configuration? {
+    _shared.map { ClerkLogger.Configuration(options: $0.options) }
+  }
+
   private static var isRuntimeReconfigurationInProgress = false
 
   private struct ReconfigurationRollbackState {
@@ -566,9 +571,7 @@ extension Clerk {
       return
     }
 
-    guard let shared = _shared else {
-      return
-    }
+    guard let shared = _shared else { return }
 
     await shared.cleanupManagersAndDrainCache()
     await SessionTokenFetcher.shared.reset()

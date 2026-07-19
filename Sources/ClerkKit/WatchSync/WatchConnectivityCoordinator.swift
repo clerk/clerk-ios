@@ -83,28 +83,34 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
         return
       }
 
-      try persistAuthState(
+      let metadata = try persistAuthState(
         client == nil ? "cleared" : "set",
-        version: nextAuthVersion(keychain: clerk.dependencies.watchSyncKeychain),
+        version: nil,
         client: client,
         serverDate: clerk.lastClientServerFetchDate,
         keychain: clerk.dependencies.watchSyncKeychain
       )
-      syncCurrentState(from: clerk)
+      try syncCurrentState(from: clerk, metadata: metadata)
     case .environmentDidChange:
       guard !isApplyingRemotePayload else { return }
       syncCurrentState(from: clerk)
     case let .deviceTokenDidChange(previousToken, token):
-      if previousToken != token {
+      let metadata: WatchSyncMetadataRecord? = if previousToken != token {
         try persistDeviceTokenState(
           token == nil ? "cleared" : "set",
           deviceToken: token,
-          version: nextDeviceTokenVersion(keychain: clerk.dependencies.watchSyncKeychain),
+          version: nil,
           keychain: clerk.dependencies.watchSyncKeychain
         )
+      } else {
+        nil
       }
 
-      syncCurrentState(from: clerk)
+      if let metadata {
+        try syncCurrentState(from: clerk, metadata: metadata)
+      } else {
+        syncCurrentState(from: clerk)
+      }
     case .identityDidChange:
       guard !isApplyingRemotePayload else { return }
       let keychain = clerk.dependencies.watchSyncKeychain

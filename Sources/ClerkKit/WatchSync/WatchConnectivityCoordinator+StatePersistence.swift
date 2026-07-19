@@ -232,28 +232,28 @@ extension WatchConnectivityCoordinator {
     )
   }
 
-  func nextAuthVersion(keychain: any KeychainStorage) throws -> WatchSyncVersion {
-    try readAuthVersion(keychain: keychain).next()
-  }
-
   func persistAuthState(
     _ state: String,
-    version: WatchSyncVersion,
+    version: WatchSyncVersion?,
     client: Client?,
     serverDate: Date?,
     keychain: any KeychainStorage
-  ) throws {
+  ) throws -> WatchSyncMetadataRecord {
     let store = WatchSyncMetadataStore(keychain: keychain)
     var record = try store.load()
+    let resolvedVersion = try version ?? WatchSyncVersion(
+      rawValue: record.effectiveAuthVersion
+    ).next()
     record.authState = state
-    record.authVersion = version.rawValue
+    record.authVersion = resolvedVersion.rawValue
     record.authFingerprint = try Self.authFingerprint(
       client: client,
       serverDate: serverDate
     )
     record.discardPendingAuth()
     try store.save(record)
-    setAuthGeneration(version)
+    setAuthGeneration(resolvedVersion)
+    return record
   }
 
   func stagePendingWatchMetadata(

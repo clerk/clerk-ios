@@ -215,6 +215,49 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func localClientChangeUsesOneMetadataSnapshot() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = MetadataReadCountingKeychain()
+    try WatchSyncMetadataStore(keychain: keychain).save(.empty)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.client = .mock
+    let coordinator = WatchConnectivityCoordinator()
+    keychain.resetMetadataReadCount()
+
+    try coordinator.handle(.clientDidChange(previous: nil, current: clerk.client), from: clerk)
+
+    #expect(keychain.metadataReadCount == 1)
+  }
+
+  @Test
+  func localDeviceTokenChangeUsesOneMetadataSnapshot() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = MetadataReadCountingKeychain()
+    try keychain.set("new-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(.empty)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let coordinator = WatchConnectivityCoordinator()
+    keychain.resetMetadataReadCount()
+
+    try coordinator.handle(
+      .deviceTokenDidChange(previous: "old-token", current: "new-token"),
+      from: clerk
+    )
+
+    #expect(keychain.metadataReadCount == 1)
+  }
+
+  @Test
   func watchTokenClearCannotSignOutAnActivePhone() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -1025,7 +1068,7 @@ struct WatchSyncPayloadTests {
     try store.save(record)
 
     #expect(throws: PromotionFailingKeychain.Failure.self) {
-      try coordinator.persistAuthState(
+      _ = try coordinator.persistAuthState(
         "set",
         version: WatchSyncVersion(rawValue: 2),
         client: nextClient,
@@ -1038,7 +1081,7 @@ struct WatchSyncPayloadTests {
     #expect(try store.load().authVersion == 1)
 
     keychain.failWrites = false
-    try coordinator.persistAuthState(
+    _ = try coordinator.persistAuthState(
       "set",
       version: WatchSyncVersion(rawValue: 2),
       client: nextClient,

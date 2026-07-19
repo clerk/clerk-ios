@@ -1946,6 +1946,50 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func localClearDoesNotStrandCanceledQueuedReconciliation() async throws {
+    let backend = TestSlotBackend()
+    backend.suspendNextSave()
+    let node = try makeNode(owner: "app.a", backend: backend)
+    let peer = try makeNode(owner: "app.b", backend: backend)
+    let publication = Task { @MainActor in
+      try await node.coordinator.publishLocalIdentity(
+        state: .present,
+        deviceToken: "stale-token",
+        client: makeClient(id: "stale-client"),
+        serverDate: nil
+      )
+    }
+    try await waitUntil { backend.isSaveSuspended }
+
+    let canceledReconciliation = Task { @MainActor in
+      await node.coordinator.reloadFromSharedStorage()
+    }
+    node.coordinator.beginLocalClear()
+    let deletion = Task { @MainActor in
+      try await node.coordinator.deleteOwnSlotDuringLocalClear()
+    }
+    backend.resumeSuspendedSave(failing: false)
+
+    await #expect(throws: CancellationError.self) {
+      try await publication.value
+    }
+    _ = await canceledReconciliation.value
+    try await deletion.value
+    node.coordinator.endLocalClear()
+
+    try await peer.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "peer-token",
+      client: makeClient(id: "peer-client"),
+      serverDate: nil
+    )
+
+    #expect(await node.coordinator.reloadFromSharedStorage())
+    #expect(node.clerk.client?.id == "peer-client")
+    #expect(node.coordinator.currentDeviceToken == "peer-token")
+  }
+
+  @Test
   func localClearBarrierRemainsActiveAfterOwnerSlotDeletion() async throws {
     let backend = TestSlotBackend()
     let node = try makeNode(owner: "app.a", backend: backend)
@@ -1971,6 +2015,45 @@ struct SharedSessionSyncTests {
     #expect(
       backend.allSlots().contains { $0.slotOwnerIdentifier == "app.a" } == false
     )
+  }
+
+  @Test
+  func failedOwnerSlotDeletionKeepsLocalClearBarrierUntilRetrySucceeds() async throws {
+    let backend = TestSlotBackend()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "client"),
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: initialIdentity
+    )
+    try await node.coordinator.publishLocalIdentity(
+      state: initialIdentity.state,
+      deviceToken: initialIdentity.deviceToken,
+      client: initialIdentity.client,
+      serverDate: initialIdentity.serverDate
+    )
+    backend.failDeletesForOwners.insert("app.a")
+
+    do {
+      try await node.clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected owner-slot deletion failure.")
+    } catch {}
+
+    #expect(node.clerk.client == nil)
+    #expect(backend.allSlots().isEmpty == false)
+    await #expect(throws: CancellationError.self) {
+      _ = try await node.coordinator.captureRequestIdentity()
+    }
+
+    backend.failDeletesForOwners.remove("app.a")
+    try await node.clerk.clearAllKeychainItemsAndWait()
+
+    #expect(backend.allSlots().isEmpty)
   }
 
   @Test
@@ -2181,6 +2264,7 @@ private final class TestSlotBackend: @unchecked Sendable {
   enum Failure: Error {
     case read
     case save
+    case delete
   }
 
   private let lock = NSLock()
@@ -2203,6 +2287,7 @@ private final class TestSlotBackend: @unchecked Sendable {
 
   var beforeFailingRead: (@Sendable () -> Void)?
   var failSavesForOwners: Set<String> = []
+  var failDeletesForOwners: Set<String> = []
   var futureSchemaOwners: Set<String> = []
   var saveDelay: TimeInterval = 0
 
@@ -2315,9 +2400,10 @@ private final class TestSlotBackend: @unchecked Sendable {
     saveOperations += 1
   }
 
-  func delete(owner: String) {
+  func delete(owner: String) throws {
     lock.lock()
     defer { lock.unlock() }
+    guard !failDeletesForOwners.contains(owner) else { throw Failure.delete }
     slots.removeValue(forKey: owner)
   }
 
@@ -2363,7 +2449,7 @@ private struct TestOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func deleteOwnSlot() throws {
-    backend.delete(owner: owner)
+    try backend.delete(owner: owner)
   }
 }
 

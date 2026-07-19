@@ -22,6 +22,7 @@ extension Clerk {
     let clearOperation: Task<Void, Error>
     let identityClear: ClerkIdentityController.StorageClearContext
     let cacheManager: CacheManager?
+    let loggingConfiguration: ClerkLogger.Configuration
   }
 
   private static let legacySharedCredentialKeys: [ClerkKeychainKey] = [
@@ -102,7 +103,11 @@ extension Clerk {
         try await finishKeychainClear(pendingClear)
         result = .success(())
       } catch {
-        ClerkLogger.logError(error, message: "Failed to clear all Clerk Keychain items")
+        ClerkLogger.logError(
+          error,
+          message: "Failed to clear all Clerk Keychain items",
+          configuration: pendingClear.loggingConfiguration
+        )
         result = .failure(error)
       }
       guard clerk.keychainClearTaskID == taskID else {
@@ -120,6 +125,7 @@ extension Clerk {
   @MainActor
   private static func beginKeychainClear(for clerk: Clerk) -> PendingKeychainClear {
     let dependencies = clerk.dependencies
+    let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
     let cacheManager = clerk.cacheManager
     cacheManager?.freezePersistence()
     let identityClear = clerk.identityController.beginStorageClear()
@@ -130,7 +136,11 @@ extension Clerk {
         _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
           .saveClearTombstone()
       } catch {
-        ClerkLogger.logError(error, message: "Failed to preserve the Watch clear watermark")
+        ClerkLogger.logError(
+          error,
+          message: "Failed to preserve the Watch clear watermark",
+          configuration: loggingConfiguration
+        )
         initialFailedOperations.append("preserve Watch clear watermark")
       }
     }
@@ -141,23 +151,43 @@ extension Clerk {
           through: identityClear.invalidatedThroughRevision
         )
       } catch {
-        ClerkLogger.logError(error, message: "Failed to synchronously delete Clerk's atomic identity")
+        ClerkLogger.logError(
+          error,
+          message: "Failed to synchronously delete Clerk's atomic identity",
+          configuration: loggingConfiguration
+        )
         initialFailedOperations.append("delete atomic identity")
       }
     }
     let preservedKeys: Set<ClerkKeychainKey> = usesAtomicLocalIdentity
       ? [.sharedSessionSyncAdopted, .watchSyncMetadata]
       : [.sharedSessionSyncAdopted]
-    clearAllKeychainItems(in: dependencies.appLocalKeychain, preserving: preservedKeys)
-    clearAllKeychainItems(in: dependencies.identityKeychain, preserving: preservedKeys)
-    clearKeychainItems(legacySharedCredentialKeys, in: dependencies.keychain)
+    clearAllKeychainItems(
+      in: dependencies.appLocalKeychain,
+      preserving: preservedKeys,
+      configuration: loggingConfiguration
+    )
+    clearAllKeychainItems(
+      in: dependencies.identityKeychain,
+      preserving: preservedKeys,
+      configuration: loggingConfiguration
+    )
+    clearKeychainItems(
+      legacySharedCredentialKeys,
+      in: dependencies.keychain,
+      configuration: loggingConfiguration
+    )
     let clearOperation = clerk.identityController.enqueueLocalOperation { operationRevision in
       var failedOperations = initialFailedOperations
       do {
         try await clerk.identityController
           .deleteCapturedOwnerSlotAfterStorageClear(identityClear)
       } catch {
-        ClerkLogger.logError(error, message: "Failed to withdraw Clerk's shared-session owner slot")
+        ClerkLogger.logError(
+          error,
+          message: "Failed to withdraw Clerk's shared-session owner slot",
+          configuration: loggingConfiguration
+        )
         failedOperations.append("withdraw shared-session owner slot")
       }
 
@@ -165,7 +195,8 @@ extension Clerk {
       do {
         try clearAllKeychainItemsStrictly(
           in: dependencies.appLocalKeychain,
-          preserving: preservedKeys
+          preserving: preservedKeys,
+          configuration: loggingConfiguration
         )
       } catch {
         failedOperations.append("clear app-local Keychain")
@@ -173,7 +204,8 @@ extension Clerk {
       do {
         try clearAllKeychainItemsStrictly(
           in: dependencies.identityKeychain,
-          preserving: preservedKeys
+          preserving: preservedKeys,
+          configuration: loggingConfiguration
         )
       } catch {
         failedOperations.append("clear identity Keychain")
@@ -181,7 +213,8 @@ extension Clerk {
       do {
         try clearKeychainItemsStrictly(
           legacySharedCredentialKeys,
-          in: dependencies.keychain
+          in: dependencies.keychain,
+          configuration: loggingConfiguration
         )
       } catch {
         failedOperations.append("clear legacy shared credentials")
@@ -191,7 +224,11 @@ extension Clerk {
         do {
           _ = try await localIdentityIO.delete(operationRevision: operationRevision)
         } catch {
-          ClerkLogger.logError(error, message: "Failed to delete Clerk's atomic identity")
+          ClerkLogger.logError(
+            error,
+            message: "Failed to delete Clerk's atomic identity",
+            configuration: loggingConfiguration
+          )
           failedOperations.append("delete atomic identity")
         }
       }
@@ -205,7 +242,8 @@ extension Clerk {
       dependencies: dependencies,
       clearOperation: clearOperation,
       identityClear: identityClear,
-      cacheManager: cacheManager
+      cacheManager: cacheManager,
+      loggingConfiguration: loggingConfiguration
     )
   }
 
@@ -236,7 +274,8 @@ extension Clerk {
   @MainActor
   static func clearAllKeychainItems(
     in keychain: any KeychainStorage,
-    preserving preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted]
+    preserving preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted],
+    configuration: ClerkLogger.Configuration? = nil
   ) {
     // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases where !preservedKeys.contains(key) {
@@ -246,7 +285,8 @@ extension Clerk {
         // Log errors but continue deleting remaining items
         ClerkLogger.logError(
           error,
-          message: "Failed to delete keychain item '\(key.rawValue)'. This is non-critical."
+          message: "Failed to delete keychain item '\(key.rawValue)'. This is non-critical.",
+          configuration: configuration
         )
       }
     }
@@ -255,7 +295,8 @@ extension Clerk {
   @MainActor
   private static func clearKeychainItems(
     _ keys: [ClerkKeychainKey],
-    in keychain: any KeychainStorage
+    in keychain: any KeychainStorage,
+    configuration: ClerkLogger.Configuration? = nil
   ) {
     for key in keys {
       do {
@@ -263,7 +304,8 @@ extension Clerk {
       } catch {
         ClerkLogger.logError(
           error,
-          message: "Failed to delete legacy shared Keychain item '\(key.rawValue)'."
+          message: "Failed to delete legacy shared Keychain item '\(key.rawValue)'.",
+          configuration: configuration
         )
       }
     }
@@ -272,7 +314,8 @@ extension Clerk {
   @MainActor
   private static func clearKeychainItemsStrictly(
     _ keys: [ClerkKeychainKey],
-    in keychain: any KeychainStorage
+    in keychain: any KeychainStorage,
+    configuration: ClerkLogger.Configuration? = nil
   ) throws {
     var failures: [String] = []
     for key in keys {
@@ -282,7 +325,8 @@ extension Clerk {
         failures.append(key.rawValue)
         ClerkLogger.logError(
           error,
-          message: "Failed to delete legacy shared Keychain item '\(key.rawValue)'."
+          message: "Failed to delete legacy shared Keychain item '\(key.rawValue)'.",
+          configuration: configuration
         )
       }
     }
@@ -294,7 +338,8 @@ extension Clerk {
   @MainActor
   static func clearAllKeychainItemsStrictly(
     in keychain: any KeychainStorage,
-    preserving preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted]
+    preserving preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted],
+    configuration: ClerkLogger.Configuration? = nil
   ) throws {
     var failures: [String] = []
 
@@ -305,7 +350,8 @@ extension Clerk {
         failures.append(key.rawValue)
         ClerkLogger.logError(
           error,
-          message: "Failed to delete keychain item '\(key.rawValue)' during Clerk reconfiguration."
+          message: "Failed to delete keychain item '\(key.rawValue)' during Clerk reconfiguration.",
+          configuration: configuration
         )
       }
     }
@@ -322,6 +368,9 @@ extension Clerk {
     in dependencies: any Dependencies,
     deleteSharedSessionOwnerSlot: Bool = true
   ) async throws {
+    let loggingConfiguration = ClerkLogger.Configuration(
+      options: dependencies.configurationManager.options
+    )
     _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
       .saveClearTombstone()
     let preservedKeys: Set<ClerkKeychainKey> = [
@@ -334,15 +383,18 @@ extension Clerk {
 
     try clearAllKeychainItemsStrictly(
       in: dependencies.appLocalKeychain,
-      preserving: preservedKeys
+      preserving: preservedKeys,
+      configuration: loggingConfiguration
     )
     try clearAllKeychainItemsStrictly(
       in: dependencies.identityKeychain,
-      preserving: preservedKeys
+      preserving: preservedKeys,
+      configuration: loggingConfiguration
     )
     try clearKeychainItemsStrictly(
       legacySharedCredentialKeys,
-      in: dependencies.keychain
+      in: dependencies.keychain,
+      configuration: loggingConfiguration
     )
     if let localIdentityIO = dependencies.atomicIdentityIO {
       try await localIdentityIO.delete()
