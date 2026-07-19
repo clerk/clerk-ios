@@ -2057,6 +2057,53 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func cleanupFailureAfterOwnerSlotDeletionReleasesLocalClearBarrier() async throws {
+    let backend = TestSlotBackend()
+    let keychain = SharedSessionDeleteFailingKeychain(
+      failingKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "client"),
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: initialIdentity,
+      keychain: keychain
+    )
+    let peer = try makeNode(owner: "app.b", backend: backend)
+    try await node.coordinator.publishLocalIdentity(
+      state: initialIdentity.state,
+      deviceToken: initialIdentity.deviceToken,
+      client: initialIdentity.client,
+      serverDate: initialIdentity.serverDate
+    )
+
+    do {
+      try await node.clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected keychain cleanup failure.")
+    } catch {}
+
+    #expect(
+      backend.allSlots().contains { $0.slotOwnerIdentifier == "app.a" } == false
+    )
+
+    try await peer.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "peer-token",
+      client: makeClient(id: "peer-client"),
+      serverDate: nil
+    )
+
+    #expect(await node.coordinator.reloadFromSharedStorage())
+    #expect(node.clerk.client?.id == "peer-client")
+    #expect(node.coordinator.currentDeviceToken == "peer-token")
+  }
+
+  @Test
   func watchMetadataIsNotPromotedWhenPeerEventWinsPublication() async throws {
     let backend = TestSlotBackend()
     let node = try makeNode(owner: "app.a", backend: backend)
@@ -2133,10 +2180,11 @@ struct SharedSessionSyncTests {
     initialIdentity: SharedSessionLocalIdentity? = nil,
     hydrateInitialIdentity: Bool = true,
     localStore suppliedLocalStore: TestLocalIdentityStore? = nil,
+    keychain suppliedKeychain: (any KeychainStorage)? = nil,
     clientService: (any ClientServiceProtocol)? = nil
   ) throws -> TestNode {
     let clerk = Clerk()
-    let keychain = InMemoryKeychain()
+    let keychain = suppliedKeychain ?? InMemoryKeychain()
     let localStore = suppliedLocalStore ?? TestLocalIdentityStore()
     if let initialIdentity {
       try localStore.save(initialIdentity)
@@ -2450,6 +2498,36 @@ private struct TestOwnerSlotStore: SharedSessionSlotStoring {
 
   func deleteOwnSlot() throws {
     try backend.delete(owner: owner)
+  }
+}
+
+private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case delete
+  }
+
+  private let backing = InMemoryKeychain()
+  private let failingKey: String
+
+  init(failingKey: String) {
+    self.failingKey = failingKey
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    guard key != failingKey else { throw Failure.delete }
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
   }
 }
 

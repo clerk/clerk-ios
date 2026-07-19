@@ -10,16 +10,29 @@ import Foundation
 extension Clerk {
   private struct KeychainClearError: LocalizedError {
     let failedOperations: [String]
+    let sharedTransportWithdrawn: Bool
+
+    init(
+      failedOperations: [String],
+      sharedTransportWithdrawn: Bool = false
+    ) {
+      self.failedOperations = failedOperations
+      self.sharedTransportWithdrawn = sharedTransportWithdrawn
+    }
 
     var errorDescription: String? {
       "Unable to complete Clerk Keychain clear: \(failedOperations.joined(separator: ", "))."
     }
   }
 
+  private struct KeychainClearResult {
+    let sharedTransportWithdrawn: Bool
+  }
+
   private struct PendingKeychainClear {
     let clerk: Clerk
     let dependencies: any Dependencies
-    let clearOperation: Task<Void, Error>
+    let clearOperation: Task<KeychainClearResult, Error>
     let identityClear: ClerkIdentityController.StorageClearContext
     let cacheManager: CacheManager?
     let loggingConfiguration: ClerkLogger.Configuration
@@ -179,8 +192,9 @@ extension Clerk {
     )
     let clearOperation = clerk.identityController.enqueueLocalOperation { operationRevision in
       var failedOperations = initialFailedOperations
+      var sharedTransportWithdrawn = false
       do {
-        try await clerk.identityController
+        sharedTransportWithdrawn = try await clerk.identityController
           .deleteCapturedOwnerSlotAfterStorageClear(identityClear)
       } catch {
         ClerkLogger.logError(
@@ -234,8 +248,14 @@ extension Clerk {
       }
 
       guard failedOperations.isEmpty else {
-        throw KeychainClearError(failedOperations: failedOperations)
+        throw KeychainClearError(
+          failedOperations: failedOperations,
+          sharedTransportWithdrawn: sharedTransportWithdrawn
+        )
       }
+      return KeychainClearResult(
+        sharedTransportWithdrawn: sharedTransportWithdrawn
+      )
     }
     return PendingKeychainClear(
       clerk: clerk,
@@ -250,18 +270,21 @@ extension Clerk {
   @MainActor
   private static func finishKeychainClear(_ pendingClear: PendingKeychainClear) async throws {
     let result: Result<Void, any Error>
-    let succeeded: Bool
+    let sharedTransportWithdrawn: Bool
     do {
-      try await pendingClear.clearOperation.value
+      let clearResult = try await pendingClear.clearOperation.value
       result = .success(())
-      succeeded = true
+      sharedTransportWithdrawn = clearResult.sharedTransportWithdrawn
+    } catch let error as KeychainClearError {
+      result = .failure(error)
+      sharedTransportWithdrawn = error.sharedTransportWithdrawn
     } catch {
       result = .failure(error)
-      succeeded = false
+      sharedTransportWithdrawn = false
     }
     pendingClear.clerk.identityController.finishStorageClear(
       pendingClear.identityClear,
-      succeeded: succeeded
+      sharedTransportWithdrawn: sharedTransportWithdrawn
     )
     if pendingClear.clerk.dependencies === pendingClear.dependencies,
        pendingClear.clerk.cacheManager === pendingClear.cacheManager

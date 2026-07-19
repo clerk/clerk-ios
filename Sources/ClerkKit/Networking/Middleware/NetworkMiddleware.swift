@@ -176,26 +176,14 @@ extension URLRequest {
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-    URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(sequence, key: Self.clerkRequestSequenceKey)
   }
 
   mutating func setClerkClientResponseGeneration(_ generation: ClientResponseGeneration) {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-
-    URLProtocol.setProperty(
+    setClerkProperty(
       generation.propertyListValue,
-      forKey: Self.clerkClientResponseGenerationKey,
-      in: mutableRequest
+      key: Self.clerkClientResponseGenerationKey
     )
-    self = mutableRequest as URLRequest
   }
 
   mutating func setClerkSharedSessionBaseGeneration(_ generation: UInt64) {

@@ -234,10 +234,12 @@ struct SharedSessionLocalIdentityStore: SharedSessionLocalIdentityStoring {
   ) throws {
     let current = try loadRecordWithoutLocking()
     guard let updated = try update(current) else {
+      guard current != nil else { return }
       try keychain.deleteItem(forKey: Self.storageKey)
       return
     }
     let validated = try updated.validated()
+    guard validated != current else { return }
     try keychain.set(
       JSONEncoder.clerkEncoder.encode(validated),
       forKey: Self.storageKey

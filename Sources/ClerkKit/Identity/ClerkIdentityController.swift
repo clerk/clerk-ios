@@ -636,15 +636,17 @@ extension ClerkIdentityController {
 
   func deleteCapturedOwnerSlotAfterStorageClear(
     _ context: StorageClearContext
-  ) async throws {
-    try await context.sharedCoordinator?.deleteOwnSlotDuringLocalClear()
+  ) async throws -> Bool {
+    guard let sharedCoordinator = context.sharedCoordinator else { return true }
+    try await sharedCoordinator.deleteOwnSlotDuringLocalClear()
+    return true
   }
 
   func finishStorageClear(
     _ context: StorageClearContext,
-    succeeded: Bool
+    sharedTransportWithdrawn: Bool
   ) {
-    if succeeded {
+    if sharedTransportWithdrawn {
       context.sharedCoordinator?.endLocalClear()
     }
   }

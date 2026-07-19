@@ -47,7 +47,7 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
     ownerIdentifier: String,
     secItemClient: SystemKeychain.SecItemClient = .live,
     diagnostics: @escaping @Sendable (String) -> Void = {
-      ClerkLogger.info($0, force: true)
+      ClerkLogger.debug($0)
     }
   ) throws {
     guard let accessGroup = keychainConfig.normalizedAccessGroup else {

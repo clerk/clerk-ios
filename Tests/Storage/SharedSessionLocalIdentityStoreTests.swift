@@ -81,6 +81,31 @@ struct SharedSessionLocalIdentityStoreTests {
     #expect(try store.load()?.client?.id == "newer")
   }
 
+  @Test
+  func unchangedUpdateDoesNotRewriteKeychainRecord() throws {
+    let keychain = WriteCountingKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+    let identity = makeIdentity(clientID: "same")
+    try store.save(identity)
+    let setCountAfterInitialSave = keychain.setCount
+
+    try store.save(identity)
+
+    #expect(keychain.setCount == setCountAfterInitialSave)
+    #expect(try store.load() == identity)
+  }
+
+  @Test
+  func emptyClearPendingPublicationDoesNotDeleteKeychainRecord() throws {
+    let keychain = WriteCountingKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+
+    try store.clearPendingPublication()
+
+    #expect(keychain.deleteCount == 0)
+    #expect(try store.loadRecord() == nil)
+  }
+
   private func makeIdentity(clientID: String) -> SharedSessionLocalIdentity {
     var client = Client.mockSignedOut
     client.id = clientID
@@ -103,5 +128,42 @@ struct SharedSessionLocalIdentityStoreTests {
       client: identity.client,
       serverDate: identity.serverDate
     ).validated()
+  }
+}
+
+private final class WriteCountingKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let lock = NSLock()
+  private var sets = 0
+  private var deletes = 0
+
+  var setCount: Int {
+    lock.withLock { sets }
+  }
+
+  var deleteCount: Int {
+    lock.withLock { deletes }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.withLock {
+      sets += 1
+    }
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    lock.withLock {
+      deletes += 1
+    }
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
   }
 }
