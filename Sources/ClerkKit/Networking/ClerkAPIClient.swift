@@ -2,7 +2,7 @@ import Foundation
 
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
-  private struct ClerkRequestContext {
+  private struct ClerkRequestContext: Equatable {
     let clientResponseGeneration: ClientResponseGeneration?
     let sharedSessionBaseGeneration: UInt64?
     let isCanonicalClientRequest: Bool
@@ -100,10 +100,14 @@ actor APIClient {
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
       try await pipeline.prepareClerkRequest(&urlRequest)
+      let preparedContext = ClerkRequestContext(request: urlRequest)
       if let clerkRequestContext {
+        guard preparedContext == clerkRequestContext else {
+          throw APIClientError.identityChangedBeforeRetry
+        }
         clerkRequestContext.apply(to: &urlRequest)
       } else {
-        clerkRequestContext = ClerkRequestContext(request: urlRequest)
+        clerkRequestContext = preparedContext
       }
       try await pipeline.prepareCustomRequest(&urlRequest)
       try ensureCurrentRuntimeScope()
@@ -172,4 +176,5 @@ actor APIClient {
 
 enum APIClientError: Error {
   case invalidHTTPResponse
+  case identityChangedBeforeRetry
 }

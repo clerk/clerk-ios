@@ -125,8 +125,8 @@ enum AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId else {
-      throw ClerkClientError(message: "Client ID is unavailble.")
+    guard let clientId = await Clerk.shared.identityController.persistedClientID() else {
+      throw ClerkClientError(message: "Client ID is unavailable.")
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
     let assertion = try await createAssertion(payload: payload)
@@ -169,24 +169,5 @@ enum AppAttestHelper {
   @MainActor
   static func removeKeyId() throws {
     try keychain.deleteItem(forKey: keychainKey)
-  }
-
-  /// Retrieves the stored attestation client ID from the keychain.
-  ///
-  /// This needs to come from the keychain, because if the initial client request is blocked on app load,
-  /// the app wont have a client yet
-  @MainActor
-  static var clientId: String? {
-    let dependencies = Clerk.shared.dependencies
-    if let identity = try? dependencies.sharedSessionLocalIdentityStore?.load() {
-      return identity.client?.id
-    }
-    guard let clientData = try? dependencies.identityKeychain.data(
-      forKey: ClerkKeychainKey.cachedClient.rawValue
-    ) else {
-      return nil
-    }
-    let decoder = JSONDecoder.clerkDecoder
-    return try? decoder.decode(Client.self, from: clientData).id
   }
 }

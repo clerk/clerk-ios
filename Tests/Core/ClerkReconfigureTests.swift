@@ -316,7 +316,7 @@ struct ClerkReconfigureTests {
     let previousDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
       keychain: throwingKeychain,
-      sharedSessionLocalIdentityStore: localIdentityStore,
+      atomicIdentityStore: localIdentityStore,
       telemetryCollector: original.dependencies.telemetryCollector
     )
     original.performConfiguration(dependencies: previousDependencies)

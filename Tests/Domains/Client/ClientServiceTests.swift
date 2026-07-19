@@ -20,7 +20,8 @@ struct ClientServiceTests {
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
         .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
-      ]
+      ],
+      additionalHeaders: ["Authorization": "test-device-token"]
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
@@ -41,7 +42,8 @@ struct ClientServiceTests {
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
         .get: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: .mock, client: .mock)),
-      ]
+      ],
+      additionalHeaders: ["Authorization": "test-device-token"]
     )
     mock.register()
 

@@ -5,7 +5,7 @@
 
 import Foundation
 
-typealias SharedSessionLocalIdentity = SharedSessionIdentityPayload
+typealias SharedSessionLocalIdentity = ClerkIdentitySnapshot
 
 struct SharedSessionLocalIdentityRecord: Codable, Equatable {
   static let schemaVersion = 1

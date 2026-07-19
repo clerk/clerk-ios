@@ -7,17 +7,6 @@ import Foundation
 
 struct SharedSessionSyncAdoption {
   static let markerValue = "2"
-  private static let maximumSnapshotValidationRetries = 3
-
-  enum AdoptionError: Error, Equatable {
-    case unstableLegacyIdentity
-  }
-
-  private struct LegacyIdentitySnapshot: Equatable {
-    let token: Data?
-    let client: Data?
-    let serverDate: Data?
-  }
 
   private let destinationIdentity: any KeychainStorage
   private let destinationIdentityStore: any SharedSessionLocalIdentityStoring
@@ -72,84 +61,35 @@ struct SharedSessionSyncAdoption {
     )
   }
 
+  func markAdoptedWithoutMigratingCredentials() throws {
+    try destinationIdentity.set(
+      Self.markerValue,
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+  }
+
   private func loadCoherentIdentity(
     from keychain: any KeychainStorage
   ) throws -> SharedSessionLocalIdentity? {
-    let snapshot = try loadStableIdentitySnapshot(from: keychain)
-    let tokenData = snapshot.token
-    let clientData = snapshot.client
-    let serverDateData = snapshot.serverDate
-    guard tokenData != nil || clientData != nil || serverDateData != nil else {
+    guard let tokenData = try keychain.data(
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    ),
+      let deviceToken = decodeString(tokenData)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !deviceToken.isEmpty
+    else {
       return nil
     }
 
-    let deviceToken: String?
-    if let tokenData {
-      guard let decoded = decodeString(tokenData)?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !decoded.isEmpty
-      else {
-        return nil
-      }
-      deviceToken = decoded
-    } else {
-      deviceToken = nil
-    }
-
-    let client: Client?
-    if let clientData {
-      guard deviceToken != nil,
-            let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
-      else {
-        return nil
-      }
-      client = decoded
-    } else {
-      client = nil
-    }
-
-    let serverDate: Date?
-    if let serverDateData {
-      guard let decoded = decodeServerDate(serverDateData) else {
-        return nil
-      }
-      serverDate = decoded
-    } else {
-      serverDate = nil
-    }
-
-    guard deviceToken != nil || client != nil else {
-      return nil
-    }
-    return try? SharedSessionLocalIdentity(
-      state: client == nil ? .cleared : .present,
+    // Legacy token, Client, and date values were written as independent Keychain
+    // items, so no read protocol can prove that they belong to one revision. Keep
+    // only the credential needed for a canonical refresh and let that response
+    // establish the first atomic Client snapshot.
+    return try SharedSessionLocalIdentity(
+      state: .cleared,
       deviceToken: deviceToken,
-      client: client,
-      serverDate: serverDate
+      client: nil,
+      serverDate: nil
     ).validated()
-  }
-
-  private func loadStableIdentitySnapshot(
-    from keychain: any KeychainStorage
-  ) throws -> LegacyIdentitySnapshot {
-    var previous = try loadIdentitySnapshot(from: keychain)
-    for _ in 0 ..< Self.maximumSnapshotValidationRetries {
-      let current = try loadIdentitySnapshot(from: keychain)
-      if current == previous {
-        return current
-      }
-      previous = current
-    }
-    throw AdoptionError.unstableLegacyIdentity
-  }
-
-  private func loadIdentitySnapshot(
-    from keychain: any KeychainStorage
-  ) throws -> LegacyIdentitySnapshot {
-    try LegacyIdentitySnapshot(
-      token: keychain.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue),
-      client: keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue),
-      serverDate: keychain.data(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    )
   }
 
   private func migrateEnvironmentIfNeeded() throws {
@@ -208,15 +148,5 @@ struct SharedSessionSyncAdoption {
 
   private func decodeString(_ data: Data) -> String? {
     String(data: data, encoding: .utf8)
-  }
-
-  private func decodeServerDate(_ data: Data) -> Date? {
-    guard let value = decodeString(data),
-          let interval = TimeInterval(value),
-          interval.isFinite
-    else {
-      return nil
-    }
-    return Date(timeIntervalSince1970: interval)
   }
 }

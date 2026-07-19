@@ -18,14 +18,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
     let clerk = try runtimeScope.requireCurrentClerk()
-    let identity: SharedSessionRequestIdentitySnapshot
-    if let coordinator = clerk.sharedSessionSyncCoordinator {
-      try await coordinator.waitForInitialReconciliation()
-      await clerk.waitForPendingLocalIdentityOperations()
-      identity = try await coordinator.captureRequestIdentity()
-    } else {
-      identity = try await clerk.captureLocalRequestIdentity()
-    }
+    let identity = try await clerk.identityController.captureRequestIdentity()
     _ = try runtimeScope.requireCurrentClerk()
     request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
     request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
@@ -38,6 +31,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
 
     if let deviceToken = identity.deviceToken {
+      request.setClerkRequestDeviceToken(deviceToken)
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 

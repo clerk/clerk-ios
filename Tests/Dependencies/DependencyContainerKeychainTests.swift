@@ -4,6 +4,7 @@
 //
 
 @testable import ClerkKit
+import Foundation
 import Testing
 
 struct DependencyContainerKeychainTests {
@@ -67,4 +68,72 @@ struct DependencyContainerKeychainTests {
     #expect(container.keychain is MigratingKeychainStorage)
   }
   #endif
+
+  @Test
+  @MainActor
+  func constructingDisabledTransportDoesNotClearPendingPublication() throws {
+    let configuredService = "com.clerk.tests.pending.\(UUID().uuidString)"
+    let owner = "com.clerk.tests.app"
+    let options = Clerk.Options(
+      keychainConfig: .init(
+        service: configuredService,
+        accessGroup: "TEAMID.com.clerk.tests.shared"
+      )
+    )
+    let configuration = ConfigurationManager()
+    try configuration.configure(publishableKey: testPublishableKey, options: options)
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: configuration.frontendApiUrl,
+      publishableKey: configuration.publishableKey
+    )
+    let identityKeychain = SystemKeychain(
+      service: DependencyContainer.stableIdentityService(
+        configuredService: configuredService,
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: owner
+      )
+    )
+    let store = SharedSessionLocalIdentityStore(keychain: identityKeychain)
+    defer {
+      try? store.delete()
+      try? identityKeychain.deleteItem(
+        forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+      )
+    }
+    try identityKeychain.set(
+      SharedSessionSyncAdoption.markerValue,
+      forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+    )
+    let accepted = ClerkIdentitySnapshot(
+      state: .cleared,
+      deviceToken: "accepted-token",
+      client: nil,
+      serverDate: nil
+    )
+    try store.save(accepted)
+    try store.stagePendingPublication(
+      SharedSessionIdentityEvent(
+        id: UUID(),
+        originOwnerIdentifier: owner,
+        generation: 1,
+        state: .cleared,
+        deviceToken: "pending-token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: options,
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      persistentAdoptionEnabledOverride: true,
+      ownerIdentifierProvider: { owner }
+    )
+
+    #expect(try container.atomicIdentityStore?.loadPendingPublication() != nil)
+    try container.prepareForInstallationAfterIdentityProducersDrain()
+    #expect(try container.atomicIdentityStore?.loadPendingPublication() == nil)
+    #expect(try container.atomicIdentityStore?.load() == accepted)
+  }
 }

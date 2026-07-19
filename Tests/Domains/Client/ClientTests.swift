@@ -65,11 +65,11 @@ struct ClientTests {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       clientService: MockClientService(get: { nil })
     )
     Clerk.shared.client = nil
-    Clerk.shared.setSharedSessionIdentityIfNeeded(previous)
+    Clerk.shared.hydrateIdentityIfNeeded(previous)
 
     let client = try await Clerk.shared.refreshClient()
 
@@ -312,8 +312,8 @@ private final class CoherentIdentityRecordingObserver: ClerkInternalStateChangeO
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
     switch change {
     case .clientDidChange:
-      guard !clerk.isApplyingSharedSessionIdentity else { return }
-    case .deviceTokenDidChange, .sharedSessionIdentityDidChange:
+      guard !clerk.identityController.isApplyingIdentityTransition else { return }
+    case .deviceTokenDidChange, .identityDidChange:
       break
     case .environmentDidChange, .localStorageDidClear, .applicationDidEnterForeground:
       return
@@ -363,7 +363,7 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
 
   @MainActor
   func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
-    Clerk.shared.clearCachedClientStateAfterDeviceTokenChange()
+    Clerk.shared.identityController.clearCachedClientStateAfterDeviceTokenChange()
     return response
   }
 }

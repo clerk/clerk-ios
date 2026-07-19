@@ -9,9 +9,6 @@ extension Clerk {
   /// - Returns: `true` when the selected shared identity changed in memory.
   @discardableResult
   public func reloadFromSharedStorage() async -> Bool {
-    guard let sharedSessionSyncCoordinator else {
-      return false
-    }
-    return await sharedSessionSyncCoordinator.reloadFromSharedStorage()
+    await identityController.reloadPersistedState()
   }
 }

@@ -123,4 +123,64 @@ struct ClerkLoggerTests {
     ClerkLogger.error("Test error message")
     // If we get here, error() worked (it uses forceLog: true internally)
   }
+
+  @Test
+  func preInstallationCleanupUsesItsExplicitLoggerOptions() async throws {
+    await Clerk.resetSharedInstanceForTesting()
+    defer { configureClerkForTesting() }
+
+    let entries = LockIsolated<[LogEntry]>([])
+    let options = Clerk.Options(
+      loggerHandler: { entry in
+        entries.withValue { $0.append(entry) }
+      }
+    )
+    let keychain = PreInstallationDeleteFailingKeychain()
+    let clerk = Clerk()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: options
+    )
+
+    await #expect(throws: ClerkClientError.self) {
+      try await Clerk.clearLocalClerkStorageStrictly(in: dependencies)
+    }
+
+    let deadline = ContinuousClock.now + .seconds(1)
+    while entries.value.isEmpty, ContinuousClock.now < deadline {
+      await Task.yield()
+    }
+    let firstEntry = try #require(entries.value.first)
+    #expect(firstEntry.message.contains("Failed to delete keychain item"))
+  }
+}
+
+private final class PreInstallationDeleteFailingKeychain: @unchecked Sendable,
+  KeychainStorage
+{
+  enum Failure: Error {
+    case delete
+  }
+
+  private let backing = InMemoryKeychain()
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw Failure.delete
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
 }

@@ -30,8 +30,8 @@ struct ClientSyncResponseContext {
     currentDeviceToken: String?,
     currentClient: Client?,
     currentServerDate: Date?
-  ) throws -> SharedSessionIdentityPayload? {
-    let payload: SharedSessionIdentityPayload
+  ) throws -> ClerkIdentitySnapshot? {
+    let payload: ClerkIdentitySnapshot
     switch update {
     case .client(let client):
       guard let token = resolvedDeviceToken else {
@@ -40,14 +40,14 @@ struct ClientSyncResponseContext {
         }
         return nil
       }
-      payload = SharedSessionIdentityPayload(
+      payload = ClerkIdentitySnapshot(
         state: .present,
         deviceToken: token,
         client: client,
         serverDate: serverDate
       )
     case .explicitClear:
-      payload = SharedSessionIdentityPayload(
+      payload = ClerkIdentitySnapshot(
         state: .cleared,
         deviceToken: resolvedDeviceToken,
         client: nil,
@@ -60,7 +60,7 @@ struct ClientSyncResponseContext {
       else {
         return nil
       }
-      payload = SharedSessionIdentityPayload(
+      payload = ClerkIdentitySnapshot(
         state: currentClient == nil ? .cleared : .present,
         deviceToken: token,
         client: currentClient,
@@ -111,7 +111,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
         deviceTokenUpdate: deviceTokenUpdate
       ),
       deviceTokenUpdate: deviceTokenUpdate,
-      requestDeviceToken: request.value(forHTTPHeaderField: "Authorization"),
+      requestDeviceToken: request.clerkRequestDeviceToken,
       baseGeneration: request.clerkSharedSessionBaseGeneration,
       serverDate: response.serverDate,
       isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
@@ -120,15 +120,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     )
 
     let clerk = try await runtimeScope.requireCurrentClerk()
-    if let coordinator = await clerk.sharedSessionSyncCoordinator {
-      guard context.baseGeneration != nil else {
-        return
-      }
-      try await coordinator.handleNetworkResponse(context)
-      return
-    }
-
-    try await clerk.applyLocalIdentityResponse(context)
+    try await clerk.identityController.applyNetworkResponse(context)
   }
 
   static func classifyClientUpdate(

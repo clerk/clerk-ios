@@ -43,6 +43,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     try await middleware.prepare(&request)
 
     #expect(request.value(forHTTPHeaderField: "Authorization") == "test-device-token")
+    #expect(request.clerkRequestDeviceToken == "test-device-token")
   }
 
   @Test
@@ -59,10 +60,10 @@ struct ClerkHeaderRequestMiddlewareTests {
       apiClient: createMockAPIClient(
         runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
       ),
-      sharedSessionLocalIdentityStore: store,
+      atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.setSharedSessionIdentityIfNeeded(identity)
+    clerk.hydrateIdentityIfNeeded(identity)
     store.resetReadCount()
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
 
@@ -88,10 +89,10 @@ struct ClerkHeaderRequestMiddlewareTests {
       apiClient: createMockAPIClient(
         runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
       ),
-      sharedSessionLocalIdentityStore: store,
+      atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    let localIdentityIO = try #require(clerk.dependencies.sharedSessionLocalIdentityIO)
+    let localIdentityIO = try #require(clerk.dependencies.atomicIdentityIO)
     let gate = RequestIdentityOperationGate()
     let identity = SharedSessionLocalIdentity(
       state: .present,
@@ -99,9 +100,9 @@ struct ClerkHeaderRequestMiddlewareTests {
       client: .mock,
       serverDate: nil
     )
-    let transition = clerk.enqueueLocalIdentityOperation { operationRevision in
+    let transition = clerk.identityController.enqueueLocalOperation { operationRevision in
       await gate.suspend()
-      return try await clerk.persistAndApplyAtomicLocalIdentity(
+      return try await clerk.identityController.persistAndApplyAtomicIdentity(
         identity,
         through: localIdentityIO,
         operationRevision: operationRevision,

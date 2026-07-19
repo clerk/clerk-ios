@@ -4,7 +4,28 @@ import Testing
 
 struct SharedSessionSyncAdoptionTests {
   @Test
-  func configuredAppLocalIdentityTakesPrecedenceAndMigratesEnvironment() throws {
+  func destructiveConfigurationMarksAdoptedWithoutMigratingCredentials() throws {
+    let destination = InMemoryKeychain()
+    let legacyShared = InMemoryKeychain()
+    try persistLegacyIdentity(
+      token: "other-instance-token",
+      client: makeClient(id: "other-instance-client"),
+      in: legacyShared
+    )
+
+    try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      previousBundle: nil,
+      legacyShared: legacyShared
+    ).markAdoptedWithoutMigratingCredentials()
+
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
+    #expect(try SharedSessionLocalIdentityStore(keychain: destination).load() == nil)
+  }
+
+  @Test
+  func configuredAppLocalTokenTakesPrecedenceAndMigratesEnvironment() throws {
     let destination = InMemoryKeychain()
     let privateKeychain = InMemoryKeychain()
     let configuredAppLocal = InMemoryKeychain()
@@ -33,7 +54,8 @@ struct SharedSessionSyncAdoptionTests {
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(identity.deviceToken == "configured-token")
-    #expect(identity.client?.id == "configured-client")
+    #expect(identity.state == .cleared)
+    #expect(identity.client == nil)
     #expect(try privateKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == environmentData)
   }
 
@@ -86,19 +108,27 @@ struct SharedSessionSyncAdoptionTests {
   }
 
   @Test
-  func unstableLegacySnapshotFailsWithoutWritingMarker() throws {
+  func legacyClientIsNeverAdoptedBeforeCanonicalRefresh() throws {
     let destination = InMemoryKeychain()
+    let previousBundle = InMemoryKeychain()
+    try persistLegacyIdentity(
+      token: "new-token",
+      client: makeClient(id: "old-client"),
+      in: previousBundle
+    )
 
-    #expect(throws: SharedSessionSyncAdoption.AdoptionError.unstableLegacyIdentity) {
-      try makeAdoption(
-        destination: destination,
-        privateKeychain: InMemoryKeychain(),
-        previousBundle: AlternatingIdentityKeychain(client: makeClient(id: "client")),
-        legacyShared: InMemoryKeychain()
-      ).migrateIfNeeded()
-    }
+    try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      previousBundle: previousBundle,
+      legacyShared: InMemoryKeychain()
+    ).migrateIfNeeded()
 
-    #expect(try !SharedSessionSyncAdoption.isAdopted(in: destination))
+    let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
+    #expect(identity.state == .cleared)
+    #expect(identity.deviceToken == "new-token")
+    #expect(identity.client == nil)
+    #expect(identity.serverDate == nil)
   }
 
   @Test
@@ -127,7 +157,7 @@ struct SharedSessionSyncAdoptionTests {
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(identity.deviceToken == "bundle-token")
-    #expect(identity.client?.id == "bundle-client")
+    #expect(identity.client == nil)
   }
 
   @Test
@@ -154,7 +184,7 @@ struct SharedSessionSyncAdoptionTests {
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(identity.deviceToken == "shared-token")
-    #expect(identity.client?.id == "shared-client")
+    #expect(identity.client == nil)
   }
 
   @Test
@@ -181,11 +211,11 @@ struct SharedSessionSyncAdoptionTests {
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(identity.deviceToken == "shared-token")
-    #expect(identity.client?.id == "shared-client")
+    #expect(identity.client == nil)
   }
 
   @Test
-  func malformedClientFallsThroughToValidLaterSource() throws {
+  func malformedClientIsIgnoredWhileThePreferredTokenIsAdopted() throws {
     let destination = InMemoryKeychain()
     let previousBundle = InMemoryKeychain()
     let legacyShared = InMemoryKeychain()
@@ -208,12 +238,12 @@ struct SharedSessionSyncAdoptionTests {
     ).migrateIfNeeded()
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
-    #expect(identity.deviceToken == "shared-token")
-    #expect(identity.client?.id == "shared-client")
+    #expect(identity.deviceToken == "bundle-token")
+    #expect(identity.client == nil)
   }
 
   @Test
-  func malformedOrNonfiniteDateFallsThroughToValidLaterSource() throws {
+  func malformedOrNonfiniteDateIsIgnoredForProvisionalTokenAdoption() throws {
     for invalidDate in ["not-a-date", "nan", "infinity"] {
       let destination = InMemoryKeychain()
       let previousBundle = InMemoryKeychain()
@@ -237,8 +267,9 @@ struct SharedSessionSyncAdoptionTests {
       ).migrateIfNeeded()
 
       let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
-      #expect(identity.deviceToken == "shared-token")
-      #expect(identity.client?.id == "shared-client")
+      #expect(identity.deviceToken == "bundle-token")
+      #expect(identity.client == nil)
+      #expect(identity.serverDate == nil)
     }
   }
 
@@ -266,7 +297,7 @@ struct SharedSessionSyncAdoptionTests {
 
     let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(identity.deviceToken == "shared-token")
-    #expect(identity.client?.id == "shared-client")
+    #expect(identity.client == nil)
   }
 
   @Test
@@ -412,7 +443,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
     let stable = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
     #expect(stable.deviceToken == "adopted-token")
-    #expect(stable.client?.id == "adopted-client")
+    #expect(stable.client == nil)
   }
 
   @Test
@@ -477,38 +508,6 @@ struct SharedSessionSyncAdoptionTests {
     var client = Client.mockSignedOut
     client.id = id
     return client
-  }
-}
-
-private final class AlternatingIdentityKeychain: @unchecked Sendable, KeychainStorage {
-  private let lock = NSLock()
-  private let clientData: Data
-  private var tokenReadCount = 0
-
-  init(client: Client) {
-    clientData = (try? JSONEncoder.clerkEncoder.encode(client)) ?? Data()
-  }
-
-  func set(_: Data, forKey _: String) throws {}
-
-  func data(forKey key: String) throws -> Data? {
-    lock.withLock {
-      switch key {
-      case ClerkKeychainKey.clerkDeviceToken.rawValue:
-        tokenReadCount += 1
-        return Data("token-\(tokenReadCount % 2)".utf8)
-      case ClerkKeychainKey.cachedClient.rawValue:
-        return clientData
-      default:
-        return nil
-      }
-    }
-  }
-
-  func deleteItem(forKey _: String) throws {}
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try data(forKey: key) != nil
   }
 }
 

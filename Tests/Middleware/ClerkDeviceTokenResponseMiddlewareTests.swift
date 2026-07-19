@@ -102,7 +102,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
     request.setClerkRequestSequence(1)
 
-    clerk.clearCachedClientStateAfterDeviceTokenChange()
+    clerk.identityController.clearCachedClientStateAfterDeviceTokenChange()
     try await middleware.validate(response, data: Data("{}".utf8), for: request)
 
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "current-token")

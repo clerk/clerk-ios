@@ -171,10 +171,10 @@ struct SharedSessionIdentityEventTests {
     #expect(throws: SharedSessionIdentityEventError.invalidGeneration) {
       try makeEvent(owner: "app.a", generation: 0).validated()
     }
-    #expect(throws: SharedSessionIdentityEventError.invalidPresentState) {
+    #expect(throws: ClerkIdentitySnapshotError.invalidPresentState) {
       try makeEvent(owner: "app.a", generation: 1, token: nil).validated()
     }
-    #expect(throws: SharedSessionIdentityEventError.invalidClearedState) {
+    #expect(throws: ClerkIdentitySnapshotError.invalidClearedState) {
       try makeEvent(owner: "app.a", generation: 1, state: .cleared).validated()
     }
   }

@@ -52,20 +52,20 @@ private final class CachePersistenceState: @unchecked Sendable {
 private actor CachePersistenceWorker {
   private let identityKeychain: any KeychainStorage
   private let environmentKeychain: any KeychainStorage
-  private let sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  private let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
 
   init(
     identityKeychain: any KeychainStorage,
     environmentKeychain: any KeychainStorage,
-    sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   ) {
     self.identityKeychain = identityKeychain
     self.environmentKeychain = environmentKeychain
-    self.sharedSessionLocalIdentityStore = sharedSessionLocalIdentityStore
+    self.atomicIdentityStore = atomicIdentityStore
   }
 
   func saveClient(_ client: Client, serverFetchDate: Date?) {
-    guard sharedSessionLocalIdentityStore == nil else { return }
+    guard atomicIdentityStore == nil else { return }
     do {
       let clientData = try JSONEncoder.clerkEncoder.encode(client)
       try identityKeychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
@@ -83,7 +83,7 @@ private actor CachePersistenceWorker {
   }
 
   func saveServerFetchDate(_ date: Date) {
-    guard sharedSessionLocalIdentityStore == nil else { return }
+    guard atomicIdentityStore == nil else { return }
     do {
       let dateString = String(date.timeIntervalSince1970)
       try identityKeychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
@@ -108,7 +108,7 @@ private actor CachePersistenceWorker {
   }
 
   func deleteClient(serverFetchDate: Date?) {
-    guard sharedSessionLocalIdentityStore == nil else { return }
+    guard atomicIdentityStore == nil else { return }
     do {
       try identityKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate {
@@ -130,8 +130,8 @@ private actor CachePersistenceWorker {
 /// This allows the cache manager to interact with Clerk instance properties
 /// without directly coupling to the Clerk class.
 protocol CacheCoordinator: AnyObject, Sendable {
-  /// Applies an atomic app-local identity during shared-session cache hydration.
-  @MainActor func setSharedSessionIdentityIfNeeded(_ identity: SharedSessionLocalIdentity)
+  /// Applies a complete atomic app-local identity during cache hydration.
+  @MainActor func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot)
 
   /// Sets the client and its server fetch date if no client is currently set.
   ///
@@ -150,7 +150,7 @@ protocol CacheCoordinator: AnyObject, Sendable {
 }
 
 extension CacheCoordinator {
-  @MainActor func setSharedSessionIdentityIfNeeded(_: SharedSessionLocalIdentity) {}
+  @MainActor func hydrateIdentityIfNeeded(_: ClerkIdentitySnapshot) {}
 }
 
 /// Manages caching of Clerk client and environment data to keychain.
@@ -169,7 +169,7 @@ final class CacheManager {
   /// The keychain storage for persisting cached data.
   private let identityKeychain: any KeychainStorage
   private let environmentKeychain: any KeychainStorage
-  private let sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  private let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
 
   /// Creates a new cache manager.
   ///
@@ -181,29 +181,29 @@ final class CacheManager {
     persistenceWorker = CachePersistenceWorker(
       identityKeychain: keychain,
       environmentKeychain: keychain,
-      sharedSessionLocalIdentityStore: nil
+      atomicIdentityStore: nil
     )
     self.coordinator = coordinator
     identityKeychain = keychain
     environmentKeychain = keychain
-    sharedSessionLocalIdentityStore = nil
+    atomicIdentityStore = nil
   }
 
   init(
     coordinator: any CacheCoordinator,
     identityKeychain: any KeychainStorage,
     environmentKeychain: any KeychainStorage,
-    sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   ) {
     persistenceWorker = CachePersistenceWorker(
       identityKeychain: identityKeychain,
       environmentKeychain: environmentKeychain,
-      sharedSessionLocalIdentityStore: sharedSessionLocalIdentityStore
+      atomicIdentityStore: atomicIdentityStore
     )
     self.coordinator = coordinator
     self.identityKeychain = identityKeychain
     self.environmentKeychain = environmentKeychain
-    self.sharedSessionLocalIdentityStore = sharedSessionLocalIdentityStore
+    self.atomicIdentityStore = atomicIdentityStore
   }
 
   /// Loads cached client and environment data from keychain.
@@ -223,8 +223,8 @@ final class CacheManager {
   /// cached data from overwriting fresh data loaded from the API.
   private func loadCachedClient() {
     do {
-      if let identity = try sharedSessionLocalIdentityStore?.load() {
-        coordinator?.setSharedSessionIdentityIfNeeded(identity)
+      if let identity = try atomicIdentityStore?.load() {
+        coordinator?.hydrateIdentityIfNeeded(identity)
         return
       }
 

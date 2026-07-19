@@ -131,16 +131,16 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector,
       clientService: MockClientService(get: { nil })
     )
     clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
     clerk.client = Client.mock
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 100)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
 
-    await clerk.clearAllKeychainItemsAndWait()
+    try await clerk.clearAllKeychainItemsAndWait()
 
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == nil)
@@ -148,7 +148,7 @@ struct ClerkTests {
   }
 
   @Test
-  func synchronousClearRemainsCallableFromAsyncCodeAndOverlappingCallsCoalesce() async {
+  func synchronousClearRemainsCallableFromAsyncCodeAndOverlappingCallsCoalesce() async throws {
     let synchronousAPI: @MainActor () -> Void = Clerk.clearAllKeychainItems
     _ = synchronousAPI
 
@@ -159,13 +159,15 @@ struct ClerkTests {
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
 
-    let revision = clerk.localIdentityOperationRevision
+    let revision = clerk.identityController.localOperationRevision
     let firstClear = Clerk.startKeychainClearIfNeeded(for: clerk)
+    let revisionAfterFirstClear = clerk.identityController.localOperationRevision
     let secondClear = Clerk.startKeychainClearIfNeeded(for: clerk)
 
     #expect(firstClear == secondClear)
-    #expect(clerk.localIdentityOperationRevision == revision + 1)
-    await firstClear.value
+    #expect(revisionAfterFirstClear > revision)
+    #expect(clerk.identityController.localOperationRevision == revisionAfterFirstClear)
+    try await firstClear.value
 
     #expect(clerk.keychainClearTask == nil)
   }
@@ -182,6 +184,18 @@ struct ClerkTests {
         authState: "set",
         authVersion: 9
       )
+    )
+    try legacyShared.set(
+      "legacy-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    try legacyShared.set(
+      JSONEncoder.clerkEncoder.encode(Client.mock),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try legacyShared.set(
+      JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
     )
     let dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
@@ -203,6 +217,49 @@ struct ClerkTests {
     #expect(metadata.deviceTokenState == "cleared")
     #expect(metadata.authState == "cleared")
     #expect(!metadata.hasPendingIdentityMetadata)
+    #expect(
+      try legacyShared.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil
+    )
+    #expect(
+      try legacyShared.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil
+    )
+    #expect(
+      try legacyShared.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == nil
+    )
+  }
+
+  @Test
+  func awaitedClearReportsAtomicIdentityDeletionFailure() async throws {
+    let clerk = Clerk()
+    let keychain = DeleteFailingKeychain(
+      failingKey: SharedSessionLocalIdentityStore.storageKey
+    )
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    try identityStore.save(
+      ClerkIdentitySnapshot(
+        state: .present,
+        deviceToken: "token",
+        client: .mock,
+        serverDate: nil
+      )
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+
+    var didThrow = false
+    do {
+      try await clerk.clearAllKeychainItemsAndWait()
+    } catch {
+      didThrow = true
+    }
+
+    #expect(didThrow)
+    #expect(try identityStore.load() != nil)
+    #expect(clerk.keychainClearTask == nil)
   }
 
   @Test
@@ -213,7 +270,7 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.dependencies = dependencies
@@ -223,7 +280,7 @@ struct ClerkTests {
       instanceFingerprint: "instance",
       slotStore: slotStore,
       localIdentityStore: identityStore,
-      localIdentityIO: dependencies.sharedSessionLocalIdentityIO,
+      localIdentityIO: dependencies.atomicIdentityIO,
       notifier: SilentSharedSessionNotifier(),
       configurationEpoch: clerk.configurationEpoch,
       clerk: clerk
@@ -237,7 +294,7 @@ struct ClerkTests {
       serverDate: nil
     )
     try identityStore.save(identity)
-    clerk.setSharedSessionIdentityIfNeeded(identity)
+    clerk.hydrateIdentityIfNeeded(identity)
     try slotStore.saveOwnSlot(
       SharedSessionOwnerSlot(
         schemaVersion: SharedSessionOwnerSlot.schemaVersion,
@@ -255,7 +312,7 @@ struct ClerkTests {
       )
     )
 
-    await clerk.clearAllKeychainItemsAndWait()
+    try await clerk.clearAllKeychainItemsAndWait()
 
     #expect(try slotStore.loadOwnSlot() == nil)
     #expect(try identityStore.loadRecord() == nil)
@@ -279,11 +336,11 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      sharedSessionLocalIdentityStore: store,
+      atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.dependencies = dependencies
-    let localIdentityIO = try #require(dependencies.sharedSessionLocalIdentityIO)
+    let localIdentityIO = try #require(dependencies.atomicIdentityIO)
     let identity = SharedSessionLocalIdentity(
       state: .present,
       deviceToken: "stale-token",
@@ -291,9 +348,9 @@ struct ClerkTests {
       serverDate: Date(timeIntervalSince1970: 100)
     )
     let gate = LocalIdentityOperationGate()
-    let saveTask = clerk.enqueueLocalIdentityOperation { operationRevision in
+    let saveTask = clerk.identityController.enqueueLocalOperation { operationRevision in
       await gate.suspend()
-      return try await clerk.persistAndApplyAtomicLocalIdentity(
+      return try await clerk.identityController.persistAndApplyAtomicIdentity(
         identity,
         through: localIdentityIO,
         operationRevision: operationRevision,
@@ -303,18 +360,18 @@ struct ClerkTests {
     try await waitUntil { gate.isSuspended }
 
     let clearTask = Task { @MainActor in
-      await clerk.clearAllKeychainItemsAndWait()
+      try await clerk.clearAllKeychainItemsAndWait()
     }
     await Task.yield()
-    #expect(clerk.localIdentityDeviceToken == nil)
+    #expect(clerk.identityController.localDeviceToken == nil)
     #expect(clerk.client == nil)
     gate.resume()
 
     _ = try? await saveTask.value
-    await clearTask.value
+    try await clearTask.value
 
     #expect(try store.loadRecord() == nil)
-    #expect(clerk.localIdentityDeviceToken == nil)
+    #expect(clerk.identityController.localDeviceToken == nil)
     #expect(clerk.client == nil)
   }
 
@@ -335,14 +392,14 @@ struct ClerkTests {
 
     var didComplete = false
     let clearTask = Task { @MainActor in
-      await clerk.clearAllKeychainItemsAndWait()
+      try await clerk.clearAllKeychainItemsAndWait()
       didComplete = true
     }
     await Task.yield()
     #expect(!didComplete)
 
     keychain.resumeSuspendedSet()
-    await clearTask.value
+    try await clearTask.value
 
     #expect(didComplete)
     #expect(try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) == nil)
@@ -365,10 +422,10 @@ struct ClerkTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      sharedSessionLocalIdentityStore: store,
+      atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.setSharedSessionIdentityIfNeeded(initialIdentity)
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
     let capturedResponseGeneration = clerk.clientResponseGeneration
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(
@@ -387,7 +444,7 @@ struct ClerkTests {
     try await waitUntil { store.isSaveSuspended }
 
     let responseTask = Task { @MainActor in
-      try await clerk.applyLocalIdentityResponse(
+      try await clerk.identityController.applyNetworkResponse(
         ClientSyncResponseContext(
           update: .client(.mock),
           deviceTokenUpdate: .set("token"),
@@ -815,6 +872,36 @@ private final class SuspendingCacheKeychain: @unchecked Sendable, KeychainStorag
   }
 
   func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case delete
+  }
+
+  private let backing = InMemoryKeychain()
+  private let failingKey: String
+
+  init(failingKey: String) {
+    self.failingKey = failingKey
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    guard key != failingKey else { throw Failure.delete }
     try backing.deleteItem(forKey: key)
   }
 

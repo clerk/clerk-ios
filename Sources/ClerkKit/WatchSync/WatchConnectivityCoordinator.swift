@@ -77,35 +77,36 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     switch change {
     case let .clientDidChange(previousClient, client):
       guard !isApplyingRemotePayload,
-            !clerk.isApplyingSharedSessionIdentity,
+            !clerk.identityController.isApplyingIdentityTransition,
             shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
       else {
         return
       }
 
-      try persistAuthState(
+      let metadata = try persistAuthState(
         client == nil ? "cleared" : "set",
-        version: nextAuthVersion(keychain: clerk.dependencies.watchSyncKeychain),
+        version: nil,
         client: client,
         serverDate: clerk.lastClientServerFetchDate,
         keychain: clerk.dependencies.watchSyncKeychain
       )
-      syncCurrentState(from: clerk)
+      try syncCurrentState(from: clerk, metadata: metadata)
     case .environmentDidChange:
       guard !isApplyingRemotePayload else { return }
       syncCurrentState(from: clerk)
     case let .deviceTokenDidChange(previousToken, token):
       if previousToken != token {
-        try persistDeviceTokenState(
+        let metadata = try persistDeviceTokenState(
           token == nil ? "cleared" : "set",
           deviceToken: token,
-          version: nextDeviceTokenVersion(keychain: clerk.dependencies.watchSyncKeychain),
+          version: nil,
           keychain: clerk.dependencies.watchSyncKeychain
         )
+        try syncCurrentState(from: clerk, metadata: metadata)
+      } else {
+        syncCurrentState(from: clerk)
       }
-
-      syncCurrentState(from: clerk)
-    case .sharedSessionIdentityDidChange:
+    case .identityDidChange:
       guard !isApplyingRemotePayload else { return }
       let keychain = clerk.dependencies.watchSyncKeychain
       let metadata = try persistCurrentIdentityMetadata(
@@ -163,7 +164,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
     guard isAcceptingIdentityUpdates else { return }
 
-    let watchSyncKeychain = clerk.dependencies.watchSyncKeychain
     if let environment = payload.environment {
       let wasApplyingRemotePayload = isApplyingRemotePayload
       isApplyingRemotePayload = true
@@ -177,40 +177,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       return
     }
 
-    if clerk.sharedSessionSyncCoordinator != nil {
-      enqueueIdentityPayload(payload, source: source, for: clerk)
-      return
-    }
-    if let localIdentityIO = clerk.dependencies.sharedSessionLocalIdentityIO {
-      enqueueAppLocalIdentityPayload(
-        payload,
-        source: source,
-        localIdentityIO: localIdentityIO,
-        for: clerk
-      )
-      return
-    }
-
-    let candidate: IdentityCandidate
-    do {
-      guard let resolved = try identityCandidate(
-        from: payload,
-        source: source,
-        clerk: clerk,
-        watchSyncKeychain: watchSyncKeychain
-      ) else {
-        return
-      }
-      candidate = resolved
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to read Watch identity metadata; rejecting identity update")
-      return
-    }
-    if apply(candidate, to: clerk, keychain: watchSyncKeychain),
-       candidate.requiresClientRefresh
-    {
-      scheduleRefresh(for: clerk)
-    }
+    enqueueIdentityPayload(payload, source: source, for: clerk)
   }
 }
 
@@ -552,50 +519,6 @@ extension WatchConnectivityCoordinator {
     return true
   }
 
-  private func apply(
-    _ candidate: IdentityCandidate,
-    to clerk: Clerk,
-    keychain: any KeychainStorage
-  ) -> Bool {
-    do {
-      try stagePendingWatchMetadata(for: candidate, keychain: keychain)
-      let previousToken = clerk.deviceToken
-      if let deviceToken = candidate.deviceToken {
-        try clerk.dependencies.identityKeychain.set(
-          deviceToken,
-          forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-        )
-      } else {
-        try clerk.dependencies.identityKeychain.deleteItem(
-          forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-        )
-      }
-
-      if previousToken != candidate.deviceToken {
-        clerk.fenceClientResponsesAfterDeviceTokenChange()
-      }
-      let wasApplyingRemotePayload = isApplyingRemotePayload
-      isApplyingRemotePayload = true
-      defer { isApplyingRemotePayload = wasApplyingRemotePayload }
-      clerk.lastClientServerFetchDate = candidate.serverDate
-      clerk.client = candidate.client
-      do {
-        try promotePendingWatchMetadata(
-          tokenVersion: candidate.tokenVersion,
-          authVersion: candidate.authVersion,
-          keychain: keychain
-        )
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to finalize Watch identity metadata")
-      }
-      syncCurrentState(from: clerk)
-      return true
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to persist atomic Watch identity update")
-      return false
-    }
-  }
-
   private func persistCurrentIdentityMetadata(
     from clerk: Clerk,
     keychain: any KeychainStorage
@@ -642,150 +565,90 @@ extension WatchConnectivityCoordinator {
     )
   }
 
-  private func publish(
-    _ candidate: IdentityCandidate,
-    through coordinator: SharedSessionSyncCoordinator,
-    to clerk: Clerk
-  ) async {
-    do {
-      try stagePendingWatchMetadata(
-        for: candidate,
-        keychain: clerk.dependencies.watchSyncKeychain
-      )
-      try await coordinator.publishReservedLocalIdentity(
-        state: candidate.state,
-        deviceToken: candidate.deviceToken,
-        client: candidate.client,
-        serverDate: candidate.serverDate
-      )
-      do {
-        try promotePendingWatchMetadata(
-          tokenVersion: candidate.tokenVersion,
-          authVersion: candidate.authVersion,
-          keychain: clerk.dependencies.watchSyncKeychain
-        )
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to finalize Watch identity metadata")
-      }
-      syncCurrentState(from: clerk)
-      if candidate.requiresClientRefresh {
-        scheduleRefresh(for: clerk)
-      }
-    } catch is CancellationError {
-      return
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to publish atomic Watch identity update")
-    }
-  }
-
   private func enqueueIdentityPayload(
     _ payload: WatchSyncPayload,
     source: WatchSyncSource,
     for clerk: Clerk
   ) {
-    guard isAcceptingIdentityUpdates,
-          let coordinator = clerk.sharedSessionSyncCoordinator
-    else {
-      return
-    }
-    let operationID = UUID()
-    let operationTask = coordinator.enqueueSerializedLocalIdentityOperation { [weak self, weak clerk] in
-      guard let self else { return }
-      guard isAcceptingIdentityUpdates,
-            let clerk,
-            clerk.sharedSessionSyncCoordinator === coordinator
-      else {
-        return
-      }
-      let keychain = clerk.dependencies.watchSyncKeychain
-      let candidate: IdentityCandidate
-      do {
-        guard let resolved = try identityCandidate(
-          from: payload,
-          source: source,
-          clerk: clerk,
-          watchSyncKeychain: keychain
-        ) else {
-          return
-        }
-        candidate = resolved
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to read Watch identity metadata; rejecting identity update")
-        return
-      }
-      beginApplyingRemoteIdentity(operationID)
-      await publish(candidate, through: coordinator, to: clerk)
-    }
-    trackIdentityPublication(operationTask, operationID: operationID)
-  }
-
-  private func enqueueAppLocalIdentityPayload(
-    _ payload: WatchSyncPayload,
-    source: WatchSyncSource,
-    localIdentityIO: SharedSessionLocalIdentityIO,
-    for clerk: Clerk
-  ) {
     guard isAcceptingIdentityUpdates else { return }
     let operationID = UUID()
-    let operationTask = clerk.enqueueLocalIdentityOperation { [weak self, weak clerk] operationRevision in
-      guard let self else { return }
-      guard isAcceptingIdentityUpdates,
-            let clerk,
-            clerk.sharedSessionSyncCoordinator == nil,
-            clerk.dependencies.sharedSessionLocalIdentityIO === localIdentityIO
-      else {
-        return
-      }
-
-      let keychain = clerk.dependencies.watchSyncKeychain
-      let candidate: IdentityCandidate
-      do {
-        guard let resolved = try identityCandidate(
-          from: payload,
-          source: source,
-          clerk: clerk,
-          watchSyncKeychain: keychain
-        ) else {
-          return
+    do {
+      let operationTask = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
+        guard let self, let clerk, isAcceptingIdentityUpdates else { return nil }
+        let keychain = clerk.dependencies.watchSyncKeychain
+        let candidate: IdentityCandidate
+        do {
+          guard let resolved = try identityCandidate(
+            from: payload,
+            source: source,
+            clerk: clerk,
+            watchSyncKeychain: keychain
+          ) else {
+            return nil
+          }
+          candidate = resolved
+        } catch {
+          ClerkLogger.logError(error, message: "Failed to read Watch identity metadata; rejecting identity update")
+          return nil
         }
-        candidate = resolved
-        try stagePendingWatchMetadata(for: candidate, keychain: keychain)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to prepare Watch identity update")
-        return
-      }
 
-      beginApplyingRemoteIdentity(operationID)
-      let identity = try SharedSessionLocalIdentity(
-        state: candidate.state,
-        deviceToken: candidate.deviceToken,
-        client: candidate.client,
-        serverDate: candidate.serverDate
-      ).validated()
-      guard try await clerk.persistAndApplyAtomicLocalIdentity(
-        identity,
-        through: localIdentityIO,
-        operationRevision: operationRevision,
-        fenceAllClientResponses: true
-      ) else {
-        return
-      }
-
-      do {
-        try promotePendingWatchMetadata(
-          tokenVersion: candidate.tokenVersion,
-          authVersion: candidate.authVersion,
-          keychain: keychain
+        beginApplyingRemoteIdentity(operationID)
+        let identity = try ClerkIdentitySnapshot(
+          state: candidate.state,
+          deviceToken: candidate.deviceToken,
+          client: candidate.client,
+          serverDate: candidate.serverDate
+        ).validated()
+        return ClerkIdentityController.ExternalTransition(
+          identity: identity,
+          stage: { [weak self] in
+            guard let self else { throw CancellationError() }
+            try stagePendingWatchMetadata(for: candidate, keychain: keychain)
+          },
+          didApply: { [weak self, weak clerk] in
+            guard let self, let clerk else { return }
+            do {
+              try promotePendingWatchMetadata(
+                tokenVersion: candidate.tokenVersion,
+                authVersion: candidate.authVersion,
+                keychain: keychain
+              )
+            } catch {
+              ClerkLogger.logError(error, message: "Failed to finalize Watch identity metadata")
+            }
+            syncCurrentState(from: clerk)
+            if candidate.requiresClientRefresh {
+              scheduleRefresh(for: clerk)
+            }
+          },
+          didNotApply: { [weak self] in
+            guard let self else { return }
+            do {
+              try discardPendingWatchMetadata(
+                tokenVersion: candidate.tokenVersion,
+                authVersion: candidate.authVersion,
+                keychain: keychain
+              )
+            } catch {
+              ClerkLogger.logError(
+                error,
+                message: "Failed to discard superseded Watch identity metadata"
+              )
+            }
+          }
         )
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to finalize Watch identity metadata")
       }
-      syncCurrentState(from: clerk)
-      if candidate.requiresClientRefresh {
-        scheduleRefresh(for: clerk)
+      if let operationTask {
+        trackIdentityPublication(operationTask, operationID: operationID)
+      } else {
+        finishIdentityPublication(operationID)
       }
+    } catch is CancellationError {
+      finishIdentityPublication(operationID)
+    } catch {
+      finishIdentityPublication(operationID)
+      ClerkLogger.logError(error, message: "Failed to persist atomic Watch identity update")
     }
-    trackIdentityPublication(operationTask, operationID: operationID)
   }
 
   private func trackIdentityPublication(
@@ -794,10 +657,17 @@ extension WatchConnectivityCoordinator {
   ) {
     let trackedTask = Task { @MainActor [weak self] in
       defer { self?.finishIdentityPublication(operationID) }
-      return try await withTaskCancellationHandler {
-        try await operationTask.value
-      } onCancel: {
-        operationTask.cancel()
+      do {
+        return try await withTaskCancellationHandler {
+          try await operationTask.value
+        } onCancel: {
+          operationTask.cancel()
+        }
+      } catch is CancellationError {
+        return
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to apply Watch identity transition")
+        throw error
       }
     }
     identityPublicationTasks[operationID] = trackedTask

@@ -115,7 +115,10 @@ struct ClerkClientSyncResponseMiddlewareTests {
       headerFields: nil
     ))
 
-    try await middleware.validate(response, data: data, for: URLRequest(url: url))
+    var request = URLRequest(url: url)
+    request.setClerkRequestDeviceToken("current-token")
+
+    try await middleware.validate(response, data: data, for: request)
 
     #expect(clerk.client?.id == signedOutClient.id)
     #expect(clerk.client?.sessions.isEmpty == true)
@@ -139,6 +142,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     ))
     var request = URLRequest(url: url)
     request.setClerkCanonicalClientRequest(true)
+    request.setClerkRequestDeviceToken("current-token")
 
     try await middleware.validate(response, data: data, for: request)
 
@@ -160,9 +164,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore
+      atomicIdentityStore: identityStore
     )
-    try clerk.setSharedSessionIdentityIfNeeded(#require(try identityStore.load()))
+    try clerk.hydrateIdentityIfNeeded(#require(try identityStore.load()))
     let deletedClient = client(id: "deleted-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: deletedClient, client: nil)
@@ -189,6 +193,49 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateUsesCapturedClerkTokenAfterCustomAuthorizationReplacement() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "clerk-token",
+      client: Client.mock,
+      serverDate: .distantPast
+    )
+    try identityStore.save(initialIdentity)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      atomicIdentityStore: identityStore
+    )
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    var request = URLRequest(url: url)
+    try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
+      .prepare(&request)
+    request.setValue("proxy-signature", forHTTPHeaderField: "Authorization")
+    let expectedClient = client(id: "updated-client", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(
+      ClientOnlyEnvelope(response: expectedClient, client: nil)
+    )
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+
+    try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
+      .validate(response, data: data, for: request)
+
+    let persisted = try #require(try identityStore.load())
+    #expect(persisted.deviceToken == "clerk-token")
+    #expect(persisted.client?.id == "updated-client")
+    #expect(clerk.identityController.currentDeviceToken == "clerk-token")
+  }
+
+  @Test
   func validateAppliesClientFromClientResponseEnvelope() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -206,7 +253,8 @@ struct ClerkClientSyncResponseMiddlewareTests {
       httpVersion: nil,
       headerFields: nil
     ))
-    let request = URLRequest(url: url)
+    var request = URLRequest(url: url)
+    request.setClerkRequestDeviceToken("current-token")
 
     try await middleware.validate(response, data: data, for: request)
 
@@ -230,7 +278,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     var request = URLRequest(url: url)
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
 
-    clerk.clearCachedClientStateAfterDeviceTokenChange()
+    clerk.identityController.clearCachedClientStateAfterDeviceTokenChange()
 
     try await middleware.validate(response, data: data, for: request)
 
@@ -254,7 +302,8 @@ struct ClerkClientSyncResponseMiddlewareTests {
       httpVersion: nil,
       headerFields: nil
     ))
-    let request = URLRequest(url: url)
+    var request = URLRequest(url: url)
+    request.setClerkRequestDeviceToken("current-token")
 
     try await middleware.validate(response, data: data, for: request)
 
@@ -302,9 +351,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore
+      atomicIdentityStore: identityStore
     )
-    clerk.setSharedSessionIdentityIfNeeded(previous)
+    clerk.hydrateIdentityIfNeeded(previous)
     let expectedClient = client(id: "new-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: expectedClient, client: nil)
@@ -343,9 +392,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let identityStore = ThreadRecordingIdentityStore(identity: previous)
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      sharedSessionLocalIdentityStore: identityStore
+      atomicIdentityStore: identityStore
     )
-    clerk.setSharedSessionIdentityIfNeeded(previous)
+    clerk.hydrateIdentityIfNeeded(previous)
     let expectedClient = client(id: "new-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: expectedClient, client: nil)
@@ -387,9 +436,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore
+      atomicIdentityStore: identityStore
     )
-    clerk.setSharedSessionIdentityIfNeeded(previous)
+    clerk.hydrateIdentityIfNeeded(previous)
     let url = try #require(URL(string: "https://example.com/v1/client"))
     let response = try #require(HTTPURLResponse(
       url: url,

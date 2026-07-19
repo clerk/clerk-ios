@@ -209,7 +209,50 @@ struct WatchSyncPayloadTests {
     let coordinator = WatchConnectivityCoordinator()
     keychain.resetMetadataReadCount()
 
-    try coordinator.handle(.sharedSessionIdentityDidChange, from: clerk)
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    #expect(keychain.metadataReadCount == 1)
+  }
+
+  @Test
+  func localClientChangeUsesOneMetadataSnapshot() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = MetadataReadCountingKeychain()
+    try WatchSyncMetadataStore(keychain: keychain).save(.empty)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.client = .mock
+    let coordinator = WatchConnectivityCoordinator()
+    keychain.resetMetadataReadCount()
+
+    try coordinator.handle(.clientDidChange(previous: nil, current: clerk.client), from: clerk)
+
+    #expect(keychain.metadataReadCount == 1)
+  }
+
+  @Test
+  func localDeviceTokenChangeUsesOneMetadataSnapshot() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = MetadataReadCountingKeychain()
+    try keychain.set("new-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(.empty)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let coordinator = WatchConnectivityCoordinator()
+    keychain.resetMetadataReadCount()
+
+    try coordinator.handle(
+      .deviceTokenDidChange(previous: "old-token", current: "new-token"),
+      from: clerk
+    )
 
     #expect(keychain.metadataReadCount == 1)
   }
@@ -228,7 +271,7 @@ struct WatchSyncPayloadTests {
       clientService: MockClientService { throw CancellationError() }
     )
     clerk.client = phoneClient
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 100)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenCleared(version: WatchSyncVersion(rawValue: 1)),
       clientUpdate: .notIncluded,
@@ -252,11 +295,11 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     let gate = AsyncGate()
-    let blocker = clerk.enqueueLocalIdentityOperation { _ in
+    let blocker = clerk.identityController.enqueueLocalOperation { _ in
       await gate.wait()
     }
     let coordinator = WatchConnectivityCoordinator()
@@ -296,11 +339,11 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     let gate = AsyncGate()
-    let blocker = clerk.enqueueLocalIdentityOperation { _ in
+    let blocker = clerk.identityController.enqueueLocalOperation { _ in
       await gate.wait()
     }
     let coordinator = WatchConnectivityCoordinator()
@@ -321,7 +364,7 @@ struct WatchSyncPayloadTests {
       to: clerk
     )
     #expect(coordinator.activeIdentityPublicationCount == 1)
-    clerk.localIdentityInvalidatedThroughRevision = clerk.localIdentityOperationRevision
+    clerk.identityController.invalidatedThroughRevision = clerk.identityController.localOperationRevision
 
     await gate.open()
     _ = try? await blocker.value
@@ -360,12 +403,12 @@ struct WatchSyncPayloadTests {
       keychain: legacyShared,
       appLocalKeychain: appLocal,
       identityKeychain: identityKeychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.setSharedSessionIdentityIfNeeded(initialIdentity)
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
 
-    await clerk.clearAllKeychainItemsAndWait()
+    try await clerk.clearAllKeychainItemsAndWait()
 
     let metadata = try WatchSyncMetadataStore(keychain: appLocal).load()
     let clearVersion = try #require(metadata.authVersion)
@@ -391,7 +434,7 @@ struct WatchSyncPayloadTests {
     coordinator.apply(stalePayload, from: .watch, to: clerk)
     await coordinator.waitForIdentityPublications()
 
-    #expect(clerk.localIdentityDeviceToken == nil)
+    #expect(clerk.identityController.localDeviceToken == nil)
     #expect(clerk.client == nil)
     #expect(try identityStore.load() == nil)
   }
@@ -501,7 +544,7 @@ struct WatchSyncPayloadTests {
     let originalGeneration = clerk.clientResponseGeneration
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch")
     clerk.client = nil
-    clerk.lastClientServerFetchDate = phoneServerDate
+    clerk.identityController.lastServerDate = phoneServerDate
 
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "watch-token", version: WatchSyncVersion(rawValue: 1)),
@@ -534,7 +577,7 @@ struct WatchSyncPayloadTests {
     let originalGeneration = clerk.clientResponseGeneration
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000, lastActiveSessionId: "session-watch")
     clerk.client = nil
-    clerk.lastClientServerFetchDate = phoneServerDate
+    clerk.identityController.lastServerDate = phoneServerDate
 
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "watch-token", version: WatchSyncVersion(rawValue: 1)),
@@ -637,7 +680,7 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.client = client(id: "old-client", updatedAt: 100)
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 50)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
@@ -676,10 +719,10 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.setSharedSessionIdentityIfNeeded(previous)
+    clerk.hydrateIdentityIfNeeded(previous)
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(
         token: "new-token",
@@ -697,7 +740,7 @@ struct WatchSyncPayloadTests {
     coordinator.apply(payload, from: .phone, to: clerk)
     await coordinator.waitForIdentityPublications()
 
-    #expect(clerk.localIdentityDeviceToken == "new-token")
+    #expect(clerk.identityController.localDeviceToken == "new-token")
     #expect(try identityStore.load()?.deviceToken == "new-token")
     #expect(clerk.client?.id == "new-client")
   }
@@ -922,7 +965,7 @@ struct WatchSyncPayloadTests {
     let clerk = Clerk()
     let previousClient = client(id: "previous", updatedAt: 100)
     clerk.client = previousClient
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 50)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: InMemoryKeychain(),
@@ -988,7 +1031,7 @@ struct WatchSyncPayloadTests {
     try store.save(record)
 
     #expect(throws: PromotionFailingKeychain.Failure.self) {
-      try coordinator.persistAuthState(
+      _ = try coordinator.persistAuthState(
         "set",
         version: WatchSyncVersion(rawValue: 2),
         client: nextClient,
@@ -1001,7 +1044,7 @@ struct WatchSyncPayloadTests {
     #expect(try store.load().authVersion == 1)
 
     keychain.failWrites = false
-    try coordinator.persistAuthState(
+    _ = try coordinator.persistAuthState(
       "set",
       version: WatchSyncVersion(rawValue: 2),
       client: nextClient,
@@ -1039,10 +1082,10 @@ struct WatchSyncPayloadTests {
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.client = nextClient
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 200)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 200)
 
     #expect(throws: PromotionFailingKeychain.Failure.self) {
-      try coordinator.handle(.sharedSessionIdentityDidChange, from: clerk)
+      try coordinator.handle(.identityDidChange, from: clerk)
     }
 
     #expect(
@@ -1052,7 +1095,7 @@ struct WatchSyncPayloadTests {
     #expect(try store.load().authVersion == 1)
 
     metadataKeychain.failWrites = false
-    try coordinator.handle(.sharedSessionIdentityDidChange, from: clerk)
+    try coordinator.handle(.identityDidChange, from: clerk)
 
     #expect(
       try coordinator.currentAuthVersion(keychain: clerk.dependencies.watchSyncKeychain)
@@ -1206,11 +1249,11 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: metadataKeychain,
-      sharedSessionLocalIdentityStore: identityStore,
+      atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector,
       clientService: MockClientService(get: { throw CancellationError() })
     )
-    clerk.setSharedSessionIdentityIfNeeded(initialIdentity)
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(
         token: "watch-token",
@@ -1237,7 +1280,7 @@ struct WatchSyncPayloadTests {
     await coordinator.waitForIdentityPublications()
 
     metadata = try WatchSyncMetadataStore(keychain: metadataKeychain).load()
-    #expect(clerk.localIdentityDeviceToken == "watch-token")
+    #expect(clerk.identityController.localDeviceToken == "watch-token")
     #expect(clerk.client?.id == "watch-client")
     #expect(try identityStore.load()?.client?.id == "watch-client")
     #expect(metadata.deviceTokenVersion == 1)
@@ -1386,7 +1429,7 @@ struct WatchSyncPayloadTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 100)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(token: "new-token", version: WatchSyncVersion(rawValue: 1)),
       clientUpdate: .snapshot(

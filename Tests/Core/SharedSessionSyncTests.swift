@@ -256,6 +256,55 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func olderSequenceWithEqualServerDateAndNewerClientTimestampIsAccepted() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let serverDate = Date(timeIntervalSince1970: 100)
+    var earlierClient = makeClient(id: "earlier-client")
+    earlierClient.updatedAt = Date(timeIntervalSince1970: 100)
+    var authoritativeClient = makeClient(id: "authoritative-client")
+    authoritativeClient.updatedAt = Date(timeIntervalSince1970: 200)
+
+    try await node.coordinator.handleNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(earlierClient),
+        deviceTokenUpdate: .set("token"),
+        requestDeviceToken: "token",
+        baseGeneration: 0,
+        serverDate: serverDate,
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 2
+      )
+    )
+    try await node.coordinator.handleNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(authoritativeClient),
+        deviceTokenUpdate: .set("token"),
+        requestDeviceToken: "token",
+        baseGeneration: 0,
+        serverDate: serverDate,
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 1
+      )
+    )
+
+    #expect(node.clerk.client?.id == "authoritative-client")
+    #expect(backend.allSlots().first?.event.client?.id == "authoritative-client")
+    #expect(node.coordinator.currentMaximumGeneration == 2)
+  }
+
+  @Test
   func newerRequestFromIntermediateNetworkFrontierCanExtendResponseLineage() async throws {
     let backend = TestSlotBackend()
     let node = try makeNode(
@@ -345,6 +394,63 @@ struct SharedSessionSyncTests {
     #expect(event.generation == 2)
     #expect(event.client?.id == "second")
     #expect(node.clerk.client?.id == "second")
+  }
+
+  @Test
+  func tokenOnlyResponseResolvesIdentityWhenItsSerializedTurnBegins() async throws {
+    let backend = TestSlotBackend()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "initial"),
+      serverDate: Date(timeIntervalSince1970: 50)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: initialIdentity
+    )
+    backend.suspendNextSave()
+
+    let clientResponse = Task { @MainActor in
+      try await node.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(makeClient(id: "new-client")),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 1
+        )
+      )
+    }
+    try await waitUntil { backend.isSaveSuspended }
+
+    let tokenOnlyResponse = Task { @MainActor in
+      try await node.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .absent,
+          deviceTokenUpdate: .set("rotated-token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 200),
+          isCanonicalClientRequest: false,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 2
+        )
+      )
+    }
+
+    backend.resumeSuspendedSave(failing: false)
+    try await clientResponse.value
+    try await tokenOnlyResponse.value
+
+    let event = try #require(backend.allSlots().first?.event)
+    #expect(event.deviceToken == "rotated-token")
+    #expect(event.client?.id == "new-client")
+    #expect(node.clerk.client?.id == "new-client")
   }
 
   @Test
@@ -653,6 +759,44 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func failedResponseStageDoesNotConsumeItsResponseSequence() async throws {
+    let localStore = TestLocalIdentityStore()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "initial"),
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: TestSlotBackend(),
+      initialIdentity: initialIdentity,
+      localStore: localStore
+    )
+    let context = ClientSyncResponseContext(
+      update: .client(makeClient(id: "replacement")),
+      deviceTokenUpdate: .absent,
+      requestDeviceToken: "token",
+      baseGeneration: 0,
+      serverDate: nil,
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: node.clerk.clientResponseGeneration,
+      responseSequence: 1
+    )
+    localStore.failStages = true
+
+    await #expect(throws: TestLocalIdentityStore.Failure.self) {
+      try await node.coordinator.handleNetworkResponse(context)
+    }
+
+    localStore.failStages = false
+    try await node.coordinator.handleNetworkResponse(context)
+
+    #expect(node.clerk.client?.id == "replacement")
+    #expect(try localStore.load()?.client?.id == "replacement")
+  }
+
+  @Test
   func olderFailedPublicationCannotBecomePendingAfterNewerSuccess() async throws {
     let backend = TestSlotBackend()
     backend.suspendNextSave()
@@ -680,7 +824,7 @@ struct SharedSessionSyncTests {
     await #expect(throws: TestSlotBackend.Failure.self) {
       try await older.value
     }
-    try await newer.value
+    _ = try await newer.value
     _ = await node.clerk.reloadFromSharedStorage()
 
     #expect(backend.allSlots().first?.event.client?.id == "newer")
@@ -925,7 +1069,7 @@ struct SharedSessionSyncTests {
     )
 
     let gate = SharedRequestPreparationGate()
-    let blocker = receiver.clerk.enqueueLocalIdentityOperation { _ in
+    let blocker = receiver.clerk.identityController.enqueueLocalOperation { _ in
       await gate.suspend()
     }
     try await waitUntil { gate.isSuspended }
@@ -1032,7 +1176,9 @@ struct SharedSessionSyncTests {
     )
     _ = await second.clerk.reloadFromSharedStorage()
 
-    await first.coordinator.deleteOwnSlotAfterLocalClear()
+    first.coordinator.beginLocalClear()
+    defer { first.coordinator.endLocalClear() }
+    try await first.coordinator.deleteOwnSlotDuringLocalClear()
 
     #expect(backend.allSlots().map(\.slotOwnerIdentifier) == ["app.b"])
   }
@@ -1051,7 +1197,9 @@ struct SharedSessionSyncTests {
     )
     _ = await node.clerk.reloadFromSharedStorage()
 
-    await node.coordinator.deleteOwnSlotAfterLocalClear()
+    node.coordinator.beginLocalClear()
+    try await node.coordinator.deleteOwnSlotDuringLocalClear()
+    node.coordinator.endLocalClear()
     try await node.coordinator.publishLocalIdentity(
       state: .present,
       deviceToken: "new-token",
@@ -1280,7 +1428,7 @@ struct SharedSessionSyncTests {
     watchCoordinator.apply(payload, from: .phone, to: node.clerk)
     backend.resumeSuspendedSave(failing: false)
 
-    try await earlierPublication.value
+    _ = try await earlierPublication.value
     try await waitUntil { node.clerk.client?.id == "watch-client" }
 
     let event = try #require(backend.allSlots().first?.event)
@@ -1320,7 +1468,7 @@ struct SharedSessionSyncTests {
     )
     backend.resumeSuspendedSave(failing: false)
 
-    try await earlierPublication.value
+    _ = try await earlierPublication.value
     await watchCoordinator.waitForIdentityPublications()
 
     let metadata = try WatchSyncMetadataStore(
@@ -1562,6 +1710,31 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func updateDeviceTokenReportsRejectedSharedPublication() async throws {
+    let backend = TestSlotBackend()
+    backend.futureSchemaOwners.insert("app.a")
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "old-token",
+      client: makeClient(id: "old-client"),
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous
+    )
+
+    await #expect(throws: Clerk.DeviceTokenError.updateRejected) {
+      try await node.clerk.updateDeviceToken("new-token")
+    }
+
+    #expect(node.coordinator.currentDeviceToken == "old-token")
+    #expect(node.clerk.client?.id == "old-client")
+    #expect(try node.localStore.load()?.deviceToken == "old-token")
+  }
+
+  @Test
   func shutdownDeletesOwnSlotAfterSuspendedPublicationAndFencesOldWork() async throws {
     let backend = TestSlotBackend()
     backend.saveDelay = 0.05
@@ -1602,18 +1775,160 @@ struct SharedSessionSyncTests {
 
     node.coordinator.beginLocalClear()
     let deletion = Task { @MainActor in
-      await node.coordinator.deleteOwnSlotAfterLocalClear()
+      try await node.coordinator.deleteOwnSlotDuringLocalClear()
     }
     backend.resumeSuspendedSave(failing: false)
 
     await #expect(throws: CancellationError.self) {
       try await publication.value
     }
-    await deletion.value
+    try await deletion.value
 
     #expect(backend.allSlots().isEmpty)
     #expect(try node.localStore.loadPendingPublication() == nil)
     #expect(node.notifier.postCount == 0)
+  }
+
+  @Test
+  func localClearPreventsPendingRecoveryFromStartingANewSlotWrite() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(owner: "app.a", backend: backend)
+    let pending = try makeEvent(
+      owner: "app.a",
+      generation: 1,
+      clientID: "pending"
+    )
+    try node.localStore.stagePendingPublication(pending)
+    backend.suspendNextLoad()
+
+    let reconciliation = Task { @MainActor in
+      await node.coordinator.reloadFromSharedStorage()
+    }
+    try await waitUntil { backend.isLoadSuspended }
+    node.coordinator.beginLocalClear()
+    let deletion = Task { @MainActor in
+      try await node.coordinator.deleteOwnSlotDuringLocalClear()
+    }
+    backend.resumeSuspendedLoad()
+
+    _ = await reconciliation.value
+    try await deletion.value
+
+    #expect(backend.saveCount == 0)
+    #expect(backend.allSlots().isEmpty)
+    #expect(node.notifier.postCount == 0)
+  }
+
+  @Test
+  func localClearBarrierRemainsActiveAfterOwnerSlotDeletion() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(owner: "app.a", backend: backend)
+    let peer = try makeNode(owner: "app.b", backend: backend)
+    try await peer.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "peer-token",
+      client: makeClient(id: "peer-client"),
+      serverDate: nil
+    )
+    _ = await node.clerk.reloadFromSharedStorage()
+    #expect(node.clerk.client?.id == "peer-client")
+
+    node.coordinator.beginLocalClear()
+    node.clerk.identityController.clearAtomicIdentityFromMemory()
+    defer { node.coordinator.endLocalClear() }
+    try await node.coordinator.deleteOwnSlotDuringLocalClear()
+    node.notifier.post()
+    await node.coordinator.waitForPendingOperations()
+
+    #expect(node.clerk.client == nil)
+    #expect(node.coordinator.acceptedEventID == nil)
+    #expect(
+      backend.allSlots().contains { $0.slotOwnerIdentifier == "app.a" } == false
+    )
+  }
+
+  @Test
+  func failedOwnerSlotDeletionKeepsLocalClearBarrierUntilRetrySucceeds() async throws {
+    let backend = TestSlotBackend()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: makeClient(id: "client"),
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: initialIdentity
+    )
+    try await node.coordinator.publishLocalIdentity(
+      state: initialIdentity.state,
+      deviceToken: initialIdentity.deviceToken,
+      client: initialIdentity.client,
+      serverDate: initialIdentity.serverDate
+    )
+    backend.failDeletesForOwners.insert("app.a")
+
+    do {
+      try await node.clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected owner-slot deletion failure.")
+    } catch {}
+
+    #expect(node.clerk.client == nil)
+    #expect(backend.allSlots().isEmpty == false)
+    await #expect(throws: CancellationError.self) {
+      _ = try await node.coordinator.captureRequestIdentity()
+    }
+
+    backend.failDeletesForOwners.remove("app.a")
+    try await node.clerk.clearAllKeychainItemsAndWait()
+
+    #expect(backend.allSlots().isEmpty)
+  }
+
+  @Test
+  func watchMetadataIsNotPromotedWhenPeerEventWinsPublication() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(owner: "app.a", backend: backend)
+    let peer = try makeNode(owner: "app.b", backend: backend)
+    let watchCoordinator = WatchConnectivityCoordinator()
+    backend.suspendNextSave()
+
+    watchCoordinator.apply(
+      WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "watch-token",
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        clientUpdate: .snapshot(
+          client: makeClient(id: "watch-client"),
+          serverFetchDate: Date(timeIntervalSince1970: 100),
+          version: WatchSyncVersion(rawValue: 1)
+        ),
+        environment: nil
+      ),
+      from: .phone,
+      to: node.clerk
+    )
+    try await waitUntil { backend.isSaveSuspended }
+
+    try await peer.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "peer-token",
+      client: makeClient(id: "peer-client"),
+      serverDate: Date(timeIntervalSince1970: 200),
+      baseGeneration: 10
+    )
+    backend.resumeSuspendedSave(failing: false)
+    await watchCoordinator.waitForIdentityPublications()
+
+    let metadata = try WatchSyncMetadataStore(
+      keychain: node.clerk.dependencies.watchSyncKeychain
+    ).load()
+    #expect(node.clerk.client?.id == "peer-client")
+    #expect(metadata.authVersion == nil)
+    #expect(metadata.deviceTokenVersion == nil)
+    #expect(!metadata.hasPendingIdentityMetadata)
   }
 
   @Test
@@ -1663,7 +1978,7 @@ struct SharedSessionSyncTests {
       keychain: keychain,
       appLocalKeychain: keychain,
       identityKeychain: keychain,
-      sharedSessionLocalIdentityStore: localStore,
+      atomicIdentityStore: localStore,
       clientService: clientService ?? MockClientService(get: { nil })
     )
     try dependencies.configurationManager.configure(
@@ -1672,7 +1987,7 @@ struct SharedSessionSyncTests {
     )
     clerk.dependencies = dependencies
     if let initialIdentity {
-      clerk.setSharedSessionIdentityIfNeeded(initialIdentity)
+      clerk.hydrateIdentityIfNeeded(initialIdentity)
     }
 
     let notifier = TestSharedSessionSyncNotifier()
@@ -1778,16 +2093,21 @@ private final class TestSlotBackend: @unchecked Sendable {
   enum Failure: Error {
     case read
     case save
+    case delete
   }
 
   private let lock = NSLock()
   private let saveCondition = NSCondition()
+  private let loadCondition = NSCondition()
   private var slots: [String: SharedSessionOwnerSlot] = [:]
   private var saveOperations = 0
   private var shouldSuspendNextSave = false
   private var suspendedSaveShouldResume = false
   private var suspendedSaveShouldFail = false
   private var saveIsSuspended = false
+  private var shouldSuspendNextLoad = false
+  private var suspendedLoadShouldResume = false
+  private var loadIsSuspended = false
   private var readsShouldFail = false
   var failReads: Bool {
     get { lock.withLock { readsShouldFail } }
@@ -1796,6 +2116,7 @@ private final class TestSlotBackend: @unchecked Sendable {
 
   var beforeFailingRead: (@Sendable () -> Void)?
   var failSavesForOwners: Set<String> = []
+  var failDeletesForOwners: Set<String> = []
   var futureSchemaOwners: Set<String> = []
   var saveDelay: TimeInterval = 0
 
@@ -1809,6 +2130,10 @@ private final class TestSlotBackend: @unchecked Sendable {
     saveCondition.lock()
     defer { saveCondition.unlock() }
     return saveIsSuspended
+  }
+
+  var isLoadSuspended: Bool {
+    loadCondition.withLock { loadIsSuspended }
   }
 
   func suspendNextSave() {
@@ -1827,6 +2152,20 @@ private final class TestSlotBackend: @unchecked Sendable {
     saveCondition.unlock()
   }
 
+  func suspendNextLoad() {
+    loadCondition.withLock {
+      shouldSuspendNextLoad = true
+      suspendedLoadShouldResume = false
+    }
+  }
+
+  func resumeSuspendedLoad() {
+    loadCondition.withLock {
+      suspendedLoadShouldResume = true
+      loadCondition.broadcast()
+    }
+  }
+
   func load(owner: String) throws -> SharedSessionOwnerSlot? {
     lock.lock()
     defer { lock.unlock() }
@@ -1835,6 +2174,19 @@ private final class TestSlotBackend: @unchecked Sendable {
   }
 
   func loadAll() throws -> [SharedSessionOwnerSlot] {
+    loadCondition.lock()
+    let shouldSuspend = shouldSuspendNextLoad
+    shouldSuspendNextLoad = false
+    if shouldSuspend {
+      loadIsSuspended = true
+      loadCondition.broadcast()
+      while !suspendedLoadShouldResume {
+        loadCondition.wait()
+      }
+      loadIsSuspended = false
+    }
+    loadCondition.unlock()
+
     lock.lock()
     let shouldFail = readsShouldFail
     let result = slots.values.sorted { $0.slotOwnerIdentifier < $1.slotOwnerIdentifier }
@@ -1877,9 +2229,10 @@ private final class TestSlotBackend: @unchecked Sendable {
     saveOperations += 1
   }
 
-  func delete(owner: String) {
+  func delete(owner: String) throws {
     lock.lock()
     defer { lock.unlock() }
+    guard !failDeletesForOwners.contains(owner) else { throw Failure.delete }
     slots.removeValue(forKey: owner)
   }
 
@@ -1925,7 +2278,7 @@ private struct TestOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func deleteOwnSlot() throws {
-    backend.delete(owner: owner)
+    try backend.delete(owner: owner)
   }
 }
 

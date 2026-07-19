@@ -232,28 +232,28 @@ extension WatchConnectivityCoordinator {
     )
   }
 
-  func nextAuthVersion(keychain: any KeychainStorage) throws -> WatchSyncVersion {
-    try readAuthVersion(keychain: keychain).next()
-  }
-
   func persistAuthState(
     _ state: String,
-    version: WatchSyncVersion,
+    version: WatchSyncVersion?,
     client: Client?,
     serverDate: Date?,
     keychain: any KeychainStorage
-  ) throws {
+  ) throws -> WatchSyncMetadataRecord {
     let store = WatchSyncMetadataStore(keychain: keychain)
     var record = try store.load()
+    let resolvedVersion = try version ?? WatchSyncVersion(
+      rawValue: record.effectiveAuthVersion
+    ).next()
     record.authState = state
-    record.authVersion = version.rawValue
+    record.authVersion = resolvedVersion.rawValue
     record.authFingerprint = try Self.authFingerprint(
       client: client,
       serverDate: serverDate
     )
     record.discardPendingAuth()
     try store.save(record)
-    setAuthGeneration(version)
+    setAuthGeneration(resolvedVersion)
+    return record
   }
 
   func stagePendingWatchMetadata(
@@ -313,6 +313,32 @@ extension WatchConnectivityCoordinator {
     }
   }
 
+  func discardPendingWatchMetadata(
+    tokenVersion: WatchSyncVersion?,
+    authVersion: WatchSyncVersion?,
+    keychain: any KeychainStorage
+  ) throws {
+    guard tokenVersion != nil || authVersion != nil else { return }
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    var record = try store.load()
+    var didChange = false
+    if let tokenVersion,
+       record.pendingDeviceTokenVersion == tokenVersion.rawValue
+    {
+      record.discardPendingDeviceToken()
+      didChange = true
+    }
+    if let authVersion,
+       record.pendingAuthVersion == authVersion.rawValue
+    {
+      record.discardPendingAuth()
+      didChange = true
+    }
+    if didChange {
+      try store.save(record)
+    }
+  }
+
   func resolvedWatchMetadata(
     clerk: Clerk,
     keychain: any KeychainStorage
@@ -357,7 +383,7 @@ extension WatchConnectivityCoordinator {
   }
 
   static func authFingerprint(client: Client?, serverDate: Date?) throws -> String {
-    let payload = SharedSessionIdentityPayload(
+    let payload = ClerkIdentitySnapshot(
       state: client == nil ? .cleared : .present,
       deviceToken: client == nil ? nil : "paired",
       client: client,

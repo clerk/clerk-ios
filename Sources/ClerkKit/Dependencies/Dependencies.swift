@@ -29,10 +29,10 @@ protocol Dependencies: AnyObject {
   var legacyAppLocalKeychain: (any KeychainStorage)? { get }
 
   /// Atomic app-local identity storage used after shared-session adoption.
-  var sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)? { get }
+  var atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? { get }
 
   /// Serialized off-main access to the atomic app-local identity storage.
-  var sharedSessionLocalIdentityIO: SharedSessionLocalIdentityIO? { get }
+  var atomicIdentityIO: SharedSessionLocalIdentityIO? { get }
 
   /// Stable owner used for this app's discoverable shared-session slot.
   var sharedSessionOwnerIdentifier: String? { get }

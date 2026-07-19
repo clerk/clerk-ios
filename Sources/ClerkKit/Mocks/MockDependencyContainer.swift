@@ -18,8 +18,8 @@ final class MockDependencyContainer: Dependencies {
   let appLocalKeychain: any KeychainStorage
   let identityKeychain: any KeychainStorage
   let legacyAppLocalKeychain: (any KeychainStorage)?
-  let sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
-  let sharedSessionLocalIdentityIO: SharedSessionLocalIdentityIO?
+  let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  let atomicIdentityIO: SharedSessionLocalIdentityIO?
   let sharedSessionOwnerIdentifier: String?
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
@@ -65,7 +65,7 @@ final class MockDependencyContainer: Dependencies {
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
     legacyAppLocalKeychain: (any KeychainStorage)? = nil,
-    sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
     sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
@@ -86,8 +86,8 @@ final class MockDependencyContainer: Dependencies {
     self.appLocalKeychain = appLocalKeychain ?? self.keychain
     self.identityKeychain = identityKeychain ?? self.appLocalKeychain
     self.legacyAppLocalKeychain = legacyAppLocalKeychain
-    self.sharedSessionLocalIdentityStore = sharedSessionLocalIdentityStore
-    sharedSessionLocalIdentityIO = sharedSessionLocalIdentityStore.map {
+    self.atomicIdentityStore = atomicIdentityStore
+    atomicIdentityIO = atomicIdentityStore.map {
       SharedSessionLocalIdentityIO(store: $0)
     }
     self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier

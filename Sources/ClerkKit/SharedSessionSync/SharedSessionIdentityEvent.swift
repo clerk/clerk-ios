@@ -29,10 +29,7 @@ struct SharedSessionNamespace: Equatable {
 }
 
 struct SharedSessionIdentityEvent: Codable, Equatable {
-  enum State: String, Codable {
-    case present
-    case cleared
-  }
+  typealias State = ClerkIdentityState
 
   let id: UUID
   let originOwnerIdentifier: String
@@ -50,7 +47,7 @@ struct SharedSessionIdentityEvent: Codable, Equatable {
       throw SharedSessionIdentityEventError.missingOriginOwnerIdentifier
     }
 
-    _ = try SharedSessionIdentityPayload(
+    _ = try ClerkIdentitySnapshot(
       state: state,
       deviceToken: deviceToken,
       client: client,
@@ -69,39 +66,9 @@ struct SharedSessionIdentityEvent: Codable, Equatable {
   }
 }
 
-struct SharedSessionIdentityPayload: Codable, Equatable {
-  let state: SharedSessionIdentityEvent.State
-  let deviceToken: String?
-  let client: Client?
-  let serverDate: Date?
-
-  func validated() throws -> Self {
-    let hasToken = deviceToken?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-    switch state {
-    case .present:
-      guard hasToken, client != nil else {
-        throw SharedSessionIdentityEventError.invalidPresentState
-      }
-    case .cleared:
-      guard client == nil, deviceToken == nil || hasToken else {
-        throw SharedSessionIdentityEventError.invalidClearedState
-      }
-    }
-    if let serverDate,
-       !serverDate.timeIntervalSinceReferenceDate.isFinite
-    {
-      throw SharedSessionIdentityEventError.invalidServerDate
-    }
-    return self
-  }
-}
-
 enum SharedSessionIdentityEventError: Error, Equatable {
   case invalidGeneration
   case missingOriginOwnerIdentifier
-  case invalidPresentState
-  case invalidClearedState
-  case invalidServerDate
   case generationOverflow
 }
 

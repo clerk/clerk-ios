@@ -668,6 +668,10 @@ struct AuthTests {
       lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
+    try keychain.set(
+      "current-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
     try clerk.dependencies.magicLinkStore.save(kind: .signUp, flowId: "flow_123", codeVerifier: "verifier_123")
 
     var result: TransferFlowResult?

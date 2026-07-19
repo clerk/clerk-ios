@@ -25,8 +25,8 @@ final class DependencyContainer: Dependencies {
   let appLocalKeychain: any KeychainStorage
   let identityKeychain: any KeychainStorage
   let legacyAppLocalKeychain: (any KeychainStorage)?
-  let sharedSessionLocalIdentityStore: (any SharedSessionLocalIdentityStoring)?
-  let sharedSessionLocalIdentityIO: SharedSessionLocalIdentityIO?
+  let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  let atomicIdentityIO: SharedSessionLocalIdentityIO?
   let sharedSessionOwnerIdentifier: String?
   private let persistentAdoptionEnabled: Bool
   let configurationManager: ConfigurationManager
@@ -71,6 +71,7 @@ final class DependencyContainer: Dependencies {
     options: Clerk.Options,
     runtimeScope: ClerkRuntimeScope,
     deferSharedSessionAdoption: Bool = false,
+    persistentAdoptionEnabledOverride: Bool? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
@@ -101,7 +102,8 @@ final class DependencyContainer: Dependencies {
       .appendingResponseMiddleware(options.middleware.response)
     sharedSessionOwnerIdentifier = ownerIdentifierProvider()?
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    persistentAdoptionEnabled = !publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests
+    persistentAdoptionEnabled = persistentAdoptionEnabledOverride
+      ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests)
     let keychainStorages = try Self.makeKeychainStorages(
       options: options,
       frontendApiUrl: configurationManager.frontendApiUrl,
@@ -114,8 +116,8 @@ final class DependencyContainer: Dependencies {
     appLocalKeychain = keychainStorages.appLocal
     identityKeychain = keychainStorages.identity
     legacyAppLocalKeychain = keychainStorages.legacyAppLocal
-    sharedSessionLocalIdentityStore = keychainStorages.localIdentityStore
-    sharedSessionLocalIdentityIO = keychainStorages.localIdentityStore.map {
+    atomicIdentityStore = keychainStorages.localIdentityStore
+    atomicIdentityIO = keychainStorages.localIdentityStore.map {
       SharedSessionLocalIdentityIO(store: $0)
     }
 
@@ -230,7 +232,6 @@ final class DependencyContainer: Dependencies {
     let adoptedIdentityStore = wasAdopted
       ? SharedSessionLocalIdentityStore(keychain: stableIdentity)
       : nil
-    try adoptedIdentityStore?.clearPendingPublication()
     return KeychainStorages(
       shared: shared,
       appLocal: wasAdopted ? configuredAppLocal : shared,
@@ -255,6 +256,29 @@ final class DependencyContainer: Dependencies {
       previousAppLocalIdentity: legacyAppLocalKeychain,
       legacyShared: keychain
     ).migrateIfNeeded()
+  }
+
+  @MainActor
+  func prepareForInstallationAfterIdentityProducersDrain() throws {
+    guard configurationManager.options.sharedSessionSync == nil else { return }
+    try atomicIdentityStore?.clearPendingPublication()
+  }
+
+  @MainActor
+  func markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded() throws {
+    guard persistentAdoptionEnabled,
+          configurationManager.options.sharedSessionSync != nil
+    else {
+      return
+    }
+
+    try SharedSessionSyncAdoption(
+      destinationIdentity: identityKeychain,
+      destinationPrivate: appLocalKeychain,
+      configuredAppLocalIdentity: appLocalKeychain,
+      previousAppLocalIdentity: legacyAppLocalKeychain,
+      legacyShared: keychain
+    ).markAdoptedWithoutMigratingCredentials()
   }
 
   private static func makePreviousAppLocalKeychain(
