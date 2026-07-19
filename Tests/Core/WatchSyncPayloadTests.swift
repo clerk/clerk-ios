@@ -1204,6 +1204,30 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func clearTombstoneClearsInheritedSources() throws {
+    let keychain = InMemoryKeychain()
+    let store = WatchSyncMetadataStore(keychain: keychain)
+    var record = WatchSyncMetadataRecord.empty
+    record.deviceTokenState = .set
+    record.deviceTokenVersion = 4
+    record.deviceTokenSource = .phone
+    record.authState = .set
+    record.authVersion = 4
+    record.authSource = .watch
+    try store.save(record)
+
+    let tombstone = try store.saveClearTombstone(minimumVersion: 10)
+
+    #expect(tombstone.deviceTokenState == .cleared)
+    #expect(tombstone.deviceTokenVersion == 10)
+    #expect(tombstone.deviceTokenSource == nil)
+    #expect(tombstone.authState == .cleared)
+    #expect(tombstone.authVersion == 10)
+    #expect(tombstone.authSource == nil)
+    #expect(try store.load() == tombstone)
+  }
+
+  @Test
   func legacyDeviceTokenStateWithoutVersionMigratesAsVersionZero() throws {
     let keychain = InMemoryKeychain()
     let store = WatchSyncMetadataStore(keychain: keychain)
@@ -1560,6 +1584,54 @@ struct WatchSyncPayloadTests {
     #expect(metadata.deviceTokenSource == .phone)
     #expect(metadata.authVersion == 4)
     #expect(metadata.authSource == .phone)
+  }
+
+  @Test
+  func lowerAuthoritativePhonePayloadCannotResetClearTombstone() throws {
+    let tombstoneSources: [WatchSyncSource?] = [nil, .watch]
+
+    for tombstoneSource in tombstoneSources {
+      configureClerkForTesting()
+      let clerk = Clerk()
+      let keychain = InMemoryKeychain()
+      var record = WatchSyncMetadataRecord.empty
+      record.deviceTokenState = .cleared
+      record.deviceTokenVersion = 100
+      record.deviceTokenFingerprint = WatchConnectivityCoordinator.deviceTokenFingerprint(nil)
+      record.deviceTokenSource = tombstoneSource
+      record.authState = .cleared
+      record.authVersion = 100
+      record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
+        client: nil,
+        serverDate: nil
+      )
+      record.authSource = tombstoneSource
+      try WatchSyncMetadataStore(keychain: keychain).save(record)
+      let stalePhonePayload = WatchSyncPayload(
+        deviceTokenUpdate: .tokenSet(
+          token: "stale-phone-token",
+          version: WatchSyncVersion(rawValue: 14)
+        ),
+        clientUpdate: .snapshot(
+          client: client(id: "stale-phone-client", updatedAt: 1000),
+          serverFetchDate: Date(timeIntervalSince1970: 1000),
+          version: WatchSyncVersion(rawValue: 14)
+        ),
+        environment: nil
+      )
+
+      apply(stalePhonePayload, from: .phone, to: clerk, keychain: keychain)
+
+      let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+      #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+      #expect(clerk.client == nil)
+      #expect(metadata.deviceTokenState == .cleared)
+      #expect(metadata.deviceTokenVersion == 100)
+      #expect(metadata.deviceTokenSource == tombstoneSource)
+      #expect(metadata.authState == .cleared)
+      #expect(metadata.authVersion == 100)
+      #expect(metadata.authSource == tombstoneSource)
+    }
   }
 
   @Test

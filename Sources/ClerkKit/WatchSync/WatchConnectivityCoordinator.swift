@@ -484,6 +484,8 @@ extension WatchConnectivityCoordinator {
           let authCurrent,
           tokenVersion < tokenCurrent,
           authVersion < authCurrent,
+          metadata.effectiveDeviceTokenState != .cleared,
+          metadata.effectiveAuthState != .cleared,
           metadata.effectiveDeviceTokenSource != source,
           metadata.effectiveAuthSource != source
     else {
@@ -603,6 +605,7 @@ extension WatchConnectivityCoordinator {
     record.deviceTokenState = clerk.deviceToken == nil ? .cleared : .set
     record.deviceTokenVersion = deviceTokenVersion.rawValue
     record.deviceTokenFingerprint = Self.deviceTokenFingerprint(clerk.deviceToken)
+    record.deviceTokenSource = nil
     record.discardPendingDeviceToken()
     record.authState = clerk.client == nil ? .cleared : .set
     record.authVersion = authVersion.rawValue
@@ -610,6 +613,7 @@ extension WatchConnectivityCoordinator {
       client: clerk.client,
       serverDate: clerk.lastClientServerFetchDate
     )
+    record.authSource = nil
     record.discardPendingAuth()
     try store.save(record)
     setAuthGeneration(authVersion)

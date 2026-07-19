@@ -18,6 +18,7 @@ extension WatchConnectivityCoordinator {
     record.deviceTokenState = state
     record.deviceTokenVersion = resolvedVersion.rawValue
     record.deviceTokenFingerprint = Self.deviceTokenFingerprint(deviceToken)
+    record.deviceTokenSource = nil
     record.discardPendingDeviceToken()
     try store.save(record)
     return record

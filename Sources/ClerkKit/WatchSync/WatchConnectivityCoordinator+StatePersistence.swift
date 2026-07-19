@@ -60,6 +60,18 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
     return pendingAuthVersion >= authVersion ? pendingAuthSource : authSource
   }
 
+  var effectiveDeviceTokenState: WatchSyncMetadataState? {
+    guard let pendingDeviceTokenVersion else { return deviceTokenState }
+    guard let deviceTokenVersion else { return pendingDeviceTokenState }
+    return pendingDeviceTokenVersion >= deviceTokenVersion ? pendingDeviceTokenState : deviceTokenState
+  }
+
+  var effectiveAuthState: WatchSyncMetadataState? {
+    guard let pendingAuthVersion else { return authState }
+    guard let authVersion else { return pendingAuthState }
+    return pendingAuthVersion >= authVersion ? pendingAuthState : authState
+  }
+
   var hasPendingIdentityMetadata: Bool {
     pendingDeviceTokenVersion != nil || pendingAuthVersion != nil
   }
@@ -175,12 +187,14 @@ struct WatchSyncMetadataStore {
     record.deviceTokenState = .cleared
     record.deviceTokenVersion = clearVersion
     record.deviceTokenFingerprint = WatchConnectivityCoordinator.deviceTokenFingerprint(nil)
+    record.deviceTokenSource = nil
     record.authState = .cleared
     record.authVersion = clearVersion
     record.authFingerprint = try WatchConnectivityCoordinator.authFingerprint(
       client: nil,
       serverDate: nil
     )
+    record.authSource = nil
     record.discardPendingDeviceToken()
     record.discardPendingAuth()
     try save(record)
@@ -336,6 +350,7 @@ extension WatchConnectivityCoordinator {
       client: client,
       serverDate: serverDate
     )
+    record.authSource = nil
     record.discardPendingAuth()
     try store.save(record)
     setAuthGeneration(resolvedVersion)
@@ -396,6 +411,7 @@ extension WatchConnectivityCoordinator {
   ) {
     guard source.incomingDeviceIsAuthoritative,
           version.rawValue < record.effectiveDeviceTokenVersion,
+          record.effectiveDeviceTokenState != .cleared,
           record.effectiveDeviceTokenSource != source
     else {
       return
@@ -414,6 +430,7 @@ extension WatchConnectivityCoordinator {
   ) {
     guard source.incomingDeviceIsAuthoritative,
           version.rawValue < record.effectiveAuthVersion,
+          record.effectiveAuthState != .cleared,
           record.effectiveAuthSource != source
     else {
       return
