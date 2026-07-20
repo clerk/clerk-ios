@@ -365,12 +365,12 @@ extension TrustedDevices {
 
       var trustedDevices: [TrustedDevice]?
       var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
+      let activeUserCredentials = supportedCredentials.filter { $0.userID == activeUserID }
+      guard !activeUserCredentials.isEmpty else {
+        return .unavailable(.noLocalCredential)
+      }
 
-      for credential in supportedCredentials {
-        guard credential.userID == activeUserID else {
-          return .available(credential)
-        }
-
+      for credential in activeUserCredentials {
         let activeUserTrustedDevices: [TrustedDevice]
         if let trustedDevices {
           activeUserTrustedDevices = trustedDevices

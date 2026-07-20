@@ -39,6 +39,20 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func resetForNewAuthFlowClearsPathAndPostAuthFlags() {
+    let navigation = AuthNavigation()
+    navigation.path = [.trustedDeviceEnrollment]
+    navigation.routeToTrustedDeviceEnrollment()
+    navigation.markPostAuthStepsComplete()
+
+    navigation.resetForNewAuthFlow()
+
+    #expect(navigation.path.isEmpty)
+    #expect(navigation.postAuthStepsComplete == false)
+    #expect(navigation.trustedDeviceEnrollmentWasOffered == false)
+  }
+
+  @Test
   func routeToSessionTaskStartRoutesResetPasswordTaskOnce() {
     let navigation = AuthNavigation()
     let session = session(pendingTasks: [.resetPassword])
