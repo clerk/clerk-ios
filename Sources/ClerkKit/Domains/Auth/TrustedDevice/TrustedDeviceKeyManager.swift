@@ -43,7 +43,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   @MainActor
   func createKey(policy: TrustedDevicePolicy = .biometryOrDevicePasscode) throws -> TrustedDeviceLocalKey {
     #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
-    guard isSupported(policy: policy) else {
+    guard canCreateKey(policy: policy) else {
       throw TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
     }
 
@@ -60,6 +60,17 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return TrustedDeviceLocalKey(localKeyId: localKeyId, publicKeyJWK: publicKeyJWK, policy: policy)
     #else
     throw TrustedDeviceKeyManagerError.unsupportedPlatform
+    #endif
+  }
+
+  @MainActor
+  private func canCreateKey(policy: TrustedDevicePolicy) -> Bool {
+    #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
+    let context = LAContext()
+    var error: NSError?
+    return context.canEvaluatePolicy(Self.localAuthenticationPolicyForKeyCreation(for: policy), error: &error)
+    #else
+    return false
     #endif
   }
 
@@ -295,7 +306,13 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     case .biometryCurrentSet, .biometryAny:
       .deviceOwnerAuthenticationWithBiometrics
     case .biometryOrDevicePasscode:
-      // Require enrolled biometrics before creating a key; .userPresence controls key-access fallback.
+      .deviceOwnerAuthentication
+    }
+  }
+
+  package static func localAuthenticationPolicyForKeyCreation(for policy: TrustedDevicePolicy) -> LAPolicy {
+    switch policy {
+    case .biometryCurrentSet, .biometryAny, .biometryOrDevicePasscode:
       .deviceOwnerAuthenticationWithBiometrics
     }
   }

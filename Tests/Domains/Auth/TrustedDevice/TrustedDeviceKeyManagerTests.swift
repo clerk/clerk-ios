@@ -70,6 +70,22 @@ struct TrustedDeviceKeyManagerTests {
     )
     #expect(
       TrustedDeviceKeyManager.localAuthenticationPolicy(for: .biometryOrDevicePasscode) ==
+        .deviceOwnerAuthentication
+    )
+  }
+
+  @Test
+  func localAuthenticationPoliciesForKeyCreationRequireBiometrics() {
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryCurrentSet) ==
+        .deviceOwnerAuthenticationWithBiometrics
+    )
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryAny) ==
+        .deviceOwnerAuthenticationWithBiometrics
+    )
+    #expect(
+      TrustedDeviceKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryOrDevicePasscode) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
   }
