@@ -349,10 +349,40 @@ extension Clerk {
 
     // Set up watch connectivity coordinator only after cache hydration.
     // Restored cached state should not be versioned as a new local auth change.
-    installWatchConnectivityIfNeeded()
+    if options.watchConnectivityEnabled {
+      let coordinator = WatchConnectivityCoordinator()
+      watchConnectivityCoordinator = coordinator
+      internalStateChanges.addObserver(coordinator)
+    }
 
     // Fire and forget: fetch fresh client and environment from API
-    scheduleStartupRefresh(after: initialSharedSessionReconciliation)
+    let retryPolicy = Self.startupRefreshRetryPolicy
+    taskCoordinator?.task { @MainActor [weak self] in
+      do {
+        guard let self else { return }
+        async let environment = retryingOperation(
+          policy: retryPolicy,
+          operationName: "environment refresh"
+        ) {
+          try await self.refreshEnvironment()
+        }
+
+        _ = await initialSharedSessionReconciliation?.value
+        let client = try await retryingOperation(
+          policy: retryPolicy,
+          operationName: "client refresh"
+        ) {
+          try await self.refreshClient()
+        }
+
+        _ = try await environment
+        _ = client
+      } catch is CancellationError {
+        return
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to load client or environment")
+      }
+    }
   }
 
   @MainActor
@@ -401,47 +431,6 @@ extension Clerk {
     } catch {
       ClerkLogger.logError(error, message: "Failed to install shared session sync")
       return nil
-    }
-  }
-
-  @MainActor
-  private func installWatchConnectivityIfNeeded() {
-    guard options.watchConnectivityEnabled else { return }
-    let coordinator = WatchConnectivityCoordinator()
-    watchConnectivityCoordinator = coordinator
-    internalStateChanges.addObserver(coordinator)
-  }
-
-  @MainActor
-  private func scheduleStartupRefresh(
-    after initialSharedSessionReconciliation: Task<Bool, Never>?
-  ) {
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    taskCoordinator?.task { @MainActor [weak self] in
-      do {
-        guard let self else { return }
-        async let environment = retryingOperation(
-          policy: retryPolicy,
-          operationName: "environment refresh"
-        ) {
-          try await self.refreshEnvironment()
-        }
-
-        _ = await initialSharedSessionReconciliation?.value
-        let client = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try await self.refreshClient()
-        }
-
-        _ = try await environment
-        _ = client
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load client or environment")
-      }
     }
   }
 

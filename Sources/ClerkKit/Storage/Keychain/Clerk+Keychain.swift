@@ -143,26 +143,52 @@ extension Clerk {
     cacheManager?.freezePersistence()
     let identityClear = clerk.identityController.beginStorageClear()
     let usesAtomicLocalIdentity = identityClear.usesAtomicLocalPersistence
-    var initialFailedOperations = preserveWatchClearWatermarkIfNeeded(
-      using: dependencies,
-      usesAtomicLocalIdentity: usesAtomicLocalIdentity,
-      loggingConfiguration: loggingConfiguration
-    )
+    var initialFailedOperations: [String] = []
+    if usesAtomicLocalIdentity {
+      do {
+        _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
+          .saveClearTombstone()
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to preserve the Watch clear watermark",
+          configuration: loggingConfiguration
+        )
+        initialFailedOperations.append("preserve Watch clear watermark")
+      }
+    }
     clerk.identityController.applyStorageClearToMemory(identityClear)
-    initialFailedOperations.append(
-      contentsOf: deleteInvalidatedAtomicIdentityIfNeeded(
-        using: dependencies,
-        identityClear: identityClear,
-        loggingConfiguration: loggingConfiguration
-      )
-    )
-    let preservedKeys = preservedKeysAfterStorageClear(
-      usesAtomicLocalIdentity: usesAtomicLocalIdentity
-    )
-    clearPersistedKeychainItems(
-      in: dependencies,
+    if let atomicIdentityStore = dependencies.atomicIdentityStore {
+      do {
+        try atomicIdentityStore.deleteInvalidatingOperations(
+          through: identityClear.invalidatedThroughRevision
+        )
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to synchronously delete Clerk's atomic identity",
+          configuration: loggingConfiguration
+        )
+        initialFailedOperations.append("delete atomic identity")
+      }
+    }
+    let preservedKeys: Set<ClerkKeychainKey> = usesAtomicLocalIdentity
+      ? [.sharedSessionSyncAdopted, .watchSyncMetadata]
+      : [.sharedSessionSyncAdopted]
+    clearAllKeychainItems(
+      in: dependencies.appLocalKeychain,
       preserving: preservedKeys,
-      loggingConfiguration: loggingConfiguration
+      configuration: loggingConfiguration
+    )
+    clearAllKeychainItems(
+      in: dependencies.identityKeychain,
+      preserving: preservedKeys,
+      configuration: loggingConfiguration
+    )
+    clearKeychainItems(
+      legacySharedCredentialKeys,
+      in: dependencies.keychain,
+      configuration: loggingConfiguration
     )
     let clearOperation = deferredKeychainClearOperation(
       clerk: clerk,
@@ -184,80 +210,6 @@ extension Clerk {
   }
 
   @MainActor
-  private static func preserveWatchClearWatermarkIfNeeded(
-    using dependencies: any Dependencies,
-    usesAtomicLocalIdentity: Bool,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) -> [String] {
-    guard usesAtomicLocalIdentity else { return [] }
-    do {
-      _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
-        .saveClearTombstone()
-      return []
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to preserve the Watch clear watermark",
-        configuration: loggingConfiguration
-      )
-      return ["preserve Watch clear watermark"]
-    }
-  }
-
-  @MainActor
-  private static func deleteInvalidatedAtomicIdentityIfNeeded(
-    using dependencies: any Dependencies,
-    identityClear: ClerkIdentityController.StorageClearContext,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) -> [String] {
-    guard let atomicIdentityStore = dependencies.atomicIdentityStore else { return [] }
-    do {
-      try atomicIdentityStore.deleteInvalidatingOperations(
-        through: identityClear.invalidatedThroughRevision
-      )
-      return []
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to synchronously delete Clerk's atomic identity",
-        configuration: loggingConfiguration
-      )
-      return ["delete atomic identity"]
-    }
-  }
-
-  private static func preservedKeysAfterStorageClear(
-    usesAtomicLocalIdentity: Bool
-  ) -> Set<ClerkKeychainKey> {
-    usesAtomicLocalIdentity
-      ? [.sharedSessionSyncAdopted, .watchSyncMetadata]
-      : [.sharedSessionSyncAdopted]
-  }
-
-  @MainActor
-  private static func clearPersistedKeychainItems(
-    in dependencies: any Dependencies,
-    preserving preservedKeys: Set<ClerkKeychainKey>,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) {
-    clearAllKeychainItems(
-      in: dependencies.appLocalKeychain,
-      preserving: preservedKeys,
-      configuration: loggingConfiguration
-    )
-    clearAllKeychainItems(
-      in: dependencies.identityKeychain,
-      preserving: preservedKeys,
-      configuration: loggingConfiguration
-    )
-    clearKeychainItems(
-      legacySharedCredentialKeys,
-      in: dependencies.keychain,
-      configuration: loggingConfiguration
-    )
-  }
-
-  @MainActor
   private static func deferredKeychainClearOperation(
     clerk: Clerk,
     dependencies: any Dependencies,
@@ -269,116 +221,70 @@ extension Clerk {
   ) -> Task<KeychainClearResult, Error> {
     clerk.identityController.enqueueLocalOperation { operationRevision in
       var failedOperations = initialFailedOperations
-      let ownerSlotWithdrawal = await withdrawSharedSessionOwnerSlot(
-        clerk: clerk,
-        identityClear: identityClear,
-        loggingConfiguration: loggingConfiguration
-      )
-      if let failedOperation = ownerSlotWithdrawal.failedOperation {
-        failedOperations.append(failedOperation)
+      var sharedTransportWithdrawn = false
+      do {
+        sharedTransportWithdrawn = try await clerk.identityController
+          .deleteCapturedOwnerSlotAfterStorageClear(identityClear)
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to withdraw Clerk's shared-session owner slot",
+          configuration: loggingConfiguration
+        )
+        failedOperations.append("withdraw shared-session owner slot")
       }
 
       await cacheManager?.drainFrozenPersistence()
-      failedOperations.append(
-        contentsOf: strictlyClearPersistedKeychainItems(
-          in: dependencies,
+      do {
+        try clearAllKeychainItemsStrictly(
+          in: dependencies.appLocalKeychain,
           preserving: preservedKeys,
-          loggingConfiguration: loggingConfiguration
+          configuration: loggingConfiguration
         )
-      )
-      let atomicIdentityFailures = await deleteAtomicIdentityIfNeeded(
-        dependencies: dependencies,
-        operationRevision: operationRevision,
-        loggingConfiguration: loggingConfiguration
-      )
-      failedOperations.append(contentsOf: atomicIdentityFailures)
+      } catch {
+        failedOperations.append("clear app-local Keychain")
+      }
+      do {
+        try clearAllKeychainItemsStrictly(
+          in: dependencies.identityKeychain,
+          preserving: preservedKeys,
+          configuration: loggingConfiguration
+        )
+      } catch {
+        failedOperations.append("clear identity Keychain")
+      }
+      do {
+        try clearKeychainItemsStrictly(
+          legacySharedCredentialKeys,
+          in: dependencies.keychain,
+          configuration: loggingConfiguration
+        )
+      } catch {
+        failedOperations.append("clear legacy shared credentials")
+      }
+
+      if let localIdentityIO = dependencies.atomicIdentityIO {
+        do {
+          _ = try await localIdentityIO.delete(operationRevision: operationRevision)
+        } catch {
+          ClerkLogger.logError(
+            error,
+            message: "Failed to delete Clerk's atomic identity",
+            configuration: loggingConfiguration
+          )
+          failedOperations.append("delete atomic identity")
+        }
+      }
 
       guard failedOperations.isEmpty else {
         throw KeychainClearError(
           failedOperations: failedOperations,
-          sharedTransportWithdrawn: ownerSlotWithdrawal.withdrawn
+          sharedTransportWithdrawn: sharedTransportWithdrawn
         )
       }
       return KeychainClearResult(
-        sharedTransportWithdrawn: ownerSlotWithdrawal.withdrawn
+        sharedTransportWithdrawn: sharedTransportWithdrawn
       )
-    }
-  }
-
-  @MainActor
-  private static func withdrawSharedSessionOwnerSlot(
-    clerk: Clerk,
-    identityClear: ClerkIdentityController.StorageClearContext,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) async -> (withdrawn: Bool, failedOperation: String?) {
-    do {
-      let withdrawn = try await clerk.identityController
-        .deleteCapturedOwnerSlotAfterStorageClear(identityClear)
-      return (withdrawn, nil)
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to withdraw Clerk's shared-session owner slot",
-        configuration: loggingConfiguration
-      )
-      return (false, "withdraw shared-session owner slot")
-    }
-  }
-
-  @MainActor
-  private static func strictlyClearPersistedKeychainItems(
-    in dependencies: any Dependencies,
-    preserving preservedKeys: Set<ClerkKeychainKey>,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) -> [String] {
-    var failedOperations: [String] = []
-    do {
-      try clearAllKeychainItemsStrictly(
-        in: dependencies.appLocalKeychain,
-        preserving: preservedKeys,
-        configuration: loggingConfiguration
-      )
-    } catch {
-      failedOperations.append("clear app-local Keychain")
-    }
-    do {
-      try clearAllKeychainItemsStrictly(
-        in: dependencies.identityKeychain,
-        preserving: preservedKeys,
-        configuration: loggingConfiguration
-      )
-    } catch {
-      failedOperations.append("clear identity Keychain")
-    }
-    do {
-      try clearKeychainItemsStrictly(
-        legacySharedCredentialKeys,
-        in: dependencies.keychain,
-        configuration: loggingConfiguration
-      )
-    } catch {
-      failedOperations.append("clear legacy shared credentials")
-    }
-    return failedOperations
-  }
-
-  @MainActor
-  private static func deleteAtomicIdentityIfNeeded(
-    dependencies: any Dependencies,
-    operationRevision: UInt64,
-    loggingConfiguration: ClerkLogger.Configuration
-  ) async -> [String] {
-    guard let localIdentityIO = dependencies.atomicIdentityIO else { return [] }
-    do {
-      _ = try await localIdentityIO.delete(operationRevision: operationRevision)
-      return []
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to delete Clerk's atomic identity",
-        configuration: loggingConfiguration
-      )
-      return ["delete atomic identity"]
     }
   }
 

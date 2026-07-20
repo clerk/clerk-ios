@@ -77,7 +77,7 @@ final class ClerkIdentityController {
   private var localOperationTail: Task<Void, Never>?
 
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
-  var lastAppliedResponseSequence: Int?
+  private var lastAppliedResponseSequence: Int?
   var lastServerDate: Date?
   var isApplyingIdentityTransition = false
 
@@ -946,5 +946,52 @@ extension ClerkIdentityController {
     isApplyingIdentityTransition = true
     clerk.client = client
     isApplyingIdentityTransition = previousApplyingState
+  }
+
+  private func responseCanBeAccepted(
+    _ incoming: Client?,
+    responseSequence: Int?,
+    serverDate: Date?,
+    clientResponseGeneration: ClientResponseGeneration?,
+    clerk: Clerk
+  ) -> Bool {
+    if let clientResponseGeneration,
+       clientResponseGeneration != self.clientResponseGeneration
+    {
+      ClerkLogger.debug(
+        "Ignoring client response from stale device token generation. Current generation: \(self.clientResponseGeneration), incoming generation: \(clientResponseGeneration)"
+      )
+      return false
+    }
+
+    if let responseSequence,
+       let lastAppliedResponseSequence,
+       responseSequence <= lastAppliedResponseSequence,
+       !responseIsNewerThanCurrent(incoming, serverDate: serverDate, clerk: clerk)
+    {
+      ClerkLogger.debug(
+        "Ignoring stale client response. Current sequence: \(lastAppliedResponseSequence), incoming sequence: \(responseSequence)"
+      )
+      return false
+    }
+    return true
+  }
+
+  private func recordAcceptedResponse(sequence: Int?) {
+    guard let sequence else { return }
+    lastAppliedResponseSequence = max(lastAppliedResponseSequence ?? sequence, sequence)
+  }
+
+  private func responseIsNewerThanCurrent(
+    _ incoming: Client?,
+    serverDate: Date?,
+    clerk: Clerk
+  ) -> Bool {
+    guard let serverDate, let lastServerDate else { return false }
+    if serverDate > lastServerDate { return true }
+    guard serverDate == lastServerDate, let incoming, let currentClient = clerk.client else {
+      return false
+    }
+    return incoming.updatedAt > currentClient.updatedAt
   }
 }
