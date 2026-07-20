@@ -1762,7 +1762,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func acceptedPayloadWithoutServerDateClearsPreviousDate() throws {
+  func acceptedPayloadWithoutServerDatePreservesPreviousDate() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -1781,7 +1781,7 @@ struct WatchSyncPayloadTests {
     apply(payload, from: .phone, to: clerk, keychain: keychain)
 
     #expect(clerk.client?.id == "new-client")
-    #expect(clerk.lastClientServerFetchDate == nil)
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
   }
 
   @Test

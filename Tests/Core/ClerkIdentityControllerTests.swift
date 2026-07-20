@@ -375,6 +375,51 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func undatedAcceptedIdentityPreservesServerDateWatermark() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    var currentClient = makeClient(id: "current-client")
+    currentClient.updatedAt = Date(timeIntervalSince1970: 100)
+    clerk.client = currentClient
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 200)
+    var undatedClient = makeClient(id: "undated-client")
+    undatedClient.updatedAt = Date(timeIntervalSince1970: 300)
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(undatedClient),
+        deviceTokenUpdate: .set("token"),
+        requestDeviceToken: "token",
+        baseGeneration: nil,
+        serverDate: nil,
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: clerk.clientResponseGeneration,
+        responseSequence: 1
+      )
+    )
+
+    #expect(clerk.client?.id == "undated-client")
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    var stalePersistedClient = makeClient(id: "stale-persisted-client")
+    stalePersistedClient.updatedAt = Date(timeIntervalSince1970: 1000)
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(stalePersistedClient),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+
+    let didChange = await clerk.reloadFromSharedStorage()
+
+    #expect(!didChange)
+    #expect(clerk.client?.id == "undated-client")
+    #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+  }
+
+  @Test
   func manualReloadStillAppliesLegacyClientAndEnvironmentWithoutCoordinator() async throws {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()

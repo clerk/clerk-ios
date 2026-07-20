@@ -933,7 +933,9 @@ extension ClerkIdentityController {
     }
     let previousApplyingState = isApplyingIdentityTransition
     isApplyingIdentityTransition = true
-    lastServerDate = identity.serverDate
+    if identity.serverDate != nil || identity.state == .cleared {
+      lastServerDate = identity.serverDate
+    }
     clerk.client = identity.client
     isApplyingIdentityTransition = previousApplyingState
     if emitIdentityChange {
