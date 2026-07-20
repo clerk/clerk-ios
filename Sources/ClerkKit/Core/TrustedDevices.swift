@@ -156,8 +156,15 @@ public struct TrustedDevices {
   @discardableResult
   public func revoke(id: String) async throws -> TrustedDevice {
     let trustedDevice = try await trustedDeviceService.revoke(trustedDeviceId: id)
-    if let localCredential = try credentialStore.credential(id: id) {
-      try deleteLocalCredential(localCredential)
+    do {
+      if let localCredential = try credentialStore.credential(id: id) {
+        try deleteLocalCredential(localCredential)
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to delete local trusted-device credential after server revocation. This is non-critical."
+      )
     }
     return trustedDevice
   }

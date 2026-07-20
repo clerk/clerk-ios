@@ -758,6 +758,24 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func revokeReturnsServerCredentialWhenLocalCleanupFails() async throws {
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = try makeTrustedDevicesWithLocalCredential(
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in .mock }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+        throw TestKeyDeletionError.failed
+      })
+    )
+
+    let trustedDevice = try await setup.trustedDevices.revoke(id: "tdc_123")
+
+    #expect(trustedDevice == .mock)
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+  }
+
+  @Test
   func revokeCurrentDeviceCredentialUsesUserIDWhenIdentifierHintChanged() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
@@ -1253,6 +1271,10 @@ private func missingTrustedDeviceCredentialError(
     meta: ["param_name": .string(paramName)],
     clerkTraceId: "trace_123"
   )
+}
+
+private enum TestKeyDeletionError: Error {
+  case failed
 }
 
 @MainActor
