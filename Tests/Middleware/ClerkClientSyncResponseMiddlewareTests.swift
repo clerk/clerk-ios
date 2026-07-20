@@ -92,6 +92,60 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateHoldsRegisteredAuthFlowBeforeApplyingCompletedSignInClient() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let data = try JSONEncoder.clerkEncoder.encode(ClientEnvelope(
+      response: SignInResponsePayload(
+        object: "sign_in_attempt",
+        id: SignIn.mock.id,
+        status: SignIn.Status.complete.rawValue,
+        createdSessionId: Client.mock.currentSession?.id
+      ),
+      client: Client.mock
+    ))
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ins/sign_in_123/attempt_first_factor"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+
+    try await middleware.validate(response, data: data, for: URLRequest(url: url))
+
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func validateDoesNotHoldRegisteredAuthFlowForRefreshedActiveClient() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let data = try JSONEncoder.clerkEncoder.encode(ClientOnlyEnvelope(response: Client.mock, client: nil))
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+
+    try await middleware.validate(response, data: data, for: URLRequest(url: url))
+
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete)
+    #expect(clerk.pendingAuthFlowCompletion == nil)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
   func validateIgnoresClientResponseFromStaleDeviceTokenGeneration() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -175,6 +229,13 @@ struct ClerkClientSyncResponseMiddlewareTests {
 private struct ClientEnvelope<Response: Codable>: Codable {
   let response: Response
   let client: Client?
+}
+
+private struct SignInResponsePayload: Codable {
+  let object: String
+  let id: String
+  let status: String
+  let createdSessionId: String?
 }
 
 private struct ClientOnlyEnvelope: Codable {

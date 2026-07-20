@@ -14,6 +14,7 @@ extension SignIn {
     let redirectUrl: String?
     let ticket: String?
     let token: String?
+    let trustedDeviceId: String?
     let transfer: Bool?
 
     init(
@@ -22,6 +23,7 @@ extension SignIn {
       strategy: FactorStrategy? = nil,
       ticket: String? = nil,
       token: String? = nil,
+      trustedDeviceId: String? = nil,
       redirectUrl: String? = nil,
       transfer: Bool? = nil
     ) {
@@ -32,6 +34,7 @@ extension SignIn {
       self.redirectUrl = redirectUrl
       self.ticket = ticket
       self.token = token
+      self.trustedDeviceId = trustedDeviceId
       self.transfer = transfer
     }
   }
@@ -70,19 +73,31 @@ extension SignIn {
     let password: String?
     let publicKeyCredential: String?
     let token: String?
+    let trustedDeviceId: String?
+    let clientData: String?
+    let signature: String?
+    let algorithm: TrustedDevice.Algorithm?
 
     init(
       strategy: FactorStrategy,
       code: String? = nil,
       password: String? = nil,
       publicKeyCredential: String? = nil,
-      token: String? = nil
+      token: String? = nil,
+      trustedDeviceId: String? = nil,
+      clientData: String? = nil,
+      signature: String? = nil,
+      algorithm: TrustedDevice.Algorithm? = nil
     ) {
       self.strategy = strategy
       self.code = code
       self.password = password
       self.publicKeyCredential = publicKeyCredential
       self.token = token
+      self.trustedDeviceId = trustedDeviceId
+      self.clientData = clientData
+      self.signature = signature
+      self.algorithm = algorithm
     }
   }
 

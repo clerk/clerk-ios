@@ -12,18 +12,44 @@ struct AuthNavigationTests {
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path == [.sessionTaskStart(task: .setupMfa)])
-    #expect(navigation.allTasksComplete == false)
+    #expect(navigation.postAuthStepsComplete == false)
   }
 
   @Test
-  func handleSessionTaskCompletionMarksAllTasksCompleteWhenSessionHasNoPendingTasks() {
+  func handleSessionTaskCompletionMarksPostAuthStepsCompleteWhenSessionHasNoPendingTasks() {
     let navigation = AuthNavigation()
     let session = session(pendingTasks: [])
 
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path.isEmpty)
-    #expect(navigation.allTasksComplete)
+    #expect(navigation.postAuthStepsComplete)
+  }
+
+  @Test
+  func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+
+    navigation.routeToTrustedDeviceEnrollment()
+
+    #expect(navigation.path == [.signUpCompleteProfile, .trustedDeviceEnrollment])
+    #expect(navigation.hasTrustedDeviceEnrollmentInPath)
+    #expect(navigation.trustedDeviceEnrollmentWasOffered)
+  }
+
+  @Test
+  func resetForNewAuthFlowClearsPathAndPostAuthFlags() {
+    let navigation = AuthNavigation()
+    navigation.path = [.trustedDeviceEnrollment]
+    navigation.routeToTrustedDeviceEnrollment()
+    navigation.markPostAuthStepsComplete()
+
+    navigation.resetForNewAuthFlow()
+
+    #expect(navigation.path.isEmpty)
+    #expect(navigation.postAuthStepsComplete == false)
+    #expect(navigation.trustedDeviceEnrollmentWasOffered == false)
   }
 
   @Test
@@ -58,7 +84,7 @@ struct AuthNavigationTests {
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
-    #expect(navigation.allTasksComplete == false)
+    #expect(navigation.postAuthStepsComplete == false)
   }
 
   @Test
