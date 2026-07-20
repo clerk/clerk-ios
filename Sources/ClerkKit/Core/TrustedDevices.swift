@@ -517,6 +517,7 @@ extension TrustedDevices {
   private func removeOtherLocalCredentialsForCurrentApp(keeping trustedDevice: TrustedDevice) {
     let credentialsToReplace: [TrustedDeviceLocalCredential]
     do {
+      // The backend replaces active credentials by installation and app identifier, even across users.
       credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != trustedDevice.id }
     } catch {
       ClerkLogger.warning(
@@ -562,8 +563,8 @@ extension Error {
       return false
     }
 
-    return ["form_resource_not_found", "trusted_device_not_registered"].contains(error.code) &&
-      error.meta?["param_name"]?.stringValue == "trusted_device_id"
+    return TrustedDeviceAPIError.missingCredentialCodes.contains(error.code) &&
+      error.meta?["param_name"]?.stringValue == TrustedDeviceAPIError.trustedDeviceIDParamName
   }
 
   fileprivate var trustedDeviceValidationUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
@@ -572,14 +573,27 @@ extension Error {
     }
 
     switch error.code {
-    case "native_api_disabled":
+    case TrustedDeviceAPIError.nativeAPIDisabledCode:
       return .nativeAPIDisabled
-    case "feature_not_enabled":
+    case TrustedDeviceAPIError.featureNotEnabledCode:
       return .featureDisabled
     default:
       return nil
     }
   }
+}
+
+private enum TrustedDeviceAPIError {
+  static let formResourceNotFoundCode = "form_resource_not_found"
+  static let trustedDeviceNotRegisteredCode = "trusted_device_not_registered"
+  static let trustedDeviceIDParamName = "trusted_device_id"
+  static let nativeAPIDisabledCode = "native_api_disabled"
+  static let featureNotEnabledCode = "feature_not_enabled"
+
+  static let missingCredentialCodes = [
+    formResourceNotFoundCode,
+    trustedDeviceNotRegisteredCode,
+  ]
 }
 
 extension Session.SessionStatus {

@@ -729,7 +729,10 @@ extension AuthStartView {
     trustedDeviceAvailability = localAvailability
     guard localAvailability.isAvailable else { return }
 
-    switch await clerk.trustedDevices.validateLocalCredentialIfPossible() {
+    let validationResult = await clerk.trustedDevices.validateLocalCredentialIfPossible()
+    guard !Task.isCancelled else { return }
+
+    switch validationResult {
     case .valid:
       trustedDeviceAvailability = .available
     case let .invalid(reason):
