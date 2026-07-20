@@ -85,9 +85,11 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       throw TrustedDeviceKeyManagerError.signingFailed(Self.errorMessage(from: error))
     }
 
+    let rawSignature = try Self.rawES256Signature(fromDEREncoded: signature)
+
     return TrustedDeviceKeySignature(
       clientData: clientData,
-      signature: Self.base64URLEncodedString(signature)
+      signature: Self.base64URLEncodedString(rawSignature)
     )
   }
 
@@ -250,6 +252,30 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       .replacingOccurrences(of: "=", with: "")
   }
 
+  package static func rawES256Signature(fromDEREncoded signature: Data) throws -> Data {
+    let bytes = Array(signature)
+    var offset = 0
+
+    guard try readDERByte(bytes, offset: &offset) == 0x30 else {
+      throw invalidES256SignatureError()
+    }
+
+    let sequenceLength = try readDERLength(bytes, offset: &offset)
+    guard sequenceLength == bytes.count - offset else {
+      throw invalidES256SignatureError()
+    }
+
+    let r = try readDERInteger(bytes, offset: &offset)
+    let s = try readDERInteger(bytes, offset: &offset)
+    guard offset == bytes.count else {
+      throw invalidES256SignatureError()
+    }
+
+    var raw = try paddedES256Component(r)
+    try raw.append(paddedES256Component(s))
+    return raw
+  }
+
   private static func publicKeyJWK(for privateKey: SecKey) throws -> String {
     guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
       throw TrustedDeviceKeyManagerError.publicKeyExportFailed("Unable to copy public key.")
@@ -277,6 +303,71 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
   private static func applicationTag(localKeyId: String) -> Data {
     Data("\(applicationTagPrefix).\(localKeyId)".utf8)
+  }
+
+  private static func readDERByte(_ bytes: [UInt8], offset: inout Int) throws -> UInt8 {
+    guard offset < bytes.count else {
+      throw invalidES256SignatureError()
+    }
+
+    let byte = bytes[offset]
+    offset += 1
+    return byte
+  }
+
+  private static func readDERLength(_ bytes: [UInt8], offset: inout Int) throws -> Int {
+    let first = try readDERByte(bytes, offset: &offset)
+    if first & 0x80 == 0 {
+      return Int(first)
+    }
+
+    let byteCount = Int(first & 0x7F)
+    guard byteCount > 0, byteCount <= MemoryLayout<Int>.size, byteCount <= bytes.count - offset else {
+      throw invalidES256SignatureError()
+    }
+
+    var length = 0
+    for _ in 0 ..< byteCount {
+      length = try (length << 8) | Int(readDERByte(bytes, offset: &offset))
+    }
+    return length
+  }
+
+  private static func readDERInteger(_ bytes: [UInt8], offset: inout Int) throws -> [UInt8] {
+    guard try readDERByte(bytes, offset: &offset) == 0x02 else {
+      throw invalidES256SignatureError()
+    }
+
+    let length = try readDERLength(bytes, offset: &offset)
+    guard length > 0, length <= bytes.count - offset else {
+      throw invalidES256SignatureError()
+    }
+
+    let value = Array(bytes[offset ..< offset + length])
+    offset += length
+    return value
+  }
+
+  private static func paddedES256Component(_ bytes: [UInt8]) throws -> Data {
+    guard let first = bytes.first, first & 0x80 == 0 else {
+      throw invalidES256SignatureError()
+    }
+
+    var component = bytes
+    while component.first == 0x00, component.count > 32 {
+      component.removeFirst()
+    }
+    guard !component.isEmpty, component.count <= 32 else {
+      throw invalidES256SignatureError()
+    }
+
+    var padded = Data(repeating: 0x00, count: 32 - component.count)
+    padded.append(contentsOf: component)
+    return padded
+  }
+
+  private static func invalidES256SignatureError() -> TrustedDeviceKeyManagerError {
+    .signingFailed("Security returned an invalid ES256 signature.")
   }
 
   private static func errorMessage(from error: Unmanaged<CFError>?) -> String {
