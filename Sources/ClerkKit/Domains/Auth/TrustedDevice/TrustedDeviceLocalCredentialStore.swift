@@ -135,12 +135,17 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
 
   @MainActor
   func all(appIdentifier: String) throws -> [TrustedDeviceLocalCredential] {
-    try rawCredentialRecords().compactMap { record in
+    var credentials: [TrustedDeviceLocalCredential] = []
+    for record in try rawCredentialRecords() {
       guard record[TrustedDeviceLocalCredentialMetadataKey.appIdentifier] as? String == appIdentifier else {
-        return nil
+        continue
       }
-      return try Self.decodeCredentialRecord(record)
+      guard let credential = try? Self.decodeCredentialRecord(record) else {
+        continue
+      }
+      credentials.append(credential)
     }
+    return credentials
   }
 
   @MainActor
@@ -162,13 +167,14 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
   ) throws {
     let credentialRecord = try Self.rawCredentialRecord(for: credential)
     var records: [[String: Any]] = []
+    var replacedLocalKeyIds: [String] = []
 
     for record in try rawCredentialRecords() {
       if record[TrustedDeviceLocalCredentialMetadataKey.id] as? String == credential.id {
         if let localKeyId = record[TrustedDeviceLocalCredentialMetadataKey.localKeyId] as? String,
            localKeyId != credential.localKeyId
         {
-          try deleteReplacedLocalKey(localKeyId)
+          replacedLocalKeyIds.append(localKeyId)
         }
         continue
       }
@@ -183,6 +189,10 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
 
     records.append(credentialRecord)
     try persistRawRecords(records)
+
+    for localKeyId in replacedLocalKeyIds {
+      try? deleteReplacedLocalKey(localKeyId)
+    }
   }
 
   @MainActor
@@ -236,26 +246,20 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
       return
     }
 
-    var remainingCredentials: [TrustedDeviceLocalCredential] = []
+    var remainingCredentials = credentials
     var keyDeletionError: Error?
 
     for credential in credentials {
-      guard shouldDelete(credential) else {
-        remainingCredentials.append(credential)
-        continue
-      }
+      guard shouldDelete(credential) else { continue }
 
       do {
         try keyManager.deleteKey(localKeyId: credential.localKeyId)
       } catch {
-        remainingCredentials.append(credential)
         keyDeletionError = keyDeletionError ?? error
+        continue
       }
-    }
 
-    if remainingCredentials.isEmpty {
-      try deleteAll()
-    } else if remainingCredentials.count < credentials.count {
+      remainingCredentials.removeAll { $0 == credential }
       try persist(remainingCredentials)
     }
 
@@ -275,32 +279,29 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
 
     let records = try rawCredentialRecords(from: data)
 
-    var remainingRecords: [[String: Any]] = []
-    var deletedRecordCount = 0
+    var deletedRecordIndexes = Set<Int>()
     var keyDeletionError: Error?
 
-    for record in records {
+    for (index, record) in records.enumerated() {
       guard record[TrustedDeviceLocalCredentialMetadataKey.appIdentifier] as? String == appIdentifier else {
-        remainingRecords.append(record)
         continue
       }
 
       guard let localKeyId = record[TrustedDeviceLocalCredentialMetadataKey.localKeyId] as? String else {
-        deletedRecordCount += 1
+        deletedRecordIndexes.insert(index)
+        try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
         continue
       }
 
       do {
         try keyManager.deleteKey(localKeyId: localKeyId)
-        deletedRecordCount += 1
       } catch {
-        remainingRecords.append(record)
         keyDeletionError = keyDeletionError ?? error
+        continue
       }
-    }
 
-    if deletedRecordCount > 0 {
-      try persistRawRecords(remainingRecords)
+      deletedRecordIndexes.insert(index)
+      try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
     }
 
     if let keyDeletionError {
@@ -314,24 +315,32 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
       return
     }
 
-    let deletionRecords: [TrustedDeviceLocalCredentialDeletionRecord]
+    let records: [[String: Any]]
     do {
-      deletionRecords = try Self.metadataDecoder().decode(
-        [TrustedDeviceLocalCredentialDeletionRecord].self,
-        from: data
-      )
+      records = try rawCredentialRecords(from: data)
     } catch {
       try deleteAll()
       return
     }
 
+    var deletedRecordIndexes = Set<Int>()
     var keyDeletionError: Error?
-    for record in deletionRecords {
+    for (index, record) in records.enumerated() {
+      guard let localKeyId = record[TrustedDeviceLocalCredentialMetadataKey.localKeyId] as? String else {
+        deletedRecordIndexes.insert(index)
+        try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
+        continue
+      }
+
       do {
-        try keyManager.deleteKey(localKeyId: record.localKeyId)
+        try keyManager.deleteKey(localKeyId: localKeyId)
       } catch {
         keyDeletionError = keyDeletionError ?? error
+        continue
       }
+
+      deletedRecordIndexes.insert(index)
+      try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
     }
 
     if let keyDeletionError {
@@ -359,6 +368,16 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
     }
 
     try keychain.set(JSONSerialization.data(withJSONObject: records), forKey: keychainKey)
+  }
+
+  @MainActor
+  private func persistRawRecords(
+    _ records: [[String: Any]],
+    excludingIndexes deletedRecordIndexes: Set<Int>
+  ) throws {
+    try persistRawRecords(records.enumerated().compactMap { index, record in
+      deletedRecordIndexes.contains(index) ? nil : record
+    })
   }
 
   @MainActor
@@ -409,16 +428,6 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
     decoder.dateDecodingStrategy = .millisecondsSince1970
     return decoder
   }
-}
-
-private struct TrustedDeviceLocalCredentialDeletionRecord: Decodable {
-  enum CodingKeys: String, CodingKey {
-    case localKeyId
-    case appIdentifier
-  }
-
-  let localKeyId: String
-  let appIdentifier: String?
 }
 
 private enum TrustedDeviceLocalCredentialMetadataKey {

@@ -35,7 +35,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
-  func saveDeletesReplacedLocalKeyBeforeOverwritingMetadata() throws {
+  func saveDeletesReplacedLocalKeyAfterOverwritingMetadata() throws {
     let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let updated = TrustedDeviceLocalCredential(
@@ -57,8 +57,9 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
-  func saveKeepsExistingMetadataWhenReplacedKeyDeletionFails() throws {
+  func saveKeepsUpdatedMetadataWhenReplacedKeyDeletionFails() throws {
     let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
     let updated = TrustedDeviceLocalCredential(
       id: "tdc_123",
       localKeyId: "tdlk_new",
@@ -70,11 +71,38 @@ struct TrustedDeviceLocalCredentialStoreTests {
 
     try store.save(.mock)
 
-    #expect(throws: TestKeyDeletionError.self) {
-      try store.save(updated, deleteReplacedLocalKey: { _ in
-        throw TestKeyDeletionError.failed
+    try store.save(updated, deleteReplacedLocalKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      throw TestKeyDeletionError.failed
+    })
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try store.all() == [updated])
+  }
+
+  @Test
+  func saveKeepsExistingMetadataAndKeyWhenReplacementPersistenceFails() throws {
+    let keychain = WriteFailingKeychain(failStartingAtSet: 1)
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let updated = TrustedDeviceLocalCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_new",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+
+    try store.save(.mock)
+
+    #expect(throws: WriteFailingKeychain.Failure.self) {
+      try store.save(updated, deleteReplacedLocalKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     }
+
+    #expect(deletedLocalKeyIds.value.isEmpty)
     #expect(try store.all() == [.mock])
   }
 
@@ -233,6 +261,34 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func deleteAllLocalCredentialsStopsAfterMetadataPersistenceFails() throws {
+    let keychain = WriteFailingKeychain(failStartingAtSet: 2)
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let other = TrustedDeviceLocalCredential(
+      id: "tdc_456",
+      localKeyId: "tdlk_other",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    try store.save(.mock)
+    try store.save(other)
+
+    #expect(throws: WriteFailingKeychain.Failure.self) {
+      try store.deleteAllLocalCredentials(keyManager: keyManager)
+    }
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try store.all() == [.mock, other])
+  }
+
+  @Test
   func deleteLocalCredentialsDeletesOnlyMatchingAppIdentifier() throws {
     let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
     let otherAppCredential = TrustedDeviceLocalCredential(
@@ -288,6 +344,54 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func appScopedReadsSkipMalformedCredentialsForCurrentApp() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [
+          {
+            "id": "tdc_malformed",
+            "localKeyId": "tdlk_malformed",
+            "userId": "user_malformed",
+            "appIdentifier": "com.clerk.example",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          },
+          {
+            "id": "tdc_valid",
+            "localKeyId": "tdlk_valid",
+            "userId": "user_valid",
+            "appIdentifier": "com.clerk.example",
+            "policy": "biometry_or_device_passcode",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          }
+        ]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+
+    let credentials = try store.all(appIdentifier: "com.clerk.example")
+
+    #expect(credentials == [
+      TrustedDeviceLocalCredential(
+        id: "tdc_valid",
+        localKeyId: "tdlk_valid",
+        userID: "user_valid",
+        appIdentifier: "com.clerk.example",
+        createdAt: Date(timeIntervalSince1970: 1_234_567_890),
+        updatedAt: Date(timeIntervalSince1970: 1_234_567_890)
+      ),
+    ])
+    #expect(throws: DecodingError.self) {
+      _ = try store.all()
+    }
+  }
+
+  @Test
   func deleteAllLocalCredentialsDeletesMalformedMetadataAfterDeletingKeys() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(
@@ -313,6 +417,50 @@ struct TrustedDeviceLocalCredentialStoreTests {
     try store.deleteAllLocalCredentials(keyManager: keyManager)
 
     #expect(deletedLocalKeyIds.value == ["tdlk_legacy"])
+    #expect(try store.all().isEmpty)
+  }
+
+  @Test
+  func deleteAllLocalCredentialsDeletesRecoverableKeysFromPartiallyMalformedMetadata() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      Data(
+        """
+        [
+          {
+            "id": "tdc_recoverable",
+            "localKeyId": "tdlk_recoverable",
+            "appIdentifier": "com.clerk.example",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          },
+          {
+            "id": "tdc_without_local_key",
+            "appIdentifier": "com.clerk.example",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          },
+          {
+            "id": "tdc_other",
+            "localKeyId": "tdlk_other",
+            "appIdentifier": "com.clerk.example",
+            "createdAt": 1234567890000,
+            "updatedAt": 1234567890000
+          }
+        ]
+        """.utf8
+      ),
+      forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue
+    )
+    let store = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    try store.deleteAllLocalCredentials(keyManager: keyManager)
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_recoverable", "tdlk_other"])
     #expect(try store.all().isEmpty)
   }
 
@@ -412,4 +560,47 @@ struct TrustedDeviceLocalCredentialStoreTests {
 
 private enum TestKeyDeletionError: Error {
   case failed
+}
+
+private final class WriteFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case set
+  }
+
+  private let lock = NSLock()
+  private let failStartingAtSet: Int
+  private var items: [String: Data] = [:]
+  private var setCount = 0
+
+  init(failStartingAtSet: Int) {
+    self.failStartingAtSet = failStartingAtSet
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    guard setCount < failStartingAtSet else {
+      throw Failure.set
+    }
+    setCount += 1
+    items[key] = data
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key]
+  }
+
+  func deleteItem(forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    items.removeValue(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key] != nil
+  }
 }
