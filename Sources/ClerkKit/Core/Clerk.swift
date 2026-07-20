@@ -343,59 +343,79 @@ extension Clerk {
       cacheManager.loadProvisionalLegacyClientForPresentation()
     }
 
-    var initialSharedSessionReconciliation: Task<Bool, Never>?
-    if usesSharedSessionSync {
-      if options.keychainConfig.normalizedAccessGroup != nil,
-         let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
-         !ownerIdentifier.isEmpty,
-         let localIdentityStore = dependencies.atomicIdentityStore
-      {
-        do {
-          let namespace = SharedSessionNamespace(
-            frontendApiUrl: frontendApiUrl,
-            publishableKey: publishableKey
-          )
-          let slotStore = try SharedSessionOwnerSlotStore(
-            keychainConfig: options.keychainConfig,
-            namespace: namespace,
-            ownerIdentifier: ownerIdentifier
-          )
-          let coordinator = SharedSessionSyncCoordinator(
-            ownerIdentifier: ownerIdentifier,
-            instanceFingerprint: namespace.fingerprint,
-            slotStore: slotStore,
-            localIdentityStore: localIdentityStore,
-            localIdentityIO: dependencies.atomicIdentityIO,
-            notifier: SharedSessionSyncDarwinNotifier(
-              keychainConfig: options.keychainConfig,
-              instanceFingerprint: namespace.fingerprint
-            ),
-            configurationEpoch: configurationEpoch,
-            clerk: self
-          )
-          sharedSessionSyncCoordinator = coordinator
-          internalStateChanges.addObserver(coordinator)
-          coordinator.hydrateInitialSharedState()
-          initialSharedSessionReconciliation = coordinator.start()
-        } catch {
-          ClerkLogger.logError(error, message: "Failed to install shared session sync")
-        }
-      } else {
-        ClerkLogger.error(
-          "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
-        )
-      }
-    }
+    let initialSharedSessionReconciliation = startSharedSessionSyncIfNeeded(
+      dependencies: dependencies
+    )
 
     // Set up watch connectivity coordinator only after cache hydration.
     // Restored cached state should not be versioned as a new local auth change.
-    if options.watchConnectivityEnabled {
-      let coordinator = WatchConnectivityCoordinator()
-      watchConnectivityCoordinator = coordinator
-      internalStateChanges.addObserver(coordinator)
-    }
+    installWatchConnectivityIfNeeded()
 
     // Fire and forget: fetch fresh client and environment from API
+    scheduleStartupRefresh(after: initialSharedSessionReconciliation)
+  }
+
+  @MainActor
+  private func startSharedSessionSyncIfNeeded(
+    dependencies: any Dependencies
+  ) -> Task<Bool, Never>? {
+    guard options.sharedSessionSync != nil else { return nil }
+    guard options.keychainConfig.normalizedAccessGroup != nil,
+          let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
+          !ownerIdentifier.isEmpty,
+          let localIdentityStore = dependencies.atomicIdentityStore
+    else {
+      ClerkLogger.error(
+        "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
+      )
+      return nil
+    }
+
+    do {
+      let namespace = SharedSessionNamespace(
+        frontendApiUrl: frontendApiUrl,
+        publishableKey: publishableKey
+      )
+      let slotStore = try SharedSessionOwnerSlotStore(
+        keychainConfig: options.keychainConfig,
+        namespace: namespace,
+        ownerIdentifier: ownerIdentifier
+      )
+      let coordinator = SharedSessionSyncCoordinator(
+        ownerIdentifier: ownerIdentifier,
+        instanceFingerprint: namespace.fingerprint,
+        slotStore: slotStore,
+        localIdentityStore: localIdentityStore,
+        localIdentityIO: dependencies.atomicIdentityIO,
+        notifier: SharedSessionSyncDarwinNotifier(
+          keychainConfig: options.keychainConfig,
+          instanceFingerprint: namespace.fingerprint
+        ),
+        configurationEpoch: configurationEpoch,
+        clerk: self
+      )
+      sharedSessionSyncCoordinator = coordinator
+      internalStateChanges.addObserver(coordinator)
+      coordinator.hydrateInitialSharedState()
+      return coordinator.start()
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to install shared session sync")
+      return nil
+    }
+  }
+
+  @MainActor
+  private func installWatchConnectivityIfNeeded() {
+    guard options.watchConnectivityEnabled else { return }
+    let coordinator = WatchConnectivityCoordinator()
+    watchConnectivityCoordinator = coordinator
+    internalStateChanges.addObserver(coordinator)
+  }
+
+  @MainActor
+  private func scheduleStartupRefresh(
+    after initialSharedSessionReconciliation: Task<Bool, Never>?
+  ) {
     let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
       do {
