@@ -548,7 +548,7 @@ struct TrustedDevicesTests {
   }
 
   @Test
-  func enrollReplacesOtherCurrentAppCredentialsAfterSuccessfulEnrollment() async throws {
+  func enrollReplacesOtherCurrentAppCredentialsAcrossUsersAfterSuccessfulEnrollment() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
     let revokedTrustedDeviceIds = LockIsolated<[String]>([])
