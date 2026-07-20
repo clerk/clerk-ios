@@ -382,7 +382,7 @@ struct TrustedDevicesTests {
   }
 
   @Test
-  func availabilityDoesNotDeleteCredentialOwnedByDifferentUserWhenSignedIn() async throws {
+  func availabilityIgnoresCredentialOwnedByDifferentUserWhenSignedIn() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
@@ -406,14 +406,15 @@ struct TrustedDevicesTests {
 
     let availability = try await setup.trustedDevices.availability(identifierHint: "sam@example.com")
 
-    #expect(availability.isAvailable)
+    #expect(availability.isAvailable == false)
+    #expect(availability.unavailableReason == .noLocalCredential)
     #expect(listWasCalled.value == false)
     #expect(deletedLocalKeyIds.value.isEmpty)
     #expect(try setup.credentialStore.credential(id: "tdc_other_user") != nil)
   }
 
   @Test
-  func availabilityDoesNotDeleteNewestCredentialOwnedByDifferentUserWhenIdentifierHintIsNil() async throws {
+  func availabilitySkipsNewestCredentialOwnedByDifferentUserWhenIdentifierHintIsNil() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
@@ -443,7 +444,7 @@ struct TrustedDevicesTests {
     let availability = try await setup.trustedDevices.availability()
 
     #expect(availability.isAvailable)
-    #expect(listWasCalled.value == false)
+    #expect(listWasCalled.value)
     #expect(deletedLocalKeyIds.value.isEmpty)
     #expect(try setup.credentialStore.credential(id: "tdc_active_user") != nil)
     #expect(try setup.credentialStore.credential(id: "tdc_other_user") != nil)
@@ -1023,6 +1024,44 @@ struct TrustedDevicesTests {
     _ = try await setup.trustedDevices.signIn()
 
     #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_new")
+  }
+
+  @Test
+  func signInSkipsCredentialOwnedByDifferentUserWhenSessionIsActive() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let listWasCalled = LockIsolated(false)
+    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(list: {
+        listWasCalled.setValue(true)
+        return [trustedDevice(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+      }),
+      signInService: MockSignInService(
+        create: { params in
+          capturedCreateParams.setValue(params)
+          return .mockTrustedDeviceChallenge
+        },
+        attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      )
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_active_user",
+      localKeyId: "tdlk_active_user",
+      userID: User.mock.id,
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_other_user",
+      localKeyId: "tdlk_other_user",
+      userID: User.mock2.id,
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    _ = try await setup.trustedDevices.signIn()
+
+    #expect(listWasCalled.value)
+    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_active_user")
   }
 
   @Test

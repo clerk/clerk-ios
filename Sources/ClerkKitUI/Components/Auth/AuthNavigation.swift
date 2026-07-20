@@ -119,6 +119,13 @@ final class AuthNavigation {
   }
 
   @MainActor
+  func resetForNewAuthFlow() {
+    path = []
+    postAuthStepsComplete = false
+    trustedDeviceEnrollmentWasOffered = false
+  }
+
+  @MainActor
   func routeToTrustedDeviceEnrollment() {
     trustedDeviceEnrollmentWasOffered = true
     guard !hasTrustedDeviceEnrollmentInPath else { return }

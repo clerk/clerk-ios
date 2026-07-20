@@ -209,14 +209,17 @@ public struct AuthView: View {
     }
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil,
-            navigation.hasSessionTaskStartInPath || navigation.hasTrustedDeviceEnrollmentInPath
+            navigation.hasSessionTaskStartInPath ||
+            navigation.hasTrustedDeviceEnrollmentInPath ||
+            navigation.postAuthStepsComplete ||
+            navigation.trustedDeviceEnrollmentWasOffered
       else {
         return
       }
       if isDismissible {
         dismiss()
       } else {
-        navigation.path = []
+        navigation.resetForNewAuthFlow()
       }
     }
     .onChange(of: config) { _, newConfig in
