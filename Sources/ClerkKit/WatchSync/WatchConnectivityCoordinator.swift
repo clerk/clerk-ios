@@ -34,6 +34,16 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let source: WatchSyncSource
   }
 
+  private struct IdentityVersionPair {
+    let token: WatchSyncVersion?
+    let auth: WatchSyncVersion?
+  }
+
+  private struct IdentityFingerprintPair {
+    let token: String
+    let auth: String
+  }
+
   private var watchConnectivitySync: (any WatchConnectivitySyncing)?
   private var authGeneration: WatchSyncVersion?
   private var isAcceptingIdentityUpdates = true
@@ -398,6 +408,7 @@ extension WatchConnectivityCoordinator {
       accepted: metadata.deviceTokenVersion,
       pending: metadata.pendingDeviceTokenVersion
     )
+    let durableTokenFingerprint = Self.deviceTokenFingerprint(clerk.deviceToken)
     let acceptedAuthVersion = maxVersion(
       authGeneration,
       metadata.authVersion.map(WatchSyncVersion.init(rawValue:))
@@ -409,12 +420,29 @@ extension WatchConnectivityCoordinator {
         pending: metadata.pendingAuthVersion
       )
     )
+    let incomingAuthFingerprint: String
+    let durableAuthFingerprint: String
+    do {
+      incomingAuthFingerprint = try Self.authFingerprint(
+        client: payload.clientUpdate.client,
+        serverDate: payload.clientUpdate.serverFetchDate
+      )
+      durableAuthFingerprint = try Self.authFingerprint(
+        client: clerk.client,
+        serverDate: clerk.lastClientServerFetchDate
+      )
+    } catch {
+      return false
+    }
     let allowsAuthoritativeVersionReset = allowsAuthoritativeVersionReset(
       payload: payload,
-      tokenCurrent: tokenCurrent,
-      authCurrent: authCurrent,
+      current: IdentityVersionPair(token: tokenCurrent, auth: authCurrent),
       metadata: metadata,
-      source: source
+      source: source,
+      durableFingerprints: IdentityFingerprintPair(
+        token: durableTokenFingerprint,
+        auth: durableAuthFingerprint
+      )
     )
     guard accepts(
       VersionAcceptance(
@@ -427,19 +455,10 @@ extension WatchConnectivityCoordinator {
         current: tokenCurrent,
         allowsAuthoritativeVersionReset: allowsAuthoritativeVersionReset,
         incomingFingerprint: incomingTokenFingerprint,
-        durableFingerprint: Self.deviceTokenFingerprint(clerk.deviceToken),
+        durableFingerprint: durableTokenFingerprint,
         source: source
       )
     ) else {
-      return false
-    }
-    let incomingAuthFingerprint: String
-    do {
-      incomingAuthFingerprint = try Self.authFingerprint(
-        client: payload.clientUpdate.client,
-        serverDate: payload.clientUpdate.serverFetchDate
-      )
-    } catch {
       return false
     }
     guard accepts(
@@ -453,10 +472,7 @@ extension WatchConnectivityCoordinator {
         current: authCurrent,
         allowsAuthoritativeVersionReset: allowsAuthoritativeVersionReset,
         incomingFingerprint: incomingAuthFingerprint,
-        durableFingerprint: (try? Self.authFingerprint(
-          client: clerk.client,
-          serverDate: clerk.lastClientServerFetchDate
-        )) ?? "",
+        durableFingerprint: durableAuthFingerprint,
         source: source
       )
     ) else {
@@ -472,27 +488,49 @@ extension WatchConnectivityCoordinator {
 
   private func allowsAuthoritativeVersionReset(
     payload: WatchSyncPayload,
-    tokenCurrent: WatchSyncVersion?,
-    authCurrent: WatchSyncVersion?,
+    current: IdentityVersionPair,
     metadata: WatchSyncMetadataRecord,
-    source: WatchSyncSource
+    source: WatchSyncSource,
+    durableFingerprints: IdentityFingerprintPair
   ) -> Bool {
     guard source.incomingDeviceIsAuthoritative,
           let tokenVersion = payload.deviceTokenUpdate.version,
           let authVersion = payload.clientUpdate.version,
-          let tokenCurrent,
-          let authCurrent,
+          let tokenCurrent = current.token,
+          let authCurrent = current.auth,
           tokenVersion < tokenCurrent,
           authVersion < authCurrent,
           metadata.effectiveDeviceTokenState != .cleared,
           metadata.effectiveAuthState != .cleared,
-          metadata.effectiveDeviceTokenSource != source,
-          metadata.effectiveAuthSource != source
+          canAuthoritativePayloadResetWatermark(
+            source: source,
+            effectiveSource: metadata.effectiveDeviceTokenSource,
+            effectiveFingerprint: metadata.effectiveDeviceTokenFingerprint,
+            durableFingerprint: durableFingerprints.token
+          ),
+          canAuthoritativePayloadResetWatermark(
+            source: source,
+            effectiveSource: metadata.effectiveAuthSource,
+            effectiveFingerprint: metadata.effectiveAuthFingerprint,
+            durableFingerprint: durableFingerprints.auth
+          )
     else {
       return false
     }
     return payload.deviceTokenUpdate != .notIncluded
       && payload.clientUpdate != .notIncluded
+  }
+
+  private func canAuthoritativePayloadResetWatermark(
+    source: WatchSyncSource,
+    effectiveSource: WatchSyncSource?,
+    effectiveFingerprint: String?,
+    durableFingerprint: String
+  ) -> Bool {
+    if let effectiveSource {
+      return effectiveSource != source
+    }
+    return effectiveFingerprint != durableFingerprint
   }
 
   private func scheduleRefreshForRejectedClientIfNeeded(

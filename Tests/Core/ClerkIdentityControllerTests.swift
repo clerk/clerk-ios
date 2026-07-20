@@ -196,7 +196,8 @@ struct ClerkIdentityControllerTests {
   @Test
   func atomicTokenOnlyResponseResolvesIdentityWhenItsSerializedTurnBegins() async throws {
     let clerk = Clerk()
-    let store = ControllerSuspendingIdentityStore()
+    let keychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
     var initialClient = Client.mock
     initialClient.id = "initial"
     let initialIdentity = ClerkIdentitySnapshot(
@@ -206,33 +207,34 @@ struct ClerkIdentityControllerTests {
       serverDate: Date(timeIntervalSince1970: 50)
     )
     try store.save(initialIdentity)
-    let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
+    let localIdentityIO = try #require(clerk.dependencies.atomicIdentityIO)
     clerk.hydrateIdentityIfNeeded(initialIdentity)
-    store.suspendNextSave()
     var newClient = Client.mock
     newClient.id = "new-client"
+    let gate = LocalIdentityOperationGate()
 
-    let clientResponse = Task { @MainActor in
-      try await clerk.identityController.applyNetworkResponse(
-        ClientSyncResponseContext(
-          update: .client(newClient),
-          deviceTokenUpdate: .set("token"),
-          requestDeviceToken: "token",
-          baseGeneration: 0,
-          serverDate: Date(timeIntervalSince1970: 100),
-          isCanonicalClientRequest: true,
-          clientResponseGeneration: clerk.clientResponseGeneration,
-          responseSequence: 1
-        )
+    let clientPersistence = clerk.identityController.enqueueLocalOperation { operationRevision in
+      await gate.suspend()
+      return try await clerk.identityController.persistAndApplyAtomicIdentity(
+        ClerkIdentitySnapshot(
+          state: .present,
+          deviceToken: "token",
+          client: newClient,
+          serverDate: Date(timeIntervalSince1970: 100)
+        ),
+        through: localIdentityIO,
+        operationRevision: operationRevision,
+        fenceAllClientResponses: false
       )
     }
-    try await waitUntil { store.isSaveSuspended }
+    try await waitUntil { gate.isSuspended }
 
+    let expectedQueuedRevision = clerk.identityController.localOperationRevision + 1
     let tokenOnlyResponse = Task { @MainActor in
       try await clerk.identityController.applyNetworkResponse(
         ClientSyncResponseContext(
@@ -247,9 +249,12 @@ struct ClerkIdentityControllerTests {
         )
       )
     }
+    try await waitUntil {
+      clerk.identityController.localOperationRevision >= expectedQueuedRevision
+    }
 
-    store.resumeSuspendedSave()
-    try await clientResponse.value
+    gate.resume()
+    _ = try await clientPersistence.value
     try await tokenOnlyResponse.value
 
     let persisted = try #require(try store.load())
@@ -471,58 +476,22 @@ struct ClerkIdentityControllerTests {
   }
 }
 
-private final class ControllerSuspendingIdentityStore: @unchecked Sendable,
-  SharedSessionLocalIdentityStoring
-{
-  private let stateLock = NSLock()
-  private let suspension = NSCondition()
-  private var record: SharedSessionLocalIdentityRecord?
-  private var shouldSuspendNextSave = false
-  private var shouldResumeSave = false
-  private var saveIsSuspended = false
+@MainActor
+private final class LocalIdentityOperationGate {
+  private(set) var isSuspended = false
+  private var continuation: CheckedContinuation<Void, Never>?
 
-  var isSaveSuspended: Bool {
-    suspension.withLock { saveIsSuspended }
-  }
-
-  func suspendNextSave() {
-    suspension.withLock {
-      shouldSuspendNextSave = true
-      shouldResumeSave = false
+  func suspend() async {
+    isSuspended = true
+    await withCheckedContinuation { continuation in
+      self.continuation = continuation
     }
+    isSuspended = false
   }
 
-  func resumeSuspendedSave() {
-    suspension.withLock {
-      shouldResumeSave = true
-      suspension.broadcast()
-    }
-  }
-
-  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
-    stateLock.withLock { record }
-  }
-
-  func updateRecord(
-    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
-  ) throws {
-    let current = stateLock.withLock { record }
-    let updated = try update(current)
-
-    suspension.lock()
-    let shouldSuspend = shouldSuspendNextSave && updated != nil
-    if shouldSuspend {
-      shouldSuspendNextSave = false
-      saveIsSuspended = true
-      suspension.broadcast()
-      while !shouldResumeSave {
-        suspension.wait()
-      }
-      saveIsSuspended = false
-    }
-    suspension.unlock()
-
-    stateLock.withLock { record = updated }
+  func resume() {
+    continuation?.resume()
+    continuation = nil
   }
 }
 

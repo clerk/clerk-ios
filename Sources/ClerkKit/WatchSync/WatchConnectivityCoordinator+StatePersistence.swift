@@ -54,10 +54,22 @@ struct WatchSyncMetadataRecord: Codable, Equatable {
     return pendingDeviceTokenVersion >= deviceTokenVersion ? pendingDeviceTokenSource : deviceTokenSource
   }
 
+  var effectiveDeviceTokenFingerprint: String? {
+    guard let pendingDeviceTokenVersion else { return deviceTokenFingerprint }
+    guard let deviceTokenVersion else { return pendingDeviceTokenFingerprint }
+    return pendingDeviceTokenVersion >= deviceTokenVersion ? pendingDeviceTokenFingerprint : deviceTokenFingerprint
+  }
+
   var effectiveAuthSource: WatchSyncSource? {
     guard let pendingAuthVersion else { return authSource }
     guard let authVersion else { return pendingAuthSource }
     return pendingAuthVersion >= authVersion ? pendingAuthSource : authSource
+  }
+
+  var effectiveAuthFingerprint: String? {
+    guard let pendingAuthVersion else { return authFingerprint }
+    guard let authVersion else { return pendingAuthFingerprint }
+    return pendingAuthVersion >= authVersion ? pendingAuthFingerprint : authFingerprint
   }
 
   var effectiveDeviceTokenState: WatchSyncMetadataState? {
