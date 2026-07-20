@@ -125,6 +125,39 @@ struct TrustedDeviceKeyManagerTests {
   }
 
   @Test
+  func rawES256SignatureConvertsDEREncodedSignature() throws {
+    let r = Data(repeating: 0x01, count: 32)
+    let s = Data([0x00, 0x80]) + Data(repeating: 0x02, count: 31)
+    let derSignature = Data([0x30, 0x45, 0x02, 0x20]) + r + Data([0x02, 0x21]) + s
+
+    let rawSignature = try TrustedDeviceKeyManager.rawES256Signature(fromDEREncoded: derSignature)
+
+    #expect(rawSignature == r + Data([0x80]) + Data(repeating: 0x02, count: 31))
+  }
+
+  @Test
+  func rawES256SignaturePadsShortDERIntegers() throws {
+    let derSignature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
+
+    let rawSignature = try TrustedDeviceKeyManager.rawES256Signature(fromDEREncoded: derSignature)
+
+    #expect(rawSignature == Data(repeating: 0x00, count: 31) + Data([0x01]) +
+      Data(repeating: 0x00, count: 31) + Data([0x02]))
+  }
+
+  @Test
+  func rawES256SignatureRejectsMalformedDER() throws {
+    do {
+      _ = try TrustedDeviceKeyManager.rawES256Signature(fromDEREncoded: Data([0x30, 0x03, 0x02, 0x01, 0x01]))
+      Issue.record("Expected malformed DER signature error.")
+    } catch let error as TrustedDeviceKeyManagerError {
+      #expect(error == .signingFailed("Security returned an invalid ES256 signature."))
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
+  @Test
   func privateKeyLookupStatusMapsBiometricErrors() {
     #expect(
       TrustedDeviceKeyManager.privateKeyLookupError(for: errSecUserCanceled)
