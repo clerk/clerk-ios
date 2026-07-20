@@ -1545,6 +1545,54 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func authoritativePhonePayloadCanResetOnlyStaleTokenWatermark() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let currentDate = Date(timeIntervalSince1970: 900)
+    let currentClient = client(id: "current-client", updatedAt: 900)
+    clerk.applyResponseClient(
+      currentClient,
+      responseSequence: 1,
+      serverDate: currentDate
+    )
+    try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
+      deviceTokenState: .set,
+      deviceTokenVersion: 100,
+      deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("stale-watch-token"),
+      authState: .set,
+      authVersion: 1,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: currentClient,
+        serverDate: currentDate
+      )
+    ))
+    let phonePayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "phone-token",
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "phone-client", updatedAt: 1000),
+        serverFetchDate: Date(timeIntervalSince1970: 1000),
+        version: WatchSyncVersion(rawValue: 2)
+      ),
+      environment: nil
+    )
+
+    apply(phonePayload, from: .phone, to: clerk, keychain: keychain)
+
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.client?.id == "phone-client")
+    #expect(metadata.deviceTokenVersion == 2)
+    #expect(metadata.deviceTokenSource == .phone)
+    #expect(metadata.authVersion == 2)
+    #expect(metadata.authSource == .phone)
+    #expect(!metadata.hasPendingIdentityMetadata)
+  }
+
+  @Test
   func lowerAuthoritativePhonePayloadCannotRollbackAcceptedPhoneWatermark() throws {
     configureClerkForTesting()
     let clerk = Clerk()
