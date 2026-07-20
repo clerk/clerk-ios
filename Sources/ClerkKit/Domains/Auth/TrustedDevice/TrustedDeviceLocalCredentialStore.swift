@@ -97,7 +97,10 @@ package protocol TrustedDeviceLocalCredentialStoreProtocol: Sendable {
   @MainActor func all() throws -> [TrustedDeviceLocalCredential]
   @MainActor func all(appIdentifier: String) throws -> [TrustedDeviceLocalCredential]
   @MainActor func credential(id: String) throws -> TrustedDeviceLocalCredential?
-  @MainActor func save(_ credential: TrustedDeviceLocalCredential) throws
+  @MainActor func save(
+    _ credential: TrustedDeviceLocalCredential,
+    deleteReplacedLocalKey: (String) throws -> Void
+  ) throws
   @MainActor func delete(id: String) throws
   @MainActor func deleteAll() throws
   @MainActor func deleteLocalCredentials(
@@ -105,6 +108,13 @@ package protocol TrustedDeviceLocalCredentialStoreProtocol: Sendable {
     keyManager: any TrustedDeviceKeyManagerProtocol
   ) throws
   @MainActor func deleteAllLocalCredentials(keyManager: any TrustedDeviceKeyManagerProtocol) throws
+}
+
+extension TrustedDeviceLocalCredentialStoreProtocol {
+  @MainActor
+  func save(_ credential: TrustedDeviceLocalCredential) throws {
+    try save(credential, deleteReplacedLocalKey: { _ in })
+  }
 }
 
 final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStoreProtocol {
@@ -146,17 +156,31 @@ final class TrustedDeviceLocalCredentialStore: TrustedDeviceLocalCredentialStore
   }
 
   @MainActor
-  func save(_ credential: TrustedDeviceLocalCredential) throws {
+  func save(
+    _ credential: TrustedDeviceLocalCredential,
+    deleteReplacedLocalKey: (String) throws -> Void
+  ) throws {
     let credentialRecord = try Self.rawCredentialRecord(for: credential)
-    var records = try rawCredentialRecords().filter { record in
-      guard record[TrustedDeviceLocalCredentialMetadataKey.id] as? String != credential.id else {
-        return false
+    var records: [[String: Any]] = []
+
+    for record in try rawCredentialRecords() {
+      if record[TrustedDeviceLocalCredentialMetadataKey.id] as? String == credential.id {
+        if let localKeyId = record[TrustedDeviceLocalCredentialMetadataKey.localKeyId] as? String,
+           localKeyId != credential.localKeyId
+        {
+          try deleteReplacedLocalKey(localKeyId)
+        }
+        continue
       }
       guard record[TrustedDeviceLocalCredentialMetadataKey.appIdentifier] as? String == credential.appIdentifier else {
-        return true
+        records.append(record)
+        continue
       }
-      return (try? Self.decodeCredentialRecord(record)) != nil
+      if (try? Self.decodeCredentialRecord(record)) != nil {
+        records.append(record)
+      }
     }
+
     records.append(credentialRecord)
     try persistRawRecords(records)
   }
