@@ -35,6 +35,50 @@ struct TrustedDeviceLocalCredentialStoreTests {
   }
 
   @Test
+  func saveDeletesReplacedLocalKeyBeforeOverwritingMetadata() throws {
+    let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let updated = TrustedDeviceLocalCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_new",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+
+    try store.save(.mock)
+    try store.save(updated, deleteReplacedLocalKey: { localKeyId in
+      deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+    })
+
+    #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
+    #expect(try store.all() == [updated])
+  }
+
+  @Test
+  func saveKeepsExistingMetadataWhenReplacedKeyDeletionFails() throws {
+    let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    let updated = TrustedDeviceLocalCredential(
+      id: "tdc_123",
+      localKeyId: "tdlk_new",
+      userID: User.mock.id,
+      appIdentifier: "com.clerk.example",
+      createdAt: Date(timeIntervalSince1970: 1),
+      updatedAt: Date(timeIntervalSince1970: 2)
+    )
+
+    try store.save(.mock)
+
+    #expect(throws: TestKeyDeletionError.self) {
+      try store.save(updated, deleteReplacedLocalKey: { _ in
+        throw TestKeyDeletionError.failed
+      })
+    }
+    #expect(try store.all() == [.mock])
+  }
+
+  @Test
   func deleteCredentialMetadata() throws {
     let store = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
 
