@@ -70,7 +70,7 @@ struct AuthNavigationTests {
     navigation.handleSessionTaskCompletion(session: session)
 
     #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
-    #expect(navigation.allTasksComplete == false)
+    #expect(navigation.postAuthStepsComplete == false)
   }
 
   @Test
