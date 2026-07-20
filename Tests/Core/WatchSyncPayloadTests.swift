@@ -977,6 +977,33 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func legacyVersionlessPayloadAppliesAfterStateWithoutVersionMigratesToInitial() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)
+    try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
+    let serverFetchDate = Date(timeIntervalSince1970: 300)
+    let payloadClient = client(id: "client-legacy", updatedAt: 4000)
+    let payload = try #require(try WatchSyncPayload(applicationContext: [
+      "watchSyncDeviceTokenState": "set",
+      "clerkDeviceToken": "legacy-token",
+      "watchSyncAuthState": "set",
+      "clerkClient": JSONEncoder.clerkEncoder.encode(payloadClient),
+      "clerkClientServerFetchDate": serverFetchDate.timeIntervalSince1970,
+    ]))
+
+    apply(payload, from: .phone, to: clerk, keychain: keychain)
+
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "legacy-token")
+    #expect(clerk.client?.id == payloadClient.id)
+    #expect(clerk.lastClientServerFetchDate == serverFetchDate)
+    #expect(metadata.deviceTokenVersion == WatchSyncVersion.initial.rawValue)
+    #expect(metadata.authVersion == WatchSyncVersion.initial.rawValue)
+  }
+
+  @Test
   func partialUnknownOrInvalidMetadataIsRejected() {
     let invalidContexts: [[String: Any]] = [
       ["watchSyncAuthState": "set"],

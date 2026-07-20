@@ -310,9 +310,7 @@ extension WatchConnectivityCoordinator {
   private func accepts(_ candidate: VersionAcceptance) -> Bool {
     guard candidate.updateIsIncluded else { return true }
     guard let version = candidate.version else {
-      return candidate.acceptedVersion == nil
-        && candidate.pendingVersion == nil
-        && candidate.current == nil
+      return acceptsLegacyVersionlessUpdate(candidate)
     }
     if let current = candidate.current {
       guard version >= current
@@ -338,6 +336,16 @@ extension WatchConnectivityCoordinator {
         || version > current
     }
     return true
+  }
+
+  private func acceptsLegacyVersionlessUpdate(_ candidate: VersionAcceptance) -> Bool {
+    guard candidate.pendingVersion == nil else { return false }
+    if candidate.acceptedVersion == nil, candidate.current == nil {
+      return true
+    }
+    return candidate.acceptedVersion == WatchSyncVersion.initial
+      && candidate.current == WatchSyncVersion.initial
+      && candidate.acceptedFingerprint == nil
   }
 
   private func isAlreadyAcceptedIdentityPayload(
