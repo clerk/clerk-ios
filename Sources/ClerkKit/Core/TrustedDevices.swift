@@ -263,11 +263,11 @@ extension TrustedDevices {
       return .inconclusive
     }
 
-    let localCredential: TrustedDeviceLocalCredential
+    let localCredentials: [TrustedDeviceLocalCredential]
     do {
       switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
       case let .available(credentials):
-        localCredential = credentials[0]
+        localCredentials = credentials
       case let .unavailable(reason):
         return .invalid(reason)
       }
@@ -279,23 +279,31 @@ extension TrustedDevices {
       return .inconclusive
     }
 
-    do {
-      let validation = try await trustedDeviceService.validateSignInCredential(trustedDeviceId: localCredential.id)
-      guard validation.valid else {
-        try? deleteLocalCredential(localCredential)
-        return .invalid(.serverCredentialMissing)
+    var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
+
+    for localCredential in localCredentials {
+      do {
+        let validation = try await trustedDeviceService.validateSignInCredential(trustedDeviceId: localCredential.id)
+        guard validation.valid else {
+          try? deleteLocalCredential(localCredential)
+          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
+          continue
+        }
+        return .valid
+      } catch {
+        if error.isMissingTrustedDeviceCredential {
+          try? deleteLocalCredential(localCredential)
+          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
+          continue
+        }
+        if let unavailableReason = error.trustedDeviceValidationUnavailableReason {
+          return .invalid(unavailableReason)
+        }
+        return .inconclusive
       }
-      return .valid
-    } catch {
-      if error.isMissingTrustedDeviceCredential {
-        try? deleteLocalCredential(localCredential)
-        return .invalid(.serverCredentialMissing)
-      }
-      if let unavailableReason = error.trustedDeviceValidationUnavailableReason {
-        return .invalid(unavailableReason)
-      }
-      return .inconclusive
     }
+
+    return .invalid(firstUnavailableReason ?? .serverCredentialMissing)
   }
 
   private var trustedDeviceFeatureUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
@@ -482,12 +490,17 @@ extension TrustedDevices {
     identifierHint: String?
   ) async throws {
     do {
-      try credentialStore.save(.init(
-        trustedDevice: trustedDevice,
-        localKey: localKey,
-        userID: userID,
-        identifierHint: identifierHint
-      ))
+      try credentialStore.save(
+        .init(
+          trustedDevice: trustedDevice,
+          localKey: localKey,
+          userID: userID,
+          identifierHint: identifierHint
+        ),
+        deleteReplacedLocalKey: { localKeyId in
+          try keyManager.deleteKey(localKeyId: localKeyId)
+        }
+      )
     } catch {
       _ = try? await trustedDeviceService.revoke(trustedDeviceId: trustedDevice.id)
       throw error

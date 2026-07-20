@@ -183,6 +183,31 @@ struct ClerkTests {
   }
 
   @Test
+  func clearAllKeychainItemsPreservesTrustedDeviceMetadataWhenCredentialCleanupFails() throws {
+    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    try keychain.set("test-client-data", forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+
+    Clerk.clearAllKeychainItems(in: keychain)
+
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == true)
+  }
+
+  @Test
+  func clearAllKeychainItemsStrictlyPreservesTrustedDeviceMetadataWhenCredentialCleanupFails() throws {
+    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    try keychain.set("test-client-data", forKey: ClerkKeychainKey.cachedClient.rawValue)
+    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+
+    #expect(throws: ClerkClientError.self) {
+      try Clerk.clearAllKeychainItemsStrictly(in: keychain)
+    }
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == true)
+  }
+
+  @Test
   func configureClearsCurrentAppTrustedDeviceCredentialsWhenInstallMarkerIsMissing() throws {
     let suiteName = installationMarkerDefaultsSuiteName()
     let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -815,4 +840,46 @@ struct ClerkTests {
 
 private func installationMarkerDefaultsSuiteName() -> String {
   "com.clerk.tests.installation-marker.\(UUID().uuidString)"
+}
+
+private final class DataFailingKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case data
+  }
+
+  private let lock = NSLock()
+  private let failingKey: String
+  private var items: [String: Data] = [:]
+
+  init(failingKey: String) {
+    self.failingKey = failingKey
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    items[key] = data
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    if key == failingKey {
+      throw Failure.data
+    }
+
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key]
+  }
+
+  func deleteItem(forKey key: String) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    items.removeValue(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return items[key] != nil
+  }
 }

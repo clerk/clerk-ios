@@ -153,6 +153,44 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func validateLocalCredentialIfPossibleSkipsMissingNewestCredential() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let validatedTrustedDeviceIds = LockIsolated<[String]>([])
+    let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { trustedDeviceId in
+        validatedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+        if trustedDeviceId == "tdc_new" {
+          throw missingTrustedDeviceCredentialError()
+        }
+        return .init(valid: true)
+      }),
+      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+        deletedLocalKeyIds.withValue { $0.append(localKeyId) }
+      })
+    )
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_old",
+      localKeyId: "tdlk_old",
+      createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_new",
+      localKeyId: "tdlk_new",
+      createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+
+    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+
+    #expect(result == .valid)
+    #expect(validatedTrustedDeviceIds.value == ["tdc_new", "tdc_old"])
+    #expect(deletedLocalKeyIds.value == ["tdlk_new"])
+    #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_old") != nil)
+  }
+
+  @Test
   func validateLocalCredentialIfPossibleKeepsCredentialForTransientError() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mockSignedOut
