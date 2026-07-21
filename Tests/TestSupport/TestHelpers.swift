@@ -7,6 +7,23 @@ let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 /// Test publishable key that decodes to mock.clerk.accounts.dev
 let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
+extension Clerk {
+  @MainActor
+  func applyResponseClient(
+    _ incoming: Client?,
+    responseSequence: Int? = nil,
+    serverDate: Date? = nil,
+    clientResponseGeneration: ClientResponseGeneration? = nil
+  ) {
+    identityController.applyLegacyResponseClient(
+      incoming,
+      responseSequence: responseSequence,
+      serverDate: serverDate,
+      clientResponseGeneration: clientResponseGeneration
+    )
+  }
+}
+
 /// Configures Clerk for testing and replaces the API client with one that uses MockingURLProtocol.
 /// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
 ///

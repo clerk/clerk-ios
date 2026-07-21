@@ -32,6 +32,13 @@ private final class CachePersistenceState: @unchecked Sendable {
     isFrozen = true
   }
 
+  func resume() {
+    lock.lock()
+    defer { lock.unlock() }
+    guard !isShutdown else { return }
+    isFrozen = false
+  }
+
   /// Fully shuts down, invalidating all pending and future work.
   func shutdown() {
     lock.lock()
@@ -43,20 +50,29 @@ private final class CachePersistenceState: @unchecked Sendable {
 }
 
 private actor CachePersistenceWorker {
-  private let keychain: any KeychainStorage
+  private let identityKeychain: any KeychainStorage
+  private let environmentKeychain: any KeychainStorage
+  private let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
 
-  init(keychain: any KeychainStorage) {
-    self.keychain = keychain
+  init(
+    identityKeychain: any KeychainStorage,
+    environmentKeychain: any KeychainStorage,
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  ) {
+    self.identityKeychain = identityKeychain
+    self.environmentKeychain = environmentKeychain
+    self.atomicIdentityStore = atomicIdentityStore
   }
 
   func saveClient(_ client: Client, serverFetchDate: Date?) {
+    guard atomicIdentityStore == nil else { return }
     do {
       let clientData = try JSONEncoder.clerkEncoder.encode(client)
-      try keychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
+      try identityKeychain.set(clientData, forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate {
         saveServerFetchDate(serverFetchDate)
       } else {
-        try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+        try identityKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
     } catch {
       ClerkLogger.logError(
@@ -67,9 +83,10 @@ private actor CachePersistenceWorker {
   }
 
   func saveServerFetchDate(_ date: Date) {
+    guard atomicIdentityStore == nil else { return }
     do {
       let dateString = String(date.timeIntervalSince1970)
-      try keychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
+      try identityKeychain.set(dateString, forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     } catch {
       ClerkLogger.logError(
         error,
@@ -81,7 +98,7 @@ private actor CachePersistenceWorker {
   func saveEnvironment(_ environment: Clerk.Environment) {
     do {
       let environmentData = try JSONEncoder.clerkEncoder.encode(environment)
-      try keychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+      try environmentKeychain.set(environmentData, forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
     } catch {
       ClerkLogger.logError(
         error,
@@ -91,10 +108,13 @@ private actor CachePersistenceWorker {
   }
 
   func deleteClient(serverFetchDate: Date?) {
+    guard atomicIdentityStore == nil else { return }
     do {
-      try keychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+      try identityKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
       if let serverFetchDate {
         saveServerFetchDate(serverFetchDate)
+      } else {
+        try identityKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
       }
     } catch {
       ClerkLogger.logError(
@@ -110,6 +130,9 @@ private actor CachePersistenceWorker {
 /// This allows the cache manager to interact with Clerk instance properties
 /// without directly coupling to the Clerk class.
 protocol CacheCoordinator: AnyObject, Sendable {
+  /// Applies a complete atomic app-local identity during cache hydration.
+  @MainActor func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot)
+
   /// Sets the client and its server fetch date if no client is currently set.
   ///
   /// - Parameters:
@@ -126,6 +149,10 @@ protocol CacheCoordinator: AnyObject, Sendable {
   @MainActor func setEnvironmentIfNeeded(_ environment: Clerk.Environment)
 }
 
+extension CacheCoordinator {
+  @MainActor func hydrateIdentityIfNeeded(_: ClerkIdentitySnapshot) {}
+}
+
 /// Manages caching of Clerk client and environment data to keychain.
 ///
 /// This class handles loading and saving cached data, coordinating with the Clerk instance
@@ -140,7 +167,10 @@ final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
 
   /// The keychain storage for persisting cached data.
-  private let keychain: any KeychainStorage
+  private let identityKeychain: any KeychainStorage
+  private let environmentKeychain: any KeychainStorage
+  private let provisionalClientKeychains: [any KeychainStorage]
+  private let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
 
   /// Creates a new cache manager.
   ///
@@ -149,9 +179,35 @@ final class CacheManager {
   ///   - keychain: The keychain storage to use for persisting cached data.
   ///     Passed in directly because CacheManager is initialized during `configure()` before `Clerk.shared` is set.
   init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
-    persistenceWorker = CachePersistenceWorker(keychain: keychain)
+    persistenceWorker = CachePersistenceWorker(
+      identityKeychain: keychain,
+      environmentKeychain: keychain,
+      atomicIdentityStore: nil
+    )
     self.coordinator = coordinator
-    self.keychain = keychain
+    identityKeychain = keychain
+    environmentKeychain = keychain
+    provisionalClientKeychains = []
+    atomicIdentityStore = nil
+  }
+
+  init(
+    coordinator: any CacheCoordinator,
+    identityKeychain: any KeychainStorage,
+    environmentKeychain: any KeychainStorage,
+    provisionalClientKeychains: [any KeychainStorage] = [],
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  ) {
+    persistenceWorker = CachePersistenceWorker(
+      identityKeychain: identityKeychain,
+      environmentKeychain: environmentKeychain,
+      atomicIdentityStore: atomicIdentityStore
+    )
+    self.coordinator = coordinator
+    self.identityKeychain = identityKeychain
+    self.environmentKeychain = environmentKeychain
+    self.provisionalClientKeychains = provisionalClientKeychains
+    self.atomicIdentityStore = atomicIdentityStore
   }
 
   /// Loads cached client and environment data from keychain.
@@ -160,9 +216,32 @@ final class CacheManager {
   /// the current state allows them to be set (i.e., no fresh data exists).
   ///
   /// Errors are logged but do not prevent initialization from proceeding.
-  func loadCachedData() {
-    loadCachedClient()
+  func loadCachedData(hydrateIdentity: Bool = true) {
+    if hydrateIdentity {
+      loadCachedClient()
+    }
     loadCachedEnvironment()
+  }
+
+  /// Loads the legacy cached client for immediate presentation during shared-session adoption.
+  ///
+  /// This is intentionally separate from identity hydration: the legacy Client is provisional UI
+  /// only, while shared-session reconciliation remains authoritative for request identity.
+  func loadProvisionalLegacyClientForPresentation() {
+    do {
+      for keychain in provisionalClientKeychains {
+        guard try loadDeviceTokenFromKeychain(keychain) != nil else { continue }
+        guard let cachedClient = try loadClientFromKeychain(keychain) else { continue }
+        let serverFetchDate = try loadClientServerFetchDateFromKeychain(keychain)
+        coordinator?.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+        return
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to load provisional cached client from keychain. This is non-critical and initialization will continue."
+      )
+    }
   }
 
   /// Loads cached client data from keychain if available.
@@ -171,11 +250,18 @@ final class CacheManager {
   /// cached data from overwriting fresh data loaded from the API.
   private func loadCachedClient() {
     do {
-      let serverFetchDate = try loadClientServerFetchDateFromKeychain()
+      if let atomicIdentityStore {
+        if let identity = try atomicIdentityStore.load() {
+          coordinator?.hydrateIdentityIfNeeded(identity)
+        }
+        return
+      }
+
+      let serverFetchDate = try loadClientServerFetchDateFromKeychain(identityKeychain)
 
       guard let coordinator else { return }
 
-      if let cachedClient = try loadClientFromKeychain() {
+      if let cachedClient = try loadClientFromKeychain(identityKeychain) {
         // Only set cached client if we don't already have one
         // This prevents overwriting fresh data during load()
         coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
@@ -267,10 +353,34 @@ final class CacheManager {
     persistenceState.shutdown()
   }
 
+  func freezePersistence() {
+    persistenceState.freeze()
+  }
+
+  func drainFrozenPersistence() async {
+    await pendingPersistenceTask?.value
+  }
+
+  func resumePersistence() {
+    persistenceState.resume()
+  }
+
   // MARK: - Private Keychain Operations
 
+  /// Loads a valid device token from keychain.
+  private func loadDeviceTokenFromKeychain(_ keychain: any KeychainStorage) throws -> String? {
+    guard let token = try keychain.string(
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !token.isEmpty
+    else {
+      return nil
+    }
+    return token
+  }
+
   /// Loads client data from keychain.
-  private func loadClientFromKeychain() throws -> Client? {
+  private func loadClientFromKeychain(_ keychain: any KeychainStorage) throws -> Client? {
     guard let clientData = try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
       return nil
     }
@@ -279,7 +389,7 @@ final class CacheManager {
   }
 
   /// Loads the server fetch date persisted alongside the cached client.
-  private func loadClientServerFetchDateFromKeychain() throws -> Date? {
+  private func loadClientServerFetchDateFromKeychain(_ keychain: any KeychainStorage) throws -> Date? {
     guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
           let timeInterval = TimeInterval(dateString)
     else {
@@ -290,7 +400,7 @@ final class CacheManager {
 
   /// Loads environment data from keychain.
   private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
-    guard let environmentData = try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {
+    guard let environmentData = try environmentKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {
       return nil
     }
     let decoder = JSONDecoder.clerkDecoder

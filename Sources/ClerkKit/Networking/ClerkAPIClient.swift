@@ -2,6 +2,24 @@ import Foundation
 
 /// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
+  private struct ClerkRequestContext: Equatable {
+    let checkpoint: ClerkRequestCheckpoint
+    let authorization: String?
+    let clientID: String?
+
+    init(request: URLRequest) {
+      checkpoint = request.clerkRequestCheckpoint
+      authorization = request.value(forHTTPHeaderField: "Authorization")
+      clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
+    }
+
+    func apply(to request: inout URLRequest) {
+      checkpoint.apply(to: &request)
+      request.setValue(authorization, forHTTPHeaderField: "Authorization")
+      request.setValue(clientID, forHTTPHeaderField: "x-clerk-client-id")
+    }
+  }
+
   struct Configuration {
     var sessionConfiguration: URLSessionConfiguration = {
       let configuration = URLSessionConfiguration.default
@@ -31,7 +49,7 @@ actor APIClient {
   init(
     baseURL: URL?,
     runtimeScope: ClerkRuntimeScope,
-    configure: (inout Configuration) -> Void = { _ in }
+    configure: @Sendable (inout Configuration) -> Void = { _ in }
   ) {
     var configuration = Configuration(runtimeScope: runtimeScope)
     configure(&configuration)
@@ -63,6 +81,7 @@ actor APIClient {
   ) async throws -> APIResponse<Value> {
     var attempts = 0
     let requestSequence = makeRequestSequence()
+    var clerkRequestContext: ClerkRequestContext?
 
     while true {
       try ensureCurrentRuntimeScope()
@@ -70,7 +89,17 @@ actor APIClient {
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestSequence(requestSequence)
-      try await pipeline.prepare(&urlRequest)
+      try await pipeline.prepareClerkRequest(&urlRequest)
+      let preparedContext = ClerkRequestContext(request: urlRequest)
+      if let clerkRequestContext {
+        guard preparedContext == clerkRequestContext else {
+          throw APIClientError.identityChangedBeforeRetry
+        }
+        clerkRequestContext.apply(to: &urlRequest)
+      } else {
+        clerkRequestContext = preparedContext
+      }
+      try await pipeline.prepareCustomRequest(&urlRequest)
       try ensureCurrentRuntimeScope()
 
       do {
@@ -137,4 +166,5 @@ actor APIClient {
 
 enum APIClientError: Error {
   case invalidHTTPResponse
+  case identityChangedBeforeRetry
 }

@@ -87,15 +87,25 @@ public enum LogLevel: String, CaseIterable, Comparable, Sendable {
   }
 }
 
-/// Location information for logging
-private struct LogLocation {
-  let file: String
-  let function: String
-  let line: Int
-}
-
 /// A unified logging system for the Clerk SDK that respects log level configuration.
 package enum ClerkLogger {
+  package struct Configuration {
+    let logLevel: LogLevel
+    let handler: (@Sendable (LogEntry) -> Void)?
+
+    init(options: Clerk.Options) {
+      logLevel = options.logLevel
+      handler = options.loggerHandler
+    }
+  }
+
+  private struct Context {
+    let file: String
+    let function: String
+    let line: Int
+    let configuration: Configuration?
+  }
+
   /// The unified logging instance for Clerk
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
@@ -194,28 +204,50 @@ package enum ClerkLogger {
     forceLog: Bool = false,
     file: String,
     function: String,
-    line: Int
+    line: Int,
+    configuration: Configuration? = nil
   ) {
     // Errors always log regardless of level
     if !forceLog {
-      // Check log level asynchronously since Clerk.shared.options requires MainActor
       let shouldLogTask = Task { @MainActor in
-        ClerkLogger.shouldLog(level: level)
+        ClerkLogger.shouldLog(level: level, configuration: configuration)
       }
       // For non-async context, we'll log by default if we can't check
       // This ensures errors always log, and other levels will be filtered properly in async contexts
       Task {
         guard await shouldLogTask.value else { return }
-        let location = LogLocation(file: file, function: function, line: line)
-        await performLog(level: level, message: message, error: error, forceLog: false, location: location)
+        let context = Context(
+          file: file,
+          function: function,
+          line: line,
+          configuration: configuration
+        )
+        await performLog(
+          level: level,
+          message: message,
+          error: error,
+          forceLog: false,
+          context: context
+        )
       }
       return
     }
 
     // For forceLog (errors), log immediately
     Task {
-      let location = LogLocation(file: file, function: function, line: line)
-      await performLog(level: level, message: message, error: error, forceLog: true, location: location)
+      let context = Context(
+        file: file,
+        function: function,
+        line: line,
+        configuration: configuration
+      )
+      await performLog(
+        level: level,
+        message: message,
+        error: error,
+        forceLog: true,
+        context: context
+      )
     }
   }
 
@@ -226,11 +258,11 @@ package enum ClerkLogger {
     message: String,
     error: Error?,
     forceLog: Bool,
-    location: LogLocation
+    context: Context
   ) {
-    let file = location.file
-    let function = location.function
-    let line = location.line
+    let file = context.file
+    let function = context.function
+    let line = context.line
     let fileName = URL(fileURLWithPath: file).lastPathComponent
     let timestampString = DateFormatter.logFormatter.string(from: Date())
     let timestamp = Date()
@@ -272,9 +304,11 @@ package enum ClerkLogger {
         formattedMessage: logMessage
       )
 
-      // Capture handler closure while we're on MainActor (where Clerk.shared is safe to access)
-      // This avoids issues if Clerk isn't configured yet or if we're in a detached context
-      let handler = Clerk.shared.options.loggerHandler
+      let handler = if let configuration = context.configuration {
+        configuration.handler
+      } else {
+        Clerk.installedLoggingConfiguration?.handler
+      }
 
       // Invoke handler asynchronously to avoid blocking
       if let handler {
@@ -287,8 +321,13 @@ package enum ClerkLogger {
 
   /// Determines if a message at the given level should be logged based on the configured log level
   @MainActor
-  static func shouldLog(level: LogLevel) -> Bool {
-    let configuredLevel = Clerk.shared.options.logLevel
+  static func shouldLog(
+    level: LogLevel,
+    configuration: Configuration? = nil
+  ) -> Bool {
+    let configuredLevel = configuration?.logLevel
+      ?? Clerk.installedLoggingConfiguration?.logLevel
+      ?? .error
     // Log if the message level is <= configured level (lower severity number = higher priority)
     return level <= configuredLevel
   }
@@ -307,11 +346,21 @@ extension ClerkLogger {
   package static func logError(
     _ error: Error,
     message: String = "An error occurred",
+    configuration: Configuration? = nil,
     file: String = #file,
     function: String = #function,
     line: Int = #line
   ) {
-    logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
+    logSync(
+      level: .error,
+      message: message,
+      error: error,
+      forceLog: true,
+      file: file,
+      function: function,
+      line: line,
+      configuration: configuration
+    )
   }
 
   /// Log a network request error with additional context

@@ -27,6 +27,15 @@ extension Clerk {
         self.service = service
         self.accessGroup = accessGroup
       }
+
+      var normalizedAccessGroup: String? {
+        guard let accessGroup = accessGroup?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !accessGroup.isEmpty
+        else {
+          return nil
+        }
+        return accessGroup
+      }
     }
 
     /// Configuration object that enables Clerk auth state synchronization between sibling apps.

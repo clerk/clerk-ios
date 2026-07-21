@@ -21,7 +21,7 @@ enum AppAttestHelper {
   /// The keychain storage for secure data persistence.
   @MainActor
   private static var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.keychain
+    Clerk.shared.dependencies.appLocalKeychain
   }
 
   /// Errors that can occur during the attestation process.
@@ -125,7 +125,7 @@ enum AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId else {
+    guard let clientId = await Clerk.shared.identityController.persistedClientID() else {
       throw ClerkClientError(message: "Client ID is unavailble.")
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
@@ -169,18 +169,5 @@ enum AppAttestHelper {
   @MainActor
   static func removeKeyId() throws {
     try keychain.deleteItem(forKey: keychainKey)
-  }
-
-  /// Retrieves the stored attestation client ID from the keychain.
-  ///
-  /// This needs to come from the keychain, because if the initial client request is blocked on app load,
-  /// the app wont have a client yet
-  @MainActor
-  static var clientId: String? {
-    guard let clientData = try? keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
-      return nil
-    }
-    let decoder = JSONDecoder.clerkDecoder
-    return try? decoder.decode(Client.self, from: clientData).id
   }
 }

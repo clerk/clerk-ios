@@ -118,6 +118,7 @@ jobs:
   format-and-lint:
     name: Check formatting and linting
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -153,6 +154,7 @@ jobs:
     name: Run ClerkKit tests on macOS
     needs: format-and-lint
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -211,6 +213,7 @@ jobs:
     name: Run ClerkKitUI tests on iOS
     needs: format-and-lint
     runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -354,6 +357,7 @@ jobs:
     name: Build ${{ matrix.platform }}
     needs: [test, test-ui]
     runs-on: macos-26
+    timeout-minutes: 45
     strategy:
       matrix:
         platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]

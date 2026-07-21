@@ -15,6 +15,13 @@ import Foundation
 final class MockDependencyContainer: Dependencies {
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
+  let appLocalKeychain: any KeychainStorage
+  let identityKeychain: any KeychainStorage
+  let legacyAppLocalKeychain: (any KeychainStorage)?
+  let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
+  let atomicIdentityIO: SharedSessionLocalIdentityIO?
+  let sharedSessionOwnerIdentifier: String?
+  let shouldHydrateProvisionalLegacyClient: Bool
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -56,6 +63,12 @@ final class MockDependencyContainer: Dependencies {
   init(
     apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
+    appLocalKeychain: (any KeychainStorage)? = nil,
+    identityKeychain: (any KeychainStorage)? = nil,
+    legacyAppLocalKeychain: (any KeychainStorage)? = nil,
+    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
+    sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
+    shouldHydrateProvisionalLegacyClient: Bool = false,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
@@ -72,10 +85,19 @@ final class MockDependencyContainer: Dependencies {
   ) {
     networkingPipeline = NetworkingPipeline()
     self.keychain = keychain ?? InMemoryKeychain()
+    self.appLocalKeychain = appLocalKeychain ?? self.keychain
+    self.identityKeychain = identityKeychain ?? self.appLocalKeychain
+    self.legacyAppLocalKeychain = legacyAppLocalKeychain
+    self.atomicIdentityStore = atomicIdentityStore
+    atomicIdentityIO = atomicIdentityStore.map {
+      SharedSessionLocalIdentityIO(store: $0)
+    }
+    self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier
+    self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
-    magicLinkStore = MagicLinkStore(keychain: self.keychain)
+    magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services

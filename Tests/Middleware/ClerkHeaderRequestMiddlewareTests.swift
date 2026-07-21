@@ -46,6 +46,91 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
+  func adoptedIdentityUsesHydratedTokenWithoutReadingStoragePerRequest() async throws {
+    let clerk = Clerk()
+    let identity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "hydrated-token",
+      client: .mock,
+      serverDate: nil
+    )
+    let store = ReadCountingIdentityStore(identity: identity)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(
+        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
+      ),
+      atomicIdentityStore: store,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.hydrateIdentityIfNeeded(identity)
+    store.resetReadCount()
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
+
+    for _ in 0 ..< 3 {
+      var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+      try await middleware.prepare(&request)
+      #expect(request.value(forHTTPHeaderField: "Authorization") == "hydrated-token")
+    }
+
+    #expect(store.readCount == 0)
+  }
+
+  @Test
+  func appLocalRequestSnapshotWaitsBehindQueuedIdentityTransition() async throws {
+    let clerk = Clerk()
+    let store = ReadCountingIdentityStore(identity: SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: nil,
+      client: nil,
+      serverDate: nil
+    ))
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(
+        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
+      ),
+      atomicIdentityStore: store,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let localIdentityIO = try #require(clerk.dependencies.atomicIdentityIO)
+    let gate = RequestIdentityOperationGate()
+    let identity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "queued-token",
+      client: .mock,
+      serverDate: nil
+    )
+    let transition = clerk.identityController.enqueueLocalOperation { operationRevision in
+      await gate.suspend()
+      return try await clerk.identityController.persistAndApplyAtomicIdentity(
+        identity,
+        through: localIdentityIO,
+        operationRevision: operationRevision,
+        fenceAllClientResponses: false
+      )
+    }
+    try await gate.waitUntilSuspended()
+
+    let requestStarted = RequestStartSignal()
+    var didPrepare = false
+    let requestTask = Task { @MainActor in
+      var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+      await requestStarted.signal()
+      try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
+        .prepare(&request)
+      didPrepare = true
+      return request
+    }
+    await requestStarted.wait()
+    #expect(!didPrepare)
+
+    gate.resume()
+    #expect(try await transition.value)
+    let request = try await requestTask.value
+    #expect(request.value(forHTTPHeaderField: "Authorization") == "queued-token")
+    #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == Client.mock.id)
+  }
+
+  @Test
   func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
     _ = createTestKeychain()
 
@@ -165,5 +250,85 @@ struct ClerkHeaderRequestMiddlewareTests {
     #expect(request.value(forHTTPHeaderField: "x-bundle-id") != nil, "Should include bundle ID header")
     #expect(request.value(forHTTPHeaderField: "x-is-sandbox") != nil, "Should include sandbox header")
     #expect(["true", "false"].contains(request.value(forHTTPHeaderField: "x-is-sandbox") ?? ""), "Sandbox should be true or false")
+  }
+}
+
+@MainActor
+private final class RequestIdentityOperationGate {
+  private(set) var isSuspended = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func suspend() async {
+    isSuspended = true
+    await withCheckedContinuation { continuation = $0 }
+    isSuspended = false
+  }
+
+  func waitUntilSuspended() async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if isSuspended { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for local identity operation.")
+  }
+
+  func resume() {
+    continuation?.resume()
+    continuation = nil
+  }
+}
+
+private actor RequestStartSignal {
+  private var didStart = false
+  private var continuations: [CheckedContinuation<Void, Never>] = []
+
+  func signal() {
+    didStart = true
+    continuations.forEach { $0.resume() }
+    continuations.removeAll()
+  }
+
+  func wait() async {
+    guard !didStart else { return }
+    await withCheckedContinuation { continuation in
+      continuations.append(continuation)
+    }
+  }
+}
+
+private final class ReadCountingIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
+  private let lock = NSLock()
+  private var record: SharedSessionLocalIdentityRecord?
+  private var reads = 0
+
+  init(identity: SharedSessionLocalIdentity) {
+    record = SharedSessionLocalIdentityRecord(
+      acceptedIdentity: identity,
+      pendingPublication: nil
+    )
+  }
+
+  var readCount: Int {
+    lock.withLock { reads }
+  }
+
+  func resetReadCount() {
+    lock.withLock { reads = 0 }
+  }
+
+  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
+    lock.withLock {
+      reads += 1
+      return record
+    }
+  }
+
+  func updateRecord(
+    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
+  ) throws {
+    try lock.withLock {
+      record = try update(record)
+    }
   }
 }

@@ -285,7 +285,7 @@ struct ClerkResponseClientStateTests {
   // MARK: - Watch Sync (Non-authoritative / Watch → Phone)
 
   @Test
-  func nonAuthoritativeWatchSyncAcceptsNewerServerFetchDate() {
+  func nonAuthoritativeWatchSyncRefreshesInsteadOfReplacingActivePhone() {
     let clerk = makeIsolatedClerk()
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000, lastActiveSessionId: "session-phone")
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 3000, lastActiveSessionId: "session-watch")
@@ -300,9 +300,9 @@ struct ClerkResponseClientStateTests {
       to: clerk
     )
 
-    #expect(clerk.client?.id == watchClient.id)
-    #expect(clerk.client?.lastActiveSessionId == "session-watch")
-    #expect(clerk.lastClientServerFetchDate == watchServerDate)
+    #expect(clerk.client?.id == phoneClient.id)
+    #expect(clerk.client?.lastActiveSessionId == "session-phone")
+    #expect(clerk.lastClientServerFetchDate == phoneServerDate)
   }
 
   @Test
@@ -395,7 +395,7 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared() {
+  func nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
     let clerk = makeIsolatedClerk(clientService: MockClientService { phoneClient })
     let keychain = clerk.dependencies.keychain
@@ -411,9 +411,9 @@ struct ClerkResponseClientStateTests {
     )
 
     coordinator.apply(clearPayload, from: .watch, to: clerk)
-    let outgoingPayload = WatchSyncPayload(
+    let outgoingPayload = try WatchSyncPayload(
       clerk: clerk,
-      keychain: keychain,
+      metadata: WatchSyncMetadataStore(keychain: keychain).load(),
       authGeneration: coordinator.currentAuthVersion(keychain: keychain)
     )
 
@@ -484,8 +484,8 @@ struct ClerkResponseClientStateTests {
 
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == clearServerDate)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == .cleared)
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authVersion == 3)
 
     applyRemoteAuthPayload(
       client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 4000),
@@ -496,8 +496,8 @@ struct ClerkResponseClientStateTests {
     )
 
     #expect(clerk.client == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) == "3")
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authState == .cleared)
+    #expect(try WatchSyncMetadataStore(keychain: keychain).load().authVersion == 3)
   }
 
   @Test
@@ -513,7 +513,7 @@ struct ClerkResponseClientStateTests {
     let keychain = clerk.dependencies.keychain
     try keychain.set("cleared", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
-    clerk.lastClientServerFetchDate = Date(timeIntervalSince1970: 200)
+    clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 200)
     clerk.client = nil
 
     let watchClient = client(id: "client-watch", signInId: "sign-in-watch", updatedAt: 4000)
@@ -625,13 +625,26 @@ struct ClerkResponseClientStateTests {
     version: WatchSyncVersion? = nil,
     to clerk: Clerk
   ) {
+    let deviceTokenUpdate: WatchSyncDeviceTokenUpdate
+    if incoming != nil {
+      let token = (try? clerk.dependencies.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )) ?? "watch-test-token"
+      deviceTokenUpdate = .tokenSet(token: token, version: version)
+    } else {
+      deviceTokenUpdate = .notIncluded
+    }
     let clientUpdate: WatchSyncClientUpdate = if let incoming {
       .snapshot(client: incoming, serverFetchDate: incomingServerFetchDate, version: version)
     } else {
       .cleared(serverFetchDate: incomingServerFetchDate, version: version)
     }
     let source: WatchSyncSource = incomingIsAuthoritative ? .phone : .watch
-    let payload = WatchSyncPayload(deviceTokenUpdate: .notIncluded, clientUpdate: clientUpdate, environment: nil)
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: deviceTokenUpdate,
+      clientUpdate: clientUpdate,
+      environment: nil
+    )
     WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
   }
 
