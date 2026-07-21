@@ -150,45 +150,28 @@ extension URLRequest {
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-    URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(sequence, forKey: Self.clerkRequestSequenceKey)
   }
 
   mutating func setClerkClientResponseGeneration(_ generation: ClientResponseGeneration) {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-
-    URLProtocol.setProperty(
-      generation.propertyListValue,
-      forKey: Self.clerkClientResponseGenerationKey,
-      in: mutableRequest
-    )
-    self = mutableRequest as URLRequest
+    setClerkProperty(generation.propertyListValue, forKey: Self.clerkClientResponseGenerationKey)
   }
 
   mutating func disableAutomaticClerkClientSync() {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-
-    URLProtocol.setProperty(false, forKey: Self.clerkAutomaticClientSyncKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(false, forKey: Self.clerkAutomaticClientSyncKey)
   }
 
   mutating func disableClerkBodyLogging() {
+    setClerkProperty(false, forKey: Self.clerkBodyLoggingKey)
+  }
+
+  private mutating func setClerkProperty(_ value: Any, forKey key: String) {
     guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
       assertionFailure("Failed to create mutable URLRequest copy.")
       return
     }
 
-    URLProtocol.setProperty(false, forKey: Self.clerkBodyLoggingKey, in: mutableRequest)
+    URLProtocol.setProperty(value, forKey: key, in: mutableRequest)
     self = mutableRequest as URLRequest
   }
 }
