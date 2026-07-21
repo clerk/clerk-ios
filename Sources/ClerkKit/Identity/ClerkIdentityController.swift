@@ -447,7 +447,7 @@ extension ClerkIdentityController {
     guard let clerk else { return }
     localDeviceToken = event.deviceToken
     if previousDeviceToken != event.deviceToken {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
     applyIdentityToMemory(
       ClerkIdentitySnapshot(
@@ -535,14 +535,14 @@ extension ClerkIdentityController {
     return true
   }
 
-  func fenceResponsesAfterDeviceTokenChange() {
+  func fenceClientResponses() {
     clientResponseGeneration = clientResponseGeneration.next()
     lastAppliedResponseSequence = nil
   }
 
   func clearCachedClientStateAfterDeviceTokenChange() {
     guard let clerk else { return }
-    fenceResponsesAfterDeviceTokenChange()
+    fenceClientResponses()
     lastServerDate = nil
     setClient(nil, on: clerk)
 
@@ -575,7 +575,7 @@ extension ClerkIdentityController {
   func clearAtomicIdentityFromMemory() {
     guard let clerk else { return }
     localDeviceToken = nil
-    fenceResponsesAfterDeviceTokenChange()
+    fenceClientResponses()
     applyIdentityToMemory(
       ClerkIdentitySnapshot(
         state: .cleared,
@@ -615,7 +615,7 @@ extension ClerkIdentityController {
     if context.usesAtomicLocalPersistence {
       clearAtomicIdentityFromMemory()
     } else {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
   }
 
@@ -929,7 +929,7 @@ extension ClerkIdentityController {
   ) {
     let previousToken = currentDeviceToken
     if fenceAllClientResponses || (fenceTokenChange && previousToken != identity.deviceToken) {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
     let previousApplyingState = isApplyingIdentityTransition
     isApplyingIdentityTransition = true

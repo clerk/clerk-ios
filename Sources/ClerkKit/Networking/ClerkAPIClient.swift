@@ -84,6 +84,7 @@ actor APIClient {
     var clerkRequestContext: ClerkRequestContext?
 
     while true {
+      try Task.checkCancellation()
       try ensureCurrentRuntimeScope()
       attempts += 1
 
@@ -112,6 +113,7 @@ actor APIClient {
           (data, response) = try await session.data(for: urlRequest)
         }
 
+        try Task.checkCancellation()
         try ensureCurrentRuntimeScope()
 
         guard let httpResponse = response as? HTTPURLResponse else {

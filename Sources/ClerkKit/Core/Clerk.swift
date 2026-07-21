@@ -139,6 +139,10 @@ public final class Clerk {
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
+  /// Configure-time client refresh, canceled when tokenless client creation starts.
+  private var startupClientRefreshTask: Task<Void, Never>?
+  private var startupClientRefreshID: UUID?
+
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
   private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
@@ -360,27 +364,43 @@ extension Clerk {
     taskCoordinator?.task { @MainActor [weak self] in
       do {
         guard let self else { return }
-        async let environment = retryingOperation(
+        _ = try await retryingOperation(
           policy: retryPolicy,
           operationName: "environment refresh"
         ) {
           try await self.refreshEnvironment()
         }
-
-        _ = await initialSharedSessionReconciliation?.value
-        let client = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try await self.refreshClient()
-        }
-
-        _ = try await environment
-        _ = client
       } catch is CancellationError {
         return
       } catch {
-        ClerkLogger.logError(error, message: "Failed to load client or environment")
+        ClerkLogger.logError(error, message: "Failed to load environment")
+      }
+    }
+
+    let startupClientRefreshID = UUID()
+    self.startupClientRefreshID = startupClientRefreshID
+    startupClientRefreshTask = taskCoordinator?.task { @MainActor [weak self] in
+      guard let self else { return }
+      defer {
+        if self.startupClientRefreshID == startupClientRefreshID {
+          self.startupClientRefreshTask = nil
+          self.startupClientRefreshID = nil
+        }
+      }
+      do {
+        _ = await initialSharedSessionReconciliation?.value
+        try Task.checkCancellation()
+        _ = try await retryingOperation(
+          policy: retryPolicy,
+          operationName: "client refresh"
+        ) {
+          try Task.checkCancellation()
+          try await self.refreshClient(skipClientId: false)
+        }
+      } catch is CancellationError {
+        return
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to load client")
       }
     }
   }
@@ -610,9 +630,11 @@ extension Clerk {
   ///   native client cannot conflict with the newly stored token.
   @discardableResult
   func refreshClient(skipClientId: Bool) async throws -> Client? {
+    try Task.checkCancellation()
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
     let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    try Task.checkCancellation()
     try runtime.validateStableRuntime()
     switch response.update {
     case .client(let responseClient):
@@ -797,6 +819,15 @@ extension Clerk {
     taskCoordinator?.task(priority: priority, operation: operation)
   }
 
+  @discardableResult
+  func cancelStartupClientRefresh() -> Bool {
+    guard let startupClientRefreshTask else { return false }
+    self.startupClientRefreshTask = nil
+    startupClientRefreshID = nil
+    startupClientRefreshTask.cancel()
+    return true
+  }
+
   @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
@@ -898,6 +929,7 @@ extension Clerk {
   package func cleanupManagers() {
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     identityController.invalidateLocalOperations()
+    cancelStartupClientRefresh()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
@@ -918,6 +950,7 @@ extension Clerk {
     await identityController.invalidateAndDrainLocalOperations(
       through: dependencies.atomicIdentityIO
     )
+    cancelStartupClientRefresh()
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil

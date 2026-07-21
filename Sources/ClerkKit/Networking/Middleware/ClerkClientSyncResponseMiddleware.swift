@@ -101,6 +101,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    try Task.checkCancellation()
     let deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
       authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
     )
@@ -121,6 +122,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     )
 
     let clerk = try await runtimeScope.requireCurrentClerk()
+    try Task.checkCancellation()
     try await clerk.identityController.applyNetworkResponse(context)
   }
 

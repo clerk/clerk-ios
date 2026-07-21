@@ -182,6 +182,34 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
+  func tokenlessClientCreationFencesSuspendedStartupRefresh() async throws {
+    let clerk = Clerk()
+    let gate = RequestIdentityOperationGate()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      clientService: MockClientService(get: {
+        await gate.suspend()
+        return .mock
+      })
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer {
+      gate.resume()
+      clerk.cleanupManagers()
+    }
+    try await gate.waitUntilSuspended()
+    let startupGeneration = clerk.clientResponseGeneration
+
+    var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client/sign_ups")))
+    request.setClerkCreatesClientWhenTokenless(true)
+    try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope).prepare(&request)
+
+    #expect(request.clerkRequestDeviceToken == nil)
+    #expect(clerk.clientResponseGeneration != startupGeneration)
+    #expect(request.clerkClientResponseGeneration == clerk.clientResponseGeneration)
+  }
+
+  @Test
   func omitsClientIdHeaderWhenSkipClientIdHeaderIsPresent() async throws {
     Clerk.shared.client = .mock
 

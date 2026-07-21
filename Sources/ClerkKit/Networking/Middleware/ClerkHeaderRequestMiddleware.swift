@@ -20,7 +20,15 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     let clerk = try runtimeScope.requireCurrentClerk()
     let identity = try await clerk.identityController.captureRequestIdentity()
     _ = try runtimeScope.requireCurrentClerk()
-    request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
+    var clientResponseGeneration = identity.clientResponseGeneration
+    if request.clerkCreatesClientWhenTokenless,
+       identity.deviceToken == nil,
+       clerk.cancelStartupClientRefresh()
+    {
+      clerk.identityController.fenceClientResponses()
+      clientResponseGeneration = clerk.clientResponseGeneration
+    }
+    request.setClerkClientResponseGeneration(clientResponseGeneration)
     request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
     let isCanonicalClientRequest = request.value(
       forHTTPHeaderField: Self.canonicalClientRequestHeader
@@ -31,7 +39,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
 
     request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
       requestSequence: request.clerkRequestSequence,
-      clientResponseGeneration: identity.clientResponseGeneration,
+      clientResponseGeneration: clientResponseGeneration,
       sharedSessionBaseGeneration: identity.baseGeneration,
       isCanonicalClientRequest: isCanonicalClientRequest,
       requestDeviceToken: identity.deviceToken
