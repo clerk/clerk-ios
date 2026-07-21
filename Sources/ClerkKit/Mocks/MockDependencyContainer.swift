@@ -20,6 +20,7 @@ final class MockDependencyContainer: Dependencies {
   let telemetryCollector: any TelemetryCollectorProtocol
 
   let clientService: ClientServiceProtocol
+  let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
@@ -42,6 +43,7 @@ final class MockDependencyContainer: Dependencies {
   ///   - keychain: Optional keychain storage (defaults to InMemoryKeychain).
   ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
   ///   - clientService: Optional custom client service (defaults to MockClientService with Client.mock).
+  ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
   ///   - userService: Optional custom user service (defaults to MockUserService).
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
   ///   - signUpService: Optional custom sign-up service (defaults to MockSignUpService).
@@ -58,6 +60,7 @@ final class MockDependencyContainer: Dependencies {
     keychain: (any KeychainStorage)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
+    hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
     signUpService: (any SignUpServiceProtocol)? = nil,
@@ -80,6 +83,7 @@ final class MockDependencyContainer: Dependencies {
 
     // Use custom services if provided, otherwise use mock services
     self.clientService = clientService ?? MockClientService()
+    self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
     self.signUpService = signUpService ?? MockSignUpService()

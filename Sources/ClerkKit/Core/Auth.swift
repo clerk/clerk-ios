@@ -16,6 +16,7 @@ import Foundation
 public struct Auth {
   private let magicLinkStore: MagicLinkStore
   private let magicLinkService: MagicLinkServiceProtocol
+  let hostedAuthService: HostedAuthServiceProtocol
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
@@ -25,6 +26,7 @@ public struct Auth {
   init(
     magicLinkStore: MagicLinkStore,
     magicLinkService: MagicLinkServiceProtocol,
+    hostedAuthService: HostedAuthServiceProtocol,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
@@ -33,6 +35,7 @@ public struct Auth {
   ) {
     self.magicLinkStore = magicLinkStore
     self.magicLinkService = magicLinkService
+    self.hostedAuthService = hostedAuthService
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
@@ -677,7 +680,7 @@ extension Auth {
     }
   }
 
-  private func activateSession(sessionId: String) async throws {
+  func activateSession(sessionId: String) async throws {
     do {
       try await setActive(sessionId: sessionId)
     } catch {

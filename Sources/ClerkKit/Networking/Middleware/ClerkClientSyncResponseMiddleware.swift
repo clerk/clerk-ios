@@ -13,6 +13,8 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    guard request.shouldAutomaticallySyncClerkClient else { return }
+
     let responseSequence = request.clerkRequestSequence
     let serverDate = response.serverDate
 

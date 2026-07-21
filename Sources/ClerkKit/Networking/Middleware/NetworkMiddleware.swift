@@ -128,6 +128,8 @@ extension HTTPURLResponse {
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
+  private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
+  private static let clerkBodyLoggingKey = "com.clerk.body-logging"
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
@@ -139,26 +141,37 @@ extension URLRequest {
     )
   }
 
+  var shouldAutomaticallySyncClerkClient: Bool {
+    URLProtocol.property(forKey: Self.clerkAutomaticClientSyncKey, in: self) as? Bool ?? true
+  }
+
+  var shouldLogClerkBodies: Bool {
+    URLProtocol.property(forKey: Self.clerkBodyLoggingKey, in: self) as? Bool ?? true
+  }
+
   mutating func setClerkRequestSequence(_ sequence: Int) {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-    URLProtocol.setProperty(sequence, forKey: Self.clerkRequestSequenceKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(sequence, forKey: Self.clerkRequestSequenceKey)
   }
 
   mutating func setClerkClientResponseGeneration(_ generation: ClientResponseGeneration) {
+    setClerkProperty(generation.propertyListValue, forKey: Self.clerkClientResponseGenerationKey)
+  }
+
+  mutating func disableAutomaticClerkClientSync() {
+    setClerkProperty(false, forKey: Self.clerkAutomaticClientSyncKey)
+  }
+
+  mutating func disableClerkBodyLogging() {
+    setClerkProperty(false, forKey: Self.clerkBodyLoggingKey)
+  }
+
+  private mutating func setClerkProperty(_ value: Any, forKey key: String) {
     guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
       assertionFailure("Failed to create mutable URLRequest copy.")
       return
     }
 
-    URLProtocol.setProperty(
-      generation.propertyListValue,
-      forKey: Self.clerkClientResponseGenerationKey,
-      in: mutableRequest
-    )
+    URLProtocol.setProperty(value, forKey: key, in: mutableRequest)
     self = mutableRequest as URLRequest
   }
 }
