@@ -324,22 +324,10 @@ extension URLRequest {
   }
 
   mutating func disableAutomaticClerkClientSync() {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-
-    URLProtocol.setProperty(false, forKey: Self.clerkAutomaticClientSyncKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(NSNumber(value: false), key: Self.clerkAutomaticClientSyncKey)
   }
 
   mutating func disableClerkBodyLogging() {
-    guard let mutableRequest = (self as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-      assertionFailure("Failed to create mutable URLRequest copy.")
-      return
-    }
-
-    URLProtocol.setProperty(false, forKey: Self.clerkBodyLoggingKey, in: mutableRequest)
-    self = mutableRequest as URLRequest
+    setClerkProperty(NSNumber(value: false), key: Self.clerkBodyLoggingKey)
   }
 }

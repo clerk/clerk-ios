@@ -149,15 +149,8 @@ struct HostedAuthCallback: Equatable {
   }
 
   private static func nonEmptySingleValue(named name: String, in queryItems: [URLQueryItem]) -> String? {
-    guard let value = singleValue(named: name, in: queryItems), !value.isEmpty else {
-      return nil
-    }
-    return value
-  }
-
-  private static func singleValue(named name: String, in queryItems: [URLQueryItem]) -> String? {
     let matches = queryItems.filter { $0.name == name }
-    guard matches.count == 1 else { return nil }
-    return matches[0].value
+    guard matches.count == 1, let value = matches[0].value, !value.isEmpty else { return nil }
+    return value
   }
 }
