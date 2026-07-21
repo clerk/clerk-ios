@@ -23,6 +23,7 @@ final class HostedAuthService: HostedAuthServiceProtocol {
       path: "/v1/client/hosted_auth",
       method: .post,
       body: params,
+      automaticallySyncClient: false,
       logBodies: false
     )
 

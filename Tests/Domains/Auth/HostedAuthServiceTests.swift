@@ -23,6 +23,7 @@ extension HostedAuthFlowTests {
     )
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(!request.shouldAutomaticallySyncClerkClient)
       #expect(!request.shouldLogClerkBodies)
       let queryItems = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems }
       #expect(queryItems == [
