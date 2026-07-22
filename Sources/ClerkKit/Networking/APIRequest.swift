@@ -64,7 +64,7 @@ struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]
-  let createsClientWhenTokenless: Bool
+  let canEstablishClientWhenTokenless: Bool
 
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
@@ -74,7 +74,7 @@ struct Request<Response: Decodable & Sendable> {
     path: String,
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
-    createsClientWhenTokenless: Bool = false,
+    canEstablishClientWhenTokenless: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
@@ -92,7 +92,7 @@ struct Request<Response: Decodable & Sendable> {
     self.path = path
     self.method = method
     self.headers = headers
-    self.createsClientWhenTokenless = createsClientWhenTokenless
+    self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     decodeClosure = decode
@@ -127,7 +127,7 @@ struct Request<Response: Decodable & Sendable> {
 
     var urlRequest = URLRequest(url: finalURL)
     urlRequest.httpMethod = method.rawValue
-    urlRequest.setClerkCreatesClientWhenTokenless(createsClientWhenTokenless)
+    urlRequest.setClerkCanEstablishClientWhenTokenless(canEstablishClientWhenTokenless)
     if !headers.isEmpty {
       var headerFields = urlRequest.allHTTPHeaderFields ?? [:]
       headers.forEach { headerFields[$0.key] = $0.value }

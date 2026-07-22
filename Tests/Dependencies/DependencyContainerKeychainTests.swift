@@ -132,7 +132,7 @@ struct DependencyContainerKeychainTests {
     )
 
     #expect(try container.atomicIdentityStore?.loadPendingPublication() != nil)
-    try container.prepareForInstallationAfterIdentityProducersDrain()
+    try container.discardPendingPublicationWhenSharedSyncDisabled()
     #expect(try container.atomicIdentityStore?.loadPendingPublication() == nil)
     #expect(try container.atomicIdentityStore?.load() == accepted)
   }

@@ -266,8 +266,9 @@ final class DependencyContainer: Dependencies {
     ).migrateIfNeeded()
   }
 
+  /// Removes an interrupted shared-session publication before installing a non-shared runtime.
   @MainActor
-  func prepareForInstallationAfterIdentityProducersDrain() throws {
+  func discardPendingPublicationWhenSharedSyncDisabled() throws {
     guard configurationManager.options.sharedSessionSync == nil else { return }
     try atomicIdentityStore?.clearPendingPublication()
   }

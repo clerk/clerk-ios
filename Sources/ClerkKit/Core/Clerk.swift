@@ -40,6 +40,16 @@ public final class Clerk {
     let identity: ClerkIdentityController.RollbackState
   }
 
+  private enum ReconfigurationPlan: Equatable {
+    case preserveIdentityAndSlot
+    case preserveIdentityAndMigrateSlot
+    case replaceIdentity
+
+    var reusesOwnerSlot: Bool {
+      self == .preserveIdentityAndSlot
+    }
+  }
+
   /// A getter to see if the Clerk object is ready for use or not.
   /// Returns true when both environment and client are loaded.
   public var isLoaded: Bool {
@@ -216,7 +226,6 @@ public final class Clerk {
   /// Coalesces overlapping public Keychain clears so persistence remains frozen
   /// until the single clear transaction has completed.
   var keychainClearTask: Task<Void, Error>?
-  var keychainClearTaskID: UUID?
 
   /// Dispatches Clerk state changes to optional internal observers.
   var internalStateChanges = ClerkInternalStateChangeEmitter()
@@ -297,7 +306,7 @@ extension Clerk {
       options: options,
       runtimeScope: runtimeScope
     )
-    try dependencies.prepareForInstallationAfterIdentityProducersDrain()
+    try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
 
     performConfiguration(dependencies: dependencies)
   }
@@ -538,12 +547,7 @@ extension Clerk {
         runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState),
         deferSharedSessionAdoption: true
       )
-      let preservesAdoptedLocalState = existing.publishableKey
-        == newDependencies.configurationManager.publishableKey
-        && (existing.options.sharedSessionSync != nil || options.sharedSessionSync != nil)
-      let preservesSharedSessionOwnerSlot = existing.canReuseSharedSessionOwnerSlot(
-        with: newDependencies
-      )
+      let plan = existing.reconfigurationPlan(with: newDependencies)
       let rollbackState = existing.captureReconfigurationRollbackState()
 
       existing.setConfigurationEpoch(to: nextEpoch)
@@ -552,17 +556,18 @@ extension Clerk {
       )
 
       do {
-        if preservesAdoptedLocalState, !preservesSharedSessionOwnerSlot {
+        switch plan {
+        case .preserveIdentityAndSlot:
+          try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
+        case .preserveIdentityAndMigrateSlot:
           try preserveAcceptedIdentityAcrossTopologyChange(
             from: rollbackState.dependencies.atomicIdentityStore,
             to: newDependencies.atomicIdentityStore
           )
           try rollbackState.dependencies.atomicIdentityStore?
             .clearPendingPublication()
-        }
-        if preservesAdoptedLocalState {
           try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
-        } else {
+        case .replaceIdentity:
           try await clearLocalClerkStorageStrictly(in: newDependencies)
           try await clearLocalClerkStorageStrictly(
             in: rollbackState.dependencies,
@@ -570,8 +575,8 @@ extension Clerk {
           )
           try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
         }
-        try newDependencies.prepareForInstallationAfterIdentityProducersDrain()
-        if !preservesSharedSessionOwnerSlot {
+        try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
+        if !plan.reusesOwnerSlot {
           try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
             in: rollbackState.dependencies
           )
@@ -596,7 +601,7 @@ extension Clerk {
 
     try await clearLocalClerkStorageStrictly(in: newDependencies)
     try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
-    try newDependencies.prepareForInstallationAfterIdentityProducersDrain()
+    try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
     clerk.performConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
@@ -803,6 +808,11 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  /// Applies a client value after the identity controller has established its mutation boundary.
+  func setClientFromIdentityController(_ client: Client?) {
+    self.client = client
+  }
+
   func emitInternalStateChange(_ change: ClerkInternalStateChange) {
     do {
       try internalStateChanges.emit(change, from: self)
@@ -894,6 +904,21 @@ extension Clerk {
         pendingPublication: nil
       )
     }
+  }
+
+  private func reconfigurationPlan(
+    with newDependencies: any Dependencies
+  ) -> ReconfigurationPlan {
+    let preservesIdentity = publishableKey
+      == newDependencies.configurationManager.publishableKey
+      && (options.sharedSessionSync != nil
+        || newDependencies.configurationManager.options.sharedSessionSync != nil)
+    guard preservesIdentity else {
+      return .replaceIdentity
+    }
+    return canReuseSharedSessionOwnerSlot(with: newDependencies)
+      ? .preserveIdentityAndSlot
+      : .preserveIdentityAndMigrateSlot
   }
 
   func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {

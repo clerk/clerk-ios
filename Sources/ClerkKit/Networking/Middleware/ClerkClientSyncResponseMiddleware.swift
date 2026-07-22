@@ -75,21 +75,12 @@ struct ClientSyncResponseContext {
   private var resolvedDeviceToken: String? {
     switch deviceTokenUpdate {
     case .absent:
-      normalizedToken(requestDeviceToken)
+      requestDeviceToken.nilIfEmpty
     case .set(let deviceToken):
       deviceToken
     case .clear:
       nil
     }
-  }
-
-  private func normalizedToken(_ token: String?) -> String? {
-    guard let token = token?.trimmingCharacters(in: .whitespacesAndNewlines),
-          !token.isEmpty
-    else {
-      return nil
-    }
-    return token
   }
 }
 

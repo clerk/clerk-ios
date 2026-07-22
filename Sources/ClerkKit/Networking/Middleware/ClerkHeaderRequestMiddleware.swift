@@ -21,7 +21,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     let identity = try await clerk.identityController.captureRequestIdentity()
     _ = try runtimeScope.requireCurrentClerk()
     var clientResponseGeneration = identity.clientResponseGeneration
-    if request.clerkCreatesClientWhenTokenless,
+    if request.clerkCanEstablishClientWhenTokenless,
        identity.deviceToken == nil,
        clerk.cancelStartupClientRefresh()
     {

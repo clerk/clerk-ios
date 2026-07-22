@@ -25,7 +25,7 @@ struct SignUpServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
-      #expect(request.clerkCreatesClientWhenTokenless)
+      #expect(request.clerkCanEstablishClientWhenTokenless)
       #expect(request.urlEncodedFormBody!["email_address"] == "test@example.com")
       #expect(request.urlEncodedFormBody!["password"] == "password123")
       #expect(request.urlEncodedFormBody!["locale"] != nil)

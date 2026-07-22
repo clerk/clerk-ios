@@ -187,10 +187,9 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     guard isAcceptingIdentityUpdates else { return }
 
     if let environment = payload.environment {
-      let wasApplyingRemotePayload = isApplyingRemotePayload
-      isApplyingRemotePayload = true
-      clerk.environment = environment
-      isApplyingRemotePayload = wasApplyingRemotePayload
+      withApplyingRemotePayload {
+        clerk.environment = environment
+      }
     }
 
     guard payload.deviceTokenUpdate != .notIncluded
@@ -226,13 +225,13 @@ extension WatchConnectivityCoordinator {
       return nil
     }
 
-    let currentToken = normalizedToken(clerk.deviceToken)
+    let currentToken = clerk.deviceToken.nilIfEmpty
     let deviceToken: String?
     switch payload.deviceTokenUpdate {
     case .notIncluded:
       deviceToken = clerk.deviceToken
     case .tokenSet(let token, _):
-      guard let token = normalizedToken(token) else { return nil }
+      guard let token = Optional(token).nilIfEmpty else { return nil }
       deviceToken = token
     case .tokenCleared:
       deviceToken = nil
@@ -263,7 +262,7 @@ extension WatchConnectivityCoordinator {
       }
     case .snapshot(let snapshot, let date, _):
       guard case .tokenSet(let pairedToken, _) = payload.deviceTokenUpdate,
-            normalizedToken(pairedToken) == deviceToken
+            Optional(pairedToken).nilIfEmpty == deviceToken
       else {
         scheduleRefresh(for: clerk)
         return nil
@@ -310,7 +309,7 @@ extension WatchConnectivityCoordinator {
   private func accepts(_ candidate: VersionAcceptance) -> Bool {
     guard candidate.updateIsIncluded else { return true }
     guard let version = candidate.version else {
-      return acceptsLegacyVersionlessUpdate(candidate)
+      return legacyVersionlessUpdateIsAccepted(candidate)
     }
     if let current = candidate.current {
       guard version >= current
@@ -332,13 +331,15 @@ extension WatchConnectivityCoordinator {
       return candidate.incomingFingerprint == candidate.durableFingerprint
     }
     if let current = candidate.current {
-      return candidate.source.incomingDeviceIsAuthoritative
-        || version > current
+      if version < current, candidate.allowsAuthoritativeVersionReset {
+        return true
+      }
+      return candidate.source.incomingDeviceIsAuthoritative || version > current
     }
     return true
   }
 
-  private func acceptsLegacyVersionlessUpdate(_ candidate: VersionAcceptance) -> Bool {
+  private func legacyVersionlessUpdateIsAccepted(_ candidate: VersionAcceptance) -> Bool {
     guard candidate.pendingVersion == nil else { return false }
     if candidate.acceptedVersion == nil, candidate.current == nil {
       return true
@@ -361,7 +362,7 @@ extension WatchConnectivityCoordinator {
     case .notIncluded:
       Self.deviceTokenFingerprint(clerk.deviceToken)
     case .tokenSet(let token, _):
-      Self.deviceTokenFingerprint(normalizedToken(token))
+      Self.deviceTokenFingerprint(Optional(token).nilIfEmpty)
     case .tokenCleared:
       Self.deviceTokenFingerprint(nil)
     }
@@ -409,7 +410,7 @@ extension WatchConnectivityCoordinator {
     case .notIncluded:
       Self.deviceTokenFingerprint(clerk.deviceToken)
     case .tokenSet(let token, _):
-      Self.deviceTokenFingerprint(normalizedToken(token))
+      Self.deviceTokenFingerprint(Optional(token).nilIfEmpty)
     case .tokenCleared:
       Self.deviceTokenFingerprint(nil)
     }
@@ -461,38 +462,34 @@ extension WatchConnectivityCoordinator {
         durableFingerprint: durableAuthFingerprint
       )
     )
-    guard accepts(
-      VersionAcceptance(
-        version: payload.deviceTokenUpdate.version,
-        updateIsIncluded: payload.deviceTokenUpdate != .notIncluded,
-        acceptedVersion: metadata.deviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
-        acceptedFingerprint: metadata.deviceTokenFingerprint,
-        pendingVersion: metadata.pendingDeviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
-        pendingFingerprint: metadata.pendingDeviceTokenFingerprint,
-        current: tokenCurrent,
-        allowsAuthoritativeVersionReset: allowsTokenAuthoritativeVersionReset,
-        incomingFingerprint: incomingTokenFingerprint,
-        durableFingerprint: durableTokenFingerprint,
-        source: source
-      )
-    ) else {
+    guard accepts(VersionAcceptance(
+      version: payload.deviceTokenUpdate.version,
+      updateIsIncluded: payload.deviceTokenUpdate != .notIncluded,
+      acceptedVersion: metadata.deviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
+      acceptedFingerprint: metadata.deviceTokenFingerprint,
+      pendingVersion: metadata.pendingDeviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
+      pendingFingerprint: metadata.pendingDeviceTokenFingerprint,
+      current: tokenCurrent,
+      allowsAuthoritativeVersionReset: allowsTokenAuthoritativeVersionReset,
+      incomingFingerprint: incomingTokenFingerprint,
+      durableFingerprint: durableTokenFingerprint,
+      source: source
+    )) else {
       return false
     }
-    guard accepts(
-      VersionAcceptance(
-        version: payload.clientUpdate.version,
-        updateIsIncluded: payload.clientUpdate != .notIncluded,
-        acceptedVersion: acceptedAuthVersion,
-        acceptedFingerprint: metadata.authFingerprint,
-        pendingVersion: metadata.pendingAuthVersion.map(WatchSyncVersion.init(rawValue:)),
-        pendingFingerprint: metadata.pendingAuthFingerprint,
-        current: authCurrent,
-        allowsAuthoritativeVersionReset: allowsAuthAuthoritativeVersionReset,
-        incomingFingerprint: incomingAuthFingerprint,
-        durableFingerprint: durableAuthFingerprint,
-        source: source
-      )
-    ) else {
+    guard accepts(VersionAcceptance(
+      version: payload.clientUpdate.version,
+      updateIsIncluded: payload.clientUpdate != .notIncluded,
+      acceptedVersion: acceptedAuthVersion,
+      acceptedFingerprint: metadata.authFingerprint,
+      pendingVersion: metadata.pendingAuthVersion.map(WatchSyncVersion.init(rawValue:)),
+      pendingFingerprint: metadata.pendingAuthFingerprint,
+      current: authCurrent,
+      allowsAuthoritativeVersionReset: allowsAuthAuthoritativeVersionReset,
+      incomingFingerprint: incomingAuthFingerprint,
+      durableFingerprint: durableAuthFingerprint,
+      source: source
+    )) else {
       scheduleRefreshForRejectedClientIfNeeded(
         payload.clientUpdate,
         source: source,
@@ -639,7 +636,7 @@ extension WatchConnectivityCoordinator {
     clientUpdate: WatchSyncClientUpdate,
     clerk: Clerk
   ) -> Bool {
-    let currentToken = normalizedToken(clerk.deviceToken)
+    let currentToken = clerk.deviceToken.nilIfEmpty
     guard currentToken != nil || clerk.client != nil else {
       return shouldApplyNonAuthoritativeClientUpdate(
         clientUpdate,
@@ -656,7 +653,7 @@ extension WatchConnectivityCoordinator {
       client: clerk.client,
       serverDate: clerk.lastClientServerFetchDate
     )
-    guard normalizedToken(deviceToken) == currentToken,
+    guard deviceToken.nilIfEmpty == currentToken,
           incomingAuthFingerprint == currentAuthFingerprint
     else {
       scheduleRefresh(for: clerk)
@@ -849,19 +846,17 @@ extension WatchConnectivityCoordinator {
     isApplyingRemotePayload = true
   }
 
+  private func withApplyingRemotePayload(_ operation: () -> Void) {
+    let previousApplyingState = isApplyingRemotePayload
+    isApplyingRemotePayload = true
+    defer { isApplyingRemotePayload = previousApplyingState }
+    operation()
+  }
+
   private func finishIdentityPublication(_ operationID: UUID) {
     identityPublicationTasks.removeValue(forKey: operationID)
     activeRemoteIdentityApplications.remove(operationID)
     isApplyingRemotePayload = !activeRemoteIdentityApplications.isEmpty
-  }
-
-  private func normalizedToken(_ token: String?) -> String? {
-    guard let token = token?.trimmingCharacters(in: .whitespacesAndNewlines),
-          !token.isEmpty
-    else {
-      return nil
-    }
-    return token
   }
 
   private func effectiveVersion(accepted: Int?, pending: Int?) -> WatchSyncVersion? {

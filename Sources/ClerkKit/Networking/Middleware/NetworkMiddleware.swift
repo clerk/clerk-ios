@@ -182,7 +182,7 @@ extension URLRequest {
   private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
-  private static let clerkCreatesClientWhenTokenlessKey = "com.clerk.creates-client-when-tokenless"
+  private static let clerkCanEstablishClientWhenTokenlessKey = "com.clerk.can-establish-client-when-tokenless"
 
   var clerkRequestCheckpoint: ClerkRequestCheckpoint {
     ClerkRequestCheckpoint(request: self)
@@ -216,9 +216,9 @@ extension URLRequest {
     URLProtocol.property(forKey: Self.clerkRequestDeviceTokenKey, in: self) as? String
   }
 
-  var clerkCreatesClientWhenTokenless: Bool {
+  var clerkCanEstablishClientWhenTokenless: Bool {
     (URLProtocol.property(
-      forKey: Self.clerkCreatesClientWhenTokenlessKey,
+      forKey: Self.clerkCanEstablishClientWhenTokenlessKey,
       in: self
     ) as? NSNumber)?.boolValue == true
   }
@@ -252,10 +252,10 @@ extension URLRequest {
     setClerkProperty(deviceToken, key: Self.clerkRequestDeviceTokenKey)
   }
 
-  mutating func setClerkCreatesClientWhenTokenless(_ createsClient: Bool) {
+  mutating func setClerkCanEstablishClientWhenTokenless(_ canEstablishClient: Bool) {
     setClerkProperty(
-      createsClient ? NSNumber(value: true) : nil,
-      key: Self.clerkCreatesClientWhenTokenlessKey
+      canEstablishClient ? NSNumber(value: true) : nil,
+      key: Self.clerkCanEstablishClientWhenTokenlessKey
     )
   }
 

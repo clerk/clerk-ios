@@ -201,7 +201,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     let startupGeneration = clerk.clientResponseGeneration
 
     var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client/sign_ups")))
-    request.setClerkCreatesClientWhenTokenless(true)
+    request.setClerkCanEstablishClientWhenTokenless(true)
     try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope).prepare(&request)
 
     #expect(request.clerkRequestDeviceToken == nil)

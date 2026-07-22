@@ -5,6 +5,14 @@
 
 import Foundation
 
+extension ClerkIdentityController {
+  enum DeviceTokenTransitionResult: Equatable {
+    case applied
+    case unchanged
+    case rejected
+  }
+}
+
 extension Clerk {
   @_spi(FrameworkIntegration) public enum DeviceTokenError: Error, LocalizedError {
     case emptyToken
@@ -41,8 +49,7 @@ extension Clerk {
   @discardableResult
   public func updateDeviceToken(_ token: String) async throws -> Client? {
     try runtimeScope.validateStableRuntime()
-    let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !normalizedToken.isEmpty else {
+    guard let normalizedToken = Optional(token).nilIfEmpty else {
       throw DeviceTokenError.emptyToken
     }
 

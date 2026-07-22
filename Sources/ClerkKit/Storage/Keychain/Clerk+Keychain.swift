@@ -38,6 +38,27 @@ extension Clerk {
     let loggingConfiguration: ClerkLogger.Configuration
   }
 
+  private static func attemptKeychainClear(
+    _ operation: String,
+    recording failures: inout [String],
+    logMessage: String? = nil,
+    configuration: ClerkLogger.Configuration,
+    perform: () throws -> Void
+  ) {
+    do {
+      try perform()
+    } catch {
+      if let logMessage {
+        ClerkLogger.logError(
+          error,
+          message: logMessage,
+          configuration: configuration
+        )
+      }
+      failures.append(operation)
+    }
+  }
+
   private static let legacySharedCredentialKeys: [ClerkKeychainKey] = [
     .cachedClient,
     .cachedClientServerDate,
@@ -108,7 +129,6 @@ extension Clerk {
       return keychainClearTask
     }
 
-    let taskID = UUID()
     let pendingClear = beginKeychainClear(for: clerk)
     let task = Task { @MainActor in
       let result: Result<Void, any Error>
@@ -123,14 +143,9 @@ extension Clerk {
         )
         result = .failure(error)
       }
-      guard clerk.keychainClearTaskID == taskID else {
-        return try result.get()
-      }
       clerk.keychainClearTask = nil
-      clerk.keychainClearTaskID = nil
       return try result.get()
     }
-    clerk.keychainClearTaskID = taskID
     clerk.keychainClearTask = task
     return task
   }
@@ -145,31 +160,27 @@ extension Clerk {
     let usesAtomicLocalIdentity = identityClear.usesAtomicLocalPersistence
     var initialFailedOperations: [String] = []
     if usesAtomicLocalIdentity {
-      do {
+      attemptKeychainClear(
+        "preserve Watch clear watermark",
+        recording: &initialFailedOperations,
+        logMessage: "Failed to preserve the Watch clear watermark",
+        configuration: loggingConfiguration
+      ) {
         _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
           .saveClearTombstone()
-      } catch {
-        ClerkLogger.logError(
-          error,
-          message: "Failed to preserve the Watch clear watermark",
-          configuration: loggingConfiguration
-        )
-        initialFailedOperations.append("preserve Watch clear watermark")
       }
     }
     clerk.identityController.applyStorageClearToMemory(identityClear)
     if let atomicIdentityStore = dependencies.atomicIdentityStore {
-      do {
+      attemptKeychainClear(
+        "delete atomic identity",
+        recording: &initialFailedOperations,
+        logMessage: "Failed to synchronously delete Clerk's atomic identity",
+        configuration: loggingConfiguration
+      ) {
         try atomicIdentityStore.deleteInvalidatingOperations(
           through: identityClear.invalidatedThroughRevision
         )
-      } catch {
-        ClerkLogger.logError(
-          error,
-          message: "Failed to synchronously delete Clerk's atomic identity",
-          configuration: loggingConfiguration
-        )
-        initialFailedOperations.append("delete atomic identity")
       }
     }
     let preservedKeys: Set<ClerkKeychainKey> = usesAtomicLocalIdentity
@@ -235,32 +246,38 @@ extension Clerk {
       }
 
       await cacheManager?.drainFrozenPersistence()
-      do {
+      attemptKeychainClear(
+        "clear app-local Keychain",
+        recording: &failedOperations,
+        configuration: loggingConfiguration
+      ) {
         try clearAllKeychainItemsStrictly(
           in: dependencies.appLocalKeychain,
           preserving: preservedKeys,
           configuration: loggingConfiguration
         )
-      } catch {
-        failedOperations.append("clear app-local Keychain")
       }
-      do {
+      attemptKeychainClear(
+        "clear identity Keychain",
+        recording: &failedOperations,
+        configuration: loggingConfiguration
+      ) {
         try clearAllKeychainItemsStrictly(
           in: dependencies.identityKeychain,
           preserving: preservedKeys,
           configuration: loggingConfiguration
         )
-      } catch {
-        failedOperations.append("clear identity Keychain")
       }
-      do {
+      attemptKeychainClear(
+        "clear legacy shared credentials",
+        recording: &failedOperations,
+        configuration: loggingConfiguration
+      ) {
         try clearKeychainItemsStrictly(
           legacySharedCredentialKeys,
           in: dependencies.keychain,
           configuration: loggingConfiguration
         )
-      } catch {
-        failedOperations.append("clear legacy shared credentials")
       }
 
       if let localIdentityIO = dependencies.atomicIdentityIO {
