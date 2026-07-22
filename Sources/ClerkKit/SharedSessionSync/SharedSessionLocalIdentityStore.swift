@@ -61,6 +61,26 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
     _ = try pendingPublication?.validated()
     return self
   }
+
+  func pendingLegacyAdoptionEventID(for ownerIdentifier: String) -> UUID? {
+    guard requiresLegacyAdoptionPublication,
+          let acceptedIdentity,
+          acceptedIdentity.state == .cleared,
+          acceptedIdentity.deviceToken.nilIfEmpty != nil,
+          acceptedIdentity.client == nil,
+          let pendingPublication,
+          pendingPublication.originOwnerIdentifier == ownerIdentifier,
+          SharedSessionLocalIdentity(
+            state: pendingPublication.state,
+            deviceToken: pendingPublication.deviceToken,
+            client: pendingPublication.client,
+            serverDate: pendingPublication.serverDate
+          ) == acceptedIdentity
+    else {
+      return nil
+    }
+    return pendingPublication.id
+  }
 }
 
 enum SharedSessionLocalIdentityStoreError: Error, Equatable {

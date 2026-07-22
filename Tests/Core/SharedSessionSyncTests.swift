@@ -175,6 +175,129 @@ struct SharedSessionSyncTests {
     #expect(node.coordinator.currentDeviceToken == "legacy-signed-in-token")
   }
 
+  @Test(arguments: [false, true])
+  func legacyAdoptionPublicationPreservesProvisionalClientUntilCanonicalResponse(
+    recoveringPendingPublication: Bool
+  ) async throws {
+    let backend = TestSlotBackend()
+    let peerEvent = try makeEvent(
+      owner: "app.custom-flows",
+      generation: 1,
+      clientID: "peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: peerEvent
+      ),
+      owner: "app.custom-flows"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+    var provisionalClient = Client.mock
+    provisionalClient.id = "provisional-client"
+    node.clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
+      provisionalClient
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+    #expect(node.clerk.client?.id == "provisional-client")
+    #expect(node.clerk.authoritativeClient == nil)
+
+    if recoveringPendingPublication {
+      localStore.failCommits = true
+      let initialReconciliationChanged = await node.coordinator.start().value
+      #expect(!initialReconciliationChanged)
+      #expect(try localStore.loadPendingPublication() != nil)
+      localStore.failCommits = false
+      #expect(await node.coordinator.reloadFromSharedStorage())
+    } else {
+      #expect(await node.coordinator.start().value)
+    }
+
+    #expect(node.clerk.client?.id == "provisional-client")
+    #expect(node.clerk.authoritativeClient == nil)
+    let adoptedIdentity = try #require(try localStore.load())
+    #expect(adoptedIdentity.state == .cleared)
+    #expect(adoptedIdentity.deviceToken == "legacy-token")
+    #expect(adoptedIdentity.client == nil)
+
+    var canonicalClient = Client.mock
+    canonicalClient.id = "canonical-client"
+    try await node.coordinator.handleNetworkResponse(ClientSyncResponseContext(
+      update: .client(canonicalClient),
+      deviceTokenUpdate: .set("legacy-token"),
+      requestDeviceToken: "legacy-token",
+      baseGeneration: 2,
+      serverDate: Date(timeIntervalSince1970: 1),
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: nil,
+      responseSequence: 1
+    ))
+
+    #expect(node.clerk.client?.id == "canonical-client")
+    #expect(node.clerk.authoritativeClient?.id == "canonical-client")
+  }
+
+  @Test
+  func ordinarySharedClearReplacesMatchingProvisionalClient() async throws {
+    let backend = TestSlotBackend()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "shared-token",
+      client: nil,
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      initialIdentity: initialIdentity,
+      hydrateInitialIdentity: false
+    )
+    var provisionalClient = Client.mock
+    provisionalClient.id = "provisional-client"
+    node.clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
+      provisionalClient
+    )
+    let peerClear = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.custom-flows",
+      generation: 1,
+      state: .cleared,
+      deviceToken: "shared-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 1)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: peerClear
+      ),
+      owner: "app.custom-flows"
+    )
+
+    #expect(await node.coordinator.start().value)
+
+    #expect(node.clerk.client == nil)
+    #expect(node.clerk.authoritativeClient == nil)
+  }
+
   @Test
   func competingWritesRemainDiscoverableUntilConvergence() async throws {
     let backend = TestSlotBackend()
@@ -1954,6 +2077,54 @@ struct SharedSessionSyncTests {
       backend.allSlots()
         .first { $0.slotOwnerIdentifier == "app.a" }?.event == pending
     )
+  }
+
+  @Test
+  func topologyChangeSettlementUsesRevisionAfterLegacyAdoptionPublication() async throws {
+    let backend = TestSlotBackend()
+    let peerEvent = try makeEvent(
+      owner: "app.b",
+      generation: 1,
+      clientID: "peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.b",
+        event: peerEvent
+      ),
+      owner: "app.b"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+
+    try await node.coordinator.settlePendingPublicationForTopologyChange()
+
+    let record = try #require(try localStore.loadRecord())
+    #expect(!record.requiresLegacyAdoptionPublication)
+    #expect(record.pendingPublication == nil)
+    let adoptedEvent = try #require(
+      backend.allSlots()
+        .first { $0.slotOwnerIdentifier == "app.a" }?.event
+    )
+    #expect(adoptedEvent.generation == 2)
+    #expect(adoptedEvent.deviceToken == "legacy-token")
+    #expect(adoptedEvent.client == nil)
   }
 
   @Test

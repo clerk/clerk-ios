@@ -5,6 +5,11 @@
 
 import Foundation
 
+enum SharedSessionClientPresentationPolicy {
+  case replaceWithIdentity
+  case preserveProvisional
+}
+
 enum SharedSessionSyncCoordinatorError: Error, Equatable {
   case initialReconciliationFailed
   case reconciliationFailed
@@ -30,6 +35,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     let serverDate: Date?
     let baseGeneration: UInt64?
     let checkpoint: PublicationCheckpoint
+    let clientPresentationPolicy: SharedSessionClientPresentationPolicy
   }
 
   struct NetworkResponseLineage {
@@ -203,7 +209,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
           checkpoint: .response(
             baseGeneration: baseGeneration,
             requestDeviceToken: context.requestDeviceToken
-          )
+          ),
+          clientPresentationPolicy: .replaceWithIdentity
         )
       }
       if didApply {
@@ -236,7 +243,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         client: client,
         serverDate: serverDate,
         baseGeneration: baseGeneration,
-        checkpoint: .none
+        checkpoint: .none,
+        clientPresentationPolicy: .replaceWithIdentity
       )
     )
   }
@@ -261,7 +269,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         client: client,
         serverDate: serverDate,
         baseGeneration: baseGeneration,
-        checkpoint: .none
+        checkpoint: .none,
+        clientPresentationPolicy: .replaceWithIdentity
       )
     )
   }
@@ -303,10 +312,10 @@ extension SharedSessionSyncCoordinator {
         throw CancellationError()
       }
 
-      let settlementRevision = operationRevision
       try await ensureSuccessfulReconciliationIfNeeded()
       _ = try await resumePendingPublicationIfNeeded()
 
+      let settlementRevision = operationRevision
       let pendingPublication = try await performCheckedOperation(
         revision: settlementRevision,
         clerk: clerk
@@ -424,7 +433,9 @@ extension SharedSessionSyncCoordinator {
           networkResponseCandidate: self.networkResponseCandidate(
             for: publication.checkpoint,
             eventID: event.id
-          )
+          ),
+          provisionalClientPreservingEventID: publication.clientPresentationPolicy
+            == .preserveProvisional ? event.id : nil
         )
       }
       notifier.post()
@@ -629,7 +640,11 @@ extension SharedSessionSyncCoordinator {
         client: identity.client,
         serverDate: identity.serverDate,
         baseGeneration: currentMaximumGeneration,
-        checkpoint: .none
+        checkpoint: .none,
+        clientPresentationPolicy: identity.state == .cleared
+          && identity.deviceToken.nilIfEmpty != nil
+          ? .preserveProvisional
+          : .replaceWithIdentity
       ),
       ensuringSuccessfulReconciliation: false
     )
@@ -701,15 +716,18 @@ extension SharedSessionSyncCoordinator {
       throw CancellationError()
     }
     let recoveryRevision = operationRevision
-    guard let pending = try await performCheckedOperation(
+    guard let record = try await performCheckedOperation(
       revision: recoveryRevision,
       clerk: clerk,
       operation: {
-        try await self.localIdentityIO.loadRecord()?.pendingPublication
+        try await self.localIdentityIO.loadRecord()
       }
-    ) else {
+    ), let pending = record.pendingPublication else {
       return false
     }
+    let provisionalClientPreservingEventID = record.pendingLegacyAdoptionEventID(
+      for: ownerIdentifier
+    )
     guard pending.originOwnerIdentifier == ownerIdentifier else {
       throw SharedSessionSyncCoordinatorError.pendingPublicationOwnerMismatch
     }
@@ -759,7 +777,8 @@ extension SharedSessionSyncCoordinator {
 
     try validateActiveOperation(recoveryRevision, clerk: clerk)
     let didChange = try await reduceApplyAndReplicate(
-      clearingPendingPublicationID: pending.id
+      clearingPendingPublicationID: pending.id,
+      provisionalClientPreservingEventID: provisionalClientPreservingEventID
     )
     if pendingWasPeerVisible {
       notifier.post()
@@ -770,7 +789,8 @@ extension SharedSessionSyncCoordinator {
   @discardableResult
   private func reduceApplyAndReplicate(
     clearingPendingPublicationID pendingPublicationID: UUID? = nil,
-    networkResponseCandidate: (eventID: UUID, rootGeneration: UInt64)? = nil
+    networkResponseCandidate: (eventID: UUID, rootGeneration: UInt64)? = nil,
+    provisionalClientPreservingEventID: UUID? = nil
   ) async throws -> Bool {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
       throw CancellationError()
@@ -836,7 +856,13 @@ extension SharedSessionSyncCoordinator {
     let previousAcceptedEventID = acceptedEventID
     let didChange = winner.id != previousAcceptedEventID
     if didChange {
-      applyToMemory(winner, clerk: clerk)
+      applyToMemory(
+        winner,
+        clerk: clerk,
+        clientPresentationPolicy: winner.id == provisionalClientPreservingEventID
+          ? .preserveProvisional
+          : .replaceWithIdentity
+      )
     }
     updateNetworkResponseLineage(
       winner: winner,
@@ -847,7 +873,11 @@ extension SharedSessionSyncCoordinator {
     return didChange
   }
 
-  private func applyToMemory(_ event: SharedSessionIdentityEvent, clerk: Clerk) {
+  private func applyToMemory(
+    _ event: SharedSessionIdentityEvent,
+    clerk: Clerk,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
+  ) {
     let previousToken = currentDeviceToken
     currentDeviceToken = event.deviceToken
     if previousToken != currentDeviceToken {
@@ -855,7 +885,8 @@ extension SharedSessionSyncCoordinator {
     }
     clerk.identityController.applySharedEvent(
       event,
-      previousDeviceToken: previousToken
+      previousDeviceToken: previousToken,
+      clientPresentationPolicy: clientPresentationPolicy
     )
     acceptedEventID = event.id
     currentMaximumGeneration = max(currentMaximumGeneration, event.generation)

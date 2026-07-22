@@ -426,7 +426,8 @@ extension ClerkIdentityController {
 
   func applySharedEvent(
     _ event: SharedSessionIdentityEvent,
-    previousDeviceToken: String?
+    previousDeviceToken: String?,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
   ) {
     guard let clerk else { return }
     localDeviceToken = event.deviceToken
@@ -443,7 +444,8 @@ extension ClerkIdentityController {
       clerk: clerk,
       fenceAllClientResponses: false,
       emitIdentityChange: true,
-      fenceTokenChange: false
+      fenceTokenChange: false,
+      clientPresentationPolicy: clientPresentationPolicy
     )
   }
 }
@@ -923,20 +925,23 @@ extension ClerkIdentityController {
     clerk: Clerk,
     fenceAllClientResponses: Bool,
     emitIdentityChange: Bool,
-    fenceTokenChange: Bool = true
+    fenceTokenChange: Bool = true,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
   ) {
     let previousToken = currentDeviceToken
     if fenceAllClientResponses || (fenceTokenChange && previousToken != identity.deviceToken) {
       fenceClientResponses()
     }
     withApplyingIdentityTransition {
-      isClientProvisional = false
       if identity.state == .cleared, identity.serverDate == nil {
         lastServerDate = identity.serverDate
       } else {
         recordAcceptedServerDate(identity.serverDate)
       }
-      clerk.setClientFromIdentityController(identity.client)
+      if clientPresentationPolicy == .replaceWithIdentity || !isClientProvisional {
+        isClientProvisional = false
+        clerk.setClientFromIdentityController(identity.client)
+      }
     }
     if emitIdentityChange {
       clerk.emitInternalStateChange(.identityDidChange)
