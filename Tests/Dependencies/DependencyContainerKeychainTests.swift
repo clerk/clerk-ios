@@ -64,6 +64,37 @@ struct DependencyContainerKeychainTests {
     #expect(container.sharedSessionOwnerSlotClearRecovery == nil)
   }
 
+  @Test
+  @MainActor
+  func constructionCompletesClearRecoveryBeforeReturning() throws {
+    let owner = "com.clerk.tests.deferred-recovery.\(UUID().uuidString)"
+    let recovery = try #require(
+      SharedSessionOwnerSlotClearRecovery.liveContext(
+        ownerIdentifier: owner,
+        currentIntent: nil
+      )
+    )
+    defer {
+      try? recovery.journal.deleteItem(
+        forKey: SharedSessionOwnerSlotClearRecovery.storageKey
+      )
+    }
+    try recovery.journal.set(
+      Data("invalid recovery journal".utf8),
+      forKey: SharedSessionOwnerSlotClearRecovery.storageKey
+    )
+
+    #expect(throws: DecodingError.self) {
+      try DependencyContainer(
+        publishableKey: testPublishableKey,
+        options: .init(),
+        runtimeScope: ClerkRuntimeScope(epoch: .initial),
+        persistentAdoptionEnabledOverride: true,
+        ownerIdentifierProvider: { owner }
+      )
+    }
+  }
+
   #if os(macOS)
   @Test
   @MainActor

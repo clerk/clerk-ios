@@ -316,8 +316,7 @@ extension Clerk {
       runtimeScope: runtimeScope
     )
     try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
-
-    try performConfiguration(dependencies: dependencies)
+    installConfiguration(dependencies: dependencies)
   }
 
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
