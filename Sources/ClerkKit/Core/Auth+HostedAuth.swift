@@ -13,23 +13,9 @@ typealias HostedAuthWebAuthentication = @MainActor @Sendable (
   _ prefersEphemeralWebBrowserSession: Bool
 ) async throws -> URL
 
-@MainActor
-private enum HostedAuthInFlightGate {
-  private static var isAcquired = false
-
-  static func acquire() throws {
-    guard !isAcquired else {
-      throw ClerkClientError(message: "A hosted authentication session is already in progress.")
-    }
-    isAcquired = true
-  }
-
-  static func release() {
-    isAcquired = false
-  }
-}
-
 extension Auth {
+  @MainActor private static var isHostedAuthInFlight = false
+
   /// Opens Clerk's hosted authentication flow and activates the created session.
   ///
   /// Completion is observable through the returned ``Session`` and ``AuthEvent/sessionChanged(oldValue:newValue:)``
@@ -67,8 +53,11 @@ extension Auth {
     prefersEphemeralWebBrowserSession: Bool,
     webAuthentication: HostedAuthWebAuthentication
   ) async throws -> Session {
-    try HostedAuthInFlightGate.acquire()
-    defer { HostedAuthInFlightGate.release() }
+    guard !Self.isHostedAuthInFlight else {
+      throw ClerkClientError(message: "A hosted authentication session is already in progress.")
+    }
+    Self.isHostedAuthInFlight = true
+    defer { Self.isHostedAuthInFlight = false }
 
     let clerk = Clerk.shared
     let runtime = clerk.runtimeScope

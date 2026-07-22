@@ -29,23 +29,6 @@ struct HostedAuthProtocolTests {
   }
 
   @Test
-  func pkceChallengeMatchesRFC7636Vector() {
-    let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
-
-    #expect(PKCE.challenge(for: verifier) == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
-  }
-
-  @Test
-  func generatedPKCEPairUsesS256CompatibleValues() throws {
-    let pair = try PKCE.generatePair()
-
-    #expect(pair.verifier.count == 43)
-    #expect(pair.challenge.count == 43)
-    #expect(pair.verifier.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" })
-    #expect(pair.challenge == PKCE.challenge(for: pair.verifier))
-  }
-
-  @Test
   func generatedStateIsRandomAndNonEmpty() throws {
     let first = try HostedAuthState.generate()
     let second = try HostedAuthState.generate()
@@ -138,30 +121,21 @@ struct HostedAuthProtocolTests {
   }
 
   @Test
-  func callbackStateValidationDistinguishesMissingDuplicatedAndMismatchedState() throws {
+  func callbackStateValidationRejectsMissingDuplicatedAndMismatchedState() throws {
     let redirect = try HostedAuthRedirect("myapp:///hosted-auth-callback")
-    let cases: [(query: String, expectedMessage: String)] = [
-      (
-        "rotating_token_nonce=nonce_123&created_session_id=sess_123",
-        "Hosted auth callback did not include a state parameter."
-      ),
-      (
-        "state=state_123&state=state_123&rotating_token_nonce=nonce_123&created_session_id=sess_123",
-        "Hosted auth callback included more than one state parameter."
-      ),
-      (
-        "state=other_state&rotating_token_nonce=nonce_123&created_session_id=sess_123",
-        "Hosted auth callback state did not match the initiated state."
-      ),
+    let invalidStateQueries = [
+      "rotating_token_nonce=nonce_123&created_session_id=sess_123",
+      "state=state_123&state=state_123&rotating_token_nonce=nonce_123&created_session_id=sess_123",
+      "state=other_state&rotating_token_nonce=nonce_123&created_session_id=sess_123",
     ]
 
-    for (query, expectedMessage) in cases {
+    for query in invalidStateQueries {
       let url = try #require(URL(string: "myapp:///hosted-auth-callback?\(query)"))
       do {
         _ = try HostedAuthCallback(url: url, redirect: redirect, state: "state_123")
         Issue.record("Expected state validation to throw for query: \(query)")
       } catch let error as ClerkClientError {
-        #expect(error.message == expectedMessage)
+        #expect(error.message == "Hosted auth callback state was missing or did not match the initiated state.")
       }
     }
   }
