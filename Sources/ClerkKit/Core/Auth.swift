@@ -193,7 +193,7 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
+    let signIn = try await createSignInWithIdToken(idToken, provider: provider)
     let result = try await signIn.handleTransferFlow(
       transferable: transferable,
       unsafeMetadata: unsafeMetadata
@@ -202,6 +202,13 @@ public struct Auth {
       throw error
     }
     return result
+  }
+
+  func createSignInWithIdToken(
+    _ idToken: String,
+    provider: IDTokenProvider
+  ) async throws -> SignIn {
+    try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
   }
   #endif
 
@@ -213,10 +220,14 @@ public struct Auth {
   /// - Extracting the ID token
   /// - Automatically routing to sign-in or sign-up via the transfer flow
   ///
+  /// The default flow starts with sign-up so the user's name, which Apple provides only on the first
+  /// authorization, can be preserved. If a restricted or waitlist instance rejects sign-up, the method
+  /// retries as a sign-in so existing users can still authenticate without changing their integration.
+  ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///     Defaults to `true`. When `false`, the method skips sign-up and starts with sign-in.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
@@ -226,54 +237,18 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let requestedScopes = Self.normalizedAppleScopes(
+    let environment = Clerk.shared.environment
+    let credential = try await Self.appleCredential(
       requestedScopes,
-      environment: Clerk.shared.environment
+      environment: environment
     )
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
-
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
-    }
-
-    if transferable {
-      return try await signUpWithIdToken(
-        idToken,
-        provider: .apple,
-        firstName: credential.fullName?.givenName,
-        lastName: credential.fullName?.familyName,
-        unsafeMetadata: unsafeMetadata
-      )
-    } else {
-      let signIn = try await signInService.create(params: .init(strategy: .idToken(.apple), token: idToken))
-      let result = try await signIn.handleTransferFlow(
-        transferable: transferable,
-        unsafeMetadata: unsafeMetadata
-      )
-      if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
-        throw error
-      }
-      return result
-    }
-  }
-  #endif
-
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  static func normalizedAppleScopes(
-    _ requestedScopes: [ASAuthorization.Scope],
-    environment: Clerk.Environment?
-  ) -> [ASAuthorization.Scope] {
-    guard requestedScopes.contains(.fullName) else {
-      return requestedScopes
-    }
-
-    let attributes = environment?.userSettings.attributes
-    let firstNameEnabled = attributes?["first_name"]?.enabled ?? true
-    let lastNameEnabled = attributes?["last_name"]?.enabled ?? true
-
-    return firstNameEnabled || lastNameEnabled
-      ? requestedScopes
-      : requestedScopes.filter { $0 != .fullName }
+    return try await completeAppleSignIn(
+      idToken: credential.tokenString,
+      firstName: credential.fullName?.givenName,
+      lastName: credential.fullName?.familyName,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -465,7 +440,9 @@ public struct Auth {
   #if !os(watchOS) && !os(tvOS)
   /// Signs up with Apple using Sign in with Apple.
   ///
-  /// This method handles the entire Sign in with Apple flow and can return either a sign-in or sign-up result.
+  /// This method explicitly starts an Apple sign-up and can return either a sign-in or sign-up result
+  /// through the transfer flow. Unlike ``signInWithApple(requestedScopes:transferable:unsafeMetadata:)``,
+  /// it does not retry as a sign-in when the instance rejects sign-up.
   ///
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
@@ -477,9 +454,16 @@ public struct Auth {
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    // Delegate to the sign-in implementation which already handles the transfer flow.
-    try await signInWithApple(
-      requestedScopes: requestedScopes,
+    let environment = Clerk.shared.environment
+    let credential = try await Self.appleCredential(
+      requestedScopes,
+      environment: environment
+    )
+    return try await signUpWithIdToken(
+      credential.tokenString,
+      provider: .apple,
+      firstName: credential.fullName?.givenName,
+      lastName: credential.fullName?.familyName,
       unsafeMetadata: unsafeMetadata
     )
   }
