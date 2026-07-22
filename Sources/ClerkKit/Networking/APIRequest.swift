@@ -127,7 +127,6 @@ struct Request<Response: Decodable & Sendable> {
 
     var urlRequest = URLRequest(url: finalURL)
     urlRequest.httpMethod = method.rawValue
-    urlRequest.setClerkCanEstablishClientWhenTokenless(canEstablishClientWhenTokenless)
     if !headers.isEmpty {
       var headerFields = urlRequest.allHTTPHeaderFields ?? [:]
       headers.forEach { headerFields[$0.key] = $0.value }

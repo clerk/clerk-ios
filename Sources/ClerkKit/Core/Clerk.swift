@@ -153,6 +153,9 @@ public final class Clerk {
   private var startupClientRefreshTask: Task<Void, Never>?
   private var startupClientRefreshID: UUID?
 
+  @ObservationIgnored
+  lazy var startupClientRefreshTakeover = StartupClientRefreshTakeover(clerk: self)
+
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
   private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
@@ -314,6 +317,7 @@ extension Clerk {
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
+    cancelStartupClientRefresh()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
@@ -386,9 +390,22 @@ extension Clerk {
       }
     }
 
+    startStartupClientRefreshIfNeeded(after: initialSharedSessionReconciliation)
+  }
+
+  func startStartupClientRefreshIfNeeded(
+    after initialSharedSessionReconciliation: Task<Bool, Never>? = nil
+  ) {
+    guard startupClientRefreshTask == nil,
+          let taskCoordinator
+    else {
+      return
+    }
+
+    let retryPolicy = Self.startupRefreshRetryPolicy
     let startupClientRefreshID = UUID()
     self.startupClientRefreshID = startupClientRefreshID
-    startupClientRefreshTask = taskCoordinator?.task { @MainActor [weak self] in
+    startupClientRefreshTask = taskCoordinator.task { @MainActor [weak self] in
       guard let self else { return }
       defer {
         if self.startupClientRefreshID == startupClientRefreshID {
@@ -830,12 +847,22 @@ extension Clerk {
   }
 
   @discardableResult
-  func cancelStartupClientRefresh() -> Bool {
+  func cancelStartupClientRefreshTask() -> Bool {
     guard let startupClientRefreshTask else { return false }
     self.startupClientRefreshTask = nil
     startupClientRefreshID = nil
     startupClientRefreshTask.cancel()
     return true
+  }
+
+  var isStartupClientRefreshInProgress: Bool {
+    startupClientRefreshTask != nil
+  }
+
+  @discardableResult
+  func cancelStartupClientRefresh() -> Bool {
+    startupClientRefreshTakeover.cancel()
+    return cancelStartupClientRefreshTask()
   }
 
   @MainActor

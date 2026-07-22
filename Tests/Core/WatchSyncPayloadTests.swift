@@ -275,7 +275,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func identityChangeNormalizesWhitespaceDeviceTokenBeforePublishingMetadata() throws {
+  func identityChangeNormalizesWhitespaceDeviceTokenBeforePublishingMetadataAndPayload() throws {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -292,6 +292,12 @@ struct WatchSyncPayloadTests {
     let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
     #expect(metadata.deviceTokenState == .cleared)
     #expect(metadata.deviceTokenFingerprint == WatchConnectivityCoordinator.deviceTokenFingerprint(nil))
+    let payload = try WatchSyncPayload(
+      clerk: clerk,
+      metadata: metadata,
+      authGeneration: .initial
+    )
+    #expect(payload.deviceTokenUpdate == .tokenCleared(version: WatchSyncVersion(rawValue: 1)))
   }
 
   @Test

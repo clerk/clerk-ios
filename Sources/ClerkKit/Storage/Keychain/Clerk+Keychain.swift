@@ -38,6 +38,8 @@ extension Clerk {
     let loggingConfiguration: ClerkLogger.Configuration
   }
 
+  private static let atomicIdentityDeletionOperation = "delete atomic identity"
+
   private static func attemptKeychainClear(
     _ operation: String,
     recording failures: inout [String],
@@ -173,7 +175,7 @@ extension Clerk {
     clerk.identityController.applyStorageClearToMemory(identityClear)
     if let atomicIdentityStore = dependencies.atomicIdentityStore {
       attemptKeychainClear(
-        "delete atomic identity",
+        atomicIdentityDeletionOperation,
         recording: &initialFailedOperations,
         logMessage: "Failed to synchronously delete Clerk's atomic identity",
         configuration: loggingConfiguration
@@ -282,14 +284,23 @@ extension Clerk {
 
       if let localIdentityIO = dependencies.atomicIdentityIO {
         do {
-          _ = try await localIdentityIO.delete(operationRevision: operationRevision)
+          let didDelete = try await localIdentityIO.delete(
+            operationRevision: operationRevision
+          )
+          if didDelete {
+            failedOperations.removeAll {
+              $0 == atomicIdentityDeletionOperation
+            }
+          }
         } catch {
           ClerkLogger.logError(
             error,
             message: "Failed to delete Clerk's atomic identity",
             configuration: loggingConfiguration
           )
-          failedOperations.append("delete atomic identity")
+          if !failedOperations.contains(atomicIdentityDeletionOperation) {
+            failedOperations.append(atomicIdentityDeletionOperation)
+          }
         }
       }
 

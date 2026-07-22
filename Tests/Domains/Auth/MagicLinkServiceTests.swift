@@ -31,7 +31,7 @@ struct MagicLinkServiceTests {
     )
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
-      #expect(request.clerkCanEstablishClientWhenTokenless)
+      #expect(request.clerkStartupClientRefreshTakeoverID != nil)
       requestHandled.setValue(true)
     }
     mock.register()

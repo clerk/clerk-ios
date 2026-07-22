@@ -1,4 +1,5 @@
 @_spi(FrameworkIntegration) @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -1175,6 +1176,68 @@ struct SharedSessionSyncTests {
     #expect(request.value(forHTTPHeaderField: "Authorization") == "peer-token")
     #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == "peer-client")
     #expect(request.clerkSharedSessionBaseGeneration == 1)
+  }
+
+  @Test
+  func concurrentSharedTokenlessRequestsShareStartupTakeoverGeneration() async throws {
+    let startupGate = SharedRequestPreparationGate()
+    let node = try makeNode(
+      owner: "app.receiver",
+      backend: TestSlotBackend(),
+      clientService: MockClientService(get: {
+        await startupGate.suspend()
+        return nil
+      })
+    )
+    defer {
+      startupGate.resume()
+      node.clerk.cleanupManagers()
+    }
+    _ = await node.coordinator.start().value
+    node.clerk.startStartupClientRefreshIfNeeded()
+    try await waitUntil { startupGate.isSuspended }
+    let startupGeneration = node.clerk.clientResponseGeneration
+
+    let identityGate = SharedRequestPreparationGate()
+    let blocker = node.coordinator.enqueueSerializedLocalIdentityOperation {
+      await identityGate.suspend()
+    }
+    try await waitUntil { identityGate.isSuspended }
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: node.clerk.runtimeScope)
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
+
+    func prepareTokenlessRequest() async throws -> URLRequest {
+      var request = URLRequest(url: url)
+      request.setClerkStartupClientRefreshTakeoverID(UUID())
+      try await middleware.prepare(&request)
+      return request
+    }
+
+    var firstResult: URLRequest?
+    var secondResult: URLRequest?
+    try await withMainSerialExecutor {
+      let firstTask = Task { @MainActor in
+        try await prepareTokenlessRequest()
+      }
+      await Task.yield()
+      let secondTask = Task { @MainActor in
+        try await prepareTokenlessRequest()
+      }
+      await Task.yield()
+      identityGate.resume()
+      _ = try await blocker.value
+      firstResult = try await firstTask.value
+      secondResult = try await secondTask.value
+    }
+
+    let first = try #require(firstResult)
+    let second = try #require(secondResult)
+
+    #expect(node.clerk.clientResponseGeneration != startupGeneration)
+    #expect(first.clerkRequestDeviceToken == nil)
+    #expect(second.clerkRequestDeviceToken == nil)
+    #expect(first.clerkClientResponseGeneration == second.clerkClientResponseGeneration)
+    #expect(first.clerkClientResponseGeneration == node.clerk.clientResponseGeneration)
   }
 
   @Test

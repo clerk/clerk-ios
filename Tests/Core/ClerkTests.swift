@@ -416,6 +416,34 @@ struct ClerkTests {
   }
 
   @Test
+  func awaitedClearAcceptsSuccessfulAtomicIdentityDeletionRetry() async throws {
+    let clerk = Clerk()
+    let keychain = DeleteFailingKeychain(
+      failingKey: SharedSessionLocalIdentityStore.storageKey,
+      failuresRemaining: 1
+    )
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    try identityStore.save(ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "token",
+      client: .mock,
+      serverDate: nil
+    ))
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+
+    try await clerk.clearAllKeychainItemsAndWait()
+
+    #expect(try identityStore.loadRecord() == nil)
+    #expect(keychain.failureCount == 1)
+    #expect(clerk.keychainClearTask == nil)
+  }
+
+  @Test
   func awaitedClearWithdrawsOwnerSlotBeforeReturning() async throws {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
@@ -1039,10 +1067,18 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
   }
 
   private let backing = InMemoryKeychain()
+  private let lock = NSLock()
   private let failingKey: String
+  private var failuresRemaining: Int?
+  private var failures = 0
 
-  init(failingKey: String) {
+  init(failingKey: String, failuresRemaining: Int? = nil) {
     self.failingKey = failingKey
+    self.failuresRemaining = failuresRemaining
+  }
+
+  var failureCount: Int {
+    lock.withLock { failures }
   }
 
   func set(_ data: Data, forKey key: String) throws {
@@ -1054,7 +1090,16 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
   }
 
   func deleteItem(forKey key: String) throws {
-    guard key != failingKey else { throw Failure.delete }
+    let shouldFail = lock.withLock {
+      guard key == failingKey else { return false }
+      if let failuresRemaining {
+        guard failuresRemaining > 0 else { return false }
+        self.failuresRemaining = failuresRemaining - 1
+      }
+      failures += 1
+      return true
+    }
+    guard !shouldFail else { throw Failure.delete }
     try backing.deleteItem(forKey: key)
   }
 

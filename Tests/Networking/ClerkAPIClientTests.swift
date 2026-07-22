@@ -321,6 +321,117 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func failedTokenlessRequestRestartsStartupClientRefresh() async throws {
+    let clerk = Clerk()
+    let startupGate = APIClientStartupGate()
+    let refreshCount = LockIsolated(0)
+    var startupClient = Client.mockSignedOut
+    startupClient.id = "cancelled-startup-client"
+    var recoveredClient = Client.mockSignedOut
+    recoveredClient.id = "recovered-startup-client"
+    let runtimeScope = clerk.runtimeScope
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: runtimeScope
+    ) { configuration in
+      configuration.pipeline = .clerkDefault(runtimeScope: runtimeScope)
+        .appendingRequestMiddleware([FailingTokenlessRequestMiddleware()])
+    }
+    let dependencies = MockDependencyContainer(
+      apiClient: apiClient,
+      clientService: MockClientService(get: {
+        let call = refreshCount.withValue {
+          $0 += 1
+          return $0
+        }
+        if call == 1 {
+          await startupGate.suspend()
+          return startupClient
+        }
+        return recoveredClient
+      })
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer {
+      startupGate.resume()
+      clerk.cleanupManagers()
+    }
+    try await waitUntil { startupGate.isSuspended }
+
+    await #expect(throws: FailingTokenlessRequestMiddleware.Failure.self) {
+      _ = try await apiClient.send(Request<EmptyResponse>(
+        path: "/v1/client/sign_ups",
+        method: .post,
+        canEstablishClientWhenTokenless: true
+      ))
+    }
+    try await waitUntil { clerk.client?.id == recoveredClient.id }
+
+    #expect(refreshCount.value == 2)
+    #expect(clerk.client?.id == recoveredClient.id)
+  }
+
+  @Test
+  func successfulTokenlessRequestDoesNotRestartStartupClientRefresh() async throws {
+    let clerk = Clerk()
+    let startupGate = APIClientStartupGate()
+    let refreshCount = LockIsolated(0)
+    var startupClient = Client.mockSignedOut
+    startupClient.id = "cancelled-startup-client"
+    var establishedClient = Client.mockSignedOut
+    establishedClient.id = "established-tokenless-client"
+    let url = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
+    let mock = try Mock(
+      url: url,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse(
+          response: EmptyResponse(),
+          client: establishedClient
+        )),
+      ],
+      additionalHeaders: ["Authorization": "established-token"]
+    )
+    mock.register()
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    let dependencies = MockDependencyContainer(
+      apiClient: apiClient,
+      clientService: MockClientService(get: {
+        let call = refreshCount.withValue {
+          $0 += 1
+          return $0
+        }
+        if call == 1 {
+          await startupGate.suspend()
+        }
+        return startupClient
+      })
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer {
+      startupGate.resume()
+      clerk.cleanupManagers()
+    }
+    try await waitUntil { startupGate.isSuspended }
+
+    _ = try await apiClient.send(Request<EmptyResponse>(
+      path: "/v1/client/sign_ups",
+      method: .post,
+      canEstablishClientWhenTokenless: true
+    ))
+
+    #expect(refreshCount.value == 1)
+    #expect(!clerk.isStartupClientRefreshInProgress)
+    #expect(clerk.client?.id == establishedClient.id)
+
+    startupGate.resume()
+    try await waitUntil { !startupGate.isSuspended }
+    #expect(clerk.client?.id == establishedClient.id)
+  }
+
+  @Test
   func retryPreservesFirstPreparedSharedIdentityContext() async throws {
     let prepareCount = LockIsolated(0)
     let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
@@ -466,6 +577,42 @@ struct ClerkAPIClientTests {
     }
     #expect(prepareCount.value == 2)
     #expect(observedContexts.value.count == 1)
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for API client state.")
+  }
+}
+
+private struct FailingTokenlessRequestMiddleware: ClerkRequestMiddleware {
+  enum Failure: Error {
+    case expected
+  }
+
+  func prepare(_: inout URLRequest) async throws {
+    throw Failure.expected
+  }
+}
+
+@MainActor
+private final class APIClientStartupGate {
+  private(set) var isSuspended = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func suspend() async {
+    isSuspended = true
+    await withCheckedContinuation { continuation = $0 }
+    isSuspended = false
+  }
+
+  func resume() {
+    continuation?.resume()
+    continuation = nil
   }
 }
 

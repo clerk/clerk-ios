@@ -18,17 +18,11 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
     let clerk = try runtimeScope.requireCurrentClerk()
-    let identity = try await clerk.identityController.captureRequestIdentity()
+    let identity = try await clerk.identityController.captureRequestIdentity(
+      startupClientRefreshTakeoverID: request.clerkStartupClientRefreshTakeoverID
+    )
     _ = try runtimeScope.requireCurrentClerk()
-    var clientResponseGeneration = identity.clientResponseGeneration
-    if request.clerkCanEstablishClientWhenTokenless,
-       identity.deviceToken == nil,
-       clerk.cancelStartupClientRefresh()
-    {
-      clerk.identityController.fenceClientResponses()
-      clientResponseGeneration = clerk.clientResponseGeneration
-    }
-    request.setClerkClientResponseGeneration(clientResponseGeneration)
+    request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
     request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
     let isCanonicalClientRequest = request.value(
       forHTTPHeaderField: Self.canonicalClientRequestHeader
@@ -39,7 +33,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
 
     request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
       requestSequence: request.clerkRequestSequence,
-      clientResponseGeneration: clientResponseGeneration,
+      clientResponseGeneration: identity.clientResponseGeneration,
       sharedSessionBaseGeneration: identity.baseGeneration,
       isCanonicalClientRequest: isCanonicalClientRequest,
       requestDeviceToken: identity.deviceToken

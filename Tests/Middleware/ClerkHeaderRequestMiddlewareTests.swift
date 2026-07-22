@@ -182,37 +182,59 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func tokenlessClientCreationFencesSuspendedStartupRefresh() async throws {
+  func concurrentAtomicTokenlessRequestsShareStartupTakeoverGeneration() async throws {
     let clerk = Clerk()
-    let gate = RequestIdentityOperationGate()
+    let startupGate = RequestIdentityOperationGate()
+    let startupCancellationObserved = RequestStartSignal()
+    let identityStore = ReadCountingIdentityStore(identity: SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: nil,
+      client: nil,
+      serverDate: nil
+    ))
     var startupClient = Client.mock
     startupClient.id = "startup-refresh-client"
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      atomicIdentityStore: identityStore,
       clientService: MockClientService(get: {
-        await gate.suspend()
+        await startupGate.suspend()
+        #expect(Task.isCancelled)
+        await startupCancellationObserved.signal()
+        try Task.checkCancellation()
         return startupClient
       })
     )
     clerk.performConfiguration(dependencies: dependencies)
     defer {
-      gate.resume()
+      startupGate.resume()
       clerk.cleanupManagers()
     }
-    try await gate.waitUntilSuspended()
+    try await startupGate.waitUntilSuspended()
     let startupGeneration = clerk.clientResponseGeneration
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
     let signUpURL = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
+    let identityGate = RequestIdentityOperationGate()
+    let blocker = clerk.identityController.enqueueLocalOperation { _ in
+      await identityGate.suspend()
+    }
+    try await identityGate.waitUntilSuspended()
+    let revisionBeforeRequests = clerk.identityController.localOperationRevision
 
     func prepareTokenlessRequest() async throws -> URLRequest {
       var request = URLRequest(url: signUpURL)
-      request.setClerkCanEstablishClientWhenTokenless(true)
+      request.setClerkStartupClientRefreshTakeoverID(UUID())
       try await middleware.prepare(&request)
       return request
     }
 
     async let firstRequest = prepareTokenlessRequest()
     async let secondRequest = prepareTokenlessRequest()
+    try await waitUntil {
+      clerk.identityController.localOperationRevision >= revisionBeforeRequests + 2
+    }
+    identityGate.resume()
+    _ = try await blocker.value
     let (first, second) = try await (firstRequest, secondRequest)
 
     #expect(first.clerkRequestDeviceToken == nil)
@@ -222,22 +244,26 @@ struct ClerkHeaderRequestMiddlewareTests {
     #expect(first.clerkClientResponseGeneration == clerk.clientResponseGeneration)
     #expect(second.clerkClientResponseGeneration == clerk.clientResponseGeneration)
 
-    var staleClient = Client.mock
-    staleClient.id = "stale-startup-client"
-    clerk.applyResponseClient(staleClient, clientResponseGeneration: startupGeneration)
+    try await clerk.identityController.applyNetworkResponse(
+      responseContext(
+        clientID: "stale-startup-client",
+        generation: startupGeneration
+      )
+    )
     #expect(clerk.client == nil)
 
-    var acceptedClient = Client.mock
-    acceptedClient.id = "accepted-tokenless-client"
-    clerk.applyResponseClient(
-      acceptedClient,
-      clientResponseGeneration: second.clerkClientResponseGeneration
+    let acceptedGeneration = try #require(second.clerkClientResponseGeneration)
+    try await clerk.identityController.applyNetworkResponse(
+      responseContext(
+        clientID: "accepted-tokenless-client",
+        generation: acceptedGeneration
+      )
     )
-    #expect(clerk.client?.id == acceptedClient.id)
+    #expect(clerk.client?.id == "accepted-tokenless-client")
 
-    gate.resume()
-    await Task.yield()
-    #expect(clerk.client?.id == acceptedClient.id)
+    startupGate.resume()
+    await startupCancellationObserved.wait()
+    #expect(clerk.client?.id == "accepted-tokenless-client")
   }
 
   @Test
@@ -309,6 +335,33 @@ struct ClerkHeaderRequestMiddlewareTests {
     #expect(request.value(forHTTPHeaderField: "x-bundle-id") != nil, "Should include bundle ID header")
     #expect(request.value(forHTTPHeaderField: "x-is-sandbox") != nil, "Should include sandbox header")
     #expect(["true", "false"].contains(request.value(forHTTPHeaderField: "x-is-sandbox") ?? ""), "Sandbox should be true or false")
+  }
+
+  private func responseContext(
+    clientID: String,
+    generation: ClientResponseGeneration
+  ) -> ClientSyncResponseContext {
+    var client = Client.mockSignedOut
+    client.id = clientID
+    return ClientSyncResponseContext(
+      update: .client(client),
+      deviceTokenUpdate: .set("response-token"),
+      requestDeviceToken: nil,
+      baseGeneration: 0,
+      serverDate: nil,
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: generation,
+      responseSequence: nil
+    )
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for request identity capture.")
   }
 }
 

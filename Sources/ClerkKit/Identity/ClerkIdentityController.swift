@@ -63,7 +63,7 @@ final class ClerkIdentityController {
     case legacy
   }
 
-  private weak var clerk: Clerk?
+  weak var clerk: Clerk?
 
   var localDeviceToken: String?
   var localOperationRevision: UInt64 = 0
@@ -89,14 +89,15 @@ final class ClerkIdentityController {
 
   var currentDeviceToken: String? {
     guard let clerk else { return nil }
+    let deviceToken: String?
     switch persistenceMode(for: clerk) {
     case .shared(let coordinator):
-      return coordinator.currentDeviceToken
+      deviceToken = coordinator.currentDeviceToken
     case .atomicLocal:
-      return localDeviceToken
+      deviceToken = localDeviceToken
     case .legacy:
       do {
-        return try clerk.dependencies.identityKeychain.string(
+        deviceToken = try clerk.dependencies.identityKeychain.string(
           forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
         )
       } catch {
@@ -104,6 +105,7 @@ final class ClerkIdentityController {
         return nil
       }
     }
+    return deviceToken.nilIfEmpty
   }
 
   func validateClientMutation() {
@@ -195,34 +197,6 @@ extension ClerkIdentityController {
 // MARK: - Request and Response Routing
 
 extension ClerkIdentityController {
-  func captureRequestIdentity() async throws -> ClerkIdentityRequestSnapshot {
-    guard let clerk else { throw CancellationError() }
-    switch persistenceMode(for: clerk) {
-    case .shared(let coordinator):
-      try await coordinator.waitForInitialReconciliation()
-      await waitForPendingLocalOperations()
-      return try await coordinator.captureRequestIdentity()
-    case .atomicLocal:
-      let task = enqueueLocalOperation { [weak self, weak clerk] _ in
-        guard let self, let clerk else { throw CancellationError() }
-        return ClerkIdentityRequestSnapshot(
-          baseGeneration: 0,
-          deviceToken: localDeviceToken,
-          clientID: clerk.client?.id,
-          clientResponseGeneration: clientResponseGeneration
-        )
-      }
-      return try await task.value
-    case .legacy:
-      return ClerkIdentityRequestSnapshot(
-        baseGeneration: 0,
-        deviceToken: currentDeviceToken,
-        clientID: clerk.client?.id,
-        clientResponseGeneration: clientResponseGeneration
-      )
-    }
-  }
-
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
     switch persistenceMode(for: clerk) {

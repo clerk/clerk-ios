@@ -143,7 +143,9 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     _ = await serializedOperationTail?.value
   }
 
-  func captureRequestIdentity() async throws -> ClerkIdentityRequestSnapshot {
+  func captureRequestIdentity(
+    startupClientRefreshTakeoverID: UUID? = nil
+  ) async throws -> ClerkIdentityRequestSnapshot {
     let task = enqueueSerializedOperation { [weak self] in
       guard let self,
             let clerk,
@@ -153,11 +155,10 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
         throw CancellationError()
       }
       try await ensureSuccessfulReconciliationIfNeeded()
-      return ClerkIdentityRequestSnapshot(
+      return try clerk.identityController.captureSerializedRequestIdentity(
         baseGeneration: currentMaximumGeneration,
         deviceToken: currentDeviceToken,
-        clientID: clerk.client?.id,
-        clientResponseGeneration: clerk.clientResponseGeneration
+        startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
       )
     }
     return try await task.value
