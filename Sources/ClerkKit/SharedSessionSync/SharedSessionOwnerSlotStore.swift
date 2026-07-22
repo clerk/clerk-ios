@@ -22,6 +22,8 @@ enum SharedSessionOwnerSlotStoreError: Error, Equatable {
 }
 
 struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
+  private static let mutationLock = NSLock()
+
   private struct SchemaVersionHeader: Decodable {
     let schemaVersion: Int
   }
@@ -117,10 +119,9 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
-    guard let data = try loadData(account: ownerAccount) else {
-      return nil
+    try Self.mutationLock.withLock {
+      try loadOwnSlotWithoutLocking()
     }
-    return decodeCompatibleSlot(data: data, account: ownerAccount, requireOwnOwner: true)
   }
 
   func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
@@ -160,6 +161,12 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func saveOwnSlot(_ slot: SharedSessionOwnerSlot) throws {
+    try Self.mutationLock.withLock {
+      try saveOwnSlotWithoutLocking(slot)
+    }
+  }
+
+  private func saveOwnSlotWithoutLocking(_ slot: SharedSessionOwnerSlot) throws {
     guard slot.schemaVersion == SharedSessionOwnerSlot.schemaVersion,
           slot.instanceFingerprint == instanceFingerprint,
           slot.slotOwnerIdentifier == ownerIdentifier,
@@ -178,6 +185,12 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func deleteOwnSlot() throws {
+    try Self.mutationLock.withLock {
+      try deleteOwnSlotWithoutLocking()
+    }
+  }
+
+  private func deleteOwnSlotWithoutLocking() throws {
     if let data = try loadData(account: ownerAccount),
        let header = try? JSONDecoder.clerkDecoder.decode(SchemaVersionHeader.self, from: data),
        header.schemaVersion > SharedSessionOwnerSlot.schemaVersion
@@ -283,6 +296,32 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
 }
 
 extension SharedSessionOwnerSlotStore {
+  private func loadOwnSlotWithoutLocking() throws -> SharedSessionOwnerSlot? {
+    guard let data = try loadData(account: ownerAccount) else {
+      return nil
+    }
+    return decodeCompatibleSlot(data: data, account: ownerAccount, requireOwnOwner: true)
+  }
+
+  @discardableResult
+  func restoreOwnSlot(
+    _ previousSlot: SharedSessionOwnerSlot?,
+    ifCurrentMatchesPublication expectedSlot: SharedSessionOwnerSlot
+  ) throws -> Bool {
+    try Self.mutationLock.withLock {
+      guard try loadOwnSlotWithoutLocking()?.matchesPublication(expectedSlot) == true else {
+        return false
+      }
+
+      if let previousSlot {
+        try saveOwnSlotWithoutLocking(previousSlot)
+      } else {
+        try deleteOwnSlotWithoutLocking()
+      }
+      return true
+    }
+  }
+
   private func validateExistingOwnSlot(_ data: Data) throws {
     if let versionHeader = try? JSONDecoder.clerkDecoder.decode(
       SchemaVersionHeader.self,

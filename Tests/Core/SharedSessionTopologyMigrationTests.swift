@@ -154,6 +154,81 @@ struct SharedSessionTopologyMigrationTests {
     #expect(try slotStore.loadOwnSlot() == nil)
   }
 
+  @Test
+  func rollbackPreservesNewerDestinationPublicationAndIdentity() throws {
+    let localStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let slotStore = TopologyOwnerSlotStore(ownerIdentifier: "app.new")
+    let rollback = try SharedSessionTopologyMigration.prepare(
+      identity: makeIdentity(clientID: "migrated"),
+      destinationIdentityStore: localStore,
+      destinationSlotStore: slotStore,
+      destinationInstanceFingerprint: "instance",
+      destinationOwnerIdentifier: "app.new"
+    )
+    let newerIdentity = makeIdentity(clientID: "newer")
+    let newerSlot = try makeSlot(
+      owner: "app.new",
+      generation: 99,
+      identity: newerIdentity
+    )
+    try slotStore.saveOwnSlot(newerSlot)
+    try localStore.save(newerIdentity)
+
+    #expect(throws: SharedSessionTopologyMigrationError.destinationSlotChanged) {
+      try rollback.restore()
+    }
+
+    #expect(try slotStore.loadOwnSlot() == newerSlot)
+    #expect(try localStore.load() == newerIdentity)
+  }
+
+  @Test
+  func rollbackKeepsMigratedIdentityWhenDestinationSlotWasSuperseded() throws {
+    let localStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let slotStore = TopologyOwnerSlotStore(ownerIdentifier: "app.new")
+    let migratedIdentity = makeIdentity(clientID: "migrated")
+    let rollback = try SharedSessionTopologyMigration.prepare(
+      identity: migratedIdentity,
+      destinationIdentityStore: localStore,
+      destinationSlotStore: slotStore,
+      destinationInstanceFingerprint: "instance",
+      destinationOwnerIdentifier: "app.new"
+    )
+    let newerSlot = try makeSlot(
+      owner: "app.new",
+      generation: 99,
+      identity: migratedIdentity
+    )
+    try slotStore.saveOwnSlot(newerSlot)
+
+    #expect(throws: SharedSessionTopologyMigrationError.destinationSlotChanged) {
+      try rollback.restore()
+    }
+
+    #expect(try slotStore.loadOwnSlot() == newerSlot)
+    #expect(try localStore.load() == migratedIdentity)
+  }
+
+  @Test
+  func rollbackPreservesNewerDestinationIdentityWithoutSlotPublication() throws {
+    let localStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let rollback = try SharedSessionTopologyMigration.prepare(
+      identity: makeIdentity(clientID: "migrated"),
+      destinationIdentityStore: localStore,
+      destinationSlotStore: nil,
+      destinationInstanceFingerprint: nil,
+      destinationOwnerIdentifier: nil
+    )
+    let newerIdentity = makeIdentity(clientID: "newer")
+    try localStore.save(newerIdentity)
+
+    #expect(throws: SharedSessionTopologyMigrationError.destinationIdentityChanged) {
+      try rollback.restore()
+    }
+
+    #expect(try localStore.load() == newerIdentity)
+  }
+
   private func makeIdentity(clientID: String) -> ClerkIdentitySnapshot {
     var client = Client.mockSignedOut
     client.id = clientID

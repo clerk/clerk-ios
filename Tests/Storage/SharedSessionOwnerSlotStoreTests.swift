@@ -234,6 +234,46 @@ struct SharedSessionOwnerSlotStoreTests {
   }
 
   @Test
+  func conditionalRestorePreservesAReplacementSlot() throws {
+    let spy = SharedSessionSecItemSpy()
+    let published = makeSlot(owner: "app.a", generation: 2)
+    let replacement = makeSlot(owner: "app.a", generation: 3)
+    spy.copyMatchingResults = try [
+      .success(JSONEncoder.clerkEncoder.encode(replacement)),
+    ]
+    let store = try makeStore(owner: "app.a", spy: spy)
+
+    #expect(try !store.restoreOwnSlot(
+      makeSlot(owner: "app.a", generation: 1),
+      ifCurrentMatchesPublication: published
+    ))
+
+    #expect(spy.updateQueries.isEmpty)
+    #expect(spy.deleteQueries.isEmpty)
+  }
+
+  @Test
+  func conditionalRestoreReplacesTheMigrationOwnedSlot() throws {
+    let spy = SharedSessionSecItemSpy()
+    let previous = makeSlot(owner: "app.a", generation: 1)
+    let published = makeSlot(owner: "app.a", generation: 2)
+    let publishedData = try JSONEncoder.clerkEncoder.encode(published)
+    spy.copyMatchingResults = [
+      .success(publishedData),
+      .success(publishedData),
+    ]
+    let store = try makeStore(owner: "app.a", spy: spy)
+
+    #expect(try store.restoreOwnSlot(
+      previous,
+      ifCurrentMatchesPublication: published
+    ))
+
+    #expect(spy.updateQueries.count == 1)
+    #expect(spy.deleteQueries.isEmpty)
+  }
+
+  @Test
   func recoveryIntentDeleteUsesRecordedServiceAccessGroupAndAccount() throws {
     let spy = SharedSessionSecItemSpy()
     spy.copyMatchingResults = [.status(errSecItemNotFound)]

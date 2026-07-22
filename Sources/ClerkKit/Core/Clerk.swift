@@ -33,6 +33,7 @@ public final class Clerk {
   }
 
   private static var isRuntimeReconfigurationInProgress = false
+  private static var runtimeReconfigurationWaiters: [CheckedContinuation<Void, Never>] = []
 
   private struct ReconfigurationRollbackState {
     let configurationEpoch: ClerkConfigurationEpoch
@@ -325,6 +326,12 @@ extension Clerk {
     try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
       in: dependencies.sharedSessionOwnerSlotClearRecovery
     )
+    installConfiguration(dependencies: dependencies)
+  }
+
+  /// Installs dependencies whose pending clear recovery has already been checked.
+  @MainActor
+  private func installConfiguration(dependencies: any Dependencies) {
     cancelStartupClientRefresh()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
@@ -564,6 +571,9 @@ extension Clerk {
       // Let that transaction commit before reconfiguration invalidates the old
       // runtime's identity queue or decides whether local state can be reused.
       try await existing.keychainClearTask?.value
+      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+        in: existing.dependencies.sharedSessionOwnerSlotClearRecovery
+      )
 
       let nextEpoch = existing.nextConfigurationEpoch
       let newDependencies = try DependencyContainer(
@@ -607,7 +617,7 @@ extension Clerk {
             in: rollbackState.dependencies
           )
         }
-        if topologyMigrationRollback?.publishedDestinationSlot == true {
+        if topologyMigrationRollback?.publishedDestinationSlot != nil {
           notifySharedSessionTopologyChange(in: newDependencies)
         }
       } catch {
@@ -621,12 +631,12 @@ extension Clerk {
             )
           }
         }
-        try existing.restoreAfterFailedReconfiguration(rollbackState)
+        existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
       }
 
       await existing.resetRuntimeStateForReconfiguration()
-      try existing.performConfiguration(dependencies: newDependencies)
+      existing.installConfiguration(dependencies: newDependencies)
       return existing
     }
 
@@ -641,7 +651,7 @@ extension Clerk {
     try await clearLocalClerkStorageStrictly(in: newDependencies)
     try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
     try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-    try clerk.performConfiguration(dependencies: newDependencies)
+    clerk.installConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
   }
@@ -904,6 +914,22 @@ extension Clerk {
   static func endRuntimeReconfiguration() {
     isRuntimeReconfigurationInProgress = false
     _shared?.runtimeState.endReconfiguration()
+    let waiters = runtimeReconfigurationWaiters
+    runtimeReconfigurationWaiters.removeAll()
+    waiters.forEach { $0.resume() }
+  }
+
+  @MainActor
+  static var runtimeReconfigurationIsInProgress: Bool {
+    isRuntimeReconfigurationInProgress
+  }
+
+  @MainActor
+  static func waitForRuntimeReconfigurationIfNeeded() async {
+    guard isRuntimeReconfigurationInProgress else { return }
+    await withCheckedContinuation {
+      runtimeReconfigurationWaiters.append($0)
+    }
   }
 
   @MainActor
@@ -942,10 +968,10 @@ extension Clerk {
 
   private func restoreAfterFailedReconfiguration(
     _ state: ReconfigurationRollbackState
-  ) throws {
+  ) {
     setConfigurationEpoch(to: state.configurationEpoch)
     identityController.restoreRollbackState(state.identity)
-    try performConfiguration(dependencies: state.dependencies)
+    installConfiguration(dependencies: state.dependencies)
   }
 
   private static func prepareAcceptedIdentityForTopologyChange(

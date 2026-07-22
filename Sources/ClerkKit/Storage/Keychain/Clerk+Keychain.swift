@@ -171,6 +171,12 @@ extension Clerk {
     if let keychainClearTask = clerk.keychainClearTask {
       return keychainClearTask
     }
+    if runtimeReconfigurationIsInProgress {
+      return Task { @MainActor in
+        await waitForRuntimeReconfigurationIfNeeded()
+        try await startKeychainClearIfNeeded(for: clerk).value
+      }
+    }
 
     let pendingClear: PendingKeychainClear
     do {
