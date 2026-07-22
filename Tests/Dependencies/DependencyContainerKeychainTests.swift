@@ -50,6 +50,20 @@ struct DependencyContainerKeychainTests {
     #expect(container.keychain is SystemKeychain)
   }
 
+  @Test
+  @MainActor
+  func disabledPersistentAdoptionDoesNotInstallLiveClearRecovery() throws {
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: .init(),
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      persistentAdoptionEnabledOverride: false,
+      ownerIdentifierProvider: { "com.clerk.tests.app" }
+    )
+
+    #expect(container.sharedSessionOwnerSlotClearRecovery == nil)
+  }
+
   #if os(macOS)
   @Test
   @MainActor
@@ -177,7 +191,7 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
-  func sharedConfigurationRecordsExactRecoveryTopology() throws {
+  func sharedConfigurationBuildsExactRecoveryTopology() throws {
     let owner = "com.clerk.tests.recovery.\(UUID().uuidString)"
     let options = Clerk.Options(
       keychainConfig: .init(
@@ -186,18 +200,17 @@ struct DependencyContainerKeychainTests {
       ),
       sharedSessionSync: .enabled
     )
-    let container = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: options,
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      ownerIdentifierProvider: { owner }
-    )
+    let configuration = ConfigurationManager()
+    try configuration.configure(publishableKey: testPublishableKey, options: options)
     let namespace = SharedSessionNamespace(
-      frontendApiUrl: container.configurationManager.frontendApiUrl,
-      publishableKey: container.configurationManager.publishableKey
+      frontendApiUrl: configuration.frontendApiUrl,
+      publishableKey: configuration.publishableKey
     )
     let intent = try #require(
-      container.sharedSessionOwnerSlotClearRecovery?.currentIntent
+      DependencyContainer.makeOwnerSlotClearRecovery(
+        configuration: configuration,
+        ownerIdentifier: owner
+      )?.currentIntent
     )
 
     #expect(intent.localIdentityService == DependencyContainer.stableIdentityService(

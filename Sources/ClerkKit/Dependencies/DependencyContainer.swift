@@ -107,11 +107,15 @@ final class DependencyContainer: Dependencies {
       .trimmingCharacters(in: .whitespacesAndNewlines)
     persistentAdoptionEnabled = persistentAdoptionEnabledOverride
       ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests)
-    sharedSessionOwnerSlotClearRecovery = Self.makeOwnerSlotClearRecovery(
-      configuration: configurationManager,
-      ownerIdentifier: sharedSessionOwnerIdentifier
-    )
-    if !publishableKey.isEmpty {
+    sharedSessionOwnerSlotClearRecovery = if persistentAdoptionEnabled {
+      Self.makeOwnerSlotClearRecovery(
+        configuration: configurationManager,
+        ownerIdentifier: sharedSessionOwnerIdentifier
+      )
+    } else {
+      nil
+    }
+    if persistentAdoptionEnabled, !publishableKey.isEmpty {
       try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
         in: sharedSessionOwnerSlotClearRecovery
       )
@@ -389,7 +393,7 @@ final class DependencyContainer: Dependencies {
 
 extension DependencyContainer {
   @MainActor
-  private static func makeOwnerSlotClearRecovery(
+  static func makeOwnerSlotClearRecovery(
     configuration: ConfigurationManager,
     ownerIdentifier: String?
   ) -> SharedSessionOwnerSlotClearRecovery.Context? {
