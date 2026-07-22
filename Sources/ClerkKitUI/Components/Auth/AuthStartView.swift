@@ -481,10 +481,24 @@ extension AuthStartView {
       if Task.isCancelled || error.isCancellationError { return nil }
       guard navigation.path.isEmpty else { return nil }
 
-      generalError = error
+      presentAutomaticPasskeyError(error)
       ClerkLogger.error("Failed to create passkey sign-in", error: error)
       return nil
     }
+  }
+
+  /// Presents a failure from the automatic passkey sign-in, in debug builds only.
+  ///
+  /// The automatic modal and the AutoFill fallback both start without user intent, so a
+  /// failure leaves nothing for the person signing in to act on. The most common cause is
+  /// an app that has not declared a `webcredentials:` associated domain for its Frontend
+  /// API, which fails every attempt with an error only the developer can fix. Debug builds
+  /// still present it so that misconfiguration is visible while integrating; every build
+  /// logs it.
+  private func presentAutomaticPasskeyError(_ error: any Error) {
+    #if DEBUG
+    generalError = error
+    #endif
   }
 
   @discardableResult
@@ -509,7 +523,7 @@ extension AuthStartView {
       if error.isUserCancelledError { return .continueWithAutofill }
       guard navigation.path.isEmpty else { return .stopped }
 
-      generalError = error
+      presentAutomaticPasskeyError(error)
       if autofill {
         ClerkLogger.error("Failed to authenticate with passkey autofill", error: error)
       } else {
