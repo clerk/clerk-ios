@@ -229,7 +229,7 @@ extension WatchConnectivityCoordinator {
     let deviceToken: String?
     switch payload.deviceTokenUpdate {
     case .notIncluded:
-      deviceToken = clerk.deviceToken
+      deviceToken = currentToken
     case .tokenSet(let token, _):
       guard let token = Optional(token).nilIfEmpty else { return nil }
       deviceToken = token
@@ -679,9 +679,10 @@ extension WatchConnectivityCoordinator {
       ) ?? .initial
     ).next()
 
-    record.deviceTokenState = clerk.deviceToken == nil ? .cleared : .set
+    let deviceToken = clerk.deviceToken.nilIfEmpty
+    record.deviceTokenState = deviceToken == nil ? .cleared : .set
     record.deviceTokenVersion = deviceTokenVersion.rawValue
-    record.deviceTokenFingerprint = Self.deviceTokenFingerprint(clerk.deviceToken)
+    record.deviceTokenFingerprint = Self.deviceTokenFingerprint(deviceToken)
     record.deviceTokenSource = nil
     record.discardPendingDeviceToken()
     record.authState = clerk.client == nil ? .cleared : .set

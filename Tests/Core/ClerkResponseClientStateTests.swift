@@ -57,6 +57,24 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
+  func applyResponseClientDoesNotRegressServerDateWatermark() {
+    let clerk = makeIsolatedClerk()
+    let first = client(id: "client-first", updatedAt: 1000)
+    let second = client(id: "client-second", updatedAt: 2000)
+    let stale = client(id: "client-stale", updatedAt: 3000)
+    let date200 = Date(timeIntervalSince1970: 200)
+    let date100 = Date(timeIntervalSince1970: 100)
+    let date150 = Date(timeIntervalSince1970: 150)
+
+    clerk.applyResponseClient(first, responseSequence: 10, serverDate: date200)
+    clerk.applyResponseClient(second, responseSequence: 11, serverDate: date100)
+    clerk.applyResponseClient(stale, responseSequence: 10, serverDate: date150)
+
+    #expect(clerk.client?.id == second.id)
+    #expect(clerk.lastClientServerFetchDate == date200)
+  }
+
+  @Test
   func applyResponseClientAcceptsOlderResponseSequenceWhenServerDateIsNewer() async throws {
     let clerk = makeIsolatedClerk()
     let refreshedBeforeCompletion = client(id: "client-current", signUpId: "sign-up-pending", updatedAt: 3000)

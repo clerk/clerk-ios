@@ -39,9 +39,12 @@ struct ClientResponseOrderingGate {
   mutating func record(sequence: Int?, serverDate: Date? = nil) {
     guard let sequence else { return }
     lastAcceptedSequence = max(lastAcceptedSequence ?? sequence, sequence)
-    if let serverDate {
-      lastAcceptedServerDate = serverDate
-    }
+    advanceServerDateWatermark(to: serverDate)
+  }
+
+  mutating func advanceServerDateWatermark(to serverDate: Date?) {
+    guard let serverDate else { return }
+    lastAcceptedServerDate = max(lastAcceptedServerDate ?? serverDate, serverDate)
   }
 
   mutating func reset() {

@@ -259,9 +259,7 @@ extension ClerkIdentityController {
       return
     }
 
-    if let serverDate {
-      lastServerDate = serverDate
-    }
+    recordAcceptedServerDate(serverDate)
     setClient(incoming, on: clerk)
     responseOrderingGate.record(sequence: responseSequence)
   }
@@ -733,9 +731,7 @@ extension ClerkIdentityController {
       }
 
       let previousDate = lastServerDate
-      if let serverDate = snapshot.serverDate {
-        lastServerDate = serverDate
-      }
+      recordAcceptedServerDate(snapshot.serverDate)
       if incomingClient != clerk.client {
         setClient(incomingClient, on: clerk)
         return true
@@ -942,8 +938,10 @@ extension ClerkIdentityController {
       fenceClientResponses()
     }
     withApplyingIdentityTransition {
-      if identity.serverDate != nil || identity.state == .cleared {
+      if identity.state == .cleared, identity.serverDate == nil {
         lastServerDate = identity.serverDate
+      } else {
+        recordAcceptedServerDate(identity.serverDate)
       }
       clerk.setClientFromIdentityController(identity.client)
     }
@@ -963,6 +961,10 @@ extension ClerkIdentityController {
     isApplyingIdentityTransition = true
     defer { isApplyingIdentityTransition = previousApplyingState }
     operation()
+  }
+
+  private func recordAcceptedServerDate(_ serverDate: Date?) {
+    responseOrderingGate.advanceServerDateWatermark(to: serverDate)
   }
 
   private func responseCanBeAccepted(

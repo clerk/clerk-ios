@@ -258,6 +258,43 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func whitespaceDeviceTokenPersistsAsClearedMetadata() throws {
+    let keychain = InMemoryKeychain()
+    let coordinator = WatchConnectivityCoordinator()
+
+    let metadata = try coordinator.persistDeviceTokenState(
+      .set,
+      deviceToken: " \n\t ",
+      version: WatchSyncVersion(rawValue: 1),
+      keychain: keychain
+    )
+
+    #expect(metadata.deviceTokenState == .cleared)
+    #expect(metadata.deviceTokenVersion == 1)
+    #expect(metadata.deviceTokenFingerprint == WatchConnectivityCoordinator.deviceTokenFingerprint(nil))
+  }
+
+  @Test
+  func identityChangeNormalizesWhitespaceDeviceTokenBeforePublishingMetadata() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set(" \n\t ", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    let coordinator = WatchConnectivityCoordinator()
+
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    let metadata = try WatchSyncMetadataStore(keychain: keychain).load()
+    #expect(metadata.deviceTokenState == .cleared)
+    #expect(metadata.deviceTokenFingerprint == WatchConnectivityCoordinator.deviceTokenFingerprint(nil))
+  }
+
+  @Test
   func watchTokenClearCannotSignOutAnActivePhone() async throws {
     configureClerkForTesting()
     let clerk = Clerk()

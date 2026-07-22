@@ -15,7 +15,8 @@ extension WatchConnectivityCoordinator {
     let resolvedVersion = try version ?? WatchSyncVersion(
       rawValue: record.effectiveDeviceTokenVersion
     ).next()
-    record.deviceTokenState = state
+    let deviceToken = deviceToken.nilIfEmpty
+    record.deviceTokenState = deviceToken == nil ? .cleared : state
     record.deviceTokenVersion = resolvedVersion.rawValue
     record.deviceTokenFingerprint = Self.deviceTokenFingerprint(deviceToken)
     record.deviceTokenSource = nil

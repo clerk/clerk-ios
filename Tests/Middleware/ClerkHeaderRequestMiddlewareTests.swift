@@ -185,11 +185,13 @@ struct ClerkHeaderRequestMiddlewareTests {
   func tokenlessClientCreationFencesSuspendedStartupRefresh() async throws {
     let clerk = Clerk()
     let gate = RequestIdentityOperationGate()
+    var startupClient = Client.mock
+    startupClient.id = "startup-refresh-client"
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       clientService: MockClientService(get: {
         await gate.suspend()
-        return .mock
+        return startupClient
       })
     )
     clerk.performConfiguration(dependencies: dependencies)
@@ -199,14 +201,43 @@ struct ClerkHeaderRequestMiddlewareTests {
     }
     try await gate.waitUntilSuspended()
     let startupGeneration = clerk.clientResponseGeneration
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
+    let signUpURL = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
 
-    var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client/sign_ups")))
-    request.setClerkCanEstablishClientWhenTokenless(true)
-    try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope).prepare(&request)
+    func prepareTokenlessRequest() async throws -> URLRequest {
+      var request = URLRequest(url: signUpURL)
+      request.setClerkCanEstablishClientWhenTokenless(true)
+      try await middleware.prepare(&request)
+      return request
+    }
 
-    #expect(request.clerkRequestDeviceToken == nil)
+    async let firstRequest = prepareTokenlessRequest()
+    async let secondRequest = prepareTokenlessRequest()
+    let (first, second) = try await (firstRequest, secondRequest)
+
+    #expect(first.clerkRequestDeviceToken == nil)
+    #expect(second.clerkRequestDeviceToken == nil)
     #expect(clerk.clientResponseGeneration != startupGeneration)
-    #expect(request.clerkClientResponseGeneration == clerk.clientResponseGeneration)
+    #expect(first.clerkClientResponseGeneration == second.clerkClientResponseGeneration)
+    #expect(first.clerkClientResponseGeneration == clerk.clientResponseGeneration)
+    #expect(second.clerkClientResponseGeneration == clerk.clientResponseGeneration)
+
+    var staleClient = Client.mock
+    staleClient.id = "stale-startup-client"
+    clerk.applyResponseClient(staleClient, clientResponseGeneration: startupGeneration)
+    #expect(clerk.client == nil)
+
+    var acceptedClient = Client.mock
+    acceptedClient.id = "accepted-tokenless-client"
+    clerk.applyResponseClient(
+      acceptedClient,
+      clientResponseGeneration: second.clerkClientResponseGeneration
+    )
+    #expect(clerk.client?.id == acceptedClient.id)
+
+    gate.resume()
+    await Task.yield()
+    #expect(clerk.client?.id == acceptedClient.id)
   }
 
   @Test

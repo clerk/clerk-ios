@@ -46,6 +46,24 @@ struct ClientResponseOrderingGateTests {
   }
 
   @Test
+  func recordDoesNotRegressServerDateWatermark() {
+    let newerDate = Date(timeIntervalSince1970: 200)
+    let olderDate = Date(timeIntervalSince1970: 100)
+    var gate = ClientResponseOrderingGate()
+
+    gate.record(sequence: 10, serverDate: newerDate)
+    gate.record(sequence: 11, serverDate: olderDate)
+
+    #expect(gate.lastAcceptedServerDate == newerDate)
+    #expect(!gate.accepts(
+      sequence: 10,
+      serverDate: Date(timeIntervalSince1970: 150),
+      incomingUpdatedAt: Date(timeIntervalSince1970: 300),
+      currentUpdatedAt: Date(timeIntervalSince1970: 100)
+    ))
+  }
+
+  @Test
   func resetClearsOrderingWatermarks() {
     let date = Date(timeIntervalSince1970: 100)
     var gate = ClientResponseOrderingGate()
