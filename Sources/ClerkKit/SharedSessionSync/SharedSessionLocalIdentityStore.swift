@@ -13,28 +13,79 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
   let schemaVersion: Int
   let acceptedIdentity: SharedSessionLocalIdentity?
   let pendingPublication: SharedSessionIdentityEvent?
+  let requiresLegacyAdoptionPublication: Bool
 
   init(
     acceptedIdentity: SharedSessionLocalIdentity?,
-    pendingPublication: SharedSessionIdentityEvent?
+    pendingPublication: SharedSessionIdentityEvent?,
+    requiresLegacyAdoptionPublication: Bool = false
   ) {
     schemaVersion = Self.schemaVersion
     self.acceptedIdentity = acceptedIdentity
     self.pendingPublication = pendingPublication
+    self.requiresLegacyAdoptionPublication = requiresLegacyAdoptionPublication
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case schemaVersion
+    case acceptedIdentity
+    case pendingPublication
+    case requiresLegacyAdoptionPublication
+  }
+
+  init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+    acceptedIdentity = try container.decodeIfPresent(
+      SharedSessionLocalIdentity.self,
+      forKey: .acceptedIdentity
+    )
+    pendingPublication = try container.decodeIfPresent(
+      SharedSessionIdentityEvent.self,
+      forKey: .pendingPublication
+    )
+    requiresLegacyAdoptionPublication = try container.decodeIfPresent(
+      Bool.self,
+      forKey: .requiresLegacyAdoptionPublication
+    ) ?? false
   }
 
   func validated() throws -> Self {
     guard schemaVersion == Self.schemaVersion else {
       throw SharedSessionLocalIdentityStoreError.unsupportedSchemaVersion
     }
+    guard !requiresLegacyAdoptionPublication || acceptedIdentity != nil else {
+      throw SharedSessionLocalIdentityStoreError.missingLegacyAdoptionIdentity
+    }
     _ = try acceptedIdentity?.validated()
     _ = try pendingPublication?.validated()
     return self
+  }
+
+  func pendingLegacyAdoptionEventID(for ownerIdentifier: String) -> UUID? {
+    guard requiresLegacyAdoptionPublication,
+          let acceptedIdentity,
+          acceptedIdentity.state == .cleared,
+          acceptedIdentity.deviceToken.nilIfEmpty != nil,
+          acceptedIdentity.client == nil,
+          let pendingPublication,
+          pendingPublication.originOwnerIdentifier == ownerIdentifier,
+          SharedSessionLocalIdentity(
+            state: pendingPublication.state,
+            deviceToken: pendingPublication.deviceToken,
+            client: pendingPublication.client,
+            serverDate: pendingPublication.serverDate
+          ) == acceptedIdentity
+    else {
+      return nil
+    }
+    return pendingPublication.id
   }
 }
 
 enum SharedSessionLocalIdentityStoreError: Error, Equatable {
   case unsupportedSchemaVersion
+  case missingLegacyAdoptionIdentity
   case pendingPublicationAlreadyExists
   case pendingPublicationMismatch
 }
@@ -75,6 +126,20 @@ extension SharedSessionLocalIdentityStoring {
     }
   }
 
+  func saveLegacyAdoption(_ identity: SharedSessionLocalIdentity) throws {
+    let identity = try identity.validated()
+    try updateRecord { record in
+      guard record?.pendingPublication == nil else {
+        throw SharedSessionLocalIdentityStoreError.pendingPublicationAlreadyExists
+      }
+      return SharedSessionLocalIdentityRecord(
+        acceptedIdentity: identity,
+        pendingPublication: nil,
+        requiresLegacyAdoptionPublication: true
+      )
+    }
+  }
+
   func stagePendingPublication(_ event: SharedSessionIdentityEvent) throws {
     let event = try event.validated()
     try updateRecord { record in
@@ -86,7 +151,8 @@ extension SharedSessionLocalIdentityStoring {
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: record?.acceptedIdentity,
-        pendingPublication: event
+        pendingPublication: event,
+        requiresLegacyAdoptionPublication: record?.requiresLegacyAdoptionPublication ?? false
       )
     }
   }
@@ -117,7 +183,8 @@ extension SharedSessionLocalIdentityStoring {
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: acceptedIdentity,
-        pendingPublication: nil
+        pendingPublication: nil,
+        requiresLegacyAdoptionPublication: record.requiresLegacyAdoptionPublication
       )
     }
   }

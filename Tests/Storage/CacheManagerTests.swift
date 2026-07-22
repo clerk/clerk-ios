@@ -17,6 +17,7 @@ final class MockCacheCoordinator: CacheCoordinator {
   var serverFetchDateSet = LockIsolated(false)
   var environmentSet = LockIsolated(false)
   var identityHydrated = LockIsolated(false)
+  var provisionalClientSet = LockIsolated(false)
   private var client: Client?
   private var serverFetchDate: Date?
   private var environment: Clerk.Environment?
@@ -43,6 +44,12 @@ final class MockCacheCoordinator: CacheCoordinator {
     if client != nil {
       clientSet.setValue(true)
     }
+  }
+
+  func setProvisionalClientIfNeeded(_ client: Client?) {
+    guard self.client == nil, let client else { return }
+    self.client = client
+    provisionalClientSet.setValue(true)
   }
 
   func setServerFetchDateIfNeeded(_ date: Date) {
@@ -211,9 +218,9 @@ struct CacheManagerTests {
 
     cacheManager.loadProvisionalLegacyClientForPresentation()
 
-    #expect(coordinator.clientSet.value == true)
+    #expect(coordinator.provisionalClientSet.value == true)
     #expect(coordinator.clientID == Client.mock.id)
-    #expect(coordinator.currentServerFetchDate == serverDate)
+    #expect(coordinator.currentServerFetchDate == nil)
   }
 
   @Test

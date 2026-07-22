@@ -27,7 +27,7 @@ struct ClerkIdentitySnapshot: Codable, Equatable {
   let serverDate: Date?
 
   func validated() throws -> Self {
-    let hasToken = deviceToken?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    let hasToken = deviceToken.nilIfEmpty != nil
     switch state {
     case .present:
       guard hasToken, client != nil else {

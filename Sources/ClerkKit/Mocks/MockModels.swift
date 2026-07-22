@@ -14,7 +14,7 @@ import Foundation
 extension Clerk {
   public static var mock: Clerk {
     let clerk = Clerk()
-    clerk.client = .mock
+    clerk.setClientFromIdentityController(.mock)
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
     return clerk
@@ -22,7 +22,7 @@ extension Clerk {
 
   public static var mockSignedOut: Clerk {
     let clerk = Clerk()
-    clerk.client = .mockSignedOut
+    clerk.setClientFromIdentityController(.mockSignedOut)
     clerk.environment = .mock
     clerk.sessionsByUserId = [:]
     return clerk

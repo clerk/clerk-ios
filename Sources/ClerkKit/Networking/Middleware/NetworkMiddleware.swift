@@ -178,6 +178,7 @@ struct ClerkRequestCheckpoint: Equatable {
 
 extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
+  private static let clerkStartupClientRefreshTakeoverIDKey = "com.clerk.startup-client-refresh-takeover-id"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
   private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
@@ -189,6 +190,16 @@ extension URLRequest {
 
   var clerkRequestSequence: Int? {
     URLProtocol.property(forKey: Self.clerkRequestSequenceKey, in: self) as? Int
+  }
+
+  var clerkStartupClientRefreshTakeoverID: UUID? {
+    guard let value = URLProtocol.property(
+      forKey: Self.clerkStartupClientRefreshTakeoverIDKey,
+      in: self
+    ) as? String else {
+      return nil
+    }
+    return UUID(uuidString: value)
   }
 
   var clerkClientResponseGeneration: ClientResponseGeneration? {
@@ -217,6 +228,26 @@ extension URLRequest {
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
     setClerkProperty(sequence, key: Self.clerkRequestSequenceKey)
+  }
+
+  mutating func setClerkRequestMetadata(
+    sequence: Int,
+    startupClientRefreshTakeoverID: UUID?
+  ) {
+    setClerkProperties([
+      (value: sequence, key: Self.clerkRequestSequenceKey),
+      (
+        value: startupClientRefreshTakeoverID?.uuidString,
+        key: Self.clerkStartupClientRefreshTakeoverIDKey
+      ),
+    ])
+  }
+
+  mutating func setClerkStartupClientRefreshTakeoverID(_ id: UUID) {
+    setClerkProperty(
+      id.uuidString,
+      key: Self.clerkStartupClientRefreshTakeoverIDKey
+    )
   }
 
   mutating func setClerkClientResponseGeneration(_ generation: ClientResponseGeneration) {

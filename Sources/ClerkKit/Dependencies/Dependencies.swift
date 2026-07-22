@@ -37,6 +37,9 @@ protocol Dependencies: AnyObject {
   /// Stable owner used for this app's discoverable shared-session slot.
   var sharedSessionOwnerIdentifier: String? { get }
 
+  /// Bundle-local journal and exact Keychain targets used to finish interrupted identity clears.
+  var sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? { get }
+
   /// Whether this configuration just adopted legacy shared-session state and may
   /// use the legacy Client as provisional launch UI.
   var shouldHydrateProvisionalLegacyClient: Bool { get }

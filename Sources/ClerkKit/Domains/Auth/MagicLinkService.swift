@@ -21,6 +21,7 @@ final class MagicLinkService: MagicLinkServiceProtocol {
     let request = Request<ClientResponse<MagicLinkCompleteResult>>(
       path: "/v1/client/magic_links/complete",
       method: .post,
+      canEstablishClientWhenTokenless: true,
       body: params
     )
 

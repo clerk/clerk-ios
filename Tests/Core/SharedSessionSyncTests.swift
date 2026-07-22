@@ -1,4 +1,5 @@
 @_spi(FrameworkIntegration) @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -105,6 +106,196 @@ struct SharedSessionSyncTests {
     #expect(snapshot.deviceToken == "token")
     #expect(snapshot.clientID == nil)
     #expect(node.clerk.client == nil)
+  }
+
+  @Test
+  func newlyAdoptedLegacyTokenPublishesAheadOfExistingSignedOutPeer() async throws {
+    let backend = TestSlotBackend()
+    let signedOutPeer = try makeEvent(
+      owner: "app.custom-flows",
+      generation: 1,
+      clientID: "signed-out-peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: signedOutPeer
+      ),
+      owner: "app.custom-flows"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-signed-in-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+    #expect(node.coordinator.currentDeviceToken == "legacy-signed-in-token")
+
+    #expect(await node.coordinator.start().value)
+
+    let adoptedSlot = try #require(
+      backend.allSlots().first {
+        $0.slotOwnerIdentifier == "app.quickstart"
+      }
+    )
+    #expect(adoptedSlot.event.generation == 2)
+    #expect(adoptedSlot.event.deviceToken == "legacy-signed-in-token")
+    #expect(adoptedSlot.event.client == nil)
+    let adoptedRecord = try #require(try localStore.loadRecord())
+    #expect(!adoptedRecord.requiresLegacyAdoptionPublication)
+    #expect(adoptedRecord.pendingPublication == nil)
+
+    var signedInClient = Client.mock
+    signedInClient.id = "signed-in-client"
+    try await node.coordinator.handleNetworkResponse(ClientSyncResponseContext(
+      update: .client(signedInClient),
+      deviceTokenUpdate: .set("legacy-signed-in-token"),
+      requestDeviceToken: "legacy-signed-in-token",
+      baseGeneration: 2,
+      serverDate: Date(timeIntervalSince1970: 1),
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: nil,
+      responseSequence: 1
+    ))
+
+    #expect(node.clerk.client?.id == "signed-in-client")
+    #expect(node.clerk.user != nil)
+    #expect(node.coordinator.currentDeviceToken == "legacy-signed-in-token")
+  }
+
+  @Test(arguments: [false, true])
+  func legacyAdoptionPublicationPreservesProvisionalClientUntilCanonicalResponse(
+    recoveringPendingPublication: Bool
+  ) async throws {
+    let backend = TestSlotBackend()
+    let peerEvent = try makeEvent(
+      owner: "app.custom-flows",
+      generation: 1,
+      clientID: "peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: peerEvent
+      ),
+      owner: "app.custom-flows"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+    var provisionalClient = Client.mock
+    provisionalClient.id = "provisional-client"
+    node.clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
+      provisionalClient
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+    #expect(node.clerk.client?.id == "provisional-client")
+    #expect(node.clerk.authoritativeClient == nil)
+
+    if recoveringPendingPublication {
+      localStore.failCommits = true
+      let initialReconciliationChanged = await node.coordinator.start().value
+      #expect(!initialReconciliationChanged)
+      #expect(try localStore.loadPendingPublication() != nil)
+      localStore.failCommits = false
+      #expect(await node.coordinator.reloadFromSharedStorage())
+    } else {
+      #expect(await node.coordinator.start().value)
+    }
+
+    #expect(node.clerk.client?.id == "provisional-client")
+    #expect(node.clerk.authoritativeClient == nil)
+    let adoptedIdentity = try #require(try localStore.load())
+    #expect(adoptedIdentity.state == .cleared)
+    #expect(adoptedIdentity.deviceToken == "legacy-token")
+    #expect(adoptedIdentity.client == nil)
+
+    var canonicalClient = Client.mock
+    canonicalClient.id = "canonical-client"
+    try await node.coordinator.handleNetworkResponse(ClientSyncResponseContext(
+      update: .client(canonicalClient),
+      deviceTokenUpdate: .set("legacy-token"),
+      requestDeviceToken: "legacy-token",
+      baseGeneration: 2,
+      serverDate: Date(timeIntervalSince1970: 1),
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: nil,
+      responseSequence: 1
+    ))
+
+    #expect(node.clerk.client?.id == "canonical-client")
+    #expect(node.clerk.authoritativeClient?.id == "canonical-client")
+  }
+
+  @Test
+  func ordinarySharedClearReplacesMatchingProvisionalClient() async throws {
+    let backend = TestSlotBackend()
+    let initialIdentity = SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "shared-token",
+      client: nil,
+      serverDate: nil
+    )
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      initialIdentity: initialIdentity,
+      hydrateInitialIdentity: false
+    )
+    var provisionalClient = Client.mock
+    provisionalClient.id = "provisional-client"
+    node.clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
+      provisionalClient
+    )
+    let peerClear = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.custom-flows",
+      generation: 1,
+      state: .cleared,
+      deviceToken: "shared-token",
+      client: nil,
+      serverDate: Date(timeIntervalSince1970: 1)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: peerClear
+      ),
+      owner: "app.custom-flows"
+    )
+
+    #expect(await node.coordinator.start().value)
+
+    #expect(node.clerk.client == nil)
+    #expect(node.clerk.authoritativeClient == nil)
   }
 
   @Test
@@ -1178,6 +1369,68 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func concurrentSharedTokenlessRequestsShareStartupTakeoverGeneration() async throws {
+    let startupGate = SharedRequestPreparationGate()
+    let node = try makeNode(
+      owner: "app.receiver",
+      backend: TestSlotBackend(),
+      clientService: MockClientService(get: {
+        await startupGate.suspend()
+        return nil
+      })
+    )
+    defer {
+      startupGate.resume()
+      node.clerk.cleanupManagers()
+    }
+    _ = await node.coordinator.start().value
+    node.clerk.startStartupClientRefreshIfNeeded()
+    try await waitUntil { startupGate.isSuspended }
+    let startupGeneration = node.clerk.clientResponseGeneration
+
+    let identityGate = SharedRequestPreparationGate()
+    let blocker = node.coordinator.enqueueSerializedLocalIdentityOperation {
+      await identityGate.suspend()
+    }
+    try await waitUntil { identityGate.isSuspended }
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: node.clerk.runtimeScope)
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
+
+    func prepareTokenlessRequest() async throws -> URLRequest {
+      var request = URLRequest(url: url)
+      request.setClerkStartupClientRefreshTakeoverID(UUID())
+      try await middleware.prepare(&request)
+      return request
+    }
+
+    var firstResult: URLRequest?
+    var secondResult: URLRequest?
+    try await withMainSerialExecutor {
+      let firstTask = Task { @MainActor in
+        try await prepareTokenlessRequest()
+      }
+      await Task.yield()
+      let secondTask = Task { @MainActor in
+        try await prepareTokenlessRequest()
+      }
+      await Task.yield()
+      identityGate.resume()
+      _ = try await blocker.value
+      firstResult = try await firstTask.value
+      secondResult = try await secondTask.value
+    }
+
+    let first = try #require(firstResult)
+    let second = try #require(secondResult)
+
+    #expect(node.clerk.clientResponseGeneration != startupGeneration)
+    #expect(first.clerkRequestDeviceToken == nil)
+    #expect(second.clerkRequestDeviceToken == nil)
+    #expect(first.clerkClientResponseGeneration == second.clerkClientResponseGeneration)
+    #expect(first.clerkClientResponseGeneration == node.clerk.clientResponseGeneration)
+  }
+
+  @Test
   func foregroundReconciliationRecoversMissedNotification() async throws {
     let backend = TestSlotBackend()
     let receiver = try makeNode(owner: "app.receiver", backend: backend)
@@ -1794,6 +2047,87 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func topologyChangeSettlesPendingPublicationIntoCanonicalIdentity() async throws {
+    let backend = TestSlotBackend()
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "previous-token",
+      client: makeClient(id: "previous"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous
+    )
+    let pending = try makeEvent(
+      owner: "app.a",
+      generation: 4,
+      clientID: "pending"
+    )
+    try node.localStore.stagePendingPublication(pending)
+
+    try await node.coordinator.settlePendingPublicationForTopologyChange()
+
+    let record = try #require(try node.localStore.loadRecord())
+    #expect(record.pendingPublication == nil)
+    #expect(record.acceptedIdentity?.client?.id == "pending")
+    #expect(node.clerk.client?.id == "pending")
+    #expect(
+      backend.allSlots()
+        .first { $0.slotOwnerIdentifier == "app.a" }?.event == pending
+    )
+  }
+
+  @Test
+  func topologyChangeSettlementUsesRevisionAfterLegacyAdoptionPublication() async throws {
+    let backend = TestSlotBackend()
+    let peerEvent = try makeEvent(
+      owner: "app.b",
+      generation: 1,
+      clientID: "peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.b",
+        event: peerEvent
+      ),
+      owner: "app.b"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+
+    try await node.coordinator.settlePendingPublicationForTopologyChange()
+
+    let record = try #require(try localStore.loadRecord())
+    #expect(!record.requiresLegacyAdoptionPublication)
+    #expect(record.pendingPublication == nil)
+    let adoptedEvent = try #require(
+      backend.allSlots()
+        .first { $0.slotOwnerIdentifier == "app.a" }?.event
+    )
+    #expect(adoptedEvent.generation == 2)
+    #expect(adoptedEvent.deviceToken == "legacy-token")
+    #expect(adoptedEvent.client == nil)
+  }
+
+  @Test
   func updateDeviceTokenPublishesClearedIdentityBeforeRefreshFailure() async throws {
     let backend = TestSlotBackend()
     let previous = SharedSessionLocalIdentity(
@@ -2192,12 +2526,29 @@ struct SharedSessionSyncTests {
     let apiClient = createMockAPIClient(
       runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
     )
+    let slotStore = TestOwnerSlotStore(owner: owner, backend: backend)
+    let recoveryIntent = SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "identity.\(owner)",
+      slotService: "slots.instance",
+      slotAccessGroup: "group.shared",
+      slotAccount: "owner.\(owner)",
+      instanceFingerprint: "instance",
+      ownerIdentifier: owner
+    )
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
       keychain: keychain,
       appLocalKeychain: keychain,
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
+      sharedSessionOwnerSlotClearRecovery: .init(
+        journal: InMemoryKeychain(),
+        currentIntent: recoveryIntent,
+        targetProvider: TestClearRecoveryTargets(
+          identityStore: localStore,
+          slotStore: slotStore
+        )
+      ),
       clientService: clientService ?? MockClientService(get: { nil })
     )
     try dependencies.configurationManager.configure(
@@ -2213,7 +2564,7 @@ struct SharedSessionSyncTests {
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: owner,
       instanceFingerprint: "instance",
-      slotStore: TestOwnerSlotStore(owner: owner, backend: backend),
+      slotStore: slotStore,
       localIdentityStore: localStore,
       notifier: notifier,
       configurationEpoch: clerk.configurationEpoch,
@@ -2498,6 +2849,23 @@ private struct TestOwnerSlotStore: SharedSessionSlotStoring {
 
   func deleteOwnSlot() throws {
     try backend.delete(owner: owner)
+  }
+}
+
+private struct TestClearRecoveryTargets: SharedSessionClearRecoveryTargets {
+  let identityStore: any SharedSessionLocalIdentityStoring
+  let slotStore: any SharedSessionSlotStoring
+
+  func localIdentityStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionLocalIdentityStoring {
+    identityStore
+  }
+
+  func slotStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionSlotStoring {
+    slotStore
   }
 }
 

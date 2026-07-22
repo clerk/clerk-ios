@@ -25,6 +25,7 @@ struct SignInServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.clerkStartupClientRefreshTakeoverID != nil)
       #expect(request.urlEncodedFormBody!["identifier"] == "test@example.com")
       #expect(request.urlEncodedFormBody!["locale"] != nil)
       requestHandled.setValue(true)

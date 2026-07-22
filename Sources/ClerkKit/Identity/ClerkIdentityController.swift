@@ -13,12 +13,6 @@ import Foundation
 /// app-local atomic persistence, legacy persistence, and `Clerk` memory.
 @MainActor
 final class ClerkIdentityController {
-  enum DeviceTokenTransitionResult: Equatable {
-    case applied
-    case unchanged
-    case rejected
-  }
-
   private struct PersistedClientSnapshot {
     let state: String?
     let client: Client?
@@ -60,6 +54,7 @@ final class ClerkIdentityController {
   struct StorageClearContext {
     let usesAtomicLocalPersistence: Bool
     let invalidatedThroughRevision: UInt64
+    let requiresOwnerSlotWithdrawal: Bool
     fileprivate let sharedCoordinator: SharedSessionSyncCoordinator?
   }
 
@@ -69,7 +64,7 @@ final class ClerkIdentityController {
     case legacy
   }
 
-  private weak var clerk: Clerk?
+  weak var clerk: Clerk?
 
   var localDeviceToken: String?
   var localOperationRevision: UInt64 = 0
@@ -77,9 +72,14 @@ final class ClerkIdentityController {
   private var localOperationTail: Task<Void, Never>?
 
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
-  private var lastAppliedResponseSequence: Int?
-  var lastServerDate: Date?
-  var isApplyingIdentityTransition = false
+  private var responseOrderingGate = ClientResponseOrderingGate()
+  var lastServerDate: Date? {
+    get { responseOrderingGate.lastAcceptedServerDate }
+    set { responseOrderingGate.lastAcceptedServerDate = newValue }
+  }
+
+  private(set) var isApplyingIdentityTransition = false
+  private(set) var isClientProvisional = false
 
   init(clerk: Clerk) {
     self.clerk = clerk
@@ -89,16 +89,22 @@ final class ClerkIdentityController {
     clerk?.dependencies.atomicIdentityStore != nil
   }
 
+  var authoritativeClient: Client? {
+    guard !isClientProvisional else { return nil }
+    return clerk?.client
+  }
+
   var currentDeviceToken: String? {
     guard let clerk else { return nil }
+    let deviceToken: String?
     switch persistenceMode(for: clerk) {
     case .shared(let coordinator):
-      return coordinator.currentDeviceToken
+      deviceToken = coordinator.currentDeviceToken
     case .atomicLocal:
-      return localDeviceToken
+      deviceToken = localDeviceToken
     case .legacy:
       do {
-        return try clerk.dependencies.identityKeychain.string(
+        deviceToken = try clerk.dependencies.identityKeychain.string(
           forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
         )
       } catch {
@@ -106,6 +112,7 @@ final class ClerkIdentityController {
         return nil
       }
     }
+    return deviceToken.nilIfEmpty
   }
 
   func validateClientMutation() {
@@ -121,6 +128,8 @@ final class ClerkIdentityController {
   }
 }
 
+// MARK: - Runtime Lifecycle and Local Operations
+
 extension ClerkIdentityController {
   func prepareForConfiguration() {
     localOperationRevision &+= 1
@@ -129,19 +138,20 @@ extension ClerkIdentityController {
 
   func captureRollbackState() -> RollbackState {
     RollbackState(
-      lastAppliedResponseSequence: lastAppliedResponseSequence,
+      lastAppliedResponseSequence: responseOrderingGate.lastAcceptedSequence,
       lastServerDate: lastServerDate
     )
   }
 
   func restoreRollbackState(_ state: RollbackState) {
-    lastAppliedResponseSequence = state.lastAppliedResponseSequence
-    lastServerDate = state.lastServerDate
+    responseOrderingGate = ClientResponseOrderingGate(
+      lastAcceptedSequence: state.lastAppliedResponseSequence,
+      lastAcceptedServerDate: state.lastServerDate
+    )
   }
 
   func resetOrderingState() {
-    lastAppliedResponseSequence = nil
-    lastServerDate = nil
+    responseOrderingGate.reset()
   }
 
   func enqueueLocalOperation<T: Sendable>(
@@ -191,35 +201,9 @@ extension ClerkIdentityController {
   }
 }
 
-extension ClerkIdentityController {
-  func captureRequestIdentity() async throws -> ClerkIdentityRequestSnapshot {
-    guard let clerk else { throw CancellationError() }
-    switch persistenceMode(for: clerk) {
-    case .shared(let coordinator):
-      try await coordinator.waitForInitialReconciliation()
-      await waitForPendingLocalOperations()
-      return try await coordinator.captureRequestIdentity()
-    case .atomicLocal:
-      let task = enqueueLocalOperation { [weak self, weak clerk] _ in
-        guard let self, let clerk else { throw CancellationError() }
-        return ClerkIdentityRequestSnapshot(
-          baseGeneration: 0,
-          deviceToken: localDeviceToken,
-          clientID: clerk.client?.id,
-          clientResponseGeneration: clientResponseGeneration
-        )
-      }
-      return try await task.value
-    case .legacy:
-      return ClerkIdentityRequestSnapshot(
-        baseGeneration: 0,
-        deviceToken: currentDeviceToken,
-        clientID: clerk.client?.id,
-        clientResponseGeneration: clientResponseGeneration
-      )
-    }
-  }
+// MARK: - Request and Response Routing
 
+extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
     switch persistenceMode(for: clerk) {
@@ -256,11 +240,9 @@ extension ClerkIdentityController {
       return
     }
 
-    if let serverDate {
-      lastServerDate = serverDate
-    }
+    recordAcceptedServerDate(serverDate)
     setClient(incoming, on: clerk)
-    recordAcceptedResponse(sequence: responseSequence)
+    responseOrderingGate.record(sequence: responseSequence)
   }
 
   func applyDecodedClientFallback(
@@ -279,6 +261,8 @@ extension ClerkIdentityController {
     )
   }
 }
+
+// MARK: - Identity Transitions
 
 extension ClerkIdentityController {
   /// Enqueues a complete external identity transition on the active persistence
@@ -442,12 +426,13 @@ extension ClerkIdentityController {
 
   func applySharedEvent(
     _ event: SharedSessionIdentityEvent,
-    previousDeviceToken: String?
+    previousDeviceToken: String?,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
   ) {
     guard let clerk else { return }
     localDeviceToken = event.deviceToken
     if previousDeviceToken != event.deviceToken {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
     applyIdentityToMemory(
       ClerkIdentitySnapshot(
@@ -459,10 +444,13 @@ extension ClerkIdentityController {
       clerk: clerk,
       fenceAllClientResponses: false,
       emitIdentityChange: true,
-      fenceTokenChange: false
+      fenceTokenChange: false,
+      clientPresentationPolicy: clientPresentationPolicy
     )
   }
 }
+
+// MARK: - Hydration and Atomic Persistence
 
 extension ClerkIdentityController {
   func hydrateAtomicIdentityIfNeeded(_ identity: ClerkIdentitySnapshot) {
@@ -481,6 +469,14 @@ extension ClerkIdentityController {
       lastServerDate = serverDate
     }
     setClient(client, on: clerk)
+  }
+
+  func hydrateProvisionalLegacyClientIfNeeded(_ client: Client?) {
+    guard let clerk, clerk.client == nil, let client else { return }
+    isClientProvisional = true
+    withApplyingIdentityTransition {
+      clerk.setClientFromIdentityController(client)
+    }
   }
 
   func hydrateLegacyServerDateIfNeeded(_ date: Date) {
@@ -535,14 +531,14 @@ extension ClerkIdentityController {
     return true
   }
 
-  func fenceResponsesAfterDeviceTokenChange() {
+  func fenceClientResponses() {
     clientResponseGeneration = clientResponseGeneration.next()
-    lastAppliedResponseSequence = nil
+    responseOrderingGate.resetSequence()
   }
 
   func clearCachedClientStateAfterDeviceTokenChange() {
     guard let clerk else { return }
-    fenceResponsesAfterDeviceTokenChange()
+    fenceClientResponses()
     lastServerDate = nil
     setClient(nil, on: clerk)
 
@@ -571,11 +567,13 @@ extension ClerkIdentityController {
   }
 }
 
+// MARK: - Storage Clearing and Reloading
+
 extension ClerkIdentityController {
   func clearAtomicIdentityFromMemory() {
     guard let clerk else { return }
     localDeviceToken = nil
-    fenceResponsesAfterDeviceTokenChange()
+    fenceClientResponses()
     applyIdentityToMemory(
       ClerkIdentitySnapshot(
         state: .cleared,
@@ -596,6 +594,7 @@ extension ClerkIdentityController {
       return StorageClearContext(
         usesAtomicLocalPersistence: false,
         invalidatedThroughRevision: localOperationRevision,
+        requiresOwnerSlotWithdrawal: false,
         sharedCoordinator: nil
       )
     }
@@ -607,6 +606,7 @@ extension ClerkIdentityController {
     return StorageClearContext(
       usesAtomicLocalPersistence: usesAtomicLocalPersistence,
       invalidatedThroughRevision: invalidatedThroughRevision,
+      requiresOwnerSlotWithdrawal: sharedCoordinator != nil,
       sharedCoordinator: sharedCoordinator
     )
   }
@@ -615,7 +615,7 @@ extension ClerkIdentityController {
     if context.usesAtomicLocalPersistence {
       clearAtomicIdentityFromMemory()
     } else {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
   }
 
@@ -629,9 +629,9 @@ extension ClerkIdentityController {
 
   func finishStorageClear(
     _ context: StorageClearContext,
-    sharedTransportWithdrawn: Bool
+    canReleaseSharedClearBarrier: Bool
   ) {
-    if sharedTransportWithdrawn {
+    if canReleaseSharedClearBarrier {
       context.sharedCoordinator?.endLocalClear()
     }
   }
@@ -640,10 +640,10 @@ extension ClerkIdentityController {
     guard let clerk else { return }
     localDeviceToken = nil
     lastServerDate = nil
-    let previousApplyingState = isApplyingIdentityTransition
-    isApplyingIdentityTransition = true
-    clerk.client = nil
-    isApplyingIdentityTransition = previousApplyingState
+    isClientProvisional = false
+    withApplyingIdentityTransition {
+      clerk.setClientFromIdentityController(nil)
+    }
   }
 
   func reloadPersistedState() async -> Bool {
@@ -693,6 +693,8 @@ extension ClerkIdentityController {
   }
 }
 
+// MARK: - Persistence Implementations
+
 extension ClerkIdentityController {
   private func persistenceMode(for clerk: Clerk) -> PersistenceMode {
     if let coordinator = clerk.sharedSessionSyncCoordinator {
@@ -723,9 +725,7 @@ extension ClerkIdentityController {
       }
 
       let previousDate = lastServerDate
-      if let serverDate = snapshot.serverDate {
-        lastServerDate = serverDate
-      }
+      recordAcceptedServerDate(snapshot.serverDate)
       if incomingClient != clerk.client {
         setClient(incomingClient, on: clerk)
         return true
@@ -842,7 +842,7 @@ extension ClerkIdentityController {
       }
       guard let identity = try context.resolvedIdentityPayload(
         currentDeviceToken: currentDeviceToken,
-        currentClient: clerk.client,
+        currentClient: clerk.authoritativeClient,
         currentServerDate: lastServerDate
       ) else {
         return false
@@ -863,7 +863,7 @@ extension ClerkIdentityController {
         fenceAllClientResponses: false
       )
       if didApply {
-        recordAcceptedResponse(sequence: context.responseSequence)
+        responseOrderingGate.record(sequence: context.responseSequence)
       }
       return didApply
     }
@@ -876,7 +876,7 @@ extension ClerkIdentityController {
   ) throws {
     guard let identity = try context.resolvedIdentityPayload(
       currentDeviceToken: currentDeviceToken,
-      currentClient: clerk.client,
+      currentClient: clerk.authoritativeClient,
       currentServerDate: lastServerDate
     ) else {
       return
@@ -900,7 +900,7 @@ extension ClerkIdentityController {
       emitIdentityChange: true,
       fenceTokenChange: false
     )
-    recordAcceptedResponse(sequence: context.responseSequence)
+    responseOrderingGate.record(sequence: context.responseSequence)
   }
 
   private func persistLegacyIdentity(
@@ -925,29 +925,45 @@ extension ClerkIdentityController {
     clerk: Clerk,
     fenceAllClientResponses: Bool,
     emitIdentityChange: Bool,
-    fenceTokenChange: Bool = true
+    fenceTokenChange: Bool = true,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
   ) {
     let previousToken = currentDeviceToken
     if fenceAllClientResponses || (fenceTokenChange && previousToken != identity.deviceToken) {
-      fenceResponsesAfterDeviceTokenChange()
+      fenceClientResponses()
     }
-    let previousApplyingState = isApplyingIdentityTransition
-    isApplyingIdentityTransition = true
-    if identity.serverDate != nil || identity.state == .cleared {
-      lastServerDate = identity.serverDate
+    withApplyingIdentityTransition {
+      if identity.state == .cleared, identity.serverDate == nil {
+        lastServerDate = identity.serverDate
+      } else {
+        recordAcceptedServerDate(identity.serverDate)
+      }
+      if clientPresentationPolicy == .replaceWithIdentity || !isClientProvisional {
+        isClientProvisional = false
+        clerk.setClientFromIdentityController(identity.client)
+      }
     }
-    clerk.client = identity.client
-    isApplyingIdentityTransition = previousApplyingState
     if emitIdentityChange {
       clerk.emitInternalStateChange(.identityDidChange)
     }
   }
 
   private func setClient(_ client: Client?, on clerk: Clerk) {
+    isClientProvisional = false
+    withApplyingIdentityTransition {
+      clerk.setClientFromIdentityController(client)
+    }
+  }
+
+  private func withApplyingIdentityTransition(_ operation: () -> Void) {
     let previousApplyingState = isApplyingIdentityTransition
     isApplyingIdentityTransition = true
-    clerk.client = client
-    isApplyingIdentityTransition = previousApplyingState
+    defer { isApplyingIdentityTransition = previousApplyingState }
+    operation()
+  }
+
+  private func recordAcceptedServerDate(_ serverDate: Date?) {
+    responseOrderingGate.advanceServerDateWatermark(to: serverDate)
   }
 
   private func responseCanBeAccepted(
@@ -966,34 +982,17 @@ extension ClerkIdentityController {
       return false
     }
 
-    if let responseSequence,
-       let lastAppliedResponseSequence,
-       responseSequence <= lastAppliedResponseSequence,
-       !responseIsNewerThanCurrent(incoming, serverDate: serverDate, clerk: clerk)
-    {
+    guard responseOrderingGate.accepts(
+      sequence: responseSequence,
+      serverDate: serverDate,
+      incomingUpdatedAt: incoming?.updatedAt,
+      currentUpdatedAt: clerk.authoritativeClient?.updatedAt
+    ) else {
       ClerkLogger.debug(
-        "Ignoring stale client response. Current sequence: \(lastAppliedResponseSequence), incoming sequence: \(responseSequence)"
+        "Ignoring stale client response. Current sequence: \(String(describing: responseOrderingGate.lastAcceptedSequence)), incoming sequence: \(String(describing: responseSequence))"
       )
       return false
     }
     return true
-  }
-
-  private func recordAcceptedResponse(sequence: Int?) {
-    guard let sequence else { return }
-    lastAppliedResponseSequence = max(lastAppliedResponseSequence ?? sequence, sequence)
-  }
-
-  private func responseIsNewerThanCurrent(
-    _ incoming: Client?,
-    serverDate: Date?,
-    clerk: Clerk
-  ) -> Bool {
-    guard let serverDate, let lastServerDate else { return false }
-    if serverDate > lastServerDate { return true }
-    guard serverDate == lastServerDate, let incoming, let currentClient = clerk.client else {
-      return false
-    }
-    return incoming.updatedAt > currentClient.updatedAt
   }
 }

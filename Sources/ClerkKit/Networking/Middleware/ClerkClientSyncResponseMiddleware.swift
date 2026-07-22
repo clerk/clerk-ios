@@ -75,21 +75,12 @@ struct ClientSyncResponseContext {
   private var resolvedDeviceToken: String? {
     switch deviceTokenUpdate {
     case .absent:
-      normalizedToken(requestDeviceToken)
+      requestDeviceToken.nilIfEmpty
     case .set(let deviceToken):
       deviceToken
     case .clear:
       nil
     }
-  }
-
-  private func normalizedToken(_ token: String?) -> String? {
-    guard let token = token?.trimmingCharacters(in: .whitespacesAndNewlines),
-          !token.isEmpty
-    else {
-      return nil
-    }
-    return token
   }
 }
 
@@ -101,6 +92,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    try Task.checkCancellation()
     let deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
       authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
     )
@@ -121,6 +113,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     )
 
     let clerk = try await runtimeScope.requireCurrentClerk()
+    try Task.checkCancellation()
     try await clerk.identityController.applyNetworkResponse(context)
   }
 

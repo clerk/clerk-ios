@@ -35,6 +35,7 @@ final class SignUpService: SignUpServiceProtocol {
     let request = Request<ClientResponse<SignUp>>(
       path: "/v1/client/sign_ups",
       method: .post,
+      canEstablishClientWhenTokenless: true,
       body: params
     )
 

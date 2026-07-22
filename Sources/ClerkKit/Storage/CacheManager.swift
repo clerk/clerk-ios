@@ -140,6 +140,9 @@ protocol CacheCoordinator: AnyObject, Sendable {
   ///   - serverFetchDate: The server timestamp persisted with this cached client.
   @MainActor func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?)
 
+  /// Sets a legacy client for launch presentation without making it request identity.
+  @MainActor func setProvisionalClientIfNeeded(_ client: Client?)
+
   /// Sets the server fetch date if one is not already set and no client exists.
   @MainActor func setServerFetchDateIfNeeded(_ date: Date)
 
@@ -232,8 +235,7 @@ final class CacheManager {
       for keychain in provisionalClientKeychains {
         guard try loadDeviceTokenFromKeychain(keychain) != nil else { continue }
         guard let cachedClient = try loadClientFromKeychain(keychain) else { continue }
-        let serverFetchDate = try loadClientServerFetchDateFromKeychain(keychain)
-        coordinator?.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
+        coordinator?.setProvisionalClientIfNeeded(cachedClient)
         return
       }
     } catch {

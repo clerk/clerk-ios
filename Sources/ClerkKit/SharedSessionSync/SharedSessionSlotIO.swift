@@ -3,6 +3,7 @@
 //  Clerk
 //
 
+/// Serializes Security-backed owner-slot operations outside the main actor.
 actor SharedSessionSlotIO {
   private let store: any SharedSessionSlotStoring
 

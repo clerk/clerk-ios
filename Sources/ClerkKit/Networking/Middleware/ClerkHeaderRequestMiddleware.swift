@@ -18,7 +18,9 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
     let clerk = try runtimeScope.requireCurrentClerk()
-    let identity = try await clerk.identityController.captureRequestIdentity()
+    let identity = try await clerk.identityController.captureRequestIdentity(
+      startupClientRefreshTakeoverID: request.clerkStartupClientRefreshTakeoverID
+    )
     _ = try runtimeScope.requireCurrentClerk()
     request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
     request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)

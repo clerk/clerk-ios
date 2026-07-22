@@ -79,16 +79,42 @@ actor APIClient {
     _ request: Request<Value>,
     uploadBody: Data?
   ) async throws -> APIResponse<Value> {
+    let startupClientRefreshTakeoverID = request.canEstablishClientWhenTokenless
+      ? UUID()
+      : nil
+    do {
+      let response = try await executeAttempts(
+        request,
+        uploadBody: uploadBody,
+        startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+      )
+      await finishStartupClientRefreshTakeover(startupClientRefreshTakeoverID)
+      return response
+    } catch {
+      await finishStartupClientRefreshTakeover(startupClientRefreshTakeoverID)
+      throw error
+    }
+  }
+
+  private func executeAttempts<Value: Decodable & Sendable>(
+    _ request: Request<Value>,
+    uploadBody: Data?,
+    startupClientRefreshTakeoverID: UUID?
+  ) async throws -> APIResponse<Value> {
     var attempts = 0
     let requestSequence = makeRequestSequence()
     var clerkRequestContext: ClerkRequestContext?
 
     while true {
+      try Task.checkCancellation()
       try ensureCurrentRuntimeScope()
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
-      urlRequest.setClerkRequestSequence(requestSequence)
+      urlRequest.setClerkRequestMetadata(
+        sequence: requestSequence,
+        startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+      )
       try await pipeline.prepareClerkRequest(&urlRequest)
       let preparedContext = ClerkRequestContext(request: urlRequest)
       if let clerkRequestContext {
@@ -112,6 +138,7 @@ actor APIClient {
           (data, response) = try await session.data(for: urlRequest)
         }
 
+        try Task.checkCancellation()
         try ensureCurrentRuntimeScope()
 
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -161,6 +188,12 @@ actor APIClient {
 
   private func ensureCurrentRuntimeScope() throws {
     try runtimeScope.validateStableRuntime()
+  }
+
+  private func finishStartupClientRefreshTakeover(_ id: UUID?) async {
+    guard let id else { return }
+    guard let clerk = try? await runtimeScope.requireCurrentClerk() else { return }
+    await clerk.startupClientRefreshTakeover.finish(id: id)
   }
 }
 

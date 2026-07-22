@@ -22,6 +22,8 @@ enum SharedSessionOwnerSlotStoreError: Error, Equatable {
 }
 
 struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
+  private static let mutationLock = NSLock()
+
   private struct SchemaVersionHeader: Decodable {
     let schemaVersion: Int
   }
@@ -57,17 +59,56 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
       throw SharedSessionOwnerSlotStoreError.missingOwnerIdentifier
     }
 
-    service = Self.service(
-      configuredService: keychainConfig.service,
-      instanceFingerprint: namespace.fingerprint
-    )
-    self.accessGroup = accessGroup
-    instanceFingerprint = namespace.fingerprint
-    self.ownerIdentifier = ownerIdentifier
-    ownerAccount = Self.account(
+    self.init(
+      service: Self.service(
+        configuredService: keychainConfig.service,
+        instanceFingerprint: namespace.fingerprint
+      ),
+      accessGroup: accessGroup,
       instanceFingerprint: namespace.fingerprint,
-      ownerIdentifier: ownerIdentifier
+      ownerIdentifier: ownerIdentifier,
+      ownerAccount: Self.account(
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      secItemClient: secItemClient,
+      diagnostics: diagnostics
     )
+  }
+
+  init(
+    clearRecoveryIntent intent: SharedSessionOwnerSlotClearRecovery.Intent,
+    secItemClient: SystemKeychain.SecItemClient = .live,
+    diagnostics: @escaping @Sendable (String) -> Void = {
+      ClerkLogger.debug($0)
+    }
+  ) throws {
+    let intent = try intent.validated()
+    self.init(
+      service: intent.slotService,
+      accessGroup: intent.slotAccessGroup,
+      instanceFingerprint: intent.instanceFingerprint,
+      ownerIdentifier: intent.ownerIdentifier,
+      ownerAccount: intent.slotAccount,
+      secItemClient: secItemClient,
+      diagnostics: diagnostics
+    )
+  }
+
+  private init(
+    service: String,
+    accessGroup: String,
+    instanceFingerprint: String,
+    ownerIdentifier: String,
+    ownerAccount: String,
+    secItemClient: SystemKeychain.SecItemClient,
+    diagnostics: @escaping @Sendable (String) -> Void
+  ) {
+    self.service = service
+    self.accessGroup = accessGroup
+    self.instanceFingerprint = instanceFingerprint
+    self.ownerIdentifier = ownerIdentifier
+    self.ownerAccount = ownerAccount
     #if os(macOS)
     useDataProtectionKeychain = true
     #else
@@ -78,10 +119,9 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
-    guard let data = try loadData(account: ownerAccount) else {
-      return nil
+    try Self.mutationLock.withLock {
+      try loadOwnSlotWithoutLocking()
     }
-    return decodeCompatibleSlot(data: data, account: ownerAccount, requireOwnOwner: true)
   }
 
   func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
@@ -121,6 +161,12 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func saveOwnSlot(_ slot: SharedSessionOwnerSlot) throws {
+    try Self.mutationLock.withLock {
+      try saveOwnSlotWithoutLocking(slot)
+    }
+  }
+
+  private func saveOwnSlotWithoutLocking(_ slot: SharedSessionOwnerSlot) throws {
     guard slot.schemaVersion == SharedSessionOwnerSlot.schemaVersion,
           slot.instanceFingerprint == instanceFingerprint,
           slot.slotOwnerIdentifier == ownerIdentifier,
@@ -139,11 +185,19 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
   }
 
   func deleteOwnSlot() throws {
+    try Self.mutationLock.withLock {
+      try deleteOwnSlotWithoutLocking()
+    }
+  }
+
+  private func deleteOwnSlotWithoutLocking() throws {
     if let data = try loadData(account: ownerAccount),
        let header = try? JSONDecoder.clerkDecoder.decode(SchemaVersionHeader.self, from: data),
        header.schemaVersion > SharedSessionOwnerSlot.schemaVersion
     {
-      return
+      throw SharedSessionOwnerSlotStoreError.futureSchemaVersion(
+        header.schemaVersion
+      )
     }
 
     let status = secItemClient.delete(query(account: ownerAccount) as CFDictionary)
@@ -242,6 +296,32 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
 }
 
 extension SharedSessionOwnerSlotStore {
+  private func loadOwnSlotWithoutLocking() throws -> SharedSessionOwnerSlot? {
+    guard let data = try loadData(account: ownerAccount) else {
+      return nil
+    }
+    return decodeCompatibleSlot(data: data, account: ownerAccount, requireOwnOwner: true)
+  }
+
+  @discardableResult
+  func restoreOwnSlot(
+    _ previousSlot: SharedSessionOwnerSlot?,
+    ifCurrentMatchesPublication expectedSlot: SharedSessionOwnerSlot
+  ) throws -> Bool {
+    try Self.mutationLock.withLock {
+      guard try loadOwnSlotWithoutLocking()?.matchesPublication(expectedSlot) == true else {
+        return false
+      }
+
+      if let previousSlot {
+        try saveOwnSlotWithoutLocking(previousSlot)
+      } else {
+        try deleteOwnSlotWithoutLocking()
+      }
+      return true
+    }
+  }
+
   private func validateExistingOwnSlot(_ data: Data) throws {
     if let versionHeader = try? JSONDecoder.clerkDecoder.decode(
       SchemaVersionHeader.self,

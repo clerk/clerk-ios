@@ -227,7 +227,7 @@ package struct WatchSyncPayload {
       metadata: metadata
     )
     let persistedAuthState = metadata.authState
-    if let client = clerk.client {
+    if let client = clerk.authoritativeClient {
       clientUpdate = .snapshot(client: client, serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)
     } else if clerk.lastClientServerFetchDate != nil || persistedAuthState == .cleared {
       clientUpdate = .cleared(serverFetchDate: clerk.lastClientServerFetchDate, version: authGeneration)

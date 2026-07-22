@@ -140,7 +140,7 @@ extension Clerk {
 
     // Replace dependencies with mock services
     clerk.dependencies = container
-    clerk.client = mockClient
+    clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
 
     return clerk

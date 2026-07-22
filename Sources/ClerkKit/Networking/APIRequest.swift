@@ -64,6 +64,7 @@ struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]
+  let canEstablishClientWhenTokenless: Bool
 
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
@@ -73,6 +74,7 @@ struct Request<Response: Decodable & Sendable> {
     path: String,
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
+    canEstablishClientWhenTokenless: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
@@ -90,6 +92,7 @@ struct Request<Response: Decodable & Sendable> {
     self.path = path
     self.method = method
     self.headers = headers
+    self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     decodeClosure = decode

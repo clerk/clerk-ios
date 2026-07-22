@@ -40,16 +40,22 @@ struct SharedSessionSyncAdoption {
     }
 
     if try destinationIdentityStore.load() == nil {
-      let identitySources = [
+      let appLocalIdentitySources = [
         configuredAppLocalIdentity,
         previousAppLocalIdentity,
-        legacyShared,
       ].compactMap { $0 }
-      for source in identitySources {
+      var migratedAppLocalIdentity = false
+      for source in appLocalIdentitySources {
         if let identity = try loadCoherentIdentity(from: source) {
-          try destinationIdentityStore.save(identity)
+          try destinationIdentityStore.saveLegacyAdoption(identity)
+          migratedAppLocalIdentity = true
           break
         }
+      }
+      if !migratedAppLocalIdentity,
+         let identity = try loadCoherentIdentity(from: legacyShared)
+      {
+        try destinationIdentityStore.save(identity)
       }
     }
 

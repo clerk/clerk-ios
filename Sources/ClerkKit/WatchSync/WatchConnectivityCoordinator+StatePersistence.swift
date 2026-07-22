@@ -377,7 +377,8 @@ extension WatchConnectivityCoordinator {
     let store = WatchSyncMetadataStore(keychain: keychain)
     var record = try store.load()
     if let tokenVersion = intent.tokenVersion {
-      let fingerprint = Self.deviceTokenFingerprint(intent.deviceToken)
+      let deviceToken = intent.deviceToken.nilIfEmpty
+      let fingerprint = Self.deviceTokenFingerprint(deviceToken)
       resetAcceptedDeviceTokenWatermarkIfNeeded(
         in: &record,
         version: tokenVersion,
@@ -388,7 +389,7 @@ extension WatchConnectivityCoordinator {
       else {
         throw ClerkClientError(message: "Conflicting Watch token payload reused a pending version.")
       }
-      record.pendingDeviceTokenState = intent.deviceToken == nil ? .cleared : .set
+      record.pendingDeviceTokenState = deviceToken == nil ? .cleared : .set
       record.pendingDeviceTokenVersion = tokenVersion.rawValue
       record.pendingDeviceTokenFingerprint = fingerprint
       record.pendingDeviceTokenSource = intent.source
@@ -542,7 +543,8 @@ extension WatchConnectivityCoordinator {
   }
 
   static func deviceTokenFingerprint(_ deviceToken: String?) -> String {
-    fingerprint(Data((deviceToken.map { "set\u{0}\($0)" } ?? "cleared").utf8))
+    let deviceToken = deviceToken.nilIfEmpty
+    return fingerprint(Data((deviceToken.map { "set\u{0}\($0)" } ?? "cleared").utf8))
   }
 
   static func authFingerprint(client: Client?, serverDate: Date?) throws -> String {
