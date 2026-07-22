@@ -482,7 +482,7 @@ extension AuthStartView {
       if Task.isCancelled || error.isCancellationError { return nil }
       guard navigation.path.isEmpty else { return nil }
 
-      presentAutomaticPasskeyError(error)
+      presentAutomaticPasskeyError(error, isPreSelection: true)
       ClerkLogger.error("Failed to create passkey sign-in", error: error)
       return nil
     }
@@ -490,17 +490,19 @@ extension AuthStartView {
 
   /// Presents a failure from the automatic passkey sign-in.
   ///
-  /// Release builds suppress `ASAuthorizationError`: the automatic modal and the AutoFill
-  /// fallback both start without user intent, and an authorization ceremony failure —
-  /// most commonly an app that has not declared a `webcredentials:` associated domain for
-  /// its Frontend API — is actionable only by the developer. Debug builds present it so
-  /// the misconfiguration is visible while integrating; every build logs it. Other errors,
-  /// such as the server rejecting a credential the user selected, present in every build.
-  private func presentAutomaticPasskeyError(_ error: any Error) {
+  /// The automatic modal and the AutoFill fallback both start without user intent, so
+  /// release builds suppress failures the user never participated in: everything from
+  /// stages that run before the credential picker (`isPreSelection`), and any
+  /// `ASAuthorizationError` — most commonly an app that has not declared a
+  /// `webcredentials:` associated domain for its Frontend API, which is actionable only
+  /// by the developer. Debug builds present everything so misconfiguration is visible
+  /// while integrating; every build logs. Other errors, such as the server rejecting a
+  /// credential the user selected, present in every build.
+  private func presentAutomaticPasskeyError(_ error: any Error, isPreSelection: Bool = false) {
     #if DEBUG
     generalError = error
     #else
-    guard !(error is ASAuthorizationError) else { return }
+    guard !isPreSelection, !(error is ASAuthorizationError) else { return }
     generalError = error
     #endif
   }
