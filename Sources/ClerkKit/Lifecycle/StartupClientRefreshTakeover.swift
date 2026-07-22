@@ -157,6 +157,7 @@ extension ClerkIdentityController {
     startupClientRefreshTakeoverID: UUID?
   ) throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
+    let deviceToken = deviceToken.nilIfEmpty
     clerk.startupClientRefreshTakeover.beginIfNeeded(
       id: startupClientRefreshTakeoverID,
       deviceToken: deviceToken

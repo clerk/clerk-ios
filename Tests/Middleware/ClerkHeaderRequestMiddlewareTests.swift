@@ -212,6 +212,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     }
     try await startupGate.waitUntilSuspended()
     let startupGeneration = clerk.clientResponseGeneration
+    clerk.identityController.localDeviceToken = " \n\t "
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
     let signUpURL = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
     let identityGate = RequestIdentityOperationGate()
@@ -239,6 +240,8 @@ struct ClerkHeaderRequestMiddlewareTests {
 
     #expect(first.clerkRequestDeviceToken == nil)
     #expect(second.clerkRequestDeviceToken == nil)
+    #expect(first.value(forHTTPHeaderField: "Authorization") == nil)
+    #expect(second.value(forHTTPHeaderField: "Authorization") == nil)
     #expect(clerk.clientResponseGeneration != startupGeneration)
     #expect(first.clerkClientResponseGeneration == second.clerkClientResponseGeneration)
     #expect(first.clerkClientResponseGeneration == clerk.clientResponseGeneration)
