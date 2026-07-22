@@ -47,6 +47,14 @@ struct PasskeyFirstFactorAvailabilityTests {
   }
 
   @Test
+  func passkeyFirstFactorIsDisabledWhenPasskeyIsDisabledAndNotAFirstFactor() {
+    let environment = environment(passkeyEnabled: false, usedForFirstFactor: false)
+
+    #expect(!environment.passkeyIsEnabled)
+    #expect(!environment.passkeyFirstFactorIsEnabled)
+  }
+
+  @Test
   func passkeyFirstFactorIsDisabledWhenPasskeyAttributeIsAbsent() {
     #expect(!Clerk.Environment.mock.passkeyFirstFactorIsEnabled)
   }

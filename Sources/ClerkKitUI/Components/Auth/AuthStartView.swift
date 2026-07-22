@@ -7,6 +7,7 @@
 
 #if os(iOS) || os(macOS)
 
+import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
@@ -487,16 +488,19 @@ extension AuthStartView {
     }
   }
 
-  /// Presents a failure from the automatic passkey sign-in, in debug builds only.
+  /// Presents a failure from the automatic passkey sign-in.
   ///
-  /// The automatic modal and the AutoFill fallback both start without user intent, so a
-  /// failure leaves nothing for the person signing in to act on. The most common cause is
-  /// an app that has not declared a `webcredentials:` associated domain for its Frontend
-  /// API, which fails every attempt with an error only the developer can fix. Debug builds
-  /// still present it so that misconfiguration is visible while integrating; every build
-  /// logs it.
+  /// Release builds suppress `ASAuthorizationError`: the automatic modal and the AutoFill
+  /// fallback both start without user intent, and an authorization ceremony failure —
+  /// most commonly an app that has not declared a `webcredentials:` associated domain for
+  /// its Frontend API — is actionable only by the developer. Debug builds present it so
+  /// the misconfiguration is visible while integrating; every build logs it. Other errors,
+  /// such as the server rejecting a credential the user selected, present in every build.
   private func presentAutomaticPasskeyError(_ error: any Error) {
     #if DEBUG
+    generalError = error
+    #else
+    guard !(error is ASAuthorizationError) else { return }
     generalError = error
     #endif
   }
