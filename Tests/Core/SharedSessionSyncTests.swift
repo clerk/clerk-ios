@@ -109,6 +109,73 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func newlyAdoptedLegacyTokenPublishesAheadOfExistingSignedOutPeer() async throws {
+    let backend = TestSlotBackend()
+    let signedOutPeer = try makeEvent(
+      owner: "app.custom-flows",
+      generation: 1,
+      clientID: "signed-out-peer"
+    )
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.custom-flows",
+        event: signedOutPeer
+      ),
+      owner: "app.custom-flows"
+    )
+
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+      state: .cleared,
+      deviceToken: "legacy-signed-in-token",
+      client: nil,
+      serverDate: nil
+    ))
+    let node = try makeNode(
+      owner: "app.quickstart",
+      backend: backend,
+      hydrateInitialIdentity: false,
+      localStore: localStore
+    )
+
+    #expect(!node.coordinator.hydrateInitialSharedState())
+    #expect(node.coordinator.currentDeviceToken == "legacy-signed-in-token")
+
+    #expect(await node.coordinator.start().value)
+
+    let adoptedSlot = try #require(
+      backend.allSlots().first {
+        $0.slotOwnerIdentifier == "app.quickstart"
+      }
+    )
+    #expect(adoptedSlot.event.generation == 2)
+    #expect(adoptedSlot.event.deviceToken == "legacy-signed-in-token")
+    #expect(adoptedSlot.event.client == nil)
+    let adoptedRecord = try #require(try localStore.loadRecord())
+    #expect(!adoptedRecord.requiresLegacyAdoptionPublication)
+    #expect(adoptedRecord.pendingPublication == nil)
+
+    var signedInClient = Client.mock
+    signedInClient.id = "signed-in-client"
+    try await node.coordinator.handleNetworkResponse(ClientSyncResponseContext(
+      update: .client(signedInClient),
+      deviceTokenUpdate: .set("legacy-signed-in-token"),
+      requestDeviceToken: "legacy-signed-in-token",
+      baseGeneration: 2,
+      serverDate: Date(timeIntervalSince1970: 1),
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: nil,
+      responseSequence: 1
+    ))
+
+    #expect(node.clerk.client?.id == "signed-in-client")
+    #expect(node.clerk.user != nil)
+    #expect(node.coordinator.currentDeviceToken == "legacy-signed-in-token")
+  }
+
+  @Test
   func competingWritesRemainDiscoverableUntilConvergence() async throws {
     let backend = TestSlotBackend()
     let first = try makeNode(owner: "app.a", backend: backend)

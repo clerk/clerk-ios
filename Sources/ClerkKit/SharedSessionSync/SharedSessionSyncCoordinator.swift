@@ -15,7 +15,7 @@ enum SharedSessionSyncCoordinatorError: Error, Equatable {
 
 @MainActor
 final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
-  private enum PublicationCheckpoint {
+  enum PublicationCheckpoint {
     case none
     case response(
       baseGeneration: UInt64,
@@ -32,7 +32,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     let checkpoint: PublicationCheckpoint
   }
 
-  private struct NetworkResponseLineage {
+  struct NetworkResponseLineage {
     let rootGeneration: UInt64
     let frontierGeneration: UInt64
     let deviceToken: String?
@@ -66,8 +66,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var reconcileAgain = false
   private var isInstalled = true
   private var operationRevision: UInt64 = 0
-  private var responseOrderingGate = ClientResponseOrderingGate()
-  private var networkResponseLineage: NetworkResponseLineage?
+  var responseOrderingGate = ClientResponseOrderingGate()
+  var networkResponseLineage: NetworkResponseLineage?
   private var isLocalClearInProgress = false
   private var requiresSuccessfulReconciliation = false
 
@@ -98,24 +98,6 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 
     notifier.setHandler { [weak self] in
       self?.requestReconciliation()
-    }
-  }
-
-  @discardableResult
-  func hydrateInitialSharedState() -> Bool {
-    guard initialReconciliationTask == nil,
-          reconciliationTask == nil,
-          serializedOperationTail == nil
-    else {
-      return false
-    }
-
-    do {
-      return try reduceApplyAndReplicateSynchronously()
-    } catch {
-      requiresSuccessfulReconciliation = true
-      logError(error, "Failed to hydrate initial shared-session owner slots")
-      return false
     }
   }
 
@@ -286,6 +268,31 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 }
 
 extension SharedSessionSyncCoordinator {
+  @discardableResult
+  func hydrateInitialSharedState() -> Bool {
+    guard initialReconciliationTask == nil,
+          reconciliationTask == nil,
+          serializedOperationTail == nil
+    else {
+      return false
+    }
+
+    do {
+      if let record = try localIdentityStore.loadRecord(),
+         record.requiresLegacyAdoptionPublication
+      {
+        currentDeviceToken = record.acceptedIdentity?.deviceToken
+        requiresSuccessfulReconciliation = true
+        return false
+      }
+      return try reduceApplyAndReplicateSynchronously()
+    } catch {
+      requiresSuccessfulReconciliation = true
+      logError(error, "Failed to hydrate initial shared-session owner slots")
+      return false
+    }
+  }
+
   func settlePendingPublicationForTopologyChange() async throws {
     let task = enqueueSerializedOperation { [weak self] in
       guard let self,
@@ -325,18 +332,26 @@ extension SharedSessionSyncCoordinator {
     }
   }
 
-  private func performPublication(_ publication: Publication) async throws -> Bool {
-    try await performPublication { publication }
+  private func performPublication(
+    _ publication: Publication,
+    ensuringSuccessfulReconciliation: Bool = true
+  ) async throws -> Bool {
+    try await performPublication(
+      ensuringSuccessfulReconciliation: ensuringSuccessfulReconciliation
+    ) { publication }
   }
 
   private func performPublication(
+    ensuringSuccessfulReconciliation: Bool = true,
     resolve: @MainActor () throws -> Publication?
   ) async throws -> Bool {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
       throw CancellationError()
     }
 
-    try await ensureSuccessfulReconciliationIfNeeded()
+    if ensuringSuccessfulReconciliation {
+      try await ensureSuccessfulReconciliationIfNeeded()
+    }
     _ = try await resumePendingPublicationIfNeeded()
     guard let publication = try resolve() else { return false }
     guard isCurrent(clerk: clerk),
@@ -559,6 +574,8 @@ extension SharedSessionSyncCoordinator {
       do {
         if try await resumePendingPublicationIfNeeded() {
           didChange = true
+        } else if try await publishLegacyAdoptionIfNeeded() {
+          didChange = true
         } else if try await reduceApplyAndReplicate() {
           didChange = true
         }
@@ -574,6 +591,48 @@ extension SharedSessionSyncCoordinator {
 
     requiresSuccessfulReconciliation = false
     return ReconciliationResult(didChange: didChange, succeeded: true)
+  }
+
+  private func publishLegacyAdoptionIfNeeded() async throws -> Bool {
+    guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
+      throw CancellationError()
+    }
+    let preparationRevision = operationRevision
+    guard let record = try await performCheckedOperation(
+      revision: preparationRevision,
+      clerk: clerk,
+      operation: {
+        try await self.localIdentityIO.loadRecord()
+      }
+    ),
+      record.requiresLegacyAdoptionPublication,
+      let identity = record.acceptedIdentity
+    else {
+      return false
+    }
+
+    let slots = try await performCheckedOperation(
+      revision: preparationRevision,
+      clerk: clerk
+    ) {
+      try await self.slotIO.loadAllSlots()
+    }
+    currentMaximumGeneration = max(
+      currentMaximumGeneration,
+      SharedSessionIdentityReducer.reduce(slots).maximumGeneration
+    )
+
+    return try await performPublication(
+      Publication(
+        state: identity.state,
+        deviceToken: identity.deviceToken,
+        client: identity.client,
+        serverDate: identity.serverDate,
+        baseGeneration: currentMaximumGeneration,
+        checkpoint: .none
+      ),
+      ensuringSuccessfulReconciliation: false
+    )
   }
 
   @discardableResult
@@ -898,82 +957,5 @@ extension SharedSessionSyncCoordinator {
       && !isLocalClearInProgress
       && clerk.sharedSessionSyncCoordinator === self
       && clerk.isCurrentConfigurationEpoch(configurationEpoch)
-  }
-}
-
-extension SharedSessionSyncCoordinator {
-  private func responseCanBeAccepted(
-    sequence: Int?,
-    serverDate: Date?,
-    incomingClient: Client?,
-    currentClient: Client?
-  ) -> Bool {
-    responseOrderingGate.accepts(
-      sequence: sequence,
-      serverDate: serverDate,
-      incomingUpdatedAt: incomingClient?.updatedAt,
-      currentUpdatedAt: currentClient?.updatedAt
-    )
-  }
-
-  private func checkpointAllowsPublication(_ checkpoint: PublicationCheckpoint) -> Bool {
-    switch checkpoint {
-    case .none:
-      true
-    case let .response(baseGeneration, requestDeviceToken):
-      responseCanPublish(
-        from: baseGeneration,
-        requestDeviceToken: requestDeviceToken
-      )
-    }
-  }
-
-  private func responseCanPublish(
-    from baseGeneration: UInt64,
-    requestDeviceToken: String?
-  ) -> Bool {
-    guard requestDeviceToken == currentDeviceToken else { return false }
-    if baseGeneration == currentMaximumGeneration {
-      return true
-    }
-    guard let networkResponseLineage else { return false }
-    return baseGeneration >= networkResponseLineage.rootGeneration
-      && baseGeneration <= networkResponseLineage.frontierGeneration
-      && networkResponseLineage.frontierGeneration == currentMaximumGeneration
-      && networkResponseLineage.deviceToken == currentDeviceToken
-  }
-
-  private func networkResponseCandidate(
-    for checkpoint: PublicationCheckpoint,
-    eventID: UUID
-  ) -> (eventID: UUID, rootGeneration: UInt64)? {
-    guard case .response(let baseGeneration, _) = checkpoint else { return nil }
-    return (eventID, baseGeneration)
-  }
-
-  private func updateNetworkResponseLineage(
-    winner: SharedSessionIdentityEvent,
-    previousAcceptedEventID: UUID?,
-    candidate: (eventID: UUID, rootGeneration: UInt64)?
-  ) {
-    if let candidate, winner.id == candidate.eventID {
-      let rootGeneration = if let networkResponseLineage,
-                              networkResponseLineage.deviceToken == currentDeviceToken,
-                              networkResponseLineage.frontierGeneration < winner.generation,
-                              candidate.rootGeneration >= networkResponseLineage.rootGeneration,
-                              candidate.rootGeneration <= networkResponseLineage.frontierGeneration
-      {
-        networkResponseLineage.rootGeneration
-      } else {
-        candidate.rootGeneration
-      }
-      networkResponseLineage = NetworkResponseLineage(
-        rootGeneration: rootGeneration,
-        frontierGeneration: winner.generation,
-        deviceToken: currentDeviceToken
-      )
-    } else if candidate != nil || winner.id != previousAcceptedEventID {
-      networkResponseLineage = nil
-    }
   }
 }

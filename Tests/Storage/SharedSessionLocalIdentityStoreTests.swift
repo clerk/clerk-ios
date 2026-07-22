@@ -18,6 +18,49 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(record.acceptedIdentity == identity)
     #expect(record.pendingPublication == nil)
+    #expect(!record.requiresLegacyAdoptionPublication)
+  }
+
+  @Test
+  func recordWrittenBeforeAdoptionProvenanceDefaultsToSettled() throws {
+    struct PreviousRecord: Encodable {
+      let schemaVersion = SharedSessionLocalIdentityRecord.schemaVersion
+      let acceptedIdentity: SharedSessionLocalIdentity
+      let pendingPublication: SharedSessionIdentityEvent? = nil
+    }
+
+    let keychain = InMemoryKeychain()
+    let identity = makeIdentity(clientID: "previous-record")
+    try keychain.set(
+      JSONEncoder.clerkEncoder.encode(PreviousRecord(acceptedIdentity: identity)),
+      forKey: SharedSessionLocalIdentityStore.storageKey
+    )
+
+    let record = try #require(
+      try SharedSessionLocalIdentityStore(keychain: keychain).loadRecord()
+    )
+
+    #expect(record.acceptedIdentity == identity)
+    #expect(!record.requiresLegacyAdoptionPublication)
+  }
+
+  @Test
+  func legacyAdoptionProvenanceSurvivesStagingAndClearsOnCommit() throws {
+    let store = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let adopted = makeIdentity(clientID: "adopted")
+    let pending = try makeEvent(clientID: "pending")
+    try store.saveLegacyAdoption(adopted)
+
+    try store.stagePendingPublication(pending)
+
+    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+
+    try store.commitAcceptedIdentity(
+      adopted,
+      clearingPendingPublicationID: pending.id
+    )
+
+    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == false)
   }
 
   @Test

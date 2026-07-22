@@ -52,10 +52,12 @@ struct SharedSessionSyncAdoptionTests {
       legacyShared: legacyShared
     ).migrateIfNeeded()
 
-    let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
+    let store = SharedSessionLocalIdentityStore(keychain: destination)
+    let identity = try #require(try store.load())
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "configured-token")
     #expect(identity.client == nil)
+    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
     #expect(try privateKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == environmentData)
   }
 
@@ -131,10 +133,12 @@ struct SharedSessionSyncAdoptionTests {
       legacyShared: legacyShared
     ).migrateIfNeeded()
 
-    let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
+    let store = SharedSessionLocalIdentityStore(keychain: destination)
+    let identity = try #require(try store.load())
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "bundle-token")
     #expect(identity.client == nil)
+    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
   }
 
   @Test
@@ -392,10 +396,12 @@ struct SharedSessionSyncAdoptionTests {
       legacyShared: legacyShared
     ).migrateIfNeeded()
 
-    let identity = try #require(try SharedSessionLocalIdentityStore(keychain: destination).load())
+    let store = SharedSessionLocalIdentityStore(keychain: destination)
+    let identity = try #require(try store.load())
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "token")
     #expect(identity.client == nil)
+    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == false)
   }
 
   @Test
