@@ -90,7 +90,7 @@ struct AuthStartView: View {
   func passkeySignInIsAvailable(environment: Clerk.Environment?) -> Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      environment?.passkeyIsEnabled == true &&
+      environment?.passkeyFirstFactorIsEnabled == true &&
         !lockedInitialIdentifierIsActive
     case .signUp:
       false

@@ -68,9 +68,20 @@ extension Clerk.Environment {
     }
   }
 
+  /// Whether the instance lets users register and manage passkeys.
   var passkeyIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "passkey" && value.enabled
+    }
+  }
+
+  /// Whether the instance accepts a passkey as a first factor when signing in.
+  ///
+  /// An instance can enable passkeys for registration and verification while leaving them
+  /// out of the sign-in factors, so this is narrower than ``passkeyIsEnabled``.
+  var passkeyFirstFactorIsEnabled: Bool {
+    userSettings.attributes.contains { key, value in
+      key == "passkey" && value.enabled && value.usedForFirstFactor
     }
   }
 
