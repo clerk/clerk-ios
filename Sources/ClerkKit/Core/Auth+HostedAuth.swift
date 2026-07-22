@@ -28,7 +28,9 @@ extension Auth {
   /// - Parameters:
   ///   - mode: The Account Portal screen to open. When omitted, Account Portal opens sign-in.
   ///   - redirectUrl: A custom-scheme callback URL. Defaults to Clerk's configured redirect URL,
-  ///     which is `{bundleIdentifier}://callback` unless overridden. Register the URL scheme in the app.
+  ///     which is `{bundleIdentifier}://callback` unless overridden. The web authentication session
+  ///     delivers the callback directly, so the scheme does not need to be registered in the
+  ///     app's `Info.plist` for this flow.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral browser session. Defaults to `false`.
   /// - Returns: The session created and activated by hosted authentication.
   /// - Throws: An error if hosted authentication cannot be completed or the callback is invalid.
