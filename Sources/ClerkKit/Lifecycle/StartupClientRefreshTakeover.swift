@@ -165,7 +165,7 @@ extension ClerkIdentityController {
     return ClerkIdentityRequestSnapshot(
       baseGeneration: baseGeneration,
       deviceToken: deviceToken,
-      clientID: clerk.client?.id,
+      clientID: clerk.authoritativeClient?.id,
       clientResponseGeneration: clientResponseGeneration
     )
   }

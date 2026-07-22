@@ -234,7 +234,36 @@ struct SharedSessionOwnerSlotStoreTests {
   }
 
   @Test
-  func futureOwnSlotIsPreserved() throws {
+  func recoveryIntentDeleteUsesRecordedServiceAccessGroupAndAccount() throws {
+    let spy = SharedSessionSecItemSpy()
+    spy.copyMatchingResults = [.status(errSecItemNotFound)]
+    let intent = SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "recorded.identity",
+      slotService: "recorded.slot-service",
+      slotAccessGroup: "recorded.access-group",
+      slotAccount: "recorded.account",
+      instanceFingerprint: "recorded-instance",
+      ownerIdentifier: "recorded.owner"
+    )
+    let store = try SharedSessionOwnerSlotStore(
+      clearRecoveryIntent: intent,
+      secItemClient: spy.client,
+      diagnostics: { _ in }
+    )
+
+    try store.deleteOwnSlot()
+
+    let readQuery = try #require(spy.copyMatchingQueries.first)
+    let deleteQuery = try #require(spy.deleteQueries.first)
+    for query in [readQuery, deleteQuery] {
+      #expect(query[kSecAttrService as String] as? String == intent.slotService)
+      #expect(query[kSecAttrAccessGroup as String] as? String == intent.slotAccessGroup)
+      #expect(query[kSecAttrAccount as String] as? String == intent.slotAccount)
+    }
+  }
+
+  @Test
+  func futureOwnSlotDeletionReportsPreservation() throws {
     let spy = SharedSessionSecItemSpy()
     let futureData = try JSONSerialization.data(withJSONObject: [
       "schemaVersion": 3,
@@ -247,7 +276,9 @@ struct SharedSessionOwnerSlotStoreTests {
     #expect(throws: SharedSessionOwnerSlotStoreError.futureSchemaVersion(3)) {
       try store.saveOwnSlot(makeSlot(owner: "app.a", generation: 1))
     }
-    try store.deleteOwnSlot()
+    #expect(throws: SharedSessionOwnerSlotStoreError.futureSchemaVersion(3)) {
+      try store.deleteOwnSlot()
+    }
 
     #expect(spy.addQueries.isEmpty)
     #expect(spy.updateQueries.isEmpty)
@@ -255,7 +286,7 @@ struct SharedSessionOwnerSlotStoreTests {
   }
 
   @Test
-  func futureOwnSlotIsPreservedWhenCurrentHeaderFieldsAreAbsent() throws {
+  func futureOwnSlotDeletionReportsPreservationWhenCurrentHeaderFieldsAreAbsent() throws {
     let spy = SharedSessionSecItemSpy()
     let futureData = try JSONSerialization.data(withJSONObject: [
       "schemaVersion": 3,
@@ -267,7 +298,9 @@ struct SharedSessionOwnerSlotStoreTests {
     #expect(throws: SharedSessionOwnerSlotStoreError.futureSchemaVersion(3)) {
       try store.saveOwnSlot(makeSlot(owner: "app.a", generation: 1))
     }
-    try store.deleteOwnSlot()
+    #expect(throws: SharedSessionOwnerSlotStoreError.futureSchemaVersion(3)) {
+      try store.deleteOwnSlot()
+    }
 
     #expect(spy.addQueries.isEmpty)
     #expect(spy.updateQueries.isEmpty)

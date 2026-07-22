@@ -29,6 +29,7 @@ final class DependencyContainer: Dependencies {
   let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   let atomicIdentityIO: SharedSessionLocalIdentityIO?
   let sharedSessionOwnerIdentifier: String?
+  let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
   private let persistentAdoptionEnabled: Bool
   let configurationManager: ConfigurationManager
@@ -106,6 +107,15 @@ final class DependencyContainer: Dependencies {
       .trimmingCharacters(in: .whitespacesAndNewlines)
     persistentAdoptionEnabled = persistentAdoptionEnabledOverride
       ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests)
+    sharedSessionOwnerSlotClearRecovery = Self.makeOwnerSlotClearRecovery(
+      configuration: configurationManager,
+      ownerIdentifier: sharedSessionOwnerIdentifier
+    )
+    if !publishableKey.isEmpty {
+      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+        in: sharedSessionOwnerSlotClearRecovery
+      )
+    }
     let keychainStorages = try Self.makeKeychainStorages(
       options: options,
       frontendApiUrl: configurationManager.frontendApiUrl,
@@ -373,6 +383,49 @@ final class DependencyContainer: Dependencies {
         instanceType: instanceType,
         telemetryEnabled: options.telemetryEnabled
       )
+    )
+  }
+}
+
+extension DependencyContainer {
+  @MainActor
+  private static func makeOwnerSlotClearRecovery(
+    configuration: ConfigurationManager,
+    ownerIdentifier: String?
+  ) -> SharedSessionOwnerSlotClearRecovery.Context? {
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: configuration.frontendApiUrl,
+      publishableKey: configuration.publishableKey
+    )
+    let intent: SharedSessionOwnerSlotClearRecovery.Intent? = if configuration.options.sharedSessionSync != nil,
+                                                                 let ownerIdentifier,
+                                                                 !ownerIdentifier.isEmpty,
+                                                                 let accessGroup = configuration.options.keychainConfig.normalizedAccessGroup
+    {
+      SharedSessionOwnerSlotClearRecovery.Intent(
+        localIdentityService: stableIdentityService(
+          configuredService: configuration.options.keychainConfig.service,
+          instanceFingerprint: namespace.fingerprint,
+          ownerIdentifier: ownerIdentifier
+        ),
+        slotService: SharedSessionOwnerSlotStore.service(
+          configuredService: configuration.options.keychainConfig.service,
+          instanceFingerprint: namespace.fingerprint
+        ),
+        slotAccessGroup: accessGroup,
+        slotAccount: SharedSessionOwnerSlotStore.account(
+          instanceFingerprint: namespace.fingerprint,
+          ownerIdentifier: ownerIdentifier
+        ),
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: ownerIdentifier
+      )
+    } else {
+      nil
+    }
+    return SharedSessionOwnerSlotClearRecovery.liveContext(
+      ownerIdentifier: ownerIdentifier,
+      currentIntent: intent
     )
   }
 }

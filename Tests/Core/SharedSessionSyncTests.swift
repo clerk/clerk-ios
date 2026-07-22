@@ -2255,12 +2255,29 @@ struct SharedSessionSyncTests {
     let apiClient = createMockAPIClient(
       runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
     )
+    let slotStore = TestOwnerSlotStore(owner: owner, backend: backend)
+    let recoveryIntent = SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "identity.\(owner)",
+      slotService: "slots.instance",
+      slotAccessGroup: "group.shared",
+      slotAccount: "owner.\(owner)",
+      instanceFingerprint: "instance",
+      ownerIdentifier: owner
+    )
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
       keychain: keychain,
       appLocalKeychain: keychain,
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
+      sharedSessionOwnerSlotClearRecovery: .init(
+        journal: InMemoryKeychain(),
+        currentIntent: recoveryIntent,
+        targetProvider: TestClearRecoveryTargets(
+          identityStore: localStore,
+          slotStore: slotStore
+        )
+      ),
       clientService: clientService ?? MockClientService(get: { nil })
     )
     try dependencies.configurationManager.configure(
@@ -2276,7 +2293,7 @@ struct SharedSessionSyncTests {
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: owner,
       instanceFingerprint: "instance",
-      slotStore: TestOwnerSlotStore(owner: owner, backend: backend),
+      slotStore: slotStore,
       localIdentityStore: localStore,
       notifier: notifier,
       configurationEpoch: clerk.configurationEpoch,
@@ -2561,6 +2578,23 @@ private struct TestOwnerSlotStore: SharedSessionSlotStoring {
 
   func deleteOwnSlot() throws {
     try backend.delete(owner: owner)
+  }
+}
+
+private struct TestClearRecoveryTargets: SharedSessionClearRecoveryTargets {
+  let identityStore: any SharedSessionLocalIdentityStoring
+  let slotStore: any SharedSessionSlotStoring
+
+  func localIdentityStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionLocalIdentityStoring {
+    identityStore
+  }
+
+  func slotStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionSlotStoring {
+    slotStore
   }
 }
 

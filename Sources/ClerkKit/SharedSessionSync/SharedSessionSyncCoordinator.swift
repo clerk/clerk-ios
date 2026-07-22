@@ -199,14 +199,14 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
               ),
               let identity = try context.resolvedIdentityPayload(
                 currentDeviceToken: currentDeviceToken,
-                currentClient: clerk.client,
+                currentClient: clerk.authoritativeClient,
                 currentServerDate: clerk.lastClientServerFetchDate
               ),
               responseCanBeAccepted(
                 sequence: context.responseSequence,
                 serverDate: context.serverDate,
                 incomingClient: identity.client,
-                currentClient: clerk.client
+                currentClient: clerk.authoritativeClient
               )
         else {
           return nil

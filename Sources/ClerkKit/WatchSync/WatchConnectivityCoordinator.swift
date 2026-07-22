@@ -247,9 +247,9 @@ extension WatchConnectivityCoordinator {
         return nil
       case .tokenSet:
         if deviceToken == currentToken {
-          client = clerk.client
-          serverDate = clerk.lastClientServerFetchDate
-          requiresClientRefresh = false
+          client = clerk.authoritativeClient
+          serverDate = client == nil ? nil : clerk.lastClientServerFetchDate
+          requiresClientRefresh = client == nil
         } else {
           client = nil
           serverDate = nil

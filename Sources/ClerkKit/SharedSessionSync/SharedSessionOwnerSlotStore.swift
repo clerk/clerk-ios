@@ -57,17 +57,56 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
       throw SharedSessionOwnerSlotStoreError.missingOwnerIdentifier
     }
 
-    service = Self.service(
-      configuredService: keychainConfig.service,
-      instanceFingerprint: namespace.fingerprint
-    )
-    self.accessGroup = accessGroup
-    instanceFingerprint = namespace.fingerprint
-    self.ownerIdentifier = ownerIdentifier
-    ownerAccount = Self.account(
+    self.init(
+      service: Self.service(
+        configuredService: keychainConfig.service,
+        instanceFingerprint: namespace.fingerprint
+      ),
+      accessGroup: accessGroup,
       instanceFingerprint: namespace.fingerprint,
-      ownerIdentifier: ownerIdentifier
+      ownerIdentifier: ownerIdentifier,
+      ownerAccount: Self.account(
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      secItemClient: secItemClient,
+      diagnostics: diagnostics
     )
+  }
+
+  init(
+    clearRecoveryIntent intent: SharedSessionOwnerSlotClearRecovery.Intent,
+    secItemClient: SystemKeychain.SecItemClient = .live,
+    diagnostics: @escaping @Sendable (String) -> Void = {
+      ClerkLogger.debug($0)
+    }
+  ) throws {
+    let intent = try intent.validated()
+    self.init(
+      service: intent.slotService,
+      accessGroup: intent.slotAccessGroup,
+      instanceFingerprint: intent.instanceFingerprint,
+      ownerIdentifier: intent.ownerIdentifier,
+      ownerAccount: intent.slotAccount,
+      secItemClient: secItemClient,
+      diagnostics: diagnostics
+    )
+  }
+
+  private init(
+    service: String,
+    accessGroup: String,
+    instanceFingerprint: String,
+    ownerIdentifier: String,
+    ownerAccount: String,
+    secItemClient: SystemKeychain.SecItemClient,
+    diagnostics: @escaping @Sendable (String) -> Void
+  ) {
+    self.service = service
+    self.accessGroup = accessGroup
+    self.instanceFingerprint = instanceFingerprint
+    self.ownerIdentifier = ownerIdentifier
+    self.ownerAccount = ownerAccount
     #if os(macOS)
     useDataProtectionKeychain = true
     #else
@@ -143,7 +182,9 @@ struct SharedSessionOwnerSlotStore: SharedSessionSlotStoring {
        let header = try? JSONDecoder.clerkDecoder.decode(SchemaVersionHeader.self, from: data),
        header.schemaVersion > SharedSessionOwnerSlot.schemaVersion
     {
-      return
+      throw SharedSessionOwnerSlotStoreError.futureSchemaVersion(
+        header.schemaVersion
+      )
     }
 
     let status = secItemClient.delete(query(account: ownerAccount) as CFDictionary)

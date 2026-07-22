@@ -136,7 +136,7 @@ struct ClerkTests {
       telemetryCollector: clerk.dependencies.telemetryCollector,
       clientService: MockClientService(get: { nil })
     )
-    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
     clerk.client = Client.mock
     clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
@@ -210,12 +210,77 @@ struct ClerkTests {
       options: .init(sharedSessionSync: .enabled)
     )
 
-    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
 
     #expect(clerk.client?.id == Client.mock.id)
-    #expect(clerk.lastClientServerFetchDate == serverDate)
+    #expect(clerk.authoritativeClient == nil)
+    #expect(clerk.lastClientServerFetchDate == nil)
     #expect(try localStore.load() == nil)
+  }
+
+  @Test
+  func provisionalLegacyClientIsExcludedFromRequestAndWatchIdentity() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    clerk.dependencies = dependencies
+    clerk.identityController.localDeviceToken = "device-token"
+    clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(.mock)
+
+    let requestIdentity = try await clerk.identityController.captureRequestIdentity()
+    let watchPayload = try WatchSyncPayload(
+      clerk: clerk,
+      metadata: .empty,
+      authGeneration: WatchSyncVersion(rawValue: 1)
+    )
+
+    #expect(clerk.client?.id == Client.mock.id)
+    #expect(clerk.authoritativeClient == nil)
+    #expect(requestIdentity.deviceToken == "device-token")
+    #expect(requestIdentity.clientID == nil)
+    #expect(watchPayload.clientUpdate == .notIncluded)
+
+    clerk.identityController.prepareForConfiguration()
+    #expect(clerk.authoritativeClient == nil)
+  }
+
+  @Test
+  func acceptedClientResponsePromotesProvisionalLegacyClient() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    clerk.identityController.localDeviceToken = "device-token"
+    clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(.mock)
+    let requestIdentity = try await clerk.identityController.captureRequestIdentity()
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(.mock),
+        deviceTokenUpdate: .set("device-token"),
+        requestDeviceToken: "device-token",
+        baseGeneration: requestIdentity.baseGeneration,
+        serverDate: Date(timeIntervalSince1970: 200),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: requestIdentity.clientResponseGeneration,
+        responseSequence: 1
+      )
+    )
+
+    #expect(clerk.authoritativeClient?.id == Client.mock.id)
+    #expect(try localStore.load()?.client?.id == Client.mock.id)
   }
 
   @Test
@@ -243,7 +308,7 @@ struct ClerkTests {
       options: .init(sharedSessionSync: .enabled)
     )
 
-    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
 
     #expect(clerk.client == nil)
@@ -448,14 +513,20 @@ struct ClerkTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let slotStore = ClearTrackingSlotStore()
+    let recovery = makeClearRecoveryContext(
+      journal: keychain,
+      identityStore: identityStore,
+      slotStore: slotStore
+    )
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
+      sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.dependencies = dependencies
-    let slotStore = ClearTrackingSlotStore()
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.clear",
       instanceFingerprint: "instance",
@@ -498,6 +569,175 @@ struct ClerkTests {
     #expect(try slotStore.loadOwnSlot() == nil)
     #expect(try identityStore.loadRecord() == nil)
     #expect(clerk.client == nil)
+  }
+
+  @Test
+  func awaitedClearKeepsPublicationBlockedUntilRecoveryIntentIsRemoved() async throws {
+    let clerk = Clerk()
+    let keychain = DeleteFailingKeychain(
+      failingKey: SharedSessionOwnerSlotClearRecovery.storageKey,
+      failuresRemaining: 1
+    )
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let slotStore = ClearTrackingSlotStore()
+    let recovery = makeClearRecoveryContext(
+      journal: keychain,
+      identityStore: identityStore,
+      slotStore: slotStore
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      sharedSessionOwnerSlotClearRecovery: recovery,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.dependencies = dependencies
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.clear",
+      instanceFingerprint: "instance",
+      slotStore: slotStore,
+      localIdentityStore: identityStore,
+      localIdentityIO: dependencies.atomicIdentityIO,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    defer { clerk.sharedSessionSyncCoordinator = nil }
+    try slotStore.saveOwnSlot(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.clear",
+        event: SharedSessionIdentityEvent(
+          id: UUID(),
+          originOwnerIdentifier: "app.clear",
+          generation: 1,
+          state: .present,
+          deviceToken: "old-token",
+          client: .mock,
+          serverDate: nil
+        )
+      )
+    )
+
+    var clearFailed = false
+    do {
+      try await clerk.clearAllKeychainItemsAndWait()
+    } catch {
+      clearFailed = true
+    }
+
+    #expect(clearFailed)
+    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: keychain) != nil)
+    await #expect(throws: CancellationError.self) {
+      try await coordinator.publishLocalIdentity(
+        state: .present,
+        deviceToken: "new-token",
+        client: .mock,
+        serverDate: nil
+      )
+    }
+
+    try await clerk.clearAllKeychainItemsAndWait()
+
+    #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: keychain) == nil)
+    #expect(
+      try await coordinator.publishLocalIdentity(
+        state: .present,
+        deviceToken: "new-token",
+        client: .mock,
+        serverDate: nil
+      )
+    )
+    #expect(try slotStore.loadOwnSlot()?.event.deviceToken == "new-token")
+  }
+
+  @Test
+  func awaitedClearKeepsRecoveryIntentWhenAtomicIdentityDeletionFailsTwice() async throws {
+    let clerk = Clerk()
+    let keychain = DeleteFailingKeychain(
+      failingKey: SharedSessionLocalIdentityStore.storageKey
+    )
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    let slotStore = ClearTrackingSlotStore()
+    let recovery = makeClearRecoveryContext(
+      journal: keychain,
+      identityStore: identityStore,
+      slotStore: slotStore
+    )
+    let dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      sharedSessionOwnerSlotClearRecovery: recovery,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.dependencies = dependencies
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.clear",
+      instanceFingerprint: "instance",
+      slotStore: slotStore,
+      localIdentityStore: identityStore,
+      localIdentityIO: dependencies.atomicIdentityIO,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk
+    )
+    clerk.sharedSessionSyncCoordinator = coordinator
+    defer { clerk.sharedSessionSyncCoordinator = nil }
+    let identity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "old-token",
+      client: .mock,
+      serverDate: nil
+    )
+    try identityStore.save(identity)
+    clerk.hydrateIdentityIfNeeded(identity)
+    try slotStore.saveOwnSlot(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.clear",
+        event: SharedSessionIdentityEvent(
+          id: UUID(),
+          originOwnerIdentifier: "app.clear",
+          generation: 1,
+          state: .present,
+          deviceToken: identity.deviceToken,
+          client: identity.client,
+          serverDate: identity.serverDate
+        )
+      )
+    )
+
+    do {
+      try await clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected both atomic identity deletion attempts to fail.")
+    } catch {
+      #expect(error.localizedDescription.contains("delete atomic identity"))
+    }
+
+    #expect(keychain.failureCount == 2)
+    let retainedIdentity = try #require(try identityStore.load())
+    #expect(retainedIdentity.state == .present)
+    #expect(retainedIdentity.deviceToken == "old-token")
+    #expect(retainedIdentity.client?.id == identity.client?.id)
+    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(
+      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: keychain)
+        == recovery.currentIntent
+    )
+    await #expect(throws: CancellationError.self) {
+      _ = try await coordinator.captureRequestIdentity()
+    }
+
+    keychain.allowDeletes()
+    #expect(try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: recovery))
+    #expect(try identityStore.loadRecord() == nil)
+    #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: keychain) == nil)
   }
 
   @Test
@@ -565,7 +805,7 @@ struct ClerkTests {
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
     keychain.suspendNextSet(forKey: ClerkKeychainKey.cachedClient.rawValue)
     clerk.client = .mock
@@ -998,6 +1238,29 @@ struct ClerkTests {
     return environment
   }
 
+  private func makeClearRecoveryContext(
+    journal: any KeychainStorage,
+    identityStore: any SharedSessionLocalIdentityStoring,
+    slotStore: any SharedSessionSlotStoring
+  ) -> SharedSessionOwnerSlotClearRecovery.Context {
+    let intent = SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "app.identity",
+      slotService: "app.slots",
+      slotAccessGroup: "group.shared",
+      slotAccount: "owner.app.clear",
+      instanceFingerprint: "instance",
+      ownerIdentifier: "app.clear"
+    )
+    return SharedSessionOwnerSlotClearRecovery.Context(
+      journal: journal,
+      currentIntent: intent,
+      targetProvider: ClearRecoveryTargetProvider(
+        identityStore: identityStore,
+        slotStore: slotStore
+      )
+    )
+  }
+
   private func waitUntil(_ condition: () -> Bool) async throws {
     let deadline = ContinuousClock.now + .seconds(1)
     while ContinuousClock.now < deadline {
@@ -1005,6 +1268,25 @@ struct ClerkTests {
       await Task.yield()
     }
     throw ClerkClientError(message: "Timed out waiting for identity operation.")
+  }
+}
+
+private struct ClearRecoveryTargetProvider:
+  SharedSessionClearRecoveryTargets
+{
+  let identityStore: any SharedSessionLocalIdentityStoring
+  let slotStore: any SharedSessionSlotStoring
+
+  func localIdentityStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionLocalIdentityStoring {
+    identityStore
+  }
+
+  func slotStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionSlotStoring {
+    slotStore
   }
 }
 
@@ -1079,6 +1361,10 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
 
   var failureCount: Int {
     lock.withLock { failures }
+  }
+
+  func allowDeletes() {
+    lock.withLock { failuresRemaining = 0 }
   }
 
   func set(_ data: Data, forKey key: String) throws {

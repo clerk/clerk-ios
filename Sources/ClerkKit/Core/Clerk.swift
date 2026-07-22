@@ -140,6 +140,11 @@ public final class Clerk {
     identityController.lastServerDate
   }
 
+  /// The client that has crossed an authoritative persistence or response boundary.
+  var authoritativeClient: Client? {
+    identityController.authoritativeClient
+  }
+
   /// Changes when local device-token ownership changes.
   /// Client responses prepared before this value changes must not update state.
   var clientResponseGeneration: ClientResponseGeneration {
@@ -311,12 +316,15 @@ extension Clerk {
     )
     try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
 
-    performConfiguration(dependencies: dependencies)
+    try performConfiguration(dependencies: dependencies)
   }
 
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
-  func performConfiguration(dependencies: any Dependencies) {
+  func performConfiguration(dependencies: any Dependencies) throws {
+    try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+      in: dependencies.sharedSessionOwnerSlotClearRecovery
+    )
     cancelStartupClientRefresh()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
@@ -566,6 +574,7 @@ extension Clerk {
       )
       let plan = existing.reconfigurationPlan(with: newDependencies)
       let rollbackState = existing.captureReconfigurationRollbackState()
+      var topologyMigrationRollback: SharedSessionTopologyMigration.Rollback?
 
       existing.setConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndDrainCache(
@@ -577,9 +586,9 @@ extension Clerk {
         case .preserveIdentityAndSlot:
           try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
         case .preserveIdentityAndMigrateSlot:
-          try preserveAcceptedIdentityAcrossTopologyChange(
-            from: rollbackState.dependencies.atomicIdentityStore,
-            to: newDependencies.atomicIdentityStore
+          topologyMigrationRollback = try prepareAcceptedIdentityForTopologyChange(
+            from: rollbackState.dependencies,
+            to: newDependencies
           )
           try rollbackState.dependencies.atomicIdentityStore?
             .clearPendingPublication()
@@ -598,13 +607,26 @@ extension Clerk {
             in: rollbackState.dependencies
           )
         }
+        if topologyMigrationRollback?.publishedDestinationSlot == true {
+          notifySharedSessionTopologyChange(in: newDependencies)
+        }
       } catch {
-        existing.restoreAfterFailedReconfiguration(rollbackState)
+        if let topologyMigrationRollback {
+          do {
+            try topologyMigrationRollback.restore()
+          } catch let rollbackError {
+            ClerkLogger.logError(
+              rollbackError,
+              message: "Failed to roll back shared-session topology migration"
+            )
+          }
+        }
+        try existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
       }
 
       await existing.resetRuntimeStateForReconfiguration()
-      existing.performConfiguration(dependencies: newDependencies)
+      try existing.performConfiguration(dependencies: newDependencies)
       return existing
     }
 
@@ -619,7 +641,7 @@ extension Clerk {
     try await clearLocalClerkStorageStrictly(in: newDependencies)
     try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
     try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-    clerk.performConfiguration(dependencies: newDependencies)
+    try clerk.performConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
   }
@@ -761,6 +783,10 @@ extension Clerk: CacheCoordinator {
 
   func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
     identityController.hydrateLegacyClientIfNeeded(client, serverDate: serverFetchDate)
+  }
+
+  func setProvisionalClientIfNeeded(_ client: Client?) {
+    identityController.hydrateProvisionalLegacyClientIfNeeded(client)
   }
 
   func setServerFetchDateIfNeeded(_ date: Date) {
@@ -914,23 +940,53 @@ extension Clerk {
     )
   }
 
-  private func restoreAfterFailedReconfiguration(_ state: ReconfigurationRollbackState) {
+  private func restoreAfterFailedReconfiguration(
+    _ state: ReconfigurationRollbackState
+  ) throws {
     setConfigurationEpoch(to: state.configurationEpoch)
     identityController.restoreRollbackState(state.identity)
-    performConfiguration(dependencies: state.dependencies)
+    try performConfiguration(dependencies: state.dependencies)
   }
 
-  private static func preserveAcceptedIdentityAcrossTopologyChange(
-    from source: (any SharedSessionLocalIdentityStoring)?,
-    to destination: (any SharedSessionLocalIdentityStoring)?
-  ) throws {
-    guard let identity = try source?.load(), let destination else { return }
-    try destination.updateRecord { _ in
-      SharedSessionLocalIdentityRecord(
-        acceptedIdentity: identity,
-        pendingPublication: nil
-      )
+  private static func prepareAcceptedIdentityForTopologyChange(
+    from source: any Dependencies,
+    to destination: any Dependencies
+  ) throws -> SharedSessionTopologyMigration.Rollback? {
+    guard let identity = try source.atomicIdentityStore?.load(),
+          let destinationIdentityStore = destination.atomicIdentityStore
+    else {
+      return nil
     }
+
+    let sourceTopology = SharedSessionSlotTopology(dependencies: source)
+    let destinationTopology = SharedSessionSlotTopology(dependencies: destination)
+    let sourceOwnerToExclude: String? = if let sourceTopology,
+                                           let destinationTopology,
+                                           sourceTopology.hasSameStore(as: destinationTopology)
+    {
+      sourceTopology.ownerIdentifier
+    } else {
+      nil
+    }
+
+    return try SharedSessionTopologyMigration.prepare(
+      identity: identity,
+      destinationIdentityStore: destinationIdentityStore,
+      destinationSlotStore: destinationTopology?.makeOwnerSlotStore(),
+      destinationInstanceFingerprint: destinationTopology?.instanceFingerprint,
+      destinationOwnerIdentifier: destinationTopology?.ownerIdentifier,
+      excludingSourceOwnerIdentifier: sourceOwnerToExclude
+    )
+  }
+
+  private static func notifySharedSessionTopologyChange(
+    in dependencies: any Dependencies
+  ) {
+    guard let topology = SharedSessionSlotTopology(dependencies: dependencies) else { return }
+    SharedSessionSyncDarwinNotifier(
+      keychainConfig: topology.keychainConfig,
+      instanceFingerprint: topology.instanceFingerprint
+    ).post()
   }
 
   private func reconfigurationPlan(
@@ -1027,28 +1083,15 @@ extension Clerk {
   func canReuseSharedSessionOwnerSlot(
     with newDependencies: any Dependencies
   ) -> Bool {
-    let currentOptions = dependencies.configurationManager.options
-    let newOptions = newDependencies.configurationManager.options
-    guard dependencies.configurationManager.publishableKey
-      == newDependencies.configurationManager.publishableKey,
-      currentOptions.sharedSessionSync != nil,
-      newOptions.sharedSessionSync != nil,
-      currentOptions.keychainConfig.service == newOptions.keychainConfig.service,
-      currentOptions.keychainConfig.normalizedAccessGroup
-      == newOptions.keychainConfig.normalizedAccessGroup,
-      dependencies.sharedSessionOwnerIdentifier
-      == newDependencies.sharedSessionOwnerIdentifier
+    guard let currentTopology = SharedSessionSlotTopology(
+      dependencies: dependencies
+    ),
+      let newTopology = SharedSessionSlotTopology(dependencies: newDependencies)
     else {
       return false
     }
 
-    return SharedSessionNamespace(
-      frontendApiUrl: dependencies.configurationManager.frontendApiUrl,
-      publishableKey: dependencies.configurationManager.publishableKey
-    ) == SharedSessionNamespace(
-      frontendApiUrl: newDependencies.configurationManager.frontendApiUrl,
-      publishableKey: newDependencies.configurationManager.publishableKey
-    )
+    return currentTopology.hasSameOwnerSlot(as: newTopology)
   }
 
   private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {

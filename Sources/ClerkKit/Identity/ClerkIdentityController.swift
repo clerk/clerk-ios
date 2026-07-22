@@ -54,6 +54,7 @@ final class ClerkIdentityController {
   struct StorageClearContext {
     let usesAtomicLocalPersistence: Bool
     let invalidatedThroughRevision: UInt64
+    let requiresOwnerSlotWithdrawal: Bool
     fileprivate let sharedCoordinator: SharedSessionSyncCoordinator?
   }
 
@@ -78,6 +79,7 @@ final class ClerkIdentityController {
   }
 
   private(set) var isApplyingIdentityTransition = false
+  private(set) var isClientProvisional = false
 
   init(clerk: Clerk) {
     self.clerk = clerk
@@ -85,6 +87,11 @@ final class ClerkIdentityController {
 
   var usesAtomicLocalPersistence: Bool {
     clerk?.dependencies.atomicIdentityStore != nil
+  }
+
+  var authoritativeClient: Client? {
+    guard !isClientProvisional else { return nil }
+    return clerk?.client
   }
 
   var currentDeviceToken: String? {
@@ -462,6 +469,14 @@ extension ClerkIdentityController {
     setClient(client, on: clerk)
   }
 
+  func hydrateProvisionalLegacyClientIfNeeded(_ client: Client?) {
+    guard let clerk, clerk.client == nil, let client else { return }
+    isClientProvisional = true
+    withApplyingIdentityTransition {
+      clerk.setClientFromIdentityController(client)
+    }
+  }
+
   func hydrateLegacyServerDateIfNeeded(_ date: Date) {
     guard let clerk, clerk.client == nil, lastServerDate == nil else { return }
     lastServerDate = date
@@ -577,6 +592,7 @@ extension ClerkIdentityController {
       return StorageClearContext(
         usesAtomicLocalPersistence: false,
         invalidatedThroughRevision: localOperationRevision,
+        requiresOwnerSlotWithdrawal: false,
         sharedCoordinator: nil
       )
     }
@@ -588,6 +604,7 @@ extension ClerkIdentityController {
     return StorageClearContext(
       usesAtomicLocalPersistence: usesAtomicLocalPersistence,
       invalidatedThroughRevision: invalidatedThroughRevision,
+      requiresOwnerSlotWithdrawal: sharedCoordinator != nil,
       sharedCoordinator: sharedCoordinator
     )
   }
@@ -610,9 +627,9 @@ extension ClerkIdentityController {
 
   func finishStorageClear(
     _ context: StorageClearContext,
-    sharedTransportWithdrawn: Bool
+    canReleaseSharedClearBarrier: Bool
   ) {
-    if sharedTransportWithdrawn {
+    if canReleaseSharedClearBarrier {
       context.sharedCoordinator?.endLocalClear()
     }
   }
@@ -621,6 +638,7 @@ extension ClerkIdentityController {
     guard let clerk else { return }
     localDeviceToken = nil
     lastServerDate = nil
+    isClientProvisional = false
     withApplyingIdentityTransition {
       clerk.setClientFromIdentityController(nil)
     }
@@ -822,7 +840,7 @@ extension ClerkIdentityController {
       }
       guard let identity = try context.resolvedIdentityPayload(
         currentDeviceToken: currentDeviceToken,
-        currentClient: clerk.client,
+        currentClient: clerk.authoritativeClient,
         currentServerDate: lastServerDate
       ) else {
         return false
@@ -856,7 +874,7 @@ extension ClerkIdentityController {
   ) throws {
     guard let identity = try context.resolvedIdentityPayload(
       currentDeviceToken: currentDeviceToken,
-      currentClient: clerk.client,
+      currentClient: clerk.authoritativeClient,
       currentServerDate: lastServerDate
     ) else {
       return
@@ -912,6 +930,7 @@ extension ClerkIdentityController {
       fenceClientResponses()
     }
     withApplyingIdentityTransition {
+      isClientProvisional = false
       if identity.state == .cleared, identity.serverDate == nil {
         lastServerDate = identity.serverDate
       } else {
@@ -925,6 +944,7 @@ extension ClerkIdentityController {
   }
 
   private func setClient(_ client: Client?, on clerk: Clerk) {
+    isClientProvisional = false
     withApplyingIdentityTransition {
       clerk.setClientFromIdentityController(client)
     }
@@ -961,7 +981,7 @@ extension ClerkIdentityController {
       sequence: responseSequence,
       serverDate: serverDate,
       incomingUpdatedAt: incoming?.updatedAt,
-      currentUpdatedAt: clerk.client?.updatedAt
+      currentUpdatedAt: clerk.authoritativeClient?.updatedAt
     ) else {
       ClerkLogger.debug(
         "Ignoring stale client response. Current sequence: \(String(describing: responseOrderingGate.lastAcceptedSequence)), incoming sequence: \(String(describing: responseSequence))"

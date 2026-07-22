@@ -21,6 +21,7 @@ final class MockDependencyContainer: Dependencies {
   let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
   let atomicIdentityIO: SharedSessionLocalIdentityIO?
   let sharedSessionOwnerIdentifier: String?
+  let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
@@ -68,6 +69,7 @@ final class MockDependencyContainer: Dependencies {
     legacyAppLocalKeychain: (any KeychainStorage)? = nil,
     atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
     sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
+    sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? = nil,
     shouldHydrateProvisionalLegacyClient: Bool = false,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
@@ -93,6 +95,7 @@ final class MockDependencyContainer: Dependencies {
       SharedSessionLocalIdentityIO(store: $0)
     }
     self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier
+    self.sharedSessionOwnerSlotClearRecovery = sharedSessionOwnerSlotClearRecovery
     self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient

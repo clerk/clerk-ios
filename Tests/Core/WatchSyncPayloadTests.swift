@@ -150,7 +150,7 @@ struct WatchSyncPayloadTests {
       options: .init(watchConnectivityEnabled: true)
     )
 
-    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
 
     #expect(clerk.client?.id == cachedClient.id)
@@ -744,6 +744,45 @@ struct WatchSyncPayloadTests {
     #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == nil)
+  }
+
+  @Test
+  func tokenOnlyUpdateDoesNotPromoteProvisionalLegacyClient() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: keychain,
+      atomicIdentityStore: identityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      clientService: MockClientService(get: { throw CancellationError() })
+    )
+    clerk.identityController.localDeviceToken = "device-token"
+    clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
+      client(id: "provisional-client", updatedAt: 100)
+    )
+    let payload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "device-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .notIncluded,
+      environment: nil
+    )
+    let coordinator = WatchConnectivityCoordinator()
+
+    coordinator.apply(payload, from: .phone, to: clerk)
+    await coordinator.waitForIdentityPublications()
+
+    let persistedIdentity = try #require(try identityStore.load())
+    #expect(clerk.client == nil)
+    #expect(clerk.authoritativeClient == nil)
+    #expect(persistedIdentity.state == .cleared)
+    #expect(persistedIdentity.deviceToken == "device-token")
+    #expect(persistedIdentity.client == nil)
+    #expect(persistedIdentity.serverDate == nil)
   }
 
   @Test

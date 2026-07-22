@@ -7,23 +7,16 @@ import Foundation
 
 enum SharedSessionOwnerSlotCleanup {
   @MainActor
-  static func deleteIfConfigured(in dependencies: any Dependencies) async throws {
-    let configuration = dependencies.configurationManager
-    guard configuration.options.sharedSessionSync != nil,
-          let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier
-    else {
-      return
-    }
+  static func storeIfConfigured(
+    in dependencies: any Dependencies
+  ) throws -> SharedSessionOwnerSlotStore? {
+    try SharedSessionSlotTopology(dependencies: dependencies)?
+      .makeOwnerSlotStore()
+  }
 
-    let namespace = SharedSessionNamespace(
-      frontendApiUrl: configuration.frontendApiUrl,
-      publishableKey: configuration.publishableKey
-    )
-    let slotStore = try SharedSessionOwnerSlotStore(
-      keychainConfig: configuration.options.keychainConfig,
-      namespace: namespace,
-      ownerIdentifier: ownerIdentifier
-    )
+  @MainActor
+  static func deleteIfConfigured(in dependencies: any Dependencies) async throws {
+    guard let slotStore = try storeIfConfigured(in: dependencies) else { return }
     try await SharedSessionSlotIO(store: slotStore).deleteOwnSlot()
   }
 }

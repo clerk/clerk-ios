@@ -71,6 +71,49 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
+  func sharedConfigurationRecordsExactRecoveryTopology() throws {
+    let owner = "com.clerk.tests.recovery.\(UUID().uuidString)"
+    let options = Clerk.Options(
+      keychainConfig: .init(
+        service: "com.clerk.tests.service",
+        accessGroup: "  TEAMID.com.clerk.tests.shared\n"
+      ),
+      sharedSessionSync: .enabled
+    )
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: options,
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      ownerIdentifierProvider: { owner }
+    )
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: container.configurationManager.frontendApiUrl,
+      publishableKey: container.configurationManager.publishableKey
+    )
+    let intent = try #require(
+      container.sharedSessionOwnerSlotClearRecovery?.currentIntent
+    )
+
+    #expect(intent.localIdentityService == DependencyContainer.stableIdentityService(
+      configuredService: options.keychainConfig.service,
+      instanceFingerprint: namespace.fingerprint,
+      ownerIdentifier: owner
+    ))
+    #expect(intent.slotService == SharedSessionOwnerSlotStore.service(
+      configuredService: options.keychainConfig.service,
+      instanceFingerprint: namespace.fingerprint
+    ))
+    #expect(intent.slotAccessGroup == "TEAMID.com.clerk.tests.shared")
+    #expect(intent.slotAccount == SharedSessionOwnerSlotStore.account(
+      instanceFingerprint: namespace.fingerprint,
+      ownerIdentifier: owner
+    ))
+    #expect(intent.instanceFingerprint == namespace.fingerprint)
+    #expect(intent.ownerIdentifier == owner)
+  }
+
+  @Test
+  @MainActor
   func constructingDisabledTransportDoesNotClearPendingPublication() throws {
     let configuredService = "com.clerk.tests.pending.\(UUID().uuidString)"
     let owner = "com.clerk.tests.app"

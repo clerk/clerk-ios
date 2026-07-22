@@ -144,6 +144,43 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func sharedSessionTopologyDistinguishesStoreFromOwnerSlot() throws {
+    let publishableKey = publishableKey(for: "topology.clerk.example.com")
+    let options = Clerk.Options(
+      keychainConfig: .init(
+        service: "com.example.clerk",
+        accessGroup: "TEAMID.com.example.shared"
+      ),
+      sharedSessionSync: .enabled
+    )
+    let first = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
+      publishableKey: publishableKey,
+      options: options,
+      owner: "com.example.first"
+    )))
+    let sameStore = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
+      publishableKey: publishableKey,
+      options: options,
+      owner: "com.example.second"
+    )))
+    let differentStore = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(
+          service: "com.example.changed",
+          accessGroup: "TEAMID.com.example.shared"
+        ),
+        sharedSessionSync: .enabled
+      ),
+      owner: "com.example.first"
+    )))
+
+    #expect(first.hasSameStore(as: sameStore))
+    #expect(!first.hasSameOwnerSlot(as: sameStore))
+    #expect(!first.hasSameStore(as: differentStore))
+  }
+
+  @Test
   func reconfigureUpdatesInstanceTypeForLiveKey() async throws {
     let publishableKey = publishableKey(for: "live.clerk.example.com", live: true)
 
@@ -275,7 +312,7 @@ struct ClerkReconfigureTests {
       keychain: throwingKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    original.performConfiguration(dependencies: previousDependencies)
+    try original.performConfiguration(dependencies: previousDependencies)
     original.client = .mock
     original.environment = .mock
     defer { original.cleanupManagers() }
@@ -319,7 +356,7 @@ struct ClerkReconfigureTests {
       atomicIdentityStore: localIdentityStore,
       telemetryCollector: original.dependencies.telemetryCollector
     )
-    original.performConfiguration(dependencies: previousDependencies)
+    try original.performConfiguration(dependencies: previousDependencies)
     let ownerSlotStore = RollbackOwnerSlotStore(
       slot: SharedSessionOwnerSlot(
         schemaVersion: SharedSessionOwnerSlot.schemaVersion,
@@ -367,7 +404,7 @@ struct ClerkReconfigureTests {
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    Clerk.shared.performConfiguration(dependencies: dependencies)
+    try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
 
     let targetService = "com.clerk.tests.pending-cache-drain.\(UUID().uuidString)"
@@ -399,7 +436,7 @@ struct ClerkReconfigureTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
       sessionService: sessionService
     )
-    Clerk.shared.performConfiguration(dependencies: dependencies)
+    try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     await SessionTokensCache.shared.insertToken(
       .init(jwt: cachedJWT),
@@ -443,7 +480,7 @@ struct ClerkReconfigureTests {
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    Clerk.shared.performConfiguration(dependencies: dependencies)
+    try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     let staleSession = try #require(Clerk.shared.session)
     await SessionTokensCache.shared.insertToken(
@@ -537,7 +574,7 @@ struct ClerkReconfigureTests {
       keychain: slowKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    Clerk.shared.performConfiguration(dependencies: dependencies)
+    try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
 
     let firstReconfigure = Task { @MainActor in
