@@ -1857,6 +1857,39 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func topologyChangeSettlesPendingPublicationIntoCanonicalIdentity() async throws {
+    let backend = TestSlotBackend()
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "previous-token",
+      client: makeClient(id: "previous"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous
+    )
+    let pending = try makeEvent(
+      owner: "app.a",
+      generation: 4,
+      clientID: "pending"
+    )
+    try node.localStore.stagePendingPublication(pending)
+
+    try await node.coordinator.settlePendingPublicationForTopologyChange()
+
+    let record = try #require(try node.localStore.loadRecord())
+    #expect(record.pendingPublication == nil)
+    #expect(record.acceptedIdentity?.client?.id == "pending")
+    #expect(node.clerk.client?.id == "pending")
+    #expect(
+      backend.allSlots()
+        .first { $0.slotOwnerIdentifier == "app.a" }?.event == pending
+    )
+  }
+
+  @Test
   func updateDeviceTokenPublishesClearedIdentityBeforeRefreshFailure() async throws {
     let backend = TestSlotBackend()
     let previous = SharedSessionLocalIdentity(

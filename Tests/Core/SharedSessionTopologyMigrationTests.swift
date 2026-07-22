@@ -155,6 +155,38 @@ struct SharedSessionTopologyMigrationTests {
   }
 
   @Test
+  func finalIdentityCommitFailureRollsBackPublishedSlotAndRecord() throws {
+    let previousIdentity = makeIdentity(clientID: "previous")
+    let previousRecord = SharedSessionLocalIdentityRecord(
+      acceptedIdentity: previousIdentity,
+      pendingPublication: nil
+    )
+    let localStore = CommitFailingTopologyIdentityStore(record: previousRecord)
+    let previousSlot = try makeSlot(
+      owner: "app.new",
+      generation: 3,
+      identity: previousIdentity
+    )
+    let slotStore = TopologyOwnerSlotStore(
+      ownerIdentifier: "app.new",
+      slots: [previousSlot]
+    )
+
+    #expect(throws: CommitFailingTopologyIdentityStore.Failure.commit) {
+      _ = try SharedSessionTopologyMigration.prepare(
+        identity: makeIdentity(clientID: "accepted"),
+        destinationIdentityStore: localStore,
+        destinationSlotStore: slotStore,
+        destinationInstanceFingerprint: "destination",
+        destinationOwnerIdentifier: "app.new"
+      )
+    }
+
+    #expect(try localStore.loadRecord() == previousRecord)
+    #expect(try slotStore.loadOwnSlot() == previousSlot)
+  }
+
+  @Test
   func rollbackPreservesNewerDestinationPublicationAndIdentity() throws {
     let localStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
     let slotStore = TopologyOwnerSlotStore(ownerIdentifier: "app.new")
@@ -275,6 +307,39 @@ struct SharedSessionTopologyMigrationTests {
       client: identity.client,
       serverDate: identity.serverDate
     ).validated()
+  }
+}
+
+private final class CommitFailingTopologyIdentityStore: SharedSessionLocalIdentityStoring, @unchecked Sendable {
+  enum Failure: Error {
+    case commit
+  }
+
+  private let lock = NSLock()
+  private var record: SharedSessionLocalIdentityRecord?
+  private var shouldFailNextCommit = true
+
+  init(record: SharedSessionLocalIdentityRecord?) {
+    self.record = record
+  }
+
+  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
+    lock.withLock { record }
+  }
+
+  func updateRecord(
+    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
+  ) throws {
+    try lock.withLock {
+      let updatedRecord = try update(record)
+      let isCommit = record?.pendingPublication != nil
+        && updatedRecord?.pendingPublication == nil
+      if isCommit, shouldFailNextCommit {
+        shouldFailNextCommit = false
+        throw Failure.commit
+      }
+      record = updatedRecord
+    }
   }
 }
 

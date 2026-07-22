@@ -583,6 +583,9 @@ extension Clerk {
         deferSharedSessionAdoption: true
       )
       let plan = existing.reconfigurationPlan(with: newDependencies)
+      if plan == .preserveIdentityAndMigrateSlot {
+        try await existing.settlePendingPublicationForTopologyChange()
+      }
       let rollbackState = existing.captureReconfigurationRollbackState()
       var topologyMigrationRollback: SharedSessionTopologyMigration.Rollback?
 
@@ -600,8 +603,6 @@ extension Clerk {
             from: rollbackState.dependencies,
             to: newDependencies
           )
-          try rollbackState.dependencies.atomicIdentityStore?
-            .clearPendingPublication()
           try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
         case .replaceIdentity:
           try await clearLocalClerkStorageStrictly(in: newDependencies)
@@ -974,11 +975,26 @@ extension Clerk {
     installConfiguration(dependencies: state.dependencies)
   }
 
+  private func settlePendingPublicationForTopologyChange() async throws {
+    try await sharedSessionSyncCoordinator?
+      .settlePendingPublicationForTopologyChange()
+
+    guard try dependencies.atomicIdentityStore?
+      .loadPendingPublication() == nil
+    else {
+      throw SharedSessionSyncCoordinatorError.pendingPublicationDidNotSettle
+    }
+  }
+
   private static func prepareAcceptedIdentityForTopologyChange(
     from source: any Dependencies,
     to destination: any Dependencies
   ) throws -> SharedSessionTopologyMigration.Rollback? {
-    guard let identity = try source.atomicIdentityStore?.load(),
+    let sourceRecord = try source.atomicIdentityStore?.loadRecord()
+    guard sourceRecord?.pendingPublication == nil else {
+      throw SharedSessionSyncCoordinatorError.pendingPublicationDidNotSettle
+    }
+    guard let identity = sourceRecord?.acceptedIdentity,
           let destinationIdentityStore = destination.atomicIdentityStore
     else {
       return nil

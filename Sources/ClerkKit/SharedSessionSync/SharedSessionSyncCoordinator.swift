@@ -10,6 +10,7 @@ enum SharedSessionSyncCoordinatorError: Error, Equatable {
   case reconciliationFailed
   case missingWinnerForPendingPublication
   case pendingPublicationOwnerMismatch
+  case pendingPublicationDidNotSettle
 }
 
 @MainActor
@@ -285,6 +286,33 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 }
 
 extension SharedSessionSyncCoordinator {
+  func settlePendingPublicationForTopologyChange() async throws {
+    let task = enqueueSerializedOperation { [weak self] in
+      guard let self,
+            let clerk,
+            isCurrent(clerk: clerk),
+            !isLocalClearInProgress
+      else {
+        throw CancellationError()
+      }
+
+      let settlementRevision = operationRevision
+      try await ensureSuccessfulReconciliationIfNeeded()
+      _ = try await resumePendingPublicationIfNeeded()
+
+      let pendingPublication = try await performCheckedOperation(
+        revision: settlementRevision,
+        clerk: clerk
+      ) {
+        try await self.localIdentityIO.loadRecord()?.pendingPublication
+      }
+      guard pendingPublication == nil else {
+        throw SharedSessionSyncCoordinatorError.pendingPublicationDidNotSettle
+      }
+    }
+    try await task.value
+  }
+
   private func enqueuePublication(_ publication: Publication) async throws -> Bool {
     let task = enqueueSerializedOperation { [weak self] in
       guard let self else { throw CancellationError() }

@@ -10,6 +10,10 @@ enum SharedSessionTopologyMigrationError: Error, Equatable {
   case destinationSlotChanged
 }
 
+private enum TopologyMigrationPreparationError: Error {
+  case destinationChangedBeforeWrite
+}
+
 enum SharedSessionTopologyMigration {
   private struct PersistenceContext {
     let identity: ClerkIdentitySnapshot
@@ -141,7 +145,7 @@ enum SharedSessionTopologyMigration {
         destinationSlot: destination.slot
       )
       return rollback
-    } catch SharedSessionTopologyMigrationError.destinationIdentityChanged {
+    } catch TopologyMigrationPreparationError.destinationChangedBeforeWrite {
       throw SharedSessionTopologyMigrationError.destinationIdentityChanged
     } catch {
       do {
@@ -245,7 +249,7 @@ enum SharedSessionTopologyMigration {
     guard let event = context.event else {
       try identityStore.updateRecord { record in
         guard record == context.previousRecord else {
-          throw SharedSessionTopologyMigrationError.destinationIdentityChanged
+          throw TopologyMigrationPreparationError.destinationChangedBeforeWrite
         }
         return SharedSessionLocalIdentityRecord(
           acceptedIdentity: context.identity,
@@ -259,7 +263,7 @@ enum SharedSessionTopologyMigration {
     }
     try identityStore.updateRecord { record in
       guard record == context.previousRecord else {
-        throw SharedSessionTopologyMigrationError.destinationIdentityChanged
+        throw TopologyMigrationPreparationError.destinationChangedBeforeWrite
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: record?.acceptedIdentity,
