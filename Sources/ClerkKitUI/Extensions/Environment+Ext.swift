@@ -143,10 +143,6 @@ extension Clerk.Environment {
   var usernameIsImmutable: Bool {
     userSettings.attributes["username"]?.immutable == true
   }
-
-  var signUpIsPublic: Bool {
-    userSettings.signUp.mode == "public"
-  }
 }
 
 #endif

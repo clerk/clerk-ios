@@ -150,31 +150,19 @@ struct SocialButton: View {
 
 extension SocialButton {
   func defaultAction() async throws {
-    let result: TransferFlowResult
-    if provider == .apple {
-      let appleTransferable = Self.shouldTransferAppleSignIn(
+    let result: TransferFlowResult = if provider == .apple {
+      try await clerk.auth.signInWithApple(
         transferable: transferable,
-        environment: clerk.environment
-      )
-      result = try await clerk.auth.signInWithApple(
-        transferable: appleTransferable,
         unsafeMetadata: unsafeMetadata
       )
     } else {
-      result = try await clerk.auth.signInWithOAuth(
+      try await clerk.auth.signInWithOAuth(
         provider: provider,
         transferable: transferable,
         unsafeMetadata: unsafeMetadata
       )
     }
     onSuccess?(result)
-  }
-
-  static func shouldTransferAppleSignIn(
-    transferable: Bool,
-    environment: Clerk.Environment?
-  ) -> Bool {
-    transferable && environment?.signUpIsPublic == true
   }
 }
 
