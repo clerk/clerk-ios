@@ -34,6 +34,7 @@ extension HostedAuthFlowTests {
       #expect(body?["code_challenge"] == "challenge_123")
       #expect(body?["state"] == "state_123")
       #expect(body?["mode"] == "sign-up")
+      // The wire param is "mode"; guard against regressing to the web SDK's "initial_page".
       #expect(body?["initial_page"] == nil)
       requestHandled.setValue(true)
     }
