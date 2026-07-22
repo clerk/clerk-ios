@@ -71,6 +71,112 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
+  func disabledConfigurationWithoutAdoptionMarkerKeepsLegacyPersistenceBoundary() throws {
+    let configuredService = "com.clerk.tests.legacy.\(UUID().uuidString)"
+    let owner = "com.clerk.tests.app.\(UUID().uuidString)"
+    let options = Clerk.Options(
+      keychainConfig: .init(service: configuredService)
+    )
+    let legacyKeychain = SystemKeychain(service: configuredService)
+    let configuration = ConfigurationManager()
+    try configuration.configure(publishableKey: testPublishableKey, options: options)
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: configuration.frontendApiUrl,
+      publishableKey: configuration.publishableKey
+    )
+    let stableIdentityKeychain = SystemKeychain(
+      service: DependencyContainer.stableIdentityService(
+        configuredService: configuredService,
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: owner
+      )
+    )
+    defer {
+      for key in [
+        ClerkKeychainKey.clerkDeviceToken.rawValue,
+        ClerkKeychainKey.cachedClient.rawValue,
+        ClerkKeychainKey.cachedClientServerDate.rawValue,
+        ClerkKeychainKey.cachedEnvironment.rawValue,
+      ] {
+        try? legacyKeychain.deleteItem(forKey: key)
+      }
+      try? stableIdentityKeychain.deleteItem(
+        forKey: SharedSessionLocalIdentityStore.storageKey
+      )
+      try? stableIdentityKeychain.deleteItem(
+        forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+      )
+    }
+
+    var legacyClient = Client.mock
+    legacyClient.id = "legacy-client"
+    let environmentData = try JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)
+    try legacyKeychain.set(
+      "legacy-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+    try legacyKeychain.set(
+      JSONEncoder.clerkEncoder.encode(legacyClient),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    try legacyKeychain.set(
+      "100",
+      forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+    )
+    try legacyKeychain.set(
+      environmentData,
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: options,
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      persistentAdoptionEnabledOverride: true,
+      ownerIdentifierProvider: { owner }
+    )
+    try container.discardPendingPublicationWhenSharedSyncDisabled()
+
+    #expect(container.atomicIdentityStore == nil)
+    #expect(!container.shouldHydrateProvisionalLegacyClient)
+    #expect(
+      try container.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "legacy-token"
+    )
+    let cachedClientData = try #require(
+      try container.identityKeychain.data(
+        forKey: ClerkKeychainKey.cachedClient.rawValue
+      )
+    )
+    #expect(
+      try JSONDecoder.clerkDecoder.decode(Client.self, from: cachedClientData).id
+        == "legacy-client"
+    )
+    #expect(
+      try container.identityKeychain.string(
+        forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
+      ) == "100"
+    )
+    #expect(
+      try container.appLocalKeychain.data(
+        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+      ) == environmentData
+    )
+    #expect(
+      try stableIdentityKeychain.data(
+        forKey: SharedSessionLocalIdentityStore.storageKey
+      ) == nil
+    )
+    #expect(
+      try stableIdentityKeychain.string(
+        forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
+  @MainActor
   func sharedConfigurationRecordsExactRecoveryTopology() throws {
     let owner = "com.clerk.tests.recovery.\(UUID().uuidString)"
     let options = Clerk.Options(
