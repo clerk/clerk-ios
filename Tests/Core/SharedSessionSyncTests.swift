@@ -2197,7 +2197,7 @@ struct SharedSessionSyncTests {
   @Test
   func shutdownDeletesOwnSlotAfterSuspendedPublicationAndFencesOldWork() async throws {
     let backend = TestSlotBackend()
-    backend.saveDelay = 0.05
+    backend.suspendNextSave()
     let node = try makeNode(owner: "app.old", backend: backend)
     let publication = Task { @MainActor in
       try await node.coordinator.publishLocalIdentity(
@@ -2207,9 +2207,17 @@ struct SharedSessionSyncTests {
         serverDate: nil
       )
     }
-    try await Task.sleep(for: .milliseconds(10))
+    try await waitUntil { backend.isSaveSuspended }
 
-    await node.coordinator.shutdown(deleteOwnSlot: true)
+    let initialHandlerSetCount = node.notifier.handlerSetCount
+    let shutdown = Task { @MainActor in
+      await node.coordinator.shutdown(deleteOwnSlot: true)
+    }
+    try await waitUntil {
+      node.notifier.handlerSetCount > initialHandlerSetCount
+    }
+    backend.resumeSuspendedSave(failing: false)
+    await shutdown.value
 
     await #expect(throws: CancellationError.self) {
       try await publication.value
@@ -2941,11 +2949,13 @@ private final class TestLocalIdentityStore: @unchecked Sendable, SharedSessionLo
 @MainActor
 private final class TestSharedSessionSyncNotifier: SharedSessionSyncNotifying {
   private var handler: (@MainActor () -> Void)?
+  private(set) var handlerSetCount = 0
   var postCount = 0
   var onPost: (@MainActor () -> Void)?
 
   func setHandler(_ handler: @escaping @MainActor () -> Void) {
     self.handler = handler
+    handlerSetCount += 1
   }
 
   func post() {
