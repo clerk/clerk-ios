@@ -533,6 +533,38 @@ extension Clerk {
     return clerk
   }
 
+  /// Configures the shared instance with isolated persistence for SDK tests.
+  @MainActor
+  @discardableResult
+  static func configureForTesting(
+    publishableKey: String,
+    options: Clerk.Options = .init(),
+    keychainStorage: any KeychainStorage
+  ) throws -> Clerk {
+    guard EnvironmentDetection.isRunningInTests else {
+      throw ClerkClientError(
+        message: "Isolated Clerk configuration is only available while running tests."
+      )
+    }
+
+    if let existing = _shared {
+      existing.cleanupManagers()
+      _shared = nil
+    }
+
+    let clerk = Clerk()
+    let dependencies = try DependencyContainer(
+      publishableKey: publishableKey,
+      options: options,
+      runtimeScope: clerk.runtimeScope,
+      persistentAdoptionEnabledOverride: false,
+      keychainStorageOverride: keychainStorage
+    )
+    try clerk.performConfiguration(dependencies: dependencies)
+    _shared = clerk
+    return clerk
+  }
+
   /// Reconfigures the shared Clerk instance with a new publishable key and options.
   ///
   /// This method validates and installs the new configuration. Changing the publishable
