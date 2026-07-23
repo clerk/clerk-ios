@@ -488,23 +488,22 @@ extension AuthStartView {
     }
   }
 
-  /// Presents a failure from the automatic passkey sign-in.
+  /// Presents an actionable failure from the automatic passkey sign-in.
   ///
   /// The automatic modal and the AutoFill fallback both start without user intent, so
-  /// release builds suppress failures the user never participated in: everything from
-  /// stages that run before the credential picker (`isPreSelection`), and any
-  /// `ASAuthorizationError` — most commonly an app that has not declared a
-  /// `webcredentials:` associated domain for its Frontend API, which is actionable only
-  /// by the developer. Debug builds present everything so misconfiguration is visible
-  /// while integrating; every build logs. Other errors, such as the server rejecting a
-  /// credential the user selected, present in every build.
+  /// failures from stages before credential selection and authorization ceremony failures
+  /// are logged instead of presented. Other errors, such as the server rejecting a
+  /// credential the user selected, remain actionable and are presented.
   private func presentAutomaticPasskeyError(_ error: any Error, isPreSelection: Bool = false) {
-    #if DEBUG
+    guard Self.shouldPresentAutomaticPasskeyError(error, isPreSelection: isPreSelection) else { return }
     generalError = error
-    #else
-    guard !isPreSelection, !(error is ASAuthorizationError) else { return }
-    generalError = error
-    #endif
+  }
+
+  static func shouldPresentAutomaticPasskeyError(
+    _ error: any Error,
+    isPreSelection: Bool = false
+  ) -> Bool {
+    !isPreSelection && !(error is ASAuthorizationError)
   }
 
   @discardableResult
