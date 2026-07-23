@@ -75,6 +75,7 @@ final class DependencyContainer: Dependencies {
     runtimeScope: ClerkRuntimeScope,
     deferSharedSessionAdoption: Bool = false,
     persistentAdoptionEnabledOverride: Bool? = nil,
+    keychainStorageOverride: (any KeychainStorage)? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
@@ -126,7 +127,8 @@ final class DependencyContainer: Dependencies {
       publishableKey: configurationManager.publishableKey,
       ownerIdentifier: sharedSessionOwnerIdentifier,
       usePersistentAdoptionState: persistentAdoptionEnabled,
-      performPersistentAdoption: !deferSharedSessionAdoption
+      performPersistentAdoption: !deferSharedSessionAdoption,
+      keychainStorageOverride: keychainStorageOverride
     )
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
@@ -185,8 +187,28 @@ final class DependencyContainer: Dependencies {
     publishableKey: String,
     ownerIdentifier: String?,
     usePersistentAdoptionState: Bool,
-    performPersistentAdoption: Bool
+    performPersistentAdoption: Bool,
+    keychainStorageOverride: (any KeychainStorage)?
   ) throws -> KeychainStorages {
+    if let keychainStorageOverride {
+      guard options.sharedSessionSync == nil,
+            !usePersistentAdoptionState
+      else {
+        throw ClerkClientError(
+          message: "Injected Keychain storage cannot be used with persistent shared-session adoption."
+        )
+      }
+
+      return KeychainStorages(
+        shared: keychainStorageOverride,
+        appLocal: keychainStorageOverride,
+        identity: keychainStorageOverride,
+        legacyAppLocal: nil,
+        localIdentityStore: nil,
+        shouldHydrateProvisionalLegacyClient: false
+      )
+    }
+
     let config = options.keychainConfig
     let shared = makeKeychainStorage(config: config)
     let syncEnabled = options.sharedSessionSync != nil

@@ -70,6 +70,27 @@ struct ClerkTests {
   }
 
   @Test
+  func isolatedConfigurationInstallsPersistenceBeforeStartup() throws {
+    let keychain = InMemoryKeychain()
+    try keychain.set(
+      "isolated-device-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    let clerk = try Clerk.configureForTesting(
+      publishableKey: testPublishableKey,
+      keychainStorage: keychain
+    )
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.publishableKey == testPublishableKey)
+    #expect(clerk.identityController.currentDeviceToken == "isolated-device-token")
+    #expect((clerk.dependencies.keychain as? InMemoryKeychain) === keychain)
+    #expect((clerk.dependencies.appLocalKeychain as? InMemoryKeychain) === keychain)
+    #expect((clerk.dependencies.identityKeychain as? InMemoryKeychain) === keychain)
+  }
+
+  @Test
   func clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker() async throws {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()

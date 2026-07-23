@@ -78,28 +78,9 @@ func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
     return false
   }
 
-  Clerk.configure(publishableKey: publishableKey)
-
-  // Replace the dependencies with a container that uses an in-memory keychain
-  // but keeps the real API client and services for making actual API calls
-  let apiClient = Clerk.shared.dependencies.apiClient
-
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: apiClient,
-    keychain: InMemoryKeychain(),
-    telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-    clientService: ClientService(apiClient: apiClient),
-    userService: UserService(apiClient: apiClient),
-    signInService: SignInService(apiClient: apiClient),
-    signUpService: SignUpService(apiClient: apiClient),
-    sessionService: SessionService(apiClient: apiClient),
-    magicLinkService: MagicLinkService(apiClient: apiClient),
-    passkeyService: PasskeyService(apiClient: apiClient),
-    organizationService: OrganizationService(apiClient: apiClient),
-    environmentService: EnvironmentService(apiClient: apiClient),
-    emailAddressService: EmailAddressService(apiClient: apiClient),
-    phoneNumberService: PhoneNumberService(apiClient: apiClient),
-    externalAccountService: ExternalAccountService(apiClient: apiClient)
+  try Clerk.configureForTesting(
+    publishableKey: publishableKey,
+    keychainStorage: InMemoryKeychain()
   )
 
   return true
