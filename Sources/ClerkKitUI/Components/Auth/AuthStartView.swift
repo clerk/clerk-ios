@@ -7,7 +7,6 @@
 
 #if os(iOS) || os(macOS)
 
-import AuthenticationServices
 import ClerkKit
 import SwiftUI
 
@@ -482,7 +481,6 @@ extension AuthStartView {
       if Task.isCancelled || error.isCancellationError { return nil }
       guard navigation.path.isEmpty else { return nil }
 
-      presentAutomaticPasskeyError(error, isPreSelection: true)
       ClerkLogger.error("Failed to create passkey sign-in", error: error)
       return nil
     }
@@ -494,16 +492,15 @@ extension AuthStartView {
   /// failures from stages before credential selection and authorization ceremony failures
   /// are logged instead of presented. Other errors, such as the server rejecting a
   /// credential the user selected, remain actionable and are presented.
-  private func presentAutomaticPasskeyError(_ error: any Error, isPreSelection: Bool = false) {
-    guard Self.shouldPresentAutomaticPasskeyError(error, isPreSelection: isPreSelection) else { return }
-    generalError = error
+  private func presentAutomaticPasskeyError(_ failure: PasskeyAuthenticationFailure) {
+    guard Self.shouldPresentAutomaticPasskeyError(at: failure.stage) else { return }
+    generalError = failure.underlyingError
   }
 
   static func shouldPresentAutomaticPasskeyError(
-    _ error: any Error,
-    isPreSelection: Bool = false
+    at stage: PasskeyAuthenticationFailure.Stage
   ) -> Bool {
-    !isPreSelection && !(error is ASAuthorizationError)
+    stage == .attemptingFirstFactor
   }
 
   @discardableResult
@@ -513,7 +510,7 @@ extension AuthStartView {
     preferImmediatelyAvailableCredentials: Bool
   ) async -> PasskeySignInResult {
     do {
-      let signIn = try await signIn.authenticateWithPasskey(
+      let signIn = try await signIn.authenticateWithPasskeyWithFailureContext(
         autofill: autofill,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
@@ -524,15 +521,16 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return .completed
     } catch {
-      if Task.isCancelled || error.isCancellationError { return .stopped }
-      if error.isUserCancelledError { return .continueWithAutofill }
+      let underlyingError = error.underlyingError
+      if Task.isCancelled || underlyingError.isCancellationError { return .stopped }
+      if underlyingError.isUserCancelledError { return .continueWithAutofill }
       guard navigation.path.isEmpty else { return .stopped }
 
       presentAutomaticPasskeyError(error)
       if autofill {
-        ClerkLogger.error("Failed to authenticate with passkey autofill", error: error)
+        ClerkLogger.error("Failed to authenticate with passkey autofill", error: underlyingError)
       } else {
-        ClerkLogger.error("Failed to authenticate with passkey", error: error)
+        ClerkLogger.error("Failed to authenticate with passkey", error: underlyingError)
       }
       // Keep iOS text-field AutoFill armed after a modal error so users can
       // pick another passkey without a second modal.
