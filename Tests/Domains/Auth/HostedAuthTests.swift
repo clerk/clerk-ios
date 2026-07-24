@@ -720,7 +720,7 @@ struct HostedAuthFlowTests {
         redirectUrl: "myapp://callback",
         prefersEphemeralWebBrowserSession: false,
         webAuthentication: { _, _, _ in
-          Clerk.shared.fenceClientResponsesAfterDeviceTokenChange()
+          Clerk.shared.identityController.fenceClientResponses()
           return try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
             state: #require(createParams.value?.state),

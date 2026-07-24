@@ -109,7 +109,7 @@ extension Auth {
       throw ClerkClientError(message: "Hosted auth completion did not include the created session.")
     }
 
-    clerk.applyResponseClient(
+    clerk.identityController.applyLegacyResponseClient(
       returnedClient,
       responseSequence: response.requestSequence,
       serverDate: response.serverDate,
