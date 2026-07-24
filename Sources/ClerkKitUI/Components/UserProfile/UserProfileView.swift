@@ -163,6 +163,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             profileContent(user: user)
               .navigationDestination(for: Route.self) { route in
                 view(for: route)
+                  .hostedNavigationBarHidden()
                   .environment(sheetNavigation)
                   .environment(codeLimiter)
                   .environment(
@@ -209,7 +210,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
+        // The add-account sheet is modal over the host, so it keeps Clerk's own
+        // navigation chrome even when this profile is hosted.
         AuthView()
+          .environment(\.clerkHostedNavigation, nil)
       }
       .task {
         for await event in clerk.auth.events {
@@ -336,8 +340,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       #endif
     }
+    .hostedNavigationBarHidden()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
+        .hostedNavigationBarHidden()
         .environment(sheetNavigation)
         .environment(codeLimiter)
         .environment(
