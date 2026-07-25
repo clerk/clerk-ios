@@ -42,38 +42,93 @@ struct IdentityPersistenceArchitectureTests {
     )
 
     #expect(throws: CancellationError.self) {
-      try coordinator.advanceBootstrap(
+      try coordinator.validate(
         staleOwnership,
-        to: .establishingLocalIdentity
+        operation: .bootstrap
+      )
+    }
+
+    let mismatchedEpochOwnership = PersistenceTransitionOwnership(
+      id: ownership.id,
+      configurationEpoch: clerk.nextConfigurationEpoch
+    )
+    #expect(throws: CancellationError.self) {
+      try coordinator.validate(
+        mismatchedEpochOwnership,
+        operation: .bootstrap,
+        expectedEpoch: clerk.configurationEpoch
       )
     }
 
     clerk.setConfigurationEpoch(to: clerk.nextConfigurationEpoch)
 
     #expect(throws: CancellationError.self) {
-      try coordinator.advanceBootstrap(
+      try coordinator.validate(
         ownership,
-        to: .establishingLocalIdentity
+        operation: .bootstrap
       )
     }
   }
 
   @Test
-  func typedTransitionsExposeOnlyOperationSpecificPhases() throws {
+  func validationRequiresMatchingOperationKind() throws {
     let clerk = Clerk()
     let coordinator = clerk.identityPersistenceOperationCoordinator
     let ownership = try coordinator.beginClear(epoch: clerk.configurationEpoch)
 
-    try coordinator.advanceClear(ownership, to: .recordingIntent)
+    try coordinator.validate(ownership, operation: .clear)
+    #expect(throws: CancellationError.self) {
+      try coordinator.validate(ownership, operation: .bootstrap)
+    }
+    #expect(throws: CancellationError.self) {
+      try coordinator.validate(ownership, operation: .reconfigure)
+    }
 
-    guard case .running(.clear(let transition)) =
+    guard case .running(let operation) =
       coordinator.transitionState
     else {
-      Issue.record("Expected a clear transition")
+      Issue.record("Expected an active clear operation")
       return
     }
-    #expect(transition.phase == .recordingIntent)
-    #expect(transition.ownership == ownership)
+    #expect(operation.kind == .clear)
+    #expect(operation.ownership == ownership)
+  }
+
+  @Test
+  func validationSupportsIntentionalReconfigurationEpochHandoff() throws {
+    let clerk = Clerk()
+    let coordinator = clerk.identityPersistenceOperationCoordinator
+    let ownership = try coordinator.beginReconfiguration(
+      epoch: clerk.configurationEpoch
+    )
+    let nextEpoch = clerk.nextConfigurationEpoch
+
+    clerk.setConfigurationEpoch(to: nextEpoch)
+
+    #expect(throws: CancellationError.self) {
+      try coordinator.validate(ownership, operation: .reconfigure)
+    }
+    try coordinator.validate(
+      ownership,
+      operation: .reconfigure,
+      expectedEpoch: nextEpoch
+    )
+  }
+
+  @Test
+  func validationChecksTaskCancellation() async {
+    let clerk = Clerk()
+    let coordinator = clerk.identityPersistenceOperationCoordinator
+    let ownership = coordinator.beginBootstrap(epoch: clerk.configurationEpoch)
+    let task = Task { @MainActor in
+      try coordinator.validate(ownership, operation: .bootstrap)
+    }
+
+    task.cancel()
+
+    await #expect(throws: CancellationError.self) {
+      try await task.value
+    }
   }
 
   @Test(

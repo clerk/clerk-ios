@@ -709,11 +709,6 @@ extension Clerk {
       return
     }
 
-    try? identityPersistenceOperationCoordinator.advanceBootstrap(
-      bootstrapOwnership,
-      to: .establishingLocalIdentity
-    )
-
     let initialSharedSessionReconciliation: Task<Bool, Never>?
     if usesSharedSessionSync {
       cacheManager.loadCachedData(hydrateIdentity: false)
@@ -863,10 +858,10 @@ extension Clerk {
       if localMutationPreparation?.publishedDestinationSlot != nil {
         Self.notifySharedSessionTopologyChange(in: dependencies)
       }
-      try identityPersistenceOperationCoordinator
-        .advanceSharedReconciliation(
-          bootstrapOwnership
-        )
+      try identityPersistenceOperationCoordinator.validate(
+        bootstrapOwnership,
+        operation: .bootstrap
+      )
       let coordinator = try makeSharedSessionSyncCoordinator(
         dependencies: dependencies,
         ownerIdentifier: ownerIdentifier,
@@ -880,13 +875,14 @@ extension Clerk {
         guard let self, let coordinator else { return false }
         do {
           try identityPersistenceOperationCoordinator.validate(
-            bootstrapOwnership
+            bootstrapOwnership,
+            operation: .bootstrap
           )
           try await coordinator.waitForInitialReconciliation()
-          try identityPersistenceOperationCoordinator
-            .advanceSharedCommit(
-              bootstrapOwnership
-            )
+          try identityPersistenceOperationCoordinator.validate(
+            bootstrapOwnership,
+            operation: .bootstrap
+          )
           identityPersistenceOperationCoordinator.setSharedSessionCapability(
             .active
           )
@@ -955,8 +951,10 @@ extension Clerk {
     cacheManager: CacheManager,
     ownership: PersistenceTransitionOwnership
   ) {
-    guard identityPersistenceOperationCoordinator.activeTransitionID
-      == ownership.id
+    guard identityPersistenceOperationCoordinator.isActive(
+      ownership,
+      operation: .bootstrap
+    )
     else {
       return
     }
@@ -1535,11 +1533,10 @@ extension Clerk {
       if plan == .preserveIdentityAndMigrateSlot {
         try await settlePendingPublicationForTopologyChange()
       }
-      try identityPersistenceOperationCoordinator
-        .advanceReconfiguration(
-          ownership,
-          to: .reconcilingIdentity
-        )
+      try identityPersistenceOperationCoordinator.validate(
+        ownership,
+        operation: .reconfigure
+      )
       return try PreparedReconfiguration(
         ownership: ownership,
         nextEpoch: nextEpoch,
@@ -1602,12 +1599,11 @@ extension Clerk {
 
     var topologyRollback: SharedSessionTopologyMigration.Rollback?
     do {
-      try identityPersistenceOperationCoordinator
-        .advanceReconfiguration(
-          preparation.ownership,
-          to: .installingTarget,
-          expectedEpoch: preparation.nextEpoch
-        )
+      try identityPersistenceOperationCoordinator.validate(
+        preparation.ownership,
+        operation: .reconfigure,
+        expectedEpoch: preparation.nextEpoch
+      )
       topologyRollback = try await prepareIdentityForReconfiguration(
         preparation
       )
@@ -1707,12 +1703,11 @@ extension Clerk {
         in: preparation.dependencies
       )
     }
-    try identityPersistenceOperationCoordinator
-      .advanceReconfiguration(
-        preparation.ownership,
-        to: .retiringSource,
-        expectedEpoch: preparation.nextEpoch
-      )
+    try identityPersistenceOperationCoordinator.validate(
+      preparation.ownership,
+      operation: .reconfigure,
+      expectedEpoch: preparation.nextEpoch
+    )
   }
 
   private func restoreTopologyMigration(

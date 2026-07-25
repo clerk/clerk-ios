@@ -127,27 +127,10 @@ enum SharedSessionCapability: Equatable {
   case unavailable(PersistenceFailureKind)
 }
 
-enum BootstrapTransitionPhase: Equatable {
-  case checkingClearRecovery
-  case establishingLocalIdentity
-  case reconcilingSharedSession
-  case committing
-}
-
-enum ClearTransitionPhase: Equatable {
-  case clearingMemory
-  case recordingIntent
-  case deletingLocalIdentity
-  case withdrawingOwnerSlot
-  case clearingIntent
-  case committing
-}
-
-enum ReconfigurationTransitionPhase: Equatable {
-  case preparingTarget
-  case reconcilingIdentity
-  case installingTarget
-  case retiringSource
+enum PersistenceOperationKind: Equatable {
+  case bootstrap
+  case clear
+  case reconfigure
 }
 
 struct PersistenceTransitionOwnership: Equatable {
@@ -155,41 +138,14 @@ struct PersistenceTransitionOwnership: Equatable {
   let configurationEpoch: ClerkConfigurationEpoch
 }
 
-struct BootstrapTransition: Equatable {
+struct ActivePersistenceOperation: Equatable {
+  let kind: PersistenceOperationKind
   let ownership: PersistenceTransitionOwnership
-  var phase: BootstrapTransitionPhase
-}
-
-struct ClearTransition: Equatable {
-  let ownership: PersistenceTransitionOwnership
-  var phase: ClearTransitionPhase
-}
-
-struct ReconfigurationTransition: Equatable {
-  let ownership: PersistenceTransitionOwnership
-  var phase: ReconfigurationTransitionPhase
-}
-
-enum ActivePersistenceTransition: Equatable {
-  case bootstrap(BootstrapTransition)
-  case clear(ClearTransition)
-  case reconfigure(ReconfigurationTransition)
-
-  var ownership: PersistenceTransitionOwnership {
-    switch self {
-    case .bootstrap(let transition):
-      transition.ownership
-    case .clear(let transition):
-      transition.ownership
-    case .reconfigure(let transition):
-      transition.ownership
-    }
-  }
 }
 
 enum PersistenceTransitionState: Equatable {
   case ready
-  case running(ActivePersistenceTransition)
+  case running(ActivePersistenceOperation)
   case blocked(Clerk.PersistenceBlockReason)
 }
 
@@ -214,7 +170,9 @@ final class IdentityPersistenceOperationCoordinator {
   }
 
   var isClearPending: Bool {
-    if case .running(.clear) = transitionState {
+    if case .running(let operation) = transitionState,
+       operation.kind == .clear
+    {
       true
     } else if case .blocked(.pendingClear) = transitionState {
       true
@@ -223,42 +181,25 @@ final class IdentityPersistenceOperationCoordinator {
     }
   }
 
-  var activeTransitionID: UUID? {
-    guard case .running(let transition) = transitionState else { return nil }
-    return transition.ownership.id
-  }
-
   @discardableResult
   func beginBootstrap(
     epoch: ClerkConfigurationEpoch
   ) -> PersistenceTransitionOwnership {
-    begin(
-      .bootstrap(
-        BootstrapTransition(
-          ownership: .init(id: UUID(), configurationEpoch: epoch),
-          phase: .checkingClearRecovery
-        )
-      )
-    )
+    begin(.bootstrap, epoch: epoch)
   }
 
   @discardableResult
   func beginClear(
     epoch: ClerkConfigurationEpoch
   ) throws -> PersistenceTransitionOwnership {
-    if case .running(.clear) = transitionState {
+    if case .running(let operation) = transitionState,
+       operation.kind == .clear
+    {
       throw ClerkClientError(
         message: "Clerk identity storage is already completing an explicit clear."
       )
     }
-    return begin(
-      .clear(
-        ClearTransition(
-          ownership: .init(id: UUID(), configurationEpoch: epoch),
-          phase: .clearingMemory
-        )
-      )
-    )
+    return begin(.clear, epoch: epoch)
   }
 
   @discardableResult
@@ -270,71 +211,7 @@ final class IdentityPersistenceOperationCoordinator {
         message: "Clerk identity storage is still completing an explicit clear."
       )
     }
-    return begin(
-      .reconfigure(
-        ReconfigurationTransition(
-          ownership: .init(id: UUID(), configurationEpoch: epoch),
-          phase: .preparingTarget
-        )
-      )
-    )
-  }
-
-  func advanceBootstrap(
-    _ ownership: PersistenceTransitionOwnership,
-    to phase: BootstrapTransitionPhase
-  ) throws {
-    try validate(ownership)
-    transitionState = .running(
-      .bootstrap(.init(ownership: ownership, phase: phase))
-    )
-    publishStatus()
-  }
-
-  func advanceClear(
-    _ ownership: PersistenceTransitionOwnership,
-    to phase: ClearTransitionPhase
-  ) throws {
-    try validate(ownership)
-    transitionState = .running(
-      .clear(.init(ownership: ownership, phase: phase))
-    )
-    publishStatus()
-  }
-
-  func advanceReconfiguration(
-    _ ownership: PersistenceTransitionOwnership,
-    to phase: ReconfigurationTransitionPhase,
-    expectedEpoch: ClerkConfigurationEpoch? = nil
-  ) throws {
-    try validate(ownership, expectedEpoch: expectedEpoch)
-    transitionState = .running(
-      .reconfigure(.init(ownership: ownership, phase: phase))
-    )
-    publishStatus()
-  }
-
-  func advanceSharedReconciliation(
-    _ ownership: PersistenceTransitionOwnership
-  ) throws {
-    try validate(ownership)
-    guard case .running(.bootstrap) = transitionState else {
-      throw CancellationError()
-    }
-    try advanceBootstrap(
-      ownership,
-      to: .reconcilingSharedSession
-    )
-  }
-
-  func advanceSharedCommit(
-    _ ownership: PersistenceTransitionOwnership
-  ) throws {
-    try validate(ownership)
-    guard case .running(.bootstrap) = transitionState else {
-      throw CancellationError()
-    }
-    try advanceBootstrap(ownership, to: .committing)
+    return begin(.reconfigure, epoch: epoch)
   }
 
   func setSharedSessionCapability(_ capability: SharedSessionCapability) {
@@ -343,7 +220,7 @@ final class IdentityPersistenceOperationCoordinator {
   }
 
   func finish(_ ownership: PersistenceTransitionOwnership) {
-    guard activeTransitionID == ownership.id else { return }
+    guard owns(ownership) else { return }
     transitionState = .ready
     publishStatus()
   }
@@ -352,7 +229,7 @@ final class IdentityPersistenceOperationCoordinator {
     _ ownership: PersistenceTransitionOwnership?,
     reason: Clerk.PersistenceBlockReason
   ) {
-    if let ownership, activeTransitionID != ownership.id {
+    if let ownership, !owns(ownership) {
       return
     }
     transitionState = .blocked(reason)
@@ -376,15 +253,29 @@ final class IdentityPersistenceOperationCoordinator {
 
   func validate(
     _ ownership: PersistenceTransitionOwnership,
+    operation expectedKind: PersistenceOperationKind,
     expectedEpoch: ClerkConfigurationEpoch? = nil
   ) throws {
     try Task.checkCancellation()
-    guard activeTransitionID == ownership.id,
+    guard case .running(let activeOperation) = transitionState,
+          activeOperation.kind == expectedKind,
+          activeOperation.ownership == ownership,
           let clerk,
           clerk.configurationEpoch == (expectedEpoch ?? ownership.configurationEpoch)
     else {
       throw CancellationError()
     }
+  }
+
+  func isActive(
+    _ ownership: PersistenceTransitionOwnership,
+    operation expectedKind: PersistenceOperationKind
+  ) -> Bool {
+    guard case .running(let activeOperation) = transitionState else {
+      return false
+    }
+    return activeOperation.kind == expectedKind
+      && activeOperation.ownership == ownership
   }
 
   func requireIdentityOperationsAvailable() throws {
@@ -407,11 +298,27 @@ final class IdentityPersistenceOperationCoordinator {
   }
 
   private func begin(
-    _ transition: ActivePersistenceTransition
+    _ kind: PersistenceOperationKind,
+    epoch: ClerkConfigurationEpoch
   ) -> PersistenceTransitionOwnership {
-    transitionState = .running(transition)
+    let ownership = PersistenceTransitionOwnership(
+      id: UUID(),
+      configurationEpoch: epoch
+    )
+    transitionState = .running(
+      ActivePersistenceOperation(kind: kind, ownership: ownership)
+    )
     publishStatus()
-    return transition.ownership
+    return ownership
+  }
+
+  private func owns(
+    _ ownership: PersistenceTransitionOwnership
+  ) -> Bool {
+    guard case .running(let activeOperation) = transitionState else {
+      return false
+    }
+    return activeOperation.ownership == ownership
   }
 
   private func publishStatus() {

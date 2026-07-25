@@ -318,9 +318,9 @@ extension Clerk {
         epoch: clerk.configurationEpoch
       )
       clerk.suspendWatchConnectivityForPersistenceTransition()
-      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+      try clerk.identityPersistenceOperationCoordinator.validate(
         ownership,
-        to: .recordingIntent
+        operation: .clear
       )
     } catch {
       return failedKeychainClearTask(
@@ -336,9 +336,9 @@ extension Clerk {
     clerk.identityController.applyStorageClearToMemory(identityClear)
     clerk.identityController.resetRuntimeIdentity()
     do {
-      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+      try clerk.identityPersistenceOperationCoordinator.validate(
         ownership,
-        to: .deletingLocalIdentity
+        operation: .clear
       )
     } catch {
       clerk.identityPersistenceOperationCoordinator.block(
@@ -485,9 +485,9 @@ extension Clerk {
   ) throws -> PendingKeychainClear {
     let dependencies = clerk.dependencies
     let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
-    try clerk.identityPersistenceOperationCoordinator.advanceClear(
+    try clerk.identityPersistenceOperationCoordinator.validate(
       ownership,
-      to: .recordingIntent
+      operation: .clear
     )
     if
       clerk.sharedSessionSyncCoordinator != nil
@@ -528,9 +528,9 @@ extension Clerk {
       }
     }
     clerk.identityController.applyStorageClearToMemory(identityClear)
-    try clerk.identityPersistenceOperationCoordinator.advanceClear(
+    try clerk.identityPersistenceOperationCoordinator.validate(
       ownership,
-      to: .deletingLocalIdentity
+      operation: .clear
     )
     if let atomicIdentityStore = dependencies.atomicIdentityStore {
       attemptKeychainClear(
@@ -597,9 +597,9 @@ extension Clerk {
     loggingConfiguration: ClerkLogger.Configuration
   ) -> Task<KeychainClearResult, Error> {
     clerk.identityController.enqueueLocalOperation { operationRevision in
-      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+      try clerk.identityPersistenceOperationCoordinator.validate(
         ownership,
-        to: .withdrawingOwnerSlot
+        operation: .clear
       )
       let withdrawalResult = await withdrawOwnerSlotIfNeeded(
         clerk: clerk,
@@ -644,9 +644,9 @@ extension Clerk {
 
       let canReleaseSharedClearBarrier: Bool
       do {
-        try clerk.identityPersistenceOperationCoordinator.advanceClear(
+        try clerk.identityPersistenceOperationCoordinator.validate(
           ownership,
-          to: .clearingIntent
+          operation: .clear
         )
         canReleaseSharedClearBarrier = try clearOwnerSlotWithdrawalIntentIfSafe(
           in: dependencies,
