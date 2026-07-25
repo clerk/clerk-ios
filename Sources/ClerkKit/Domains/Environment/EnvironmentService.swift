@@ -18,7 +18,10 @@ final class EnvironmentService: EnvironmentServiceProtocol {
 
   @MainActor
   func get() async throws -> Clerk.Environment {
-    let request = Request<Clerk.Environment>(path: "/v1/environment")
+    let request = Request<Clerk.Environment>(
+      path: "/v1/environment",
+      requiresIdentityPersistenceReadiness: false
+    )
     return try await apiClient.send(request).value
   }
 }

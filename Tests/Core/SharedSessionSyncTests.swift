@@ -2391,7 +2391,7 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func cleanupFailureAfterOwnerSlotDeletionReleasesLocalClearBarrier() async throws {
+  func cleanupFailureAfterOwnerSlotDeletionKeepsBarrierUntilRetry() async throws {
     let backend = TestSlotBackend()
     let keychain = SharedSessionDeleteFailingKeychain(
       failingKey: ClerkKeychainKey.cachedEnvironment.rawValue
@@ -2424,6 +2424,9 @@ struct SharedSessionSyncTests {
     #expect(
       backend.allSlots().contains { $0.slotOwnerIdentifier == "app.a" } == false
     )
+    #expect(
+      try node.clerk.appContainerIdentityClearIntentStore.load() != nil
+    )
 
     try await peer.coordinator.publishLocalIdentity(
       state: .present,
@@ -2432,6 +2435,18 @@ struct SharedSessionSyncTests {
       serverDate: nil
     )
 
+    #expect(await node.coordinator.reloadFromSharedStorage() == false)
+    #expect(node.clerk.client == nil)
+    await #expect(throws: CancellationError.self) {
+      _ = try await node.coordinator.captureRequestIdentity()
+    }
+
+    keychain.allowDeletes()
+    try await node.clerk.clearAllKeychainItemsAndWait()
+
+    #expect(
+      try node.clerk.appContainerIdentityClearIntentStore.load() == nil
+    )
     #expect(await node.coordinator.reloadFromSharedStorage())
     #expect(node.clerk.client?.id == "peer-client")
     #expect(node.coordinator.currentDeviceToken == "peer-token")
@@ -2527,14 +2542,33 @@ struct SharedSessionSyncTests {
       runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
     )
     let slotStore = TestOwnerSlotStore(owner: owner, backend: backend)
+    let keychainOptions = Clerk.Options(
+      keychainConfig: .init(
+        service: "com.example.clerk",
+        accessGroup: "TEAMID.com.example.shared"
+      )
+    )
+    let instanceFingerprint = SharedSessionNamespace.sha256("instance")
     let recoveryIntent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: "identity.\(owner)",
-      slotService: "slots.instance",
-      slotAccessGroup: "group.shared",
-      slotAccount: "owner.\(owner)",
-      instanceFingerprint: "instance",
+      localIdentityService: DependencyContainer.stableIdentityService(
+        configuredService: keychainOptions.keychainConfig.service,
+        instanceFingerprint: instanceFingerprint,
+        ownerIdentifier: owner
+      ),
+      slotService: SharedSessionOwnerSlotStore.service(
+        configuredService: keychainOptions.keychainConfig.service,
+        instanceFingerprint: instanceFingerprint
+      ),
+      slotAccessGroup:
+      keychainOptions.keychainConfig.normalizedAccessGroup!,
+      slotAccount: SharedSessionOwnerSlotStore.account(
+        instanceFingerprint: instanceFingerprint,
+        ownerIdentifier: owner
+      ),
+      instanceFingerprint: instanceFingerprint,
       ownerIdentifier: owner
     )
+    let clearJournal = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
       keychain: keychain,
@@ -2542,7 +2576,7 @@ struct SharedSessionSyncTests {
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
       sharedSessionOwnerSlotClearRecovery: .init(
-        journal: InMemoryKeychain(),
+        journal: clearJournal,
         currentIntent: recoveryIntent,
         targetProvider: TestClearRecoveryTargets(
           identityStore: localStore,
@@ -2553,9 +2587,23 @@ struct SharedSessionSyncTests {
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
-      options: .init()
+      options: keychainOptions
     )
     clerk.dependencies = dependencies
+    clerk.appContainerIdentityClearRecovery =
+      AppContainerIdentityClearRecovery(
+        storageProvider: { target in
+          if target.service
+            == SharedSessionOwnerSlotClearRecovery.journalService(
+              ownerIdentifier: owner
+            )
+          {
+            return clearJournal
+          }
+          return keychain
+        },
+        slotStoreProvider: { _ in slotStore }
+      )
     if hydrateInitialIdentity, let initialIdentity {
       clerk.hydrateIdentityIfNeeded(initialIdentity)
     }
@@ -2867,6 +2915,10 @@ private struct TestClearRecoveryTargets: SharedSessionClearRecoveryTargets {
   ) throws -> any SharedSessionSlotStoring {
     slotStore
   }
+
+  func preventLegacyIdentityReadoption(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws {}
 }
 
 private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, KeychainStorage {
@@ -2876,9 +2928,17 @@ private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, Key
 
   private let backing = InMemoryKeychain()
   private let failingKey: String
+  private let lock = NSLock()
+  private var shouldFailDeletes = true
 
   init(failingKey: String) {
     self.failingKey = failingKey
+  }
+
+  func allowDeletes() {
+    lock.withLock {
+      shouldFailDeletes = false
+    }
   }
 
   func set(_ data: Data, forKey key: String) throws {
@@ -2890,7 +2950,10 @@ private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, Key
   }
 
   func deleteItem(forKey key: String) throws {
-    guard key != failingKey else { throw Failure.delete }
+    let shouldFail = lock.withLock {
+      shouldFailDeletes && key == failingKey
+    }
+    guard !shouldFail else { throw Failure.delete }
     try backing.deleteItem(forKey: key)
   }
 

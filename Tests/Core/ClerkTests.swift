@@ -223,12 +223,18 @@ struct ClerkTests {
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
       atomicIdentityStore: localStore,
+      sharedSessionOwnerIdentifier: "com.clerk.tests.app",
       shouldHydrateProvisionalLegacyClient: true,
       clientService: MockClientService(get: { nil })
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
-      options: .init(sharedSessionSync: .enabled)
+      options: .init(
+        keychainConfig: .init(
+          accessGroup: "TEAMID.com.clerk.tests.shared"
+        ),
+        sharedSessionSync: .enabled
+      )
     )
 
     try clerk.performConfiguration(dependencies: dependencies)
@@ -547,7 +553,16 @@ struct ClerkTests {
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: clearRecoveryOptions
+    )
     clerk.dependencies = dependencies
+    clerk.appContainerIdentityClearRecovery =
+      AppContainerIdentityClearRecovery(
+        storageProvider: { _ in keychain },
+        slotStoreProvider: { _ in slotStore }
+      )
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.clear",
       instanceFingerprint: "instance",
@@ -613,7 +628,16 @@ struct ClerkTests {
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: clearRecoveryOptions
+    )
     clerk.dependencies = dependencies
+    clerk.appContainerIdentityClearRecovery =
+      AppContainerIdentityClearRecovery(
+        storageProvider: { _ in keychain },
+        slotStoreProvider: { _ in slotStore }
+      )
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.clear",
       instanceFingerprint: "instance",
@@ -695,6 +719,10 @@ struct ClerkTests {
       atomicIdentityStore: identityStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: clearRecoveryOptions
     )
     clerk.dependencies = dependencies
     let coordinator = SharedSessionSyncCoordinator(
@@ -1264,13 +1292,26 @@ struct ClerkTests {
     identityStore: any SharedSessionLocalIdentityStoring,
     slotStore: any SharedSessionSlotStoring
   ) -> SharedSessionOwnerSlotClearRecovery.Context {
+    let instanceFingerprint = SharedSessionNamespace.sha256("instance")
+    let ownerIdentifier = "app.clear"
     let intent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: "app.identity",
-      slotService: "app.slots",
-      slotAccessGroup: "group.shared",
-      slotAccount: "owner.app.clear",
-      instanceFingerprint: "instance",
-      ownerIdentifier: "app.clear"
+      localIdentityService: DependencyContainer.stableIdentityService(
+        configuredService: clearRecoveryOptions.keychainConfig.service,
+        instanceFingerprint: instanceFingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      slotService: SharedSessionOwnerSlotStore.service(
+        configuredService: clearRecoveryOptions.keychainConfig.service,
+        instanceFingerprint: instanceFingerprint
+      ),
+      slotAccessGroup:
+      clearRecoveryOptions.keychainConfig.normalizedAccessGroup!,
+      slotAccount: SharedSessionOwnerSlotStore.account(
+        instanceFingerprint: instanceFingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      instanceFingerprint: instanceFingerprint,
+      ownerIdentifier: ownerIdentifier
     )
     return SharedSessionOwnerSlotClearRecovery.Context(
       journal: journal,
@@ -1278,6 +1319,15 @@ struct ClerkTests {
       targetProvider: ClearRecoveryTargetProvider(
         identityStore: identityStore,
         slotStore: slotStore
+      )
+    )
+  }
+
+  private var clearRecoveryOptions: Clerk.Options {
+    .init(
+      keychainConfig: .init(
+        service: "com.example.clerk",
+        accessGroup: "TEAMID.com.example.shared"
       )
     )
   }
@@ -1309,6 +1359,10 @@ private struct ClearRecoveryTargetProvider:
   ) throws -> any SharedSessionSlotStoring {
     slotStore
   }
+
+  func preventLegacyIdentityReadoption(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws {}
 }
 
 private final class SuspendingCacheKeychain: @unchecked Sendable, KeychainStorage {
@@ -1522,4 +1576,29 @@ private final class ClearTrackingSlotStore: @unchecked Sendable, SharedSessionSl
 private final class SilentSharedSessionNotifier: SharedSessionSyncNotifying {
   func setHandler(_: @escaping @MainActor () -> Void) {}
   func post() {}
+}
+
+@MainActor
+struct ClerkPreviewTests {
+  @Test
+  func previewUsesIsolatedMockDependenciesWithoutProductionManagers() {
+    var client = Client.mock
+    client.id = "preview-client"
+
+    let clerk = Clerk.makePreview(
+      preview: { preview in
+        preview.client = client
+        preview.environment = .mock
+      },
+      installAsShared: false
+    )
+    defer { clerk.cleanupManagers() }
+
+    #expect(clerk.publishableKey == testPublishableKey)
+    #expect(clerk.client?.id == "preview-client")
+    #expect(clerk.environment == .mock)
+    #expect(clerk.dependencies is MockDependencyContainer)
+    #expect(clerk.cacheManager == nil)
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+  }
 }

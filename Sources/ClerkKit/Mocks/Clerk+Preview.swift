@@ -48,6 +48,8 @@ public final class PreviewBuilder {
 }
 
 extension Clerk {
+  private static let previewPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
+
   /// Configures Clerk for SwiftUI previews with simplified API.
   ///
   /// This method provides a simpler API specifically designed for SwiftUI previews.
@@ -103,28 +105,25 @@ extension Clerk {
   public static func preview(
     preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
-    // Check if running in SwiftUI preview
     guard EnvironmentDetection.isRunningInPreviews else {
       return Clerk.shared
     }
 
-    // Configure Clerk.shared if not already configured
-    let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
+    return makePreview(preview: preview)
+  }
 
-    // Create a minimal API client (won't be used if services are mocked)
-    let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
-    let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
-
-    // Create preview builder and apply closure
+  @MainActor
+  static func makePreview(
+    preview: ((PreviewBuilder) -> Void)? = nil,
+    installAsShared: Bool = true
+  ) -> Clerk {
     let previewBuilder = PreviewBuilder()
     preview?(previewBuilder)
 
-    // Determine environment and client
     let loadedEnvironment = loadEnvironmentFromBundle()
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Configure services to return builder values if no custom handler set
     if previewBuilder.services.clientService.getHandler == nil {
       previewBuilder.services.clientService.getHandler = { mockClient }
     }
@@ -132,14 +131,38 @@ extension Clerk {
       previewBuilder.services.environmentService.getHandler = { mockEnvironment }
     }
 
-    // Create mock dependency container using services from builder
-    let container = createMockDependencyContainer(
-      apiClient: mockAPIClient,
-      services: previewBuilder.services
-    )
+    let makeDependencies: (Clerk) -> any Dependencies = { clerk in
+      guard let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev") else {
+        fatalError("Clerk preview URL is invalid.")
+      }
+      let mockAPIClient = APIClient(
+        baseURL: mockBaseURL,
+        runtimeScope: clerk.runtimeScope
+      )
+      let container = createMockDependencyContainer(
+        apiClient: mockAPIClient,
+        services: previewBuilder.services
+      )
+      do {
+        try container.configurationManager.configure(
+          publishableKey: previewPublishableKey,
+          options: .init()
+        )
+      } catch {
+        assertionFailure(
+          "Failed to configure Clerk preview dependencies: \(error.localizedDescription)"
+        )
+      }
+      return container
+    }
+    let clerk: Clerk
+    if installAsShared {
+      clerk = configureForPreview(dependencies: makeDependencies)
+    } else {
+      clerk = Clerk()
+      clerk.dependencies = makeDependencies(clerk)
+    }
 
-    // Replace dependencies with mock services
-    clerk.dependencies = container
     clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
 

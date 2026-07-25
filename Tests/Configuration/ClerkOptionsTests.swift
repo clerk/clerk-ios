@@ -25,6 +25,7 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl == nil)
     #expect(options.keychainConfig.service == Bundle.main.bundleIdentifier ?? "")
     #expect(options.keychainConfig.accessGroup == nil)
+    #expect(options.keychainConfig.appLocalAccessGroup == nil)
     #expect(options.sharedSessionSync == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
@@ -34,7 +35,11 @@ struct ClerkOptionsTests {
 
   @Test
   func initializationWithAllParameters() {
-    let keychainConfig = Clerk.Options.KeychainConfig(service: "test.service", accessGroup: "test.group")
+    let keychainConfig = Clerk.Options.KeychainConfig(
+      service: "test.service",
+      accessGroup: "TEAMID.test.group",
+      appLocalAccessGroup: "TEAMID.test.app"
+    )
     let redirectConfig = Clerk.Options.RedirectConfig(redirectUrl: "test://redirect", callbackUrlScheme: "test")
 
     let options = Clerk.Options(
@@ -49,7 +54,8 @@ struct ClerkOptionsTests {
     #expect(options.logLevel == .debug)
     #expect(options.telemetryEnabled == false)
     #expect(options.keychainConfig.service == "test.service")
-    #expect(options.keychainConfig.accessGroup == "test.group")
+    #expect(options.keychainConfig.accessGroup == "TEAMID.test.group")
+    #expect(options.keychainConfig.appLocalAccessGroup == "TEAMID.test.app")
     #expect(options.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
     #expect(options.redirectConfig.redirectUrl == "test://redirect")
     #expect(options.redirectConfig.callbackUrlScheme == "test")

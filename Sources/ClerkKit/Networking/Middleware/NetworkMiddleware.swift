@@ -183,6 +183,7 @@ extension URLRequest {
   private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
+  private static let clerkUsesIdentityKey = "com.clerk.uses-identity"
 
   var clerkRequestCheckpoint: ClerkRequestCheckpoint {
     ClerkRequestCheckpoint(request: self)
@@ -224,6 +225,16 @@ extension URLRequest {
 
   var clerkRequestDeviceToken: String? {
     URLProtocol.property(forKey: Self.clerkRequestDeviceTokenKey, in: self) as? String
+  }
+
+  var clerkUsesIdentity: Bool {
+    guard let value = URLProtocol.property(
+      forKey: Self.clerkUsesIdentityKey,
+      in: self
+    ) as? NSNumber else {
+      return true
+    }
+    return value.boolValue
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -273,6 +284,13 @@ extension URLRequest {
 
   mutating func setClerkRequestDeviceToken(_ deviceToken: String) {
     setClerkProperty(deviceToken, key: Self.clerkRequestDeviceTokenKey)
+  }
+
+  mutating func setClerkUsesIdentity(_ usesIdentity: Bool) {
+    setClerkProperty(
+      NSNumber(value: usesIdentity),
+      key: Self.clerkUsesIdentityKey
+    )
   }
 
   mutating func setClerkRequestCheckpoint(_ checkpoint: ClerkRequestCheckpoint) {

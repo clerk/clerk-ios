@@ -42,6 +42,8 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(record.acceptedIdentity == identity)
     #expect(!record.requiresLegacyAdoptionPublication)
+    #expect(!record.hasUnpublishedLocalMutation)
+    #expect(record.sharedSessionBaseGeneration == nil)
   }
 
   @Test
@@ -102,6 +104,36 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(try store.loadPendingPublication() == pending)
     #expect(try store.load() == nil)
+  }
+
+  @Test
+  func pendingPublicationCanBecomeAnUnpublishedLocalMutation() throws {
+    let store = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    try store.saveUnpublishedLocalIdentity(
+      makeIdentity(clientID: "previous"),
+      baseGeneration: 12
+    )
+    let pending = try makeEvent(clientID: "pending")
+    try store.stagePendingPublication(pending)
+
+    try store.convertPendingPublicationToUnpublishedLocalMutation(
+      baseGeneration: nil
+    )
+
+    let converted = try #require(try store.loadRecord())
+    #expect(converted.acceptedIdentity?.client?.id == "pending")
+    #expect(converted.acceptedIdentity?.deviceToken == "token-pending")
+    #expect(converted.pendingPublication == nil)
+    #expect(converted.hasUnpublishedLocalMutation)
+    #expect(converted.sharedSessionBaseGeneration == 12)
+
+    let next = makeIdentity(clientID: "next")
+    try store.saveUnpublishedLocalIdentity(
+      next,
+      baseGeneration: converted.sharedSessionBaseGeneration
+    )
+    #expect(try store.load() == next)
+    #expect(try store.loadRecord()?.pendingPublication == nil)
   }
 
   @Test

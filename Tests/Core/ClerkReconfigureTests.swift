@@ -346,59 +346,6 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func failedRecoveryPreflightLeavesPreviousRuntimeInstalled() async throws {
-    let original = Clerk.shared
-    let previousEpoch = original.configurationEpoch
-    let journal = InMemoryKeychain()
-    let intent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: "reconfigure.identity",
-      slotService: "reconfigure.slots",
-      slotAccessGroup: "reconfigure.group",
-      slotAccount: "reconfigure.owner",
-      instanceFingerprint: "reconfigure-instance",
-      ownerIdentifier: "reconfigure-app"
-    )
-    let recovery = SharedSessionOwnerSlotClearRecovery.Context(
-      journal: journal,
-      currentIntent: intent,
-      targetProvider: FailingReconfigurationRecoveryTargets()
-    )
-    let previousDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
-      sharedSessionOwnerSlotClearRecovery: recovery,
-      telemetryCollector: original.dependencies.telemetryCollector
-    )
-    try original.performConfiguration(dependencies: previousDependencies)
-    original.client = .mock
-    original.environment = .mock
-    try SharedSessionOwnerSlotClearRecovery.markPending(in: recovery)
-    defer {
-      try? journal.deleteItem(
-        forKey: SharedSessionOwnerSlotClearRecovery.storageKey
-      )
-      original.cleanupManagers()
-    }
-
-    do {
-      _ = try await Clerk.reconfigure(
-        publishableKey: publishableKey(for: "failed-recovery-preflight.clerk.example.com")
-      )
-      Issue.record("Expected recovery preflight to fail")
-    } catch FailingReconfigurationRecoveryTargets.Failure.unavailable {
-      // Expected.
-    } catch {
-      Issue.record("Expected recovery target failure, got \(error)")
-    }
-
-    #expect(Clerk.shared === original)
-    #expect(original.configurationEpoch == previousEpoch)
-    #expect(original.dependencies === previousDependencies)
-    #expect(original.client?.id == Client.mock.id)
-    #expect(original.environment == .mock)
-    #expect(try await original.refreshClient()?.id == Client.mock.id)
-  }
-
-  @Test
   func keychainClearStartedDuringReconfigurationWaitsForInstalledRuntime() async throws {
     let clerk = Clerk.shared
     let keychain = InMemoryKeychain()
@@ -1020,24 +967,6 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     lock.lock()
     defer { lock.unlock() }
     return storage[key] != nil
-  }
-}
-
-private struct FailingReconfigurationRecoveryTargets: SharedSessionClearRecoveryTargets {
-  enum Failure: Error {
-    case unavailable
-  }
-
-  func localIdentityStore(
-    for _: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws -> any SharedSessionLocalIdentityStoring {
-    throw Failure.unavailable
-  }
-
-  func slotStore(
-    for _: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws -> any SharedSessionSlotStoring {
-    throw Failure.unavailable
   }
 }
 

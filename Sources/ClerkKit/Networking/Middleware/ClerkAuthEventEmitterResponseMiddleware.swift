@@ -12,7 +12,8 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
     self.runtimeScope = runtimeScope
   }
 
-  func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
+  func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    guard request.clerkUsesIdentity else { return }
     guard let responseObject = Self.decodeResponseObject(from: data) else {
       return
     }

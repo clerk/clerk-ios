@@ -41,6 +41,31 @@ public final class Clerk {
     let identity: ClerkIdentityController.RollbackState
   }
 
+  private struct PreparedReconfiguration {
+    let ownership: PersistenceTransitionOwnership
+    let nextEpoch: ClerkConfigurationEpoch
+    let dependencies: DependencyContainer
+    let plan: ReconfigurationPlan
+    let rollbackState: ReconfigurationRollbackState
+    let volatileIdentity: ClerkIdentitySnapshot?
+  }
+
+  private enum AppContainerIdentityClearBootstrapResult {
+    case notNeeded
+    case recovered
+    case blocked(
+      reason: PersistenceBlockReason,
+      recoveryFailure: PersistenceFailureKind,
+      requiresAtomicRouting: Bool
+    )
+  }
+
+  typealias ConfigurationDependencyFactory = @MainActor (
+    String,
+    Clerk.Options,
+    PersistenceFailureKind?
+  ) throws -> DependencyContainer
+
   private enum ReconfigurationPlan: Equatable {
     case preserveIdentityAndSlot
     case preserveIdentityAndMigrateSlot
@@ -52,10 +77,21 @@ public final class Clerk {
   }
 
   /// A getter to see if the Clerk object is ready for use or not.
-  /// Returns true when both environment and client are loaded.
+  /// Returns true when persisted identity is safe to use and both environment
+  /// and client are loaded.
   public var isLoaded: Bool {
-    environment != nil && client != nil
+    persistenceStatus.readiness == .ready
+      && environment != nil
+      && client != nil
   }
+
+  /// Availability and readiness of Clerk's identity persistence and optional
+  /// cross-app session transport.
+  public internal(set) var persistenceStatus = PersistenceStatus(
+    identityStorage: .durable,
+    sharedSession: .disabled,
+    readiness: .ready
+  )
 
   /// A getter to see if a Clerk instance is running in production or development mode.
   public var instanceType: InstanceEnvironmentType {
@@ -232,9 +268,55 @@ public final class Clerk {
   /// Coordinates authentication state exchanged with a paired Apple Watch.
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
+  var isWatchConnectivityInstalled: Bool {
+    watchConnectivityCoordinator != nil
+  }
+
   /// Coalesces overlapping public Keychain clears so persistence remains frozen
   /// until the single clear transaction has completed.
   var keychainClearTask: Task<Void, Error>?
+
+  /// Persists an explicit clear outside Keychain so the obligation survives
+  /// process termination while durable identity storage is unavailable.
+  @ObservationIgnored
+  var appContainerIdentityClearIntentStore =
+    AppContainerIdentityClearIntentStoreFactory.makeDefault()
+
+  /// Clears the exact durable topology captured by an app-container intent
+  /// without installing or promoting those dependencies into the runtime.
+  @ObservationIgnored
+  var appContainerIdentityClearRecovery =
+    AppContainerIdentityClearRecovery()
+
+  /// Keeps authentication operations on one persistence runtime across
+  /// suspension points.
+  @ObservationIgnored
+  lazy var identityPersistenceOperationCoordinator =
+    IdentityPersistenceOperationCoordinator(clerk: self)
+
+  var identityPersistenceClearPending: Bool {
+    identityPersistenceOperationCoordinator.isClearPending
+  }
+
+  /// Shared generation observed when this app entered local-durable mode.
+  /// Local mutations retain this base so later transport recovery can resolve
+  /// concurrent sibling changes without assuming either side always wins.
+  var sharedSessionDegradationBaseGeneration: UInt64?
+
+  var sharedSessionLocalMutation: SharedSessionLocalMutation? {
+    guard case .durable =
+      identityPersistenceOperationCoordinator.identityCapability,
+      case .unavailable =
+      identityPersistenceOperationCoordinator
+        .sharedSessionCapability,
+        options.sharedSessionSync != nil
+    else {
+      return nil
+    }
+    return SharedSessionLocalMutation(
+      baseGeneration: sharedSessionDegradationBaseGeneration
+    )
+  }
 
   /// Dispatches Clerk state changes to optional internal observers.
   var internalStateChanges = ClerkInternalStateChangeEmitter()
@@ -309,28 +391,254 @@ public final class Clerk {
 extension Clerk {
   /// Internal helper method that performs the actual configuration work.
   @MainActor
-  func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
-    let dependencies = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options,
-      runtimeScope: runtimeScope
-    )
-    try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
+  func performConfiguration(
+    publishableKey: String,
+    options: Clerk.Options,
+    dependencyFactory: ConfigurationDependencyFactory? = nil
+  ) throws {
+    func makeDependencies(
+      forceVolatileIdentityPersistence: PersistenceFailureKind? = nil
+    ) throws -> DependencyContainer {
+      if let dependencyFactory {
+        return try dependencyFactory(
+          publishableKey,
+          options,
+          forceVolatileIdentityPersistence
+        )
+      }
+      return try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: runtimeScope,
+        deferSharedSessionAdoption: true,
+        persistenceFailureBehavior: .useVolatileStorage,
+        forceVolatileIdentityPersistence: forceVolatileIdentityPersistence
+      )
+    }
+
+    var dependencies = try makeDependencies()
+    switch recoverAppContainerIdentityClearBeforeBootstrap(
+      protecting: dependencies
+    ) {
+    case .notNeeded:
+      break
+    case .recovered:
+      // Recovery can establish the durable adoption barrier after the first
+      // container selected its storage mode. Rebuild only on this exceptional
+      // path so the installed runtime uses the recovered topology.
+      dependencies = try makeDependencies()
+    case .blocked(
+      let blockReason,
+      let recoveryFailure,
+      let requiresAtomicRouting
+    ):
+      // A partially completed recovery can also establish the adoption
+      // barrier before a later cleanup step fails. Rebuild before installing
+      // the blocked runtime so a foreground retry cannot resume with stale
+      // persistence routing.
+      let rebuiltDependencies = try makeDependencies()
+      if requiresAtomicRouting,
+         !rebuiltDependencies.usesVolatileIdentityPersistence,
+         rebuiltDependencies.atomicIdentityStore == nil
+      {
+        dependencies = try makeDependencies(
+          forceVolatileIdentityPersistence: recoveryFailure
+        )
+      } else {
+        dependencies = rebuiltDependencies
+      }
+      installConfiguration(
+        dependencies: dependencies,
+        bootstrapBlockReason: blockReason
+      )
+      return
+    }
+
+    do {
+      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+        in: dependencies.sharedSessionOwnerSlotClearRecovery
+      )
+    } catch {
+      let failure = PersistenceFailureKind.classify(error)
+      guard failure.permitsVolatileIdentityFallback else {
+        installConfiguration(
+          dependencies: dependencies,
+          bootstrapBlockReason: failure.blockReason
+        )
+        return
+      }
+      dependencies = try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: runtimeScope,
+        deferSharedSessionAdoption: true,
+        forceVolatileIdentityPersistence: failure
+      )
+      ClerkLogger.logError(
+        error,
+        message: "Durable Clerk clear recovery is unavailable. Continuing with isolated in-memory identity for this process."
+      )
+    }
+
+    if let bootstrapFailure =
+      dependencies.identityPersistenceBootstrapFailure
+    {
+      installConfiguration(
+        dependencies: dependencies,
+        bootstrapBlockReason: bootstrapFailure.blockReason
+      )
+      return
+    }
+
+    do {
+      try dependencies.probeLocalIdentityPersistence()
+      try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
+    } catch {
+      let failure = PersistenceFailureKind.classify(error)
+      guard failure.permitsVolatileIdentityFallback else {
+        installConfiguration(
+          dependencies: dependencies,
+          bootstrapBlockReason: failure.blockReason
+        )
+        return
+      }
+      dependencies = try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: runtimeScope,
+        deferSharedSessionAdoption: true,
+        forceVolatileIdentityPersistence: failure
+      )
+    }
+
     installConfiguration(dependencies: dependencies)
   }
 
   /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) throws {
+    switch recoverAppContainerIdentityClearBeforeBootstrap(
+      protecting: dependencies
+    ) {
+    case .notNeeded, .recovered:
+      break
+    case .blocked(let blockReason, _, _):
+      installConfiguration(
+        dependencies: dependencies,
+        bootstrapBlockReason: blockReason
+      )
+      return
+    }
     try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
       in: dependencies.sharedSessionOwnerSlotClearRecovery
     )
+    try dependencies.probeLocalIdentityPersistence()
     installConfiguration(dependencies: dependencies)
+  }
+
+  /// Completes an explicit clear before any persisted identity can be hydrated.
+  /// A valid unresolved intent always blocks identity; an unreadable or malformed
+  /// intent fails closed without guessing at a deletion target.
+  private func recoverAppContainerIdentityClearBeforeBootstrap(
+    protecting currentDependencies: any Dependencies
+  )
+    -> AppContainerIdentityClearBootstrapResult
+  {
+    let intent: AppContainerIdentityClearIntent
+    do {
+      guard let pendingIntent = try appContainerIdentityClearIntentStore.load()
+      else {
+        return .notNeeded
+      }
+      intent = pendingIntent
+    } catch {
+      let failure = PersistenceFailureKind.classify(error)
+      ClerkLogger.logError(
+        error,
+        message: "Clerk could not read its pending app-container identity clear."
+      )
+      return .blocked(
+        reason: failure.blockReason,
+        recoveryFailure: failure,
+        requiresAtomicRouting: false
+      )
+    }
+
+    do {
+      try recoverAppContainerIdentityClear(
+        intent,
+        protecting: currentDependencies
+      )
+      try appContainerIdentityClearIntentStore.remove(
+        matching: intent.transactionID
+      )
+      return .recovered
+    } catch {
+      let failure = PersistenceFailureKind.classify(error)
+      ClerkLogger.logError(
+        error,
+        message: "Clerk could not complete its pending durable identity clear."
+      )
+      return .blocked(
+        reason: .pendingClear,
+        recoveryFailure: failure,
+        requiresAtomicRouting:
+        appContainerIdentityClearCanChangeCurrentPersistenceRouting(
+          intent,
+          protecting: currentDependencies
+        )
+      )
+    }
+  }
+
+  private func recoverAppContainerIdentityClearStrictlyIfNeeded(
+    protecting currentDependencies: any Dependencies
+  ) throws -> Bool {
+    guard let intent = try appContainerIdentityClearIntentStore.load() else {
+      return false
+    }
+    try recoverAppContainerIdentityClear(
+      intent,
+      protecting: currentDependencies
+    )
+    try appContainerIdentityClearIntentStore.remove(
+      matching: intent.transactionID
+    )
+    return true
+  }
+
+  func appContainerIdentityClearCanChangeCurrentPersistenceRouting(
+    _ intent: AppContainerIdentityClearIntent,
+    protecting currentDependencies: any Dependencies
+  ) -> Bool {
+    guard intent.ownerSlot != nil else { return false }
+    let currentConfiguration =
+      currentDependencies.configurationManager
+    let currentFingerprint = SharedSessionNamespace(
+      frontendApiUrl: currentConfiguration.frontendApiUrl,
+      publishableKey: currentConfiguration.publishableKey
+    ).fingerprint
+    guard currentFingerprint == intent.instanceFingerprint,
+          let currentIntent =
+          try? Self.makeAppContainerIdentityClearIntent(
+            dependencies: currentDependencies,
+            options: currentConfiguration.options,
+            frontendApiUrl: currentConfiguration.frontendApiUrl,
+            publishableKey: currentConfiguration.publishableKey
+          )
+    else {
+      return false
+    }
+    return currentIntent.ownerIdentifier == intent.ownerIdentifier
+      && currentIntent.stableIdentity == intent.stableIdentity
   }
 
   /// Installs dependencies whose pending clear recovery has already been checked.
   @MainActor
-  private func installConfiguration(dependencies: any Dependencies) {
+  func installConfiguration(
+    dependencies: any Dependencies,
+    bootstrapBlockReason: PersistenceBlockReason? = nil
+  ) {
     cancelStartupClientRefresh()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
@@ -343,7 +651,28 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    sharedSessionDegradationBaseGeneration = nil
+    let initialSharedCapability: SharedSessionCapability = if options.sharedSessionSync == nil {
+      .disabled
+    } else if case .volatile(let failure) =
+      dependencies.identityPersistenceCapability
+    {
+      .unavailable(failure)
+    } else {
+      .unavailable(.temporarilyUnavailable)
+    }
+    identityPersistenceOperationCoordinator.reset(
+      identityCapability: dependencies.identityPersistenceCapability,
+      sharedSessionCapability: initialSharedCapability
+    )
+    let bootstrapOwnership =
+      identityPersistenceOperationCoordinator.beginBootstrap(
+        epoch: configurationEpoch
+      )
+    let durableIdentityPersistenceIsAvailable =
+      !dependencies.usesVolatileIdentityPersistence
     let usesSharedSessionSync = options.sharedSessionSync != nil
+      && durableIdentityPersistenceIsAvailable
 
     // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
@@ -369,24 +698,48 @@ extension Clerk {
       atomicIdentityStore: dependencies.atomicIdentityStore
     )
     self.cacheManager = cacheManager
-    cacheManager.loadCachedData(hydrateIdentity: !usesSharedSessionSync)
-    if usesSharedSessionSync, dependencies.shouldHydrateProvisionalLegacyClient {
-      cacheManager.loadProvisionalLegacyClientForPresentation()
+
+    if let bootstrapBlockReason {
+      cacheManager.loadCachedData(hydrateIdentity: false)
+      identityPersistenceOperationCoordinator.block(
+        bootstrapOwnership,
+        reason: bootstrapBlockReason
+      )
+      startEnvironmentRefresh()
+      return
     }
 
-    let initialSharedSessionReconciliation = startSharedSessionSyncIfNeeded(
-      dependencies: dependencies
+    try? identityPersistenceOperationCoordinator.advanceBootstrap(
+      bootstrapOwnership,
+      to: .establishingLocalIdentity
     )
 
-    // Set up watch connectivity coordinator only after cache hydration.
-    // Restored cached state should not be versioned as a new local auth change.
-    if options.watchConnectivityEnabled {
-      let coordinator = WatchConnectivityCoordinator()
-      watchConnectivityCoordinator = coordinator
-      internalStateChanges.addObserver(coordinator)
+    let initialSharedSessionReconciliation: Task<Bool, Never>?
+    if usesSharedSessionSync {
+      cacheManager.loadCachedData(hydrateIdentity: false)
+      if dependencies.shouldHydrateProvisionalLegacyClient {
+        cacheManager.loadProvisionalLegacyClientForPresentation()
+      }
+      initialSharedSessionReconciliation = startSharedSessionSyncIfNeeded(
+        dependencies: dependencies,
+        cacheManager: cacheManager,
+        bootstrapOwnership: bootstrapOwnership
+      )
+    } else {
+      cacheManager.loadCachedData()
+      identityPersistenceOperationCoordinator.setSharedSessionCapability(
+        initialSharedCapability
+      )
+      identityPersistenceOperationCoordinator.finish(bootstrapOwnership)
+      installWatchConnectivityIfAvailable()
+      initialSharedSessionReconciliation = nil
     }
 
-    // Fire and forget: fetch fresh client and environment from API
+    startEnvironmentRefresh()
+    startStartupClientRefreshIfNeeded(after: initialSharedSessionReconciliation)
+  }
+
+  private func startEnvironmentRefresh() {
     let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
       do {
@@ -403,8 +756,31 @@ extension Clerk {
         ClerkLogger.logError(error, message: "Failed to load environment")
       }
     }
+  }
 
-    startStartupClientRefreshIfNeeded(after: initialSharedSessionReconciliation)
+  private func installWatchConnectivityIfAvailable() {
+    guard options.watchConnectivityEnabled,
+          identityPersistenceOperationCoordinator.isIdentityReady,
+          case .durable =
+          identityPersistenceOperationCoordinator.identityCapability,
+          watchConnectivityCoordinator == nil
+    else {
+      return
+    }
+    let coordinator = WatchConnectivityCoordinator()
+    watchConnectivityCoordinator = coordinator
+    internalStateChanges.addObserver(coordinator)
+  }
+
+  func suspendWatchConnectivityForPersistenceTransition() {
+    guard let coordinator = watchConnectivityCoordinator else { return }
+    coordinator.stopAcceptingIdentityUpdates()
+    internalStateChanges.removeObserver(coordinator)
+    watchConnectivityCoordinator = nil
+  }
+
+  func resumeWatchConnectivityAfterPersistenceTransition() {
+    installWatchConnectivityIfAvailable()
   }
 
   func startStartupClientRefreshIfNeeded(
@@ -447,51 +823,188 @@ extension Clerk {
 
   @MainActor
   private func startSharedSessionSyncIfNeeded(
-    dependencies: any Dependencies
+    dependencies: any Dependencies,
+    cacheManager: CacheManager,
+    bootstrapOwnership: PersistenceTransitionOwnership
   ) -> Task<Bool, Never>? {
-    guard options.sharedSessionSync != nil else { return nil }
+    guard !dependencies.usesVolatileIdentityPersistence,
+          options.sharedSessionSync != nil
+    else {
+      return nil
+    }
     guard options.keychainConfig.normalizedAccessGroup != nil,
           let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
           !ownerIdentifier.isEmpty,
           let localIdentityStore = dependencies.atomicIdentityStore
     else {
-      ClerkLogger.error(
-        "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
+      settleUnavailableSharedSession(
+        error: ClerkClientError(
+          message: "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
+        ),
+        coordinator: nil,
+        cacheManager: cacheManager,
+        ownership: bootstrapOwnership
       )
       return nil
     }
 
     do {
-      let namespace = SharedSessionNamespace(
-        frontendApiUrl: frontendApiUrl,
-        publishableKey: publishableKey
-      )
-      let slotStore = try SharedSessionOwnerSlotStore(
-        keychainConfig: options.keychainConfig,
-        namespace: namespace,
-        ownerIdentifier: ownerIdentifier
-      )
-      let coordinator = SharedSessionSyncCoordinator(
+      let didAdoptSharedSession =
+        try (dependencies as? DependencyContainer)?
+          .performDeferredSharedSessionAdoptionIfNeeded() ?? false
+      if didAdoptSharedSession {
+        cacheManager.loadProvisionalLegacyClientForPresentation()
+      }
+      let localMutationPreparation =
+        try SharedSessionRecoveryReconciler
+          .preparePendingLocalMutationForActivation(
+            in: dependencies
+          )
+      if localMutationPreparation?.publishedDestinationSlot != nil {
+        Self.notifySharedSessionTopologyChange(in: dependencies)
+      }
+      try identityPersistenceOperationCoordinator
+        .advanceSharedReconciliation(
+          bootstrapOwnership
+        )
+      let coordinator = try makeSharedSessionSyncCoordinator(
+        dependencies: dependencies,
         ownerIdentifier: ownerIdentifier,
-        instanceFingerprint: namespace.fingerprint,
-        slotStore: slotStore,
-        localIdentityStore: localIdentityStore,
-        localIdentityIO: dependencies.atomicIdentityIO,
-        notifier: SharedSessionSyncDarwinNotifier(
-          keychainConfig: options.keychainConfig,
-          instanceFingerprint: namespace.fingerprint
-        ),
-        configurationEpoch: configurationEpoch,
-        clerk: self
+        localIdentityStore: localIdentityStore
       )
       sharedSessionSyncCoordinator = coordinator
       internalStateChanges.addObserver(coordinator)
-      coordinator.hydrateInitialSharedState()
-      return coordinator.start()
+      let initialTask = coordinator.start()
+      return Task { @MainActor [weak self, weak coordinator] in
+        _ = await initialTask.value
+        guard let self, let coordinator else { return false }
+        do {
+          try identityPersistenceOperationCoordinator.validate(
+            bootstrapOwnership
+          )
+          try await coordinator.waitForInitialReconciliation()
+          try identityPersistenceOperationCoordinator
+            .advanceSharedCommit(
+              bootstrapOwnership
+            )
+          identityPersistenceOperationCoordinator.setSharedSessionCapability(
+            .active
+          )
+          sharedSessionDegradationBaseGeneration = nil
+          identityPersistenceOperationCoordinator.finish(bootstrapOwnership)
+          installWatchConnectivityIfAvailable()
+          return true
+        } catch is CancellationError {
+          return false
+        } catch {
+          settleUnavailableSharedSession(
+            error: error,
+            failure:
+            coordinator.lastReconciliationFailureKind,
+            coordinator: coordinator,
+            cacheManager: cacheManager,
+            ownership: bootstrapOwnership
+          )
+          return false
+        }
+      }
     } catch {
-      ClerkLogger.logError(error, message: "Failed to install shared session sync")
+      settleUnavailableSharedSession(
+        error: error,
+        coordinator: nil,
+        cacheManager: cacheManager,
+        ownership: bootstrapOwnership
+      )
       return nil
     }
+  }
+
+  private func makeSharedSessionSyncCoordinator(
+    dependencies: any Dependencies,
+    ownerIdentifier: String,
+    localIdentityStore: any SharedSessionLocalIdentityStoring
+  ) throws -> SharedSessionSyncCoordinator {
+    let namespace = SharedSessionNamespace(
+      frontendApiUrl: frontendApiUrl,
+      publishableKey: publishableKey
+    )
+    let slotStore = try SharedSessionOwnerSlotStore(
+      keychainConfig: options.keychainConfig,
+      namespace: namespace,
+      ownerIdentifier: ownerIdentifier
+    )
+    return SharedSessionSyncCoordinator(
+      ownerIdentifier: ownerIdentifier,
+      instanceFingerprint: namespace.fingerprint,
+      slotStore: slotStore,
+      localIdentityStore: localIdentityStore,
+      localIdentityIO: dependencies.atomicIdentityIO,
+      notifier: SharedSessionSyncDarwinNotifier(
+        keychainConfig: options.keychainConfig,
+        instanceFingerprint: namespace.fingerprint
+      ),
+      configurationEpoch: configurationEpoch,
+      clerk: self
+    )
+  }
+
+  private func settleUnavailableSharedSession(
+    error: any Error,
+    failure: PersistenceFailureKind? = nil,
+    coordinator: SharedSessionSyncCoordinator?,
+    cacheManager: CacheManager,
+    ownership: PersistenceTransitionOwnership
+  ) {
+    guard identityPersistenceOperationCoordinator.activeTransitionID
+      == ownership.id
+    else {
+      return
+    }
+    ClerkLogger.logError(
+      error,
+      message: "Shared session sync is unavailable. Clerk will continue with durable app-local identity."
+    )
+    coordinator?.deactivate()
+    if let observedGeneration = coordinator?.currentMaximumGeneration,
+       observedGeneration > 0
+    {
+      sharedSessionDegradationBaseGeneration = max(
+        sharedSessionDegradationBaseGeneration ?? 0,
+        observedGeneration
+      )
+    }
+    if sharedSessionSyncCoordinator === coordinator {
+      sharedSessionSyncCoordinator = nil
+    }
+    if let coordinator {
+      internalStateChanges.removeObserver(coordinator)
+    }
+    do {
+      try dependencies.atomicIdentityStore?
+        .convertPendingPublicationToUnpublishedLocalMutation(
+          baseGeneration: sharedSessionDegradationBaseGeneration
+        )
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Shared session sync failed while preserving the pending app-local identity."
+      )
+      identityController.resetRuntimeIdentity()
+      identityPersistenceOperationCoordinator.block(
+        ownership,
+        reason: PersistenceFailureKind.classify(error).blockReason
+      )
+      return
+    }
+    identityController.resetRuntimeIdentity()
+    cacheManager.loadCachedData()
+    identityPersistenceOperationCoordinator.setSharedSessionCapability(
+      .unavailable(
+        failure ?? PersistenceFailureKind.classify(error)
+      )
+    )
+    identityPersistenceOperationCoordinator.finish(ownership)
+    installWatchConnectivityIfAvailable()
   }
 
   /// Configures the shared Clerk instance.
@@ -529,6 +1042,26 @@ extension Clerk {
       return Clerk()
     }
 
+    _shared = clerk
+    return clerk
+  }
+
+  /// Installs an isolated instance without starting production managers.
+  ///
+  /// SwiftUI previews use this path so their mock state never depends on
+  /// production persistence, lifecycle, networking, Watch, or shared-session
+  /// setup.
+  @MainActor
+  static func configureForPreview(
+    dependencies makeDependencies: (Clerk) -> any Dependencies
+  ) -> Clerk {
+    if let existing = _shared {
+      existing.cleanupManagers()
+      _shared = nil
+    }
+
+    let clerk = Clerk()
+    clerk.dependencies = makeDependencies(clerk)
     _shared = clerk
     return clerk
   }
@@ -573,7 +1106,10 @@ extension Clerk {
   /// shared owner slot as needed.
   ///
   /// If Clerk has not been configured yet, this method creates and installs the shared
-  /// instance without going through the fallback ``Clerk/shared`` getter.
+  /// instance without going through the fallback ``Clerk/shared`` getter. This initial
+  /// reconfiguration remains strict because it promises to clear persisted credentials:
+  /// it throws when durable storage cannot be reached. Use ``configure(publishableKey:options:)``
+  /// for resilient initial launch with isolated in-memory fallback.
   ///
   /// - Parameters:
   ///   - publishableKey: The new publishable key from your Clerk Dashboard.
@@ -594,98 +1130,30 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) async throws -> Clerk {
+    if let existing = _shared {
+      try await existing.keychainClearTask?.value
+      if existing.identityPersistenceClearPending {
+        try await startKeychainClearIfNeeded(for: existing).value
+      }
+    }
+
     try beginRuntimeReconfiguration()
     defer { endRuntimeReconfiguration() }
 
     if let existing = _shared {
-      // A public Keychain clear owns deletion of the current atomic identity.
-      // Let that transaction commit before reconfiguration invalidates the old
-      // runtime's identity queue or decides whether local state can be reused.
-      try await existing.keychainClearTask?.value
-      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-        in: existing.dependencies.sharedSessionOwnerSlotClearRecovery
-      )
-
-      let nextEpoch = existing.nextConfigurationEpoch
-      let newDependencies = try DependencyContainer(
+      let preparation = try await existing.prepareReconfiguration(
         publishableKey: publishableKey,
-        options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState),
-        deferSharedSessionAdoption: true
+        options: options
       )
-      let plan = existing.reconfigurationPlan(with: newDependencies)
-      if plan == .preserveIdentityAndMigrateSlot {
-        try await existing.settlePendingPublicationForTopologyChange()
-      }
-      let rollbackState = existing.captureReconfigurationRollbackState()
-      var topologyMigrationRollback: SharedSessionTopologyMigration.Rollback?
-
-      existing.setConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersAndDrainCache(
-        deleteSharedSessionOwnerSlot: false
+      return try await existing.installPreparedReconfiguration(
+        preparation
       )
-
-      do {
-        switch plan {
-        case .preserveIdentityAndSlot:
-          try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
-        case .preserveIdentityAndMigrateSlot:
-          topologyMigrationRollback = try prepareAcceptedIdentityForTopologyChange(
-            from: rollbackState.dependencies,
-            to: newDependencies
-          )
-          try newDependencies.performDeferredSharedSessionAdoptionIfNeeded()
-        case .replaceIdentity:
-          try await clearLocalClerkStorageStrictly(in: newDependencies)
-          try await clearLocalClerkStorageStrictly(
-            in: rollbackState.dependencies,
-            deleteSharedSessionOwnerSlot: false
-          )
-          try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
-        }
-        try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-        if !plan.reusesOwnerSlot {
-          try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
-            in: rollbackState.dependencies
-          )
-        }
-        if topologyMigrationRollback?.publishedDestinationSlot != nil {
-          notifySharedSessionTopologyChange(in: newDependencies)
-        }
-      } catch {
-        if let topologyMigrationRollback {
-          do {
-            try topologyMigrationRollback.restore()
-          } catch let rollbackError {
-            ClerkLogger.logError(
-              rollbackError,
-              message: "Failed to roll back shared-session topology migration"
-            )
-          }
-        }
-        existing.restoreAfterFailedReconfiguration(rollbackState)
-        throw error
-      }
-
-      await existing.resetRuntimeStateForReconfiguration()
-      existing.installConfiguration(dependencies: newDependencies)
-      return existing
     }
 
-    let clerk = Clerk()
-    let newDependencies = try DependencyContainer(
+    return try await configureNewSharedInstance(
       publishableKey: publishableKey,
-      options: options,
-      runtimeScope: clerk.runtimeScope,
-      deferSharedSessionAdoption: true
+      options: options
     )
-
-    try await clearLocalClerkStorageStrictly(in: newDependencies)
-    try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
-    try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-    clerk.installConfiguration(dependencies: newDependencies)
-    _shared = clerk
-    return clerk
   }
 
   @MainActor
@@ -794,6 +1262,7 @@ extension Clerk {
   /// ```
   @discardableResult
   public func handle(_ url: URL) async throws -> Bool {
+    await Clerk.waitForRuntimeReconfigurationIfNeeded()
     guard let route = try ClerkURLRoute(url: url, redirectUrl: options.redirectConfig.redirectUrl) else {
       return false
     }
@@ -849,6 +1318,21 @@ extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
+
+    if identityPersistenceClearPending {
+      do {
+        try await Self.startKeychainClearIfNeeded(for: self).value
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Clerk identity storage is still unavailable. The pending identity clear will retry on the next foreground."
+        )
+      }
+      return
+    }
+    if case .blocked = persistenceStatus.readiness {
+      return
+    }
 
     emitInternalStateChange(.applicationDidEnterForeground)
 
@@ -974,6 +1458,8 @@ extension Clerk {
       throw ClerkClientError(message: "Clerk must be configured before getting a session token.")
     }
 
+    try shared.identityPersistenceOperationCoordinator
+      .requireIdentityOperationsAvailable()
     return shared.runtimeScope
   }
 
@@ -988,6 +1474,259 @@ extension Clerk {
   func setConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
     configurationEpoch = epoch
     runtimeState.advance(to: epoch)
+  }
+
+  private static func configureNewSharedInstance(
+    publishableKey: String,
+    options: Clerk.Options
+  ) async throws -> Clerk {
+    let clerk = Clerk()
+    func makeDependencies() throws -> DependencyContainer {
+      try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: clerk.runtimeScope,
+        deferSharedSessionAdoption: true
+      )
+    }
+
+    var dependencies = try makeDependencies()
+    if try clerk.recoverAppContainerIdentityClearStrictlyIfNeeded(
+      protecting: dependencies
+    ) {
+      dependencies = try makeDependencies()
+    }
+    try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+      in: dependencies.sharedSessionOwnerSlotClearRecovery
+    )
+    try dependencies.probeLocalIdentityPersistence()
+    try await clearLocalClerkStorageStrictly(in: dependencies)
+    try dependencies
+      .markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
+    try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
+    clerk.installConfiguration(dependencies: dependencies)
+    _shared = clerk
+    return clerk
+  }
+
+  private func prepareReconfiguration(
+    publishableKey: String,
+    options: Clerk.Options
+  ) async throws -> PreparedReconfiguration {
+    let previousReadiness = persistenceStatus.readiness
+    identityPersistenceOperationCoordinator.cancelActiveTransition()
+    let ownership = try identityPersistenceOperationCoordinator
+      .beginReconfiguration(epoch: configurationEpoch)
+    suspendWatchConnectivityForPersistenceTransition()
+    let nextEpoch = nextConfigurationEpoch
+
+    do {
+      let target = try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: .init(
+          epoch: nextEpoch,
+          runtimeState: runtimeState
+        ),
+        deferSharedSessionAdoption: true
+      )
+      try prepareReconfigurationTarget(target)
+      let plan = reconfigurationPlan(with: target)
+      if plan == .preserveIdentityAndMigrateSlot {
+        try await settlePendingPublicationForTopologyChange()
+      }
+      try identityPersistenceOperationCoordinator
+        .advanceReconfiguration(
+          ownership,
+          to: .reconcilingIdentity
+        )
+      return try PreparedReconfiguration(
+        ownership: ownership,
+        nextEpoch: nextEpoch,
+        dependencies: target,
+        plan: plan,
+        rollbackState: captureReconfigurationRollbackState(),
+        volatileIdentity: volatileIdentityForReconfiguration()
+      )
+    } catch {
+      restoreAfterFailedReconfigurationPreparation(
+        ownership: ownership,
+        previousReadiness: previousReadiness
+      )
+      throw error
+    }
+  }
+
+  private func prepareReconfigurationTarget(
+    _ target: DependencyContainer
+  ) throws {
+    try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+      in: target.sharedSessionOwnerSlotClearRecovery
+    )
+    try target.probeLocalIdentityPersistence()
+    try target.discardPendingPublicationWhenSharedSyncDisabled()
+  }
+
+  private func volatileIdentityForReconfiguration() throws
+    -> ClerkIdentitySnapshot?
+  {
+    guard dependencies.usesVolatileIdentityPersistence else {
+      return nil
+    }
+    return try identityController.currentIdentitySnapshot()
+  }
+
+  private func restoreAfterFailedReconfigurationPreparation(
+    ownership: PersistenceTransitionOwnership,
+    previousReadiness: PersistenceStatus.Readiness
+  ) {
+    if case .blocked(let reason) = previousReadiness {
+      identityPersistenceOperationCoordinator.block(
+        ownership,
+        reason: reason
+      )
+    } else {
+      identityPersistenceOperationCoordinator.finish(ownership)
+    }
+    resumeWatchConnectivityAfterPersistenceTransition()
+  }
+
+  private func installPreparedReconfiguration(
+    _ preparation: PreparedReconfiguration
+  ) async throws -> Clerk {
+    setConfigurationEpoch(to: preparation.nextEpoch)
+    await cleanupManagersAndDrainCache(
+      deleteSharedSessionOwnerSlot: false,
+      cancelPersistenceTransition: false
+    )
+
+    var topologyRollback: SharedSessionTopologyMigration.Rollback?
+    do {
+      try identityPersistenceOperationCoordinator
+        .advanceReconfiguration(
+          preparation.ownership,
+          to: .installingTarget,
+          expectedEpoch: preparation.nextEpoch
+        )
+      topologyRollback = try await prepareIdentityForReconfiguration(
+        preparation
+      )
+      try await retireReconfigurationSource(
+        preparation,
+        topologyRollback: topologyRollback
+      )
+    } catch {
+      restoreTopologyMigration(topologyRollback)
+      restoreAfterFailedReconfiguration(preparation.rollbackState)
+      throw error
+    }
+
+    await resetRuntimeStateForReconfiguration()
+    installConfiguration(dependencies: preparation.dependencies)
+    return self
+  }
+
+  private func prepareIdentityForReconfiguration(
+    _ preparation: PreparedReconfiguration
+  ) async throws -> SharedSessionTopologyMigration.Rollback? {
+    switch preparation.plan {
+    case .preserveIdentityAndSlot:
+      guard let identity = preparation.volatileIdentity else { return nil }
+      return try prepareLocalMutationForReconfiguration(
+        identity,
+        baseGeneration: sharedSessionDegradationBaseGeneration,
+        dependencies: preparation.dependencies
+      )
+    case .preserveIdentityAndMigrateSlot:
+      return try prepareMigratedIdentityForReconfiguration(preparation)
+    case .replaceIdentity:
+      try await Self.clearLocalClerkStorageStrictly(
+        in: preparation.dependencies
+      )
+      try await Self.clearLocalClerkStorageStrictly(
+        in: preparation.rollbackState.dependencies,
+        deleteSharedSessionOwnerSlot: false
+      )
+      try preparation.dependencies
+        .markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
+      return nil
+    }
+  }
+
+  private func prepareMigratedIdentityForReconfiguration(
+    _ preparation: PreparedReconfiguration
+  ) throws -> SharedSessionTopologyMigration.Rollback? {
+    if let identity = preparation.volatileIdentity {
+      return try prepareLocalMutationForReconfiguration(
+        identity,
+        baseGeneration: sharedSessionDegradationBaseGeneration,
+        dependencies: preparation.dependencies
+      )
+    }
+    if let sourceRecord = try preparation.rollbackState
+      .dependencies.atomicIdentityStore?.loadRecord(),
+      sourceRecord.hasUnpublishedLocalMutation,
+      let identity = sourceRecord.acceptedIdentity
+    {
+      return try prepareLocalMutationForReconfiguration(
+        identity,
+        baseGeneration: sourceRecord.sharedSessionBaseGeneration,
+        dependencies: preparation.dependencies
+      )
+    }
+    return try Self.prepareAcceptedIdentityForTopologyChange(
+      from: preparation.rollbackState.dependencies,
+      to: preparation.dependencies
+    )
+  }
+
+  private func prepareLocalMutationForReconfiguration(
+    _ identity: ClerkIdentitySnapshot,
+    baseGeneration: UInt64?,
+    dependencies: any Dependencies
+  ) throws -> SharedSessionTopologyMigration.Rollback? {
+    try SharedSessionRecoveryReconciler
+      .prepareLocalMutationForActivation(
+        identity: identity,
+        baseGeneration: baseGeneration,
+        in: dependencies
+      )
+  }
+
+  private func retireReconfigurationSource(
+    _ preparation: PreparedReconfiguration,
+    topologyRollback: SharedSessionTopologyMigration.Rollback?
+  ) async throws {
+    if !preparation.plan.reusesOwnerSlot {
+      try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
+        in: preparation.rollbackState.dependencies
+      )
+    }
+    if topologyRollback?.publishedDestinationSlot != nil {
+      Self.notifySharedSessionTopologyChange(
+        in: preparation.dependencies
+      )
+    }
+    try identityPersistenceOperationCoordinator
+      .advanceReconfiguration(
+        preparation.ownership,
+        to: .retiringSource,
+        expectedEpoch: preparation.nextEpoch
+      )
+  }
+
+  private func restoreTopologyMigration(
+    _ rollback: SharedSessionTopologyMigration.Rollback?
+  ) {
+    guard let rollback else { return }
+    do {
+      try rollback.restore()
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to roll back shared-session topology migration"
+      )
+    }
   }
 
   private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
@@ -1052,7 +1791,7 @@ extension Clerk {
     )
   }
 
-  private static func notifySharedSessionTopologyChange(
+  static func notifySharedSessionTopologyChange(
     in dependencies: any Dependencies
   ) {
     guard let topology = SharedSessionSlotTopology(dependencies: dependencies) else { return }
@@ -1108,6 +1847,7 @@ extension Clerk {
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
+    identityPersistenceOperationCoordinator.cancelActiveTransition()
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     identityController.invalidateLocalOperations()
     cancelStartupClientRefresh()
@@ -1123,9 +1863,13 @@ extension Clerk {
     teardownNonCacheManagers()
   }
 
-  private func cleanupManagersAndDrainCache(
-    deleteSharedSessionOwnerSlot: Bool = true
+  func cleanupManagersAndDrainCache(
+    deleteSharedSessionOwnerSlot: Bool = true,
+    cancelPersistenceTransition: Bool = true
   ) async {
+    if cancelPersistenceTransition {
+      identityPersistenceOperationCoordinator.cancelActiveTransition()
+    }
     let watchConnectivityCoordinator = watchConnectivityCoordinator
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     await identityController.invalidateAndDrainLocalOperations(

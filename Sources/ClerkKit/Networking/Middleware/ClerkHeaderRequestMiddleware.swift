@@ -17,35 +17,45 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
 
   @MainActor
   func prepare(_ request: inout URLRequest) async throws {
-    let clerk = try runtimeScope.requireCurrentClerk()
-    let identity = try await clerk.identityController.captureRequestIdentity(
-      startupClientRefreshTakeoverID: request.clerkStartupClientRefreshTakeoverID
-    )
-    _ = try runtimeScope.requireCurrentClerk()
-    request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
-    request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
-    let isCanonicalClientRequest = request.value(
-      forHTTPHeaderField: Self.canonicalClientRequestHeader
-    ) == "1"
+    if request.clerkUsesIdentity {
+      let clerk = try runtimeScope.requireCurrentClerk()
+      let identity = try await clerk.identityController.captureRequestIdentity(
+        startupClientRefreshTakeoverID: request.clerkStartupClientRefreshTakeoverID
+      )
+      _ = try runtimeScope.requireCurrentClerk()
+      request.setClerkClientResponseGeneration(
+        identity.clientResponseGeneration
+      )
+      request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
+      let isCanonicalClientRequest = request.value(
+        forHTTPHeaderField: Self.canonicalClientRequestHeader
+      ) == "1"
+      let skipClientId = request.value(
+        forHTTPHeaderField: Self.skipClientIdHeader
+      ) == "1"
+      request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
+        requestSequence: request.clerkRequestSequence,
+        clientResponseGeneration: identity.clientResponseGeneration,
+        sharedSessionBaseGeneration: identity.baseGeneration,
+        isCanonicalClientRequest: isCanonicalClientRequest,
+        requestDeviceToken: identity.deviceToken
+      ))
+
+      if let deviceToken = identity.deviceToken {
+        request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
+      }
+      if !skipClientId, let clientId = identity.clientID {
+        request.setValue(
+          clientId,
+          forHTTPHeaderField: "x-clerk-client-id"
+        )
+      }
+    } else {
+      request.setValue(nil, forHTTPHeaderField: "Authorization")
+      request.setValue(nil, forHTTPHeaderField: "x-clerk-client-id")
+    }
     request.setValue(nil, forHTTPHeaderField: Self.canonicalClientRequestHeader)
-    let skipClientId = request.value(forHTTPHeaderField: Self.skipClientIdHeader) == "1"
     request.setValue(nil, forHTTPHeaderField: Self.skipClientIdHeader)
-
-    request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
-      requestSequence: request.clerkRequestSequence,
-      clientResponseGeneration: identity.clientResponseGeneration,
-      sharedSessionBaseGeneration: identity.baseGeneration,
-      isCanonicalClientRequest: isCanonicalClientRequest,
-      requestDeviceToken: identity.deviceToken
-    ))
-
-    if let deviceToken = identity.deviceToken {
-      request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
-    }
-
-    if !skipClientId, let clientId = identity.clientID {
-      request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
-    }
 
     if let deviceId = DeviceHelper.deviceID {
       request.setValue(deviceId, forHTTPHeaderField: "x-native-device-id")

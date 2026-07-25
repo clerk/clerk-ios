@@ -44,6 +44,12 @@ protocol Dependencies: AnyObject {
   /// use the legacy Client as provisional launch UI.
   var shouldHydrateProvisionalLegacyClient: Bool { get }
 
+  /// Availability of this runtime's app-local identity persistence.
+  var identityPersistenceCapability: IdentityPersistenceCapability { get }
+
+  /// A durable bootstrap record that could not be interpreted safely.
+  var identityPersistenceBootstrapFailure: PersistenceFailureKind? { get }
+
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
@@ -86,6 +92,15 @@ protocol Dependencies: AnyObject {
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }
 
+  /// Removes an interrupted shared publication when the target runtime has
+  /// shared-session transport disabled.
+  @MainActor
+  func discardPendingPublicationWhenSharedSyncDisabled() throws
+
+  /// Prevents a completed explicit clear from re-adopting legacy credentials.
+  @MainActor
+  func markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded() throws
+
   /// Store for pending native magic-link PKCE state.
   var magicLinkStore: MagicLinkStore { get }
 
@@ -94,7 +109,50 @@ protocol Dependencies: AnyObject {
 }
 
 extension Dependencies {
+  var identityPersistenceCapability: IdentityPersistenceCapability {
+    .durable
+  }
+
+  var identityPersistenceBootstrapFailure: PersistenceFailureKind? {
+    nil
+  }
+
+  var usesVolatileIdentityPersistence: Bool {
+    if case .volatile = identityPersistenceCapability {
+      true
+    } else {
+      false
+    }
+  }
+
   var watchSyncKeychain: any KeychainStorage {
     MigratingKeychainStorage(primary: appLocalKeychain, fallback: keychain)
   }
+
+  /// Performs one identity read to establish that app-local identity storage
+  /// can be consumed before any identity is hydrated.
+  ///
+  /// All identity keys use the same Keychain access scope, so reading every
+  /// key would duplicate the entitlement check. Cached environment hydration
+  /// remains best-effort and does not determine identity readiness.
+  func probeLocalIdentityPersistence() throws {
+    if let atomicIdentityStore {
+      _ = try atomicIdentityStore.loadRecord()
+    } else {
+      _ = try identityKeychain.data(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+    }
+  }
+
+  @MainActor
+  func discardPendingPublicationWhenSharedSyncDisabled() throws {
+    guard configurationManager.options.sharedSessionSync == nil else {
+      return
+    }
+    try atomicIdentityStore?.clearPendingPublication()
+  }
+
+  @MainActor
+  func markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded() throws {}
 }

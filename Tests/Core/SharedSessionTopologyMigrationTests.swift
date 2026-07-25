@@ -60,6 +60,36 @@ struct SharedSessionTopologyMigrationTests {
   }
 
   @Test
+  func volatileIdentityRecoveryPublishesAfterExistingPeer() throws {
+    let peerSlot = try makeSlot(
+      owner: "app.peer",
+      generation: 7,
+      identity: makeIdentity(clientID: "peer")
+    )
+    let slotStore = TopologyOwnerSlotStore(
+      ownerIdentifier: "app.recovered",
+      slots: [peerSlot]
+    )
+    let localStore = SharedSessionLocalIdentityStore(
+      keychain: InMemoryKeychain()
+    )
+
+    _ = try SharedSessionTopologyMigration.prepare(
+      identity: makeIdentity(clientID: "fresh"),
+      destinationIdentityStore: localStore,
+      destinationSlotStore: slotStore,
+      destinationInstanceFingerprint: "instance",
+      destinationOwnerIdentifier: "app.recovered",
+      alwaysPublishIdentity: true
+    )
+
+    let recoveredSlot = try #require(try slotStore.loadOwnSlot())
+    #expect(recoveredSlot.event.generation == 8)
+    #expect(recoveredSlot.event.client?.id == "fresh")
+    #expect(try localStore.load()?.client?.id == "fresh")
+  }
+
+  @Test
   func staleDestinationOwnedSlotIsReplacedWhenNoPeerExists() throws {
     let staleIdentity = makeIdentity(clientID: "stale")
     let staleSlot = try makeSlot(

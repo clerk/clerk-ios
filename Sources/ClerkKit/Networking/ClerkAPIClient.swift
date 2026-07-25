@@ -108,12 +108,16 @@ actor APIClient {
     while true {
       try Task.checkCancellation()
       try ensureCurrentRuntimeScope()
+      try await ensureIdentityPersistenceReadinessIfNeeded(for: request)
       attempts += 1
 
       var urlRequest = try request.makeURLRequest(baseURL: baseURL, encoder: encoder)
       urlRequest.setClerkRequestMetadata(
         sequence: requestSequence,
         startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+      )
+      urlRequest.setClerkUsesIdentity(
+        request.requiresIdentityPersistenceReadiness
       )
       try await pipeline.prepareClerkRequest(&urlRequest)
       let preparedContext = ClerkRequestContext(request: urlRequest)
@@ -145,6 +149,7 @@ actor APIClient {
           throw APIClientError.invalidHTTPResponse
         }
 
+        try await ensureIdentityPersistenceReadinessIfNeeded(for: request)
         do {
           try await pipeline.validate(httpResponse, data: data, for: urlRequest)
           try ensureCurrentRuntimeScope()
@@ -188,6 +193,16 @@ actor APIClient {
 
   private func ensureCurrentRuntimeScope() throws {
     try runtimeScope.validateStableRuntime()
+  }
+
+  private func ensureIdentityPersistenceReadinessIfNeeded(
+    for request: Request<some Any>
+  ) async throws {
+    guard request.requiresIdentityPersistenceReadiness else { return }
+    try await runtimeScope.withCurrentClerk {
+      try $0.identityPersistenceOperationCoordinator
+        .requireIdentityOperationsAvailable()
+    }
   }
 
   private func finishStartupClientRefreshTakeover(_ id: UUID?) async {

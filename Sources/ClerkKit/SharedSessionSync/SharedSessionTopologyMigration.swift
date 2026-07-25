@@ -23,6 +23,7 @@ enum SharedSessionTopologyMigration {
 
   private struct DestinationTopology {
     let hasSlotStore: Bool
+    let alwaysPublishIdentity: Bool
     let instanceFingerprint: String?
     let ownerIdentifier: String?
     let excludedOwnerIdentifier: String?
@@ -106,7 +107,8 @@ enum SharedSessionTopologyMigration {
     destinationSlotStore: (any SharedSessionSlotStoring)?,
     destinationInstanceFingerprint: String?,
     destinationOwnerIdentifier: String?,
-    excludingSourceOwnerIdentifier: String? = nil
+    excludingSourceOwnerIdentifier: String? = nil,
+    alwaysPublishIdentity: Bool = false
   ) throws -> Rollback {
     let identity = try identity.validated()
     let previousDestinationRecord = try destinationIdentityStore.loadRecord()
@@ -118,6 +120,7 @@ enum SharedSessionTopologyMigration {
       slots: destinationSlots,
       topology: DestinationTopology(
         hasSlotStore: destinationSlotStore != nil,
+        alwaysPublishIdentity: alwaysPublishIdentity,
         instanceFingerprint: destinationInstanceFingerprint,
         ownerIdentifier: destinationOwnerIdentifier,
         excludedOwnerIdentifier: excludingSourceOwnerIdentifier
@@ -172,7 +175,8 @@ enum SharedSessionTopologyMigration {
       $0.slotOwnerIdentifier != topology.excludedOwnerIdentifier
         && $0.slotOwnerIdentifier != topology.ownerIdentifier
     }
-    let event = try topology.hasSlotStore && !hasPeerSlot
+    let event = try topology.hasSlotStore
+      && (topology.alwaysPublishIdentity || !hasPeerSlot)
       ? makeDestinationEvent(
         identity: identity,
         slots: slots,

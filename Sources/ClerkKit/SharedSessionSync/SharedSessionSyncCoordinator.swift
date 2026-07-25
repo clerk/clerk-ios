@@ -68,6 +68,11 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var initialReconciliationTask: Task<Bool, Never>?
   private var initialReconciliationTaskID: UUID?
   private var initialReconciliationSucceeded: Bool?
+  private var lastReconciliationError: (any Error)?
+  var lastReconciliationFailureKind: PersistenceFailureKind? {
+    lastReconciliationError.map(PersistenceFailureKind.classify)
+  }
+
   private var serializedOperationTail: Task<Void, Never>?
   private var reconcileAgain = false
   private var isInstalled = true
@@ -595,12 +600,14 @@ extension SharedSessionSyncCoordinator {
         return ReconciliationResult(didChange: didChange, succeeded: false)
       } catch {
         requiresSuccessfulReconciliation = true
+        lastReconciliationError = error
         logError(error, "Failed to reconcile shared-session owner slots")
         return ReconciliationResult(didChange: didChange, succeeded: false)
       }
     } while reconcileAgain
 
     requiresSuccessfulReconciliation = false
+    lastReconciliationError = nil
     return ReconciliationResult(didChange: didChange, succeeded: true)
   }
 

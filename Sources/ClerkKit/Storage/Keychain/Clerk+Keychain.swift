@@ -10,6 +10,7 @@ import Foundation
 extension Clerk {
   private enum KeychainClearOperation: Equatable {
     case persistOwnerSlotWithdrawalIntent
+    case preventLegacyIdentityReadoption
     case preserveWatchClearWatermark
     case deleteAtomicIdentity
     case withdrawSharedSessionOwnerSlot
@@ -23,6 +24,8 @@ extension Clerk {
       switch self {
       case .persistOwnerSlotWithdrawalIntent:
         "persist owner-slot withdrawal intent"
+      case .preventLegacyIdentityReadoption:
+        "prevent legacy identity re-adoption"
       case .preserveWatchClearWatermark:
         "preserve Watch clear watermark"
       case .deleteAtomicIdentity:
@@ -73,6 +76,8 @@ extension Clerk {
   private struct PendingKeychainClear {
     let clerk: Clerk
     let dependencies: any Dependencies
+    let ownership: PersistenceTransitionOwnership
+    let appContainerIntent: AppContainerIdentityClearIntent
     let clearOperation: Task<KeychainClearResult, Error>
     let identityClear: ClerkIdentityController.StorageClearContext
     let cacheManager: CacheManager?
@@ -178,10 +183,76 @@ extension Clerk {
       }
     }
 
+    do {
+      if let intent = try clerk.appContainerIdentityClearIntentStore.load() {
+        return startPendingAppContainerIdentityClear(
+          for: clerk,
+          intent: intent
+        )
+      }
+    } catch {
+      clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
+      let ownership = try? clerk.identityPersistenceOperationCoordinator
+        .beginClear(epoch: clerk.configurationEpoch)
+      clerk.identityPersistenceOperationCoordinator.block(
+        ownership,
+        reason: PersistenceFailureKind.classify(error).blockReason
+      )
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to read Clerk's pending identity clear"
+      )
+    }
+
+    clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
+    let clearOwnership: PersistenceTransitionOwnership
+    do {
+      clearOwnership =
+        try clerk.identityPersistenceOperationCoordinator.beginClear(
+          epoch: clerk.configurationEpoch
+        )
+      clerk.suspendWatchConnectivityForPersistenceTransition()
+    } catch {
+      return Task { throw error }
+    }
+
+    let appContainerIntent: AppContainerIdentityClearIntent
+    do {
+      appContainerIntent = try clerk.makeAppContainerIdentityClearIntent()
+      try clerk.appContainerIdentityClearIntentStore.record(
+        appContainerIntent
+      )
+    } catch {
+      clerk.identityPersistenceOperationCoordinator.finish(clearOwnership)
+      clerk.resumeWatchConnectivityAfterPersistenceTransition()
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to record Clerk's durable identity-clear intent"
+      )
+    }
+
+    if clerk.dependencies.usesVolatileIdentityPersistence {
+      return startVolatileKeychainClear(
+        for: clerk,
+        ownership: clearOwnership,
+        appContainerIntent: appContainerIntent
+      )
+    }
+
     let pendingClear: PendingKeychainClear
     do {
-      pendingClear = try beginKeychainClear(for: clerk)
+      pendingClear = try beginKeychainClear(
+        for: clerk,
+        ownership: clearOwnership,
+        appContainerIntent: appContainerIntent
+      )
     } catch {
+      clerk.identityPersistenceOperationCoordinator.block(
+        clearOwnership,
+        reason: .pendingClear
+      )
       let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
       let task = Task<Void, Error> { @MainActor in
         ClerkLogger.logError(
@@ -216,18 +287,227 @@ extension Clerk {
   }
 
   @MainActor
-  private static func beginKeychainClear(for clerk: Clerk) throws -> PendingKeychainClear {
+  private static func failedKeychainClearTask(
+    for clerk: Clerk,
+    error: any Error,
+    message: String
+  ) -> Task<Void, Error> {
+    let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
+    let task = Task<Void, Error> { @MainActor in
+      ClerkLogger.logError(
+        error,
+        message: message,
+        configuration: loggingConfiguration
+      )
+      clerk.keychainClearTask = nil
+      throw error
+    }
+    clerk.keychainClearTask = task
+    return task
+  }
+
+  @MainActor
+  private static func startPendingAppContainerIdentityClear(
+    for clerk: Clerk,
+    intent: AppContainerIdentityClearIntent
+  ) -> Task<Void, Error> {
+    clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
+    let ownership: PersistenceTransitionOwnership
+    do {
+      ownership = try clerk.identityPersistenceOperationCoordinator.beginClear(
+        epoch: clerk.configurationEpoch
+      )
+      clerk.suspendWatchConnectivityForPersistenceTransition()
+      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+        ownership,
+        to: .recordingIntent
+      )
+    } catch {
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to resume Clerk's pending identity clear"
+      )
+    }
+
+    let cacheManager = clerk.cacheManager
+    cacheManager?.freezePersistence()
+    let identityClear = clerk.identityController.beginStorageClear()
+    clerk.identityController.applyStorageClearToMemory(identityClear)
+    clerk.identityController.resetRuntimeIdentity()
+    do {
+      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+        ownership,
+        to: .deletingLocalIdentity
+      )
+    } catch {
+      clerk.identityPersistenceOperationCoordinator.block(
+        ownership,
+        reason: .pendingClear
+      )
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to resume Clerk's pending identity clear"
+      )
+    }
+
+    let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
+    let task = Task<Void, Error> { @MainActor in
+      let recoveryResult = Result {
+        try clerk.recoverAppContainerIdentityClear(
+          intent,
+          protecting: clerk.dependencies
+        )
+      }
+      await SessionTokenFetcher.shared.reset()
+      await SessionTokensCache.shared.clear()
+
+      do {
+        try recoveryResult.get()
+        if !clerk.dependencies.usesVolatileIdentityPersistence,
+           clerk.dependencies.atomicIdentityStore == nil
+        {
+          if clerk
+            .appContainerIdentityClearCanChangeCurrentPersistenceRouting(
+              intent,
+              protecting: clerk.dependencies
+            )
+          {
+            throw AppContainerIdentityClearIntentError
+              .runtimePersistenceRoutingRequiresRestart
+          }
+        }
+        try clerk.appContainerIdentityClearIntentStore.remove(
+          matching: intent.transactionID
+        )
+        clerk.identityController.finishStorageClear(
+          identityClear,
+          canReleaseSharedClearBarrier: true
+        )
+        cacheManager?.resumePersistence()
+        clerk.identityPersistenceOperationCoordinator.finish(ownership)
+        clerk.resumeWatchConnectivityAfterPersistenceTransition()
+        clerk.keychainClearTask = nil
+      } catch {
+        clerk.identityController.finishStorageClear(
+          identityClear,
+          canReleaseSharedClearBarrier: false
+        )
+        clerk.identityPersistenceOperationCoordinator.block(
+          ownership,
+          reason: .pendingClear
+        )
+        ClerkLogger.logError(
+          error,
+          message: "Failed to complete Clerk's pending durable identity clear",
+          configuration: loggingConfiguration
+        )
+        clerk.keychainClearTask = nil
+        throw error
+      }
+    }
+    clerk.keychainClearTask = task
+    return task
+  }
+
+  @MainActor
+  private static func startVolatileKeychainClear(
+    for clerk: Clerk,
+    ownership: PersistenceTransitionOwnership,
+    appContainerIntent: AppContainerIdentityClearIntent
+  ) -> Task<Void, Error> {
+    let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
+
+    let pendingClear: PendingKeychainClear
+    do {
+      pendingClear = try beginKeychainClear(
+        for: clerk,
+        ownership: ownership,
+        appContainerIntent: appContainerIntent
+      )
+    } catch {
+      clerk.identityPersistenceOperationCoordinator.block(
+        ownership,
+        reason: .pendingClear
+      )
+      let task = Task<Void, Error> { @MainActor in
+        ClerkLogger.logError(
+          error,
+          message: "Failed to clear the volatile Clerk identity",
+          configuration: loggingConfiguration
+        )
+        clerk.keychainClearTask = nil
+        throw error
+      }
+      clerk.keychainClearTask = task
+      return task
+    }
+
+    let task = Task<Void, Error> { @MainActor in
+      do {
+        try await finishKeychainClear(
+          pendingClear,
+          completesTransition: false
+        )
+        try clerk.appContainerIdentityClearRecovery.recover(
+          appContainerIntent
+        )
+        try clerk.appContainerIdentityClearIntentStore.remove(
+          matching: appContainerIntent.transactionID
+        )
+        clerk.identityPersistenceOperationCoordinator.finish(ownership)
+        clerk.resumeWatchConnectivityAfterPersistenceTransition()
+        clerk.keychainClearTask = nil
+      } catch {
+        clerk.identityPersistenceOperationCoordinator.block(
+          ownership,
+          reason: .pendingClear
+        )
+        ClerkLogger.logError(
+          error,
+          message: "Failed to clear Clerk identity from durable storage",
+          configuration: loggingConfiguration
+        )
+        clerk.keychainClearTask = nil
+        throw error
+      }
+    }
+    clerk.keychainClearTask = task
+    return task
+  }
+
+  @MainActor
+  private static func beginKeychainClear(
+    for clerk: Clerk,
+    ownership: PersistenceTransitionOwnership,
+    appContainerIntent: AppContainerIdentityClearIntent
+  ) throws -> PendingKeychainClear {
     let dependencies = clerk.dependencies
     let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
-    if clerk.sharedSessionSyncCoordinator != nil {
+    try clerk.identityPersistenceOperationCoordinator.advanceClear(
+      ownership,
+      to: .recordingIntent
+    )
+    if
+      clerk.sharedSessionSyncCoordinator != nil
+      || clerk.options.sharedSessionSync != nil,
+
+      !dependencies.usesVolatileIdentityPersistence
+    {
       do {
         guard let context = dependencies.sharedSessionOwnerSlotClearRecovery else {
           throw SharedSessionOwnerSlotClearRecoveryError.missingCurrentTopology
         }
         try SharedSessionOwnerSlotClearRecovery.markPending(in: context)
+        try dependencies
+          .markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
       } catch {
         throw KeychainClearError(
-          failedOperations: [.persistOwnerSlotWithdrawalIntent]
+          failedOperations: [
+            .persistOwnerSlotWithdrawalIntent,
+            .preventLegacyIdentityReadoption,
+          ]
         )
       }
     }
@@ -248,6 +528,10 @@ extension Clerk {
       }
     }
     clerk.identityController.applyStorageClearToMemory(identityClear)
+    try clerk.identityPersistenceOperationCoordinator.advanceClear(
+      ownership,
+      to: .deletingLocalIdentity
+    )
     if let atomicIdentityStore = dependencies.atomicIdentityStore {
       attemptKeychainClear(
         .deleteAtomicIdentity,
@@ -282,6 +566,7 @@ extension Clerk {
     let clearOperation = deferredKeychainClearOperation(
       clerk: clerk,
       dependencies: dependencies,
+      ownership: ownership,
       identityClear: identityClear,
       cacheManager: cacheManager,
       preservedKeys: preservedKeys,
@@ -291,6 +576,8 @@ extension Clerk {
     return PendingKeychainClear(
       clerk: clerk,
       dependencies: dependencies,
+      ownership: ownership,
+      appContainerIntent: appContainerIntent,
       clearOperation: clearOperation,
       identityClear: identityClear,
       cacheManager: cacheManager,
@@ -302,6 +589,7 @@ extension Clerk {
   private static func deferredKeychainClearOperation(
     clerk: Clerk,
     dependencies: any Dependencies,
+    ownership: PersistenceTransitionOwnership,
     identityClear: ClerkIdentityController.StorageClearContext,
     cacheManager: CacheManager?,
     preservedKeys: Set<ClerkKeychainKey>,
@@ -309,6 +597,10 @@ extension Clerk {
     loggingConfiguration: ClerkLogger.Configuration
   ) -> Task<KeychainClearResult, Error> {
     clerk.identityController.enqueueLocalOperation { operationRevision in
+      try clerk.identityPersistenceOperationCoordinator.advanceClear(
+        ownership,
+        to: .withdrawingOwnerSlot
+      )
       let withdrawalResult = await withdrawOwnerSlotIfNeeded(
         clerk: clerk,
         identityClear: identityClear,
@@ -320,39 +612,12 @@ extension Clerk {
         || !failedOperations.contains(.deleteAtomicIdentity)
 
       await cacheManager?.drainFrozenPersistence()
-      attemptKeychainClear(
-        .clearAppLocalKeychain,
+      clearPersistedIdentityItems(
+        in: dependencies,
+        preserving: preservedKeys,
         recording: &failedOperations,
         configuration: loggingConfiguration
-      ) {
-        try clearAllKeychainItemsStrictly(
-          in: dependencies.appLocalKeychain,
-          preserving: preservedKeys,
-          configuration: loggingConfiguration
-        )
-      }
-      attemptKeychainClear(
-        .clearIdentityKeychain,
-        recording: &failedOperations,
-        configuration: loggingConfiguration
-      ) {
-        try clearAllKeychainItemsStrictly(
-          in: dependencies.identityKeychain,
-          preserving: preservedKeys,
-          configuration: loggingConfiguration
-        )
-      }
-      attemptKeychainClear(
-        .clearLegacySharedCredentials,
-        recording: &failedOperations,
-        configuration: loggingConfiguration
-      ) {
-        try clearKeychainItemsStrictly(
-          legacySharedCredentialKeys,
-          in: dependencies.keychain,
-          configuration: loggingConfiguration
-        )
-      }
+      )
 
       if let localIdentityIO = dependencies.atomicIdentityIO {
         do {
@@ -379,6 +644,10 @@ extension Clerk {
 
       let canReleaseSharedClearBarrier: Bool
       do {
+        try clerk.identityPersistenceOperationCoordinator.advanceClear(
+          ownership,
+          to: .clearingIntent
+        )
         canReleaseSharedClearBarrier = try clearOwnerSlotWithdrawalIntentIfSafe(
           in: dependencies,
           identityClear: identityClear,
@@ -403,6 +672,48 @@ extension Clerk {
       }
       return KeychainClearResult(
         canReleaseSharedClearBarrier: canReleaseSharedClearBarrier
+      )
+    }
+  }
+
+  @MainActor
+  private static func clearPersistedIdentityItems(
+    in dependencies: any Dependencies,
+    preserving preservedKeys: Set<ClerkKeychainKey>,
+    recording failedOperations: inout [KeychainClearOperation],
+    configuration: ClerkLogger.Configuration
+  ) {
+    attemptKeychainClear(
+      .clearAppLocalKeychain,
+      recording: &failedOperations,
+      configuration: configuration
+    ) {
+      try clearAllKeychainItemsStrictly(
+        in: dependencies.appLocalKeychain,
+        preserving: preservedKeys,
+        configuration: configuration
+      )
+    }
+    attemptKeychainClear(
+      .clearIdentityKeychain,
+      recording: &failedOperations,
+      configuration: configuration
+    ) {
+      try clearAllKeychainItemsStrictly(
+        in: dependencies.identityKeychain,
+        preserving: preservedKeys,
+        configuration: configuration
+      )
+    }
+    attemptKeychainClear(
+      .clearLegacySharedCredentials,
+      recording: &failedOperations,
+      configuration: configuration
+    ) {
+      try clearKeychainItemsStrictly(
+        legacySharedCredentialKeys,
+        in: dependencies.keychain,
+        configuration: configuration
       )
     }
   }
@@ -468,9 +779,12 @@ extension Clerk {
   }
 
   @MainActor
-  private static func finishKeychainClear(_ pendingClear: PendingKeychainClear) async throws {
-    let result: Result<Void, any Error>
-    let canReleaseSharedClearBarrier: Bool
+  private static func finishKeychainClear(
+    _ pendingClear: PendingKeychainClear,
+    completesTransition: Bool = true
+  ) async throws {
+    var result: Result<Void, any Error>
+    var canReleaseSharedClearBarrier: Bool
     do {
       let clearResult = try await pendingClear.clearOperation.value
       result = .success(())
@@ -482,14 +796,58 @@ extension Clerk {
       result = .failure(error)
       canReleaseSharedClearBarrier = false
     }
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    if case .success = result, completesTransition {
+      do {
+        if pendingClear.appContainerIntent.ownerSlot != nil,
+           !pendingClear.identityClear.requiresOwnerSlotWithdrawal
+        {
+          try pendingClear.clerk.recoverAppContainerIdentityClear(
+            pendingClear.appContainerIntent,
+            protecting: nil
+          )
+        }
+        try pendingClear.clerk.appContainerIdentityClearIntentStore.remove(
+          matching: pendingClear.appContainerIntent.transactionID
+        )
+      } catch {
+        result = .failure(error)
+        canReleaseSharedClearBarrier = false
+      }
+    }
+
+    let completedDurably = if case .success = result {
+      true
+    } else {
+      false
+    }
     pendingClear.clerk.identityController.finishStorageClear(
       pendingClear.identityClear,
-      canReleaseSharedClearBarrier: canReleaseSharedClearBarrier
+      canReleaseSharedClearBarrier:
+      completedDurably && canReleaseSharedClearBarrier
     )
     if pendingClear.clerk.dependencies === pendingClear.dependencies,
-       pendingClear.clerk.cacheManager === pendingClear.cacheManager
+       pendingClear.clerk.cacheManager === pendingClear.cacheManager,
+       completedDurably
     {
       pendingClear.cacheManager?.resumePersistence()
+    }
+    switch result {
+    case .success:
+      if completesTransition {
+        pendingClear.clerk.identityPersistenceOperationCoordinator.finish(
+          pendingClear.ownership
+        )
+        pendingClear.clerk
+          .resumeWatchConnectivityAfterPersistenceTransition()
+      }
+    case .failure:
+      pendingClear.clerk.identityPersistenceOperationCoordinator.block(
+        pendingClear.ownership,
+        reason: .pendingClear
+      )
     }
     try result.get()
   }
