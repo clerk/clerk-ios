@@ -33,10 +33,7 @@ struct AppLocalKeychainMigratingStorage: KeychainStorage {
   func set(_ data: Data, forKey key: String) throws {
     try Self.mutationLock.withLock {
       try primary.set(data, forKey: key)
-      let removedAllLegacyItems = try removeLegacyItems(forKey: key)
-      if removedAllLegacyItems, !optionalLegacySources.isEmpty {
-        try primary.deleteItem(forKey: deletionTombstoneKey(for: key))
-      }
+      cleanupLegacyItemsAfterCommittedWrite(forKey: key)
     }
   }
 
@@ -60,10 +57,7 @@ struct AppLocalKeychainMigratingStorage: KeychainStorage {
       }
 
       try primary.set(first, forKey: key)
-      let removedAllLegacyItems = try removeLegacyItems(forKey: key)
-      if removedAllLegacyItems, !optionalLegacySources.isEmpty {
-        try primary.deleteItem(forKey: deletionTombstoneKey(for: key))
-      }
+      cleanupLegacyItemsAfterCommittedWrite(forKey: key)
       return first
     }
   }
@@ -89,6 +83,20 @@ struct AppLocalKeychainMigratingStorage: KeychainStorage {
 
   func hasItem(forKey key: String) throws -> Bool {
     try data(forKey: key) != nil
+  }
+
+  private func cleanupLegacyItemsAfterCommittedWrite(forKey key: String) {
+    do {
+      let removedAllLegacyItems = try removeLegacyItems(forKey: key)
+      if removedAllLegacyItems, !optionalLegacySources.isEmpty {
+        try primary.deleteItem(forKey: deletionTombstoneKey(for: key))
+      }
+    } catch {
+      ClerkLogger.logError(
+        error,
+        message: "Failed to clean up legacy Keychain state after committing app-local state."
+      )
+    }
   }
 
   private func removeLegacyItems(forKey key: String) throws -> Bool {

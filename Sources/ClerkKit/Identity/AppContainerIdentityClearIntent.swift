@@ -16,6 +16,11 @@ enum AppContainerIdentityClearIntentError: Error, Equatable {
 struct AppContainerIdentityClearIntent: Codable, Equatable {
   static let schemaVersion = 1
 
+  private struct KeychainLocation: Hashable {
+    let service: String
+    let accessGroup: String?
+  }
+
   struct KeychainTarget: Codable, Equatable, Hashable {
     enum Kind: String, Codable {
       case applicationLocal
@@ -102,6 +107,10 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
   let previousAppLocal: KeychainTarget?
   let clearJournal: KeychainTarget?
   let ownerSlot: SharedSessionOwnerSlotClearRecovery.Intent?
+  /// A second exact topology covered by the same durable clear transaction.
+  /// Identity replacement uses this when source and target cleanup must survive
+  /// process termination without inferring deletion targets at recovery time.
+  let additionalClearIntents: [AppContainerIdentityClearIntent]?
 
   private enum CodingKeys: String, CodingKey {
     case schemaVersion
@@ -114,6 +123,7 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
     case previousAppLocal
     case clearJournal
     case ownerSlot
+    case additionalClearIntents
   }
 
   init(
@@ -125,7 +135,8 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
     stableIdentity: KeychainTarget,
     previousAppLocal: KeychainTarget?,
     clearJournal: KeychainTarget?,
-    ownerSlot: SharedSessionOwnerSlotClearRecovery.Intent?
+    ownerSlot: SharedSessionOwnerSlotClearRecovery.Intent?,
+    additionalClearIntents: [AppContainerIdentityClearIntent]? = nil
   ) {
     schemaVersion = Self.schemaVersion
     self.transactionID = transactionID
@@ -137,6 +148,7 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
     self.previousAppLocal = previousAppLocal
     self.clearJournal = clearJournal
     self.ownerSlot = ownerSlot
+    self.additionalClearIntents = additionalClearIntents
   }
 
   func validated() throws -> Self {
@@ -291,7 +303,44 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
       throw AppContainerIdentityClearIntentError.invalidIntent
     }
 
+    let additionalClearIntents = additionalClearIntents ?? []
+    guard additionalClearIntents.count <= 1 else {
+      throw AppContainerIdentityClearIntentError.invalidIntent
+    }
+    for additionalIntent in additionalClearIntents {
+      guard additionalIntent.additionalClearIntents?.isEmpty != false,
+            additionalIntent.transactionID != transactionID
+      else {
+        throw AppContainerIdentityClearIntentError.invalidIntent
+      }
+      let additionalIntent = try additionalIntent.validated()
+      guard !hasSameRecoveryTopology(as: additionalIntent) else {
+        throw AppContainerIdentityClearIntentError.invalidIntent
+      }
+    }
+
     return self
+  }
+
+  var recordedClearIntents: [AppContainerIdentityClearIntent] {
+    [self] + (additionalClearIntents ?? [])
+  }
+
+  func includingClearIntent(
+    _ additionalIntent: AppContainerIdentityClearIntent
+  ) throws -> AppContainerIdentityClearIntent {
+    try AppContainerIdentityClearIntent(
+      transactionID: transactionID,
+      instanceFingerprint: instanceFingerprint,
+      ownerIdentifier: ownerIdentifier,
+      configuredShared: configuredShared,
+      configuredAppLocal: configuredAppLocal,
+      stableIdentity: stableIdentity,
+      previousAppLocal: previousAppLocal,
+      clearJournal: clearJournal,
+      ownerSlot: ownerSlot,
+      additionalClearIntents: [additionalIntent]
+    ).validated()
   }
 
   var uniqueAppLocalKeychainTargets: [KeychainTarget] {
@@ -313,6 +362,60 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
         configuredShared,
       ]
     )
+  }
+
+  func activeStorageMayOverlap(
+    with other: AppContainerIdentityClearIntent
+  ) -> Bool {
+    if let ownerSlot,
+       let otherOwnerSlot = other.ownerSlot,
+       ownerSlot.slotService == otherOwnerSlot.slotService,
+       ownerSlot.slotAccessGroup == otherOwnerSlot.slotAccessGroup,
+       ownerSlot.slotAccount == otherOwnerSlot.slotAccount
+    {
+      return true
+    }
+    let activeLocations = keychainLocations(
+      for: [
+        stableIdentity,
+        configuredAppLocal,
+        configuredShared,
+      ]
+    )
+    let otherLocations = keychainLocations(
+      for: other.uniqueKeychainTargets
+    )
+    return !activeLocations.isDisjoint(with: otherLocations)
+  }
+
+  private func keychainLocations(
+    for targets: [KeychainTarget]
+  ) -> Set<KeychainLocation> {
+    targets.reduce(into: Set<KeychainLocation>()) { locations, target in
+      locations.insert(
+        KeychainLocation(
+          service: target.service,
+          accessGroup: target.accessGroup
+        )
+      )
+      guard target.kind == .applicationLocal else { return }
+      for accessGroup in target.legacyAccessGroups {
+        locations.insert(
+          KeychainLocation(
+            service: target.service,
+            accessGroup: accessGroup
+          )
+        )
+      }
+      #if os(macOS)
+      locations.insert(
+        KeychainLocation(
+          service: target.service,
+          accessGroup: nil
+        )
+      )
+      #endif
+    }
   }
 
   private func uniqueTargets(
@@ -344,6 +447,37 @@ protocol AppContainerIdentityClearIntentStoring: AnyObject {
   func load() throws -> AppContainerIdentityClearIntent?
   func record(_ intent: AppContainerIdentityClearIntent) throws
   func remove(matching transactionID: UUID) throws
+}
+
+enum AppContainerIdentityClearIntentRecordOutcome {
+  case recorded
+  case notRecorded(any Error)
+  case unresolved(any Error)
+}
+
+extension AppContainerIdentityClearIntentStoring {
+  func recordResolvingWriteFailure(
+    _ intent: AppContainerIdentityClearIntent
+  ) -> AppContainerIdentityClearIntentRecordOutcome {
+    do {
+      try record(intent)
+      return .recorded
+    } catch let recordError {
+      do {
+        guard let pendingIntent = try load() else {
+          return .notRecorded(recordError)
+        }
+        guard pendingIntent == intent else {
+          return .unresolved(
+            AppContainerIdentityClearIntentError.pendingIntentConflict
+          )
+        }
+        return .recorded
+      } catch {
+        return .unresolved(error)
+      }
+    }
+  }
 }
 
 @MainActor
@@ -516,7 +650,11 @@ struct AppContainerIdentityClearRecovery {
   }
 
   func recover(_ pendingIntents: [AppContainerIdentityClearIntent]) throws {
-    let intents = try pendingIntents.map { try $0.validated() }
+    let validatedIntents = try pendingIntents.map { try $0.validated() }
+    var seenTransactions = Set<UUID>()
+    let intents = validatedIntents
+      .flatMap(\.recordedClearIntents)
+      .filter { seenTransactions.insert($0.transactionID).inserted }
     var firstError: (any Error)?
 
     func attempt(_ operation: () throws -> Void) {
@@ -602,7 +740,6 @@ struct AppContainerIdentityClearRecovery {
       }
     }
 
-    let appLocalTargetSet = Set(appLocalTargets)
     let keychainTargets = uniqueTargets(
       intents.flatMap(\.uniqueKeychainTargets)
     )
@@ -613,7 +750,10 @@ struct AppContainerIdentityClearRecovery {
         var preservedKeys: Set<ClerkKeychainKey> = [
           .sharedSessionSyncAdopted,
         ]
-        if appLocalTargetSet.contains(target) {
+        if appLocalTargets.contains(where: {
+          $0.service == target.service
+            && $0.accessGroup == target.accessGroup
+        }) {
           preservedKeys.insert(.watchSyncMetadata)
         }
         try Clerk.clearAllKeychainItemsStrictly(
@@ -828,7 +968,11 @@ extension Clerk {
       frontendApiUrl: currentConfiguration.frontendApiUrl,
       publishableKey: currentConfiguration.publishableKey
     ).fingerprint
-    guard currentFingerprint == intent.instanceFingerprint else {
+    let matchingRecordedIntents =
+      intent.recordedClearIntents.filter {
+        $0.instanceFingerprint == currentFingerprint
+      }
+    guard !matchingRecordedIntents.isEmpty else {
       try appContainerIdentityClearRecovery.recover(intent)
       return
     }
@@ -839,7 +983,9 @@ extension Clerk {
         frontendApiUrl: currentConfiguration.frontendApiUrl,
         publishableKey: currentConfiguration.publishableKey
       )
-    guard !intent.hasSameRecoveryTopology(as: currentIntent) else {
+    guard !matchingRecordedIntents.contains(where: {
+      $0.hasSameRecoveryTopology(as: currentIntent)
+    }) else {
       try appContainerIdentityClearRecovery.recover(intent)
       return
     }

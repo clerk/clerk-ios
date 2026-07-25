@@ -73,7 +73,7 @@ extension Clerk {
       )
       sharedSessionSyncCoordinator = coordinator
       internalStateChanges.addObserver(coordinator)
-      let initialTask = coordinator.start()
+      let initialTask = coordinator.startWithInitialHydration()
       return Task { @MainActor [weak self, weak coordinator] in
         _ = await initialTask.value
         guard let self, let coordinator else { return false }

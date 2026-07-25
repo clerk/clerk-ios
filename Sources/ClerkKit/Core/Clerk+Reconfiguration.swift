@@ -5,6 +5,16 @@
 import Foundation
 
 extension Clerk {
+  typealias ReconfigurationDependencyFactory = @MainActor (
+    String,
+    Clerk.Options,
+    ClerkRuntimeScope
+  ) throws -> any Dependencies
+
+  typealias ReconfigurationSourceRetirement = @MainActor @Sendable (
+    any Dependencies
+  ) async throws -> Void
+
   private struct ReconfigurationRollbackState {
     let configurationEpoch: ClerkConfigurationEpoch
     let dependencies: any Dependencies
@@ -14,10 +24,16 @@ extension Clerk {
   private struct PreparedReconfiguration {
     let ownership: PersistenceTransitionOwnership
     let nextEpoch: ClerkConfigurationEpoch
-    let dependencies: DependencyContainer
+    let dependencies: any Dependencies
     let plan: ReconfigurationPlan
     let rollbackState: ReconfigurationRollbackState
     let volatileIdentity: ClerkIdentitySnapshot?
+    let sourceClearIntent: AppContainerIdentityClearIntent?
+    let targetClearIntent: AppContainerIdentityClearIntent?
+  }
+
+  private struct CommittedReconfigurationFailure: Error {
+    let underlyingError: any Error
   }
 
   private enum ReconfigurationPlan: Equatable {
@@ -32,13 +48,19 @@ extension Clerk {
 
   func performReconfiguration(
     publishableKey: String,
-    options: Clerk.Options
+    options: Clerk.Options,
+    dependencyFactory: ReconfigurationDependencyFactory? = nil,
+    sourceRetirement: ReconfigurationSourceRetirement? = nil
   ) async throws -> Clerk {
     let preparation = try await prepareReconfiguration(
       publishableKey: publishableKey,
-      options: options
+      options: options,
+      dependencyFactory: dependencyFactory
     )
-    return try await installPreparedReconfiguration(preparation)
+    return try await installPreparedReconfiguration(
+      preparation,
+      sourceRetirement: sourceRetirement
+    )
   }
 
   @MainActor
@@ -58,25 +80,51 @@ extension Clerk {
 
   private func prepareReconfiguration(
     publishableKey: String,
-    options: Clerk.Options
+    options: Clerk.Options,
+    dependencyFactory: ReconfigurationDependencyFactory?
   ) async throws -> PreparedReconfiguration {
     let nextEpoch = nextConfigurationEpoch
-    let target = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options,
-      runtimeScope: .init(
-        epoch: nextEpoch,
-        runtimeState: runtimeState
-      ),
-      deferSharedSessionAdoption: true
+    let targetRuntimeScope = ClerkRuntimeScope(
+      epoch: nextEpoch,
+      runtimeState: runtimeState
     )
+    let target: any Dependencies = if let dependencyFactory {
+      try dependencyFactory(
+        publishableKey,
+        options,
+        targetRuntimeScope
+      )
+    } else {
+      try DependencyContainer(
+        publishableKey: publishableKey,
+        options: options,
+        runtimeScope: targetRuntimeScope,
+        deferSharedSessionAdoption: true
+      )
+    }
     try prepareReconfigurationTarget(target)
     let plan = reconfigurationPlan(with: target)
     if plan == .preserveIdentityAndMigrateSlot {
       try await settlePendingPublicationForTopologyChange()
     }
+    try target.discardPendingPublicationWhenSharedSyncDisabled()
     let rollbackState = captureReconfigurationRollbackState()
     let volatileIdentity = try volatileIdentityForReconfiguration()
+    let sourceClearIntent: AppContainerIdentityClearIntent?
+    let targetClearIntent: AppContainerIdentityClearIntent?
+    if plan == .replaceIdentity {
+      sourceClearIntent = try makeAppContainerIdentityClearIntent()
+      let targetConfiguration = target.configurationManager
+      targetClearIntent = try Self.makeAppContainerIdentityClearIntent(
+        dependencies: target,
+        options: targetConfiguration.options,
+        frontendApiUrl: targetConfiguration.frontendApiUrl,
+        publishableKey: targetConfiguration.publishableKey
+      )
+    } else {
+      sourceClearIntent = nil
+      targetClearIntent = nil
+    }
     try Task.checkCancellation()
     let ownership = try identityPersistenceOperationCoordinator
       .beginReconfiguration(epoch: configurationEpoch)
@@ -87,18 +135,19 @@ extension Clerk {
       dependencies: target,
       plan: plan,
       rollbackState: rollbackState,
-      volatileIdentity: volatileIdentity
+      volatileIdentity: volatileIdentity,
+      sourceClearIntent: sourceClearIntent,
+      targetClearIntent: targetClearIntent
     )
   }
 
   private func prepareReconfigurationTarget(
-    _ target: DependencyContainer
+    _ target: any Dependencies
   ) throws {
     try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
       in: target.sharedSessionOwnerSlotClearRecovery
     )
     try target.probeLocalIdentityPersistence()
-    try target.discardPendingPublicationWhenSharedSyncDisabled()
   }
 
   private func volatileIdentityForReconfiguration() throws
@@ -111,7 +160,8 @@ extension Clerk {
   }
 
   private func installPreparedReconfiguration(
-    _ preparation: PreparedReconfiguration
+    _ preparation: PreparedReconfiguration,
+    sourceRetirement: ReconfigurationSourceRetirement?
   ) async throws -> Clerk {
     setConfigurationEpoch(to: preparation.nextEpoch)
     await cleanupManagersAndDrainCache(
@@ -131,8 +181,14 @@ extension Clerk {
       )
       try await retireReconfigurationSource(
         preparation,
-        topologyRollback: topologyRollback
+        topologyRollback: topologyRollback,
+        sourceRetirement: sourceRetirement
       )
+    } catch let failure as CommittedReconfigurationFailure {
+      await blockAfterCommittedReconfigurationFailure(
+        preparation.rollbackState
+      )
+      throw failure.underlyingError
     } catch {
       restoreTopologyMigration(topologyRollback)
       restoreAfterFailedReconfiguration(preparation.rollbackState)
@@ -158,15 +214,17 @@ extension Clerk {
     case .preserveIdentityAndMigrateSlot:
       return try prepareMigratedIdentityForReconfiguration(preparation)
     case .replaceIdentity:
-      try await Self.clearLocalClerkStorageStrictly(
-        in: preparation.dependencies
-      )
-      try await Self.clearLocalClerkStorageStrictly(
-        in: preparation.rollbackState.dependencies,
-        deleteSharedSessionOwnerSlot: false
-      )
-      try preparation.dependencies
-        .markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
+      guard let sourceClearIntent = preparation.sourceClearIntent,
+            let targetClearIntent = preparation.targetClearIntent
+      else {
+        throw AppContainerIdentityClearIntentError.invalidIntent
+      }
+      guard targetClearIntent.activeStorageMayOverlap(
+        with: sourceClearIntent
+      ) else {
+        try await clearReconfigurationTarget(preparation)
+        return nil
+      }
       return nil
     }
   }
@@ -213,22 +271,104 @@ extension Clerk {
 
   private func retireReconfigurationSource(
     _ preparation: PreparedReconfiguration,
-    topologyRollback: SharedSessionTopologyMigration.Rollback?
+    topologyRollback: SharedSessionTopologyMigration.Rollback?,
+    sourceRetirement: ReconfigurationSourceRetirement?
   ) async throws {
-    if !preparation.plan.reusesOwnerSlot {
-      try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
-        in: preparation.rollbackState.dependencies
-      )
+    try identityPersistenceOperationCoordinator.validate(
+      preparation.ownership,
+      operation: .reconfigure,
+      expectedEpoch: preparation.nextEpoch
+    )
+
+    if preparation.plan == .replaceIdentity {
+      try await commitIdentityReplacement(preparation)
+    } else if !preparation.plan.reusesOwnerSlot {
+      let retireSource = sourceRetirement ?? { dependencies in
+        try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
+          in: dependencies
+        )
+      }
+      try await Task { @MainActor in
+        try await retireSource(preparation.rollbackState.dependencies)
+      }.value
     }
     if topologyRollback?.publishedDestinationSlot != nil {
       Self.notifySharedSessionTopologyChange(
         in: preparation.dependencies
       )
     }
-    try identityPersistenceOperationCoordinator.validate(
-      preparation.ownership,
-      operation: .reconfigure,
-      expectedEpoch: preparation.nextEpoch
+  }
+
+  private func commitIdentityReplacement(
+    _ preparation: PreparedReconfiguration
+  ) async throws {
+    guard let sourceClearIntent = preparation.sourceClearIntent,
+          let targetClearIntent = preparation.targetClearIntent
+    else {
+      throw AppContainerIdentityClearIntentError.invalidIntent
+    }
+    let targetClearRequiresCommit = targetClearIntent
+      .activeStorageMayOverlap(with: sourceClearIntent)
+
+    // Keep both exact topologies in one durable transaction. A target clear can
+    // overlap the source, and even a disjoint target can have legacy locations
+    // that are not represented by its active dependency stores.
+    let committedClearIntent =
+      if !sourceClearIntent.hasSameRecoveryTopology(as: targetClearIntent) {
+        try sourceClearIntent.includingClearIntent(targetClearIntent)
+      } else {
+        sourceClearIntent
+      }
+    switch appContainerIdentityClearIntentStore
+      .recordResolvingWriteFailure(committedClearIntent)
+    {
+    case .recorded:
+      break
+    case .notRecorded(let error):
+      throw error
+    case .unresolved(let error):
+      throw CommittedReconfigurationFailure(underlyingError: error)
+    }
+
+    do {
+      try await Task { @MainActor in
+        if targetClearRequiresCommit {
+          try await self.clearReconfigurationTarget(preparation)
+        }
+        try await Self.clearLocalClerkStorageStrictly(
+          in: preparation.rollbackState.dependencies,
+          deleteSharedSessionOwnerSlot: false
+        )
+        try self.appContainerIdentityClearRecovery.recover(
+          committedClearIntent
+        )
+        try self.appContainerIdentityClearIntentStore.remove(
+          matching: committedClearIntent.transactionID
+        )
+      }.value
+    } catch {
+      throw CommittedReconfigurationFailure(underlyingError: error)
+    }
+  }
+
+  private func clearReconfigurationTarget(
+    _ preparation: PreparedReconfiguration
+  ) async throws {
+    try await Self.clearLocalClerkStorageStrictly(
+      in: preparation.dependencies
+    )
+    try preparation.dependencies
+      .markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
+  }
+
+  private func blockAfterCommittedReconfigurationFailure(
+    _ rollbackState: ReconfigurationRollbackState
+  ) async {
+    setConfigurationEpoch(to: rollbackState.configurationEpoch)
+    await resetRuntimeStateForReconfiguration()
+    installConfiguration(
+      dependencies: rollbackState.dependencies,
+      bootstrapBlockReason: .pendingClear
     )
   }
 

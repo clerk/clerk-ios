@@ -10,13 +10,14 @@ struct ApplicationKeychainStorageTests {
   private let sharedGroup = "TEAMID.com.example.shared"
 
   @Test
-  func explicitlyScopedReadDoesNotFallThroughToSharedItem() throws {
+  func explicitlyScopedOperationsDoNotTouchSharedItem() throws {
     let store = KeychainTopologyStore(defaultAccessGroup: sharedGroup)
+    let sharedData = Data("shared".utf8)
     store.seed(
       service: service,
       account: account,
       accessGroup: sharedGroup,
-      data: Data("shared".utf8)
+      data: sharedData
     )
     let appLocal = SystemKeychain(
       service: service,
@@ -25,11 +26,30 @@ struct ApplicationKeychainStorageTests {
     )
 
     #expect(try appLocal.data(forKey: account) == nil)
+    try appLocal.set(Data("private".utf8), forKey: account)
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: appLocalGroup
+    ) == Data("private".utf8))
     #expect(store.data(
       service: service,
       account: account,
       accessGroup: sharedGroup
-    ) == Data("shared".utf8))
+    ) == sharedData)
+
+    try appLocal.deleteItem(forKey: account)
+
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: appLocalGroup
+    ) == nil)
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: sharedGroup
+    ) == sharedData)
   }
 
   @Test
@@ -261,18 +281,179 @@ struct ApplicationKeychainStorageTests {
   }
 
   @Test
-  func unexpectedOptionalLegacyCleanupErrorRemainsStrict() {
+  func unexpectedOptionalLegacyCleanupErrorDoesNotFailCommittedWrite() throws {
     let (store, storage) = makeMigratingStorage()
+    store.seed(
+      service: service,
+      account: account,
+      accessGroup: sharedGroup,
+      data: Data("stale".utf8)
+    )
     store.forceDeleteStatus(errSecAuthFailed, accessGroup: sharedGroup)
 
-    #expect(throws: KeychainError.self) {
-      try storage.set(Data("current".utf8), forKey: account)
-    }
+    try storage.set(Data("current".utf8), forKey: account)
+
     #expect(store.data(
       service: service,
       account: account,
       accessGroup: appLocalGroup
     ) == Data("current".utf8))
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: sharedGroup
+    ) == Data("stale".utf8))
+    #expect(try storage.data(forKey: account) == Data("current".utf8))
+  }
+
+  @Test
+  func migrationReadReturnsCommittedValueWhenLegacyCleanupFails() throws {
+    let (store, storage) = makeMigratingStorage()
+    store.seed(
+      service: service,
+      account: account,
+      accessGroup: sharedGroup,
+      data: Data("legacy".utf8)
+    )
+    store.forceDeleteStatus(errSecAuthFailed, accessGroup: sharedGroup)
+
+    #expect(try storage.data(forKey: account) == Data("legacy".utf8))
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: appLocalGroup
+    ) == Data("legacy".utf8))
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: sharedGroup
+    ) == Data("legacy".utf8))
+  }
+
+  @Test
+  func unexpectedTombstoneCleanupErrorDoesNotFailCommittedWrite() throws {
+    let (store, storage) = makeMigratingStorage()
+    store.forceDeleteStatus(errSecAuthFailed, accessGroup: appLocalGroup)
+
+    try storage.set(Data("current".utf8), forKey: account)
+
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: appLocalGroup
+    ) == Data("current".utf8))
+    #expect(try storage.data(forKey: account) == Data("current".utf8))
+  }
+
+  @Test
+  func unexpectedRequiredLegacyCleanupErrorDoesNotFailCommittedWrite() throws {
+    let requiredLegacyGroup = "TEAMID.com.example.required-legacy"
+    let store = KeychainTopologyStore(defaultAccessGroup: requiredLegacyGroup)
+    store.seed(
+      service: service,
+      account: account,
+      accessGroup: requiredLegacyGroup,
+      data: Data("stale".utf8)
+    )
+    store.forceDeleteStatus(
+      errSecAuthFailed,
+      accessGroup: requiredLegacyGroup
+    )
+    let storage = AppLocalKeychainMigratingStorage(
+      primary: SystemKeychain(
+        service: service,
+        accessGroup: appLocalGroup,
+        secItemClient: store.client
+      ),
+      requiredLegacySources: [
+        SystemKeychain(
+          service: service,
+          accessGroup: requiredLegacyGroup,
+          secItemClient: store.client
+        ),
+      ]
+    )
+
+    try storage.set(Data("current".utf8), forKey: account)
+
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: appLocalGroup
+    ) == Data("current".utf8))
+    #expect(store.data(
+      service: service,
+      account: account,
+      accessGroup: requiredLegacyGroup
+    ) == Data("stale".utf8))
+    #expect(try storage.data(forKey: account) == Data("current".utf8))
+  }
+
+  @MainActor
+  @Test
+  func committedIdentityWriteIsAppliedToMemoryWhenLegacyCleanupFails() async throws {
+    let clerk = Clerk()
+    let (topologyStore, storage) = makeMigratingStorage()
+    let identityStore = SharedSessionLocalIdentityStore(keychain: storage)
+    var previousClient = Client.mock
+    previousClient.id = "previous-client"
+    let previousIdentity = ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "previous-token",
+      client: previousClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try identityStore.save(previousIdentity)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: storage,
+      atomicIdentityStore: identityStore
+    )
+    clerk.hydrateIdentityIfNeeded(previousIdentity)
+    topologyStore.seed(
+      service: service,
+      account: SharedSessionLocalIdentityStore.storageKey,
+      accessGroup: sharedGroup,
+      data: Data("stale".utf8)
+    )
+    topologyStore.forceDeleteStatus(
+      errSecAuthFailed,
+      accessGroup: sharedGroup
+    )
+    var replacementClient = Client.mock
+    replacementClient.id = "replacement-client"
+    let replacementIdentity = ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "replacement-token",
+      client: replacementClient,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+
+    let task = try #require(
+      try clerk.identityController.submitExternalTransition {
+        ClerkIdentityController.ExternalTransition(
+          identity: replacementIdentity
+        )
+      }
+    )
+    try await task.value
+
+    #expect(clerk.client?.id == replacementClient.id)
+    #expect(
+      clerk.identityController.currentDeviceToken
+        == replacementIdentity.deviceToken
+    )
+    let persistedIdentity = try #require(try identityStore.load())
+    #expect(persistedIdentity.deviceToken == replacementIdentity.deviceToken)
+    #expect(persistedIdentity.client?.id == replacementClient.id)
+    #expect(persistedIdentity.serverDate == replacementIdentity.serverDate)
+    let recreatedIdentityStore = SharedSessionLocalIdentityStore(
+      keychain: makeMigratingStorage(in: topologyStore)
+    )
+    let recreatedIdentity = try #require(try recreatedIdentityStore.load())
+    #expect(recreatedIdentity.deviceToken == replacementIdentity.deviceToken)
+    #expect(recreatedIdentity.client?.id == replacementClient.id)
+    #expect(recreatedIdentity.serverDate == replacementIdentity.serverDate)
   }
 
   @Test

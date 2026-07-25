@@ -15,6 +15,11 @@ final class DependencyContainer: Dependencies {
     case useVolatileStorage
   }
 
+  struct KeychainMigrationAccessGroups: Equatable {
+    let configuredAppLocal: [String]
+    let identity: [String]
+  }
+
   private struct KeychainStorages {
     let shared: any KeychainStorage
     let appLocal: any KeychainStorage
@@ -217,6 +222,15 @@ final class DependencyContainer: Dependencies {
 }
 
 extension DependencyContainer {
+  static func keychainMigrationAccessGroups(
+    config: Clerk.Options.KeychainConfig
+  ) -> KeychainMigrationAccessGroups {
+    KeychainMigrationAccessGroups(
+      configuredAppLocal: [],
+      identity: config.normalizedAccessGroup.map { [$0] } ?? []
+    )
+  }
+
   private static func makeAPIClient(
     baseURL: URL,
     runtimeScope: ClerkRuntimeScope,
@@ -364,13 +378,16 @@ extension DependencyContainer {
     let config = options.keychainConfig
     let shared = makeKeychainStorage(config: config)
     let syncEnabled = options.sharedSessionSync != nil
+    let migrationAccessGroups = keychainMigrationAccessGroups(
+      config: config
+    )
 
     let configuredAppLocal: any KeychainStorage = if let appLocalAccessGroup {
       ApplicationKeychainStorage.make(
         service: config.service,
         accessGroup: appLocalAccessGroup,
         migrateLegacyUnscopedItems: true,
-        legacyAccessGroups: config.normalizedAccessGroup.map { [$0] } ?? []
+        legacyAccessGroups: migrationAccessGroups.configuredAppLocal
       )
     } else {
       shared
@@ -380,7 +397,7 @@ extension DependencyContainer {
       bundleIdentifier: ownerIdentifier,
       configuredAppLocal: configuredAppLocal,
       appLocalAccessGroup: appLocalAccessGroup,
-      legacyAccessGroups: config.normalizedAccessGroup.map { [$0] } ?? []
+      legacyAccessGroups: migrationAccessGroups.identity
     )
     let namespace = SharedSessionNamespace(
       frontendApiUrl: frontendApiUrl,
@@ -396,7 +413,7 @@ extension DependencyContainer {
         service: stableIdentityService,
         accessGroup: appLocalAccessGroup,
         migrateLegacyUnscopedItems: true,
-        legacyAccessGroups: config.normalizedAccessGroup.map { [$0] } ?? []
+        legacyAccessGroups: migrationAccessGroups.identity
       )
     } else {
       makeKeychainStorage(

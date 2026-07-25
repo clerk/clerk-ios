@@ -185,6 +185,50 @@ struct DependencyContainerKeychainTests {
   }
 
   @Test
+  func configuredAppLocalMigrationExcludesSharedAccessGroup() {
+    let migrationAccessGroups =
+      DependencyContainer.keychainMigrationAccessGroups(
+        config: .init(
+          service: "com.clerk.shared",
+          accessGroup: "TEAMID.com.clerk.shared"
+        )
+      )
+
+    #expect(migrationAccessGroups.configuredAppLocal.isEmpty)
+    #expect(
+      migrationAccessGroups.identity == ["TEAMID.com.clerk.shared"]
+    )
+  }
+
+  #if !os(macOS)
+  @Test
+  @MainActor
+  func configuredSharedServiceIsNotAnAppLocalMigrationSource() throws {
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(
+          service: "com.clerk.shared",
+          accessGroup: "TEAMID.com.clerk.shared"
+        ),
+        sharedSessionSync: .enabled
+      ),
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      persistentAdoptionEnabledOverride: false,
+      ownerIdentifierProvider: { "com.example.app" }
+    )
+
+    #expect(container.keychain is SystemKeychain)
+    #expect(container.appLocalKeychain is SystemKeychain)
+    #expect(container.identityKeychain is AppLocalKeychainMigratingStorage)
+    #expect(
+      container.legacyAppLocalKeychain
+        is AppLocalKeychainMigratingStorage
+    )
+  }
+  #endif
+
+  @Test
   @MainActor
   func disabledPersistentAdoptionDoesNotInstallLiveClearRecovery() throws {
     let container = try DependencyContainer(

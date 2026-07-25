@@ -137,13 +137,7 @@ extension Clerk {
         )
       }
     } catch {
-      clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
-      let ownership = try? clerk.identityPersistenceOperationCoordinator
-        .beginClear(epoch: clerk.configurationEpoch)
-      clerk.identityPersistenceOperationCoordinator.block(
-        ownership,
-        reason: PersistenceFailureKind.classify(error).blockReason
-      )
+      blockUnresolvedIdentityClear(for: clerk)
       return failedKeychainClearTask(
         for: clerk,
         error: error,
@@ -162,38 +156,24 @@ extension Clerk {
       )
     }
 
-    do {
-      try clerk.appContainerIdentityClearIntentStore.record(
-        appContainerIntent
+    switch clerk.appContainerIdentityClearIntentStore
+      .recordResolvingWriteFailure(appContainerIntent)
+    {
+    case .recorded:
+      break
+    case .notRecorded(let error):
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to record Clerk's durable identity-clear intent"
       )
-    } catch let recordError {
-      let pendingIntent: AppContainerIdentityClearIntent?
-      do {
-        pendingIntent = try clerk.appContainerIdentityClearIntentStore.load()
-      } catch {
-        blockUnresolvedIdentityClear(for: clerk)
-        return failedKeychainClearTask(
-          for: clerk,
-          error: error,
-          message: "Failed to resolve Clerk's durable identity-clear intent after a write error"
-        )
-      }
-      guard let pendingIntent else {
-        return failedKeychainClearTask(
-          for: clerk,
-          error: recordError,
-          message: "Failed to record Clerk's durable identity-clear intent"
-        )
-      }
-      guard pendingIntent == appContainerIntent else {
-        blockUnresolvedIdentityClear(for: clerk)
-        return failedKeychainClearTask(
-          for: clerk,
-          error: AppContainerIdentityClearIntentError
-            .pendingIntentConflict,
-          message: "Clerk found a conflicting durable identity-clear intent after a write error"
-        )
-      }
+    case .unresolved(let error):
+      blockUnresolvedIdentityClear(for: clerk)
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to resolve Clerk's durable identity-clear intent after a write error"
+      )
     }
 
     let clearOwnership: PersistenceTransitionOwnership
@@ -286,6 +266,11 @@ extension Clerk {
 
   @MainActor
   private static func blockUnresolvedIdentityClear(for clerk: Clerk) {
+    clerk.cacheManager?.freezePersistence()
+    let identityClear = clerk.identityController.beginStorageClear()
+    clerk.identityController.applyStorageClearToMemory(identityClear)
+    clerk.identityController.resetRuntimeIdentity()
+    clerk.sessionsByUserId = [:]
     clerk.identityPersistenceOperationCoordinator.block(
       nil,
       reason: .pendingClear
@@ -298,6 +283,7 @@ extension Clerk {
     for clerk: Clerk,
     intent: AppContainerIdentityClearIntent
   ) -> Task<Void, Error> {
+    let dependencies = clerk.dependencies
     let ownership: PersistenceTransitionOwnership
     do {
       ownership = try clerk.identityPersistenceOperationCoordinator.beginClear(
@@ -371,9 +357,16 @@ extension Clerk {
           identityClear,
           canReleaseSharedClearBarrier: true
         )
-        cacheManager?.resumePersistence()
-        clerk.identityPersistenceOperationCoordinator.finish(ownership)
-        clerk.resumeWatchConnectivityAfterPersistenceTransition()
+        let didReinstallSharedSessionRuntime =
+          await reinstallSharedSessionRuntimeAfterPendingClearIfNeeded(
+            for: clerk,
+            dependencies: dependencies
+          )
+        if !didReinstallSharedSessionRuntime {
+          cacheManager?.resumePersistence()
+          clerk.identityPersistenceOperationCoordinator.finish(ownership)
+          clerk.resumeWatchConnectivityAfterPersistenceTransition()
+        }
         clerk.keychainClearTask = nil
       } catch {
         clerk.identityController.finishStorageClear(
@@ -814,15 +807,25 @@ extension Clerk {
       canReleaseSharedClearBarrier:
       completedDurably && canReleaseSharedClearBarrier
     )
+    let didReinstallSharedSessionRuntime =
+      if completedDurably, completesTransition {
+        await reinstallSharedSessionRuntimeAfterPendingClearIfNeeded(
+          for: pendingClear.clerk,
+          dependencies: pendingClear.dependencies
+        )
+      } else {
+        false
+      }
     if pendingClear.clerk.dependencies === pendingClear.dependencies,
        pendingClear.clerk.cacheManager === pendingClear.cacheManager,
-       completedDurably
+       completedDurably,
+       !didReinstallSharedSessionRuntime
     {
       pendingClear.cacheManager?.resumePersistence()
     }
     switch result {
     case .success:
-      if completesTransition {
+      if completesTransition, !didReinstallSharedSessionRuntime {
         pendingClear.clerk.identityPersistenceOperationCoordinator.finish(
           pendingClear.ownership
         )
@@ -836,6 +839,27 @@ extension Clerk {
       )
     }
     try result.get()
+  }
+
+  @MainActor
+  private static func reinstallSharedSessionRuntimeAfterPendingClearIfNeeded(
+    for clerk: Clerk,
+    dependencies: any Dependencies
+  ) async -> Bool {
+    guard clerk.dependencies === dependencies,
+          !dependencies.usesVolatileIdentityPersistence,
+          clerk.options.sharedSessionSync != nil,
+          clerk.sharedSessionSyncCoordinator == nil
+    else {
+      return false
+    }
+
+    await clerk.cleanupManagersAndDrainCache(
+      deleteSharedSessionOwnerSlot: false,
+      cancelPersistenceTransition: false
+    )
+    clerk.installConfiguration(dependencies: dependencies)
+    return true
   }
 
   @MainActor

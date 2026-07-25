@@ -303,7 +303,98 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
+  func disjointTargetClearFailureLeavesSourceRuntimeReady() async throws {
+    let clerk = Clerk.shared
+    let previousIntentStore = clerk.appContainerIdentityClearIntentStore
+    let intentStore = InMemoryAppContainerIdentityClearIntentStore()
+    clerk.appContainerIdentityClearIntentStore = intentStore
+    defer {
+      clerk.appContainerIdentityClearIntentStore = previousIntentStore
+      clerk.cleanupManagers()
+    }
+
+    let sourceKeychain = InMemoryKeychain()
+    let sourceIdentityStore = SharedSessionLocalIdentityStore(
+      keychain: sourceKeychain
+    )
+    let sourceIdentity = ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "healthy-source-token",
+      client: .mock,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try sourceIdentityStore.save(sourceIdentity)
+    let sourceOptions = Clerk.Options(
+      keychainConfig: .init(service: "com.example.healthy-source")
+    )
+    let sourceDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: sourceKeychain,
+      appLocalKeychain: sourceKeychain,
+      identityKeychain: sourceKeychain,
+      atomicIdentityStore: sourceIdentityStore,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    try sourceDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: sourceOptions
+    )
+    try clerk.performConfiguration(dependencies: sourceDependencies)
+    let sourceEpoch = clerk.configurationEpoch
+    let sourceClientID = try #require(clerk.client?.id)
+    let sourceSessionID = try #require(clerk.session?.id)
+    let sourceUserID = try #require(clerk.user?.id)
+
+    let targetKeychain = ThrowingDeleteKeychain()
+    let targetOptions = Clerk.Options(
+      keychainConfig: .init(service: "com.example.failing-target")
+    )
+    let dependencyFactory: Clerk.ReconfigurationDependencyFactory = {
+      publishableKey,
+      options,
+      runtimeScope in
+      let target = MockDependencyContainer(
+        apiClient: createMockAPIClient(runtimeScope: runtimeScope),
+        keychain: targetKeychain,
+        appLocalKeychain: targetKeychain,
+        identityKeychain: targetKeychain,
+        atomicIdentityStore: SharedSessionLocalIdentityStore(
+          keychain: targetKeychain
+        ),
+        telemetryCollector: clerk.dependencies.telemetryCollector
+      )
+      try target.configurationManager.configure(
+        publishableKey: publishableKey,
+        options: options
+      )
+      return target
+    }
+
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.performReconfiguration(
+        publishableKey: publishableKey(
+          for: "disjoint-failing-target.clerk.example.com"
+        ),
+        options: targetOptions,
+        dependencyFactory: dependencyFactory
+      )
+    }
+
+    #expect(clerk.dependencies === sourceDependencies)
+    #expect(clerk.configurationEpoch == sourceEpoch)
+    #expect(clerk.client?.id == sourceClientID)
+    #expect(clerk.session?.id == sourceSessionID)
+    #expect(clerk.user?.id == sourceUserID)
+    #expect(clerk.persistenceStatus.readiness == .ready)
+    #expect(clerk.persistenceStatus.sharedSession == .disabled)
+    #expect(try intentStore.load() == nil)
+    #expect(try sourceIdentityStore.load()?.client?.id == sourceClientID)
+  }
+
+  @Test
+  func failedCommittedReconfigureBlocksPreviousIdentityUntilClearRecovery()
+    async throws
+  {
     let original = Clerk.shared
     let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
@@ -315,7 +406,21 @@ struct ClerkReconfigureTests {
     try original.performConfiguration(dependencies: previousDependencies)
     original.client = .mock
     original.environment = .mock
-    defer { original.cleanupManagers() }
+    defer {
+      if let intent = try? original
+        .appContainerIdentityClearIntentStore.load()
+      {
+        try? original.appContainerIdentityClearIntentStore.remove(
+          matching: intent.transactionID
+        )
+      }
+      original.identityPersistenceOperationCoordinator.reset(
+        identityCapability: previousDependencies
+          .identityPersistenceCapability,
+        sharedSessionCapability: .disabled
+      )
+      original.cleanupManagers()
+    }
 
     let targetService = "com.clerk.tests.failed-reconfigure.\(UUID().uuidString)"
     let targetKeychain = SystemKeychain(service: targetService)
@@ -341,8 +446,14 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared === original)
     #expect(Clerk.shared.configurationEpoch == previousEpoch)
     #expect(dependenciesUnchanged)
-    #expect(Clerk.shared.client?.id == Client.mock.id)
-    #expect(Clerk.shared.environment == .mock)
+    #expect(Clerk.shared.client == nil)
+    #expect(Clerk.shared.sessionsByUserId.isEmpty)
+    #expect(
+      Clerk.shared.persistenceStatus.readiness == .blocked(.pendingClear)
+    )
+    #expect(
+      try Clerk.shared.appContainerIdentityClearIntentStore.load() != nil
+    )
   }
 
   @Test

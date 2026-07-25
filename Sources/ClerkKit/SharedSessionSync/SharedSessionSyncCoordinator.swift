@@ -20,6 +20,11 @@ enum SharedSessionSyncCoordinatorError: Error, Equatable {
 
 @MainActor
 final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
+  private enum InitialHydrationOutcome {
+    case completed(didChange: Bool)
+    case requiresReconciliation
+  }
+
   enum PublicationCheckpoint {
     case none
     case response(
@@ -81,6 +86,8 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   var networkResponseLineage: NetworkResponseLineage?
   private var isLocalClearInProgress = false
   private var requiresSuccessfulReconciliation = false
+  private var prefetchedLocalIdentityRecord: SharedSessionLocalIdentityRecord?
+  private var hasPrefetchedLocalIdentityRecord = false
 
   init(
     ownerIdentifier: String,
@@ -105,7 +112,15 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     self.configurationEpoch = configurationEpoch
     self.logError = logError
     self.clerk = clerk
-    currentDeviceToken = (try? localIdentityStore.load()?.deviceToken) ?? clerk.deviceToken
+    do {
+      let record = try localIdentityStore.loadRecord()
+      prefetchedLocalIdentityRecord = record
+      hasPrefetchedLocalIdentityRecord = true
+      currentDeviceToken = record?.acceptedIdentity?.deviceToken
+        ?? clerk.deviceToken
+    } catch {
+      currentDeviceToken = clerk.deviceToken
+    }
 
     notifier.setHandler { [weak self] in
       self?.requestReconciliation()
@@ -121,6 +136,19 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
     initialReconciliationTaskID = reconciliationTaskID
     initialReconciliationSucceeded = nil
     return task
+  }
+
+  func startWithInitialHydration() -> Task<Bool, Never> {
+    switch performInitialSharedHydration() {
+    case .completed(let didChange):
+      initialReconciliationSucceeded = true
+      let task = Task { @MainActor in didChange }
+      initialReconciliationTask = task
+      initialReconciliationTaskID = nil
+      return task
+    case .requiresReconciliation:
+      return start()
+    }
   }
 
   func waitForInitialReconciliation() async throws {
@@ -284,26 +312,40 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
 extension SharedSessionSyncCoordinator {
   @discardableResult
   func hydrateInitialSharedState() -> Bool {
+    switch performInitialSharedHydration() {
+    case .completed(let didChange):
+      didChange
+    case .requiresReconciliation:
+      false
+    }
+  }
+
+  private func performInitialSharedHydration()
+    -> InitialHydrationOutcome
+  {
     guard initialReconciliationTask == nil,
           reconciliationTask == nil,
           serializedOperationTail == nil
     else {
-      return false
+      return .requiresReconciliation
     }
 
     do {
-      if let record = try localIdentityStore.loadRecord(),
+      let record = try consumePrefetchedLocalIdentityRecord()
+      if let record,
          record.requiresLegacyAdoptionPublication
       {
         currentDeviceToken = record.acceptedIdentity?.deviceToken
         requiresSuccessfulReconciliation = true
-        return false
+        return .requiresReconciliation
       }
-      return try reduceApplyAndReplicateSynchronously()
+      return try reduceApplyAndReplicateSynchronously(
+        localIdentityRecord: record
+      )
     } catch {
       requiresSuccessfulReconciliation = true
       logError(error, "Failed to hydrate initial shared-session owner slots")
-      return false
+      return .requiresReconciliation
     }
   }
 
@@ -658,12 +700,14 @@ extension SharedSessionSyncCoordinator {
   }
 
   @discardableResult
-  private func reduceApplyAndReplicateSynchronously() throws -> Bool {
+  private func reduceApplyAndReplicateSynchronously(
+    localIdentityRecord: SharedSessionLocalIdentityRecord?
+  ) throws -> InitialHydrationOutcome {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
-      return false
+      return .requiresReconciliation
     }
-    guard try localIdentityStore.loadPendingPublication() == nil else {
-      return false
+    guard localIdentityRecord?.pendingPublication == nil else {
+      return .requiresReconciliation
     }
 
     let slots = try slotStore.loadAllSlots()
@@ -674,10 +718,10 @@ extension SharedSessionSyncCoordinator {
     )
 
     guard let winner = reduction.winner else {
-      if let identity = try localIdentityStore.load() {
+      if let identity = localIdentityRecord?.acceptedIdentity {
         currentDeviceToken = identity.deviceToken
       }
-      return false
+      return .completed(didChange: false)
     }
     requiresSuccessfulReconciliation = true
 
@@ -706,7 +750,20 @@ extension SharedSessionSyncCoordinator {
       candidate: nil
     )
     requiresSuccessfulReconciliation = false
-    return didChange
+    return .completed(didChange: didChange)
+  }
+
+  private func consumePrefetchedLocalIdentityRecord() throws
+    -> SharedSessionLocalIdentityRecord?
+  {
+    guard hasPrefetchedLocalIdentityRecord else {
+      return try localIdentityStore.loadRecord()
+    }
+    defer {
+      prefetchedLocalIdentityRecord = nil
+      hasPrefetchedLocalIdentityRecord = false
+    }
+    return prefetchedLocalIdentityRecord
   }
 
   private func ensureSuccessfulReconciliationIfNeeded() async throws {

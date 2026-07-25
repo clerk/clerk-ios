@@ -190,7 +190,7 @@ extension Clerk {
         message: "Clerk could not read its pending app-container identity clear."
       )
       return .blocked(
-        reason: failure.blockReason,
+        reason: .pendingClear,
         recoveryFailure: failure,
         requiresAtomicRouting: false
       )
@@ -227,25 +227,28 @@ extension Clerk {
     _ intent: AppContainerIdentityClearIntent,
     protecting currentDependencies: any Dependencies
   ) -> Bool {
-    guard intent.ownerSlot != nil else { return false }
+    guard let intent = try? intent.validated() else { return false }
     let currentConfiguration =
       currentDependencies.configurationManager
     let currentFingerprint = SharedSessionNamespace(
       frontendApiUrl: currentConfiguration.frontendApiUrl,
       publishableKey: currentConfiguration.publishableKey
     ).fingerprint
-    guard currentFingerprint == intent.instanceFingerprint,
-          let currentIntent =
-          try? Self.makeAppContainerIdentityClearIntent(
-            dependencies: currentDependencies,
-            options: currentConfiguration.options,
-            frontendApiUrl: currentConfiguration.frontendApiUrl,
-            publishableKey: currentConfiguration.publishableKey
-          )
+    guard let currentIntent =
+      try? Self.makeAppContainerIdentityClearIntent(
+        dependencies: currentDependencies,
+        options: currentConfiguration.options,
+        frontendApiUrl: currentConfiguration.frontendApiUrl,
+        publishableKey: currentConfiguration.publishableKey
+      )
     else {
       return false
     }
-    return currentIntent.ownerIdentifier == intent.ownerIdentifier
-      && currentIntent.stableIdentity == intent.stableIdentity
+    return intent.recordedClearIntents.contains { recordedIntent in
+      recordedIntent.ownerSlot != nil
+        && currentFingerprint == recordedIntent.instanceFingerprint
+        && currentIntent.ownerIdentifier == recordedIntent.ownerIdentifier
+        && currentIntent.stableIdentity == recordedIntent.stableIdentity
+    }
   }
 }

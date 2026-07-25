@@ -82,6 +82,46 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func startupHydratesPeerIdentityBeforeReturningInitialTask() async throws {
+    let backend = TestSlotBackend()
+    var peerClient = Client.mock
+    peerClient.id = "shared-client"
+    let peerEvent = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.quickstart",
+      generation: 1,
+      state: .present,
+      deviceToken: "shared-token",
+      client: peerClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.quickstart",
+        event: peerEvent
+      ),
+      owner: "app.quickstart"
+    )
+    let node = try makeNode(
+      owner: "app.custom-flows",
+      backend: backend,
+      hydrateInitialIdentity: false
+    )
+
+    #expect(node.clerk.client == nil)
+
+    let initialTask = node.coordinator.startWithInitialHydration()
+
+    #expect(node.clerk.client?.id == "shared-client")
+    #expect(node.clerk.user != nil)
+    backend.failReads = true
+    #expect(await initialTask.value)
+    try await node.coordinator.waitForInitialReconciliation()
+  }
+
+  @Test
   func initialSharedHydrationSeedsLocalTokenWithoutExposingLocalClient() async throws {
     let backend = TestSlotBackend()
     let staleIdentity = SharedSessionLocalIdentity(
