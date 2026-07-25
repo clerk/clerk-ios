@@ -22,6 +22,37 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
   }
 
   @Test
+  func legacyIntentWithAppLocalGroupIsRejected() throws {
+    let journal = InMemoryKeychain()
+    let data = Data(
+      """
+      {
+        "schema_version": 1,
+        "local_identity_service": "app.identity",
+        "local_identity_access_group": "TEAMID.app.owner",
+        "slot_service": "app.slots",
+        "slot_access_group": "TEAMID.shared",
+        "slot_account": "owner",
+        "instance_fingerprint": "instance",
+        "owner_identifier": "app.owner"
+      }
+      """.utf8
+    )
+    try journal.set(
+      data,
+      forKey: SharedSessionOwnerSlotClearRecovery.storageKey
+    )
+
+    #expect(
+      throws: SharedSessionOwnerSlotClearRecoveryError.invalidIntent
+    ) {
+      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(
+        in: journal
+      )
+    }
+  }
+
+  @Test
   func currentIntentRequiresPrivateOwnerGroup() {
     let intent = SharedSessionOwnerSlotClearRecovery.Intent(
       localIdentityService: "app.identity",

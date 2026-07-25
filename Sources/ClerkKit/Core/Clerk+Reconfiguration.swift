@@ -60,47 +60,35 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options
   ) async throws -> PreparedReconfiguration {
-    let previousReadiness = persistenceStatus.readiness
-    identityPersistenceOperationCoordinator.cancelActiveTransition()
+    let nextEpoch = nextConfigurationEpoch
+    let target = try DependencyContainer(
+      publishableKey: publishableKey,
+      options: options,
+      runtimeScope: .init(
+        epoch: nextEpoch,
+        runtimeState: runtimeState
+      ),
+      deferSharedSessionAdoption: true
+    )
+    try prepareReconfigurationTarget(target)
+    let plan = reconfigurationPlan(with: target)
+    if plan == .preserveIdentityAndMigrateSlot {
+      try await settlePendingPublicationForTopologyChange()
+    }
+    let rollbackState = captureReconfigurationRollbackState()
+    let volatileIdentity = try volatileIdentityForReconfiguration()
+    try Task.checkCancellation()
     let ownership = try identityPersistenceOperationCoordinator
       .beginReconfiguration(epoch: configurationEpoch)
     suspendWatchConnectivityForPersistenceTransition()
-    let nextEpoch = nextConfigurationEpoch
-
-    do {
-      let target = try DependencyContainer(
-        publishableKey: publishableKey,
-        options: options,
-        runtimeScope: .init(
-          epoch: nextEpoch,
-          runtimeState: runtimeState
-        ),
-        deferSharedSessionAdoption: true
-      )
-      try prepareReconfigurationTarget(target)
-      let plan = reconfigurationPlan(with: target)
-      if plan == .preserveIdentityAndMigrateSlot {
-        try await settlePendingPublicationForTopologyChange()
-      }
-      try identityPersistenceOperationCoordinator.validate(
-        ownership,
-        operation: .reconfigure
-      )
-      return try PreparedReconfiguration(
-        ownership: ownership,
-        nextEpoch: nextEpoch,
-        dependencies: target,
-        plan: plan,
-        rollbackState: captureReconfigurationRollbackState(),
-        volatileIdentity: volatileIdentityForReconfiguration()
-      )
-    } catch {
-      restoreAfterFailedReconfigurationPreparation(
-        ownership: ownership,
-        previousReadiness: previousReadiness
-      )
-      throw error
-    }
+    return PreparedReconfiguration(
+      ownership: ownership,
+      nextEpoch: nextEpoch,
+      dependencies: target,
+      plan: plan,
+      rollbackState: rollbackState,
+      volatileIdentity: volatileIdentity
+    )
   }
 
   private func prepareReconfigurationTarget(
@@ -120,21 +108,6 @@ extension Clerk {
       return nil
     }
     return try identityController.currentIdentitySnapshot()
-  }
-
-  private func restoreAfterFailedReconfigurationPreparation(
-    ownership: PersistenceTransitionOwnership,
-    previousReadiness: PersistenceStatus.Readiness
-  ) {
-    if case .blocked(let reason) = previousReadiness {
-      identityPersistenceOperationCoordinator.block(
-        ownership,
-        reason: reason
-      )
-    } else {
-      identityPersistenceOperationCoordinator.finish(ownership)
-    }
-    resumeWatchConnectivityAfterPersistenceTransition()
   }
 
   private func installPreparedReconfiguration(

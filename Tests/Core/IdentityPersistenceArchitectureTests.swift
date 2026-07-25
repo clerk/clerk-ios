@@ -131,6 +131,145 @@ struct IdentityPersistenceArchitectureTests {
     }
   }
 
+  @Test
+  func failedClearPreflightPreservesActiveBootstrap() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      appLocalKeychain: keychain,
+      identityKeychain: keychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
+    clerk.dependencies = dependencies
+    clerk.appContainerIdentityClearIntentStore =
+      FailingAppContainerIdentityClearIntentStore()
+
+    let coordinator = clerk.identityPersistenceOperationCoordinator
+    coordinator.reset(
+      identityCapability: .durable,
+      sharedSessionCapability: .unavailable(.temporarilyUnavailable)
+    )
+    let ownership = coordinator.beginBootstrap(
+      epoch: clerk.configurationEpoch
+    )
+    let gate = PersistenceBootstrapGate()
+    let bootstrap = Task { @MainActor in
+      await gate.waitForRelease()
+      try coordinator.validate(ownership, operation: .bootstrap)
+      coordinator.setSharedSessionCapability(.active)
+      coordinator.finish(ownership)
+    }
+    defer {
+      gate.release()
+      bootstrap.cancel()
+    }
+    await gate.waitUntilEntered()
+
+    await #expect(throws: (any Error).self) {
+      try await clerk.clearAllKeychainItemsAndWait()
+    }
+
+    #expect(coordinator.isActive(ownership, operation: .bootstrap))
+    #expect(clerk.persistenceStatus.readiness == .transitioning)
+    #expect(
+      clerk.persistenceStatus.sharedSession
+        == .unavailable(.temporarilyUnavailable)
+    )
+
+    gate.release()
+    try await bootstrap.value
+
+    #expect(clerk.persistenceStatus.readiness == .ready)
+    #expect(clerk.persistenceStatus.sharedSession == .active)
+  }
+
+  @Test
+  func clearContinuesWhenIntentRecordThrowsAfterPersisting() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      appLocalKeychain: keychain,
+      identityKeychain: keychain
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init()
+    )
+    clerk.dependencies = dependencies
+    let intentStore =
+      FailAfterPersistAppContainerIdentityClearIntentStore()
+    clerk.appContainerIdentityClearIntentStore = intentStore
+
+    let coordinator = clerk.identityPersistenceOperationCoordinator
+    coordinator.reset(
+      identityCapability: .durable,
+      sharedSessionCapability: .unavailable(.temporarilyUnavailable)
+    )
+    let ownership = coordinator.beginBootstrap(
+      epoch: clerk.configurationEpoch
+    )
+
+    try await clerk.clearAllKeychainItemsAndWait()
+
+    #expect(!coordinator.isActive(ownership, operation: .bootstrap))
+    #expect(clerk.persistenceStatus.readiness == .ready)
+    #expect(try intentStore.load() == nil)
+  }
+
+  @Test
+  func failedReconfigurationPreflightPreservesActiveBootstrap()
+    async throws
+  {
+    let clerk = Clerk()
+    let coordinator = clerk.identityPersistenceOperationCoordinator
+    coordinator.reset(
+      identityCapability: .durable,
+      sharedSessionCapability: .unavailable(.temporarilyUnavailable)
+    )
+    let ownership = coordinator.beginBootstrap(
+      epoch: clerk.configurationEpoch
+    )
+    let gate = PersistenceBootstrapGate()
+    let bootstrap = Task { @MainActor in
+      await gate.waitForRelease()
+      try coordinator.validate(ownership, operation: .bootstrap)
+      coordinator.setSharedSessionCapability(.active)
+      coordinator.finish(ownership)
+    }
+    defer {
+      gate.release()
+      bootstrap.cancel()
+    }
+    await gate.waitUntilEntered()
+
+    await #expect(throws: ClerkInitializationError.self) {
+      try await clerk.performReconfiguration(
+        publishableKey: "invalid_key",
+        options: .init()
+      )
+    }
+
+    #expect(coordinator.isActive(ownership, operation: .bootstrap))
+    #expect(clerk.persistenceStatus.readiness == .transitioning)
+    #expect(
+      clerk.persistenceStatus.sharedSession
+        == .unavailable(.temporarilyUnavailable)
+    )
+
+    gate.release()
+    try await bootstrap.value
+
+    #expect(clerk.persistenceStatus.readiness == .ready)
+    #expect(clerk.persistenceStatus.sharedSession == .active)
+  }
+
   @Test(
     arguments: [
       FailureMatrixCase(
@@ -1870,6 +2009,35 @@ struct IdentityPersistenceArchitectureTests {
   }
 }
 
+@MainActor
+private final class PersistenceBootstrapGate {
+  private var didEnter = false
+  private var entryWaiters: [CheckedContinuation<Void, Never>] = []
+  private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+  func waitForRelease() async {
+    didEnter = true
+    let waiters = entryWaiters
+    entryWaiters.removeAll()
+    waiters.forEach { $0.resume() }
+    await withCheckedContinuation { continuation in
+      releaseContinuation = continuation
+    }
+  }
+
+  func waitUntilEntered() async {
+    guard !didEnter else { return }
+    await withCheckedContinuation { continuation in
+      entryWaiters.append(continuation)
+    }
+  }
+
+  func release() {
+    releaseContinuation?.resume()
+    releaseContinuation = nil
+  }
+}
+
 private enum IdentityPersistenceBootstrapTestError: Error {
   case unexpectedMutation
   case unexpectedTargetLookup
@@ -2013,6 +2181,26 @@ private final class FailingAppContainerIdentityClearIntentStore:
 
   func remove(matching _: UUID) throws {
     throw IdentityPersistenceBootstrapTestError.unexpectedMutation
+  }
+}
+
+@MainActor
+private final class FailAfterPersistAppContainerIdentityClearIntentStore:
+  AppContainerIdentityClearIntentStoring
+{
+  private let backing = InMemoryAppContainerIdentityClearIntentStore()
+
+  func load() throws -> AppContainerIdentityClearIntent? {
+    try backing.load()
+  }
+
+  func record(_ intent: AppContainerIdentityClearIntent) throws {
+    try backing.record(intent)
+    throw IdentityPersistenceBootstrapTestError.unexpectedMutation
+  }
+
+  func remove(matching transactionID: UUID) throws {
+    try backing.remove(matching: transactionID)
   }
 }
 

@@ -80,8 +80,8 @@ enum SharedSessionOwnerSlotClearRecovery {
       guard requiredValues.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
         throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
       }
-      if schemaVersion == Self.schemaVersion {
-        guard let localIdentityAccessGroup,
+      if let localIdentityAccessGroup {
+        guard schemaVersion == Self.schemaVersion,
               !localIdentityAccessGroup.trimmingCharacters(
                 in: .whitespacesAndNewlines
               ).isEmpty,
@@ -93,6 +93,8 @@ enum SharedSessionOwnerSlotClearRecovery {
         else {
           throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
         }
+      } else if schemaVersion == Self.schemaVersion {
+        throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
       }
       return self
     }

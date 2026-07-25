@@ -151,7 +151,51 @@ extension Clerk {
       )
     }
 
-    clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
+    let appContainerIntent: AppContainerIdentityClearIntent
+    do {
+      appContainerIntent = try clerk.makeAppContainerIdentityClearIntent()
+    } catch {
+      return failedKeychainClearTask(
+        for: clerk,
+        error: error,
+        message: "Failed to prepare Clerk's durable identity-clear intent"
+      )
+    }
+
+    do {
+      try clerk.appContainerIdentityClearIntentStore.record(
+        appContainerIntent
+      )
+    } catch let recordError {
+      let pendingIntent: AppContainerIdentityClearIntent?
+      do {
+        pendingIntent = try clerk.appContainerIdentityClearIntentStore.load()
+      } catch {
+        blockUnresolvedIdentityClear(for: clerk)
+        return failedKeychainClearTask(
+          for: clerk,
+          error: error,
+          message: "Failed to resolve Clerk's durable identity-clear intent after a write error"
+        )
+      }
+      guard let pendingIntent else {
+        return failedKeychainClearTask(
+          for: clerk,
+          error: recordError,
+          message: "Failed to record Clerk's durable identity-clear intent"
+        )
+      }
+      guard pendingIntent == appContainerIntent else {
+        blockUnresolvedIdentityClear(for: clerk)
+        return failedKeychainClearTask(
+          for: clerk,
+          error: AppContainerIdentityClearIntentError
+            .pendingIntentConflict,
+          message: "Clerk found a conflicting durable identity-clear intent after a write error"
+        )
+      }
+    }
+
     let clearOwnership: PersistenceTransitionOwnership
     do {
       clearOwnership =
@@ -160,22 +204,10 @@ extension Clerk {
         )
       clerk.suspendWatchConnectivityForPersistenceTransition()
     } catch {
-      return Task { throw error }
-    }
-
-    let appContainerIntent: AppContainerIdentityClearIntent
-    do {
-      appContainerIntent = try clerk.makeAppContainerIdentityClearIntent()
-      try clerk.appContainerIdentityClearIntentStore.record(
-        appContainerIntent
-      )
-    } catch {
-      clerk.identityPersistenceOperationCoordinator.finish(clearOwnership)
-      clerk.resumeWatchConnectivityAfterPersistenceTransition()
       return failedKeychainClearTask(
         for: clerk,
         error: error,
-        message: "Failed to record Clerk's durable identity-clear intent"
+        message: "Failed to begin Clerk's durable identity clear"
       )
     }
 
@@ -253,11 +285,19 @@ extension Clerk {
   }
 
   @MainActor
+  private static func blockUnresolvedIdentityClear(for clerk: Clerk) {
+    clerk.identityPersistenceOperationCoordinator.block(
+      nil,
+      reason: .pendingClear
+    )
+    clerk.suspendWatchConnectivityForPersistenceTransition()
+  }
+
+  @MainActor
   private static func startPendingAppContainerIdentityClear(
     for clerk: Clerk,
     intent: AppContainerIdentityClearIntent
   ) -> Task<Void, Error> {
-    clerk.identityPersistenceOperationCoordinator.cancelActiveTransition()
     let ownership: PersistenceTransitionOwnership
     do {
       ownership = try clerk.identityPersistenceOperationCoordinator.beginClear(
