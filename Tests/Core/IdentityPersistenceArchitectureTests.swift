@@ -3,6 +3,43 @@ import Foundation
 import Security
 import Testing
 
+private struct FrozenV1ClearIntentReader: Decodable {
+  enum Failure: Error, Equatable {
+    case unsupportedSchemaVersion
+  }
+
+  let schemaVersion: Int
+  let transactionID: UUID
+  let instanceFingerprint: String
+  let ownerIdentifier: String?
+  let configuredShared: AppContainerIdentityClearIntent.KeychainTarget
+  let configuredAppLocal: AppContainerIdentityClearIntent.KeychainTarget
+  let stableIdentity: AppContainerIdentityClearIntent.KeychainTarget
+  let previousAppLocal: AppContainerIdentityClearIntent.KeychainTarget?
+  let clearJournal: AppContainerIdentityClearIntent.KeychainTarget?
+  let ownerSlot: SharedSessionOwnerSlotClearRecovery.Intent?
+
+  private enum CodingKeys: String, CodingKey {
+    case schemaVersion
+    case transactionID = "transactionId"
+    case instanceFingerprint
+    case ownerIdentifier
+    case configuredShared
+    case configuredAppLocal
+    case stableIdentity
+    case previousAppLocal
+    case clearJournal
+    case ownerSlot
+  }
+
+  func validated() throws -> Self {
+    guard schemaVersion == 1 else {
+      throw Failure.unsupportedSchemaVersion
+    }
+    return self
+  }
+}
+
 @MainActor
 @Suite(.serialized)
 struct IdentityPersistenceArchitectureTests {
@@ -1434,6 +1471,183 @@ struct IdentityPersistenceArchitectureTests {
         forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
       ) == false
     )
+  }
+
+  @Test
+  func clearIntentSchemaVersionsProtectEnvelopeFromFrozenV1Reader()
+    throws
+  {
+    let sharedService = "com.example.versioned-envelope"
+    let sharedAccessGroup = "TEAMID.com.example.versioned-envelope"
+    let clerk = Clerk()
+
+    func makeIntent(
+      ownerIdentifier: String,
+      host: String
+    ) throws -> AppContainerIdentityClearIntent {
+      let dependencies = MockDependencyContainer(
+        apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+        sharedSessionOwnerIdentifier: ownerIdentifier
+      )
+      let options = Clerk.Options(
+        keychainConfig: .init(
+          service: sharedService,
+          accessGroup: sharedAccessGroup,
+          appLocalAccessGroup: "TEAMID.\(ownerIdentifier)"
+        ),
+        sharedSessionSync: .enabled
+      )
+      let publishableKey = publishableKey(for: host)
+      try dependencies.configurationManager.configure(
+        publishableKey: publishableKey,
+        options: options
+      )
+      return try Clerk.makeAppContainerIdentityClearIntent(
+        dependencies: dependencies,
+        options: options,
+        frontendApiUrl: dependencies.configurationManager.frontendApiUrl,
+        publishableKey: publishableKey
+      )
+    }
+
+    let sourceIntent = try makeIntent(
+      ownerIdentifier: "com.example.versioned-source",
+      host: "versioned-source.clerk.example.com"
+    )
+    let targetIntent = try makeIntent(
+      ownerIdentifier: "com.example.versioned-target",
+      host: "versioned-target.clerk.example.com"
+    )
+    #expect(
+      sourceIntent.schemaVersion
+        == AppContainerIdentityClearIntent.singleTopologySchemaVersion
+    )
+    #expect(
+      targetIntent.schemaVersion
+        == AppContainerIdentityClearIntent.singleTopologySchemaVersion
+    )
+
+    let singletonData = try JSONEncoder.clerkEncoder.encode(sourceIntent)
+    let singletonJSON = try #require(
+      JSONSerialization.jsonObject(with: singletonData)
+        as? [String: Any]
+    )
+    #expect(singletonJSON["additional_clear_intents"] == nil)
+    #expect(
+      try JSONDecoder.clerkDecoder.decode(
+        AppContainerIdentityClearIntent.self,
+        from: singletonData
+      ).validated() == sourceIntent
+    )
+
+    let envelope = try sourceIntent.includingClearIntent(targetIntent)
+    #expect(
+      envelope.schemaVersion
+        == AppContainerIdentityClearIntent.envelopeSchemaVersion
+    )
+    #expect(
+      envelope.additionalClearIntents?.first?.schemaVersion
+        == AppContainerIdentityClearIntent.singleTopologySchemaVersion
+    )
+    let envelopeData = try JSONEncoder.clerkEncoder.encode(envelope)
+    let envelopeJSON = try #require(
+      JSONSerialization.jsonObject(with: envelopeData)
+        as? [String: Any]
+    )
+    let encodedAdditionalIntents = try #require(
+      envelopeJSON["additional_clear_intents"] as? [[String: Any]]
+    )
+    #expect(encodedAdditionalIntents.count == 1)
+    #expect(
+      try JSONDecoder.clerkDecoder.decode(
+        AppContainerIdentityClearIntent.self,
+        from: envelopeData
+      ).validated() == envelope
+    )
+
+    let frozenReader = try JSONDecoder.clerkDecoder.decode(
+      FrozenV1ClearIntentReader.self,
+      from: envelopeData
+    )
+    #expect(frozenReader.transactionID == envelope.transactionID)
+    #expect(throws: FrozenV1ClearIntentReader.Failure.unsupportedSchemaVersion) {
+      try frozenReader.validated()
+    }
+
+    var mislabeledV1JSON = envelopeJSON
+    mislabeledV1JSON["schema_version"] =
+      AppContainerIdentityClearIntent.singleTopologySchemaVersion
+    let mislabeledV1Data = try JSONSerialization.data(
+      withJSONObject: mislabeledV1JSON
+    )
+    _ = try JSONDecoder.clerkDecoder.decode(
+      FrozenV1ClearIntentReader.self,
+      from: mislabeledV1Data
+    ).validated()
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try JSONDecoder.clerkDecoder.decode(
+        AppContainerIdentityClearIntent.self,
+        from: mislabeledV1Data
+      ).validated()
+    }
+
+    func envelopeRoot(
+      additionalIntents: [AppContainerIdentityClearIntent]?
+    ) -> AppContainerIdentityClearIntent {
+      AppContainerIdentityClearIntent(
+        transactionID: sourceIntent.transactionID,
+        instanceFingerprint: sourceIntent.instanceFingerprint,
+        ownerIdentifier: sourceIntent.ownerIdentifier,
+        configuredShared: sourceIntent.configuredShared,
+        configuredAppLocal: sourceIntent.configuredAppLocal,
+        stableIdentity: sourceIntent.stableIdentity,
+        previousAppLocal: sourceIntent.previousAppLocal,
+        clearJournal: sourceIntent.clearJournal,
+        ownerSlot: sourceIntent.ownerSlot,
+        additionalClearIntents: additionalIntents
+      )
+    }
+
+    var missingAdditionJSON = envelopeJSON
+    missingAdditionJSON.removeValue(forKey: "additional_clear_intents")
+    let missingAdditionData = try JSONSerialization.data(
+      withJSONObject: missingAdditionJSON
+    )
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try JSONDecoder.clerkDecoder.decode(
+        AppContainerIdentityClearIntent.self,
+        from: missingAdditionData
+      ).validated()
+    }
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try envelopeRoot(additionalIntents: []).validated()
+    }
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try envelopeRoot(
+        additionalIntents: [targetIntent, targetIntent]
+      ).validated()
+    }
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try envelopeRoot(additionalIntents: [envelope]).validated()
+    }
+    #expect(throws: AppContainerIdentityClearIntentError.invalidIntent) {
+      try envelope.includingClearIntent(targetIntent)
+    }
+
+    var unknownVersionJSON = envelopeJSON
+    unknownVersionJSON["schema_version"] = 99
+    let unknownVersionData = try JSONSerialization.data(
+      withJSONObject: unknownVersionJSON
+    )
+    #expect(
+      throws:
+      AppContainerIdentityClearIntentError.unsupportedSchemaVersion
+    ) {
+      try JSONDecoder.clerkDecoder.decode(
+        AppContainerIdentityClearIntent.self,
+        from: unknownVersionData
+      ).validated()
+    }
   }
 
   @Test

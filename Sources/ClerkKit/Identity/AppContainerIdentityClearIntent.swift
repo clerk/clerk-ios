@@ -14,7 +14,8 @@ enum AppContainerIdentityClearIntentError: Error, Equatable {
 }
 
 struct AppContainerIdentityClearIntent: Codable, Equatable {
-  static let schemaVersion = 1
+  static let singleTopologySchemaVersion = 1
+  static let envelopeSchemaVersion = 2
 
   private struct KeychainLocation: Hashable {
     let service: String
@@ -138,7 +139,10 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
     ownerSlot: SharedSessionOwnerSlotClearRecovery.Intent?,
     additionalClearIntents: [AppContainerIdentityClearIntent]? = nil
   ) {
-    schemaVersion = Self.schemaVersion
+    schemaVersion =
+      additionalClearIntents == nil
+        ? Self.singleTopologySchemaVersion
+        : Self.envelopeSchemaVersion
     self.transactionID = transactionID
     self.instanceFingerprint = instanceFingerprint
     self.ownerIdentifier = ownerIdentifier
@@ -152,7 +156,21 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
   }
 
   func validated() throws -> Self {
-    guard schemaVersion == Self.schemaVersion else {
+    let additionalClearIntents: [AppContainerIdentityClearIntent]
+    switch schemaVersion {
+    case Self.singleTopologySchemaVersion:
+      guard self.additionalClearIntents == nil else {
+        throw AppContainerIdentityClearIntentError.invalidIntent
+      }
+      additionalClearIntents = []
+    case Self.envelopeSchemaVersion:
+      guard let storedAdditionalIntents = self.additionalClearIntents,
+            storedAdditionalIntents.count == 1
+      else {
+        throw AppContainerIdentityClearIntentError.invalidIntent
+      }
+      additionalClearIntents = storedAdditionalIntents
+    default:
       throw AppContainerIdentityClearIntentError.unsupportedSchemaVersion
     }
     guard instanceFingerprint.count == 64,
@@ -303,13 +321,11 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
       throw AppContainerIdentityClearIntentError.invalidIntent
     }
 
-    let additionalClearIntents = additionalClearIntents ?? []
-    guard additionalClearIntents.count <= 1 else {
-      throw AppContainerIdentityClearIntentError.invalidIntent
-    }
     for additionalIntent in additionalClearIntents {
-      guard additionalIntent.additionalClearIntents?.isEmpty != false,
-            additionalIntent.transactionID != transactionID
+      guard additionalIntent.schemaVersion
+        == Self.singleTopologySchemaVersion,
+        additionalIntent.additionalClearIntents == nil,
+        additionalIntent.transactionID != transactionID
       else {
         throw AppContainerIdentityClearIntentError.invalidIntent
       }
@@ -329,16 +345,24 @@ struct AppContainerIdentityClearIntent: Codable, Equatable {
   func includingClearIntent(
     _ additionalIntent: AppContainerIdentityClearIntent
   ) throws -> AppContainerIdentityClearIntent {
-    try AppContainerIdentityClearIntent(
-      transactionID: transactionID,
-      instanceFingerprint: instanceFingerprint,
-      ownerIdentifier: ownerIdentifier,
-      configuredShared: configuredShared,
-      configuredAppLocal: configuredAppLocal,
-      stableIdentity: stableIdentity,
-      previousAppLocal: previousAppLocal,
-      clearJournal: clearJournal,
-      ownerSlot: ownerSlot,
+    let sourceIntent = try validated()
+    let additionalIntent = try additionalIntent.validated()
+    guard sourceIntent.schemaVersion == Self.singleTopologySchemaVersion,
+          additionalIntent.schemaVersion
+          == Self.singleTopologySchemaVersion
+    else {
+      throw AppContainerIdentityClearIntentError.invalidIntent
+    }
+    return try AppContainerIdentityClearIntent(
+      transactionID: sourceIntent.transactionID,
+      instanceFingerprint: sourceIntent.instanceFingerprint,
+      ownerIdentifier: sourceIntent.ownerIdentifier,
+      configuredShared: sourceIntent.configuredShared,
+      configuredAppLocal: sourceIntent.configuredAppLocal,
+      stableIdentity: sourceIntent.stableIdentity,
+      previousAppLocal: sourceIntent.previousAppLocal,
+      clearJournal: sourceIntent.clearJournal,
+      ownerSlot: sourceIntent.ownerSlot,
       additionalClearIntents: [additionalIntent]
     ).validated()
   }
