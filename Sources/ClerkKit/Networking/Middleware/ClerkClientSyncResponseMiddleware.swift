@@ -84,6 +84,33 @@ struct ClientSyncResponseContext {
   }
 }
 
+struct ClientSyncResponseMetadata {
+  let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
+  let checkpoint: ClerkRequestCheckpoint
+  let serverDate: Date?
+
+  init(response: HTTPURLResponse, request: URLRequest) {
+    deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
+      authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
+    )
+    checkpoint = request.clerkRequestCheckpoint
+    serverDate = response.serverDate
+  }
+
+  func context(update: ClientResponseUpdate) -> ClientSyncResponseContext {
+    ClientSyncResponseContext(
+      update: update,
+      deviceTokenUpdate: deviceTokenUpdate,
+      requestDeviceToken: checkpoint.requestDeviceToken,
+      baseGeneration: checkpoint.sharedSessionBaseGeneration,
+      serverDate: serverDate,
+      isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
+      clientResponseGeneration: checkpoint.clientResponseGeneration,
+      responseSequence: checkpoint.requestSequence
+    )
+  }
+}
+
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   private let runtimeScope: ClerkRuntimeScope
 
@@ -92,27 +119,17 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    guard request.shouldAutomaticallySyncClerkClient else { return }
-
     try Task.checkCancellation()
-    let deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
-      authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
+    let metadata = ClientSyncResponseMetadata(response: response, request: request)
+    let update = Self.classifyClientUpdate(
+      from: data,
+      isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
+      deviceTokenUpdate: metadata.deviceTokenUpdate
     )
-    let checkpoint = request.clerkRequestCheckpoint
-    let context = ClientSyncResponseContext(
-      update: Self.classifyClientUpdate(
-        from: data,
-        isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
-        deviceTokenUpdate: deviceTokenUpdate
-      ),
-      deviceTokenUpdate: deviceTokenUpdate,
-      requestDeviceToken: checkpoint.requestDeviceToken,
-      baseGeneration: checkpoint.sharedSessionBaseGeneration,
-      serverDate: response.serverDate,
-      isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
-      clientResponseGeneration: checkpoint.clientResponseGeneration,
-      responseSequence: checkpoint.requestSequence
-    )
+    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
+      return
+    }
+    let context = metadata.context(update: update)
 
     let clerk = try await runtimeScope.requireCurrentClerk()
     try Task.checkCancellation()

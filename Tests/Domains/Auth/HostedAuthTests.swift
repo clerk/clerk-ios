@@ -168,7 +168,11 @@ struct HostedAuthFlowTests {
           throw ClerkClientError(message: "Missing create params in test.")
         }
         #expect(PKCE.challenge(for: params.codeVerifier) == createParams.codeChallenge)
-        return ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        return hostedAuthRedeemResponse(
+          client: redeemedClient,
+          responseSequence: 1,
+          serverDate: Date(timeIntervalSince1970: 200)
+        )
       }
     )
     let sessionService = MockSessionService(setActive: { sessionId, organizationId in
@@ -205,6 +209,12 @@ struct HostedAuthFlowTests {
 
     #expect(session.id == Session.mock2.id)
     #expect(Clerk.shared.client == activatedClient)
+    #expect(
+      try Clerk.shared.dependencies.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == "hosted_auth_test_device_token"
+    )
+    #expect(Clerk.shared.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
     #expect(createParams.value?.redirectUrl == "myapp:///hosted-auth-callback")
     #expect(createParams.value?.mode == .signUp)
     #expect(redeemParams.value?.rotatingTokenNonce == "nonce_123")
@@ -231,7 +241,7 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        hostedAuthRedeemResponse(client: redeemedClient)
       }
     )
     configureHostedAuthForTesting(
@@ -285,7 +295,7 @@ struct HostedAuthFlowTests {
       },
       redeem: { _ in
         redeemCalled.setValue(true)
-        return ClientServiceResponse(client: .mock, requestSequence: nil, serverDate: nil)
+        return hostedAuthRedeemResponse(client: .mock)
       }
     )
     let sessionService = MockSessionService(setActive: { _, _ in
@@ -508,7 +518,7 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: .mock, requestSequence: nil, serverDate: nil)
+        hostedAuthRedeemResponse(client: .mock)
       }
     )
     let sessionService = MockSessionService(setActive: { _, _ in
@@ -548,6 +558,73 @@ struct HostedAuthFlowTests {
   }
 
   @Test
+  func explicitClearRedeemResponseClearsIdentityWithoutActivating() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let setActiveCalled = LockIsolated(false)
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        HostedAuthRedeemResponse(
+          client: nil,
+          clientSyncContext: ClientSyncResponseContext(
+            update: .explicitClear,
+            deviceTokenUpdate: .clear,
+            requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
+            baseGeneration: nil,
+            serverDate: Date(timeIntervalSince1970: 200),
+            isCanonicalClientRequest: true,
+            clientResponseGeneration: Clerk.shared.clientResponseGeneration,
+            responseSequence: 1
+          )
+        )
+      }
+    )
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: MockSessionService(setActive: { _, _ in
+        setActiveCalled.setValue(true)
+      }),
+      initialClient: .mock
+    )
+    try Clerk.shared.dependencies.identityKeychain.set(
+      "initial-token",
+      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          try makeHostedAuthCallbackUrl(
+            redirectUrl: "myapp://callback",
+            state: #require(createParams.value?.state),
+            rotatingTokenNonce: "nonce_123",
+            createdSessionId: Session.mock.id
+          )
+        }
+      )
+      Issue.record("Expected the authoritative clear to fail hosted auth completion")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Hosted auth completion could not update the current client.")
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
+
+    #expect(!setActiveCalled.value)
+    #expect(Clerk.shared.client == nil)
+    #expect(
+      try Clerk.shared.dependencies.identityKeychain.string(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      ) == nil
+    )
+  }
+
+  @Test
   func clientChangeDuringActivationDoesNotReturnStaleSession() async throws {
     let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
     var redeemedClient = Client.mock
@@ -559,7 +636,7 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        hostedAuthRedeemResponse(client: redeemedClient)
       }
     )
     let sessionService = MockSessionService(setActive: { _, _ in
@@ -608,7 +685,7 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        hostedAuthRedeemResponse(client: redeemedClient)
       }
     )
     configureHostedAuthForTesting(
@@ -656,7 +733,7 @@ struct HostedAuthFlowTests {
       },
       redeem: { _ in
         redeemCalled.setValue(true)
-        return ClientServiceResponse(client: .mock, requestSequence: nil, serverDate: nil)
+        return hostedAuthRedeemResponse(client: .mock)
       }
     )
     configureHostedAuthForTesting(
@@ -690,6 +767,7 @@ struct HostedAuthFlowTests {
   @Test
   func generationChangeWhileBrowserOpenDiscardsRedeemedClient() async throws {
     let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let redeemCalled = LockIsolated(false)
     let setActiveCalled = LockIsolated(false)
     let initialClient = Client.mockSignedOut
     var redeemedClient = Client.mock
@@ -702,7 +780,8 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        redeemCalled.setValue(true)
+        return hostedAuthRedeemResponse(client: redeemedClient)
       }
     )
     let sessionService = MockSessionService(setActive: { _, _ in
@@ -732,11 +811,69 @@ struct HostedAuthFlowTests {
       Issue.record("Expected stale client response generation to throw")
     } catch let error as ClerkClientError {
       #expect(error.message == "Hosted auth completion could not update the current client.")
+      #expect(!redeemCalled.value)
       #expect(!setActiveCalled.value)
       #expect(Clerk.shared.client == initialClient)
     } catch {
       Issue.record("Expected ClerkClientError, got \(error)")
     }
+  }
+
+  @Test
+  func generationChangeDuringRedeemDiscardsResponseWithoutActivating() async throws {
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let redeemCalled = LockIsolated(false)
+    let setActiveCalled = LockIsolated(false)
+    let initialClient = Client.mockSignedOut
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock]
+    redeemedClient.lastActiveSessionId = Session.mock.id
+
+    let hostedAuthService = MockHostedAuthService(
+      create: { params in
+        createParams.setValue(params)
+        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+      },
+      redeem: { _ in
+        redeemCalled.setValue(true)
+        let response = hostedAuthRedeemResponse(client: redeemedClient)
+        Clerk.shared.identityController.fenceClientResponses()
+        return response
+      }
+    )
+    let sessionService = MockSessionService(setActive: { _, _ in
+      setActiveCalled.setValue(true)
+    })
+    configureHostedAuthForTesting(
+      hostedAuthService: hostedAuthService,
+      sessionService: sessionService,
+      initialClient: initialClient
+    )
+
+    do {
+      _ = try await Clerk.shared.auth.performHostedAuth(
+        mode: nil,
+        redirectUrl: "myapp://callback",
+        prefersEphemeralWebBrowserSession: false,
+        webAuthentication: { _, _, _ in
+          try makeHostedAuthCallbackUrl(
+            redirectUrl: "myapp://callback",
+            state: #require(createParams.value?.state),
+            rotatingTokenNonce: "nonce_123",
+            createdSessionId: Session.mock.id
+          )
+        }
+      )
+      Issue.record("Expected the stale redeem response to throw")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Hosted auth completion could not update the current client.")
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
+
+    #expect(redeemCalled.value)
+    #expect(!setActiveCalled.value)
+    #expect(Clerk.shared.client == initialClient)
   }
 
   @Test
@@ -753,7 +890,7 @@ struct HostedAuthFlowTests {
         return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
       },
       redeem: { _ in
-        ClientServiceResponse(client: redeemedClient, requestSequence: nil, serverDate: nil)
+        hostedAuthRedeemResponse(client: redeemedClient)
       }
     )
     configureHostedAuthForTesting(
@@ -799,6 +936,27 @@ private struct HostedAuthBrowserInputs: Equatable {
 private struct HostedAuthSetActiveCall: Equatable {
   let sessionId: String
   let organizationId: String?
+}
+
+@MainActor
+private func hostedAuthRedeemResponse(
+  client: Client?,
+  responseSequence: Int? = nil,
+  serverDate: Date? = nil
+) -> HostedAuthRedeemResponse {
+  HostedAuthRedeemResponse(
+    client: client,
+    clientSyncContext: ClientSyncResponseContext(
+      update: client.map(ClientResponseUpdate.client) ?? .absent,
+      deviceTokenUpdate: .set("hosted_auth_test_device_token"),
+      requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
+      baseGeneration: 0,
+      serverDate: serverDate,
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: Clerk.shared.clientResponseGeneration,
+      responseSequence: responseSequence
+    )
+  )
 }
 
 private final class HostedAuthClientService: ClientServiceProtocol {

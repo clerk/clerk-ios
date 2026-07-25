@@ -63,7 +63,6 @@ extension Auth {
 
     let clerk = Clerk.shared
     let runtime = clerk.runtimeScope
-    let clientResponseGeneration = clerk.clientResponseGeneration
 
     let redirect = try HostedAuthRedirect(redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
     let state = try HostedAuthState.generate()
@@ -85,6 +84,9 @@ extension Auth {
     }
     let hostedAuthUrl = try hostedAuth.authenticationUrl()
 
+    try Task.checkCancellation()
+    try runtime.validateStableRuntime()
+    let browserStartClientResponseGeneration = clerk.clientResponseGeneration
     let callbackUrl = try await webAuthentication(
       hostedAuthUrl,
       redirect.callbackUrlScheme,
@@ -94,13 +96,23 @@ extension Auth {
 
     // A reconfiguration while the browser was open invalidates this flow; fail
     // before the redeem request consumes the single-use rotating token nonce.
+    try Task.checkCancellation()
     try runtime.validateStableRuntime()
+    guard clerk.clientResponseGeneration == browserStartClientResponseGeneration else {
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+    }
 
     let response = try await hostedAuthService.redeem(params: HostedAuthRedeemParams(
       rotatingTokenNonce: callback.rotatingTokenNonce,
       codeVerifier: pkce.verifier
     ))
+    try Task.checkCancellation()
     try runtime.validateStableRuntime()
+
+    if response.clientSyncContext.update == .explicitClear {
+      try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+    }
 
     guard
       let returnedClient = response.client,
@@ -109,12 +121,14 @@ extension Auth {
       throw ClerkClientError(message: "Hosted auth completion did not include the created session.")
     }
 
-    clerk.identityController.applyLegacyResponseClient(
-      returnedClient,
-      responseSequence: response.requestSequence,
-      serverDate: response.serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    )
+    guard
+      response.clientSyncContext.clientResponseGeneration
+        == browserStartClientResponseGeneration
+    else {
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+    }
+
+    try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
     guard clerk.client?.sessions.contains(where: { $0.id == callback.createdSessionId }) == true else {
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
     }

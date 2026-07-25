@@ -95,6 +95,7 @@ extension HostedAuthFlowTests {
       ])
       #expect(!request.shouldAutomaticallySyncClerkClient)
       #expect(!request.shouldLogClerkBodies)
+      #expect(request.clerkRequestCheckpoint.isCanonicalClientRequest)
       let body = request.urlEncodedFormBody
       #expect(body?["_method"] == "GET")
       #expect(body?["rotating_token_nonce"] == "nonce_123")
@@ -112,5 +113,50 @@ extension HostedAuthFlowTests {
     #expect(requestHandled.value)
     #expect(response.client?.id == redeemedClient.id)
     #expect(response.client?.sessions.map(\.id) == redeemedClient.sessions.map(\.id))
+    guard case .client(let synchronizedClient) = response.clientSyncContext.update else {
+      Issue.record("Expected hosted auth redeem to defer the decoded client update.")
+      return
+    }
+    #expect(synchronizedClient.id == redeemedClient.id)
+    #expect(synchronizedClient.sessions.map(\.id) == redeemedClient.sessions.map(\.id))
+    #expect(response.clientSyncContext.isCanonicalClientRequest)
+    #expect(
+      response.clientSyncContext.clientResponseGeneration
+        == Clerk.shared.clientResponseGeneration
+    )
+  }
+
+  @Test
+  func redeemPreservesAuthoritativeDeviceTokenClear() async throws {
+    configureClerkForTesting()
+    let requestUrl = try #require(URL(string: mockBaseUrl.absoluteString + "/v1/client"))
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock]
+    let mock = try Mock(
+      url: requestUrl,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(
+          response: redeemedClient,
+          client: nil
+        )),
+      ],
+      additionalHeaders: [
+        "Authorization": "Bearer",
+      ]
+    )
+    mock.register()
+
+    let service = HostedAuthService(apiClient: Clerk.shared.dependencies.apiClient)
+    let response = try await service.redeem(params: HostedAuthRedeemParams(
+      rotatingTokenNonce: "nonce_123",
+      codeVerifier: "verifier_123"
+    ))
+
+    #expect(response.client?.id == redeemedClient.id)
+    #expect(response.clientSyncContext.update == .explicitClear)
+    #expect(response.clientSyncContext.deviceTokenUpdate == .clear)
   }
 }

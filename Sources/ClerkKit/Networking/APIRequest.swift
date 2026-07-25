@@ -185,4 +185,5 @@ struct APIResponse<Value: Sendable> {
   let value: Value
   let requestSequence: Int?
   let serverDate: Date?
+  let deferredClientSyncMetadata: ClientSyncResponseMetadata?
 }
