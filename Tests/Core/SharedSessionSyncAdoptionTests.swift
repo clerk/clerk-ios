@@ -1,6 +1,5 @@
 @testable import ClerkKit
 import Foundation
-import Security
 import Testing
 
 struct SharedSessionSyncAdoptionTests {
@@ -589,23 +588,5 @@ private final class FailingReadKeychain: @unchecked Sendable, KeychainStorage {
 
   func hasItem(forKey _: String) throws -> Bool {
     throw Failure.read
-  }
-}
-
-private struct MissingEntitlementKeychain: KeychainStorage {
-  func set(_: Data, forKey _: String) throws {
-    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
-  }
-
-  func data(forKey _: String) throws -> Data? {
-    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
-  }
-
-  func deleteItem(forKey _: String) throws {
-    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
-  }
-
-  func hasItem(forKey _: String) throws -> Bool {
-    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
   }
 }

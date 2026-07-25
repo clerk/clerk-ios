@@ -1,5 +1,6 @@
 @testable import ClerkKit
 import Foundation
+import Security
 
 /// An in-memory keychain storage implementation for testing.
 /// Data is stored in a dictionary and cleared when the test completes.
@@ -49,5 +50,27 @@ final class SetFailingKeychain: @unchecked Sendable, KeychainStorage {
 
   func hasItem(forKey _: String) throws -> Bool {
     false
+  }
+}
+
+struct MissingEntitlementKeychain: KeychainStorage {
+  private var error: KeychainError {
+    .unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func set(_: Data, forKey _: String) throws {
+    throw error
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw error
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw error
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw error
   }
 }

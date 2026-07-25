@@ -1,6 +1,5 @@
 @testable import ClerkKit
 import Foundation
-import Security
 import Testing
 
 @Suite(.serialized)
@@ -563,28 +562,6 @@ private final class RecoveryOwnerSlotStore: SharedSessionSlotStoring, @unchecked
       if deleteFails { throw Failure.delete }
       slot = nil
     }
-  }
-}
-
-private struct MissingEntitlementKeychain: KeychainStorage {
-  private var error: KeychainError {
-    .unexpectedStatus(errSecMissingEntitlement)
-  }
-
-  func set(_: Data, forKey _: String) throws {
-    throw error
-  }
-
-  func data(forKey _: String) throws -> Data? {
-    throw error
-  }
-
-  func deleteItem(forKey _: String) throws {
-    throw error
-  }
-
-  func hasItem(forKey _: String) throws -> Bool {
-    throw error
   }
 }
 

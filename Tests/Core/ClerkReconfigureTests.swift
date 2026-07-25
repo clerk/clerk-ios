@@ -2,7 +2,6 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
-import Security
 import Testing
 
 @MainActor
@@ -1033,28 +1032,6 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     lock.lock()
     defer { lock.unlock() }
     return storage[key] != nil
-  }
-}
-
-private struct MissingEntitlementKeychain: KeychainStorage {
-  private var error: KeychainError {
-    .unexpectedStatus(errSecMissingEntitlement)
-  }
-
-  func set(_: Data, forKey _: String) throws {
-    throw error
-  }
-
-  func data(forKey _: String) throws -> Data? {
-    throw error
-  }
-
-  func deleteItem(forKey _: String) throws {
-    throw error
-  }
-
-  func hasItem(forKey _: String) throws -> Bool {
-    throw error
   }
 }
 
