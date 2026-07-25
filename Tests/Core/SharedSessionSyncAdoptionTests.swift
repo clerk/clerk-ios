@@ -1,5 +1,6 @@
 @testable import ClerkKit
 import Foundation
+import Security
 import Testing
 
 struct SharedSessionSyncAdoptionTests {
@@ -22,6 +23,50 @@ struct SharedSessionSyncAdoptionTests {
 
     #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
     #expect(try SharedSessionLocalIdentityStore(keychain: destination).load() == nil)
+  }
+
+  @Test
+  func missingSharedEntitlementMarksAdoptedWithoutImportingLegacyCredentials() throws {
+    let destination = InMemoryKeychain()
+
+    let canHydrateProvisionalClient = try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      previousBundle: nil,
+      legacyShared: MissingEntitlementKeychain()
+    ).migrateToleratingMissingSharedEntitlement()
+
+    #expect(!canHydrateProvisionalClient)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
+    #expect(try SharedSessionLocalIdentityStore(keychain: destination).load() == nil)
+  }
+
+  @Test
+  func partialAppLocalMigrationAllowsProvisionalHydrationWithoutSharedEntitlement() throws {
+    let destination = InMemoryKeychain()
+    let configuredAppLocal = InMemoryKeychain()
+    try persistLegacyIdentity(
+      token: "app-local-token",
+      client: makeClient(id: "app-local-client"),
+      in: configuredAppLocal
+    )
+
+    let canHydrateProvisionalClient = try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      configuredAppLocal: configuredAppLocal,
+      previousBundle: nil,
+      legacyShared: MissingEntitlementKeychain()
+    ).migrateToleratingMissingSharedEntitlement()
+
+    #expect(canHydrateProvisionalClient)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
+    let record = try #require(
+      try SharedSessionLocalIdentityStore(keychain: destination).loadRecord()
+    )
+    #expect(record.acceptedIdentity?.deviceToken == "app-local-token")
+    #expect(record.acceptedIdentity?.client == nil)
+    #expect(record.requiresSharedSessionPublication)
   }
 
   @Test
@@ -57,7 +102,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "configured-token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == true)
     #expect(try privateKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == environmentData)
   }
 
@@ -138,7 +183,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "bundle-token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == true)
   }
 
   @Test
@@ -401,7 +446,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == false)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == false)
   }
 
   @Test
@@ -544,5 +589,23 @@ private final class FailingReadKeychain: @unchecked Sendable, KeychainStorage {
 
   func hasItem(forKey _: String) throws -> Bool {
     throw Failure.read
+  }
+}
+
+private struct MissingEntitlementKeychain: KeychainStorage {
+  func set(_: Data, forKey _: String) throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
   }
 }

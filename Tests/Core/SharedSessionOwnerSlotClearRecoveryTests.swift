@@ -1,74 +1,10 @@
 @testable import ClerkKit
 import Foundation
+import Security
 import Testing
 
 @Suite(.serialized)
 struct SharedSessionOwnerSlotClearRecoveryTests {
-  @Test
-  func legacyIntentWithoutAppLocalGroupStillDecodes() throws {
-    let legacyIntent = makeIntent()
-    let data = try JSONEncoder.clerkEncoder.encode(legacyIntent)
-
-    let decoded = try JSONDecoder.clerkDecoder.decode(
-      SharedSessionOwnerSlotClearRecovery.Intent.self,
-      from: data
-    ).validated()
-
-    #expect(
-      decoded.schemaVersion
-        == SharedSessionOwnerSlotClearRecovery.Intent.legacySchemaVersion
-    )
-    #expect(decoded.localIdentityAccessGroup == nil)
-  }
-
-  @Test
-  func legacyIntentWithAppLocalGroupIsRejected() throws {
-    let journal = InMemoryKeychain()
-    let data = Data(
-      """
-      {
-        "schema_version": 1,
-        "local_identity_service": "app.identity",
-        "local_identity_access_group": "TEAMID.app.owner",
-        "slot_service": "app.slots",
-        "slot_access_group": "TEAMID.shared",
-        "slot_account": "owner",
-        "instance_fingerprint": "instance",
-        "owner_identifier": "app.owner"
-      }
-      """.utf8
-    )
-    try journal.set(
-      data,
-      forKey: SharedSessionOwnerSlotClearRecovery.storageKey
-    )
-
-    #expect(
-      throws: SharedSessionOwnerSlotClearRecoveryError.invalidIntent
-    ) {
-      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(
-        in: journal
-      )
-    }
-  }
-
-  @Test
-  func currentIntentRequiresPrivateOwnerGroup() {
-    let intent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: "app.identity",
-      localIdentityAccessGroup: "TEAMID.shared",
-      slotService: "app.slots",
-      slotAccessGroup: "TEAMID.shared",
-      slotAccount: "owner",
-      instanceFingerprint: "instance",
-      ownerIdentifier: "app.owner"
-    )
-
-    #expect(throws: SharedSessionOwnerSlotClearRecoveryError.invalidIntent) {
-      try intent.validated()
-    }
-  }
-
   @Test
   @MainActor
   func synchronousClearPersistsExactRecoveryIntentBeforeReturning() async throws {
@@ -84,7 +20,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       identityStore: localStore,
       slotStore: slotStore
     )
-    let dependencies = MockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       identityKeychain: keychain,
@@ -92,11 +28,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       sharedSessionOwnerSlotClearRecovery: recovery,
       clientService: MockClientService(get: { nil })
     )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: makeOptions()
-    )
-    clerk.dependencies = dependencies
     clerk.sharedSessionSyncCoordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.owner",
       instanceFingerprint: "instance",
@@ -115,6 +46,58 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     )
 
     try await clearTask.value
+    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == nil)
+  }
+
+  @Test
+  @MainActor
+  func degradedClearRecoversOwnerSlotAfterEntitlementReturns() async throws {
+    let clerk = Clerk()
+    let localKeychain = InMemoryKeychain()
+    let journal = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: localKeychain)
+    let slotStore = try RecoveryOwnerSlotStore(
+      slot: makeSlot(token: "old-token")
+    )
+    let intent = makeIntent()
+    let recovery = makeContext(
+      journal: journal,
+      currentIntent: intent,
+      identityStore: localStore,
+      slotStore: slotStore
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: MissingEntitlementKeychain(),
+      appLocalKeychain: localKeychain,
+      identityKeychain: localKeychain,
+      atomicIdentityStore: localStore,
+      sharedSessionOwnerSlotClearRecovery: recovery,
+      clientService: MockClientService(get: { nil })
+    )
+    try localStore.save(makeIdentity(token: "local-token"))
+
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+    do {
+      try await clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected the inaccessible shared Keychain clear to fail.")
+    } catch {
+      #expect(
+        error.localizedDescription.contains(
+          "clear legacy shared credentials"
+        )
+      )
+    }
+
+    #expect(try localStore.loadRecord() == nil)
+    #expect(try slotStore.loadOwnSlot() != nil)
+    #expect(
+      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal)
+        == intent
+    )
+
+    #expect(try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: recovery))
     #expect(try slotStore.loadOwnSlot() == nil)
     #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == nil)
   }
@@ -141,10 +124,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       atomicIdentityStore: localStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
       clientService: MockClientService(get: { nil })
-    )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: makeOptions()
     )
     clerk.dependencies = dependencies
     let identity = makeIdentity(token: "accepted-token")
@@ -242,7 +221,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     let currentSlotStore = try RecoveryOwnerSlotStore(slot: makeSlot(token: "current-token"))
     let originalIntent = makeIntent(suffix: "original")
     let currentIntent = makeIntent(suffix: "current")
-    let readoptionRecorder = RecoveryReadoptionRecorder()
     try originalIdentityStore.save(makeIdentity(token: "original-token"))
     try currentIdentityStore.save(makeIdentity(token: "current-token"))
     let provider = RecoveryTargetProvider(
@@ -250,10 +228,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       originalIdentityStore: originalIdentityStore,
       originalSlotStore: originalSlotStore,
       otherIdentityStore: currentIdentityStore,
-      otherSlotStore: currentSlotStore,
-      preventLegacyIdentityReadoption: { intent in
-        readoptionRecorder.record(intent)
-      }
+      otherSlotStore: currentSlotStore
     )
     try SharedSessionOwnerSlotClearRecovery.markPending(in: .init(
       journal: journal,
@@ -272,68 +247,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     #expect(try originalSlotStore.loadOwnSlot() == nil)
     #expect(try currentIdentityStore.load() != nil)
     #expect(try currentSlotStore.loadOwnSlot() != nil)
-    #expect(readoptionRecorder.recordedIntents.count == 2)
-    #expect(readoptionRecorder.recordedIntents.contains(originalIntent))
-    #expect(readoptionRecorder.recordedIntents.contains(currentIntent))
-  }
-
-  @Test
-  func recoveryKeepsIntentUntilReadoptionBarrierIsDurable() throws {
-    let journal = InMemoryKeychain()
-    let destination = InMemoryKeychain()
-    let legacyShared = InMemoryKeychain()
-    let localStore = SharedSessionLocalIdentityStore(keychain: destination)
-    let slotStore = try RecoveryOwnerSlotStore(slot: makeSlot())
-    let intent = makeIntent()
-    let barrier = RecoveryReadoptionBarrier(destination: destination)
-    let provider = RecoveryTargetProvider(
-      originalIntent: intent,
-      originalIdentityStore: localStore,
-      originalSlotStore: slotStore,
-      preventLegacyIdentityReadoption: { intent in
-        try barrier.mark(intent: intent)
-      }
-    )
-    let context = SharedSessionOwnerSlotClearRecovery.Context(
-      journal: journal,
-      currentIntent: intent,
-      targetProvider: provider
-    )
-    try localStore.save(makeIdentity(token: "accepted-token"))
-    try legacyShared.set(
-      "legacy-token",
-      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-    )
-    try SharedSessionOwnerSlotClearRecovery.markPending(in: context)
-
-    #expect(throws: RecoveryReadoptionBarrier.Failure.mark) {
-      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: context)
-    }
-
-    #expect(try localStore.loadRecord() != nil)
-    #expect(try slotStore.loadOwnSlot() != nil)
-    #expect(
-      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal)
-        == intent
-    )
-    #expect(try !SharedSessionSyncAdoption.isAdopted(in: destination))
-
-    barrier.allowMarking()
-    #expect(try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: context))
-    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
-    #expect(
-      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal)
-        == nil
-    )
-
-    try SharedSessionSyncAdoption(
-      destinationIdentity: destination,
-      destinationPrivate: InMemoryKeychain(),
-      previousAppLocalIdentity: nil,
-      legacyShared: legacyShared
-    ).migrateIfNeeded()
-
-    #expect(try localStore.loadRecord() == nil)
   }
 
   @Test
@@ -378,7 +291,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
   }
 
   @Test
-  func failedLocalIdentityDeletionWithdrawsSlotAndKeepsIntent() throws {
+  func failedLocalIdentityDeletionKeepsSlotAndIntent() throws {
     let journal = InMemoryKeychain()
     let localStore = DeleteFailingRecoveryIdentityStore()
     let slotStore = try RecoveryOwnerSlotStore(slot: makeSlot())
@@ -395,7 +308,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: context)
     }
 
-    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(try slotStore.loadOwnSlot() != nil)
     #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == intent)
   }
 
@@ -442,7 +355,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
   }
 
   @Test
-  func failedSlotWithdrawalLeavesIdentityAndIntentForRetry() throws {
+  func failedSlotWithdrawalLeavesClearedIdentityAndIntentForRetry() throws {
     let journal = InMemoryKeychain()
     let localStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
     let slotStore = try RecoveryOwnerSlotStore(slot: makeSlot(), deleteFails: true)
@@ -460,7 +373,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: context)
     }
 
-    #expect(try localStore.loadRecord() != nil)
+    #expect(try localStore.loadRecord() == nil)
     #expect(try slotStore.loadOwnSlot() != nil)
     #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == intent)
   }
@@ -487,7 +400,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: context)
     }
 
-    #expect(try localStore.loadRecord() != nil)
+    #expect(try localStore.loadRecord() == nil)
     #expect(try slotStore.loadOwnSlot() != nil)
     #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == intent)
   }
@@ -513,39 +426,13 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
   private func makeIntent(
     suffix: String = "original"
   ) -> SharedSessionOwnerSlotClearRecovery.Intent {
-    let options = makeOptions(suffix: suffix)
-    let instanceFingerprint = SharedSessionNamespace.sha256(
-      "instance-\(suffix)"
-    )
-    let ownerIdentifier = "app.owner"
-    return SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: DependencyContainer.stableIdentityService(
-        configuredService: options.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      slotService: SharedSessionOwnerSlotStore.service(
-        configuredService: options.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint
-      ),
-      slotAccessGroup: options.keychainConfig.normalizedAccessGroup!,
-      slotAccount: SharedSessionOwnerSlotStore.account(
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      instanceFingerprint: instanceFingerprint,
-      ownerIdentifier: ownerIdentifier
-    )
-  }
-
-  private func makeOptions(
-    suffix: String = "original"
-  ) -> Clerk.Options {
-    .init(
-      keychainConfig: .init(
-        service: "com.example.\(suffix)",
-        accessGroup: "TEAMID.com.example.shared.\(suffix)"
-      )
+    SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "app.identity.\(suffix)",
+      slotService: "app.slots.\(suffix)",
+      slotAccessGroup: "group.\(suffix)",
+      slotAccount: "owner.\(suffix)",
+      instanceFingerprint: "instance-\(suffix)",
+      ownerIdentifier: "app.owner"
     )
   }
 
@@ -602,25 +489,19 @@ private final class RecoveryTargetProvider:
   private let originalSlotStore: any SharedSessionSlotStoring
   private let otherIdentityStore: (any SharedSessionLocalIdentityStoring)?
   private let otherSlotStore: (any SharedSessionSlotStoring)?
-  private let readoptionBarrier:
-    @Sendable (SharedSessionOwnerSlotClearRecovery.Intent) throws -> Void
 
   init(
     originalIntent: SharedSessionOwnerSlotClearRecovery.Intent,
     originalIdentityStore: any SharedSessionLocalIdentityStoring,
     originalSlotStore: any SharedSessionSlotStoring,
     otherIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
-    otherSlotStore: (any SharedSessionSlotStoring)? = nil,
-    preventLegacyIdentityReadoption: @escaping @Sendable (
-      SharedSessionOwnerSlotClearRecovery.Intent
-    ) throws -> Void = { _ in }
+    otherSlotStore: (any SharedSessionSlotStoring)? = nil
   ) {
     self.originalIntent = originalIntent
     self.originalIdentityStore = originalIdentityStore
     self.originalSlotStore = originalSlotStore
     self.otherIdentityStore = otherIdentityStore
     self.otherSlotStore = otherSlotStore
-    readoptionBarrier = preventLegacyIdentityReadoption
   }
 
   func localIdentityStore(
@@ -637,59 +518,6 @@ private final class RecoveryTargetProvider:
     if intent == originalIntent { return originalSlotStore }
     guard let otherSlotStore else { throw Failure.unexpectedIntent }
     return otherSlotStore
-  }
-
-  func preventLegacyIdentityReadoption(
-    for intent: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws {
-    try readoptionBarrier(intent)
-  }
-}
-
-private final class RecoveryReadoptionBarrier: @unchecked Sendable {
-  enum Failure: Error {
-    case mark
-  }
-
-  private let lock = NSLock()
-  private let destination: any KeychainStorage
-  private var shouldFail = true
-
-  init(destination: any KeychainStorage) {
-    self.destination = destination
-  }
-
-  func allowMarking() {
-    lock.withLock {
-      shouldFail = false
-    }
-  }
-
-  func mark(
-    intent _: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws {
-    try lock.withLock {
-      guard !shouldFail else { throw Failure.mark }
-      try destination.set(
-        SharedSessionSyncAdoption.markerValue,
-        forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
-      )
-    }
-  }
-}
-
-private final class RecoveryReadoptionRecorder: @unchecked Sendable {
-  private let lock = NSLock()
-  private var intents: [SharedSessionOwnerSlotClearRecovery.Intent] = []
-
-  var recordedIntents: [SharedSessionOwnerSlotClearRecovery.Intent] {
-    lock.withLock { intents }
-  }
-
-  func record(_ intent: SharedSessionOwnerSlotClearRecovery.Intent) {
-    lock.withLock {
-      intents.append(intent)
-    }
   }
 }
 
@@ -738,6 +566,28 @@ private final class RecoveryOwnerSlotStore: SharedSessionSlotStoring, @unchecked
   }
 }
 
+private struct MissingEntitlementKeychain: KeychainStorage {
+  private var error: KeychainError {
+    .unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func set(_: Data, forKey _: String) throws {
+    throw error
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw error
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw error
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw error
+  }
+}
+
 private final class DeleteFailingRecoveryIdentityStore:
   SharedSessionLocalIdentityStoring,
   @unchecked Sendable
@@ -760,7 +610,8 @@ private final class DeleteFailingRecoveryIdentityStore:
 
   func save(
     _: SharedSessionLocalIdentity,
-    operationRevision _: UInt64
+    operationRevision _: UInt64,
+    requiresSharedSessionPublication _: Bool
   ) throws -> Bool {
     true
   }

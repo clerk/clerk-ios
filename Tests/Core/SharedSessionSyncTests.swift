@@ -69,6 +69,7 @@ struct SharedSessionSyncTests {
     )
 
     #expect(node.clerk.client == nil)
+    #expect(try node.localStore.loadRecord()?.requiresSharedSessionPublication == false)
 
     node.coordinator.hydrateInitialSharedState()
 
@@ -82,43 +83,59 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func startupHydratesPeerIdentityBeforeReturningInitialTask() async throws {
+  func degradedLocalMutationPublishesAheadOfOlderSharedWinner() async throws {
     let backend = TestSlotBackend()
-    var peerClient = Client.mock
-    peerClient.id = "shared-client"
-    let peerEvent = try SharedSessionIdentityEvent(
-      id: UUID(),
-      originOwnerIdentifier: "app.quickstart",
-      generation: 1,
-      state: .present,
-      deviceToken: "shared-token",
-      client: peerClient,
-      serverDate: Date(timeIntervalSince1970: 100)
-    ).validated()
+    let peerEvent = try makeEvent(
+      owner: "app.peer",
+      generation: 7,
+      clientID: "older-shared"
+    )
     try backend.save(
       SharedSessionOwnerSlot(
         schemaVersion: SharedSessionOwnerSlot.schemaVersion,
         instanceFingerprint: "instance",
-        slotOwnerIdentifier: "app.quickstart",
+        slotOwnerIdentifier: "app.peer",
         event: peerEvent
       ),
-      owner: "app.quickstart"
+      owner: "app.peer"
     )
+    var localClient = Client.mock
+    localClient.id = "degraded-local"
+    let localIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "local-token",
+      client: localClient,
+      serverDate: Date(timeIntervalSince1970: 200)
+    )
+    let localStore = TestLocalIdentityStore()
+    try localStore.saveRequiringSharedSessionPublication(localIdentity)
     let node = try makeNode(
-      owner: "app.custom-flows",
+      owner: "app.recovered",
       backend: backend,
-      hydrateInitialIdentity: false
+      hydrateInitialIdentity: false,
+      localStore: localStore
     )
 
     #expect(node.clerk.client == nil)
-
-    let initialTask = node.coordinator.startWithInitialHydration()
-
-    #expect(node.clerk.client?.id == "shared-client")
+    #expect(!node.coordinator.hydrateInitialSharedState())
+    #expect(node.clerk.client?.id == "degraded-local")
     #expect(node.clerk.user != nil)
-    backend.failReads = true
-    #expect(await initialTask.value)
-    try await node.coordinator.waitForInitialReconciliation()
+    #expect(node.coordinator.currentDeviceToken == "local-token")
+
+    #expect(await node.coordinator.start().value)
+
+    let recoveredSlot = try #require(
+      backend.allSlots().first {
+        $0.slotOwnerIdentifier == "app.recovered"
+      }
+    )
+    #expect(recoveredSlot.event.generation == 8)
+    #expect(recoveredSlot.event.client?.id == "degraded-local")
+    #expect(node.clerk.client?.id == "degraded-local")
+    #expect(node.clerk.user != nil)
+    let recoveredRecord = try #require(try localStore.loadRecord())
+    #expect(!recoveredRecord.requiresSharedSessionPublication)
+    #expect(recoveredRecord.pendingPublication == nil)
   }
 
   @Test
@@ -167,7 +184,7 @@ struct SharedSessionSyncTests {
     )
 
     let localStore = TestLocalIdentityStore()
-    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+    try localStore.saveRequiringSharedSessionPublication(SharedSessionLocalIdentity(
       state: .cleared,
       deviceToken: "legacy-signed-in-token",
       client: nil,
@@ -194,7 +211,7 @@ struct SharedSessionSyncTests {
     #expect(adoptedSlot.event.deviceToken == "legacy-signed-in-token")
     #expect(adoptedSlot.event.client == nil)
     let adoptedRecord = try #require(try localStore.loadRecord())
-    #expect(!adoptedRecord.requiresLegacyAdoptionPublication)
+    #expect(!adoptedRecord.requiresSharedSessionPublication)
     #expect(adoptedRecord.pendingPublication == nil)
 
     var signedInClient = Client.mock
@@ -236,7 +253,7 @@ struct SharedSessionSyncTests {
     )
 
     let localStore = TestLocalIdentityStore()
-    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
+    try localStore.saveRequiringSharedSessionPublication(SharedSessionLocalIdentity(
       state: .cleared,
       deviceToken: "legacy-token",
       client: nil,
@@ -2087,87 +2104,6 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func topologyChangeSettlesPendingPublicationIntoCanonicalIdentity() async throws {
-    let backend = TestSlotBackend()
-    let previous = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "previous-token",
-      client: makeClient(id: "previous"),
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    let node = try makeNode(
-      owner: "app.a",
-      backend: backend,
-      initialIdentity: previous
-    )
-    let pending = try makeEvent(
-      owner: "app.a",
-      generation: 4,
-      clientID: "pending"
-    )
-    try node.localStore.stagePendingPublication(pending)
-
-    try await node.coordinator.settlePendingPublicationForTopologyChange()
-
-    let record = try #require(try node.localStore.loadRecord())
-    #expect(record.pendingPublication == nil)
-    #expect(record.acceptedIdentity?.client?.id == "pending")
-    #expect(node.clerk.client?.id == "pending")
-    #expect(
-      backend.allSlots()
-        .first { $0.slotOwnerIdentifier == "app.a" }?.event == pending
-    )
-  }
-
-  @Test
-  func topologyChangeSettlementUsesRevisionAfterLegacyAdoptionPublication() async throws {
-    let backend = TestSlotBackend()
-    let peerEvent = try makeEvent(
-      owner: "app.b",
-      generation: 1,
-      clientID: "peer"
-    )
-    try backend.save(
-      SharedSessionOwnerSlot(
-        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
-        instanceFingerprint: "instance",
-        slotOwnerIdentifier: "app.b",
-        event: peerEvent
-      ),
-      owner: "app.b"
-    )
-
-    let localStore = TestLocalIdentityStore()
-    try localStore.saveLegacyAdoption(SharedSessionLocalIdentity(
-      state: .cleared,
-      deviceToken: "legacy-token",
-      client: nil,
-      serverDate: nil
-    ))
-    let node = try makeNode(
-      owner: "app.a",
-      backend: backend,
-      hydrateInitialIdentity: false,
-      localStore: localStore
-    )
-
-    #expect(!node.coordinator.hydrateInitialSharedState())
-
-    try await node.coordinator.settlePendingPublicationForTopologyChange()
-
-    let record = try #require(try localStore.loadRecord())
-    #expect(!record.requiresLegacyAdoptionPublication)
-    #expect(record.pendingPublication == nil)
-    let adoptedEvent = try #require(
-      backend.allSlots()
-        .first { $0.slotOwnerIdentifier == "app.a" }?.event
-    )
-    #expect(adoptedEvent.generation == 2)
-    #expect(adoptedEvent.deviceToken == "legacy-token")
-    #expect(adoptedEvent.client == nil)
-  }
-
-  @Test
   func updateDeviceTokenPublishesClearedIdentityBeforeRefreshFailure() async throws {
     let backend = TestSlotBackend()
     let previous = SharedSessionLocalIdentity(
@@ -2431,7 +2367,7 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func cleanupFailureAfterOwnerSlotDeletionKeepsBarrierUntilRetry() async throws {
+  func cleanupFailureAfterOwnerSlotDeletionReleasesLocalClearBarrier() async throws {
     let backend = TestSlotBackend()
     let keychain = SharedSessionDeleteFailingKeychain(
       failingKey: ClerkKeychainKey.cachedEnvironment.rawValue
@@ -2464,9 +2400,6 @@ struct SharedSessionSyncTests {
     #expect(
       backend.allSlots().contains { $0.slotOwnerIdentifier == "app.a" } == false
     )
-    #expect(
-      try node.clerk.appContainerIdentityClearIntentStore.load() != nil
-    )
 
     try await peer.coordinator.publishLocalIdentity(
       state: .present,
@@ -2475,18 +2408,6 @@ struct SharedSessionSyncTests {
       serverDate: nil
     )
 
-    #expect(await node.coordinator.reloadFromSharedStorage() == false)
-    #expect(node.clerk.client == nil)
-    await #expect(throws: CancellationError.self) {
-      _ = try await node.coordinator.captureRequestIdentity()
-    }
-
-    keychain.allowDeletes()
-    try await node.clerk.clearAllKeychainItemsAndWait()
-
-    #expect(
-      try node.clerk.appContainerIdentityClearIntentStore.load() == nil
-    )
     #expect(await node.coordinator.reloadFromSharedStorage())
     #expect(node.clerk.client?.id == "peer-client")
     #expect(node.coordinator.currentDeviceToken == "peer-token")
@@ -2582,33 +2503,14 @@ struct SharedSessionSyncTests {
       runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
     )
     let slotStore = TestOwnerSlotStore(owner: owner, backend: backend)
-    let keychainOptions = Clerk.Options(
-      keychainConfig: .init(
-        service: "com.example.clerk",
-        accessGroup: "TEAMID.com.example.shared"
-      )
-    )
-    let instanceFingerprint = SharedSessionNamespace.sha256("instance")
     let recoveryIntent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: DependencyContainer.stableIdentityService(
-        configuredService: keychainOptions.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: owner
-      ),
-      slotService: SharedSessionOwnerSlotStore.service(
-        configuredService: keychainOptions.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint
-      ),
-      slotAccessGroup:
-      keychainOptions.keychainConfig.normalizedAccessGroup!,
-      slotAccount: SharedSessionOwnerSlotStore.account(
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: owner
-      ),
-      instanceFingerprint: instanceFingerprint,
+      localIdentityService: "identity.\(owner)",
+      slotService: "slots.instance",
+      slotAccessGroup: "group.shared",
+      slotAccount: "owner.\(owner)",
+      instanceFingerprint: "instance",
       ownerIdentifier: owner
     )
-    let clearJournal = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
       keychain: keychain,
@@ -2616,7 +2518,7 @@ struct SharedSessionSyncTests {
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
       sharedSessionOwnerSlotClearRecovery: .init(
-        journal: clearJournal,
+        journal: InMemoryKeychain(),
         currentIntent: recoveryIntent,
         targetProvider: TestClearRecoveryTargets(
           identityStore: localStore,
@@ -2627,23 +2529,9 @@ struct SharedSessionSyncTests {
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
-      options: keychainOptions
+      options: .init()
     )
     clerk.dependencies = dependencies
-    clerk.appContainerIdentityClearRecovery =
-      AppContainerIdentityClearRecovery(
-        storageProvider: { target in
-          if target.service
-            == SharedSessionOwnerSlotClearRecovery.journalService(
-              ownerIdentifier: owner
-            )
-          {
-            return clearJournal
-          }
-          return keychain
-        },
-        slotStoreProvider: { _ in slotStore }
-      )
     if hydrateInitialIdentity, let initialIdentity {
       clerk.hydrateIdentityIfNeeded(initialIdentity)
     }
@@ -2955,10 +2843,6 @@ private struct TestClearRecoveryTargets: SharedSessionClearRecoveryTargets {
   ) throws -> any SharedSessionSlotStoring {
     slotStore
   }
-
-  func preventLegacyIdentityReadoption(
-    for _: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws {}
 }
 
 private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, KeychainStorage {
@@ -2968,17 +2852,9 @@ private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, Key
 
   private let backing = InMemoryKeychain()
   private let failingKey: String
-  private let lock = NSLock()
-  private var shouldFailDeletes = true
 
   init(failingKey: String) {
     self.failingKey = failingKey
-  }
-
-  func allowDeletes() {
-    lock.withLock {
-      shouldFailDeletes = false
-    }
   }
 
   func set(_ data: Data, forKey key: String) throws {
@@ -2990,10 +2866,7 @@ private final class SharedSessionDeleteFailingKeychain: @unchecked Sendable, Key
   }
 
   func deleteItem(forKey key: String) throws {
-    let shouldFail = lock.withLock {
-      shouldFailDeletes && key == failingKey
-    }
-    guard !shouldFail else { throw Failure.delete }
+    guard key != failingKey else { throw Failure.delete }
     try backing.deleteItem(forKey: key)
   }
 

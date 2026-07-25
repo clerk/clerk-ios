@@ -6,6 +6,13 @@ enum KeychainError: Error, LocalizedError {
   case unexpectedStatus(OSStatus)
   case invalidStringEncoding
 
+  var isMissingEntitlement: Bool {
+    guard case .unexpectedStatus(errSecMissingEntitlement) = self else {
+      return false
+    }
+    return true
+  }
+
   var errorDescription: String? {
     switch self {
     case .unexpectedStatus(let status):
@@ -22,7 +29,7 @@ enum KeychainError: Error, LocalizedError {
   var failureReason: String? {
     switch self {
     case .unexpectedStatus(errSecMissingEntitlement):
-      "The app is not signed with the configured Keychain access group. Enable Keychain Sharing and make sure Clerk.Options.keychainConfig.accessGroup and appLocalAccessGroup match signed Keychain groups."
+      "The app is not signed with the configured Keychain access group. Enable Keychain Sharing and make sure Clerk.Options.keychainConfig.accessGroup matches a signed keychain-access-groups entitlement."
     case .unexpectedStatus:
       nil
     case .invalidStringEncoding:

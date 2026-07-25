@@ -20,22 +20,16 @@ protocol SharedSessionClearRecoveryTargets: Sendable {
   func slotStore(
     for intent: SharedSessionOwnerSlotClearRecovery.Intent
   ) throws -> any SharedSessionSlotStoring
-
-  func preventLegacyIdentityReadoption(
-    for intent: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws
 }
 
 enum SharedSessionOwnerSlotClearRecovery {
   static let storageKey = "clerkSharedSessionOwnerSlotClearIntentV1"
 
   struct Intent: Codable, Equatable {
-    static let schemaVersion = 2
-    static let legacySchemaVersion = 1
+    static let schemaVersion = 1
 
     let schemaVersion: Int
     let localIdentityService: String
-    let localIdentityAccessGroup: String?
     let slotService: String
     let slotAccessGroup: String
     let slotAccount: String
@@ -44,18 +38,14 @@ enum SharedSessionOwnerSlotClearRecovery {
 
     init(
       localIdentityService: String,
-      localIdentityAccessGroup: String? = nil,
       slotService: String,
       slotAccessGroup: String,
       slotAccount: String,
       instanceFingerprint: String,
       ownerIdentifier: String
     ) {
-      schemaVersion = localIdentityAccessGroup == nil
-        ? Self.legacySchemaVersion
-        : Self.schemaVersion
+      schemaVersion = Self.schemaVersion
       self.localIdentityService = localIdentityService
-      self.localIdentityAccessGroup = localIdentityAccessGroup
       self.slotService = slotService
       self.slotAccessGroup = slotAccessGroup
       self.slotAccount = slotAccount
@@ -64,9 +54,7 @@ enum SharedSessionOwnerSlotClearRecovery {
     }
 
     func validated() throws -> Self {
-      guard schemaVersion == Self.legacySchemaVersion
-        || schemaVersion == Self.schemaVersion
-      else {
+      guard schemaVersion == Self.schemaVersion else {
         throw SharedSessionOwnerSlotClearRecoveryError.unsupportedSchemaVersion
       }
       let requiredValues = [
@@ -78,22 +66,6 @@ enum SharedSessionOwnerSlotClearRecovery {
         ownerIdentifier,
       ]
       guard requiredValues.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
-        throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
-      }
-      if let localIdentityAccessGroup {
-        guard schemaVersion == Self.schemaVersion,
-              !localIdentityAccessGroup.trimmingCharacters(
-                in: .whitespacesAndNewlines
-              ).isEmpty,
-              AppLocalKeychainAccessGroup.isApplicationIdentifier(
-                localIdentityAccessGroup,
-                for: ownerIdentifier
-              ),
-              localIdentityAccessGroup != slotAccessGroup
-        else {
-          throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
-        }
-      } else if schemaVersion == Self.schemaVersion {
         throw SharedSessionOwnerSlotClearRecoveryError.invalidIntent
       }
       return self
@@ -110,8 +82,9 @@ enum SharedSessionOwnerSlotClearRecovery {
     func localIdentityStore(
       for intent: Intent
     ) throws -> any SharedSessionLocalIdentityStoring {
-      try SharedSessionLocalIdentityStore(
-        keychain: localIdentityKeychain(for: intent)
+      let intent = try intent.validated()
+      return SharedSessionLocalIdentityStore(
+        keychain: SystemKeychain(service: intent.localIdentityService)
       )
     }
 
@@ -120,60 +93,24 @@ enum SharedSessionOwnerSlotClearRecovery {
     ) throws -> any SharedSessionSlotStoring {
       try SharedSessionOwnerSlotStore(clearRecoveryIntent: intent)
     }
-
-    func preventLegacyIdentityReadoption(for intent: Intent) throws {
-      try localIdentityKeychain(for: intent).set(
-        SharedSessionSyncAdoption.markerValue,
-        forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
-      )
-    }
-
-    private func localIdentityKeychain(
-      for intent: Intent
-    ) throws -> any KeychainStorage {
-      let intent = try intent.validated()
-      if let accessGroup = intent.localIdentityAccessGroup {
-        return ApplicationKeychainStorage.make(
-          service: intent.localIdentityService,
-          accessGroup: accessGroup,
-          migrateLegacyUnscopedItems: false
-        )
-      }
-      // Version 1 intents predate explicit app-local scoping. This broad
-      // access is retained only to finish the already-durable clear.
-      return SystemKeychain(service: intent.localIdentityService)
-    }
   }
 
   static func liveContext(
     ownerIdentifier: String?,
-    currentIntent: Intent?,
-    appLocalAccessGroup: String? = nil
+    currentIntent: Intent?
   ) -> Context? {
     guard let ownerIdentifier = ownerIdentifier?.trimmingCharacters(
       in: .whitespacesAndNewlines
     ), !ownerIdentifier.isEmpty else {
       return nil
     }
-    let journalService = journalService(ownerIdentifier: ownerIdentifier)
-    let journal: any KeychainStorage = if let appLocalAccessGroup {
-      ApplicationKeychainStorage.make(
-        service: journalService,
-        accessGroup: appLocalAccessGroup,
-        migrateLegacyUnscopedItems: true
-      )
-    } else {
-      SystemKeychain(service: journalService)
-    }
     return Context(
-      journal: journal,
+      journal: SystemKeychain(
+        service: "\(ownerIdentifier).clerk.shared-session-clear-recovery.v1"
+      ),
       currentIntent: currentIntent,
       targetProvider: LiveTargetProvider()
     )
-  }
-
-  static func journalService(ownerIdentifier: String) -> String {
-    "\(ownerIdentifier).clerk.shared-session-clear-recovery.v1"
   }
 
   static func markPending(in context: Context) throws {
@@ -213,16 +150,8 @@ enum SharedSessionOwnerSlotClearRecovery {
       return false
     }
 
-    try context.targetProvider.preventLegacyIdentityReadoption(for: intent)
-    if let currentIntent = context.currentIntent,
-       currentIntent != intent
-    {
-      try context.targetProvider.preventLegacyIdentityReadoption(
-        for: currentIntent
-      )
-    }
-    try context.targetProvider.slotStore(for: intent).deleteOwnSlot()
     try context.targetProvider.localIdentityStore(for: intent).delete()
+    try context.targetProvider.slotStore(for: intent).deleteOwnSlot()
     try context.journal.deleteItem(forKey: storageKey)
     return true
   }

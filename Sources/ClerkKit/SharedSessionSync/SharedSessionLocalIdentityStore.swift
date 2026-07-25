@@ -13,32 +13,24 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
   let schemaVersion: Int
   let acceptedIdentity: SharedSessionLocalIdentity?
   let pendingPublication: SharedSessionIdentityEvent?
-  let requiresLegacyAdoptionPublication: Bool
-  let hasUnpublishedLocalMutation: Bool
-  let sharedSessionBaseGeneration: UInt64?
+  let requiresSharedSessionPublication: Bool
 
   init(
     acceptedIdentity: SharedSessionLocalIdentity?,
     pendingPublication: SharedSessionIdentityEvent?,
-    requiresLegacyAdoptionPublication: Bool = false,
-    hasUnpublishedLocalMutation: Bool = false,
-    sharedSessionBaseGeneration: UInt64? = nil
+    requiresSharedSessionPublication: Bool = false
   ) {
     schemaVersion = Self.schemaVersion
     self.acceptedIdentity = acceptedIdentity
     self.pendingPublication = pendingPublication
-    self.requiresLegacyAdoptionPublication = requiresLegacyAdoptionPublication
-    self.hasUnpublishedLocalMutation = hasUnpublishedLocalMutation
-    self.sharedSessionBaseGeneration = sharedSessionBaseGeneration
+    self.requiresSharedSessionPublication = requiresSharedSessionPublication
   }
 
   private enum CodingKeys: String, CodingKey {
     case schemaVersion
     case acceptedIdentity
     case pendingPublication
-    case requiresLegacyAdoptionPublication
-    case hasUnpublishedLocalMutation
-    case sharedSessionBaseGeneration
+    case requiresSharedSessionPublication = "requiresLegacyAdoptionPublication"
   }
 
   init(from decoder: any Decoder) throws {
@@ -52,34 +44,26 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
       SharedSessionIdentityEvent.self,
       forKey: .pendingPublication
     )
-    requiresLegacyAdoptionPublication = try container.decodeIfPresent(
+    requiresSharedSessionPublication = try container.decodeIfPresent(
       Bool.self,
-      forKey: .requiresLegacyAdoptionPublication
+      forKey: .requiresSharedSessionPublication
     ) ?? false
-    hasUnpublishedLocalMutation = try container.decodeIfPresent(
-      Bool.self,
-      forKey: .hasUnpublishedLocalMutation
-    ) ?? false
-    sharedSessionBaseGeneration = try container.decodeIfPresent(
-      UInt64.self,
-      forKey: .sharedSessionBaseGeneration
-    )
   }
 
   func validated() throws -> Self {
     guard schemaVersion == Self.schemaVersion else {
       throw SharedSessionLocalIdentityStoreError.unsupportedSchemaVersion
     }
-    guard !requiresLegacyAdoptionPublication || acceptedIdentity != nil else {
-      throw SharedSessionLocalIdentityStoreError.missingLegacyAdoptionIdentity
+    guard !requiresSharedSessionPublication || acceptedIdentity != nil else {
+      throw SharedSessionLocalIdentityStoreError.missingRequiredPublicationIdentity
     }
     _ = try acceptedIdentity?.validated()
     _ = try pendingPublication?.validated()
     return self
   }
 
-  func pendingLegacyAdoptionEventID(for ownerIdentifier: String) -> UUID? {
-    guard requiresLegacyAdoptionPublication,
+  func pendingTokenOnlyPublicationEventID(for ownerIdentifier: String) -> UUID? {
+    guard requiresSharedSessionPublication,
           let acceptedIdentity,
           acceptedIdentity.state == .cleared,
           acceptedIdentity.deviceToken.nilIfEmpty != nil,
@@ -99,13 +83,9 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
   }
 }
 
-struct SharedSessionLocalMutation: Equatable {
-  let baseGeneration: UInt64?
-}
-
 enum SharedSessionLocalIdentityStoreError: Error, Equatable {
   case unsupportedSchemaVersion
-  case missingLegacyAdoptionIdentity
+  case missingRequiredPublicationIdentity
   case pendingPublicationAlreadyExists
   case pendingPublicationMismatch
 }
@@ -116,10 +96,11 @@ protocol SharedSessionLocalIdentityStoring: Sendable {
     _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
   ) throws
   func invalidateOperations(through operationRevision: UInt64) throws
+  /// Saves an authoritative atomic-local transition, superseding any orphaned shared publication.
   func save(
     _ identity: SharedSessionLocalIdentity,
     operationRevision: UInt64,
-    sharedSessionMutation: SharedSessionLocalMutation?
+    requiresSharedSessionPublication: Bool
   ) throws -> Bool
   func delete(operationRevision: UInt64) throws -> Bool
   func deleteInvalidatingOperations(through operationRevision: UInt64) throws
@@ -133,7 +114,7 @@ extension SharedSessionLocalIdentityStoring {
     try save(
       identity,
       operationRevision: operationRevision,
-      sharedSessionMutation: nil
+      requiresSharedSessionPublication: false
     )
   }
 
@@ -158,7 +139,9 @@ extension SharedSessionLocalIdentityStoring {
     }
   }
 
-  func saveLegacyAdoption(_ identity: SharedSessionLocalIdentity) throws {
+  func saveRequiringSharedSessionPublication(
+    _ identity: SharedSessionLocalIdentity
+  ) throws {
     let identity = try identity.validated()
     try updateRecord { record in
       guard record?.pendingPublication == nil else {
@@ -167,7 +150,7 @@ extension SharedSessionLocalIdentityStoring {
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: identity,
         pendingPublication: nil,
-        requiresLegacyAdoptionPublication: true
+        requiresSharedSessionPublication: true
       )
     }
   }
@@ -184,12 +167,8 @@ extension SharedSessionLocalIdentityStoring {
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: record?.acceptedIdentity,
         pendingPublication: event,
-        requiresLegacyAdoptionPublication:
-        record?.requiresLegacyAdoptionPublication ?? false,
-        hasUnpublishedLocalMutation:
-        record?.hasUnpublishedLocalMutation ?? false,
-        sharedSessionBaseGeneration:
-        record?.sharedSessionBaseGeneration
+        requiresSharedSessionPublication:
+        record?.requiresSharedSessionPublication ?? false
       )
     }
   }
@@ -221,35 +200,8 @@ extension SharedSessionLocalIdentityStoring {
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: acceptedIdentity,
         pendingPublication: nil,
-        requiresLegacyAdoptionPublication:
-        record.requiresLegacyAdoptionPublication,
-        hasUnpublishedLocalMutation:
-        record.hasUnpublishedLocalMutation,
-        sharedSessionBaseGeneration:
-        record.sharedSessionBaseGeneration
-      )
-    }
-  }
-
-  func convertPendingPublicationToUnpublishedLocalMutation(
-    baseGeneration: UInt64?
-  ) throws {
-    try updateRecord { record in
-      guard let record, let pending = record.pendingPublication else {
-        return record
-      }
-      let identity = try SharedSessionLocalIdentity(
-        state: pending.state,
-        deviceToken: pending.deviceToken,
-        client: pending.client,
-        serverDate: pending.serverDate
-      ).validated()
-      return SharedSessionLocalIdentityRecord(
-        acceptedIdentity: identity,
-        pendingPublication: nil,
-        hasUnpublishedLocalMutation: true,
-        sharedSessionBaseGeneration:
-        baseGeneration ?? record.sharedSessionBaseGeneration
+        requiresSharedSessionPublication:
+        record.requiresSharedSessionPublication
       )
     }
   }
@@ -263,20 +215,15 @@ extension SharedSessionLocalIdentityStoring {
   func save(
     _ identity: SharedSessionLocalIdentity,
     operationRevision _: UInt64,
-    sharedSessionMutation: SharedSessionLocalMutation?
+    requiresSharedSessionPublication: Bool
   ) throws -> Bool {
     let identity = try identity.validated()
-    try updateRecord { record in
-      guard record?.pendingPublication == nil else {
-        throw SharedSessionLocalIdentityStoreError
-          .pendingPublicationAlreadyExists
-      }
-      return SharedSessionLocalIdentityRecord(
+    try updateRecord { _ in
+      SharedSessionLocalIdentityRecord(
         acceptedIdentity: identity,
         pendingPublication: nil,
-        hasUnpublishedLocalMutation: sharedSessionMutation != nil,
-        sharedSessionBaseGeneration:
-        sharedSessionMutation?.baseGeneration
+        requiresSharedSessionPublication:
+        requiresSharedSessionPublication
       )
     }
     return true
@@ -338,23 +285,19 @@ struct SharedSessionLocalIdentityStore: SharedSessionLocalIdentityStoring {
   func save(
     _ identity: SharedSessionLocalIdentity,
     operationRevision: UInt64,
-    sharedSessionMutation: SharedSessionLocalMutation?
+    requiresSharedSessionPublication: Bool
   ) throws -> Bool {
     let identity = try identity.validated()
     state.lock.lock()
     defer { state.lock.unlock() }
     guard operationRevision > state.latestOperationRevision else { return false }
     state.latestOperationRevision = operationRevision
-    try updateRecordWithoutLocking { record in
-      guard record?.pendingPublication == nil else {
-        throw SharedSessionLocalIdentityStoreError.pendingPublicationAlreadyExists
-      }
-      return SharedSessionLocalIdentityRecord(
+    try updateRecordWithoutLocking { _ in
+      SharedSessionLocalIdentityRecord(
         acceptedIdentity: identity,
         pendingPublication: nil,
-        hasUnpublishedLocalMutation: sharedSessionMutation != nil,
-        sharedSessionBaseGeneration:
-        sharedSessionMutation?.baseGeneration
+        requiresSharedSessionPublication:
+        requiresSharedSessionPublication
       )
     }
     return true
@@ -441,14 +384,14 @@ actor SharedSessionLocalIdentityIO {
   func saveAcceptedIdentity(
     _ identity: SharedSessionLocalIdentity,
     operationRevision: UInt64,
-    sharedSessionMutation: SharedSessionLocalMutation? = nil
+    requiresSharedSessionPublication: Bool = false
   ) throws -> Bool {
     guard operationRevision > latestOperationRevision else { return false }
     latestOperationRevision = operationRevision
     return try store.save(
       identity,
       operationRevision: operationRevision,
-      sharedSessionMutation: sharedSessionMutation
+      requiresSharedSessionPublication: requiresSharedSessionPublication
     )
   }
 

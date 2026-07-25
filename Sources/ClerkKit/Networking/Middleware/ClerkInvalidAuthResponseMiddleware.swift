@@ -15,7 +15,6 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    guard request.clerkUsesIdentity else { return }
     guard
       let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
       let clerkAPIError = clerkErrorResponse.errors.first,

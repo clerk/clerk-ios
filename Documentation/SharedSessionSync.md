@@ -40,4 +40,4 @@ Watch metadata state is a durable string protocol with `set` and `cleared`. Vers
 
 Destructive local clear fences prepared responses, clears the live atomic identity, drains SDK writers, deletes this app's owner slot, scrubs reusable legacy credentials, and releases the local-clear barrier only after shared transport is withdrawn. If owner-slot withdrawal fails, reconciliation and request capture remain barriered until a clear retry succeeds.
 
-Reconfiguration adopts credentials only after draining the old runtime and only when the normalized publishable key permits preservation. Cross-key or destructive transitions clear the destination and do not import legacy credentials.
+Reconfiguration is destructive: it drains the old runtime, clears source and destination credentials, withdraws this app's source owner slot, and installs the new configuration without migrating the previous identity. If shared-session sync is enabled in the destination, normal reconciliation may subsequently hydrate an identity published by another participating app.

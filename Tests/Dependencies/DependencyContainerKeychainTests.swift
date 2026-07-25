@@ -9,140 +9,6 @@ import Testing
 
 struct DependencyContainerKeychainTests {
   @Test
-  func derivesAppLocalGroupFromSharedGroupPrefix() throws {
-    let accessGroup = try AppLocalKeychainAccessGroup.resolve(
-      config: .init(
-        service: "service",
-        accessGroup: "TEAMID.com.clerk.shared"
-      ),
-      ownerIdentifier: "com.example.app",
-      requiresIsolation: true
-    )
-
-    #expect(accessGroup == "TEAMID.com.example.app")
-  }
-
-  @Test
-  func explicitAppLocalGroupSupportsSharedAppGroup() throws {
-    let accessGroup = try AppLocalKeychainAccessGroup.resolve(
-      config: .init(
-        service: "service",
-        accessGroup: "group.com.clerk.shared",
-        appLocalAccessGroup: "TEAMID.com.example.app"
-      ),
-      ownerIdentifier: "com.example.app",
-      requiresIsolation: true
-    )
-
-    #expect(accessGroup == "TEAMID.com.example.app")
-  }
-
-  @Test
-  func appGroupCannotBeUsedAsExplicitAppLocalGroup() {
-    #expect(throws: ClerkClientError.self) {
-      try AppLocalKeychainAccessGroup.resolve(
-        config: .init(
-          service: "service",
-          accessGroup: "TEAMID.com.clerk.shared",
-          appLocalAccessGroup: "group.com.example.app"
-        ),
-        ownerIdentifier: "com.example.app",
-        requiresIsolation: true
-      )
-    }
-  }
-
-  @Test
-  func appGroupCannotBeAppLocalWhenOwnerIdentifierIsUnavailable() {
-    #expect(throws: ClerkClientError.self) {
-      try AppLocalKeychainAccessGroup.resolve(
-        config: .init(
-          service: "service",
-          accessGroup: "TEAMID.com.clerk.shared",
-          appLocalAccessGroup: "group.com.example.app"
-        ),
-        ownerIdentifier: nil,
-        requiresIsolation: false
-      )
-    }
-  }
-
-  @Test
-  func sharedAppGroupRequiresExplicitAppLocalGroup() {
-    #expect(throws: ClerkClientError.self) {
-      try AppLocalKeychainAccessGroup.resolve(
-        config: .init(
-          service: "service",
-          accessGroup: "group.com.clerk.shared"
-        ),
-        ownerIdentifier: "com.example.app",
-        requiresIsolation: true
-      )
-    }
-  }
-
-  @Test
-  func disabledSharedSessionAllowsExistingAppGroupConfiguration() throws {
-    let accessGroup = try AppLocalKeychainAccessGroup.resolve(
-      config: .init(
-        service: "service",
-        accessGroup: "group.com.clerk.shared"
-      ),
-      ownerIdentifier: "com.example.app",
-      requiresIsolation: false
-    )
-
-    #expect(accessGroup == nil)
-  }
-
-  @Test
-  @MainActor
-  func containerAllowsExistingAppGroupWhenSharedSessionIsDisabled() throws {
-    _ = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: .init(
-        keychainConfig: .init(
-          service: "service",
-          accessGroup: "group.com.clerk.shared"
-        )
-      ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      persistentAdoptionEnabledOverride: false,
-      ownerIdentifierProvider: { "com.example.app" }
-    )
-  }
-
-  @Test
-  func sharedAndAppLocalGroupsMustDiffer() {
-    #expect(throws: ClerkClientError.self) {
-      try AppLocalKeychainAccessGroup.resolve(
-        config: .init(
-          service: "service",
-          accessGroup: "TEAMID.com.example.app",
-          appLocalAccessGroup: "TEAMID.com.example.app"
-        ),
-        ownerIdentifier: "com.example.app",
-        requiresIsolation: true
-      )
-    }
-  }
-
-  @Test
-  func appLocalGroupMustExactlyMatchApplicationIdentifier() {
-    #expect(throws: ClerkClientError.self) {
-      try AppLocalKeychainAccessGroup.resolve(
-        config: .init(
-          service: "service",
-          accessGroup: "TEAMID.com.clerk.shared",
-          appLocalAccessGroup: "TEAMID.extra.com.example.app"
-        ),
-        ownerIdentifier: "com.example.app",
-        requiresIsolation: true
-      )
-    }
-  }
-
-  @Test
   @MainActor
   func sharedSessionSyncFailsClosedWithoutAccessGroup() {
     #expect(throws: ClerkClientError.self) {
@@ -185,50 +51,6 @@ struct DependencyContainerKeychainTests {
   }
 
   @Test
-  func configuredAppLocalMigrationExcludesSharedAccessGroup() {
-    let migrationAccessGroups =
-      DependencyContainer.keychainMigrationAccessGroups(
-        config: .init(
-          service: "com.clerk.shared",
-          accessGroup: "TEAMID.com.clerk.shared"
-        )
-      )
-
-    #expect(migrationAccessGroups.configuredAppLocal.isEmpty)
-    #expect(
-      migrationAccessGroups.identity == ["TEAMID.com.clerk.shared"]
-    )
-  }
-
-  #if !os(macOS)
-  @Test
-  @MainActor
-  func configuredSharedServiceIsNotAnAppLocalMigrationSource() throws {
-    let container = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: .init(
-        keychainConfig: .init(
-          service: "com.clerk.shared",
-          accessGroup: "TEAMID.com.clerk.shared"
-        ),
-        sharedSessionSync: .enabled
-      ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      persistentAdoptionEnabledOverride: false,
-      ownerIdentifierProvider: { "com.example.app" }
-    )
-
-    #expect(container.keychain is SystemKeychain)
-    #expect(container.appLocalKeychain is SystemKeychain)
-    #expect(container.identityKeychain is AppLocalKeychainMigratingStorage)
-    #expect(
-      container.legacyAppLocalKeychain
-        is AppLocalKeychainMigratingStorage
-    )
-  }
-  #endif
-
-  @Test
   @MainActor
   func disabledPersistentAdoptionDoesNotInstallLiveClearRecovery() throws {
     let container = try DependencyContainer(
@@ -244,7 +66,7 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
-  func constructionDefersClearRecoveryToClerkBootstrap() throws {
+  func constructionCompletesClearRecoveryBeforeReturning() throws {
     let owner = "com.clerk.tests.deferred-recovery.\(UUID().uuidString)"
     let recovery = try #require(
       SharedSessionOwnerSlotClearRecovery.liveContext(
@@ -262,38 +84,15 @@ struct DependencyContainerKeychainTests {
       forKey: SharedSessionOwnerSlotClearRecovery.storageKey
     )
 
-    let container = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: .init(),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      persistentAdoptionEnabledOverride: true,
-      ownerIdentifierProvider: { owner }
-    )
-
     #expect(throws: DecodingError.self) {
-      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-        in: container.sharedSessionOwnerSlotClearRecovery
+      try DependencyContainer(
+        publishableKey: testPublishableKey,
+        options: .init(),
+        runtimeScope: ClerkRuntimeScope(epoch: .initial),
+        persistentAdoptionEnabledOverride: true,
+        ownerIdentifierProvider: { owner }
       )
     }
-  }
-
-  @Test
-  @MainActor
-  func forcedVolatileRuntimeUsesOnlyInMemoryIdentityStorage() throws {
-    let container = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: .init(),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      persistentAdoptionEnabledOverride: false,
-      forceVolatileIdentityPersistence: .temporarilyUnavailable,
-      ownerIdentifierProvider: { "com.clerk.tests.app" }
-    )
-
-    #expect(container.usesVolatileIdentityPersistence)
-    try container.keychain.set("volatile", forKey: "test")
-    #expect(try container.appLocalKeychain.string(forKey: "test") == "volatile")
-    #expect(try container.identityKeychain.string(forKey: "test") == "volatile")
-    #expect(container.atomicIdentityStore != nil)
   }
 
   #if os(macOS)
@@ -305,11 +104,10 @@ struct DependencyContainerKeychainTests {
       options: .init(
         keychainConfig: .init(
           service: "service",
-          accessGroup: "TEAMID.com.example.shared"
+          accessGroup: "group.example"
         )
       ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      ownerIdentifierProvider: { "com.example.app" }
+      runtimeScope: ClerkRuntimeScope(epoch: .initial)
     )
 
     #expect(container.keychain is MigratingKeychainStorage)
@@ -442,8 +240,7 @@ struct DependencyContainerKeychainTests {
     let intent = try #require(
       DependencyContainer.makeOwnerSlotClearRecovery(
         configuration: configuration,
-        ownerIdentifier: owner,
-        appLocalAccessGroup: "TEAMID.\(owner)"
+        ownerIdentifier: owner
       )?.currentIntent
     )
 
@@ -452,8 +249,6 @@ struct DependencyContainerKeychainTests {
       instanceFingerprint: namespace.fingerprint,
       ownerIdentifier: owner
     ))
-    #expect(intent.schemaVersion == SharedSessionOwnerSlotClearRecovery.Intent.schemaVersion)
-    #expect(intent.localIdentityAccessGroup == "TEAMID.\(owner)")
     #expect(intent.slotService == SharedSessionOwnerSlotStore.service(
       configuredService: options.keychainConfig.service,
       instanceFingerprint: namespace.fingerprint
@@ -473,7 +268,10 @@ struct DependencyContainerKeychainTests {
     let configuredService = "com.clerk.tests.pending.\(UUID().uuidString)"
     let owner = "com.clerk.tests.app"
     let options = Clerk.Options(
-      keychainConfig: .init(service: configuredService)
+      keychainConfig: .init(
+        service: configuredService,
+        accessGroup: "TEAMID.com.clerk.tests.shared"
+      )
     )
     let configuration = ConfigurationManager()
     try configuration.configure(publishableKey: testPublishableKey, options: options)

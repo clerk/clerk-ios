@@ -28,12 +28,6 @@ struct ClerkInternalStateChangeEmitter {
     observers.append(observer)
   }
 
-  mutating func removeObserver(_ observer: any ClerkInternalStateChangeObserver) {
-    observers.removeAll {
-      ObjectIdentifier($0) == ObjectIdentifier(observer)
-    }
-  }
-
   mutating func removeAllObservers() {
     observers.removeAll()
   }

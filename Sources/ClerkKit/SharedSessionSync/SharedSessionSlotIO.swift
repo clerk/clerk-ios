@@ -11,10 +11,6 @@ actor SharedSessionSlotIO {
     self.store = store
   }
 
-  func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
-    try store.loadOwnSlot()
-  }
-
   func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
     try store.loadAllSlots()
   }

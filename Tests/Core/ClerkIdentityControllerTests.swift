@@ -260,6 +260,7 @@ struct ClerkIdentityControllerTests {
     let persisted = try #require(try store.load())
     #expect(persisted.deviceToken == "rotated-token")
     #expect(persisted.client?.id == "new-client")
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == false)
     #expect(clerk.client?.id == "new-client")
   }
 

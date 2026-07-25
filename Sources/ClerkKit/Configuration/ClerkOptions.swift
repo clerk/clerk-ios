@@ -16,27 +16,16 @@ extension Clerk {
       /// Access group for sharing Keychain items.
       public let accessGroup: String?
 
-      /// App-specific access group for Clerk state that must not be shared.
-      ///
-      /// Clerk normally derives this from `accessGroup` and the application bundle
-      /// identifier. Set it explicitly when the shared group does not use an App ID
-      /// prefix, such as when using an App Group as a Keychain access group. The value
-      /// must match the app's signed application-identifier entitlement.
-      public let appLocalAccessGroup: String?
-
       /// Initializes a ``KeychainConfig`` instance.
       /// - Parameters:
       ///   - service: Name of the service under which to save items. Defaults to the bundle identifier.
       ///   - accessGroup: Access group for sharing Keychain items.
-      ///   - appLocalAccessGroup: App-specific access group for nonshared Clerk state.
       public init(
         service: String = Bundle.main.bundleIdentifier ?? "",
-        accessGroup: String? = nil,
-        appLocalAccessGroup: String? = nil
+        accessGroup: String? = nil
       ) {
         self.service = service
         self.accessGroup = accessGroup
-        self.appLocalAccessGroup = appLocalAccessGroup
       }
 
       var normalizedAccessGroup: String? {
@@ -47,24 +36,12 @@ extension Clerk {
         }
         return accessGroup
       }
-
-      var normalizedAppLocalAccessGroup: String? {
-        guard let appLocalAccessGroup = appLocalAccessGroup?
-          .trimmingCharacters(in: .whitespacesAndNewlines),
-          !appLocalAccessGroup.isEmpty
-        else {
-          return nil
-        }
-        return appLocalAccessGroup
-      }
     }
 
     /// Configuration object that enables Clerk auth state synchronization between sibling apps.
     ///
     /// Participating apps must also configure ``KeychainConfig`` with the same Keychain
-    /// service and access group so Clerk auth state is readable across those apps. Clerk
-    /// keeps each app's accepted identity in its private application-identifier group.
-    /// When `accessGroup` is an App Group, configure `appLocalAccessGroup` explicitly.
+    /// service and access group so Clerk auth state is readable across those apps.
     public struct SharedSessionSyncConfig: Sendable, Equatable {
       /// Enables synchronization of persisted Clerk auth state through the shared Keychain.
       public static let enabled = Self()

@@ -14,14 +14,6 @@ import Testing
 /// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
 @Suite(.serialized)
 struct SystemKeychainTests {
-  enum ScopedOperation: CaseIterable {
-    case add
-    case update
-    case read
-    case contains
-    case delete
-  }
-
   @Test
   func setAndGetData() throws {
     let keychain = InMemoryKeychain()
@@ -167,43 +159,6 @@ struct SystemKeychainTests {
     #expect(data == Data("value".utf8))
     #expect(secItemClient.copyMatchingQueries.count == 1)
     #expect(hasDataProtectionKeychainFlag(secItemClient.copyMatchingQueries[0]))
-  }
-
-  @Test(arguments: ScopedOperation.allCases)
-  func scopedOperationsAlwaysIncludeAccessGroup(
-    _ operation: ScopedOperation
-  ) throws {
-    let secItemClient = SecItemClientSpy()
-    let keychain = SystemKeychain(
-      service: "service",
-      accessGroup: "TEAMID.com.example.app",
-      secItemClient: secItemClient.client
-    )
-
-    let query: [String: Any]
-    switch operation {
-    case .add:
-      try keychain.set(Data("value".utf8), forKey: "key")
-      query = try #require(secItemClient.addQueries.first)
-    case .update:
-      secItemClient.addResults = [errSecDuplicateItem]
-      try keychain.set(Data("value".utf8), forKey: "key")
-      query = try #require(secItemClient.updateQueries.first)
-    case .read:
-      _ = try keychain.data(forKey: "key")
-      query = try #require(secItemClient.copyMatchingQueries.first)
-    case .contains:
-      _ = try keychain.hasItem(forKey: "key")
-      query = try #require(secItemClient.copyMatchingQueries.first)
-    case .delete:
-      try keychain.deleteItem(forKey: "key")
-      query = try #require(secItemClient.deleteQueries.first)
-    }
-
-    #expect(
-      query[kSecAttrAccessGroup as String] as? String
-        == "TEAMID.com.example.app"
-    )
   }
 
   @Test

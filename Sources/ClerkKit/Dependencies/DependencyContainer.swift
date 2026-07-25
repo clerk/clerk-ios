@@ -10,16 +10,6 @@ import Foundation
 /// This class manages the lifecycle of all dependencies and provides them
 /// through the `Dependencies` protocol for dependency injection.
 final class DependencyContainer: Dependencies {
-  enum PersistenceFailureBehavior: Equatable {
-    case failConfiguration
-    case useVolatileStorage
-  }
-
-  struct KeychainMigrationAccessGroups: Equatable {
-    let configuredAppLocal: [String]
-    let identity: [String]
-  }
-
   private struct KeychainStorages {
     let shared: any KeychainStorage
     let appLocal: any KeychainStorage
@@ -27,12 +17,6 @@ final class DependencyContainer: Dependencies {
     let legacyAppLocal: (any KeychainStorage)?
     let localIdentityStore: (any SharedSessionLocalIdentityStoring)?
     let shouldHydrateProvisionalLegacyClient: Bool
-  }
-
-  private struct KeychainBootstrap {
-    let storages: KeychainStorages
-    let identityPersistenceCapability: IdentityPersistenceCapability
-    let bootstrapFailure: PersistenceFailureKind?
   }
 
   // MARK: - Core Dependencies
@@ -47,8 +31,6 @@ final class DependencyContainer: Dependencies {
   let sharedSessionOwnerIdentifier: String?
   let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
-  let identityPersistenceCapability: IdentityPersistenceCapability
-  let identityPersistenceBootstrapFailure: PersistenceFailureKind?
   private let persistentAdoptionEnabled: Bool
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
@@ -94,12 +76,7 @@ final class DependencyContainer: Dependencies {
     deferSharedSessionAdoption: Bool = false,
     persistentAdoptionEnabledOverride: Bool? = nil,
     keychainStorageOverride: (any KeychainStorage)? = nil,
-    persistenceFailureBehavior: PersistenceFailureBehavior = .failConfiguration,
-    forceVolatileIdentityPersistence: PersistenceFailureKind? = nil,
-    ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier },
-    ownerSlotClearRecoveryProvider: (
-      @MainActor (ConfigurationManager, String?) -> SharedSessionOwnerSlotClearRecovery.Context?
-    )? = nil
+    ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
     // Phase 1: Core infrastructure (no dependencies)
     // Create and configure ConfigurationManager first (needed to determine baseURL)
@@ -129,58 +106,34 @@ final class DependencyContainer: Dependencies {
       .appendingResponseMiddleware(options.middleware.response)
     sharedSessionOwnerIdentifier = ownerIdentifierProvider()?
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    try Self.validateKeychainConfiguration(
-      options: options,
-      ownerIdentifier: sharedSessionOwnerIdentifier
-    )
-    let appLocalAccessGroup = try AppLocalKeychainAccessGroup.resolve(
-      config: options.keychainConfig,
-      ownerIdentifier: sharedSessionOwnerIdentifier,
-      requiresIsolation: options.sharedSessionSync != nil
-    )
     persistentAdoptionEnabled = persistentAdoptionEnabledOverride
       ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests)
     sharedSessionOwnerSlotClearRecovery = if persistentAdoptionEnabled {
-      if let ownerSlotClearRecoveryProvider {
-        ownerSlotClearRecoveryProvider(
-          configurationManager,
-          sharedSessionOwnerIdentifier
-        )
-      } else {
-        Self.makeOwnerSlotClearRecovery(
-          configuration: configurationManager,
-          ownerIdentifier: sharedSessionOwnerIdentifier,
-          appLocalAccessGroup: appLocalAccessGroup
-        )
-      }
+      Self.makeOwnerSlotClearRecovery(
+        configuration: configurationManager,
+        ownerIdentifier: sharedSessionOwnerIdentifier
+      )
     } else {
       nil
     }
-    let keychainBootstrap = if let forceVolatileIdentityPersistence {
-      KeychainBootstrap(
-        storages: Self.makeVolatileKeychainStorages(),
-        identityPersistenceCapability: .volatile(
-          forceVolatileIdentityPersistence
-        ),
-        bootstrapFailure: nil
-      )
-    } else {
-      try Self.bootstrapKeychainStorages(
-        configuration: configurationManager,
-        options: options,
-        ownerIdentifier: sharedSessionOwnerIdentifier,
-        appLocalAccessGroup: appLocalAccessGroup,
-        usePersistentAdoptionState: persistentAdoptionEnabled,
-        performPersistentAdoption: !deferSharedSessionAdoption,
-        keychainStorageOverride: keychainStorageOverride,
-        failureBehavior: persistenceFailureBehavior
-      )
+    if persistentAdoptionEnabled, !publishableKey.isEmpty {
+      do {
+        try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+          in: sharedSessionOwnerSlotClearRecovery
+        )
+      } catch let error as KeychainError where error.isMissingEntitlement {
+        // Recovery remains journaled and is retried after the entitlement is fixed.
+      }
     }
-    let keychainStorages = keychainBootstrap.storages
-    identityPersistenceCapability =
-      keychainBootstrap.identityPersistenceCapability
-    identityPersistenceBootstrapFailure =
-      keychainBootstrap.bootstrapFailure
+    let keychainStorages = try Self.makeKeychainStorages(
+      options: options,
+      frontendApiUrl: configurationManager.frontendApiUrl,
+      publishableKey: configurationManager.publishableKey,
+      ownerIdentifier: sharedSessionOwnerIdentifier,
+      usePersistentAdoptionState: persistentAdoptionEnabled,
+      performPersistentAdoption: !deferSharedSessionAdoption,
+      keychainStorageOverride: keychainStorageOverride
+    )
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
     identityKeychain = keychainStorages.identity
@@ -193,11 +146,19 @@ final class DependencyContainer: Dependencies {
 
     magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 
-    apiClient = Self.makeAPIClient(
-      baseURL: baseURL,
-      runtimeScope: runtimeScope,
-      networkingPipeline: networkingPipeline
-    )
+    // Phase 2: API client (depends on networkingPipeline)
+    let pipeline = networkingPipeline
+    apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
+      configuration.pipeline = pipeline
+      configuration.decoder = .clerkDecoder
+      configuration.encoder = .clerkEncoder
+      configuration.sessionConfiguration.httpAdditionalHeaders = [
+        "Content-Type": "application/x-www-form-urlencoded",
+        "clerk-api-version": Clerk.apiVersion,
+        "x-ios-sdk-version": Clerk.sdkVersion,
+        "x-mobile": "1",
+      ]
+    }
 
     // Phase 3: Telemetry collector (depends on options)
     telemetryCollector = Self.createTelemetryCollector(
@@ -219,131 +180,9 @@ final class DependencyContainer: Dependencies {
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
-}
-
-extension DependencyContainer {
-  static func keychainMigrationAccessGroups(
-    config: Clerk.Options.KeychainConfig
-  ) -> KeychainMigrationAccessGroups {
-    KeychainMigrationAccessGroups(
-      configuredAppLocal: [],
-      identity: config.normalizedAccessGroup.map { [$0] } ?? []
-    )
-  }
-
-  private static func makeAPIClient(
-    baseURL: URL,
-    runtimeScope: ClerkRuntimeScope,
-    networkingPipeline: NetworkingPipeline
-  ) -> APIClient {
-    APIClient(
-      baseURL: baseURL,
-      runtimeScope: runtimeScope
-    ) { @Sendable configuration in
-      configuration.pipeline = networkingPipeline
-      configuration.decoder = .clerkDecoder
-      configuration.encoder = .clerkEncoder
-      configuration.sessionConfiguration.httpAdditionalHeaders = [
-        "Content-Type": "application/x-www-form-urlencoded",
-        "clerk-api-version": Clerk.apiVersion,
-        "x-ios-sdk-version": Clerk.sdkVersion,
-        "x-mobile": "1",
-      ]
-    }
-  }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {
     makeKeychainStorage(service: config.service, accessGroup: config.normalizedAccessGroup)
-  }
-
-  @MainActor
-  private static func bootstrapKeychainStorages(
-    configuration: ConfigurationManager,
-    options: Clerk.Options,
-    ownerIdentifier: String?,
-    appLocalAccessGroup: String?,
-    usePersistentAdoptionState: Bool,
-    performPersistentAdoption: Bool,
-    keychainStorageOverride: (any KeychainStorage)?,
-    failureBehavior: PersistenceFailureBehavior
-  ) throws -> KeychainBootstrap {
-    do {
-      return try KeychainBootstrap(
-        storages: makeKeychainStorages(
-          options: options,
-          frontendApiUrl: configuration.frontendApiUrl,
-          publishableKey: configuration.publishableKey,
-          ownerIdentifier: ownerIdentifier,
-          appLocalAccessGroup: appLocalAccessGroup,
-          usePersistentAdoptionState: usePersistentAdoptionState,
-          performPersistentAdoption: performPersistentAdoption,
-          keychainStorageOverride: keychainStorageOverride
-        ),
-        identityPersistenceCapability: .durable,
-        bootstrapFailure: nil
-      )
-    } catch {
-      let failure = PersistenceFailureKind.classify(error)
-      guard failureBehavior == .useVolatileStorage,
-            keychainStorageOverride == nil
-      else {
-        throw error
-      }
-      if !failure.permitsVolatileIdentityFallback {
-        return try KeychainBootstrap(
-          storages: makeKeychainStorages(
-            options: options,
-            frontendApiUrl: configuration.frontendApiUrl,
-            publishableKey: configuration.publishableKey,
-            ownerIdentifier: ownerIdentifier,
-            appLocalAccessGroup: appLocalAccessGroup,
-            usePersistentAdoptionState: false,
-            performPersistentAdoption: false,
-            keychainStorageOverride: nil
-          ),
-          identityPersistenceCapability: .durable,
-          bootstrapFailure: failure
-        )
-      }
-      ClerkLogger.logError(
-        error,
-        message: "Durable Clerk identity storage is unavailable. Continuing with an isolated in-memory identity for this process."
-      )
-      return KeychainBootstrap(
-        storages: makeVolatileKeychainStorages(),
-        identityPersistenceCapability: .volatile(failure),
-        bootstrapFailure: nil
-      )
-    }
-  }
-
-  private static func validateKeychainConfiguration(
-    options: Clerk.Options,
-    ownerIdentifier: String?
-  ) throws {
-    guard options.sharedSessionSync != nil else { return }
-    guard options.keychainConfig.normalizedAccessGroup != nil else {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty Keychain access group."
-      )
-    }
-    guard ownerIdentifier?.isEmpty == false else {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty application bundle identifier."
-      )
-    }
-  }
-
-  private static func makeVolatileKeychainStorages() -> KeychainStorages {
-    let keychain = InMemoryKeychain()
-    return KeychainStorages(
-      shared: keychain,
-      appLocal: keychain,
-      identity: keychain,
-      legacyAppLocal: nil,
-      localIdentityStore: SharedSessionLocalIdentityStore(keychain: keychain),
-      shouldHydrateProvisionalLegacyClient: false
-    )
   }
 
   private static func makeKeychainStorages(
@@ -351,7 +190,6 @@ extension DependencyContainer {
     frontendApiUrl: String,
     publishableKey: String,
     ownerIdentifier: String?,
-    appLocalAccessGroup: String?,
     usePersistentAdoptionState: Bool,
     performPersistentAdoption: Bool,
     keychainStorageOverride: (any KeychainStorage)?
@@ -378,62 +216,54 @@ extension DependencyContainer {
     let config = options.keychainConfig
     let shared = makeKeychainStorage(config: config)
     let syncEnabled = options.sharedSessionSync != nil
-    let migrationAccessGroups = keychainMigrationAccessGroups(
-      config: config
-    )
-
-    let configuredAppLocal: any KeychainStorage = if let appLocalAccessGroup {
-      ApplicationKeychainStorage.make(
-        service: config.service,
-        accessGroup: appLocalAccessGroup,
-        migrateLegacyUnscopedItems: true,
-        legacyAccessGroups: migrationAccessGroups.configuredAppLocal
+    if syncEnabled, config.normalizedAccessGroup == nil {
+      throw ClerkClientError(
+        message: "Shared session sync requires a nonempty Keychain access group."
       )
+    }
+    if syncEnabled, ownerIdentifier?.isEmpty != false {
+      throw ClerkClientError(
+        message: "Shared session sync requires a nonempty application bundle identifier."
+      )
+    }
+
+    let configuredAppLocal: any KeychainStorage = if config.normalizedAccessGroup != nil {
+      makeKeychainStorage(service: config.service, accessGroup: nil)
     } else {
       shared
     }
     let previousAppLocal = makePreviousAppLocalKeychain(
       configuredService: config.service,
       bundleIdentifier: ownerIdentifier,
-      configuredAppLocal: configuredAppLocal,
-      appLocalAccessGroup: appLocalAccessGroup,
-      legacyAccessGroups: migrationAccessGroups.identity
+      configuredAppLocal: configuredAppLocal
     )
     let namespace = SharedSessionNamespace(
       frontendApiUrl: frontendApiUrl,
       publishableKey: publishableKey
     )
-    let stableIdentityService = stableIdentityService(
-      configuredService: config.service,
-      instanceFingerprint: namespace.fingerprint,
-      ownerIdentifier: ownerIdentifier
+    let stableIdentity = makeKeychainStorage(
+      service: stableIdentityService(
+        configuredService: config.service,
+        instanceFingerprint: namespace.fingerprint,
+        ownerIdentifier: ownerIdentifier
+      ),
+      accessGroup: nil
     )
-    let stableIdentity: any KeychainStorage = if let appLocalAccessGroup {
-      ApplicationKeychainStorage.make(
-        service: stableIdentityService,
-        accessGroup: appLocalAccessGroup,
-        migrateLegacyUnscopedItems: true,
-        legacyAccessGroups: migrationAccessGroups.identity
-      )
-    } else {
-      makeKeychainStorage(
-        service: stableIdentityService,
-        accessGroup: nil
-      )
-    }
 
     if syncEnabled {
       var shouldHydrateProvisionalLegacyClient = false
       if usePersistentAdoptionState, performPersistentAdoption {
         let wasAdopted = try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
-        try SharedSessionSyncAdoption(
+        let adoption = SharedSessionSyncAdoption(
           destinationIdentity: stableIdentity,
           destinationPrivate: configuredAppLocal,
           configuredAppLocalIdentity: configuredAppLocal,
           previousAppLocalIdentity: previousAppLocal,
           legacyShared: shared
-        ).migrateIfNeeded()
-        shouldHydrateProvisionalLegacyClient = !wasAdopted
+        )
+        if try adoption.migrateToleratingMissingSharedEntitlement() {
+          shouldHydrateProvisionalLegacyClient = !wasAdopted
+        }
       }
       return KeychainStorages(
         shared: shared,
@@ -459,27 +289,6 @@ extension DependencyContainer {
       localIdentityStore: adoptedIdentityStore,
       shouldHydrateProvisionalLegacyClient: false
     )
-  }
-
-  @MainActor
-  func performDeferredSharedSessionAdoptionIfNeeded() throws -> Bool {
-    guard persistentAdoptionEnabled,
-          configurationManager.options.sharedSessionSync != nil
-    else {
-      return false
-    }
-
-    let wasAdopted = try SharedSessionSyncAdoption.isAdopted(
-      in: identityKeychain
-    )
-    try SharedSessionSyncAdoption(
-      destinationIdentity: identityKeychain,
-      destinationPrivate: appLocalKeychain,
-      configuredAppLocalIdentity: appLocalKeychain,
-      previousAppLocalIdentity: legacyAppLocalKeychain,
-      legacyShared: keychain
-    ).migrateIfNeeded()
-    return !wasAdopted
   }
 
   /// Removes an interrupted shared-session publication before installing a non-shared runtime.
@@ -509,23 +318,13 @@ extension DependencyContainer {
   private static func makePreviousAppLocalKeychain(
     configuredService: String,
     bundleIdentifier: String?,
-    configuredAppLocal: any KeychainStorage,
-    appLocalAccessGroup: String?,
-    legacyAccessGroups: [String]
+    configuredAppLocal: any KeychainStorage
   ) -> (any KeychainStorage)? {
     guard let bundleIdentifier, !bundleIdentifier.isEmpty else {
       return nil
     }
     guard bundleIdentifier != configuredService else {
       return configuredAppLocal
-    }
-    if let appLocalAccessGroup {
-      return ApplicationKeychainStorage.make(
-        service: bundleIdentifier,
-        accessGroup: appLocalAccessGroup,
-        migrateLegacyUnscopedItems: true,
-        legacyAccessGroups: legacyAccessGroups
-      )
     }
     return makeKeychainStorage(service: bundleIdentifier, accessGroup: nil)
   }
@@ -543,7 +342,7 @@ extension DependencyContainer {
     return "\(owner).clerk.identity.v2.\(instanceFingerprint)"
   }
 
-  static func makeKeychainStorage(
+  private static func makeKeychainStorage(
     service: String,
     accessGroup: String?
   ) -> any KeychainStorage {
@@ -607,8 +406,7 @@ extension DependencyContainer {
   @MainActor
   static func makeOwnerSlotClearRecovery(
     configuration: ConfigurationManager,
-    ownerIdentifier: String?,
-    appLocalAccessGroup: String? = nil
+    ownerIdentifier: String?
   ) -> SharedSessionOwnerSlotClearRecovery.Context? {
     let namespace = SharedSessionNamespace(
       frontendApiUrl: configuration.frontendApiUrl,
@@ -625,7 +423,6 @@ extension DependencyContainer {
           instanceFingerprint: namespace.fingerprint,
           ownerIdentifier: ownerIdentifier
         ),
-        localIdentityAccessGroup: appLocalAccessGroup,
         slotService: SharedSessionOwnerSlotStore.service(
           configuredService: configuration.options.keychainConfig.service,
           instanceFingerprint: namespace.fingerprint
@@ -643,8 +440,7 @@ extension DependencyContainer {
     }
     return SharedSessionOwnerSlotClearRecovery.liveContext(
       ownerIdentifier: ownerIdentifier,
-      currentIntent: intent,
-      appLocalAccessGroup: appLocalAccessGroup
+      currentIntent: intent
     )
   }
 }

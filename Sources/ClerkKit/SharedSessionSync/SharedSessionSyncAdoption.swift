@@ -47,7 +47,8 @@ struct SharedSessionSyncAdoption {
       var migratedAppLocalIdentity = false
       for source in appLocalIdentitySources {
         if let identity = try loadCoherentIdentity(from: source) {
-          try destinationIdentityStore.saveLegacyAdoption(identity)
+          try destinationIdentityStore
+            .saveRequiringSharedSessionPublication(identity)
           migratedAppLocalIdentity = true
           break
         }
@@ -65,6 +66,21 @@ struct SharedSessionSyncAdoption {
       Self.markerValue,
       forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue
     )
+  }
+
+  /// Returns whether a legacy Client may be presented provisionally after adoption.
+  @discardableResult
+  func migrateToleratingMissingSharedEntitlement() throws -> Bool {
+    do {
+      try migrateIfNeeded()
+      return true
+    } catch let error as KeychainError where error.isMissingEntitlement {
+      let record = try destinationIdentityStore.loadRecord()
+      let canHydrateProvisionalClient =
+        record?.requiresSharedSessionPublication == true
+      try markAdoptedWithoutMigratingCredentials()
+      return canHydrateProvisionalClient
+    }
   }
 
   func markAdoptedWithoutMigratingCredentials() throws {

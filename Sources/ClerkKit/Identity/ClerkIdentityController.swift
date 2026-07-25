@@ -13,6 +13,57 @@ import Foundation
 /// app-local atomic persistence, legacy persistence, and `Clerk` memory.
 @MainActor
 final class ClerkIdentityController {
+  private struct PersistedClientSnapshot {
+    let state: String?
+    let client: Client?
+    let serverDate: Date?
+  }
+
+  private enum PersistedClientDecision {
+    case apply
+    case ignore
+  }
+
+  struct RollbackState {
+    let lastAppliedResponseSequence: Int?
+    let lastServerDate: Date?
+  }
+
+  struct ExternalTransition {
+    let identity: ClerkIdentitySnapshot
+    let fenceAllClientResponses: Bool
+    let stage: @MainActor () throws -> Void
+    let didApply: @MainActor () -> Void
+    let didNotApply: @MainActor () -> Void
+
+    init(
+      identity: ClerkIdentitySnapshot,
+      fenceAllClientResponses: Bool = true,
+      stage: @escaping @MainActor () throws -> Void = {},
+      didApply: @escaping @MainActor () -> Void = {},
+      didNotApply: @escaping @MainActor () -> Void = {}
+    ) {
+      self.identity = identity
+      self.fenceAllClientResponses = fenceAllClientResponses
+      self.stage = stage
+      self.didApply = didApply
+      self.didNotApply = didNotApply
+    }
+  }
+
+  struct StorageClearContext {
+    let usesAtomicLocalPersistence: Bool
+    let invalidatedThroughRevision: UInt64
+    let requiresOwnerSlotWithdrawal: Bool
+    fileprivate let sharedCoordinator: SharedSessionSyncCoordinator?
+  }
+
+  private enum PersistenceMode {
+    case shared(SharedSessionSyncCoordinator)
+    case atomicLocal(SharedSessionLocalIdentityIO)
+    case legacy
+  }
+
   weak var clerk: Clerk?
 
   var localDeviceToken: String?
@@ -446,16 +497,6 @@ extension ClerkIdentityController {
     return try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData).id
   }
 
-  func currentIdentitySnapshot() throws -> ClerkIdentitySnapshot {
-    guard let clerk else { throw CancellationError() }
-    return try ClerkIdentitySnapshot(
-      state: clerk.authoritativeClient == nil ? .cleared : .present,
-      deviceToken: currentDeviceToken,
-      client: clerk.authoritativeClient,
-      serverDate: lastServerDate
-    ).validated()
-  }
-
   @discardableResult
   func persistAndApplyAtomicIdentity(
     _ identity: ClerkIdentitySnapshot,
@@ -469,7 +510,9 @@ extension ClerkIdentityController {
     guard try await localIdentityIO.saveAcceptedIdentity(
       identity,
       operationRevision: operationRevision,
-      sharedSessionMutation: clerk.sharedSessionLocalMutation
+      requiresSharedSessionPublication:
+      clerk.options.sharedSessionSync != nil
+        && clerk.sharedSessionSyncCoordinator == nil
     ) else {
       return false
     }
@@ -563,17 +606,10 @@ extension ClerkIdentityController {
     localDeviceToken = nil
     let sharedCoordinator = clerk.sharedSessionSyncCoordinator
     sharedCoordinator?.beginLocalClear()
-    let requiresOwnerSlotWithdrawal =
-      (
-        sharedCoordinator != nil
-          || clerk.options.sharedSessionSync != nil
-      )
-      && !clerk.dependencies
-      .usesVolatileIdentityPersistence
     return StorageClearContext(
       usesAtomicLocalPersistence: usesAtomicLocalPersistence,
       invalidatedThroughRevision: invalidatedThroughRevision,
-      requiresOwnerSlotWithdrawal: requiresOwnerSlotWithdrawal,
+      requiresOwnerSlotWithdrawal: sharedCoordinator != nil,
       sharedCoordinator: sharedCoordinator
     )
   }
@@ -589,14 +625,8 @@ extension ClerkIdentityController {
   func deleteCapturedOwnerSlotAfterStorageClear(
     _ context: StorageClearContext
   ) async throws -> Bool {
-    guard let clerk else { throw CancellationError() }
-    if let sharedCoordinator = context.sharedCoordinator {
-      try await sharedCoordinator.deleteOwnSlotDuringLocalClear()
-    } else if context.requiresOwnerSlotWithdrawal {
-      try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
-        in: clerk.dependencies
-      )
-    }
+    guard let sharedCoordinator = context.sharedCoordinator else { return true }
+    try await sharedCoordinator.deleteOwnSlotDuringLocalClear()
     return true
   }
 

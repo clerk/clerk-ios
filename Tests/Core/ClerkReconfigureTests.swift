@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Security
 import Testing
 
 @MainActor
@@ -18,7 +19,7 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func reconfigureUpdatesConfigurationAndPreservesSharedIdentity() async throws {
+  func reconfigureUpdatesConfiguration() async throws {
     let original = Clerk.shared
     let publishableKey = publishableKey(for: "ca.clerk.example.com")
     let options = Clerk.Options(
@@ -69,115 +70,6 @@ struct ClerkReconfigureTests {
 
     #expect(clearFinished)
     #expect(reconfigureFinished)
-  }
-
-  @Test
-  func ownerSlotReuseRequiresIdenticalEnabledTopology() throws {
-    let clerk = Clerk.shared
-    let originalDependencies = clerk.dependencies
-    defer { clerk.dependencies = originalDependencies }
-    let publishableKey = publishableKey(for: "same-topology.clerk.example.com")
-    let options = Clerk.Options(
-      keychainConfig: .init(
-        service: "com.example.clerk",
-        accessGroup: "TEAMID.com.example.shared"
-      ),
-      sharedSessionSync: .enabled
-    )
-    let current = try makeDependencies(
-      publishableKey: publishableKey,
-      options: options,
-      owner: "com.example.app"
-    )
-    clerk.dependencies = current
-
-    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: publishableKey,
-      options: options,
-      owner: "com.example.app"
-    )))
-    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: "  \(publishableKey)\n",
-      options: options,
-      owner: "com.example.app"
-    )))
-    #expect(try clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: publishableKey,
-      options: Clerk.Options(
-        keychainConfig: .init(
-          service: "com.example.clerk",
-          accessGroup: "  TEAMID.com.example.shared\n"
-        ),
-        sharedSessionSync: .enabled
-      ),
-      owner: "com.example.app"
-    )))
-    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: publishableKey,
-      options: Clerk.Options(
-        keychainConfig: options.keychainConfig,
-        sharedSessionSync: nil
-      ),
-      owner: "com.example.app"
-    )))
-    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: publishableKey,
-      options: Clerk.Options(
-        keychainConfig: .init(
-          service: "com.example.changed",
-          accessGroup: "TEAMID.com.example.shared"
-        ),
-        sharedSessionSync: .enabled
-      ),
-      owner: "com.example.app"
-    )))
-    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: publishableKey,
-      options: options,
-      owner: "com.example.other-app"
-    )))
-    #expect(try !clerk.canReuseSharedSessionOwnerSlot(with: makeDependencies(
-      publishableKey: self.publishableKey(for: "same-topology.clerk.example.com", live: true),
-      options: options,
-      owner: "com.example.app"
-    )))
-  }
-
-  @Test
-  func sharedSessionTopologyDistinguishesStoreFromOwnerSlot() throws {
-    let publishableKey = publishableKey(for: "topology.clerk.example.com")
-    let options = Clerk.Options(
-      keychainConfig: .init(
-        service: "com.example.clerk",
-        accessGroup: "TEAMID.com.example.shared"
-      ),
-      sharedSessionSync: .enabled
-    )
-    let first = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
-      publishableKey: publishableKey,
-      options: options,
-      owner: "com.example.first"
-    )))
-    let sameStore = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
-      publishableKey: publishableKey,
-      options: options,
-      owner: "com.example.second"
-    )))
-    let differentStore = try #require(SharedSessionSlotTopology(dependencies: makeDependencies(
-      publishableKey: publishableKey,
-      options: Clerk.Options(
-        keychainConfig: .init(
-          service: "com.example.changed",
-          accessGroup: "TEAMID.com.example.shared"
-        ),
-        sharedSessionSync: .enabled
-      ),
-      owner: "com.example.first"
-    )))
-
-    #expect(first.hasSameStore(as: sameStore))
-    #expect(!first.hasSameOwnerSlot(as: sameStore))
-    #expect(!first.hasSameStore(as: differentStore))
   }
 
   @Test
@@ -303,29 +195,12 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func disjointTargetClearFailureLeavesSourceRuntimeReady() async throws {
+  func samePublishableKeyReconfigureClearsAdoptedSharedIdentity() async throws {
     let clerk = Clerk.shared
-    let previousIntentStore = clerk.appContainerIdentityClearIntentStore
-    let intentStore = InMemoryAppContainerIdentityClearIntentStore()
-    clerk.appContainerIdentityClearIntentStore = intentStore
-    defer {
-      clerk.appContainerIdentityClearIntentStore = previousIntentStore
-      clerk.cleanupManagers()
-    }
-
+    let publishableKey = testPublishableKey
     let sourceKeychain = InMemoryKeychain()
     let sourceIdentityStore = SharedSessionLocalIdentityStore(
       keychain: sourceKeychain
-    )
-    let sourceIdentity = ClerkIdentitySnapshot(
-      state: .present,
-      deviceToken: "healthy-source-token",
-      client: .mock,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    try sourceIdentityStore.save(sourceIdentity)
-    let sourceOptions = Clerk.Options(
-      keychainConfig: .init(service: "com.example.healthy-source")
     )
     let sourceDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
@@ -333,68 +208,132 @@ struct ClerkReconfigureTests {
       appLocalKeychain: sourceKeychain,
       identityKeychain: sourceKeychain,
       atomicIdentityStore: sourceIdentityStore,
+      sharedSessionOwnerIdentifier: nil,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     try sourceDependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: sourceOptions
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(
+          service: "com.clerk.tests.destructive-source",
+          accessGroup: "TEAMID.com.clerk.tests.shared"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    try sourceIdentityStore.save(
+      SharedSessionLocalIdentity(
+        state: .present,
+        deviceToken: "source-token",
+        client: .mock,
+        serverDate: Date(timeIntervalSince1970: 100)
+      )
     )
     try clerk.performConfiguration(dependencies: sourceDependencies)
-    let sourceEpoch = clerk.configurationEpoch
-    let sourceClientID = try #require(clerk.client?.id)
-    let sourceSessionID = try #require(clerk.session?.id)
-    let sourceUserID = try #require(clerk.user?.id)
+    clerk.client = .mock
+    clerk.environment = .mock
+    clerk.sessionsByUserId = [User.mock.id: [.mock]]
 
-    let targetKeychain = ThrowingDeleteKeychain()
-    let targetOptions = Clerk.Options(
-      keychainConfig: .init(service: "com.example.failing-target")
+    let targetService = "com.clerk.tests.destructive-target.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(service: targetService)
+      )
     )
-    let dependencyFactory: Clerk.ReconfigurationDependencyFactory = {
-      publishableKey,
-      options,
-      runtimeScope in
-      let target = MockDependencyContainer(
-        apiClient: createMockAPIClient(runtimeScope: runtimeScope),
-        keychain: targetKeychain,
-        appLocalKeychain: targetKeychain,
-        identityKeychain: targetKeychain,
-        atomicIdentityStore: SharedSessionLocalIdentityStore(
-          keychain: targetKeychain
-        ),
-        telemetryCollector: clerk.dependencies.telemetryCollector
-      )
-      try target.configurationManager.configure(
-        publishableKey: publishableKey,
-        options: options
-      )
-      return target
-    }
+    defer { reconfigured.cleanupManagers() }
 
-    await #expect(throws: ClerkClientError.self) {
-      try await clerk.performReconfiguration(
-        publishableKey: publishableKey(
-          for: "disjoint-failing-target.clerk.example.com"
-        ),
-        options: targetOptions,
-        dependencyFactory: dependencyFactory
-      )
-    }
-
-    #expect(clerk.dependencies === sourceDependencies)
-    #expect(clerk.configurationEpoch == sourceEpoch)
-    #expect(clerk.client?.id == sourceClientID)
-    #expect(clerk.session?.id == sourceSessionID)
-    #expect(clerk.user?.id == sourceUserID)
-    #expect(clerk.persistenceStatus.readiness == .ready)
-    #expect(clerk.persistenceStatus.sharedSession == .disabled)
-    #expect(try intentStore.load() == nil)
-    #expect(try sourceIdentityStore.load()?.client?.id == sourceClientID)
+    #expect(try sourceIdentityStore.loadRecord() == nil)
+    #expect(reconfigured.client == nil)
+    #expect(reconfigured.session == nil)
+    #expect(reconfigured.user == nil)
+    #expect(reconfigured.environment == nil)
+    #expect(reconfigured.sessionsByUserId.isEmpty)
   }
 
   @Test
-  func failedCommittedReconfigureBlocksPreviousIdentityUntilClearRecovery()
-    async throws
-  {
+  func missingSharedEntitlementPreflightRunsBeforeDestructiveWrites() async throws {
+    let original = Clerk.shared
+    let previousEpoch = original.configurationEpoch
+    let sourceIdentityKeychain = InMemoryKeychain()
+    let sourceIdentityStore = SharedSessionLocalIdentityStore(
+      keychain: sourceIdentityKeychain
+    )
+    let sourceDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
+      keychain: MissingEntitlementKeychain(),
+      appLocalKeychain: sourceIdentityKeychain,
+      identityKeychain: sourceIdentityKeychain,
+      atomicIdentityStore: sourceIdentityStore,
+      sharedSessionOwnerIdentifier: nil,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    try sourceDependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: Clerk.Options(
+        keychainConfig: .init(
+          service: "com.clerk.tests.missing-entitlement-source",
+          accessGroup: "TEAMID.com.clerk.tests.unavailable"
+        ),
+        sharedSessionSync: .enabled
+      )
+    )
+    try original.performConfiguration(dependencies: sourceDependencies)
+    original.cleanupManagers()
+    try sourceIdentityStore.save(SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "source-token",
+      client: .mock,
+      serverDate: Date(timeIntervalSince1970: 100)
+    ))
+    defer { original.cleanupManagers() }
+
+    let targetService = "com.clerk.tests.missing-entitlement-target.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    try targetKeychain.set(
+      "target-environment",
+      forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+    )
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: testPublishableKey,
+        options: Clerk.Options(keychainConfig: .init(service: targetService))
+      )
+      Issue.record("Expected the shared Keychain preflight to fail")
+    } catch let error as KeychainError {
+      #expect(error.isMissingEntitlement)
+    } catch {
+      Issue.record("Expected a missing-entitlement Keychain error, got \(error)")
+    }
+
+    #expect(Clerk.shared === original)
+    #expect(original.configurationEpoch == previousEpoch)
+    #expect(original.dependencies === sourceDependencies)
+    let persistedIdentity = try #require(try sourceIdentityStore.load())
+    #expect(persistedIdentity.deviceToken == "source-token")
+    #expect(persistedIdentity.client?.id == Client.mock.id)
+    #expect(
+      try targetKeychain.string(
+        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+      ) == "target-environment"
+    )
+  }
+
+  @Test
+  func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
     let original = Clerk.shared
     let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
@@ -406,21 +345,7 @@ struct ClerkReconfigureTests {
     try original.performConfiguration(dependencies: previousDependencies)
     original.client = .mock
     original.environment = .mock
-    defer {
-      if let intent = try? original
-        .appContainerIdentityClearIntentStore.load()
-      {
-        try? original.appContainerIdentityClearIntentStore.remove(
-          matching: intent.transactionID
-        )
-      }
-      original.identityPersistenceOperationCoordinator.reset(
-        identityCapability: previousDependencies
-          .identityPersistenceCapability,
-        sharedSessionCapability: .disabled
-      )
-      original.cleanupManagers()
-    }
+    defer { original.cleanupManagers() }
 
     let targetService = "com.clerk.tests.failed-reconfigure.\(UUID().uuidString)"
     let targetKeychain = SystemKeychain(service: targetService)
@@ -446,14 +371,61 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared === original)
     #expect(Clerk.shared.configurationEpoch == previousEpoch)
     #expect(dependenciesUnchanged)
-    #expect(Clerk.shared.client == nil)
-    #expect(Clerk.shared.sessionsByUserId.isEmpty)
-    #expect(
-      Clerk.shared.persistenceStatus.readiness == .blocked(.pendingClear)
+    #expect(Clerk.shared.client?.id == Client.mock.id)
+    #expect(Clerk.shared.environment == .mock)
+  }
+
+  @Test
+  func failedRecoveryPreflightLeavesPreviousRuntimeInstalled() async throws {
+    let original = Clerk.shared
+    let previousEpoch = original.configurationEpoch
+    let journal = InMemoryKeychain()
+    let intent = SharedSessionOwnerSlotClearRecovery.Intent(
+      localIdentityService: "reconfigure.identity",
+      slotService: "reconfigure.slots",
+      slotAccessGroup: "reconfigure.group",
+      slotAccount: "reconfigure.owner",
+      instanceFingerprint: "reconfigure-instance",
+      ownerIdentifier: "reconfigure-app"
     )
-    #expect(
-      try Clerk.shared.appContainerIdentityClearIntentStore.load() != nil
+    let recovery = SharedSessionOwnerSlotClearRecovery.Context(
+      journal: journal,
+      currentIntent: intent,
+      targetProvider: FailingReconfigurationRecoveryTargets()
     )
+    let previousDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
+      sharedSessionOwnerSlotClearRecovery: recovery,
+      telemetryCollector: original.dependencies.telemetryCollector
+    )
+    try original.performConfiguration(dependencies: previousDependencies)
+    original.client = .mock
+    original.environment = .mock
+    try SharedSessionOwnerSlotClearRecovery.markPending(in: recovery)
+    defer {
+      try? journal.deleteItem(
+        forKey: SharedSessionOwnerSlotClearRecovery.storageKey
+      )
+      original.cleanupManagers()
+    }
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: publishableKey(for: "failed-recovery-preflight.clerk.example.com")
+      )
+      Issue.record("Expected recovery preflight to fail")
+    } catch FailingReconfigurationRecoveryTargets.Failure.unavailable {
+      // Expected.
+    } catch {
+      Issue.record("Expected recovery target failure, got \(error)")
+    }
+
+    #expect(Clerk.shared === original)
+    #expect(original.configurationEpoch == previousEpoch)
+    #expect(original.dependencies === previousDependencies)
+    #expect(original.client?.id == Client.mock.id)
+    #expect(original.environment == .mock)
+    #expect(try await original.refreshClient()?.id == Client.mock.id)
   }
 
   @Test
@@ -493,7 +465,7 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func failedReconfigurePreservesPreviousOwnerSlotForRollback() async throws {
+  func failedDestructiveReconfigureRetainsPreviousOwnerSlot() async throws {
     let original = Clerk.shared
     let throwingKeychain = ThrowingDeleteKeychain()
     let localIdentityStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
@@ -902,23 +874,6 @@ struct ClerkReconfigureTests {
     }
   }
 
-  private func makeDependencies(
-    publishableKey: String,
-    options: Clerk.Options,
-    owner: String
-  ) throws -> MockDependencyContainer {
-    let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      sharedSessionOwnerIdentifier: owner,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-    try dependencies.configurationManager.configure(
-      publishableKey: publishableKey,
-      options: options
-    )
-    return dependencies
-  }
-
   private func publishableKey(for host: String, live: Bool = false) -> String {
     let data = Data("\(host)$".utf8)
     let encoded = data.base64EncodedString()
@@ -1078,6 +1033,46 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     lock.lock()
     defer { lock.unlock() }
     return storage[key] != nil
+  }
+}
+
+private struct MissingEntitlementKeychain: KeychainStorage {
+  private var error: KeychainError {
+    .unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func set(_: Data, forKey _: String) throws {
+    throw error
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw error
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw error
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw error
+  }
+}
+
+private struct FailingReconfigurationRecoveryTargets: SharedSessionClearRecoveryTargets {
+  enum Failure: Error {
+    case unavailable
+  }
+
+  func localIdentityStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionLocalIdentityStoring {
+    throw Failure.unavailable
+  }
+
+  func slotStore(
+    for _: SharedSessionOwnerSlotClearRecovery.Intent
+  ) throws -> any SharedSessionSlotStoring {
+    throw Failure.unavailable
   }
 }
 

@@ -31,10 +31,7 @@ extension Clerk {
   /// The currently stored Clerk device token, if one is available.
   @_spi(FrameworkIntegration)
   public var deviceToken: String? {
-    guard identityPersistenceOperationCoordinator.isIdentityReady else {
-      return nil
-    }
-    return identityController.currentDeviceToken
+    identityController.currentDeviceToken
   }
 
   /// Updates the stored Clerk device token and refreshes native auth state.
@@ -52,8 +49,6 @@ extension Clerk {
   @discardableResult
   public func updateDeviceToken(_ token: String) async throws -> Client? {
     try runtimeScope.validateStableRuntime()
-    try identityPersistenceOperationCoordinator
-      .requireIdentityOperationsAvailable()
     guard let normalizedToken = Optional(token).nilIfEmpty else {
       throw DeviceTokenError.emptyToken
     }

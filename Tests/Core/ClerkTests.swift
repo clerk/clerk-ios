@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Security
 import Testing
 
 @MainActor
@@ -223,18 +224,12 @@ struct ClerkTests {
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
       atomicIdentityStore: localStore,
-      sharedSessionOwnerIdentifier: "com.clerk.tests.app",
       shouldHydrateProvisionalLegacyClient: true,
       clientService: MockClientService(get: { nil })
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
-      options: .init(
-        keychainConfig: .init(
-          accessGroup: "TEAMID.com.clerk.tests.shared"
-        ),
-        sharedSessionSync: .enabled
-      )
+      options: .init(sharedSessionSync: .enabled)
     )
 
     try clerk.performConfiguration(dependencies: dependencies)
@@ -340,6 +335,142 @@ struct ClerkTests {
 
     #expect(clerk.client == nil)
     #expect(try localStore.load() == nil)
+  }
+
+  @Test
+  func sharedActivationHydratesPeerIdentitySynchronously() throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    var peerClient = Client.mock
+    peerClient.id = "peer-client"
+    let peerEvent = SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.peer",
+      generation: 1,
+      state: .present,
+      deviceToken: "peer-token",
+      client: peerClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let slotStore = ClearTrackingSlotStore()
+    try slotStore.saveOwnSlot(SharedSessionOwnerSlot(
+      schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+      instanceFingerprint: "instance",
+      slotOwnerIdentifier: "app.peer",
+      event: peerEvent
+    ))
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.local",
+      instanceFingerprint: "instance",
+      slotStore: slotStore,
+      localIdentityStore: localStore,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk,
+      logError: { _, _ in }
+    )
+    defer { coordinator.deactivate() }
+
+    let initialReconciliation = clerk.activateSharedSessionSync(coordinator)
+
+    #expect(initialReconciliation != nil)
+    #expect(clerk.sharedSessionSyncCoordinator === coordinator)
+    #expect(clerk.client?.id == "peer-client")
+    #expect(clerk.identityController.currentDeviceToken == "peer-token")
+  }
+
+  @Test
+  func missingSharedEntitlementDiscardsPendingPublicationAndUsesDurableLocalIdentity() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    var localClient = Client.mock
+    localClient.id = "durable-local-client"
+    let localIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "durable-local-token",
+      client: localClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try localStore.save(localIdentity)
+    try localStore.stagePendingPublication(SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.missing-entitlement",
+      generation: 1,
+      state: .present,
+      deviceToken: "interrupted-token",
+      client: Client.mock,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ))
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      identityKeychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(accessGroup: "group.missing-entitlement"),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+    clerk.cacheManager = CacheManager(
+      coordinator: clerk,
+      identityKeychain: keychain,
+      environmentKeychain: keychain,
+      atomicIdentityStore: localStore
+    )
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.missing-entitlement",
+      instanceFingerprint: "instance",
+      slotStore: MissingEntitlementSlotStore(),
+      localIdentityStore: localStore,
+      localIdentityIO: dependencies.atomicIdentityIO,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk,
+      logError: { _, _ in }
+    )
+
+    let initialReconciliation = clerk.activateSharedSessionSync(coordinator)
+
+    #expect(initialReconciliation == nil)
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+    #expect(clerk.client?.id == "durable-local-client")
+    #expect(clerk.identityController.currentDeviceToken == "durable-local-token")
+    let persistedIdentity = try #require(try localStore.load())
+    #expect(persistedIdentity.state == .present)
+    #expect(persistedIdentity.deviceToken == "durable-local-token")
+    #expect(persistedIdentity.client?.id == "durable-local-client")
+    #expect(try localStore.loadPendingPublication() == nil)
+
+    var replacementClient = Client.mock
+    replacementClient.id = "replacement-local-client"
+    let replacementIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "replacement-local-token",
+      client: replacementClient,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+    #expect(try await clerk.identityController.persistAndApplyAtomicIdentity(
+      replacementIdentity,
+      through: #require(dependencies.atomicIdentityIO),
+      operationRevision: 1,
+      fenceAllClientResponses: true
+    ))
+    #expect(clerk.client?.id == "replacement-local-client")
+    #expect(try localStore.load()?.client?.id == "replacement-local-client")
+    #expect(try localStore.loadRecord()?.requiresSharedSessionPublication == true)
   }
 
   @Test
@@ -553,16 +684,7 @@ struct ClerkTests {
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: clearRecoveryOptions
-    )
     clerk.dependencies = dependencies
-    clerk.appContainerIdentityClearRecovery =
-      AppContainerIdentityClearRecovery(
-        storageProvider: { _ in keychain },
-        slotStoreProvider: { _ in slotStore }
-      )
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.clear",
       instanceFingerprint: "instance",
@@ -628,16 +750,7 @@ struct ClerkTests {
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: clearRecoveryOptions
-    )
     clerk.dependencies = dependencies
-    clerk.appContainerIdentityClearRecovery =
-      AppContainerIdentityClearRecovery(
-        storageProvider: { _ in keychain },
-        slotStoreProvider: { _ in slotStore }
-      )
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.clear",
       instanceFingerprint: "instance",
@@ -719,10 +832,6 @@ struct ClerkTests {
       atomicIdentityStore: identityStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: clerk.dependencies.telemetryCollector
-    )
-    try dependencies.configurationManager.configure(
-      publishableKey: testPublishableKey,
-      options: clearRecoveryOptions
     )
     clerk.dependencies = dependencies
     let coordinator = SharedSessionSyncCoordinator(
@@ -1292,26 +1401,13 @@ struct ClerkTests {
     identityStore: any SharedSessionLocalIdentityStoring,
     slotStore: any SharedSessionSlotStoring
   ) -> SharedSessionOwnerSlotClearRecovery.Context {
-    let instanceFingerprint = SharedSessionNamespace.sha256("instance")
-    let ownerIdentifier = "app.clear"
     let intent = SharedSessionOwnerSlotClearRecovery.Intent(
-      localIdentityService: DependencyContainer.stableIdentityService(
-        configuredService: clearRecoveryOptions.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      slotService: SharedSessionOwnerSlotStore.service(
-        configuredService: clearRecoveryOptions.keychainConfig.service,
-        instanceFingerprint: instanceFingerprint
-      ),
-      slotAccessGroup:
-      clearRecoveryOptions.keychainConfig.normalizedAccessGroup!,
-      slotAccount: SharedSessionOwnerSlotStore.account(
-        instanceFingerprint: instanceFingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      instanceFingerprint: instanceFingerprint,
-      ownerIdentifier: ownerIdentifier
+      localIdentityService: "app.identity",
+      slotService: "app.slots",
+      slotAccessGroup: "group.shared",
+      slotAccount: "owner.app.clear",
+      instanceFingerprint: "instance",
+      ownerIdentifier: "app.clear"
     )
     return SharedSessionOwnerSlotClearRecovery.Context(
       journal: journal,
@@ -1319,15 +1415,6 @@ struct ClerkTests {
       targetProvider: ClearRecoveryTargetProvider(
         identityStore: identityStore,
         slotStore: slotStore
-      )
-    )
-  }
-
-  private var clearRecoveryOptions: Clerk.Options {
-    .init(
-      keychainConfig: .init(
-        service: "com.example.clerk",
-        accessGroup: "TEAMID.com.example.shared"
       )
     )
   }
@@ -1359,10 +1446,6 @@ private struct ClearRecoveryTargetProvider:
   ) throws -> any SharedSessionSlotStoring {
     slotStore
   }
-
-  func preventLegacyIdentityReadoption(
-    for _: SharedSessionOwnerSlotClearRecovery.Intent
-  ) throws {}
 }
 
 private final class SuspendingCacheKeychain: @unchecked Sendable, KeychainStorage {
@@ -1572,33 +1655,26 @@ private final class ClearTrackingSlotStore: @unchecked Sendable, SharedSessionSl
   }
 }
 
+private struct MissingEntitlementSlotStore: SharedSessionSlotStoring {
+  func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func saveOwnSlot(_: SharedSessionOwnerSlot) throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func deleteOwnSlot() throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+}
+
 @MainActor
 private final class SilentSharedSessionNotifier: SharedSessionSyncNotifying {
   func setHandler(_: @escaping @MainActor () -> Void) {}
   func post() {}
-}
-
-@MainActor
-struct ClerkPreviewTests {
-  @Test
-  func previewUsesIsolatedMockDependenciesWithoutProductionManagers() {
-    var client = Client.mock
-    client.id = "preview-client"
-
-    let clerk = Clerk.makePreview(
-      preview: { preview in
-        preview.client = client
-        preview.environment = .mock
-      },
-      installAsShared: false
-    )
-    defer { clerk.cleanupManagers() }
-
-    #expect(clerk.publishableKey == testPublishableKey)
-    #expect(clerk.client?.id == "preview-client")
-    #expect(clerk.environment == .mock)
-    #expect(clerk.dependencies is MockDependencyContainer)
-    #expect(clerk.cacheManager == nil)
-    #expect(clerk.sharedSessionSyncCoordinator == nil)
-  }
 }

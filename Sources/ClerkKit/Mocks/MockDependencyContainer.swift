@@ -23,9 +23,6 @@ final class MockDependencyContainer: Dependencies {
   let sharedSessionOwnerIdentifier: String?
   let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
-  let identityPersistenceCapability: IdentityPersistenceCapability
-  let identityPersistenceBootstrapFailure:
-    PersistenceFailureKind? = nil
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -74,7 +71,6 @@ final class MockDependencyContainer: Dependencies {
     sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
     sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? = nil,
     shouldHydrateProvisionalLegacyClient: Bool = false,
-    usesVolatileIdentityPersistence: Bool = false,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
@@ -101,9 +97,6 @@ final class MockDependencyContainer: Dependencies {
     self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier
     self.sharedSessionOwnerSlotClearRecovery = sharedSessionOwnerSlotClearRecovery
     self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
-    identityPersistenceCapability = usesVolatileIdentityPersistence
-      ? .volatile(.temporarilyUnavailable)
-      : .durable
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
