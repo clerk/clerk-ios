@@ -1,43 +1,21 @@
-import AuthenticationServices
+import ClerkKit
 @testable import ClerkKitUI
-import Foundation
 import Testing
 
 @MainActor
 struct AutomaticPasskeyErrorPresentationTests {
-  private enum TestError: Error {
-    case failed
+  @Test(arguments: [
+    PasskeyAuthenticationFailure.Stage.preparingFirstFactor,
+    .requestingAuthorization,
+  ])
+  func errorsBeforeFirstFactorAttemptAreNotPresented(
+    _ stage: PasskeyAuthenticationFailure.Stage
+  ) {
+    #expect(!AuthStartView.shouldPresentAutomaticPasskeyError(at: stage))
   }
 
   @Test
-  func noCredentialAuthorizationErrorIsNotPresented() {
-    let error = ASAuthorizationError(
-      .canceled,
-      userInfo: [
-        NSLocalizedFailureReasonErrorKey: "No credentials available for login.",
-      ]
-    )
-
-    #expect(!AuthStartView.shouldPresentAutomaticPasskeyError(error))
-  }
-
-  @Test
-  func authorizationErrorWithoutFailureReasonIsNotPresented() {
-    let error = ASAuthorizationError(.failed)
-
-    #expect(!AuthStartView.shouldPresentAutomaticPasskeyError(error))
-  }
-
-  @Test
-  func preSelectionErrorIsNotPresented() {
-    #expect(!AuthStartView.shouldPresentAutomaticPasskeyError(
-      TestError.failed,
-      isPreSelection: true
-    ))
-  }
-
-  @Test
-  func postSelectionNonAuthorizationErrorIsPresented() {
-    #expect(AuthStartView.shouldPresentAutomaticPasskeyError(TestError.failed))
+  func firstFactorAttemptErrorIsPresented() {
+    #expect(AuthStartView.shouldPresentAutomaticPasskeyError(at: .attemptingFirstFactor))
   }
 }

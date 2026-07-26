@@ -6,6 +6,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SignInTests {
+  private enum PasskeyTestError: Error {
+    case preparationFailed
+    case authorizationFailed
+    case attemptFailed
+  }
+
   init() {
     configureClerkForTesting()
   }
@@ -42,6 +48,73 @@ struct SignInTests {
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
+  }
+
+  @Test(arguments: [
+    PasskeyAuthenticationFailure.Stage.preparingFirstFactor,
+    .requestingAuthorization,
+    .attemptingFirstFactor,
+  ])
+  func passkeyFailureContextIdentifiesFailureStage(
+    _ expectedStage: PasskeyAuthenticationFailure.Stage
+  ) async {
+    let signIn = SignIn.mock
+    let service = MockSignInService(
+      prepareFirstFactor: { _, _ in
+        if expectedStage == .preparingFirstFactor {
+          throw PasskeyTestError.preparationFailed
+        }
+        return .mock
+      },
+      attemptFirstFactor: { _, _ in
+        if expectedStage == .attemptingFirstFactor {
+          throw PasskeyTestError.attemptFailed
+        }
+        return .mock
+      }
+    )
+
+    configureService(service)
+
+    do {
+      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
+        if expectedStage == .requestingAuthorization {
+          throw PasskeyTestError.authorizationFailed
+        }
+        return "credential"
+      }
+      Issue.record("Expected passkey authentication to fail.")
+    } catch {
+      #expect(error.stage == expectedStage)
+      #expect(error.underlyingError as? PasskeyTestError == passkeyTestError(for: expectedStage))
+    }
+  }
+
+  @Test
+  func publicPasskeyAuthenticationPreservesUnderlyingError() async {
+    let signIn = SignIn.mock
+    let service = MockSignInService(prepareFirstFactor: { _, _ in
+      throw PasskeyTestError.preparationFailed
+    })
+
+    configureService(service)
+
+    await #expect(throws: PasskeyTestError.self) {
+      try await signIn.authenticateWithPasskey()
+    }
+  }
+
+  private func passkeyTestError(
+    for stage: PasskeyAuthenticationFailure.Stage
+  ) -> PasskeyTestError {
+    switch stage {
+    case .preparingFirstFactor:
+      .preparationFailed
+    case .requestingAuthorization:
+      .authorizationFailed
+    case .attemptingFirstFactor:
+      .attemptFailed
+    }
   }
 
   @Test

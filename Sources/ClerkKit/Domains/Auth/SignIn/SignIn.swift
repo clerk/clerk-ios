@@ -507,20 +507,69 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
-    )
+    do {
+      return try await authenticateWithPasskeyWithFailureContext(
+        autofill: autofill,
+        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      )
+    } catch {
+      throw error.underlyingError
+    }
+  }
 
-    let credential = try await signIn.getCredentialForPasskey(
-      autofill: autofill,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
+  @discardableResult
+  @MainActor
+  package func authenticateWithPasskeyWithFailureContext(
+    autofill: Bool = false,
+    preferImmediatelyAvailableCredentials: Bool = true
+  ) async throws(PasskeyAuthenticationFailure) -> SignIn {
+    try await authenticateWithPasskeyWithFailureContext { signIn in
+      try await signIn.getCredentialForPasskey(
+        autofill: autofill,
+        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      )
+    }
+  }
 
-    return try await signInService.attemptFirstFactor(
-      signInId: signIn.id,
-      params: .init(strategy: .passkey, publicKeyCredential: credential)
-    )
+  @discardableResult
+  @MainActor
+  func authenticateWithPasskeyWithFailureContext(
+    credentialProvider: @MainActor (SignIn) async throws -> String
+  ) async throws(PasskeyAuthenticationFailure) -> SignIn {
+    let signIn: SignIn
+    do {
+      signIn = try await signInService.prepareFirstFactor(
+        signInId: id,
+        params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
+      )
+    } catch {
+      throw PasskeyAuthenticationFailure(
+        stage: .preparingFirstFactor,
+        underlyingError: error
+      )
+    }
+
+    let credential: String
+    do {
+      credential = try await credentialProvider(signIn)
+    } catch {
+      throw PasskeyAuthenticationFailure(
+        stage: .requestingAuthorization,
+        underlyingError: error
+      )
+    }
+
+    do {
+      return try await signInService.attemptFirstFactor(
+        signInId: signIn.id,
+        params: .init(strategy: .passkey, publicKeyCredential: credential)
+      )
+    } catch {
+      throw PasskeyAuthenticationFailure(
+        stage: .attemptingFirstFactor,
+        underlyingError: error
+      )
+    }
   }
   #endif
 }
