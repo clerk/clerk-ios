@@ -182,7 +182,7 @@ clean:
 # Run ClerkKitTests on macOS
 test:
 	@echo "Running unit tests..."
-	swift test --skip Integration --filter '^ClerkKitTests\.'
+	swift test --skip Integration --no-parallel --filter '^ClerkKitTests\.'
 	CLERK_RUN_RECONFIGURE_TESTS=1 swift test --skip Integration --no-parallel --filter '^ClerkKitTests\.ClerkReconfigureTests'
 	@echo "✅ Unit tests completed!"
 
