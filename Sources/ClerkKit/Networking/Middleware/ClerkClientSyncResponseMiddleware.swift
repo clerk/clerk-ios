@@ -5,6 +5,110 @@
 
 import Foundation
 
+struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope) {
+    self.runtimeScope = runtimeScope
+  }
+
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    try Task.checkCancellation()
+    let metadata = ClientSyncResponseMetadata(response: response, request: request)
+    let update = Self.classifyClientUpdate(
+      from: data,
+      isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
+      deviceTokenUpdate: metadata.deviceTokenUpdate
+    )
+    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
+      return
+    }
+    let context = metadata.context(update: update)
+
+    let clerk = try await runtimeScope.requireCurrentClerk()
+    try Task.checkCancellation()
+    try await clerk.identityController.applyNetworkResponse(context)
+  }
+
+  static func classifyClientUpdate(
+    from jsonData: Data,
+    isCanonicalClientRequest: Bool,
+    deviceTokenUpdate: ClerkDeviceTokenResponseUpdate = .absent
+  ) -> ClientResponseUpdate {
+    if deviceTokenUpdate == .clear {
+      return .explicitClear
+    }
+
+    if let client = decodeClient(from: jsonData) {
+      return .client(client)
+    }
+
+    guard let object = try? JSONSerialization.jsonObject(with: jsonData),
+          let payload = object as? [String: Any]
+    else {
+      return .invalid
+    }
+
+    if isCanonicalClientRequest, let response = payload["response"] {
+      return response is NSNull ? .absent : .invalid
+    }
+    if let client = payload["client"], !(client is NSNull) {
+      return .invalid
+    }
+    if let meta = payload["meta"] as? [String: Any],
+       let client = meta["client"],
+       !(client is NSNull)
+    {
+      return .invalid
+    }
+    return .absent
+  }
+
+  static func decodeClient(from jsonData: Data) -> Client? {
+    struct ClientWrapper: Decodable {
+      let client: Client?
+
+      enum CodingKeys: String, CodingKey {
+        case response, client, meta
+      }
+
+      enum MetaCodingKeys: String, CodingKey {
+        case client
+      }
+
+      init(from decoder: Decoder) throws {
+        let container = try? decoder.container(keyedBy: CodingKeys.self)
+
+        if let responseClient = try? container?.decode(Client.self, forKey: .response) {
+          client = responseClient
+          return
+        }
+
+        if let clientClient = try? container?.decode(Client.self, forKey: .client) {
+          client = clientClient
+          return
+        }
+
+        if let metaContainer = try? container?.nestedContainer(keyedBy: MetaCodingKeys.self, forKey: .meta),
+           let metaClient = try? metaContainer.decode(Client.self, forKey: .client)
+        {
+          client = metaClient
+          return
+        }
+
+        if let topLevelClient = try? Client(from: decoder) {
+          client = topLevelClient
+          return
+        }
+
+        client = nil
+      }
+    }
+
+    return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
+  }
+}
+
 enum ClientResponseUpdate: Equatable {
   case client(Client)
   case explicitClear
@@ -108,109 +212,5 @@ struct ClientSyncResponseMetadata {
       clientResponseGeneration: checkpoint.clientResponseGeneration,
       responseSequence: checkpoint.requestSequence
     )
-  }
-}
-
-struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
-  private let runtimeScope: ClerkRuntimeScope
-
-  init(runtimeScope: ClerkRuntimeScope) {
-    self.runtimeScope = runtimeScope
-  }
-
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    try Task.checkCancellation()
-    let metadata = ClientSyncResponseMetadata(response: response, request: request)
-    let update = Self.classifyClientUpdate(
-      from: data,
-      isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
-      deviceTokenUpdate: metadata.deviceTokenUpdate
-    )
-    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
-      return
-    }
-    let context = metadata.context(update: update)
-
-    let clerk = try await runtimeScope.requireCurrentClerk()
-    try Task.checkCancellation()
-    try await clerk.identityController.applyNetworkResponse(context)
-  }
-
-  static func classifyClientUpdate(
-    from jsonData: Data,
-    isCanonicalClientRequest: Bool,
-    deviceTokenUpdate: ClerkDeviceTokenResponseUpdate = .absent
-  ) -> ClientResponseUpdate {
-    if deviceTokenUpdate == .clear {
-      return .explicitClear
-    }
-
-    if let client = decodeClient(from: jsonData) {
-      return .client(client)
-    }
-
-    guard let object = try? JSONSerialization.jsonObject(with: jsonData),
-          let payload = object as? [String: Any]
-    else {
-      return .invalid
-    }
-
-    if isCanonicalClientRequest, let response = payload["response"] {
-      return response is NSNull ? .absent : .invalid
-    }
-    if let client = payload["client"], !(client is NSNull) {
-      return .invalid
-    }
-    if let meta = payload["meta"] as? [String: Any],
-       let client = meta["client"],
-       !(client is NSNull)
-    {
-      return .invalid
-    }
-    return .absent
-  }
-
-  static func decodeClient(from jsonData: Data) -> Client? {
-    struct ClientWrapper: Decodable {
-      let client: Client?
-
-      enum CodingKeys: String, CodingKey {
-        case response, client, meta
-      }
-
-      enum MetaCodingKeys: String, CodingKey {
-        case client
-      }
-
-      init(from decoder: Decoder) throws {
-        let container = try? decoder.container(keyedBy: CodingKeys.self)
-
-        if let responseClient = try? container?.decode(Client.self, forKey: .response) {
-          client = responseClient
-          return
-        }
-
-        if let clientClient = try? container?.decode(Client.self, forKey: .client) {
-          client = clientClient
-          return
-        }
-
-        if let metaContainer = try? container?.nestedContainer(keyedBy: MetaCodingKeys.self, forKey: .meta),
-           let metaClient = try? metaContainer.decode(Client.self, forKey: .client)
-        {
-          client = metaClient
-          return
-        }
-
-        if let topLevelClient = try? Client(from: decoder) {
-          client = topLevelClient
-          return
-        }
-
-        client = nil
-      }
-    }
-
-    return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
   }
 }
