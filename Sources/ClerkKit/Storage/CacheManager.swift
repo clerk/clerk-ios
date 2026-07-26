@@ -226,6 +226,10 @@ final class CacheManager {
     loadCachedEnvironment()
   }
 
+  func loadCachedIdentity() {
+    loadCachedClient()
+  }
+
   /// Loads the legacy cached client for immediate presentation during shared-session adoption.
   ///
   /// This is intentionally separate from identity hydration: the legacy Client is provisional UI

@@ -48,14 +48,6 @@ struct SharedSessionSlotTopology: Equatable {
     self.ownerIdentifier = ownerIdentifier
   }
 
-  func hasSameStore(as other: Self) -> Bool {
-    storeIdentity == other.storeIdentity
-  }
-
-  func hasSameOwnerSlot(as other: Self) -> Bool {
-    self == other
-  }
-
   func makeOwnerSlotStore() throws -> SharedSessionOwnerSlotStore {
     try SharedSessionOwnerSlotStore(
       keychainConfig: keychainConfig,

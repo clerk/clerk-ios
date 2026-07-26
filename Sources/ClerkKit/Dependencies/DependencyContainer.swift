@@ -117,9 +117,13 @@ final class DependencyContainer: Dependencies {
       nil
     }
     if persistentAdoptionEnabled, !publishableKey.isEmpty {
-      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-        in: sharedSessionOwnerSlotClearRecovery
-      )
+      do {
+        try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
+          in: sharedSessionOwnerSlotClearRecovery
+        )
+      } catch let error as KeychainError where error.isMissingEntitlement {
+        // Recovery remains journaled and is retried after the entitlement is fixed.
+      }
     }
     let keychainStorages = try Self.makeKeychainStorages(
       options: options,
@@ -250,14 +254,16 @@ final class DependencyContainer: Dependencies {
       var shouldHydrateProvisionalLegacyClient = false
       if usePersistentAdoptionState, performPersistentAdoption {
         let wasAdopted = try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
-        try SharedSessionSyncAdoption(
+        let adoption = SharedSessionSyncAdoption(
           destinationIdentity: stableIdentity,
           destinationPrivate: configuredAppLocal,
           configuredAppLocalIdentity: configuredAppLocal,
           previousAppLocalIdentity: previousAppLocal,
           legacyShared: shared
-        ).migrateIfNeeded()
-        shouldHydrateProvisionalLegacyClient = !wasAdopted
+        )
+        if try adoption.migrateToleratingMissingSharedEntitlement() {
+          shouldHydrateProvisionalLegacyClient = !wasAdopted
+        }
       }
       return KeychainStorages(
         shared: shared,
@@ -283,23 +289,6 @@ final class DependencyContainer: Dependencies {
       localIdentityStore: adoptedIdentityStore,
       shouldHydrateProvisionalLegacyClient: false
     )
-  }
-
-  @MainActor
-  func performDeferredSharedSessionAdoptionIfNeeded() throws {
-    guard persistentAdoptionEnabled,
-          configurationManager.options.sharedSessionSync != nil
-    else {
-      return
-    }
-
-    try SharedSessionSyncAdoption(
-      destinationIdentity: identityKeychain,
-      destinationPrivate: appLocalKeychain,
-      configuredAppLocalIdentity: appLocalKeychain,
-      previousAppLocalIdentity: legacyAppLocalKeychain,
-      legacyShared: keychain
-    ).migrateIfNeeded()
   }
 
   /// Removes an interrupted shared-session publication before installing a non-shared runtime.

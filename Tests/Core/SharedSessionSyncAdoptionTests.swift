@@ -25,6 +25,50 @@ struct SharedSessionSyncAdoptionTests {
   }
 
   @Test
+  func missingSharedEntitlementMarksAdoptedWithoutImportingLegacyCredentials() throws {
+    let destination = InMemoryKeychain()
+
+    let canHydrateProvisionalClient = try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      previousBundle: nil,
+      legacyShared: MissingEntitlementKeychain()
+    ).migrateToleratingMissingSharedEntitlement()
+
+    #expect(!canHydrateProvisionalClient)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
+    #expect(try SharedSessionLocalIdentityStore(keychain: destination).load() == nil)
+  }
+
+  @Test
+  func partialAppLocalMigrationAllowsProvisionalHydrationWithoutSharedEntitlement() throws {
+    let destination = InMemoryKeychain()
+    let configuredAppLocal = InMemoryKeychain()
+    try persistLegacyIdentity(
+      token: "app-local-token",
+      client: makeClient(id: "app-local-client"),
+      in: configuredAppLocal
+    )
+
+    let canHydrateProvisionalClient = try makeAdoption(
+      destination: destination,
+      privateKeychain: InMemoryKeychain(),
+      configuredAppLocal: configuredAppLocal,
+      previousBundle: nil,
+      legacyShared: MissingEntitlementKeychain()
+    ).migrateToleratingMissingSharedEntitlement()
+
+    #expect(canHydrateProvisionalClient)
+    #expect(try SharedSessionSyncAdoption.isAdopted(in: destination))
+    let record = try #require(
+      try SharedSessionLocalIdentityStore(keychain: destination).loadRecord()
+    )
+    #expect(record.acceptedIdentity?.deviceToken == "app-local-token")
+    #expect(record.acceptedIdentity?.client == nil)
+    #expect(record.requiresSharedSessionPublication)
+  }
+
+  @Test
   func configuredAppLocalIdentityTakesPrecedenceAndMigratesEnvironment() throws {
     let destination = InMemoryKeychain()
     let privateKeychain = InMemoryKeychain()
@@ -57,7 +101,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "configured-token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == true)
     #expect(try privateKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == environmentData)
   }
 
@@ -138,7 +182,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "bundle-token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == true)
   }
 
   @Test
@@ -401,7 +445,7 @@ struct SharedSessionSyncAdoptionTests {
     #expect(identity.state == .cleared)
     #expect(identity.deviceToken == "token")
     #expect(identity.client == nil)
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == false)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == false)
   }
 
   @Test

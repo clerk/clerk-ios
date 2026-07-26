@@ -6,6 +6,13 @@ enum KeychainError: Error, LocalizedError {
   case unexpectedStatus(OSStatus)
   case invalidStringEncoding
 
+  var isMissingEntitlement: Bool {
+    guard case .unexpectedStatus(errSecMissingEntitlement) = self else {
+      return false
+    }
+    return true
+  }
+
   var errorDescription: String? {
     switch self {
     case .unexpectedStatus(let status):

@@ -219,7 +219,9 @@ extension Clerk {
   private static func beginKeychainClear(for clerk: Clerk) throws -> PendingKeychainClear {
     let dependencies = clerk.dependencies
     let loggingConfiguration = ClerkLogger.Configuration(options: clerk.options)
-    if clerk.sharedSessionSyncCoordinator != nil {
+    if clerk.sharedSessionSyncCoordinator != nil
+      || dependencies.sharedSessionOwnerSlotClearRecovery?.currentIntent != nil
+    {
       do {
         guard let context = dependencies.sharedSessionOwnerSlotClearRecovery else {
           throw SharedSessionOwnerSlotClearRecoveryError.missingCurrentTopology

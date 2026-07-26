@@ -15,7 +15,6 @@ enum SharedSessionSyncCoordinatorError: Error, Equatable {
   case reconciliationFailed
   case missingWinnerForPendingPublication
   case pendingPublicationOwnerMismatch
-  case pendingPublicationDidNotSettle
 }
 
 @MainActor
@@ -72,6 +71,7 @@ final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
   private var reconcileAgain = false
   private var isInstalled = true
   private var operationRevision: UInt64 = 0
+  private(set) var initialHydrationError: (any Error)?
   var responseOrderingGate = ClientResponseOrderingGate()
   var networkResponseLineage: NetworkResponseLineage?
   private var isLocalClearInProgress = false
@@ -286,47 +286,29 @@ extension SharedSessionSyncCoordinator {
       return false
     }
 
+    initialHydrationError = nil
     do {
       if let record = try localIdentityStore.loadRecord(),
-         record.requiresLegacyAdoptionPublication
+         record.pendingPublication != nil
+         || record.requiresSharedSessionPublication
       {
-        currentDeviceToken = record.acceptedIdentity?.deviceToken
+        _ = try slotStore.loadAllSlots()
+        if record.requiresSharedSessionPublication,
+           let identity = record.acceptedIdentity
+        {
+          currentDeviceToken = identity.deviceToken
+          clerk?.identityController.hydrateAtomicIdentityIfNeeded(identity)
+        }
         requiresSuccessfulReconciliation = true
         return false
       }
       return try reduceApplyAndReplicateSynchronously()
     } catch {
+      initialHydrationError = error
       requiresSuccessfulReconciliation = true
       logError(error, "Failed to hydrate initial shared-session owner slots")
       return false
     }
-  }
-
-  func settlePendingPublicationForTopologyChange() async throws {
-    let task = enqueueSerializedOperation { [weak self] in
-      guard let self,
-            let clerk,
-            isCurrent(clerk: clerk),
-            !isLocalClearInProgress
-      else {
-        throw CancellationError()
-      }
-
-      try await ensureSuccessfulReconciliationIfNeeded()
-      _ = try await resumePendingPublicationIfNeeded()
-
-      let settlementRevision = operationRevision
-      let pendingPublication = try await performCheckedOperation(
-        revision: settlementRevision,
-        clerk: clerk
-      ) {
-        try await self.localIdentityIO.loadRecord()?.pendingPublication
-      }
-      guard pendingPublication == nil else {
-        throw SharedSessionSyncCoordinatorError.pendingPublicationDidNotSettle
-      }
-    }
-    try await task.value
   }
 
   private func enqueuePublication(_ publication: Publication) async throws -> Bool {
@@ -585,7 +567,7 @@ extension SharedSessionSyncCoordinator {
       do {
         if try await resumePendingPublicationIfNeeded() {
           didChange = true
-        } else if try await publishLegacyAdoptionIfNeeded() {
+        } else if try await publishRequiredLocalIdentityIfNeeded() {
           didChange = true
         } else if try await reduceApplyAndReplicate() {
           didChange = true
@@ -604,7 +586,7 @@ extension SharedSessionSyncCoordinator {
     return ReconciliationResult(didChange: didChange, succeeded: true)
   }
 
-  private func publishLegacyAdoptionIfNeeded() async throws -> Bool {
+  private func publishRequiredLocalIdentityIfNeeded() async throws -> Bool {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
       throw CancellationError()
     }
@@ -616,7 +598,7 @@ extension SharedSessionSyncCoordinator {
         try await self.localIdentityIO.loadRecord()
       }
     ),
-      record.requiresLegacyAdoptionPublication,
+      record.requiresSharedSessionPublication,
       let identity = record.acceptedIdentity
     else {
       return false
@@ -725,7 +707,7 @@ extension SharedSessionSyncCoordinator {
     ), let pending = record.pendingPublication else {
       return false
     }
-    let provisionalClientPreservingEventID = record.pendingLegacyAdoptionEventID(
+    let provisionalClientPreservingEventID = record.pendingTokenOnlyPublicationEventID(
       for: ownerIdentifier
     )
     guard pending.originOwnerIdentifier == ownerIdentifier else {

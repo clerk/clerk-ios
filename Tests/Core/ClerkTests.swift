@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Security
 import Testing
 
 @MainActor
@@ -334,6 +335,142 @@ struct ClerkTests {
 
     #expect(clerk.client == nil)
     #expect(try localStore.load() == nil)
+  }
+
+  @Test
+  func sharedActivationHydratesPeerIdentitySynchronously() throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    var peerClient = Client.mock
+    peerClient.id = "peer-client"
+    let peerEvent = SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.peer",
+      generation: 1,
+      state: .present,
+      deviceToken: "peer-token",
+      client: peerClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let slotStore = ClearTrackingSlotStore()
+    try slotStore.saveOwnSlot(SharedSessionOwnerSlot(
+      schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+      instanceFingerprint: "instance",
+      slotOwnerIdentifier: "app.peer",
+      event: peerEvent
+    ))
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.local",
+      instanceFingerprint: "instance",
+      slotStore: slotStore,
+      localIdentityStore: localStore,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk,
+      logError: { _, _ in }
+    )
+    defer { coordinator.deactivate() }
+
+    let initialReconciliation = clerk.activateSharedSessionSync(coordinator)
+
+    #expect(initialReconciliation != nil)
+    #expect(clerk.sharedSessionSyncCoordinator === coordinator)
+    #expect(clerk.client?.id == "peer-client")
+    #expect(clerk.identityController.currentDeviceToken == "peer-token")
+  }
+
+  @Test
+  func missingSharedEntitlementDiscardsPendingPublicationAndUsesDurableLocalIdentity() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
+    var localClient = Client.mock
+    localClient.id = "durable-local-client"
+    let localIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "durable-local-token",
+      client: localClient,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    try localStore.save(localIdentity)
+    try localStore.stagePendingPublication(SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.missing-entitlement",
+      generation: 1,
+      state: .present,
+      deviceToken: "interrupted-token",
+      client: Client.mock,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ))
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      identityKeychain: keychain,
+      atomicIdentityStore: localStore,
+      clientService: MockClientService(get: { nil })
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(
+        keychainConfig: .init(accessGroup: "group.missing-entitlement"),
+        sharedSessionSync: .enabled
+      )
+    )
+    clerk.dependencies = dependencies
+    clerk.cacheManager = CacheManager(
+      coordinator: clerk,
+      identityKeychain: keychain,
+      environmentKeychain: keychain,
+      atomicIdentityStore: localStore
+    )
+    let coordinator = SharedSessionSyncCoordinator(
+      ownerIdentifier: "app.missing-entitlement",
+      instanceFingerprint: "instance",
+      slotStore: MissingEntitlementSlotStore(),
+      localIdentityStore: localStore,
+      localIdentityIO: dependencies.atomicIdentityIO,
+      notifier: SilentSharedSessionNotifier(),
+      configurationEpoch: clerk.configurationEpoch,
+      clerk: clerk,
+      logError: { _, _ in }
+    )
+
+    let initialReconciliation = clerk.activateSharedSessionSync(coordinator)
+
+    #expect(initialReconciliation == nil)
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+    #expect(clerk.client?.id == "durable-local-client")
+    #expect(clerk.identityController.currentDeviceToken == "durable-local-token")
+    let persistedIdentity = try #require(try localStore.load())
+    #expect(persistedIdentity.state == .present)
+    #expect(persistedIdentity.deviceToken == "durable-local-token")
+    #expect(persistedIdentity.client?.id == "durable-local-client")
+    #expect(try localStore.loadPendingPublication() == nil)
+
+    var replacementClient = Client.mock
+    replacementClient.id = "replacement-local-client"
+    let replacementIdentity = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "replacement-local-token",
+      client: replacementClient,
+      serverDate: Date(timeIntervalSince1970: 300)
+    )
+    #expect(try await clerk.identityController.persistAndApplyAtomicIdentity(
+      replacementIdentity,
+      through: #require(dependencies.atomicIdentityIO),
+      operationRevision: 1,
+      fenceAllClientResponses: true
+    ))
+    #expect(clerk.client?.id == "replacement-local-client")
+    #expect(try localStore.load()?.client?.id == "replacement-local-client")
+    #expect(try localStore.loadRecord()?.requiresSharedSessionPublication == true)
   }
 
   @Test
@@ -1515,6 +1652,24 @@ private final class ClearTrackingSlotStore: @unchecked Sendable, SharedSessionSl
 
   func deleteOwnSlot() throws {
     lock.withLock { slot = nil }
+  }
+}
+
+private struct MissingEntitlementSlotStore: SharedSessionSlotStoring {
+  func loadOwnSlot() throws -> SharedSessionOwnerSlot? {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func loadAllSlots() throws -> [SharedSessionOwnerSlot] {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func saveOwnSlot(_: SharedSessionOwnerSlot) throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
+  }
+
+  func deleteOwnSlot() throws {
+    throw KeychainError.unexpectedStatus(errSecMissingEntitlement)
   }
 }
 

@@ -303,25 +303,6 @@ extension SharedSessionOwnerSlotStore {
     return decodeCompatibleSlot(data: data, account: ownerAccount, requireOwnOwner: true)
   }
 
-  @discardableResult
-  func restoreOwnSlot(
-    _ previousSlot: SharedSessionOwnerSlot?,
-    ifCurrentMatchesPublication expectedSlot: SharedSessionOwnerSlot
-  ) throws -> Bool {
-    try Self.mutationLock.withLock {
-      guard try loadOwnSlotWithoutLocking()?.matchesPublication(expectedSlot) == true else {
-        return false
-      }
-
-      if let previousSlot {
-        try saveOwnSlotWithoutLocking(previousSlot)
-      } else {
-        try deleteOwnSlotWithoutLocking()
-      }
-      return true
-    }
-  }
-
   private func validateExistingOwnSlot(_ data: Data) throws {
     if let versionHeader = try? JSONDecoder.clerkDecoder.decode(
       SchemaVersionHeader.self,

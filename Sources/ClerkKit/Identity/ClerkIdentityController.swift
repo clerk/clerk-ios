@@ -509,7 +509,9 @@ extension ClerkIdentityController {
     guard operationRevision > invalidatedThroughRevision else { return false }
     guard try await localIdentityIO.saveAcceptedIdentity(
       identity,
-      operationRevision: operationRevision
+      operationRevision: operationRevision,
+      requiresSharedSessionPublication:
+      clerk.options.sharedSessionSync != nil && clerk.sharedSessionSyncCoordinator == nil
     ) else {
       return false
     }

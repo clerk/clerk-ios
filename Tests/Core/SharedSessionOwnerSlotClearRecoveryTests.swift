@@ -51,6 +51,58 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
 
   @Test
   @MainActor
+  func degradedClearRecoversOwnerSlotAfterEntitlementReturns() async throws {
+    let clerk = Clerk()
+    let localKeychain = InMemoryKeychain()
+    let journal = InMemoryKeychain()
+    let localStore = SharedSessionLocalIdentityStore(keychain: localKeychain)
+    let slotStore = try RecoveryOwnerSlotStore(
+      slot: makeSlot(token: "old-token")
+    )
+    let intent = makeIntent()
+    let recovery = makeContext(
+      journal: journal,
+      currentIntent: intent,
+      identityStore: localStore,
+      slotStore: slotStore
+    )
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: clerk.dependencies.apiClient,
+      keychain: MissingEntitlementKeychain(),
+      appLocalKeychain: localKeychain,
+      identityKeychain: localKeychain,
+      atomicIdentityStore: localStore,
+      sharedSessionOwnerSlotClearRecovery: recovery,
+      clientService: MockClientService(get: { nil })
+    )
+    try localStore.save(makeIdentity(token: "local-token"))
+
+    #expect(clerk.sharedSessionSyncCoordinator == nil)
+    do {
+      try await clerk.clearAllKeychainItemsAndWait()
+      Issue.record("Expected the inaccessible shared Keychain clear to fail.")
+    } catch {
+      #expect(
+        error.localizedDescription.contains(
+          "clear legacy shared credentials"
+        )
+      )
+    }
+
+    #expect(try localStore.loadRecord() == nil)
+    #expect(try slotStore.loadOwnSlot() != nil)
+    #expect(
+      try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal)
+        == intent
+    )
+
+    #expect(try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(in: recovery))
+    #expect(try slotStore.loadOwnSlot() == nil)
+    #expect(try SharedSessionOwnerSlotClearRecovery.loadPendingIntent(in: journal) == nil)
+  }
+
+  @Test
+  @MainActor
   func journalFailureLeavesIdentityAndOwnerSlotUntouched() async throws {
     let clerk = Clerk()
     let identityKeychain = InMemoryKeychain()
@@ -535,7 +587,8 @@ private final class DeleteFailingRecoveryIdentityStore:
 
   func save(
     _: SharedSessionLocalIdentity,
-    operationRevision _: UInt64
+    operationRevision _: UInt64,
+    requiresSharedSessionPublication _: Bool
   ) throws -> Bool {
     true
   }

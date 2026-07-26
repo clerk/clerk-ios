@@ -18,11 +18,11 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(record.acceptedIdentity == identity)
     #expect(record.pendingPublication == nil)
-    #expect(!record.requiresLegacyAdoptionPublication)
+    #expect(!record.requiresSharedSessionPublication)
   }
 
   @Test
-  func recordWrittenBeforeAdoptionProvenanceDefaultsToSettled() throws {
+  func recordWrittenBeforePublicationMarkerDefaultsToSettled() throws {
     struct PreviousRecord: Encodable {
       let schemaVersion = SharedSessionLocalIdentityRecord.schemaVersion
       let acceptedIdentity: SharedSessionLocalIdentity
@@ -41,26 +41,43 @@ struct SharedSessionLocalIdentityStoreTests {
     )
 
     #expect(record.acceptedIdentity == identity)
-    #expect(!record.requiresLegacyAdoptionPublication)
+    #expect(!record.requiresSharedSessionPublication)
   }
 
   @Test
-  func legacyAdoptionProvenanceSurvivesStagingAndClearsOnCommit() throws {
+  func requiredPublicationKeepsLegacyCodingKey() throws {
+    let record = SharedSessionLocalIdentityRecord(
+      acceptedIdentity: makeIdentity(clientID: "local"),
+      pendingPublication: nil,
+      requiresSharedSessionPublication: true
+    )
+
+    let data = try JSONEncoder.clerkEncoder.encode(record)
+    let json = try #require(
+      JSONSerialization.jsonObject(with: data) as? [String: Any]
+    )
+
+    #expect(json["requires_legacy_adoption_publication"] as? Bool == true)
+    #expect(json["requires_shared_session_publication"] == nil)
+  }
+
+  @Test
+  func requiredPublicationMarkerSurvivesStagingAndClearsOnCommit() throws {
     let store = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
     let adopted = makeIdentity(clientID: "adopted")
     let pending = try makeEvent(clientID: "pending")
-    try store.saveLegacyAdoption(adopted)
+    try store.saveRequiringSharedSessionPublication(adopted)
 
     try store.stagePendingPublication(pending)
 
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == true)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == true)
 
     try store.commitAcceptedIdentity(
       adopted,
       clearingPendingPublicationID: pending.id
     )
 
-    #expect(try store.loadRecord()?.requiresLegacyAdoptionPublication == false)
+    #expect(try store.loadRecord()?.requiresSharedSessionPublication == false)
   }
 
   @Test
@@ -102,6 +119,31 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(try store.loadPendingPublication() == pending)
     #expect(try store.load() == nil)
+  }
+
+  @Test
+  func revisionedSaveSupersedesPendingPublicationWhileOrdinarySaveRemainsStrict() throws {
+    let store = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
+    let accepted = makeIdentity(clientID: "accepted")
+    let pending = try makeEvent(clientID: "pending")
+    let replacement = makeIdentity(clientID: "replacement")
+    try store.save(accepted)
+    try store.stagePendingPublication(pending)
+
+    #expect(throws: SharedSessionLocalIdentityStoreError.pendingPublicationAlreadyExists) {
+      try store.save(replacement)
+    }
+    #expect(try store.loadRecord()?.acceptedIdentity == accepted)
+    #expect(try store.loadPendingPublication() == pending)
+
+    let didSave = try store.save(
+      replacement,
+      operationRevision: 1
+    )
+
+    #expect(didSave)
+    #expect(try store.loadRecord()?.acceptedIdentity == replacement)
+    #expect(try store.loadPendingPublication() == nil)
   }
 
   @Test
