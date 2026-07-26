@@ -511,8 +511,7 @@ extension ClerkIdentityController {
       identity,
       operationRevision: operationRevision,
       requiresSharedSessionPublication:
-      clerk.options.sharedSessionSync != nil
-        && clerk.sharedSessionSyncCoordinator == nil
+      clerk.options.sharedSessionSync != nil && clerk.sharedSessionSyncCoordinator == nil
     ) else {
       return false
     }
