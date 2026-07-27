@@ -164,7 +164,18 @@ actor APIClient {
 
         let value = try request.decode(data, using: decoder)
         try ensureCurrentRuntimeScope()
-        return APIResponse(value: value, requestSequence: requestSequence, serverDate: httpResponse.serverDate)
+        let deferredClientSyncMetadata: ClientSyncResponseMetadata? =
+          if !urlRequest.shouldAutomaticallySyncClerkClient {
+            ClientSyncResponseMetadata(response: httpResponse, request: urlRequest)
+          } else {
+            nil
+          }
+        return APIResponse(
+          value: value,
+          requestSequence: requestSequence,
+          serverDate: httpResponse.serverDate,
+          deferredClientSyncMetadata: deferredClientSyncMetadata
+        )
       } catch {
         try ensureCurrentRuntimeScope()
 

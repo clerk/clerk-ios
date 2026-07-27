@@ -139,7 +139,7 @@ extension SignIn {
       throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.")
     }
 
-    let pkcePair = try MagicLinkPKCE.generatePair()
+    let pkcePair = try PKCE.generatePair()
     try magicLinkStore.save(kind: .signIn, flowId: id, codeVerifier: pkcePair.verifier)
 
     return try await signInService.prepareFirstFactor(
@@ -149,7 +149,7 @@ extension SignIn {
         emailAddressId: emailId,
         redirectUri: resolvedRedirectUri,
         codeChallenge: pkcePair.challenge,
-        codeChallengeMethod: MagicLinkPKCE.codeChallengeMethod
+        codeChallengeMethod: PKCE.codeChallengeMethod
       )
     )
   }

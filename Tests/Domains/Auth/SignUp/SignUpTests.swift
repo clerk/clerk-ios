@@ -65,7 +65,7 @@ struct SignUpTests {
     #expect(params.1.strategy == .emailLink)
     #expect(params.1.emailAddressId == nil)
     #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(params.1.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
+    #expect(params.1.codeChallengeMethod == PKCE.codeChallengeMethod)
     #expect(params.1.codeChallenge?.isEmpty == false)
 
     let pendingFlow = try #require(magicLinkStore.load())

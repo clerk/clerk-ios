@@ -189,6 +189,58 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func disabledAutomaticSyncDefersClientButStillAppliesExplicitClear() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    let existingClient = client(id: "existing-client", updatedAt: .distantPast)
+    clerk.client = existingClient
+    let incomingClient = client(id: "incoming-client", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(
+      ClientOnlyEnvelope(response: incomingClient, client: nil)
+    )
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    var request = URLRequest(url: url)
+    request.disableAutomaticClerkClientSync()
+    request.setClerkCanonicalClientRequest(true)
+    request.setClerkRequestDeviceToken("current-token")
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
+    let positiveResponse = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: ["Authorization": "rotated-token"]
+    ))
+
+    try await middleware.validate(positiveResponse, data: data, for: request)
+
+    #expect(clerk.client?.id == existingClient.id)
+    #expect(
+      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        == "current-token"
+    )
+
+    let clearResponse = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: ["Authorization": "Bearer"]
+    ))
+    try await middleware.validate(clearResponse, data: data, for: request)
+
+    #expect(clerk.client == nil)
+    #expect(
+      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+        == nil
+    )
+  }
+
+  @Test
   func validateAppliesClientFromClientResponseEnvelope() async throws {
     configureClerkForTesting()
     let clerk = Clerk()

@@ -579,6 +579,88 @@ struct ClerkAPIClientTests {
     #expect(observedContexts.value.count == 1)
   }
 
+  @Test
+  func deferredClientSyncMetadataPreservesPreparedRequestAndResponseContext() async throws {
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/deferred-client-sync")!
+    let mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.post: JSONEncoder().encode(["success": true])],
+      additionalHeaders: [
+        "Authorization": "rotated-device-token",
+        "Date": "Sat, 18 Jul 2026 14:00:00 GMT",
+      ]
+    )
+    mock.register()
+    let expectedClientResponseGeneration = ClientResponseGeneration.initial.next()
+    let pipeline = NetworkingPipeline(
+      requestMiddleware: [
+        PreparedDeferredClientSyncContextMiddleware(
+          clientResponseGeneration: expectedClientResponseGeneration
+        ),
+      ]
+    )
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = pipeline
+      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+    }
+
+    let response = try await apiClient.send(Request<EmptyResponse>(
+      path: "/v1/deferred-client-sync",
+      method: .post,
+      automaticallySyncClient: false
+    ))
+
+    let metadata = try #require(response.deferredClientSyncMetadata)
+    #expect(metadata.deviceTokenUpdate == .set("rotated-device-token"))
+    #expect(metadata.checkpoint.requestSequence == response.requestSequence)
+    #expect(metadata.checkpoint.clientResponseGeneration == expectedClientResponseGeneration)
+    #expect(metadata.checkpoint.sharedSessionBaseGeneration == 42)
+    #expect(metadata.checkpoint.isCanonicalClientRequest)
+    #expect(metadata.checkpoint.requestDeviceToken == "request-device-token")
+    #expect(metadata.serverDate == ISO8601DateFormatter().date(from: "2026-07-18T14:00:00Z"))
+
+    let context = metadata.context(update: .absent)
+    #expect(context.deviceTokenUpdate == .set("rotated-device-token"))
+    #expect(context.requestDeviceToken == "request-device-token")
+    #expect(context.baseGeneration == 42)
+    #expect(context.serverDate == metadata.serverDate)
+    #expect(context.isCanonicalClientRequest)
+    #expect(context.clientResponseGeneration == expectedClientResponseGeneration)
+    #expect(context.responseSequence == response.requestSequence)
+  }
+
+  @Test
+  func deferredClientSyncMetadataRequiresDisabledAutomaticSync() async throws {
+    let automaticURL = URL(string: mockBaseUrl.absoluteString + "/v1/automatic-client-sync")!
+    let automaticMock = try Mock(
+      url: automaticURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    automaticMock.register()
+    let apiClient = APIClient(
+      baseURL: mockBaseUrl,
+      runtimeScope: Clerk.shared.runtimeScope
+    ) { configuration in
+      configuration.pipeline = NetworkingPipeline()
+      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+    }
+
+    let automaticResponse = try await apiClient.send(
+      Request<EmptyResponse>(path: "/v1/automatic-client-sync")
+    )
+
+    #expect(automaticResponse.deferredClientSyncMetadata == nil)
+  }
+
   private func waitUntil(_ condition: () -> Bool) async throws {
     let deadline = ContinuousClock.now + .seconds(1)
     while ContinuousClock.now < deadline {
@@ -586,6 +668,17 @@ struct ClerkAPIClientTests {
       await Task.yield()
     }
     throw ClerkClientError(message: "Timed out waiting for API client state.")
+  }
+}
+
+private struct PreparedDeferredClientSyncContextMiddleware: ClerkRequestMiddleware {
+  let clientResponseGeneration: ClientResponseGeneration
+
+  func prepare(_ request: inout URLRequest) async throws {
+    request.setClerkClientResponseGeneration(clientResponseGeneration)
+    request.setClerkSharedSessionBaseGeneration(42)
+    request.setClerkCanonicalClientRequest(true)
+    request.setClerkRequestDeviceToken("request-device-token")
   }
 }
 

@@ -5,85 +5,6 @@
 
 import Foundation
 
-enum ClientResponseUpdate: Equatable {
-  case client(Client)
-  case explicitClear
-  case absent
-  case invalid
-}
-
-enum ClientSyncResponseError: Error, Equatable {
-  case missingDeviceTokenForCanonicalClient
-}
-
-struct ClientSyncResponseContext {
-  let update: ClientResponseUpdate
-  let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
-  let requestDeviceToken: String?
-  let baseGeneration: UInt64?
-  let serverDate: Date?
-  let isCanonicalClientRequest: Bool
-  let clientResponseGeneration: ClientResponseGeneration?
-  let responseSequence: Int?
-
-  func resolvedIdentityPayload(
-    currentDeviceToken: String?,
-    currentClient: Client?,
-    currentServerDate: Date?
-  ) throws -> ClerkIdentitySnapshot? {
-    let payload: ClerkIdentitySnapshot
-    switch update {
-    case .client(let client):
-      guard let token = resolvedDeviceToken else {
-        if isCanonicalClientRequest {
-          throw ClientSyncResponseError.missingDeviceTokenForCanonicalClient
-        }
-        return nil
-      }
-      payload = ClerkIdentitySnapshot(
-        state: .present,
-        deviceToken: token,
-        client: client,
-        serverDate: serverDate
-      )
-    case .explicitClear:
-      payload = ClerkIdentitySnapshot(
-        state: .cleared,
-        deviceToken: resolvedDeviceToken,
-        client: nil,
-        serverDate: serverDate
-      )
-    case .absent:
-      guard !isCanonicalClientRequest,
-            case .set(let token) = deviceTokenUpdate,
-            requestDeviceToken == currentDeviceToken
-      else {
-        return nil
-      }
-      payload = ClerkIdentitySnapshot(
-        state: currentClient == nil ? .cleared : .present,
-        deviceToken: token,
-        client: currentClient,
-        serverDate: serverDate ?? currentServerDate
-      )
-    case .invalid:
-      return nil
-    }
-    return try payload.validated()
-  }
-
-  private var resolvedDeviceToken: String? {
-    switch deviceTokenUpdate {
-    case .absent:
-      requestDeviceToken.nilIfEmpty
-    case .set(let deviceToken):
-      deviceToken
-    case .clear:
-      nil
-    }
-  }
-}
-
 struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   private let runtimeScope: ClerkRuntimeScope
 
@@ -93,24 +14,16 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     try Task.checkCancellation()
-    let deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
-      authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
+    let metadata = ClientSyncResponseMetadata(response: response, request: request)
+    let update = Self.classifyClientUpdate(
+      from: data,
+      isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
+      deviceTokenUpdate: metadata.deviceTokenUpdate
     )
-    let checkpoint = request.clerkRequestCheckpoint
-    let context = ClientSyncResponseContext(
-      update: Self.classifyClientUpdate(
-        from: data,
-        isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
-        deviceTokenUpdate: deviceTokenUpdate
-      ),
-      deviceTokenUpdate: deviceTokenUpdate,
-      requestDeviceToken: checkpoint.requestDeviceToken,
-      baseGeneration: checkpoint.sharedSessionBaseGeneration,
-      serverDate: response.serverDate,
-      isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
-      clientResponseGeneration: checkpoint.clientResponseGeneration,
-      responseSequence: checkpoint.requestSequence
-    )
+    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
+      return
+    }
+    let context = metadata.context(update: update)
 
     let clerk = try await runtimeScope.requireCurrentClerk()
     try Task.checkCancellation()
@@ -193,5 +106,111 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     }
 
     return (try? JSONDecoder.clerkDecoder.decode(ClientWrapper.self, from: jsonData))?.client
+  }
+}
+
+enum ClientResponseUpdate: Equatable {
+  case client(Client)
+  case explicitClear
+  case absent
+  case invalid
+}
+
+enum ClientSyncResponseError: Error, Equatable {
+  case missingDeviceTokenForCanonicalClient
+}
+
+struct ClientSyncResponseContext {
+  let update: ClientResponseUpdate
+  let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
+  let requestDeviceToken: String?
+  let baseGeneration: UInt64?
+  let serverDate: Date?
+  let isCanonicalClientRequest: Bool
+  let clientResponseGeneration: ClientResponseGeneration?
+  let responseSequence: Int?
+
+  func resolvedIdentityPayload(
+    currentDeviceToken: String?,
+    currentClient: Client?,
+    currentServerDate: Date?
+  ) throws -> ClerkIdentitySnapshot? {
+    let payload: ClerkIdentitySnapshot
+    switch update {
+    case .client(let client):
+      guard let token = resolvedDeviceToken else {
+        if isCanonicalClientRequest {
+          throw ClientSyncResponseError.missingDeviceTokenForCanonicalClient
+        }
+        return nil
+      }
+      payload = ClerkIdentitySnapshot(
+        state: .present,
+        deviceToken: token,
+        client: client,
+        serverDate: serverDate
+      )
+    case .explicitClear:
+      payload = ClerkIdentitySnapshot(
+        state: .cleared,
+        deviceToken: resolvedDeviceToken,
+        client: nil,
+        serverDate: serverDate
+      )
+    case .absent:
+      guard !isCanonicalClientRequest,
+            case .set(let token) = deviceTokenUpdate,
+            requestDeviceToken == currentDeviceToken
+      else {
+        return nil
+      }
+      payload = ClerkIdentitySnapshot(
+        state: currentClient == nil ? .cleared : .present,
+        deviceToken: token,
+        client: currentClient,
+        serverDate: serverDate ?? currentServerDate
+      )
+    case .invalid:
+      return nil
+    }
+    return try payload.validated()
+  }
+
+  private var resolvedDeviceToken: String? {
+    switch deviceTokenUpdate {
+    case .absent:
+      requestDeviceToken.nilIfEmpty
+    case .set(let deviceToken):
+      deviceToken
+    case .clear:
+      nil
+    }
+  }
+}
+
+struct ClientSyncResponseMetadata {
+  let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
+  let checkpoint: ClerkRequestCheckpoint
+  let serverDate: Date?
+
+  init(response: HTTPURLResponse, request: URLRequest) {
+    deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
+      authorizationHeader: response.value(forHTTPHeaderField: "Authorization")
+    )
+    checkpoint = request.clerkRequestCheckpoint
+    serverDate = response.serverDate
+  }
+
+  func context(update: ClientResponseUpdate) -> ClientSyncResponseContext {
+    ClientSyncResponseContext(
+      update: update,
+      deviceTokenUpdate: deviceTokenUpdate,
+      requestDeviceToken: checkpoint.requestDeviceToken,
+      baseGeneration: checkpoint.sharedSessionBaseGeneration,
+      serverDate: serverDate,
+      isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
+      clientResponseGeneration: checkpoint.clientResponseGeneration,
+      responseSequence: checkpoint.requestSequence
+    )
   }
 }

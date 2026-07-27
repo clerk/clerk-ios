@@ -384,7 +384,7 @@ struct AuthTests {
     #expect(capturedPrepareParams.strategy == .emailLink)
     #expect(capturedPrepareParams.emailAddressId == "ema_123")
     #expect(capturedPrepareParams.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(capturedPrepareParams.codeChallengeMethod == MagicLinkPKCE.codeChallengeMethod)
+    #expect(capturedPrepareParams.codeChallengeMethod == PKCE.codeChallengeMethod)
     #expect(capturedPrepareParams.codeChallenge?.isEmpty == false)
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
