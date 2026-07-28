@@ -216,6 +216,14 @@ if [ -z "$simulator_id" ]; then
 fi
 
 destination="platform=iOS Simulator,id=$simulator_id"
+simulator_build_arch="$(uname -m)"
+case "$simulator_build_arch" in
+  arm64 | x86_64) ;;
+  *)
+    echo "❌ Unsupported simulator build architecture: $simulator_build_arch"
+    exit 1
+    ;;
+esac
 derived_data_path="${E2E_MAESTRO_DERIVED_DATA_PATH:-build/e2e-maestro-derived-data}"
 source_packages_path="${E2E_XCODE_SOURCE_PACKAGES_PATH:-build/xcode-source-packages}"
 
@@ -244,9 +252,11 @@ xcodebuild build \
   -workspace Clerk.xcworkspace \
   -scheme E2EHost \
   -configuration Debug \
-  -destination "$destination" \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$derived_data_path" \
   -clonedSourcePackagesDirPath "$source_packages_path" \
+  ARCHS="$simulator_build_arch" \
+  ONLY_ACTIVE_ARCH=YES \
   -showBuildTimingSummary
 build_finished_at="$(date +%s)"
 build_duration="$((build_finished_at - build_started_at))"
