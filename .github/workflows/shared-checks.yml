@@ -353,6 +353,18 @@ jobs:
           rm -f .keys.json
           echo "✅ Cleaned up .keys.json"
 
+  test-e2e-maestro:
+    name: Maestro E2EHost burn-in
+    needs: format-and-lint
+    if: inputs.run_integration_tests
+    uses: ./.github/workflows/maestro-burn-in.yml
+    with:
+      checkout_repository: ${{ inputs.checkout_repository }}
+      checkout_ref: ${{ inputs.checkout_ref }}
+      include_xcuitest_baseline: false
+    secrets:
+      CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
+
   build:
     name: Build ${{ matrix.platform }}
     needs: [test, test-ui]

@@ -7,6 +7,7 @@ ROOT = File.expand_path("..", __dir__)
 PRODUCT_IDENTIFIER_SOURCE = "Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift"
 HOST_IDENTIFIER_SOURCE = "Examples/E2EHost/E2EHost/E2EIdentifiers.swift"
 E2E_TEST_SOURCE = "Examples/E2EHost/E2EHostE2ETests/E2EHostE2ETests.swift"
+MAESTRO_FLOW_GLOB = "Examples/E2EHost/Maestro/**/*.yaml"
 
 NON_SELECTOR_CLERK_LITERALS = Set[
   "clerk.dev",
@@ -67,6 +68,7 @@ host_literals = quoted_literals(HOST_IDENTIFIER_SOURCE, prefix: "e2e.")
 host_exact_values = host_literals.map(&:value).to_set
 
 failures = []
+maestro_selector_count = 0
 
 quoted_literals(E2E_TEST_SOURCE, prefix: "clerk.").each do |literal|
   next if NON_SELECTOR_CLERK_LITERALS.include?(literal.value)
@@ -101,6 +103,34 @@ source_lines(E2E_TEST_SOURCE).each_with_index do |line, index|
   end
 end
 
+Dir.glob(File.join(ROOT, MAESTRO_FLOW_GLOB)).sort.each do |absolute_path|
+  relative_path = absolute_path.delete_prefix("#{ROOT}/")
+
+  File.readlines(absolute_path, chomp: true).each_with_index do |line, index|
+    line.scan(/\bid:\s*['"]([^'"]+)['"]/).flatten.each do |value|
+      maestro_selector_count += 1
+
+      if value.start_with?("clerk.")
+        next if backed_by_contract?(value, product_exact_values, product_patterns)
+
+        failures << [
+          relative_path,
+          index + 1,
+          "Maestro product selector '#{value}' is not backed by #{PRODUCT_IDENTIFIER_SOURCE}.",
+        ]
+      elsif value.start_with?("e2e.")
+        next if host_exact_values.include?(value)
+
+        failures << [
+          relative_path,
+          index + 1,
+          "Maestro E2EHost selector '#{value}' is not backed by #{HOST_IDENTIFIER_SOURCE}.",
+        ]
+      end
+    end
+  end
+end
+
 failures.each do |file, line, message|
   report_error(file, line, message)
 end
@@ -110,4 +140,4 @@ if failures.any?
   exit 1
 end
 
-puts "E2E selector check passed: #{product_literals.count} product selectors, #{host_literals.count} E2EHost selectors."
+puts "E2E selector check passed: #{product_literals.count} product selectors, #{host_literals.count} E2EHost selectors, #{maestro_selector_count} Maestro selector usages."

@@ -1,0 +1,52 @@
+appId: com.clerk.E2EHost
+name: User Profile Security deletes account
+commandTimeout: 15000
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+    environment:
+      CLERK_PUBLISHABLE_KEY: ${CLERK_E2E_PUBLISHABLE_KEY}
+      CLERK_E2E_MODE: "1"
+      CLERK_E2E_KEY_NAME: ${CLERK_E2E_KEY_NAME}
+      CLERK_E2E_AUTH_MODE: "signUp"
+      CLERK_E2E_KEYCHAIN_SERVICE: ${CLERK_E2E_KEYCHAIN_SERVICE}
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000
+- runFlow: ../subflows/email-code-sign-up.yaml
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.sessionActive"
+    timeout: 45000
+- tapOn:
+    id: "clerk.userButton.profile"
+- extendedWaitUntil:
+    visible:
+      id: "clerk.userProfile.row.security"
+    timeout: 45000
+- tapOn:
+    id: "clerk.userProfile.row.security"
+- extendedWaitUntil:
+    visible:
+      id: "clerk.userProfile.security.deleteAccount"
+    timeout: 45000
+- tapOn:
+    id: "clerk.userProfile.security.deleteAccount"
+- extendedWaitUntil:
+    visible:
+      id: "clerk.userProfile.deleteAccount.confirmation"
+    timeout: 30000
+- tapOn:
+    id: "clerk.userProfile.deleteAccount.confirmation"
+- inputText: "DELETE"
+- hideKeyboard
+- tapOn:
+    id: "clerk.userProfile.deleteAccount.confirm"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000

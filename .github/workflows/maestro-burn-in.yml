@@ -1,0 +1,326 @@
+name: Maestro E2EHost Burn-in
+
+on:
+  push:
+    branches:
+      - sean/Explore-maestro
+  workflow_call:
+    inputs:
+      checkout_repository:
+        description: Repository containing the E2EHost revision to test
+        required: false
+        type: string
+        default: ""
+      checkout_ref:
+        description: Git ref or SHA containing the E2EHost revision to test
+        required: false
+        type: string
+        default: ""
+      include_xcuitest_baseline:
+        description: Run the existing XCUITest shards beside Maestro
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CLERK_TEST_KEYS_JSON:
+        required: true
+  workflow_dispatch:
+    inputs:
+      include_xcuitest_baseline:
+        description: Run the existing XCUITest shards beside Maestro
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-e2e-maestro:
+    name: Burn in Maestro E2EHost smoke test on iOS (${{ matrix.shard }})
+    runs-on: macos-26
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: auth-email
+            key_name: auth-email-code-password
+          - shard: auth-phone
+            key_name: auth-phone-code
+          - shard: user-profile
+            key_name: auth-email-code-password
+          - shard: session-task-setup-mfa
+            key_name: session-task-setup-mfa
+    env:
+      MAESTRO_RUNNER_VERSION: "1.1.21"
+      E2E_MAESTRO_REPORT_PATH: build/reports/maestro-${{ matrix.shard }}
+      IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Xcode Swift package checkouts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: build/xcode-source-packages
+          key: swiftpm-e2e-maestro-${{ hashFiles('Package.swift') }}
+          restore-keys: swiftpm-e2e-maestro-
+
+      - name: Cache maestro-runner
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.maestro-runner
+          key: maestro-runner-${{ runner.os }}-${{ runner.arch }}-${{ env.MAESTRO_RUNNER_VERSION }}
+
+      - name: Install maestro-runner
+        run: |
+          set -euo pipefail
+
+          if [ -x "$HOME/.maestro-runner/bin/maestro-runner" ]; then
+            echo "Using cached maestro-runner"
+          else
+            installed=0
+            for attempt in 1 2 3; do
+              if curl -fsSL --retry 3 --retry-delay 5 "https://open.devicelab.dev/install/maestro-runner" |
+                bash -s -- --version "$MAESTRO_RUNNER_VERSION"; then
+                if [ -x "$HOME/.maestro-runner/bin/maestro-runner" ]; then
+                  installed=1
+                  break
+                fi
+              fi
+              echo "maestro-runner install attempt $attempt failed; retrying"
+              sleep 5
+            done
+            if [ "$installed" != "1" ]; then
+              echo "::error::maestro-runner installation failed after 3 attempts"
+              exit 1
+            fi
+          fi
+
+          echo "$HOME/.maestro-runner/bin" >> "$GITHUB_PATH"
+          "$HOME/.maestro-runner/bin/maestro-runner" --version
+
+      - name: Setup E2E test keys
+        env:
+          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
+        run: |
+          set +x
+          if [ -z "$CLERK_TEST_KEYS_JSON" ]; then
+            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
+            echo "   Please configure CLERK_TEST_KEYS_JSON in repository settings"
+            exit 1
+          fi
+
+          printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
+          chmod 600 .keys.json
+          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+
+      - name: Run E2EHost Maestro burn-in
+        id: run_maestro
+        env:
+          CLERK_E2E_KEY_NAME: ${{ matrix.key_name }}
+          E2E_MAESTRO_FLOW_NAME: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+
+          test_password="ClerkIOS2026E2EMaestro9!${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          echo "::add-mask::$test_password"
+          CLERK_TEST_PASSWORD="$test_password" make test-e2e-maestro
+
+      - name: Scrub credentials from Maestro reports
+        if: always() && steps.run_maestro.outcome == 'failure'
+        run: |
+          set -euo pipefail
+
+          report_path="$E2E_MAESTRO_REPORT_PATH"
+          [ -d "$report_path" ] || exit 0
+          test_password="ClerkIOS2026E2EMaestro9!${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          # shellcheck disable=SC2016
+          TEST_PASSWORD="$test_password" find "$report_path" -type f \
+            \( -name '*.html' -o -name '*.json' -o -name '*.log' -o -name '*.txt' -o -name '*.xml' -o -name '*.yaml' \) \
+            -exec perl -pi -e 's/\Q$ENV{TEST_PASSWORD}\E/[REDACTED]/g' {} +
+
+      - name: Upload Maestro burn-in metrics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: E2EHost-maestro-${{ matrix.shard }}-metrics
+          path: ${{ env.E2E_MAESTRO_REPORT_PATH }}/metrics.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload Maestro reports
+        if: always() && steps.run_maestro.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: E2EHost-maestro-${{ matrix.shard }}-artifacts
+          path: ${{ env.E2E_MAESTRO_REPORT_PATH }}
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Cleanup E2E test keys
+        if: always()
+        run: |
+          rm -f .keys.json
+          echo "✅ Cleaned up .keys.json"
+
+  test-e2e-xcuitest-baseline:
+    name: Measure existing XCUITest E2EHost smoke test on iOS (${{ matrix.shard }})
+    if: github.event_name == 'push' || inputs.include_xcuitest_baseline
+    runs-on: macos-26
+    timeout-minutes: 30
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: auth-email
+            key_name: auth-email-code-password
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testEmailCodeSignUpCompletes()
+          - shard: auth-phone
+            key_name: auth-phone-code
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testPhoneCodeSignUpCompletes()
+          - shard: user-profile
+            key_name: auth-email-code-password
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testUserProfileSecurityDeletesAccount()
+          - shard: session-task-setup-mfa
+            key_name: session-task-setup-mfa
+            only_testing: >-
+              E2EHostE2ETests/E2EHostE2ETests/testSessionTaskSetupMfaSignUpCompletesAuthenticatorAppSetup()
+    env:
+      E2E_RESULT_BUNDLE_PATH: build/reports/E2EHost-xcuitest-${{ matrix.shard }}.xcresult
+      E2E_METRICS_PATH: build/reports/xcuitest-${{ matrix.shard }}-metrics.json
+      IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Cache Xcode Swift package checkouts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: build/xcode-source-packages
+          key: swiftpm-e2e-xcuitest-baseline-${{ hashFiles('Package.swift') }}
+          restore-keys: swiftpm-e2e-xcuitest-baseline-
+
+      - name: Setup E2E test keys
+        env:
+          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
+        run: |
+          set +x
+          if [ -z "$CLERK_TEST_KEYS_JSON" ]; then
+            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
+            echo "   Please configure CLERK_TEST_KEYS_JSON in repository settings"
+            exit 1
+          fi
+
+          printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
+          chmod 600 .keys.json
+          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
+
+      - name: Run existing XCUITest baseline
+        id: run_xcuitest
+        env:
+          CLERK_E2E_KEY_NAME: ${{ matrix.key_name }}
+          E2E_ONLY_TESTING: ${{ matrix.only_testing }}
+          E2E_XCODEBUILD_ATTEMPTS: "2"
+          FLOW_NAME: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p build/reports
+          started_at="$(date +%s)"
+          set +e
+          make test-e2e
+          test_status="$?"
+          set -e
+          finished_at="$(date +%s)"
+          total_duration="$((finished_at - started_at))"
+          test_duration=""
+
+          if [ -d "$E2E_RESULT_BUNDLE_PATH" ]; then
+            test_duration="$(
+              xcrun xcresulttool get test-results tests \
+                --path "$E2E_RESULT_BUNDLE_PATH" \
+                --format json 2>/dev/null \
+                | jq -r '[.. | objects | select(.nodeType? == "Test Case") | (.durationInSeconds // 0)] | add // empty' \
+                || true
+            )"
+          fi
+
+          E2E_METRICS_STATUS="$test_status" \
+            E2E_METRICS_TOTAL_DURATION="$total_duration" \
+            E2E_METRICS_TEST_DURATION="$test_duration" \
+            E2E_METRICS_FLOW="$FLOW_NAME" \
+            E2E_METRICS_KEY_NAME="$CLERK_E2E_KEY_NAME" \
+            /usr/bin/ruby -rjson -rtime -e '
+              number_or_nil = lambda do |value|
+                value.nil? || value.empty? ? nil : Float(value).round(1)
+              end
+              status = Integer(ENV.fetch("E2E_METRICS_STATUS"))
+              metrics = {
+                schema_version: 1,
+                harness: "xcuitest",
+                flow: ENV.fetch("E2E_METRICS_FLOW"),
+                key_name: ENV.fetch("E2E_METRICS_KEY_NAME"),
+                outcome: status.zero? ? "passed" : "failed",
+                exit_code: status,
+                execution_seconds: number_or_nil.call(ENV["E2E_METRICS_TEST_DURATION"]),
+                total_seconds: number_or_nil.call(ENV["E2E_METRICS_TOTAL_DURATION"]),
+                git_sha: ENV["GITHUB_SHA"],
+                github_run_id: ENV["GITHUB_RUN_ID"],
+                github_run_attempt: ENV["GITHUB_RUN_ATTEMPT"],
+                recorded_at: Time.now.utc.iso8601,
+              }
+              File.write(ENV.fetch("E2E_METRICS_PATH"), JSON.pretty_generate(metrics) + "\n")
+            '
+
+          exit "$test_status"
+
+      - name: Upload XCUITest baseline metrics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: E2EHost-xcuitest-${{ matrix.shard }}-metrics
+          path: ${{ env.E2E_METRICS_PATH }}
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload XCUITest failure artifacts
+        if: always() && steps.run_xcuitest.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: E2EHost-xcuitest-${{ matrix.shard }}-artifacts
+          path: |
+            ${{ env.E2E_RESULT_BUNDLE_PATH }}
+            build/reports/E2EHost-xcuitest-${{ matrix.shard }}*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Cleanup E2E test keys
+        if: always()
+        run: |
+          rm -f .keys.json
+          echo "✅ Cleaned up .keys.json"

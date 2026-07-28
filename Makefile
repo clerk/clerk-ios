@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-e2e-runner install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-e2e-runner install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-e2e-maestro summarize-maestro-burn-in test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -32,6 +32,9 @@ help:
 	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
 	@echo "      CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e"
 	@echo "      E2E_ONLY_TESTING='E2EHostE2ETests/E2EHostE2ETests/testName()' make test-e2e"
+	@echo "  make test-e2e-maestro - Run the E2EHost Maestro smoke flow on iOS Simulator"
+	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e-maestro"
+	@echo "  make summarize-maestro-burn-in - Summarize the latest 20 GitHub burn-in workflow runs"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make smoke-macos   - Build the Swift package and MacExampleApp on macOS"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
@@ -331,6 +334,14 @@ test-e2e:
 	echo "E2E timing: make test-e2e finished in $$((e2e_finished_at - e2e_started_at))s"; \
 	exit "$$xcodebuild_status"
 	@echo "✅ E2EHost tests completed!"
+
+# Run the E2EHost Maestro smoke flow on iOS Simulator.
+test-e2e-maestro:
+	@./scripts/run-e2e-maestro.sh
+
+# Summarize retained metrics from recent Maestro burn-in workflow runs.
+summarize-maestro-burn-in:
+	@./scripts/summarize-maestro-burn-in.sh
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)

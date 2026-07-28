@@ -1,0 +1,34 @@
+appId: com.clerk.E2EHost
+name: Email code sign-up completes
+commandTimeout: 15000
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+    environment:
+      CLERK_PUBLISHABLE_KEY: ${CLERK_E2E_PUBLISHABLE_KEY}
+      CLERK_E2E_MODE: "1"
+      CLERK_E2E_KEY_NAME: ${CLERK_E2E_KEY_NAME}
+      CLERK_E2E_AUTH_MODE: "signUp"
+      CLERK_E2E_KEYCHAIN_SERVICE: ${CLERK_E2E_KEYCHAIN_SERVICE}
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000
+- runFlow: ../subflows/email-code-sign-up.yaml
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedIn"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.sessionActive"
+    timeout: 45000
+- tapOn:
+    id: "e2e.auth.deleteAccount"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000

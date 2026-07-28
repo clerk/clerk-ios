@@ -1,0 +1,66 @@
+appId: com.clerk.E2EHost
+name: Setup MFA session task completes authenticator app enrollment
+commandTimeout: 15000
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+    environment:
+      CLERK_PUBLISHABLE_KEY: ${CLERK_E2E_PUBLISHABLE_KEY}
+      CLERK_E2E_MODE: "1"
+      CLERK_E2E_KEY_NAME: ${CLERK_E2E_KEY_NAME}
+      CLERK_E2E_AUTH_MODE: "signUp"
+      CLERK_E2E_KEYCHAIN_SERVICE: ${CLERK_E2E_KEYCHAIN_SERVICE}
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000
+- runFlow: ../subflows/email-code-sign-up.yaml
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.sessionPending"
+    timeout: 45000
+- assertVisible:
+    id: "e2e.auth.pendingTasks"
+    text: ".*setup-mfa.*"
+- tapOn:
+    id: "clerk.auth.sessionTask.setupMfa.authenticatorApp"
+- extendedWaitUntil:
+    visible:
+      id: "clerk.auth.sessionTask.totp.secret"
+    timeout: 30000
+- copyTextFrom:
+    id: "clerk.auth.sessionTask.totp.secret"
+- tapOn:
+    id: "clerk.auth.sessionTask.totp.continue"
+- retry:
+    maxRetries: 2
+    commands:
+      - runScript: ../scripts/totp.js
+      - tapOn:
+          id: "clerk.auth.sessionTask.totp.code"
+      - eraseText: 6
+      - inputText: ${output.totp}
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.auth.sessionTask.backupCodes.continue"
+          timeout: 45000
+- scrollUntilVisible:
+    element:
+      id: "clerk.auth.sessionTask.backupCodes.continue"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "clerk.auth.sessionTask.backupCodes.continue"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.sessionActive"
+    timeout: 45000
+- tapOn:
+    id: "e2e.auth.deleteAccount"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000
