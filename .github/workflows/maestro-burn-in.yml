@@ -1,6 +1,9 @@
 name: Maestro E2EHost Burn-in
 
 on:
+  push:
+    branches:
+      - sean/Explore-maestro
   workflow_call:
     inputs:
       checkout_repository:
@@ -175,7 +178,7 @@ jobs:
   test-e2e-xcuitest-baseline:
     name: Measure existing XCUITest E2EHost smoke test on iOS (${{ matrix.shard }})
     if: github.event_name == 'push' || inputs.include_xcuitest_baseline
-    runs-on: macos-26
+    runs-on: blacksmith-6vcpu-macos-26
     timeout-minutes: 30
     continue-on-error: true
     strategy:
