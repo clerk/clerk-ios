@@ -27,12 +27,15 @@ commandTimeout: 15000
     visible:
       id: "clerk.userProfile.row.security"
     timeout: 45000
-- tapOn:
-    id: "clerk.userProfile.row.security"
-- extendedWaitUntil:
-    visible:
-      id: "clerk.userProfile.security.deleteAccount"
-    timeout: 45000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "clerk.userProfile.row.security"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.userProfile.security.deleteAccount"
+          timeout: 45000
 - tapOn:
     id: "clerk.userProfile.security.deleteAccount"
 - extendedWaitUntil:

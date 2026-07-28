@@ -24,12 +24,15 @@ commandTimeout: 15000
 - assertVisible:
     id: "e2e.auth.pendingTasks"
     text: ".*setup-mfa.*"
-- tapOn:
-    id: "clerk.auth.sessionTask.setupMfa.authenticatorApp"
-- extendedWaitUntil:
-    visible:
-      id: "clerk.auth.sessionTask.totp.secret"
-    timeout: 30000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "clerk.auth.sessionTask.setupMfa.authenticatorApp"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.auth.sessionTask.totp.secret"
+          timeout: 30000
 - copyTextFrom:
     id: "clerk.auth.sessionTask.totp.secret"
 - tapOn:
