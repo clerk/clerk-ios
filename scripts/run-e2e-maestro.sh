@@ -244,7 +244,7 @@ xcodebuild build \
   -workspace Clerk.xcworkspace \
   -scheme E2EHost \
   -configuration Debug \
-  -destination "generic/platform=iOS Simulator" \
+  -destination "$destination" \
   -derivedDataPath "$derived_data_path" \
   -clonedSourcePackagesDirPath "$source_packages_path" \
   -showBuildTimingSummary
