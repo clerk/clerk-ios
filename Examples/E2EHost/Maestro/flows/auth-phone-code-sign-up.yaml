@@ -40,7 +40,17 @@ commandTimeout: 15000
       - tapOn:
           id: "clerk.auth.start.phoneNumber"
       - eraseText: 30
-      - inputText: ${CLERK_TEST_PHONE_NUMBER}
+      - runScript: ../scripts/phone-digits.js
+      - inputText: ${output.phoneDigit0}
+      - inputText: ${output.phoneDigit1}
+      - inputText: ${output.phoneDigit2}
+      - inputText: ${output.phoneDigit3}
+      - inputText: ${output.phoneDigit4}
+      - inputText: ${output.phoneDigit5}
+      - inputText: ${output.phoneDigit6}
+      - inputText: ${output.phoneDigit7}
+      - inputText: ${output.phoneDigit8}
+      - inputText: ${output.phoneDigit9}
       - hideKeyboard
       - tapOn:
           id: "clerk.auth.start.continue"
