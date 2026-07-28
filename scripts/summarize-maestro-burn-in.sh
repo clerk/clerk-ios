@@ -66,7 +66,7 @@ EXPECTED_METRICS="$((downloaded_runs * 8))" /usr/bin/ruby -rjson -e '
     value.nil? ? "—" : "#{value}s"
   end
 
-  files = Dir[File.join(ARGV.fetch(0), "**", "metrics.json")]
+  files = Dir[File.join(ARGV.fetch(0), "**", "*metrics.json")]
   metrics = files.map { |path| JSON.parse(File.read(path)) }
   expected = Integer(ENV.fetch("EXPECTED_METRICS"))
   abort("No burn-in metrics were downloaded.") if metrics.empty?
@@ -75,14 +75,17 @@ EXPECTED_METRICS="$((downloaded_runs * 8))" /usr/bin/ruby -rjson -e '
   puts
   puts "Collected #{metrics.count}/#{expected} expected harness metrics from #{expected / 8} workflow run(s)."
   puts
-  puts "| Harness | Flow | Samples | Passed | Failed | Reliability | Median execution | P95 execution | Median total | P95 total |"
-  puts "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
+  puts "| Harness | Flow | Samples | Passed | Failed | Reliability | Median setup | P95 setup | Median execution | P95 execution | Median total | P95 total |"
+  puts "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
 
   metrics.group_by { |entry| [entry.fetch("harness", "maestro"), entry.fetch("flow")] }.sort.each do |(harness, flow), entries|
     passed = entries.count { |entry| entry["outcome"] == "passed" }
     failed = entries.count - passed
     reliability = entries.empty? ? 0 : passed.fdiv(entries.count) * 100
-    executions = entries.map { |entry| entry["execution_seconds"] || entry["flow_seconds"] }.compact
+    setups = entries.map { |entry| entry["runner_setup_seconds"] }.compact
+    executions = entries.map do |entry|
+      entry["command_execution_seconds"] || entry["execution_seconds"] || entry["flow_seconds"]
+    end.compact
     totals = entries.map { |entry| entry["total_seconds"] }.compact
 
     columns = [
@@ -92,6 +95,8 @@ EXPECTED_METRICS="$((downloaded_runs * 8))" /usr/bin/ruby -rjson -e '
       passed,
       failed,
       format("%.1f%%", reliability),
+      duration(percentile(setups, 0.50)),
+      duration(percentile(setups, 0.95)),
       duration(percentile(executions, 0.50)),
       duration(percentile(executions, 0.95)),
       duration(percentile(totals, 0.50)),

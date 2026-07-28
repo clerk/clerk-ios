@@ -4,10 +4,17 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-command -v maestro-runner >/dev/null 2>&1 || {
+maestro_runner_bin="${MAESTRO_RUNNER_BIN:-}"
+if [ -z "$maestro_runner_bin" ]; then
+  maestro_runner_bin="$(command -v maestro-runner || true)"
+fi
+if [ -z "$maestro_runner_bin" ] && [ -x "$HOME/.maestro-runner/bin/maestro-runner" ]; then
+  maestro_runner_bin="$HOME/.maestro-runner/bin/maestro-runner"
+fi
+if [ -z "$maestro_runner_bin" ] || [ ! -x "$maestro_runner_bin" ]; then
   echo "❌ maestro-runner is required: https://open.devicelab.dev/maestro-runner"
   exit 1
-}
+fi
 
 flow_name="${E2E_MAESTRO_FLOW_NAME:-auth-email}"
 case "$flow_name" in
@@ -41,7 +48,11 @@ flow_path="${E2E_MAESTRO_FLOW:-$default_flow_path}"
 report_path="${E2E_MAESTRO_REPORT_PATH:-build/reports/maestro-$flow_name}"
 run_started_at="$(date +%s)"
 build_duration=""
+simulator_boot_duration=""
+app_reset_duration=""
 flow_duration=""
+runner_setup_duration=""
+command_execution_duration=""
 runner_version=""
 log_pid=""
 
@@ -82,7 +93,11 @@ write_metrics() {
     MAESTRO_METRICS_KEY_NAME="$key_name" \
     MAESTRO_METRICS_EXIT_STATUS="$exit_status" \
     MAESTRO_METRICS_BUILD_DURATION="$build_duration" \
+    MAESTRO_METRICS_SIMULATOR_BOOT_DURATION="$simulator_boot_duration" \
+    MAESTRO_METRICS_APP_RESET_DURATION="$app_reset_duration" \
     MAESTRO_METRICS_FLOW_DURATION="$flow_duration" \
+    MAESTRO_METRICS_RUNNER_SETUP_DURATION="$runner_setup_duration" \
+    MAESTRO_METRICS_COMMAND_EXECUTION_DURATION="$command_execution_duration" \
     MAESTRO_METRICS_TOTAL_DURATION="$total_duration" \
     MAESTRO_METRICS_RUNNER_VERSION="$runner_version" \
     /usr/bin/ruby -rjson -rtime -e '
@@ -96,8 +111,12 @@ write_metrics() {
         outcome: status.zero? ? "passed" : "failed",
         exit_code: status,
         build_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_BUILD_DURATION"]),
+        simulator_boot_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_SIMULATOR_BOOT_DURATION"]),
+        app_reset_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_APP_RESET_DURATION"]),
         flow_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_FLOW_DURATION"]),
         execution_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_FLOW_DURATION"]),
+        runner_setup_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_RUNNER_SETUP_DURATION"]),
+        command_execution_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_COMMAND_EXECUTION_DURATION"]),
         total_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_TOTAL_DURATION"]),
         runner_version: ENV.fetch("MAESTRO_METRICS_RUNNER_VERSION", ""),
         git_sha: ENV["GITHUB_SHA"],
@@ -211,16 +230,12 @@ echo "Using simulator destination: $destination"
 echo "Using Maestro burn-in flow: $flow_name"
 echo "Using E2E test key: $key_name"
 echo "Using Maestro flow: $flow_path"
-runner_version="$(maestro-runner --version | head -n 1)"
+runner_version="$("$maestro_runner_bin" --version | head -n 1)"
 echo "$runner_version"
 
+simulator_boot_started_at="$(date +%s)"
+echo "Maestro E2E timing: simulator boot started at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 xcrun simctl boot "$simulator_id" >/dev/null 2>&1 || true
-xcrun simctl bootstatus "$simulator_id" -b >/dev/null
-xcrun simctl spawn "$simulator_id" defaults write com.apple.UIKit UIAnimationDragCoefficient -float 0.01 || true
-xcrun simctl spawn "$simulator_id" defaults write -g ApplePersistenceIgnoreState -bool YES || true
-xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.AutoCapitalization -bool NO || true
-xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.AutoCorrection -bool NO || true
-xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.Prediction -bool NO || true
 
 build_started_at="$(date +%s)"
 echo "Maestro E2E timing: E2EHost build started at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -229,7 +244,7 @@ xcodebuild build \
   -workspace Clerk.xcworkspace \
   -scheme E2EHost \
   -configuration Debug \
-  -destination "$destination" \
+  -destination "generic/platform=iOS Simulator" \
   -derivedDataPath "$derived_data_path" \
   -clonedSourcePackagesDirPath "$source_packages_path" \
   -showBuildTimingSummary
@@ -243,7 +258,24 @@ if [ ! -d "$app_path" ]; then
   exit 1
 fi
 
+xcrun simctl bootstatus "$simulator_id" -b >/dev/null
+simulator_boot_finished_at="$(date +%s)"
+simulator_boot_duration="$((simulator_boot_finished_at - simulator_boot_started_at))"
+echo "Maestro E2E timing: simulator boot finished in ${simulator_boot_duration}s (overlapped with build)"
+
+xcrun simctl spawn "$simulator_id" defaults write com.apple.UIKit UIAnimationDragCoefficient -float 0.01 || true
+xcrun simctl spawn "$simulator_id" defaults write -g ApplePersistenceIgnoreState -bool YES || true
+xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.AutoCapitalization -bool NO || true
+xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.AutoCorrection -bool NO || true
+xcrun simctl spawn "$simulator_id" defaults write com.apple.keyboard.Prediction -bool NO || true
+
+app_reset_started_at="$(date +%s)"
+xcrun simctl terminate "$simulator_id" com.clerk.E2EHost >/dev/null 2>&1 || true
+xcrun simctl uninstall "$simulator_id" com.clerk.E2EHost >/dev/null 2>&1 || true
 xcrun simctl install "$simulator_id" "$app_path"
+app_reset_finished_at="$(date +%s)"
+app_reset_duration="$((app_reset_finished_at - app_reset_started_at))"
+echo "Maestro E2E timing: E2EHost reset and install finished in ${app_reset_duration}s"
 
 email_suffix="$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')"
 test_email="${CLERK_TEST_EMAIL:-clerk_ios_maestro+clerk_test_$email_suffix@example.com}"
@@ -270,10 +302,12 @@ set +e
 MAESTRO_DEVICE="$simulator_id" \
   MAESTRO_DRIVER="wda" \
   MAESTRO_PLATFORM="ios" \
-  maestro-runner test \
+  "$maestro_runner_bin" test \
     --output "$report_path/runner" \
     --flatten \
     --artifacts on-failure \
+    --wait-for-idle-timeout 0 \
+    --no-flutter-fallback \
     --env CLERK_E2E_PUBLISHABLE_KEY="$publishable_key" \
     --env CLERK_E2E_KEY_NAME="$key_name" \
     --env CLERK_E2E_KEYCHAIN_SERVICE="$keychain_service" \
@@ -287,14 +321,37 @@ flow_finished_at="$(date +%s)"
 flow_duration="$((flow_finished_at - flow_started_at))"
 echo "Maestro E2E timing: flow finished in ${flow_duration}s"
 
+runner_report_path="$report_path/runner/report.json"
+if [ -f "$runner_report_path" ]; then
+  command_execution_duration="$(
+    MAESTRO_RUNNER_REPORT_PATH="$runner_report_path" /usr/bin/ruby -rjson -e '
+      report = JSON.parse(File.read(ENV.fetch("MAESTRO_RUNNER_REPORT_PATH")))
+      milliseconds = report.fetch("flows", []).sum { |flow| Integer(flow.fetch("duration", 0)) }
+      puts (milliseconds / 1000.0).round
+    ' 2>/dev/null || true
+  )"
+  if [[ "$command_execution_duration" =~ ^[0-9]+$ ]]; then
+    runner_setup_duration="$((flow_duration - command_execution_duration))"
+    if [ "$runner_setup_duration" -lt 0 ]; then
+      runner_setup_duration=0
+    fi
+    echo "Maestro E2E timing: runner and WDA setup took ${runner_setup_duration}s"
+    echo "Maestro E2E timing: Maestro commands took ${command_execution_duration}s"
+  fi
+fi
+
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   {
     echo "### E2EHost Maestro burn-in"
     echo
     echo "| Phase | Duration |"
     echo "| --- | ---: |"
+    echo "| Simulator boot (overlapped) | ${simulator_boot_duration:-—}s |"
     echo "| E2EHost build | ${build_duration}s |"
-    echo "| Maestro flow | ${flow_duration}s |"
+    echo "| E2EHost reset and install | ${app_reset_duration:-—}s |"
+    echo "| Runner and WDA setup | ${runner_setup_duration:-—}s |"
+    echo "| Maestro commands | ${command_execution_duration:-—}s |"
+    echo "| Maestro runner total | ${flow_duration}s |"
   } >> "$GITHUB_STEP_SUMMARY"
 fi
 

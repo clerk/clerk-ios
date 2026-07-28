@@ -3,7 +3,6 @@ name: User Profile Security deletes account
 commandTimeout: 15000
 ---
 - launchApp:
-    clearState: true
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"

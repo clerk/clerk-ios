@@ -3,7 +3,6 @@ name: Setup MFA session task completes authenticator app enrollment
 commandTimeout: 15000
 ---
 - launchApp:
-    clearState: true
     arguments:
       AppleLanguages: "(en)"
       AppleLocale: "en_US"
