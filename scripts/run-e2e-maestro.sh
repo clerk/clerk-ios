@@ -316,7 +316,6 @@ MAESTRO_DEVICE="$simulator_id" \
     --output "$report_path/runner" \
     --flatten \
     --artifacts on-failure \
-    --wait-for-idle-timeout 0 \
     --no-flutter-fallback \
     --env CLERK_E2E_PUBLISHABLE_KEY="$publishable_key" \
     --env CLERK_E2E_KEY_NAME="$key_name" \
