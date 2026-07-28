@@ -1,9 +1,6 @@
 name: Maestro E2EHost Burn-in
 
 on:
-  push:
-    branches:
-      - sean/Explore-maestro
   workflow_call:
     inputs:
       checkout_repository:
