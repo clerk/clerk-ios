@@ -108,6 +108,77 @@ struct TokenFreshnessTests {
     #expect(result == incoming)
   }
 
+  @Test
+  func keepsUnexpiredExistingToken() throws {
+    let now = Date(timeIntervalSince1970: 1000)
+    let existing = try token(
+      originIssuedAt: 100,
+      issuedAt: 100,
+      expiresAt: 2000
+    )
+    let incoming = try token(
+      originIssuedAt: 300,
+      issuedAt: 300,
+      expiresAt: 900
+    )
+
+    let result = TokenFreshness.pickFreshest(
+      existing: existing,
+      incoming: incoming,
+      now: now
+    )
+
+    #expect(result == existing)
+  }
+
+  @Test
+  func comparesFreshnessWhenBothTokensAreExpired() throws {
+    let now = Date(timeIntervalSince1970: 1000)
+    let existing = try token(
+      originIssuedAt: 300,
+      issuedAt: 300,
+      expiresAt: 900
+    )
+    let incoming = try token(
+      originIssuedAt: 100,
+      issuedAt: 100,
+      expiresAt: 800
+    )
+
+    let result = TokenFreshness.pickFreshest(
+      existing: existing,
+      incoming: incoming,
+      now: now
+    )
+
+    #expect(result == existing)
+  }
+
+  @Test
+  func acceptsOrganizationChangeBeforeComparingExpiration() throws {
+    let now = Date(timeIntervalSince1970: 1000)
+    let existing = try token(
+      organizationId: "org_one",
+      originIssuedAt: 300,
+      issuedAt: 300,
+      expiresAt: 2000
+    )
+    let incoming = try token(
+      organizationId: "org_two",
+      originIssuedAt: 100,
+      issuedAt: 100,
+      expiresAt: 900
+    )
+
+    let result = TokenFreshness.pickFreshest(
+      existing: existing,
+      incoming: incoming,
+      now: now
+    )
+
+    #expect(result == incoming)
+  }
+
   private func token(
     sessionId: String = "sess_test",
     organizationId: String? = nil,

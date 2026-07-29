@@ -180,6 +180,57 @@ struct SessionTokenFetcherTests {
   }
 
   @Test
+  func hydrationPreservesFresherExpiredTokenForNextMint() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    var session = Session.mock
+    let snapshotToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      expiresAt: 200,
+      signature: "snapshot"
+    )
+    let cachedToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      expiresAt: 300,
+      signature: "cached"
+    )
+    session.lastActiveToken = snapshotToken
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+    await SessionTokensCache.shared.insertToken(
+      cachedToken,
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+
+    let captured = LockIsolated<SessionTokenRequestParams?>(nil)
+    let service = MockSessionService(fetchToken: { _, _, params in
+      captured.setValue(params)
+      return try token(
+        sessionId: session.id,
+        organizationId: nil,
+        originIssuedAt: 300,
+        issuedAt: 300,
+        signature: "response"
+      )
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    _ = try await SessionTokenFetcher.shared.getToken(session)
+
+    let params = try #require(captured.value)
+    #expect(params.token == cachedToken.jwt)
+  }
+
+  @Test
   func sessionMinterUsesLatestSessionTokenAndForcesOrigin() async throws {
     await SessionTokensCache.shared.clear()
     let staleSession = Session.mock
@@ -478,6 +529,7 @@ struct SessionTokenFetcherTests {
     organizationId: String?,
     originIssuedAt: Int,
     issuedAt: Int,
+    expiresAt: Int = 4_000_000_000,
     signature: String = "signature"
   ) throws -> TokenResource {
     let header: [String: Any] = [
@@ -488,7 +540,7 @@ struct SessionTokenFetcherTests {
     var claims: [String: Any] = [
       "sid": sessionId,
       "iat": issuedAt,
-      "exp": 4_000_000_000,
+      "exp": expiresAt,
     ]
     if let organizationId {
       claims["org_id"] = organizationId

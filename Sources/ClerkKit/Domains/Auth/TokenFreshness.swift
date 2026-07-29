@@ -19,19 +19,22 @@ enum TokenFreshness {
     let existingJWT = try? DecodedJWT(jwt: existing.jwt)
     let incomingJWT = try? DecodedJWT(jwt: incoming.jwt)
 
-    if let expiresAt = existingJWT?.expiresAt, expiresAt <= now {
-      return incoming
-    }
-
     guard let existingJWT, let incomingJWT else {
       return incoming
     }
 
-    guard existingJWT.sessionId == incomingJWT.sessionId,
-          normalizedOrganizationId(existingJWT.organizationId)
-          == normalizedOrganizationId(incomingJWT.organizationId)
-    else {
+    guard haveMatchingContext(existingJWT, incomingJWT) else {
       return incoming
+    }
+
+    if let freshestByExpiration = pickByExpiration(
+      existing: existing,
+      existingJWT: existingJWT,
+      incoming: incoming,
+      incomingJWT: incomingJWT,
+      now: now
+    ) {
+      return freshestByExpiration
     }
 
     switch (existingJWT.originIssuedAt, incomingJWT.originIssuedAt) {
@@ -62,6 +65,35 @@ enum TokenFreshness {
         incomingJWT: incomingJWT,
         tieBreaker: tieBreaker
       )
+    }
+  }
+
+  private static func haveMatchingContext(
+    _ existingJWT: DecodedJWT,
+    _ incomingJWT: DecodedJWT
+  ) -> Bool {
+    existingJWT.sessionId == incomingJWT.sessionId
+      && normalizedOrganizationId(existingJWT.organizationId)
+      == normalizedOrganizationId(incomingJWT.organizationId)
+  }
+
+  private static func pickByExpiration(
+    existing: TokenResource,
+    existingJWT: DecodedJWT,
+    incoming: TokenResource,
+    incomingJWT: DecodedJWT,
+    now: Date
+  ) -> TokenResource? {
+    let existingIsExpired = existingJWT.expiresAt.map { $0 <= now }
+    let incomingIsExpired = incomingJWT.expiresAt.map { $0 <= now }
+
+    switch (existingIsExpired, incomingIsExpired) {
+    case (.some(true), .some(false)):
+      return incoming
+    case (.some(false), .some(true)):
+      return existing
+    default:
+      return nil
     }
   }
 
