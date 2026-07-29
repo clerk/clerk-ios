@@ -1,0 +1,43 @@
+appId: com.clerk.E2EHost
+---
+- tapOn:
+    id: "e2e.auth.signIn"
+- extendedWaitUntil:
+    visible:
+      id: "clerk.auth.start.identifier"
+    timeout: 45000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "clerk.auth.start.identifier"
+      - eraseText: 100
+      - inputText: ${CLERK_TEST_EMAIL}
+      - hideKeyboard
+      - tapOn:
+          id: "clerk.auth.start.continue"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.auth.signUp.code"
+          timeout: 30000
+- tapOn:
+    id: "clerk.auth.signUp.code"
+- inputText: "424242"
+- extendedWaitUntil:
+    visible: "Password|Signed in"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: "clerk.auth.signUp.password"
+    commands:
+      - tapOn:
+          id: "clerk.auth.signUp.password"
+      - inputText: ${CLERK_TEST_PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          id: "clerk.auth.signUp.continue"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedIn"
+    timeout: 45000

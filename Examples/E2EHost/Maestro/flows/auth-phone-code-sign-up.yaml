@@ -1,0 +1,100 @@
+appId: com.clerk.E2EHost
+name: Phone code sign-up completes
+commandTimeout: 15000
+---
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+    environment:
+      CLERK_PUBLISHABLE_KEY: ${CLERK_E2E_PUBLISHABLE_KEY}
+      CLERK_E2E_MODE: "1"
+      CLERK_E2E_KEY_NAME: ${CLERK_E2E_KEY_NAME}
+      CLERK_E2E_AUTH_MODE: "signUp"
+      CLERK_E2E_KEYCHAIN_SERVICE: ${CLERK_E2E_KEYCHAIN_SERVICE}
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000
+- tapOn:
+    id: "e2e.auth.signIn"
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "clerk.auth.start.identifier"
+          commands:
+            - tapOn:
+                id: "clerk.auth.start.identifierSwitcher"
+            - extendedWaitUntil:
+                visible:
+                  id: "clerk.auth.start.phoneNumber"
+                timeout: 30000
+      - tapOn:
+          id: "clerk.auth.start.phoneNumber"
+      - eraseText: 30
+      - runScript: ../scripts/phone-digits.js
+      - inputText: ${output.phoneDigit0}
+      - inputText: ${output.phoneDigit1}
+      - inputText: ${output.phoneDigit2}
+      - inputText: ${output.phoneDigit3}
+      - inputText: ${output.phoneDigit4}
+      - inputText: ${output.phoneDigit5}
+      - inputText: ${output.phoneDigit6}
+      - inputText: ${output.phoneDigit7}
+      - inputText: ${output.phoneDigit8}
+      - inputText: ${output.phoneDigit9}
+      - hideKeyboard
+      - tapOn:
+          id: "clerk.auth.start.continue"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.auth.signUp.code"
+          timeout: 90000
+- tapOn:
+    id: "clerk.auth.signUp.code"
+- inputText: "424242"
+- extendedWaitUntil:
+    visible: "Email address|Password|Signed in"
+    timeout: 45000
+- runFlow:
+    when:
+      visible:
+        id: "clerk.auth.signUp.emailAddress"
+    commands:
+      - tapOn:
+          id: "clerk.auth.signUp.emailAddress"
+      - inputText: ${CLERK_TEST_EMAIL}
+      - hideKeyboard
+      - tapOn:
+          id: "clerk.auth.signUp.continue"
+- extendedWaitUntil:
+    visible: "Password|Signed in"
+    timeout: 45000
+- runFlow:
+    when:
+      visible:
+        id: "clerk.auth.signUp.password"
+    commands:
+      - tapOn:
+          id: "clerk.auth.signUp.password"
+      - inputText: ${CLERK_TEST_PASSWORD}
+      - hideKeyboard
+      - tapOn:
+          id: "clerk.auth.signUp.continue"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedIn"
+    timeout: 45000
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.sessionActive"
+    timeout: 45000
+- tapOn:
+    id: "e2e.auth.deleteAccount"
+- extendedWaitUntil:
+    visible:
+      id: "e2e.auth.signedOut"
+    timeout: 45000

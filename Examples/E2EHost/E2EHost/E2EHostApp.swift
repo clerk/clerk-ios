@@ -16,7 +16,6 @@ struct E2EHostApp: App {
       publishableKey: configuration.publishableKey,
       options: configuration.clerkOptions
     )
-    E2ECleanupCommand.startObserving()
   }
 
   var body: some Scene {
