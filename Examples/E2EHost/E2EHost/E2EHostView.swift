@@ -43,7 +43,6 @@ struct E2EHostView: View {
 
       if let userID = clerk.user?.id {
         Text(userID)
-          .accessibilityIdentifier(E2EIdentifiers.Auth.userID)
       }
 
       sessionState
@@ -51,7 +50,6 @@ struct E2EHostView: View {
       Button("Sign out") {
         signOut()
       }
-      .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
 
       if clerk.session?.status == .active {
         Button("Delete account", role: .destructive) {
@@ -69,7 +67,6 @@ struct E2EHostView: View {
   private var sessionState: some View {
     if let session = clerk.session {
       Text(session.status.rawValue)
-        .accessibilityIdentifier(E2EIdentifiers.Auth.sessionStatus)
 
       switch session.status {
       case .active:
