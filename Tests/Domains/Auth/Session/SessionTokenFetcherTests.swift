@@ -232,6 +232,7 @@ struct SessionTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
     let callCount = LockIsolated(0)
+    let firstCallGate = SessionTokenFetchGate()
     let firstCallStarted = AsyncStream<Void>.makeStream(
       bufferingPolicy: .bufferingNewest(1)
     )
@@ -243,7 +244,7 @@ struct SessionTokenFetcherTests {
       }
       if callIndex == 0 {
         firstCallStarted.continuation.yield()
-        try await Task.sleep(for: .milliseconds(100))
+        await firstCallGate.suspend()
         return staleResponse
       }
       return freshResponse
@@ -259,7 +260,10 @@ struct SessionTokenFetcherTests {
         options: .init(skipCache: true)
       )
     }
-    defer { first.cancel() }
+    defer {
+      first.cancel()
+      Task { await firstCallGate.resume() }
+    }
     try await waitForSignal(
       firstCallStarted.stream,
       message: "Timed out waiting for the first forced token refresh to start."
@@ -272,8 +276,9 @@ struct SessionTokenFetcherTests {
     }
     defer { second.cancel() }
 
-    let firstResult = try await first.value
     let secondResult = try await second.value
+    await firstCallGate.resume()
+    let firstResult = try await first.value
     let cachedToken = await SessionTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: nil)
     )
