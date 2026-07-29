@@ -8,19 +8,11 @@ import ClerkKitUI
 import SwiftUI
 
 struct E2EHostView: View {
-  private enum CleanupStatus: Equatable {
-    case idle
-    case inProgress
-    case complete
-    case failed(String)
-  }
-
   @Environment(Clerk.self) private var clerk
 
   let configuration: E2EConfiguration
 
   @State private var authViewIsPresented = false
-  @State private var cleanupStatus = CleanupStatus.idle
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
@@ -37,9 +29,6 @@ struct E2EHostView: View {
 
       e2eControls
     }
-    .onReceive(NotificationCenter.default.publisher(for: .e2eCleanupAccountRequested)) { _ in
-      cleanupAccount()
-    }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView(mode: configuration.authMode)
         .persistsIdentifiers(false)
@@ -48,20 +37,6 @@ struct E2EHostView: View {
 
   @ViewBuilder
   private var e2eControls: some View {
-    switch cleanupStatus {
-    case .idle:
-      EmptyView()
-    case .inProgress:
-      Text("Cleanup in progress")
-        .accessibilityIdentifier(E2EIdentifiers.Auth.cleanupInProgress)
-    case .complete:
-      Text("Cleanup complete")
-        .accessibilityIdentifier(E2EIdentifiers.Auth.cleanupComplete)
-    case .failed(let message):
-      Text(message)
-        .accessibilityIdentifier(E2EIdentifiers.Auth.cleanupFailed)
-    }
-
     if clerk.user != nil {
       Text("Signed in")
         .accessibilityIdentifier(E2EIdentifiers.Auth.signedIn)
@@ -128,19 +103,6 @@ struct E2EHostView: View {
     }
   }
 
-  private func cleanupAccount() {
-    Task { @MainActor in
-      cleanupStatus = .inProgress
-
-      do {
-        try await deleteCurrentAccountIfPresent()
-        cleanupStatus = .complete
-      } catch {
-        cleanupStatus = .failed(Self.cleanupFailureMessage(for: error))
-      }
-    }
-  }
-
   @MainActor
   private func deleteCurrentAccountIfPresent() async throws {
     guard let user = clerk.user else {
@@ -151,16 +113,6 @@ struct E2EHostView: View {
     try await user.delete()
     try? await clerk.auth.signOut()
     authViewIsPresented = false
-  }
-
-  private static func cleanupFailureMessage(for error: Error) -> String {
-    let detail = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !detail.isEmpty else {
-      return "Cleanup failed while deleting the current account."
-    }
-
-    let truncatedDetail = detail.count > 240 ? "\(detail.prefix(240))..." : detail
-    return "Cleanup failed while deleting the current account: \(truncatedDetail)"
   }
 }
 

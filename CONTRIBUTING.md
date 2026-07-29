@@ -121,7 +121,7 @@ SwiftLint checks for:
 
 ## Testing
 
-This project uses **Swift Testing** for package unit and integration tests, and **XCTest/XCUITest** for app-level E2E UI automation. Tests are organized into three categories:
+This project uses **Swift Testing** for package unit and integration tests, and **Maestro** for app-level E2E UI automation. Tests are organized into three categories:
 
 ### Unit and UI Tests
 
@@ -194,7 +194,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 ### E2EHost Tests
 
-E2E tests live in `Examples/E2EHost/` and run a dedicated SwiftUI test host app on an iOS Simulator with XCUITest. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, these tests use the `auth-email-code-password` mobile integration test instance.
+E2E tests live in `Examples/E2EHost/Maestro/` and run a dedicated SwiftUI test host app on an iOS Simulator. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, `make test-e2e` runs the email-code sign-up flow with the `auth-email-code-password` mobile integration test instance.
 
 **Running E2E tests (Clerk employees only):**
 ```bash
@@ -212,13 +212,11 @@ You can also provide a key directly:
 CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e
 ```
 
-To run against a different named test instance from `.keys.json`:
+To run a different flow:
 ```bash
-CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e
+E2E_MAESTRO_FLOW_NAME=session-task-setup-mfa make test-e2e
 ```
-If omitted, `CLERK_E2E_KEY_NAME` defaults to `auth-email-code-password`.
-Mobile auth examples include `auth-legal-consent`, `auth-multi-methods`, `auth-phone-code`, and `auth-username-password-user-model`.
-Session-task examples include `session-task-setup-mfa`, `session-task-choose-organization`, and `session-task-reset-password`.
+Available flow names are `auth-email`, `auth-phone`, `user-profile`, and `session-task-setup-mfa`. Each flow selects its required test instance automatically. `CLERK_E2E_KEY_NAME` can override that selection when necessary.
 
 To choose a specific simulator:
 ```bash
@@ -227,12 +225,11 @@ IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
 
 **Requirements:**
 - Network access
+- `maestro-runner`
 - Valid publishable key in `.keys.json` for `CLERK_E2E_KEY_NAME` or `CLERK_E2E_PUBLISHABLE_KEY`
 - iOS Simulator available through `xcrun simctl`
 
-The test runner writes its result bundle to `build/reports/E2EHost.xcresult`. In CI, this bundle is uploaded on failure. AI tools may help draft page objects, test flows, and accessibility ID changes, but generated tests must use the approved accessibility identifiers and be reviewed like production code. Maestro can be useful for exploratory mobile QA, but XCUITest is the release-gating E2E layer.
-
-E2E cleanup uses the normal host-level delete-account control when possible. If a failure leaves the test inside an auth sheet or pending session-task screen, teardown sends an E2E-only in-app cleanup notification so the app can delete the current user without exposing a visible cleanup button.
+The test runner writes failure artifacts to `build/reports/maestro-<flow>`. CI uploads those reports when a flow fails. Generated tests must use the approved accessibility identifiers and be reviewed like production code.
 
 ## Releasing (Maintainers)
 

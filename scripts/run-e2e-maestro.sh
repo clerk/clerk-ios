@@ -46,15 +46,15 @@ publishable_key="${CLERK_E2E_PUBLISHABLE_KEY:-}"
 secret_key="${CLERK_E2E_SECRET_KEY:-}"
 flow_path="${E2E_MAESTRO_FLOW:-$default_flow_path}"
 report_path="${E2E_MAESTRO_REPORT_PATH:-build/reports/maestro-$flow_name}"
-run_started_at="$(date +%s)"
 build_duration=""
 simulator_boot_duration=""
 app_reset_duration=""
 flow_duration=""
 runner_setup_duration=""
 command_execution_duration=""
-runner_version=""
 log_pid=""
+cleanup_identifier_type=""
+cleanup_identifier_value=""
 
 case "$report_path" in
   /*) ;;
@@ -79,61 +79,25 @@ stop_log_stream() {
   fi
 }
 
-write_metrics() {
-  local exit_status="$1"
-  local finished_at
-  local total_duration
-
-  [ -d "$report_path" ] || return
-  finished_at="$(date +%s)"
-  total_duration="$((finished_at - run_started_at))"
-
-  MAESTRO_METRICS_PATH="$report_path/metrics.json" \
-    MAESTRO_METRICS_FLOW="$flow_name" \
-    MAESTRO_METRICS_KEY_NAME="$key_name" \
-    MAESTRO_METRICS_EXIT_STATUS="$exit_status" \
-    MAESTRO_METRICS_BUILD_DURATION="$build_duration" \
-    MAESTRO_METRICS_SIMULATOR_BOOT_DURATION="$simulator_boot_duration" \
-    MAESTRO_METRICS_APP_RESET_DURATION="$app_reset_duration" \
-    MAESTRO_METRICS_FLOW_DURATION="$flow_duration" \
-    MAESTRO_METRICS_RUNNER_SETUP_DURATION="$runner_setup_duration" \
-    MAESTRO_METRICS_COMMAND_EXECUTION_DURATION="$command_execution_duration" \
-    MAESTRO_METRICS_TOTAL_DURATION="$total_duration" \
-    MAESTRO_METRICS_RUNNER_VERSION="$runner_version" \
-    /usr/bin/ruby -rjson -rtime -e '
-      integer_or_nil = ->(value) { value.nil? || value.empty? ? nil : Integer(value) }
-      status = Integer(ENV.fetch("MAESTRO_METRICS_EXIT_STATUS"))
-      metrics = {
-        schema_version: 1,
-        harness: "maestro",
-        flow: ENV.fetch("MAESTRO_METRICS_FLOW"),
-        key_name: ENV.fetch("MAESTRO_METRICS_KEY_NAME"),
-        outcome: status.zero? ? "passed" : "failed",
-        exit_code: status,
-        build_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_BUILD_DURATION"]),
-        simulator_boot_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_SIMULATOR_BOOT_DURATION"]),
-        app_reset_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_APP_RESET_DURATION"]),
-        flow_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_FLOW_DURATION"]),
-        execution_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_FLOW_DURATION"]),
-        runner_setup_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_RUNNER_SETUP_DURATION"]),
-        command_execution_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_COMMAND_EXECUTION_DURATION"]),
-        total_seconds: integer_or_nil.call(ENV["MAESTRO_METRICS_TOTAL_DURATION"]),
-        runner_version: ENV.fetch("MAESTRO_METRICS_RUNNER_VERSION", ""),
-        git_sha: ENV["GITHUB_SHA"],
-        github_run_id: ENV["GITHUB_RUN_ID"],
-        github_run_attempt: ENV["GITHUB_RUN_ATTEMPT"],
-        recorded_at: Time.now.utc.iso8601,
-      }
-      File.write(ENV.fetch("MAESTRO_METRICS_PATH"), JSON.pretty_generate(metrics) + "\n")
-    '
-}
-
-finish() {
+cleanup() {
   local exit_status="$?"
+
   stop_log_stream
-  write_metrics "$exit_status"
+  if [ "$exit_status" -ne 0 ] &&
+    [ -n "$cleanup_identifier_type" ] &&
+    [ -n "$cleanup_identifier_value" ] &&
+    [ -n "$publishable_key" ] &&
+    [ -n "$secret_key" ]; then
+    CLERK_E2E_PUBLISHABLE_KEY="$publishable_key" \
+      CLERK_E2E_SECRET_KEY="$secret_key" \
+      ./scripts/cleanup-e2e-users.sh "$cleanup_identifier_type" "$cleanup_identifier_value" ||
+      echo "⚠️  Failed to clean up the user created by the unsuccessful Maestro flow."
+  fi
+
+  trap - EXIT
+  exit "$exit_status"
 }
-trap finish EXIT
+trap cleanup EXIT
 
 if [ -z "$publishable_key" ] && [ -f .keys.json ]; then
   publishable_key="$(/usr/bin/plutil -extract "$key_name.pk" raw -o - .keys.json 2>/dev/null || true)"
@@ -235,11 +199,10 @@ fi
 mkdir -p "$derived_data_path" "$source_packages_path"
 
 echo "Using simulator destination: $destination"
-echo "Using Maestro burn-in flow: $flow_name"
+echo "Using Maestro flow: $flow_name"
 echo "Using E2E test key: $key_name"
 echo "Using Maestro flow: $flow_path"
-runner_version="$("$maestro_runner_bin" --version | head -n 1)"
-echo "$runner_version"
+echo "$("$maestro_runner_bin" --version | head -n 1)"
 
 simulator_boot_started_at="$(date +%s)"
 echo "Maestro E2E timing: simulator boot started at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -296,9 +259,14 @@ printf -v generated_phone_number '5555550%03d' "$((100 + phone_seed % 100))"
 test_phone_number="${CLERK_TEST_PHONE_NUMBER:-$generated_phone_number}"
 
 if [ "$flow_name" = "auth-phone" ]; then
+  cleanup_identifier_type="phone"
+  cleanup_identifier_value="$test_phone_number"
   CLERK_E2E_PUBLISHABLE_KEY="$publishable_key" \
     CLERK_E2E_SECRET_KEY="$secret_key" \
-    ./scripts/delete-e2e-users-by-phone.sh "$test_phone_number"
+    ./scripts/cleanup-e2e-users.sh phone "$test_phone_number"
+else
+  cleanup_identifier_type="email"
+  cleanup_identifier_value="$test_email"
 fi
 
 xcrun simctl spawn "$simulator_id" log stream --style compact \
@@ -351,7 +319,7 @@ fi
 
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   {
-    echo "### E2EHost Maestro burn-in"
+    echo "### E2EHost Maestro ($flow_name)"
     echo
     echo "| Phase | Duration |"
     echo "| --- | ---: |"

@@ -3,8 +3,9 @@
 
 APPROVED_RANGE = 5_555_550_100..5_555_550_199
 PHONE_NUMBER_PATTERN = /(?<!\d)\+?1?(?:[\s().-]*)555(?:[\s().-]*)555(?:[\s().-]*)\d{4}(?!\d)/
-E2E_SOURCES = [
-  "Examples/E2EHost",
+E2E_SOURCE_GLOBS = [
+  "Examples/E2EHost/**/*.{swift,yaml,yml,js}",
+  "scripts/*e2e*.sh",
 ].freeze
 
 failure_count = 0
@@ -23,7 +24,7 @@ def normalized_phone_digits(value)
   digits
 end
 
-Dir.glob(E2E_SOURCES.map { |source| File.join(source, "**/*.swift") }).each do |file|
+Dir.glob(E2E_SOURCE_GLOBS).sort.each do |file|
   File.readlines(file, chomp: true).each_with_index do |line, index|
     line.scan(PHONE_NUMBER_PATTERN).each do |candidate|
       digits = normalized_phone_digits(candidate)

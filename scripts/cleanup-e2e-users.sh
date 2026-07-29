@@ -7,14 +7,43 @@ require "net/http"
 require "timeout"
 require "uri"
 
-phone_number = ARGV.fetch(0) do
-  warn "Usage: scripts/delete-e2e-users-by-phone.sh PHONE_NUMBER"
+identifier_type = ARGV.fetch(0) do
+  warn "Usage: scripts/cleanup-e2e-users.sh email|phone IDENTIFIER"
   exit 1
 end
-digits = phone_number.gsub(/\D/, "")
+identifier = ARGV.fetch(1) do
+  warn "Usage: scripts/cleanup-e2e-users.sh email|phone IDENTIFIER"
+  exit 1
+end
 
-unless digits.match?(/\A5555550(?:1\d\d)\z/)
-  warn "Refusing to delete users outside the approved 5555550100...5555550199 test range."
+case identifier_type
+when "email"
+  query_parameter = "email_address[]"
+  query_value = identifier.strip.downcase
+  unless query_value.match?(/\Aclerk_ios_maestro\+clerk_test_[a-z0-9]+@example[.]com\z/)
+    warn "Refusing to delete users outside the generated Maestro test-email pattern."
+    exit 1
+  end
+  matches_user = lambda do |user|
+    user.fetch("email_addresses", []).any? do |resource|
+      resource["email_address"]&.downcase == query_value
+    end
+  end
+when "phone"
+  digits = identifier.gsub(/\D/, "")
+  unless digits.match?(/\A5555550(?:1\d\d)\z/)
+    warn "Refusing to delete users outside the approved 5555550100...5555550199 test range."
+    exit 1
+  end
+  query_parameter = "phone_number[]"
+  query_value = "+1#{digits}"
+  matches_user = lambda do |user|
+    user.fetch("phone_numbers", []).any? do |resource|
+      resource["phone_number"] == query_value
+    end
+  end
+else
+  warn "Usage: scripts/cleanup-e2e-users.sh email|phone IDENTIFIER"
   exit 1
 end
 
@@ -22,7 +51,7 @@ publishable_key = ENV.fetch("CLERK_E2E_PUBLISHABLE_KEY", "").strip
 secret_key = ENV.fetch("CLERK_E2E_SECRET_KEY", "").strip
 
 if publishable_key.empty? || secret_key.empty?
-  warn "CLERK_E2E_PUBLISHABLE_KEY and CLERK_E2E_SECRET_KEY are required for phone-user cleanup."
+  warn "CLERK_E2E_PUBLISHABLE_KEY and CLERK_E2E_SECRET_KEY are required for user cleanup."
   exit 1
 end
 
@@ -77,11 +106,10 @@ def authorized_request(request, secret_key)
 end
 
 base_url = backend_api_base_url(publishable_key)
-e164_phone_number = "+1#{digits}"
 users_uri = base_url.dup
 users_uri.path = "/v1/users"
 users_uri.query = URI.encode_www_form([
-  ["phone_number[]", e164_phone_number],
+  [query_parameter, query_value],
   ["limit", "100"],
 ])
 
@@ -92,8 +120,7 @@ users_response = perform_request(
 payload = JSON.parse(users_response.body)
 users = payload.is_a?(Hash) ? payload.fetch("data", []) : payload
 user_ids = users.each_with_object([]) do |user, matches|
-  phone_numbers = user.fetch("phone_numbers", [])
-  matches << user["id"] if phone_numbers.any? { |resource| resource["phone_number"] == e164_phone_number }
+  matches << user["id"] if matches_user.call(user)
 end
 
 user_ids.each do |user_id|
@@ -105,4 +132,4 @@ user_ids.each do |user_id|
   )
 end
 
-puts "Removed #{user_ids.count} pre-existing test user(s) for the selected approved phone number."
+puts "Removed #{user_ids.count} test user(s) for the selected approved #{identifier_type}."

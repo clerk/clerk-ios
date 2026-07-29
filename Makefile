@@ -1,12 +1,8 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-e2e-runner install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-e2e-maestro summarize-maestro-burn-in test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
 IOS_SIMULATOR_DESTINATION ?=
-CLERK_E2E_KEY_NAME ?= auth-email-code-password
-E2E_ONLY_TESTING ?= E2EHostE2ETests
-E2E_RESULT_BUNDLE_PATH ?= build/reports/E2EHost.xcresult
-E2E_XCODE_SOURCE_PACKAGES_PATH ?= build/xcode-source-packages
 MACOS_DESTINATION ?= platform=macOS
 
 
@@ -26,15 +22,10 @@ help:
 	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
 	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
-	@echo "  make check-e2e-runner - Verify E2E xcodebuild retry wrapper behavior"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
-	@echo "  make test-e2e      - Run E2EHost tests on iOS Simulator"
-	@echo "      CLERK_E2E_KEY_NAME=session-task-setup-mfa make test-e2e"
-	@echo "      E2E_ONLY_TESTING='E2EHostE2ETests/E2EHostE2ETests/testName()' make test-e2e"
-	@echo "  make test-e2e-maestro - Run the E2EHost Maestro smoke flow on iOS Simulator"
-	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e-maestro"
-	@echo "  make summarize-maestro-burn-in - Summarize the latest 20 GitHub burn-in workflow runs"
+	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
+	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make smoke-macos   - Build the Swift package and MacExampleApp on macOS"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
@@ -170,12 +161,8 @@ check-e2e-selectors:
 check-e2e-phone-numbers:
 	@./scripts/check-e2e-phone-numbers.sh
 
-# Verify E2E xcodebuild retry wrapper classification behavior
-check-e2e-runner:
-	@./scripts/test-run-e2e-xcodebuild.sh
-
 # Run format-check, lint, and lightweight repo checks
-check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-e2e-runner
+check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers
 	@echo "✅ All checks passed!"
 
 clean:
@@ -229,119 +216,9 @@ test-ui:
 	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
 
-# Run E2EHost tests on iOS Simulator
+# Run an E2EHost Maestro flow on iOS Simulator.
 test-e2e:
-	@echo "Running E2EHost tests on iOS Simulator..."
-	@mkdir -p build/reports
-	@set -e; \
-	key_name="$(CLERK_E2E_KEY_NAME)"; \
-	e2e_started_at="$$(date +%s)"; \
-	echo "E2E timing: make test-e2e started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
-	if [ -z "$$key_name" ]; then \
-		key_name="auth-email-code-password"; \
-	fi; \
-	publishable_key="$${CLERK_E2E_PUBLISHABLE_KEY:-}"; \
-	if [ -z "$$publishable_key" ] && [ -f .keys.json ]; then \
-		publishable_key="$$(/usr/bin/plutil -extract "$$key_name.pk" raw -o - .keys.json 2>/dev/null || true)"; \
-	fi; \
-	secret_key="$${CLERK_E2E_SECRET_KEY:-}"; \
-	if [ -z "$$secret_key" ] && [ -f .keys.json ]; then \
-		secret_key="$$(/usr/bin/plutil -extract "$$key_name.sk" raw -o - .keys.json 2>/dev/null || true)"; \
-	fi; \
-	if [ -z "$$publishable_key" ]; then \
-		echo "❌ Unable to find a publishable key for E2EHost tests."; \
-		echo "   Set CLERK_E2E_PUBLISHABLE_KEY or configure '$$key_name.pk' in .keys.json."; \
-		exit 1; \
-	fi; \
-	if [ "$${CLERK_E2E_SKIP_PREFLIGHT:-}" != "1" ]; then \
-		CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" ./scripts/validate-e2e-test-instances.sh "$$key_name"; \
-	else \
-		echo "Skipping E2E test instance preflight because CLERK_E2E_SKIP_PREFLIGHT=1."; \
-	fi; \
-	echo "Using E2E test key: $$key_name"; \
-	simulator_id=""; \
-	destination="$(IOS_SIMULATOR_DESTINATION)"; \
-	if [ -n "$$destination" ]; then \
-		simulator_id="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)id=([0-9A-Fa-f-]{36})(,.*|$$).*/\2/p')"; \
-		if [ -z "$$simulator_id" ]; then \
-			simulator_name="$$(printf '%s\n' "$$destination" | sed -nE 's/.*(^|,)name=([^,]+)(,.*|$$).*/\2/p')"; \
-			if [ -n "$$simulator_name" ]; then \
-				if ! command -v ruby >/dev/null; then \
-					echo "❌ ruby is required to resolve IOS_SIMULATOR_DESTINATION name=$$simulator_name."; \
-					exit 1; \
-				fi; \
-				simulator_id="$$(xcrun simctl list devices available -j | ruby -rjson -e 'target = ARGV.fetch(0).downcase; candidates = []; JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|; version = runtime[/SimRuntime[.]iOS-(.*)$$/, 1]; next unless version; version_parts = version.split("-").map(&:to_i); devices.each do |device|; next unless device["isAvailable"] && device["name"].downcase == target; candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]; end; end; selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }; puts selected[2] if selected' "$$simulator_name" || true)"; \
-				if [ -z "$$simulator_id" ]; then \
-					echo "❌ Unable to find an available iOS simulator named '$$simulator_name'."; \
-					exit 1; \
-				fi; \
-				destination="platform=iOS Simulator,id=$$simulator_id"; \
-			fi; \
-		fi; \
-	fi; \
-	if [ -z "$$destination" ]; then \
-		available_devices="$$(xcrun simctl list devices available)"; \
-		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-Fa-f-]{36})\) \(.*$$/\2/p' | head -n1)"; \
-		if [ -n "$$simulator_id" ]; then \
-			destination="platform=iOS Simulator,id=$$simulator_id"; \
-		fi; \
-	fi; \
-	if [ -z "$$destination" ]; then \
-		echo "❌ Unable to find an available iPhone simulator for E2EHostE2ETests."; \
-		echo "   Set IOS_SIMULATOR_DESTINATION explicitly and rerun make test-e2e."; \
-		exit 1; \
-	fi; \
-	echo "Using simulator destination: $$destination"; \
-	if [ -n "$$simulator_id" ]; then \
-		simulator_started_at="$$(date +%s)"; \
-		echo "E2E timing: simulator preparation started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
-		echo "Preparing simulator keyboard preferences..."; \
-		xcrun simctl boot "$$simulator_id" >/dev/null 2>&1 || true; \
-		xcrun simctl bootstatus "$$simulator_id" -b >/dev/null; \
-		xcrun simctl spawn "$$simulator_id" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES; \
-		simulator_finished_at="$$(date +%s)"; \
-		echo "E2E timing: simulator preparation finished in $$((simulator_finished_at - simulator_started_at))s"; \
-	else \
-		echo "Skipping simulator keyboard preference setup; destination does not include an explicit simulator id."; \
-	fi; \
-	result_bundle_path="$(E2E_RESULT_BUNDLE_PATH)"; \
-	rm -rf "$$result_bundle_path"; \
-	mkdir -p "$$(dirname "$$result_bundle_path")"; \
-	source_packages_path="$(E2E_XCODE_SOURCE_PACKAGES_PATH)"; \
-	mkdir -p "$$source_packages_path"; \
-	only_testing="$(E2E_ONLY_TESTING)"; \
-	only_testing_flags=""; \
-	set -f; \
-	for test_identifier in $$only_testing; do \
-		only_testing_flags="$$only_testing_flags -only-testing:$$test_identifier"; \
-	done; \
-	set +f; \
-	if [ -z "$$only_testing_flags" ]; then \
-		echo "❌ E2E_ONLY_TESTING must contain at least one test identifier."; \
-		exit 1; \
-	fi; \
-	printf '%s' "$$publishable_key" > build/reports/E2EHostPublishableKey.txt; \
-	printf '%s' "$$key_name" > build/reports/E2EHostPublishableKeyName.txt; \
-	chmod 600 build/reports/E2EHostPublishableKey.txt; \
-	chmod 600 build/reports/E2EHostPublishableKeyName.txt; \
-	trap 'rm -f build/reports/E2EHostPublishableKey.txt build/reports/E2EHostPublishableKeyName.txt' EXIT; \
-	echo "E2E timing: xcodebuild test started at $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
-	set +e; \
-	CLERK_E2E_KEY_NAME="$$key_name" CLERK_E2E_PUBLISHABLE_KEY="$$publishable_key" CLERK_PUBLISHABLE_KEY="$$publishable_key" CLERK_E2E_SECRET_KEY="$$secret_key" E2E_SIMULATOR_ID="$$simulator_id" E2E_RESULT_BUNDLE_PATH="$$result_bundle_path" ./scripts/run-e2e-xcodebuild.sh xcodebuild test -workspace Clerk.xcworkspace -scheme E2EHost -destination "$$destination" -clonedSourcePackagesDirPath "$$source_packages_path" -enableCodeCoverage NO $$only_testing_flags -resultBundlePath "$$result_bundle_path" -showBuildTimingSummary; \
-	xcodebuild_status="$$?"; \
-	set -e; \
-	e2e_finished_at="$$(date +%s)"; \
-	echo "E2E timing: make test-e2e finished in $$((e2e_finished_at - e2e_started_at))s"; \
-	exit "$$xcodebuild_status"
-	@echo "✅ E2EHost tests completed!"
-
-# Run the E2EHost Maestro smoke flow on iOS Simulator.
-test-e2e-maestro:
 	@./scripts/run-e2e-maestro.sh
-
-# Summarize retained metrics from recent Maestro burn-in workflow runs.
-summarize-maestro-burn-in:
-	@./scripts/summarize-maestro-burn-in.sh
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)

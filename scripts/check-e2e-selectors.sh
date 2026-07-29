@@ -6,28 +6,7 @@ require "set"
 ROOT = File.expand_path("..", __dir__)
 PRODUCT_IDENTIFIER_SOURCE = "Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift"
 HOST_IDENTIFIER_SOURCE = "Examples/E2EHost/E2EHost/E2EIdentifiers.swift"
-E2E_TEST_SOURCE = "Examples/E2EHost/E2EHostE2ETests/E2EHostE2ETests.swift"
 MAESTRO_FLOW_GLOB = "Examples/E2EHost/Maestro/**/*.yaml"
-
-NON_SELECTOR_CLERK_LITERALS = Set[
-  "clerk.dev",
-].freeze
-
-VISIBLE_TEXT_SELECTOR_EXCEPTIONS = Set[
-  "Cancel",
-].freeze
-
-VISIBLE_TEXT_SELECTOR_QUERIES = %w[
-  alerts
-  buttons
-  cells
-  images
-  otherElements
-  secureTextFields
-  staticTexts
-  switches
-  textFields
-].freeze
 
 SelectorLiteral = Struct.new(:value, :file, :line, keyword_init: true)
 
@@ -69,39 +48,6 @@ host_exact_values = host_literals.map(&:value).to_set
 
 failures = []
 maestro_selector_count = 0
-
-quoted_literals(E2E_TEST_SOURCE, prefix: "clerk.").each do |literal|
-  next if NON_SELECTOR_CLERK_LITERALS.include?(literal.value)
-  next if backed_by_contract?(literal.value, product_exact_values, product_patterns)
-
-  failures << [
-    literal.file,
-    literal.line,
-    "E2E product selector '#{literal.value}' is not backed by #{PRODUCT_IDENTIFIER_SOURCE}.",
-  ]
-end
-
-quoted_literals(E2E_TEST_SOURCE, prefix: "e2e.").each do |literal|
-  next if host_exact_values.include?(literal.value)
-
-  failures << [
-    literal.file,
-    literal.line,
-    "E2EHost selector '#{literal.value}' is not backed by #{HOST_IDENTIFIER_SOURCE}.",
-  ]
-end
-
-source_lines(E2E_TEST_SOURCE).each_with_index do |line, index|
-  line.scan(/app\.(?:#{VISIBLE_TEXT_SELECTOR_QUERIES.join("|")})\["([^"]+)"\]/).flatten.each do |visible_text|
-    next if VISIBLE_TEXT_SELECTOR_EXCEPTIONS.include?(visible_text)
-
-    failures << [
-      E2E_TEST_SOURCE,
-      index + 1,
-      "Use an accessibility identifier instead of visible text selector '#{visible_text}', or add a reviewed exception.",
-    ]
-  end
-end
 
 Dir.glob(File.join(ROOT, MAESTRO_FLOW_GLOB)).sort.each do |absolute_path|
   relative_path = absolute_path.delete_prefix("#{ROOT}/")

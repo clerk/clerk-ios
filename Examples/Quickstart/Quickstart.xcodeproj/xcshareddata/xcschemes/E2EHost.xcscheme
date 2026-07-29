@@ -21,20 +21,6 @@
                ReferencedContainer = "container:Quickstart.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "NO"
-            buildForProfiling = "NO"
-            buildForArchiving = "NO"
-            buildForAnalyzing = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8FE2E2E72E90000000000007"
-               BuildableName = "E2EHostE2ETests.xctest"
-               BlueprintName = "E2EHostE2ETests"
-               ReferencedContainer = "container:Quickstart.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -52,18 +38,6 @@
             ReferencedContainer = "container:Quickstart.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
-      <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8FE2E2E72E90000000000007"
-               BuildableName = "E2EHostE2ETests.xctest"
-               BlueprintName = "E2EHostE2ETests"
-               ReferencedContainer = "container:Quickstart.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
