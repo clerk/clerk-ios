@@ -250,6 +250,11 @@ jobs:
             key_name: auth-email-code-password
           - shard: session-task-setup-mfa
             key_name: session-task-setup-mfa
+    # The approved fictional phone range has only 100 values, so phone sign-up
+    # must not race another workflow run that may select the same number.
+    concurrency:
+      group: ${{ matrix.shard == 'auth-phone' && 'e2ehost-maestro-auth-phone' || format('e2ehost-maestro-{0}-{1}', github.run_id, matrix.shard) }}
+      cancel-in-progress: false
     env:
       MAESTRO_RUNNER_VERSION: "1.1.21"
       E2E_MAESTRO_REPORT_PATH: build/reports/maestro-${{ matrix.shard }}
