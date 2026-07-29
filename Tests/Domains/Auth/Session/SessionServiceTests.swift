@@ -252,6 +252,8 @@ struct SessionServiceTests {
   @Test
   func fetchToken() async throws {
     let session = Session.mock
+    let organizationId = "org_test456"
+    let previousToken = "previous.jwt.value"
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
 
@@ -264,11 +266,54 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      let body = request.urlEncodedFormBody!
+      #expect(body["organization_id"] == organizationId)
+      #expect(body["token"] == previousToken)
+      #expect(body["force_origin"] == "true")
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: nil)
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: nil,
+      params: .init(
+        organizationId: organizationId,
+        token: previousToken,
+        forceOrigin: "true"
+      )
+    )
+    #expect(requestHandled.value)
+  }
+
+  @Test
+  func fetchTokenForFirstMintOmitsPreviousTokenAndForceOrigin() async throws {
+    let session = Session.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      let body = request.urlEncodedFormBody!
+      #expect(body["organization_id"] == "")
+      #expect(body["token"] == nil)
+      #expect(body["force_origin"] == nil)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: nil,
+      params: .init(organizationId: "")
+    )
+
     #expect(requestHandled.value)
   }
 
@@ -288,11 +333,20 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.httpBody == nil)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: template)
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: template,
+      params: .init(
+        organizationId: "org_ignored",
+        token: "token_ignored",
+        forceOrigin: "true"
+      )
+    )
     #expect(requestHandled.value)
   }
 

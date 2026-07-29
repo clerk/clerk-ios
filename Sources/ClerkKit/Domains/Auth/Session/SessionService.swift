@@ -5,6 +5,22 @@
 
 import Foundation
 
+package struct SessionTokenRequestParams: Encodable, Equatable {
+  package var organizationId: String
+  package var token: String?
+  package var forceOrigin: String?
+
+  package init(
+    organizationId: String,
+    token: String? = nil,
+    forceOrigin: String? = nil
+  ) {
+    self.organizationId = organizationId
+    self.token = token
+    self.forceOrigin = forceOrigin
+  }
+}
+
 protocol SessionServiceProtocol: Sendable {
   @MainActor func revoke(sessionId: String) async throws -> Session
 
@@ -22,7 +38,12 @@ protocol SessionServiceProtocol: Sendable {
   /// - Parameters:
   ///   - sessionId: The session ID to generate a token for.
   ///   - template: Optional JWT template name.
-  @MainActor func fetchToken(sessionId: String, template: String?) async throws -> TokenResource?
+  ///   - params: Parameters used when generating the default session token.
+  @MainActor func fetchToken(
+    sessionId: String,
+    template: String?,
+    params: SessionTokenRequestParams?
+  ) async throws -> TokenResource?
 
   /// Starts an in-session reverification (step-up) flow.
   @MainActor func startVerification(
@@ -107,7 +128,11 @@ final class SessionService: SessionServiceProtocol {
   }
 
   @MainActor
-  func fetchToken(sessionId: String, template: String?) async throws -> TokenResource? {
+  func fetchToken(
+    sessionId: String,
+    template: String?,
+    params: SessionTokenRequestParams?
+  ) async throws -> TokenResource? {
     let path = if let template {
       "/v1/client/sessions/\(sessionId)/tokens/\(template)"
     } else {
@@ -116,7 +141,8 @@ final class SessionService: SessionServiceProtocol {
 
     let request = Request<TokenResource?>(
       path: path,
-      method: .post
+      method: .post,
+      body: template == nil ? params : nil
     )
 
     return try await apiClient.send(request).value
