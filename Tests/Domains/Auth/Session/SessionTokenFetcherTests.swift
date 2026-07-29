@@ -213,12 +213,17 @@ struct SessionTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
     let callCount = LockIsolated(0)
+    let firstCallStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    defer { firstCallStarted.continuation.finish() }
     let service = MockSessionService(fetchToken: { _, _, _ in
       let callIndex = callCount.withValue { count in
         defer { count += 1 }
         return count
       }
       if callIndex == 0 {
+        firstCallStarted.continuation.yield()
         try await Task.sleep(for: .milliseconds(100))
         return staleResponse
       }
@@ -235,16 +240,18 @@ struct SessionTokenFetcherTests {
         options: .init(skipCache: true)
       )
     }
-    let deadline = ContinuousClock.now + .seconds(1)
-    while callCount.value == 0, ContinuousClock.now < deadline {
-      await Task.yield()
-    }
+    defer { first.cancel() }
+    try await waitForSignal(
+      firstCallStarted.stream,
+      message: "Timed out waiting for the first forced token refresh to start."
+    )
     let second = Task {
       try await SessionTokenFetcher.shared.getToken(
         session,
         options: .init(skipCache: true)
       )
     }
+    defer { second.cancel() }
 
     let firstResult = try await first.value
     let secondResult = try await second.value
@@ -256,6 +263,100 @@ struct SessionTokenFetcherTests {
     #expect(firstResult == staleResponse)
     #expect(secondResult == freshResponse)
     #expect(cachedToken == freshResponse)
+  }
+
+  @Test
+  func completedRequestDoesNotClearReplacementTaskAfterReset() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let firstResponse = TokenResource(jwt: "first.jwt.value")
+    let secondResponse = TokenResource(jwt: "second.jwt.value")
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+
+    let firstCallStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    let secondCallStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    defer {
+      firstCallStarted.continuation.finish()
+      secondCallStarted.continuation.finish()
+    }
+
+    let firstGate = SessionTokenFetchGate()
+    let secondGate = SessionTokenFetchGate()
+    let callCount = LockIsolated(0)
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      let callIndex = callCount.withValue { count in
+        defer { count += 1 }
+        return count
+      }
+
+      switch callIndex {
+      case 0:
+        firstCallStarted.continuation.yield()
+        await firstGate.suspend()
+        return firstResponse
+      case 1:
+        secondCallStarted.continuation.yield()
+        await secondGate.suspend()
+        return secondResponse
+      default:
+        return TokenResource(jwt: "unexpected.jwt.value")
+      }
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let first = Task {
+      try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer {
+      first.cancel()
+      Task { await firstGate.resume() }
+    }
+    try await waitForSignal(
+      firstCallStarted.stream,
+      message: "Timed out waiting for token request A to start."
+    )
+
+    await SessionTokenFetcher.shared.reset()
+
+    let second = Task {
+      try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer {
+      second.cancel()
+      Task { await secondGate.resume() }
+    }
+    try await waitForSignal(
+      secondCallStarted.stream,
+      message: "Timed out waiting for replacement token request B to start."
+    )
+
+    let cacheKey = session.tokenCacheKey(template: nil)
+    let registeredReplacement = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    let replacementId = try #require(registeredReplacement?.id)
+
+    await firstGate.resume()
+    do {
+      _ = try await first.value
+      Issue.record("Expected reset to cancel token request A.")
+    } catch is CancellationError {
+      // Expected.
+    }
+
+    let remainingTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    #expect(remainingTask?.id == replacementId)
+
+    await secondGate.resume()
+    #expect(try await second.value == secondResponse)
+    #expect(callCount.value == 2)
   }
 
   private func configureCurrentState(
@@ -295,5 +396,52 @@ struct SessionTokenFetcherTests {
     return try TokenResource(
       jwt: testJWT(header: header, claims: claims, signature: signature)
     )
+  }
+}
+
+private actor SessionTokenFetchGate {
+  private var isOpen = false
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  func suspend() async {
+    if isOpen {
+      return
+    }
+    await withCheckedContinuation { continuation = $0 }
+  }
+
+  func resume() {
+    if let continuation {
+      continuation.resume()
+      self.continuation = nil
+    } else {
+      isOpen = true
+    }
+  }
+}
+
+private struct SessionTokenSignalTimeoutError: Error, CustomStringConvertible {
+  let description: String
+}
+
+private func waitForSignal(
+  _ stream: AsyncStream<Void>,
+  timeout: Duration = .seconds(1),
+  message: String
+) async throws {
+  try await withThrowingTaskGroup(of: Void.self) { group in
+    group.addTask {
+      for await _ in stream {
+        return
+      }
+      throw SessionTokenSignalTimeoutError(description: message)
+    }
+    group.addTask {
+      try await Task.sleep(for: timeout)
+      throw SessionTokenSignalTimeoutError(description: message)
+    }
+
+    defer { group.cancelAll() }
+    _ = try await group.next()
   }
 }

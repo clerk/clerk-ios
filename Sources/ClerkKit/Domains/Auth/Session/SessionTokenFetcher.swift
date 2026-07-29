@@ -75,12 +75,17 @@ private func makeSessionTokenRequestParams(
 actor SessionTokenFetcher {
   static let shared = SessionTokenFetcher()
 
+  struct InFlightTokenTask {
+    let id: UUID
+    let task: Task<TokenResource?, Error>
+  }
+
   /// Key is `tokenCacheKey` property of a `session`
-  var tokenTasks: [String: Task<TokenResource?, Error>] = [:]
+  var tokenTasks: [String: InFlightTokenTask] = [:]
 
   func reset() {
-    for task in tokenTasks.values {
-      task.cancel()
+    for inFlightTask in tokenTasks.values {
+      inFlightTask.task.cancel()
     }
     tokenTasks.removeAll()
   }
@@ -96,22 +101,27 @@ actor SessionTokenFetcher {
     }
 
     if let inProgressTask = tokenTasks[context.cacheKey] {
-      let result = await inProgressTask.result
+      let result = await inProgressTask.task.result
       try runtime.validateStableRuntime()
       return try result.get()
     }
 
+    let requestId = UUID()
     let task: Task<TokenResource?, Error> = Task {
       try Task.checkCancellation()
       return try await fetchToken(context, options: options, runtime: runtime)
     }
 
-    tokenTasks[context.cacheKey] = task
+    tokenTasks[context.cacheKey] = InFlightTokenTask(
+      id: requestId,
+      task: task
+    )
 
     let result = await task.result
 
-    // clear the inProgressTask on success AND failure
-    tokenTasks[context.cacheKey] = nil
+    if tokenTasks[context.cacheKey]?.id == requestId {
+      tokenTasks[context.cacheKey] = nil
+    }
 
     try runtime.validateStableRuntime()
     return try result.get()
