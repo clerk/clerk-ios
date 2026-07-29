@@ -18,10 +18,6 @@ commandTimeout: 15000
     timeout: 45000
 - tapOn:
     id: "e2e.auth.signIn"
-- extendedWaitUntil:
-    visible:
-      id: "clerk.auth.start.phoneNumber"
-    timeout: 45000
 - retry:
     maxRetries: 2
     commands:

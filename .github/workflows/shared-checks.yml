@@ -331,8 +331,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          test_password="ClerkIOS2026E2EMaestro9!${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          test_password="ClerkIOS2026E2E$(openssl rand -hex 16)!"
           echo "::add-mask::$test_password"
+          printf 'TEST_PASSWORD=%s\n' "$test_password" >> "$GITHUB_ENV"
           CLERK_TEST_PASSWORD="$test_password" make test-e2e
 
       - name: Scrub credentials from Maestro reports
@@ -342,9 +343,8 @@ jobs:
 
           report_path="$E2E_MAESTRO_REPORT_PATH"
           [ -d "$report_path" ] || exit 0
-          test_password="ClerkIOS2026E2EMaestro9!${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           # shellcheck disable=SC2016
-          TEST_PASSWORD="$test_password" find "$report_path" -type f \
+          find "$report_path" -type f \
             \( -name '*.html' -o -name '*.json' -o -name '*.log' -o -name '*.txt' -o -name '*.xml' -o -name '*.yaml' \) \
             -exec perl -pi -e 's/\Q$ENV{TEST_PASSWORD}\E/[REDACTED]/g' {} +
 

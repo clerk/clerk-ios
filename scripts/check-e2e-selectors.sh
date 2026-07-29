@@ -53,7 +53,8 @@ Dir.glob(File.join(ROOT, MAESTRO_FLOW_GLOB)).sort.each do |absolute_path|
   relative_path = absolute_path.delete_prefix("#{ROOT}/")
 
   File.readlines(absolute_path, chomp: true).each_with_index do |line, index|
-    line.scan(/\bid:\s*['"]([^'"]+)['"]/).flatten.each do |value|
+    line.scan(/\bid:\s*(?:['"]([^'"]+)['"]|([^\s#]+))/).each do |quoted_value, plain_value|
+      value = quoted_value || plain_value
       maestro_selector_count += 1
 
       if value.start_with?("clerk.")

@@ -87,6 +87,7 @@ def perform_request(uri, request, attempts: 3)
     end
 
     return response if response.is_a?(Net::HTTPSuccess)
+    return response if request.is_a?(Net::HTTP::Delete) && response.is_a?(Net::HTTPNotFound)
 
     retryable = response.code.to_i == 429 || response.code.to_i >= 500
     raise "Backend API request failed with HTTP #{response.code}." unless retryable && attempt + 1 < attempts

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$repo_root"
 
 maestro_runner_bin="${MAESTRO_RUNNER_BIN:-}"
@@ -55,19 +55,29 @@ command_execution_duration=""
 log_pid=""
 cleanup_identifier_type=""
 cleanup_identifier_value=""
+reports_root="$repo_root/build/reports"
 
 case "$report_path" in
   /*) ;;
   *) report_path="$repo_root/$report_path" ;;
 esac
 
-case "$report_path" in
-  "$repo_root"/build/reports/*) ;;
-  *)
-    echo "❌ E2E_MAESTRO_REPORT_PATH must be inside '$repo_root/build/reports'."
-    exit 1
-    ;;
-esac
+if [ -L "$repo_root/build" ] || [ -L "$reports_root" ]; then
+  echo "❌ '$repo_root/build/reports' must not resolve outside the repository."
+  exit 1
+fi
+mkdir -p "$reports_root"
+reports_root="$(cd "$reports_root" && pwd -P)"
+if [ "$reports_root" != "$repo_root/build/reports" ]; then
+  echo "❌ '$repo_root/build/reports' must not resolve outside the repository."
+  exit 1
+fi
+report_path="$(ruby -e 'puts File.expand_path(ARGV.fetch(0))' "$report_path")"
+
+if [ "$(dirname "$report_path")" != "$reports_root" ]; then
+  echo "❌ E2E_MAESTRO_REPORT_PATH must be a direct child of '$reports_root'."
+  exit 1
+fi
 
 rm -rf "$report_path"
 mkdir -p "$report_path"
@@ -124,32 +134,48 @@ fi
 
 simulator_id="${E2E_SIMULATOR_ID:-}"
 destination="${IOS_SIMULATOR_DESTINATION:-}"
+simulator_name=""
+simulator_os=""
+
+if [ -n "$destination" ]; then
+  simulator_name="$(printf '%s\n' "$destination" | sed -nE 's/.*(^|,)name=([^,]+)(,.*|$).*/\2/p')"
+  simulator_os="$(printf '%s\n' "$destination" | sed -nE 's/.*(^|,)OS=([^,]+)(,.*|$).*/\2/p')"
+fi
 
 if [ -z "$simulator_id" ] && [ -n "$destination" ]; then
   simulator_id="$(printf '%s\n' "$destination" | sed -nE 's/.*(^|,)id=([0-9A-Fa-f-]{36})(,.*|$).*/\2/p')"
 fi
 
-if [ -z "$simulator_id" ] && [ -n "$destination" ]; then
-  simulator_name="$(printf '%s\n' "$destination" | sed -nE 's/.*(^|,)name=([^,]+)(,.*|$).*/\2/p')"
-  if [ -n "$simulator_name" ]; then
-    simulator_id="$(
-      xcrun simctl list devices available -j |
-        ruby -rjson -e '
-          target = ARGV.fetch(0).downcase
-          candidates = []
-          JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|
-            version = runtime[/SimRuntime[.]iOS-(.*)$/, 1]
-            next unless version
-            version_parts = version.split("-").map(&:to_i)
-            devices.each do |device|
-              next unless device["isAvailable"] && device["name"].downcase == target
-              candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]
-            end
+if [ -z "$simulator_id" ] && [ -n "$simulator_name" ]; then
+  simulator_id="$(
+    xcrun simctl list devices available -j |
+      ruby -rjson -e '
+        target_name = ARGV.fetch(0).downcase
+        target_os = ARGV.fetch(1, "")
+        candidates = []
+        JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|
+          version = runtime[/SimRuntime[.]iOS-(.*)$/, 1]
+          next unless version
+          normalized_version = version.tr("-", ".")
+          next if !target_os.empty? && target_os.downcase != "latest" && normalized_version != target_os
+          version_parts = version.split("-").map(&:to_i)
+          devices.each do |device|
+            next unless device["isAvailable"] && device["name"].downcase == target_name
+            candidates << [device["state"] == "Booted" ? 1 : 0, version_parts, device["udid"]]
           end
-          selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }
-          puts selected[2] if selected
-        ' "$simulator_name"
-    )"
+        end
+        selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }
+        puts selected[2] if selected
+      ' "$simulator_name" "$simulator_os"
+  )"
+
+  if [ -z "$simulator_id" ]; then
+    requested_simulator="$simulator_name"
+    if [ -n "$simulator_os" ]; then
+      requested_simulator="$requested_simulator running iOS $simulator_os"
+    fi
+    echo "❌ Unable to find the requested simulator: $requested_simulator."
+    exit 1
   fi
 fi
 
@@ -157,10 +183,13 @@ if [ -z "$simulator_id" ]; then
   simulator_id="$(
     xcrun simctl list devices available -j |
       ruby -rjson -e '
+        target_os = ARGV.fetch(0, "")
         candidates = []
         JSON.parse(STDIN.read).fetch("devices").each do |runtime, devices|
           version = runtime[/SimRuntime[.]iOS-(.*)$/, 1]
           next unless version
+          normalized_version = version.tr("-", ".")
+          next if !target_os.empty? && target_os.downcase != "latest" && normalized_version != target_os
           version_parts = version.split("-").map(&:to_i)
           devices.each do |device|
             next unless device["isAvailable"] && device["name"].start_with?("iPhone")
@@ -169,7 +198,7 @@ if [ -z "$simulator_id" ]; then
         end
         selected = candidates.max_by { |candidate| [candidate[0], candidate[1]] }
         puts selected[2] if selected
-      '
+      ' "$simulator_os"
   )"
 fi
 

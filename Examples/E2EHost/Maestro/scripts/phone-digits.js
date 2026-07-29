@@ -1,6 +1,6 @@
-var phoneNumber = String(CLERK_TEST_PHONE_NUMBER).replace(/\D/g, "");
+var phoneNumber = String(CLERK_TEST_PHONE_NUMBER);
 
-if (phoneNumber.length !== 10) {
+if (!/^\d{10}$/.test(phoneNumber)) {
   throw new Error("CLERK_TEST_PHONE_NUMBER must contain exactly 10 digits");
 }
 
