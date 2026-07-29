@@ -190,7 +190,7 @@ actor SessionTokenFetcher {
       )
       try Task.checkCancellation()
       try runtime.validateStableRuntime()
-      if storeResult.didStoreIncoming {
+      if storeResult.didChangeCanonicalToken {
         Clerk.shared.auth.send(.tokenRefreshed(token: token.jwt))
       }
     }
@@ -204,7 +204,7 @@ actor SessionTokensCache {
 
   struct StoreResult {
     let canonicalToken: TokenResource
-    let didStoreIncoming: Bool
+    let didChangeCanonicalToken: Bool
   }
 
   private var cache: [String: TokenResource] = [:]
@@ -223,15 +223,16 @@ actor SessionTokensCache {
     cacheKey: String,
     now: Date = .now
   ) -> StoreResult {
+    let previousToken = cache[cacheKey]
     let canonicalToken = TokenFreshness.pickFreshest(
-      existing: cache[cacheKey],
+      existing: previousToken,
       incoming: token,
       now: now
     )
     cache[cacheKey] = canonicalToken
     return StoreResult(
       canonicalToken: canonicalToken,
-      didStoreIncoming: canonicalToken.jwt == token.jwt
+      didChangeCanonicalToken: previousToken?.jwt != canonicalToken.jwt
     )
   }
 

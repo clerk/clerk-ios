@@ -85,6 +85,25 @@ struct SessionTokenFetcherTests {
   }
 
   @Test
+  func storingSameJWTDoesNotReportCanonicalTokenChange() async {
+    await SessionTokensCache.shared.clear()
+    let cacheKey = UUID().uuidString
+    let tokenResource = TokenResource(jwt: "jwt_123")
+
+    let initialStore = await SessionTokensCache.shared.storeIfFresher(
+      tokenResource,
+      cacheKey: cacheKey
+    )
+    let duplicateStore = await SessionTokensCache.shared.storeIfFresher(
+      tokenResource,
+      cacheKey: cacheKey
+    )
+
+    #expect(initialStore.didChangeCanonicalToken)
+    #expect(duplicateStore.didChangeCanonicalToken == false)
+  }
+
+  @Test
   func sessionMinterUsesLatestSessionTokenAndForcesOrigin() async throws {
     await SessionTokensCache.shared.clear()
     let staleSession = Session.mock
