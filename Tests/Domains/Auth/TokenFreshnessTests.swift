@@ -24,6 +24,16 @@ struct TokenFreshnessTests {
   }
 
   @Test
+  func usesIssuedAtWhenBothTokensLackOriginIssuedAt() throws {
+    let existing = try token(originIssuedAt: nil, issuedAt: 300)
+    let incoming = try token(originIssuedAt: nil, issuedAt: 200)
+
+    let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
+
+    #expect(result == existing)
+  }
+
+  @Test
   func acceptsIncomingTokenOnFullTimestampTie() throws {
     let existing = try token(originIssuedAt: 200, issuedAt: 300, signature: "existing")
     let incoming = try token(originIssuedAt: 200, issuedAt: 300, signature: "incoming")
@@ -31,6 +41,20 @@ struct TokenFreshnessTests {
     let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
 
     #expect(result == incoming)
+  }
+
+  @Test
+  func keepsExistingTokenOnFullTimestampTieWhenRequested() throws {
+    let existing = try token(originIssuedAt: 200, issuedAt: 300, signature: "existing")
+    let incoming = try token(originIssuedAt: 200, issuedAt: 300, signature: "incoming")
+
+    let result = TokenFreshness.pickFreshest(
+      existing: existing,
+      incoming: incoming,
+      tieBreaker: .existing
+    )
+
+    #expect(result == existing)
   }
 
   @Test

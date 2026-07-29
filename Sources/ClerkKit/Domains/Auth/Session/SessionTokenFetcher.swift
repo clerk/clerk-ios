@@ -39,7 +39,7 @@ private func cacheLastActiveTokenIfNeeded(
     return
   }
 
-  await SessionTokensCache.shared.storeIfFresher(
+  await SessionTokensCache.shared.hydrate(
     lastActiveToken,
     cacheKey: context.cacheKey
   )
@@ -214,6 +214,19 @@ actor SessionTokensCache {
   /// - Returns: ``TokenResource``
   func getToken(cacheKey: String) -> TokenResource? {
     cache[cacheKey]
+  }
+
+  /// Reconciles a session snapshot without replacing an equally fresh canonical token.
+  func hydrate(
+    _ token: TokenResource,
+    cacheKey: String
+  ) {
+    let canonicalToken = TokenFreshness.pickFreshest(
+      existing: cache[cacheKey],
+      incoming: token,
+      tieBreaker: .existing
+    )
+    cache[cacheKey] = canonicalToken
   }
 
   /// Atomically keeps the freshest token for a cache key.

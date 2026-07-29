@@ -1,10 +1,16 @@
 import Foundation
 
 enum TokenFreshness {
+  enum TieBreaker {
+    case existing
+    case incoming
+  }
+
   static func pickFreshest(
     existing: TokenResource?,
     incoming: TokenResource,
-    now: Date = .now
+    now: Date = .now,
+    tieBreaker: TieBreaker = .incoming
   ) -> TokenResource {
     guard let existing else {
       return incoming
@@ -30,7 +36,13 @@ enum TokenFreshness {
 
     switch (existingJWT.originIssuedAt, incomingJWT.originIssuedAt) {
     case (nil, nil):
-      return incoming
+      return pickByIssuedAt(
+        existing: existing,
+        existingJWT: existingJWT,
+        incoming: incoming,
+        incomingJWT: incomingJWT,
+        tieBreaker: tieBreaker
+      )
     case (.some, nil):
       return existing
     case (nil, .some):
@@ -43,9 +55,37 @@ enum TokenFreshness {
         return incoming
       }
 
-      let existingIssuedAt = existingJWT.issuedAt?.timeIntervalSince1970 ?? 0
-      let incomingIssuedAt = incomingJWT.issuedAt?.timeIntervalSince1970 ?? 0
-      return existingIssuedAt > incomingIssuedAt ? existing : incoming
+      return pickByIssuedAt(
+        existing: existing,
+        existingJWT: existingJWT,
+        incoming: incoming,
+        incomingJWT: incomingJWT,
+        tieBreaker: tieBreaker
+      )
+    }
+  }
+
+  private static func pickByIssuedAt(
+    existing: TokenResource,
+    existingJWT: DecodedJWT,
+    incoming: TokenResource,
+    incomingJWT: DecodedJWT,
+    tieBreaker: TieBreaker
+  ) -> TokenResource {
+    let existingIssuedAt = existingJWT.issuedAt?.timeIntervalSince1970 ?? 0
+    let incomingIssuedAt = incomingJWT.issuedAt?.timeIntervalSince1970 ?? 0
+
+    if existingIssuedAt > incomingIssuedAt {
+      return existing
+    }
+    if incomingIssuedAt > existingIssuedAt {
+      return incoming
+    }
+    switch tieBreaker {
+    case .existing:
+      return existing
+    case .incoming:
+      return incoming
     }
   }
 

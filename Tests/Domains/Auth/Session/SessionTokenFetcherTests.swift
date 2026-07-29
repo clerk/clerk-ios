@@ -104,6 +104,82 @@ struct SessionTokenFetcherTests {
   }
 
   @Test
+  func hydrationDoesNotReplaceCanonicalTokenOnTimestampTie() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    var session = Session.mock
+    let snapshotToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "snapshot"
+    )
+    let mintedToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "minted"
+    )
+    session.lastActiveToken = snapshotToken
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+
+    let callCount = LockIsolated(0)
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      callCount.withValue { $0 += 1 }
+      return mintedToken
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let forcedToken = try await SessionTokenFetcher.shared.getToken(
+      session,
+      options: .init(skipCache: true)
+    )
+    let ordinaryToken = try await SessionTokenFetcher.shared.getToken(session)
+    let cachedToken = await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+
+    #expect(forcedToken == mintedToken)
+    #expect(ordinaryToken == mintedToken)
+    #expect(cachedToken == mintedToken)
+    #expect(callCount.value == 1)
+  }
+
+  @Test
+  func hydrationAcceptsStrictlyFresherSessionSnapshot() async throws {
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let cacheKey = session.tokenCacheKey(template: nil)
+    let cachedToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "cached"
+    )
+    let snapshotToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "snapshot"
+    )
+    await SessionTokensCache.shared.insertToken(cachedToken, cacheKey: cacheKey)
+
+    await SessionTokensCache.shared.hydrate(snapshotToken, cacheKey: cacheKey)
+
+    let canonicalToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)
+    #expect(canonicalToken == snapshotToken)
+  }
+
+  @Test
   func sessionMinterUsesLatestSessionTokenAndForcesOrigin() async throws {
     await SessionTokensCache.shared.clear()
     let staleSession = Session.mock
