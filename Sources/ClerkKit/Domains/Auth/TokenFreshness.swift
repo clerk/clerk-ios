@@ -19,9 +19,34 @@ enum TokenFreshness {
     let existingJWT = try? DecodedJWT(jwt: existing.jwt)
     let incomingJWT = try? DecodedJWT(jwt: incoming.jwt)
 
-    guard let existingJWT, let incomingJWT else {
+    switch (existingJWT, incomingJWT) {
+    case (.some(let existingJWT), .some(let incomingJWT)):
+      return pickFreshestDecoded(
+        existing: existing,
+        incoming: incoming,
+        decodedJWTs: (
+          existing: existingJWT,
+          incoming: incomingJWT
+        ),
+        now: now,
+        tieBreaker: tieBreaker
+      )
+    case (.some, nil):
+      return existing
+    case (nil, _):
       return incoming
     }
+  }
+
+  private static func pickFreshestDecoded(
+    existing: TokenResource,
+    incoming: TokenResource,
+    decodedJWTs: (existing: DecodedJWT, incoming: DecodedJWT),
+    now: Date,
+    tieBreaker: TieBreaker
+  ) -> TokenResource {
+    let existingJWT = decodedJWTs.existing
+    let incomingJWT = decodedJWTs.incoming
 
     guard haveMatchingContext(existingJWT, incomingJWT) else {
       return incoming

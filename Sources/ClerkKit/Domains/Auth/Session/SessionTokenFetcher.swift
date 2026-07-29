@@ -82,12 +82,18 @@ actor SessionTokenFetcher {
 
   /// Key is `tokenCacheKey` property of a `session`
   var tokenTasks: [String: InFlightTokenTask] = [:]
+  var forcedTokenTasks: [UUID: Task<TokenResource?, Error>] = [:]
 
   func reset() {
     for inFlightTask in tokenTasks.values {
       inFlightTask.task.cancel()
     }
     tokenTasks.removeAll()
+
+    for task in forcedTokenTasks.values {
+      task.cancel()
+    }
+    forcedTokenTasks.removeAll()
   }
 
   func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
@@ -95,9 +101,11 @@ actor SessionTokenFetcher {
     let context = await makeSessionTokenFetchContext(session: session, template: options.template)
 
     if options.skipCache {
-      let token = try await fetchToken(context, options: options, runtime: runtime)
-      try runtime.validateStableRuntime()
-      return token
+      return try await getForcedToken(
+        context,
+        options: options,
+        runtime: runtime
+      )
     }
 
     if let inProgressTask = tokenTasks[context.cacheKey] {
@@ -121,6 +129,29 @@ actor SessionTokenFetcher {
 
     if tokenTasks[context.cacheKey]?.id == requestId {
       tokenTasks[context.cacheKey] = nil
+    }
+
+    try runtime.validateStableRuntime()
+    return try result.get()
+  }
+
+  private func getForcedToken(
+    _ context: SessionTokenFetchContext,
+    options: Session.GetTokenOptions,
+    runtime: ClerkRuntimeScope
+  ) async throws -> TokenResource? {
+    let requestId = UUID()
+    let task: Task<TokenResource?, Error> = Task {
+      try Task.checkCancellation()
+      return try await fetchToken(context, options: options, runtime: runtime)
+    }
+    forcedTokenTasks[requestId] = task
+    defer { forcedTokenTasks[requestId] = nil }
+
+    let result = await withTaskCancellationHandler {
+      await task.result
+    } onCancel: {
+      task.cancel()
     }
 
     try runtime.validateStableRuntime()

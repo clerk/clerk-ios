@@ -179,6 +179,36 @@ struct TokenFreshnessTests {
     #expect(result == incoming)
   }
 
+  @Test
+  func keepsDecodableExistingTokenWhenIncomingCannotBeDecoded() throws {
+    let existing = try token(originIssuedAt: 100, issuedAt: 100)
+    let incoming = TokenResource(jwt: "malformed")
+
+    let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
+
+    #expect(result == existing)
+  }
+
+  @Test
+  func acceptsDecodableIncomingTokenWhenExistingCannotBeDecoded() throws {
+    let existing = TokenResource(jwt: "malformed")
+    let incoming = try token(originIssuedAt: 100, issuedAt: 100)
+
+    let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
+
+    #expect(result == incoming)
+  }
+
+  @Test
+  func acceptsIncomingTokenWhenNeitherTokenCanBeDecoded() {
+    let existing = TokenResource(jwt: "malformed-existing")
+    let incoming = TokenResource(jwt: "malformed-incoming")
+
+    let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
+
+    #expect(result == incoming)
+  }
+
   private func token(
     sessionId: String = "sess_test",
     organizationId: String? = nil,
