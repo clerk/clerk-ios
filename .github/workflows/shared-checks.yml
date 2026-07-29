@@ -255,8 +255,11 @@ jobs:
     concurrency:
       group: ${{ matrix.shard == 'auth-phone' && 'e2ehost-maestro-auth-phone' || format('e2ehost-maestro-{0}-{1}', github.run_id, matrix.shard) }}
       cancel-in-progress: false
+      queue: max
     env:
       MAESTRO_RUNNER_VERSION: "1.1.21"
+      MAESTRO_RUNNER_DARWIN_AMD64_SHA256: c69cc36f85fb639ff799bc00775c45ae98b6e4c50455ef08f6d594000253bc83
+      MAESTRO_RUNNER_DARWIN_ARM64_SHA256: 192038da519ddaf817c43c94735662942ffc69a58fa467c1d9ff7f948323a4a8
       E2E_MAESTRO_REPORT_PATH: build/reports/maestro-${{ matrix.shard }}
       IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro
     steps:
@@ -279,37 +282,82 @@ jobs:
           key: swiftpm-e2e-${{ hashFiles('Package.swift') }}
           restore-keys: swiftpm-e2e-
 
-      - name: Cache maestro-runner and compiled WDA
+      - name: Cache maestro-runner archive and compiled WDA
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
-          path: ~/.maestro-runner
+          path: |
+            ~/Library/Caches/clerk-maestro-runner
+            ~/.maestro-runner/cache
           key: maestro-runner-${{ runner.os }}-${{ runner.arch }}-${{ env.MAESTRO_RUNNER_VERSION }}
 
       - name: Install maestro-runner
         run: |
           set -euo pipefail
 
-          if [ -x "$HOME/.maestro-runner/bin/maestro-runner" ]; then
-            echo "Using cached maestro-runner"
+          case "$(uname -m)" in
+            arm64)
+              release_arch="arm64"
+              expected_sha="$MAESTRO_RUNNER_DARWIN_ARM64_SHA256"
+              ;;
+            x86_64)
+              release_arch="amd64"
+              expected_sha="$MAESTRO_RUNNER_DARWIN_AMD64_SHA256"
+              ;;
+            *)
+              echo "::error::Unsupported maestro-runner architecture: $(uname -m)"
+              exit 1
+              ;;
+          esac
+
+          archive_name="maestro-runner-${MAESTRO_RUNNER_VERSION}-darwin-${release_arch}.tar.gz"
+          archive_cache_dir="$HOME/Library/Caches/clerk-maestro-runner"
+          archive_path="$archive_cache_dir/$archive_name"
+          download_url="https://github.com/devicelab-dev/maestro-runner/releases/download/v${MAESTRO_RUNNER_VERSION}/${archive_name}"
+          mkdir -p "$archive_cache_dir"
+
+          archive_is_valid() {
+            [ -f "$archive_path" ] || return 1
+            actual_sha="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+            [ "$actual_sha" = "$expected_sha" ]
+          }
+
+          if archive_is_valid; then
+            echo "Using cached, verified maestro-runner archive"
           else
-            installed=0
+            rm -f "$archive_path"
+            downloaded=0
             for attempt in 1 2 3; do
-              if curl -fsSL --retry 3 --retry-delay 5 "https://open.devicelab.dev/install/maestro-runner" |
-                bash -s -- --version "$MAESTRO_RUNNER_VERSION"; then
-                if [ -x "$HOME/.maestro-runner/bin/maestro-runner" ]; then
-                  installed=1
+              download_path="$archive_path.download"
+              rm -f "$download_path"
+              if curl -fsSL --retry 3 --retry-delay 5 -o "$download_path" "$download_url"; then
+                actual_sha="$(shasum -a 256 "$download_path" | awk '{print $1}')"
+                if [ "$actual_sha" = "$expected_sha" ]; then
+                  mv "$download_path" "$archive_path"
+                  downloaded=1
                   break
                 fi
+                echo "::warning::maestro-runner checksum mismatch on attempt $attempt"
               fi
-              echo "maestro-runner install attempt $attempt failed; retrying"
+              echo "maestro-runner download attempt $attempt failed; retrying"
               sleep 5
             done
-            if [ "$installed" != "1" ]; then
-              echo "::error::maestro-runner installation failed after 3 attempts"
+            if [ "$downloaded" != "1" ]; then
+              echo "::error::maestro-runner download or checksum verification failed after 3 attempts"
               exit 1
             fi
           fi
 
+          extract_dir="$(mktemp -d "$RUNNER_TEMP/maestro-runner.XXXXXX")"
+          trap 'rm -rf "$extract_dir"' EXIT
+          tar -xzf "$archive_path" -C "$extract_dir"
+          [ -x "$extract_dir/maestro-runner/bin/maestro-runner" ] || {
+            echo "::error::Verified maestro-runner archive has an unexpected layout"
+            exit 1
+          }
+
+          mkdir -p "$HOME/.maestro-runner"
+          cp -R "$extract_dir/maestro-runner/." "$HOME/.maestro-runner/"
+          chmod +x "$HOME/.maestro-runner/bin/maestro-runner"
           echo "$HOME/.maestro-runner/bin" >> "$GITHUB_PATH"
           "$HOME/.maestro-runner/bin/maestro-runner" --version
 

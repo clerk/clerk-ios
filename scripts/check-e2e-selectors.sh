@@ -6,7 +6,7 @@ require "set"
 ROOT = File.expand_path("..", __dir__)
 PRODUCT_IDENTIFIER_SOURCE = "Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift"
 HOST_IDENTIFIER_SOURCE = "Examples/E2EHost/E2EHost/E2EIdentifiers.swift"
-MAESTRO_FLOW_GLOB = "Examples/E2EHost/Maestro/**/*.yaml"
+MAESTRO_FLOW_GLOB = "Examples/E2EHost/Maestro/**/*.{yaml,yml}"
 
 SelectorLiteral = Struct.new(:value, :file, :line, keyword_init: true)
 
