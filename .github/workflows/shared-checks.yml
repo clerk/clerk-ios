@@ -396,6 +396,10 @@ jobs:
 
           report_path="$E2E_MAESTRO_REPORT_PATH"
           [ -d "$report_path" ] || exit 0
+          if [ -z "${TEST_PASSWORD:-}" ]; then
+            echo "::warning::Skipping Maestro report scrubbing because TEST_PASSWORD is unavailable"
+            exit 0
+          fi
           # shellcheck disable=SC2016
           find "$report_path" -type f \
             \( -name '*.html' -o -name '*.json' -o -name '*.log' -o -name '*.txt' -o -name '*.xml' -o -name '*.yaml' \) \
