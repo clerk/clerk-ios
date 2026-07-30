@@ -99,6 +99,7 @@ public struct AuthView: View {
   }
 
   let isDismissible: Bool
+  private let navigationPath: Binding<NavigationPath>?
 
   /// Creates a new authentication view.
   ///
@@ -110,43 +111,51 @@ public struct AuthView: View {
   ///     dismisses on successful authentication. When `false`, no dismiss
   ///     button is shown. Interactive presentation dismissal is always disabled.
   ///     Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
-    self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
+  ///   - navigationPath: An optional binding to a parent `NavigationPath`. When provided,
+  ///   the view skips creating its own `NavigationStack` and pushes the auth flow's steps
+  ///   onto the parent's path instead. Use this when embedding `AuthView` inside your own
+  ///   `NavigationStack` to avoid nested navigation stacks; the flow pops its own steps
+  ///   when authentication completes. Defaults to `nil`.
+  public init(
+    mode: Mode = .signInOrUp,
+    isDismissible: Bool = true,
+    navigationPath: Binding<NavigationPath>? = nil
+  ) {
+    self.init(
+      mode: mode,
+      isDismissible: isDismissible,
+      navigationPath: navigationPath,
+      config: AuthConfig()
+    )
   }
 
   init(
     mode: Mode,
     isDismissible: Bool,
+    navigationPath: Binding<NavigationPath>? = nil,
     config: AuthConfig
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissible = isDismissible
+    self.navigationPath = navigationPath
     self.config = config
   }
 
   public var body: some View {
-    NavigationStack(path: $navigation.path) {
-      AuthStartView()
-        #if os(iOS)
-        .toolbar {
-          dismissToolbarItem
+    Group {
+      if let navigationPath {
+        authContent
+          .onFirstAppear {
+            navigation.attachExternalPath(navigationPath)
+          }
+          .onChange(of: navigationPath.wrappedValue.count) {
+            navigation.externalPathDidChange()
+          }
+      } else {
+        NavigationStack(path: $navigation.path) {
+          authContent
         }
-        #endif
-        .embeddedNavigationBarHidden()
-        .navigationDestination(for: Destination.self) {
-          $0.view
-            #if os(iOS)
-            .toolbar {
-              dismissToolbarItem
-            }
-            #endif
-            .embeddedNavigationBarHidden()
-            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
-            .environment(navigation)
-            .environment(authState)
-            .environment(codeLimiter)
-        }
-        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+      }
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
@@ -206,8 +215,14 @@ public struct AuthView: View {
           let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
           let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
           let sessionSwitched = oldValue?.id != newValue?.id
-          if becameActive, isDismissible, !isHandlingSessionTask || sessionSwitched {
-            dismiss()
+          if becameActive, !isHandlingSessionTask || sessionSwitched {
+            if navigationPath != nil {
+              // Embedded in a host-owned stack: pop the flow's own steps; the host
+              // reacts to the auth state change itself.
+              navigation.path = []
+            } else if isDismissible {
+              dismiss()
+            }
           }
         default:
           break
@@ -216,7 +231,9 @@ public struct AuthView: View {
     }
     .onChange(of: navigation.allTasksComplete) { _, isComplete in
       guard isComplete else { return }
-      if isDismissible {
+      if navigationPath != nil {
+        navigation.path = []
+      } else if isDismissible {
         dismiss()
       }
     }
@@ -258,6 +275,32 @@ public struct AuthView: View {
 }
 
 extension AuthView {
+  /// The auth flow's screens and destination registrations, shared by the self-contained
+  /// `NavigationStack` and host-owned (`navigationPath:`) rendering modes.
+  private var authContent: some View {
+    AuthStartView()
+      #if os(iOS)
+      .toolbar {
+        dismissToolbarItem
+      }
+      #endif
+      .embeddedNavigationBarHidden()
+      .navigationDestination(for: Destination.self) {
+        $0.view
+          #if os(iOS)
+          .toolbar {
+            dismissToolbarItem
+          }
+          #endif
+          .embeddedNavigationBarHidden()
+          .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+          .environment(navigation)
+          .environment(authState)
+          .environment(codeLimiter)
+      }
+      .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+  }
+
   /// Whether the dismiss button should be shown, accounting for required session tasks.
   private var showDismissButton: Bool {
     isDismissible && !navigation.hasSessionTaskStartInPath

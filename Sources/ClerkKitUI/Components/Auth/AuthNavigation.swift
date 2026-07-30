@@ -17,13 +17,49 @@ import SwiftUI
 @Observable
 final class AuthNavigation {
   /// The navigation path for the auth flow.
-  var path: [AuthView.Destination] = []
+  var path: [AuthView.Destination] = [] {
+    didSet { mirrorToExternalPath(previousCount: oldValue.count) }
+  }
 
   /// Set to `true` when a session task flow completes and auth navigation should continue.
   private(set) var allTasksComplete = false
 
+  /// The parent `NavigationPath` the auth flow pushes onto when embedded in a host-owned
+  /// `NavigationStack`, and the number of host entries beneath the auth flow's segment.
+  @ObservationIgnored private var externalPath: Binding<NavigationPath>?
+  @ObservationIgnored private var externalBaseCount = 0
+  @ObservationIgnored private var isSyncingFromExternal = false
+
   /// Creates a new AuthNavigation instance.
   init() {}
+
+  /// Mirrors ``path`` into a host-owned `NavigationPath`, keeping the host's own entries
+  /// beneath the auth flow's segment untouched.
+  func attachExternalPath(_ binding: Binding<NavigationPath>) {
+    externalPath = binding
+    externalBaseCount = binding.wrappedValue.count
+    mirrorToExternalPath(previousCount: 0)
+  }
+
+  /// Trims ``path`` after the host popped entries directly (back button, gesture).
+  func externalPathDidChange() {
+    guard let externalPath else { return }
+    let externalDepth = max(externalPath.wrappedValue.count - externalBaseCount, 0)
+    guard externalDepth < path.count else { return }
+    isSyncingFromExternal = true
+    path.removeLast(path.count - externalDepth)
+    isSyncingFromExternal = false
+  }
+
+  private func mirrorToExternalPath(previousCount: Int) {
+    guard let externalPath, !isSyncingFromExternal else { return }
+    var newValue = externalPath.wrappedValue
+    newValue.removeLast(min(previousCount, max(newValue.count - externalBaseCount, 0)))
+    for destination in path {
+      newValue.append(destination)
+    }
+    externalPath.wrappedValue = newValue
+  }
 
   /// Updates the navigation path based on the current sign-in status.
   ///
