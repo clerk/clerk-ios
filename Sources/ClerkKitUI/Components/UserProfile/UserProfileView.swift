@@ -361,6 +361,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       #endif
     }
     .embeddedNavigationBarHidden()
+    .embeddedHostBackToolbar()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
         .embeddedNavigationBarHidden()

@@ -133,6 +133,7 @@ public struct AuthView: View {
         }
         #endif
         .embeddedNavigationBarHidden()
+        .embeddedHostBackToolbar()
         .navigationDestination(for: Destination.self) {
           $0.view
             #if os(iOS)

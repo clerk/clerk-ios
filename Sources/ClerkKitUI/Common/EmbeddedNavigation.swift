@@ -26,6 +26,17 @@ public final class ClerkEmbeddedNavigation {
   /// whenever its internal navigation stack changes.
   public var onDepthChange: ((Int) -> Void)?
 
+  /// Whether the component hides its own navigation bars. `true` (the default)
+  /// is for hosts that draw their own header. When `false`, the component keeps
+  /// its native chrome — bars, titles, back buttons, and transitions — and the
+  /// host only supplies the root back affordance via ``hostBackAction``.
+  public var hidesNavigationBars = true
+
+  /// Invoked when the user taps the back button on the embedded component's
+  /// root screen; the host should pop its own navigation. A back button is
+  /// shown at the root only while this is non-`nil` and bars are kept.
+  public var hostBackAction: (() -> Void)?
+
   /// Identifies one component's registration so a superseded or disappearing
   /// component can neither drive the host nor tear down its successor.
   @MainActor
@@ -86,7 +97,7 @@ private struct EmbeddedNavigationBarHiddenModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     #if os(iOS)
-    if embeddedNavigation != nil {
+    if let embeddedNavigation, embeddedNavigation.hidesNavigationBars {
       content.toolbar(.hidden, for: .navigationBar)
     } else {
       content
@@ -101,6 +112,42 @@ extension View {
   /// Hides the navigation bar when embedded navigation is active (iOS only).
   func embeddedNavigationBarHidden() -> some View {
     modifier(EmbeddedNavigationBarHiddenModifier())
+  }
+}
+
+private struct EmbeddedHostBackToolbarModifier: ViewModifier {
+  @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
+
+  func body(content: Content) -> some View {
+    #if os(iOS)
+    if let embeddedNavigation, !embeddedNavigation.hidesNavigationBars,
+       let hostBackAction = embeddedNavigation.hostBackAction
+    {
+      content.toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button {
+            hostBackAction()
+          } label: {
+            Image(systemName: "chevron.backward")
+              .fontWeight(.semibold)
+          }
+          .accessibilityLabel(Text("Back"))
+        }
+      }
+    } else {
+      content
+    }
+    #else
+    content
+    #endif
+  }
+}
+
+extension View {
+  /// Shows the host's back button on the embedded component's root screen when
+  /// the host keeps Clerk's navigation chrome (iOS only).
+  func embeddedHostBackToolbar() -> some View {
+    modifier(EmbeddedHostBackToolbarModifier())
   }
 }
 
