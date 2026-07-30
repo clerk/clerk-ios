@@ -101,7 +101,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
 
   private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
@@ -116,7 +115,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
-  @State private var embeddedRegistration: ClerkEmbeddedNavigation.Registration?
 
   init(
     isDismissible: Bool,
@@ -165,7 +163,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             profileContent(user: user)
               .navigationDestination(for: Route.self) { route in
                 view(for: route)
-                  .embeddedNavigationBarHidden()
                   .environment(sheetNavigation)
                   .environment(codeLimiter)
                   .environment(
@@ -199,24 +196,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       .onFirstAppear {
         initialPathCount = navigationPath?.wrappedValue.count ?? 0
       }
-      .onAppear {
-        guard let embeddedNavigation else { return }
-        let registration = embeddedNavigation.register { toRoot in
-          popForEmbeddedNavigation(toRoot: toRoot)
-        }
-        embeddedRegistration = registration
-        embeddedNavigation.reportDepth(embeddedNavigationDepth, from: registration)
-      }
-      .onDisappear {
-        if let embeddedRegistration {
-          embeddedNavigation?.unregister(embeddedRegistration)
-        }
-        embeddedRegistration = nil
-      }
-      .onChange(of: embeddedNavigationDepth) {
-        guard let embeddedRegistration else { return }
-        embeddedNavigation?.reportDepth(embeddedNavigationDepth, from: embeddedRegistration)
-      }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
         #if os(iOS)
@@ -230,10 +209,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
-        // The add-account sheet is modal over the host, so it keeps Clerk's own
-        // navigation chrome even when this profile is embedded.
+        // The add-account sheet is modal over the host, so it dismisses itself
+        // rather than showing the host's back button.
         AuthView()
-          .environment(\.clerkEmbeddedNavigation, nil)
+          .environment(\.clerkHostBackAction, nil)
       }
       .task {
         for await event in clerk.auth.events {
@@ -360,11 +339,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       #endif
     }
-    .embeddedNavigationBarHidden()
-    .embeddedHostBackToolbar()
+    .hostBackToolbar()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
-        .embeddedNavigationBarHidden()
         .environment(sheetNavigation)
         .environment(codeLimiter)
         .environment(
@@ -619,22 +596,7 @@ extension UserProfileView {
 // MARK: - Embedded Navigation
 
 extension UserProfileView {
-  /// Screens pushed above this profile's root, regardless of who owns the stack.
-  fileprivate var embeddedNavigationDepth: Int {
-    let count = navigationPath?.wrappedValue.count ?? internalPath.count
-    return max(count - initialPathCount, 0)
-  }
-
-  fileprivate func popForEmbeddedNavigation(toRoot: Bool) {
-    guard embeddedNavigationDepth > 0 else { return }
-    if toRoot {
-      dismissAction(.popToRoot)
-    } else if let navigationPath {
-      navigationPath.wrappedValue.removeLast()
-    } else {
-      internalPath.removeLast()
-    }
-  }
+  // Screens pushed above this profile's root, regardless of who owns the stack.
 }
 
 // MARK: - Actions

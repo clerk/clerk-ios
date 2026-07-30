@@ -65,9 +65,6 @@ public struct AuthView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
-  @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
-  /// This view's registration with the embedded-navigation coordinator, if any.
-  @State private var embeddedRegistration: ClerkEmbeddedNavigation.Registration?
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
 
@@ -132,8 +129,7 @@ public struct AuthView: View {
           dismissToolbarItem
         }
         #endif
-        .embeddedNavigationBarHidden()
-        .embeddedHostBackToolbar()
+        .hostBackToolbar()
         .navigationDestination(for: Destination.self) {
           $0.view
             #if os(iOS)
@@ -141,7 +137,6 @@ public struct AuthView: View {
               dismissToolbarItem
             }
             #endif
-            .embeddedNavigationBarHidden()
             .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
             .environment(navigation)
             .environment(authState)
@@ -168,28 +163,6 @@ public struct AuthView: View {
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
-      if let embeddedNavigation {
-        let registration = embeddedNavigation.register { [navigation] toRoot in
-          guard !navigation.path.isEmpty else { return }
-          if toRoot {
-            navigation.path = []
-          } else {
-            navigation.path.removeLast()
-          }
-        }
-        embeddedRegistration = registration
-        embeddedNavigation.reportDepth(navigation.path.count, from: registration)
-      }
-    }
-    .onDisappear {
-      if let embeddedRegistration {
-        embeddedNavigation?.unregister(embeddedRegistration)
-      }
-      embeddedRegistration = nil
-    }
-    .onChange(of: navigation.path.count) { _, newCount in
-      guard let embeddedRegistration else { return }
-      embeddedNavigation?.reportDepth(newCount, from: embeddedRegistration)
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
