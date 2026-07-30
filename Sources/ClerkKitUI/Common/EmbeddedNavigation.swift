@@ -49,7 +49,7 @@ private struct HostBackToolbarModifier: ViewModifier {
           // Opts out of the tint a toolbar button would otherwise take, so this
           // renders at the label color like the system back buttons alongside it.
           .buttonStyle(.plain)
-          .accessibilityLabel(Text("Back"))
+          .accessibilityLabel(Text("Back", bundle: .module))
         }
       }
     } else {
