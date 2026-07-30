@@ -626,12 +626,16 @@ extension UserProfileView {
 
   fileprivate func popForEmbeddedNavigation(toRoot: Bool) {
     guard embeddedNavigationDepth > 0 else { return }
-    if toRoot {
-      dismissAction(.popToRoot)
-    } else if let navigationPath {
-      navigationPath.wrappedValue.removeLast()
-    } else {
-      internalPath.removeLast()
+    // The host drives this from outside SwiftUI, where no transaction is active
+    // to animate the pop.
+    withAnimation {
+      if toRoot {
+        dismissAction(.popToRoot)
+      } else if let navigationPath {
+        navigationPath.wrappedValue.removeLast()
+      } else {
+        internalPath.removeLast()
+      }
     }
   }
 }

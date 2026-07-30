@@ -170,10 +170,14 @@ public struct AuthView: View {
       if let embeddedNavigation {
         let registration = embeddedNavigation.register { [navigation] toRoot in
           guard !navigation.path.isEmpty else { return }
-          if toRoot {
-            navigation.path = []
-          } else {
-            navigation.path.removeLast()
+          // The host drives this from outside SwiftUI, where no transaction is
+          // active to animate the pop.
+          withAnimation {
+            if toRoot {
+              navigation.path = []
+            } else {
+              navigation.path.removeLast()
+            }
           }
         }
         embeddedRegistration = registration
