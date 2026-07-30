@@ -35,7 +35,6 @@ extension EnvironmentValues {
 
 private struct HostBackToolbarModifier: ViewModifier {
   @Environment(\.clerkHostBackAction) private var hostBackAction
-  @Environment(\.clerkTheme) private var theme
 
   func body(content: Content) -> some View {
     #if os(iOS)
@@ -47,10 +46,10 @@ private struct HostBackToolbarModifier: ViewModifier {
           } label: {
             Image(systemName: "chevron.backward")
               .fontWeight(.semibold)
-              // A toolbar button picks up the tint, but the system back buttons
-              // on the screens this sits alongside render at the label color.
-              .foregroundStyle(theme.colors.foreground)
           }
+          // Opts out of the tint a toolbar button would otherwise take, so this
+          // renders at the label color like the system back buttons alongside it.
+          .buttonStyle(.plain)
           .accessibilityLabel(Text("Back"))
         }
       }
