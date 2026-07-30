@@ -22,7 +22,8 @@ protocol SessionServiceProtocol: Sendable {
   /// - Parameters:
   ///   - sessionId: The session ID to generate a token for.
   ///   - template: Optional JWT template name.
-  @MainActor func fetchToken(sessionId: String, template: String?) async throws -> TokenResource?
+  ///   - skipCache: Whether the caller asked to bypass caches for this token.
+  @MainActor func fetchToken(sessionId: String, template: String?, skipCache: Bool) async throws -> TokenResource?
 
   /// Starts an in-session reverification (step-up) flow.
   @MainActor func startVerification(
@@ -81,15 +82,31 @@ final class SessionService: SessionServiceProtocol {
         method: .post
       )
 
-      try await apiClient.send(request)
-    } else {
-      let request = Request<EmptyResponse>(
-        path: "/v1/client/sessions",
-        method: .delete
-      )
+      do {
+        try await apiClient.send(request)
+      } catch {
+        // The server can accept the sign-out and the response pipeline still throw.
+        await SessionTokensCache.shared.removeTokens(sessionId: sessionId)
+        throw error
+      }
 
-      try await apiClient.send(request)
+      await SessionTokensCache.shared.removeTokens(sessionId: sessionId)
+      return
     }
+
+    let request = Request<EmptyResponse>(
+      path: "/v1/client/sessions",
+      method: .delete
+    )
+
+    do {
+      try await apiClient.send(request)
+    } catch {
+      await SessionTokensCache.shared.clear()
+      throw error
+    }
+
+    await SessionTokensCache.shared.clear()
   }
 
   @MainActor
@@ -104,22 +121,75 @@ final class SessionService: SessionServiceProtocol {
     )
 
     try await apiClient.send(request)
+    await SessionTokensCache.shared.removeTokens(sessionId: sessionId)
   }
 
   @MainActor
-  func fetchToken(sessionId: String, template: String?) async throws -> TokenResource? {
-    let path = if let template {
-      "/v1/client/sessions/\(sessionId)/tokens/\(template)"
-    } else {
-      "/v1/client/sessions/\(sessionId)/tokens"
+  func fetchToken(sessionId: String, template: String?, skipCache: Bool) async throws -> TokenResource? {
+    if let template {
+      let request = Request<TokenResource?>(
+        path: "/v1/client/sessions/\(sessionId)/tokens/\(template)",
+        method: .post
+      )
+
+      return try await apiClient.send(request).value
     }
 
+    let body = await sessionMinterBody(sessionId: sessionId, skipCache: skipCache)
     let request = Request<TokenResource?>(
-      path: path,
-      method: .post
+      path: "/v1/client/sessions/\(sessionId)/tokens",
+      method: .post,
+      body: body,
+      // The seed is a replayable session credential; keep it out of device logs.
+      logBodies: body?["token"] == nil
     )
 
     return try await apiClient.send(request).value
+  }
+
+  /// Body params the session minter needs on the non-template tokens route.
+  ///
+  /// Returns `nil` when the instance is not on the session minter, or when there is
+  /// nothing to send, so the request stays byte-identical to a minter-less one.
+  @MainActor
+  private func sessionMinterBody(sessionId: String, skipCache: Bool) async -> [String: String]? {
+    guard Clerk.shared.environment?.authConfig.sessionMinter == true else {
+      return nil
+    }
+
+    var body: [String: String] = [:]
+
+    if let seedToken = await sessionMinterSeedToken(sessionId: sessionId) {
+      body["token"] = seedToken
+    }
+
+    if skipCache {
+      body["force_origin"] = "true"
+    }
+
+    return body.isEmpty ? nil : body
+  }
+
+  /// The previous session token the minter mints from. Never a template token.
+  @MainActor
+  private func sessionMinterSeedToken(sessionId: String) async -> String? {
+    let cacheKey = Session.tokenCacheKey(sessionId: sessionId, template: nil)
+
+    if let cachedToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)?.jwt, !cachedToken.isEmpty {
+      return cachedToken
+    }
+
+    let lastActiveToken = Clerk.shared.client?
+      .sessions
+      .first { $0.id == sessionId }?
+      .lastActiveToken?
+      .jwt
+
+    guard let lastActiveToken, !lastActiveToken.isEmpty else {
+      return nil
+    }
+
+    return lastActiveToken
   }
 
   @MainActor

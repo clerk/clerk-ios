@@ -296,7 +296,12 @@ extension Session {
   /// - If the template is null, the key will be 'sess_abc12345'
   /// - If the template is 'supabase', the key will be 'sess_abc12345-supabase'
   func tokenCacheKey(template: String?) -> String {
-    var tokenCacheKey = id
+    Self.tokenCacheKey(sessionId: id, template: template)
+  }
+
+  /// Format for the session token cache key, for callers that only hold a session id.
+  static func tokenCacheKey(sessionId: String, template: String?) -> String {
+    var tokenCacheKey = sessionId
     if let template {
       tokenCacheKey += "-\(template)"
     }
