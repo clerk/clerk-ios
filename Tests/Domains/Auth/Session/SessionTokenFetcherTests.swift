@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct SessionTokenFetcherTests {
+struct SessionServiceAndTokenFetcherTests {
   init() {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
@@ -82,6 +82,499 @@ struct SessionTokenFetcherTests {
       cacheKey: session.tokenCacheKey(template: template)
     )
     #expect(cachedToken == tokenResource)
+  }
+
+  @Test
+  func templateTokenCacheIsPartitionedByActiveOrganization() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let template = "firebase"
+    var previousSession = Session.mock
+    previousSession.lastActiveOrganizationId = "org_previous"
+    let previousToken = try token(
+      sessionId: previousSession.id,
+      organizationId: previousSession.lastActiveOrganizationId,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "previous"
+    )
+    await SessionTokensCache.shared.insertToken(
+      previousToken,
+      cacheKey: previousSession.tokenCacheKey(template: template)
+    )
+
+    var updatedSession = previousSession
+    updatedSession.lastActiveOrganizationId = "org_updated"
+    configureCurrentState(session: updatedSession, sessionMinterEnabled: true)
+    let updatedToken = try token(
+      sessionId: updatedSession.id,
+      organizationId: updatedSession.lastActiveOrganizationId,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "updated"
+    )
+    let callCount = LockIsolated(0)
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      callCount.withValue { $0 += 1 }
+      return updatedToken
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let result = try await SessionTokenFetcher.shared.getToken(
+      previousSession,
+      options: .init(template: template)
+    )
+
+    #expect(result == updatedToken)
+    #expect(callCount.value == 1)
+    #expect(
+      previousSession.tokenCacheKey(template: template)
+        != updatedSession.tokenCacheKey(template: template)
+    )
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: previousSession.tokenCacheKey(template: template)
+    ) == previousToken)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: updatedSession.tokenCacheKey(template: template)
+    ) == updatedToken)
+  }
+
+  @Test
+  func invalidationPreventsInFlightResponseFromRestoringCachedToken() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let response = TokenResource(jwt: "late.jwt.response")
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+    let generationBeforeRequest = await SessionTokensCache.shared.generation(
+      sessionId: session.id
+    )
+
+    let requestGate = SessionTokenFetchGate()
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      await requestGate.suspend()
+      return response
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let request = Task {
+      try await SessionTokenFetcher.shared.getToken(
+        session,
+        options: .init(skipCache: true)
+      )
+    }
+    defer {
+      request.cancel()
+      Task { await requestGate.resume() }
+    }
+
+    try await waitForCondition(
+      message: "Timed out waiting for the forced token task to be registered."
+    ) {
+      await SessionTokenFetcher.shared.forcedTokenTasks.isEmpty == false
+    }
+    let registeredTask = await SessionTokenFetcher.shared.forcedTokenTasks.values.first
+    let registeredGeneration = try #require(registeredTask?.cacheGeneration)
+    #expect(registeredGeneration == generationBeforeRequest)
+
+    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    await requestGate.resume()
+
+    #expect(try await request.value == response)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    ) == nil)
+  }
+
+  @Test
+  func invalidatedInFlightTaskIsCancelledAndReplaced() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let staleResponse = TokenResource(jwt: "stale.jwt.response")
+    let freshResponse = TokenResource(jwt: "fresh.jwt.response")
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+
+    let firstCallStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    let secondCallStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    defer {
+      firstCallStarted.continuation.finish()
+      secondCallStarted.continuation.finish()
+    }
+
+    let firstGate = SessionTokenFetchGate()
+    let secondGate = SessionTokenFetchGate()
+    let callCount = LockIsolated(0)
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      let callIndex = callCount.withValue { count in
+        defer { count += 1 }
+        return count
+      }
+
+      switch callIndex {
+      case 0:
+        firstCallStarted.continuation.yield()
+        await firstGate.suspend()
+        return staleResponse
+      case 1:
+        secondCallStarted.continuation.yield()
+        await secondGate.suspend()
+        return freshResponse
+      default:
+        return TokenResource(jwt: "unexpected.jwt.response")
+      }
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let first = Task {
+      try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer {
+      first.cancel()
+      Task { await firstGate.resume() }
+    }
+    try await waitForSignal(
+      firstCallStarted.stream,
+      message: "Timed out waiting for the original token request to start."
+    )
+
+    let cacheKey = session.tokenCacheKey(template: nil)
+    let originalTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    let originalTaskId = try #require(originalTask?.id)
+
+    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    let currentGeneration = await SessionTokensCache.shared.generation(
+      sessionId: session.id
+    )
+
+    let second = Task {
+      try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer {
+      second.cancel()
+      Task { await secondGate.resume() }
+    }
+    try await waitForSignal(
+      secondCallStarted.stream,
+      message: "Timed out waiting for the replacement token request to start."
+    )
+
+    let replacementTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    #expect(replacementTask?.id != originalTaskId)
+    #expect(replacementTask?.cacheGeneration == currentGeneration)
+
+    await firstGate.resume()
+    await #expect(throws: CancellationError.self) {
+      try await first.value
+    }
+
+    await secondGate.resume()
+    #expect(try await second.value == freshResponse)
+    #expect(callCount.value == 2)
+    #expect(await SessionTokensCache.shared.getToken(cacheKey: cacheKey) == freshResponse)
+  }
+
+  @Test
+  func retainedSessionDoesNotRehydrateInvalidatedSnapshot() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    var session = Session.mock
+    let snapshotToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "snapshot"
+    )
+    let serverToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "server"
+    )
+    session.lastActiveToken = snapshotToken
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+
+    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    var signedOutClient = Client.mock
+    signedOutClient.sessions = []
+    signedOutClient.lastActiveSessionId = nil
+    Clerk.shared.client = signedOutClient
+
+    let callCount = LockIsolated(0)
+    let capturedParams = LockIsolated<SessionTokenRequestParams?>(nil)
+    let service = MockSessionService(fetchToken: { _, _, params in
+      callCount.withValue { $0 += 1 }
+      capturedParams.setValue(params)
+      return serverToken
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let result = try await SessionTokenFetcher.shared.getToken(session)
+
+    #expect(result == serverToken)
+    #expect(callCount.value == 1)
+    #expect(capturedParams.value?.token == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    ) == serverToken)
+  }
+
+  @Test
+  func nonActiveSessionDoesNotReturnExistingCachedToken() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let cachedToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 100,
+      issuedAt: 100,
+      signature: "cached"
+    )
+    let serverToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "server"
+    )
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+
+    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    await SessionTokensCache.shared.insertToken(
+      cachedToken,
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+    var signedOutClient = Client.mock
+    signedOutClient.sessions = []
+    signedOutClient.lastActiveSessionId = nil
+    Clerk.shared.client = signedOutClient
+
+    let callCount = LockIsolated(0)
+    let capturedParams = LockIsolated<SessionTokenRequestParams?>(nil)
+    let service = MockSessionService(fetchToken: { _, _, params in
+      callCount.withValue { $0 += 1 }
+      capturedParams.setValue(params)
+      return serverToken
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let result = try await SessionTokenFetcher.shared.getToken(session)
+
+    #expect(result == serverToken)
+    #expect(callCount.value == 1)
+    #expect(capturedParams.value?.token == nil)
+  }
+
+  @Test
+  func concurrentNonActiveSessionFetchesShareRequest() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    let session = Session.mock
+    let serverToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "server"
+    )
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+    var signedOutClient = Client.mock
+    signedOutClient.sessions = []
+    signedOutClient.lastActiveSessionId = nil
+    Clerk.shared.client = signedOutClient
+
+    let callCount = LockIsolated(0)
+    let requestStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    let secondCallerStarted = AsyncStream<Void>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    let requestGate = SessionTokenFetchGate()
+    defer {
+      requestStarted.continuation.finish()
+      secondCallerStarted.continuation.finish()
+    }
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      callCount.withValue { $0 += 1 }
+      requestStarted.continuation.yield()
+      await requestGate.suspend()
+      try Task.checkCancellation()
+      return serverToken
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let first = Task {
+      try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer {
+      first.cancel()
+      Task { await requestGate.resume() }
+    }
+    try await waitForSignal(
+      requestStarted.stream,
+      message: "Timed out waiting for the first inactive-session fetch to start."
+    )
+
+    let cacheKey = session.tokenCacheKey(template: nil)
+    let originalTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    let originalTaskId = try #require(originalTask?.id)
+
+    let second = Task {
+      secondCallerStarted.continuation.yield()
+      return try await SessionTokenFetcher.shared.getToken(session)
+    }
+    defer { second.cancel() }
+    try await waitForSignal(
+      secondCallerStarted.stream,
+      message: "Timed out waiting for the second inactive-session caller to start."
+    )
+
+    let sharedTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+    #expect(sharedTask?.id == originalTaskId)
+    #expect(sharedTask?.isCurrentActiveSession == false)
+
+    await requestGate.resume()
+
+    #expect(try await first.value == serverToken)
+    #expect(try await second.value == serverToken)
+    #expect(callCount.value == 1)
+  }
+
+  @Test
+  func transitionedActiveSessionCanHydrateCanonicalSnapshot() async throws {
+    await SessionTokenFetcher.shared.reset()
+    await SessionTokensCache.shared.clear()
+
+    var session = Session.mock
+    let snapshotToken = try token(
+      sessionId: session.id,
+      organizationId: nil,
+      originIssuedAt: 200,
+      issuedAt: 200,
+      signature: "transitioned"
+    )
+    session.lastActiveToken = snapshotToken
+    configureCurrentState(session: session, sessionMinterEnabled: true)
+    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+
+    let callCount = LockIsolated(0)
+    let service = MockSessionService(fetchToken: { _, _, _ in
+      callCount.withValue { $0 += 1 }
+      return TokenResource(jwt: "unexpected.server.response")
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let result = try await SessionTokenFetcher.shared.getToken(session)
+
+    #expect(result == snapshotToken)
+    #expect(callCount.value == 0)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    ) == snapshotToken)
+  }
+
+  @Test
+  func removeTokensClearsAllTokensForOnlyThatSession() async {
+    let cache = SessionTokensCache()
+    var session = Session.mock
+    session.id = "sess_target"
+    var otherSession = Session.mock
+    otherSession.id = "sess_target2"
+
+    await cache.insertToken(
+      .init(jwt: "default.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+    await cache.insertToken(
+      .init(jwt: "template.jwt"),
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    )
+    await cache.insertToken(
+      .init(jwt: "other.jwt"),
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )
+
+    await cache.removeTokens(sessionId: session.id)
+
+    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: "firebase")) == nil)
+    #expect(await cache.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )?.jwt == "other.jwt")
+  }
+
+  @Test
+  func removeTokensRejectsWritesFromAnEarlierGeneration() async {
+    let cache = SessionTokensCache()
+    let session = Session.mock
+    let generation = await cache.generation(sessionId: session.id)
+
+    await cache.removeTokens(sessionId: session.id)
+    let storeResult = await cache.storeIfFresher(
+      .init(jwt: "late.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil),
+      generation: generation
+    )
+    await cache.hydrate(
+      .init(jwt: "late.snapshot.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil),
+      generation: generation
+    )
+
+    #expect(storeResult?.canonicalToken == nil)
+    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+  }
+
+  @Test
+  func clearRejectsWritesFromAnEarlierGeneration() async {
+    let cache = SessionTokensCache()
+    let session = Session.mock
+    let generation = await cache.generation(sessionId: session.id)
+
+    await cache.clear()
+    let storeResult = await cache.storeIfFresher(
+      .init(jwt: "late.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil),
+      generation: generation
+    )
+
+    #expect(storeResult?.canonicalToken == nil)
+    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
   }
 
   @Test
@@ -735,5 +1228,24 @@ private func waitForSignal(
 
     defer { group.cancelAll() }
     _ = try await group.next()
+  }
+}
+
+@MainActor
+private func waitForCondition(
+  timeout: Duration = .seconds(1),
+  message: String,
+  condition: () async -> Bool
+) async throws {
+  let deadline = ContinuousClock.now + timeout
+  while ContinuousClock.now < deadline {
+    if await condition() {
+      return
+    }
+    try await Task.sleep(for: .milliseconds(5))
+  }
+
+  if await condition() == false {
+    throw SessionTokenSignalTimeoutError(description: message)
   }
 }
