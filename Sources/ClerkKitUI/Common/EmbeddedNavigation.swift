@@ -117,6 +117,7 @@ extension View {
 
 private struct EmbeddedHostBackToolbarModifier: ViewModifier {
   @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
+  @Environment(\.clerkTheme) private var theme
 
   func body(content: Content) -> some View {
     #if os(iOS)
@@ -130,6 +131,8 @@ private struct EmbeddedHostBackToolbarModifier: ViewModifier {
           } label: {
             Image(systemName: "chevron.backward")
               .fontWeight(.semibold)
+              // Match the system back button's label color rather than the tint.
+              .foregroundStyle(theme.colors.foreground)
           }
           .accessibilityLabel(Text("Back"))
         }
