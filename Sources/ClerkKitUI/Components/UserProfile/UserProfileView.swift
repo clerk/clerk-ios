@@ -593,12 +593,6 @@ extension UserProfileView {
   }
 }
 
-// MARK: - Embedded Navigation
-
-extension UserProfileView {
-  // Screens pushed above this profile's root, regardless of who owns the stack.
-}
-
 // MARK: - Actions
 
 extension UserProfileView {
