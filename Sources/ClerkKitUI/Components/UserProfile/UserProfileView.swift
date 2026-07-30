@@ -116,6 +116,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
+  @State private var embeddedRegistration: ClerkEmbeddedNavigation.Registration?
 
   init(
     isDismissible: Bool,
@@ -200,16 +201,21 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .onAppear {
         guard let embeddedNavigation else { return }
-        embeddedNavigation.register { toRoot in
+        let registration = embeddedNavigation.register { toRoot in
           popForEmbeddedNavigation(toRoot: toRoot)
         }
-        embeddedNavigation.reportDepth(embeddedNavigationDepth)
+        embeddedRegistration = registration
+        embeddedNavigation.reportDepth(embeddedNavigationDepth, from: registration)
       }
       .onDisappear {
-        embeddedNavigation?.unregister()
+        if let embeddedRegistration {
+          embeddedNavigation?.unregister(embeddedRegistration)
+        }
+        embeddedRegistration = nil
       }
       .onChange(of: embeddedNavigationDepth) {
-        embeddedNavigation?.reportDepth(embeddedNavigationDepth)
+        guard let embeddedRegistration else { return }
+        embeddedNavigation?.reportDepth(embeddedNavigationDepth, from: embeddedRegistration)
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {

@@ -26,29 +26,49 @@ public final class ClerkEmbeddedNavigation {
   /// whenever its internal navigation stack changes.
   public var onDepthChange: ((Int) -> Void)?
 
-  private var popHandler: ((_ toRoot: Bool) -> Void)?
+  /// Identifies one component's registration so a superseded or disappearing
+  /// component can neither drive the host nor tear down its successor.
+  @MainActor
+  final class Registration {
+    fileprivate let popHandler: (_ toRoot: Bool) -> Void
+
+    fileprivate init(popHandler: @escaping (_ toRoot: Bool) -> Void) {
+      self.popHandler = popHandler
+    }
+  }
+
+  private var current: Registration?
 
   public init() {}
 
   /// Pops one screen off the embedded component's internal stack. No-op at the root.
   public func pop() {
-    popHandler?(false)
+    current?.popHandler(false)
   }
 
   /// Pops the embedded component's internal stack back to its root screen.
   public func popToRoot() {
-    popHandler?(true)
+    current?.popHandler(true)
   }
 
-  func register(popHandler: @escaping (_ toRoot: Bool) -> Void) {
-    self.popHandler = popHandler
+  /// Registers the embedded component driving this coordinator. The most recent
+  /// registration wins; commands and depth reports from earlier registrations
+  /// are ignored.
+  func register(popHandler: @escaping (_ toRoot: Bool) -> Void) -> Registration {
+    let registration = Registration(popHandler: popHandler)
+    current = registration
+    return registration
   }
 
-  func unregister() {
-    popHandler = nil
+  /// No-op unless `registration` is still current, so a disappearing component
+  /// cannot tear down a successor that registered before it went away.
+  func unregister(_ registration: Registration) {
+    guard current === registration else { return }
+    current = nil
   }
 
-  func reportDepth(_ depth: Int) {
+  func reportDepth(_ depth: Int, from registration: Registration) {
+    guard current === registration else { return }
     onDepthChange?(depth)
   }
 }

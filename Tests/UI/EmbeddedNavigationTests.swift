@@ -8,9 +8,10 @@ struct EmbeddedNavigationTests {
     let embeddedNavigation = ClerkEmbeddedNavigation()
     var received: [Int] = []
     embeddedNavigation.onDepthChange = { received.append($0) }
+    let registration = embeddedNavigation.register { _ in }
 
-    embeddedNavigation.reportDepth(1)
-    embeddedNavigation.reportDepth(0)
+    embeddedNavigation.reportDepth(1, from: registration)
+    embeddedNavigation.reportDepth(0, from: registration)
 
     #expect(received == [1, 0])
   }
@@ -19,7 +20,7 @@ struct EmbeddedNavigationTests {
   func popRoutesToRegisteredHandler() {
     let embeddedNavigation = ClerkEmbeddedNavigation()
     var pops: [Bool] = []
-    embeddedNavigation.register { toRoot in pops.append(toRoot) }
+    _ = embeddedNavigation.register { toRoot in pops.append(toRoot) }
 
     embeddedNavigation.pop()
     embeddedNavigation.popToRoot()
@@ -39,8 +40,8 @@ struct EmbeddedNavigationTests {
   func unregisterStopsRoutingPops() {
     let embeddedNavigation = ClerkEmbeddedNavigation()
     var pops: [Bool] = []
-    embeddedNavigation.register { toRoot in pops.append(toRoot) }
-    embeddedNavigation.unregister()
+    let registration = embeddedNavigation.register { toRoot in pops.append(toRoot) }
+    embeddedNavigation.unregister(registration)
 
     embeddedNavigation.pop()
 
@@ -52,12 +53,41 @@ struct EmbeddedNavigationTests {
     let embeddedNavigation = ClerkEmbeddedNavigation()
     var first = 0
     var second = 0
-    embeddedNavigation.register { _ in first += 1 }
-    embeddedNavigation.register { _ in second += 1 }
+    _ = embeddedNavigation.register { _ in first += 1 }
+    _ = embeddedNavigation.register { _ in second += 1 }
 
     embeddedNavigation.pop()
 
     #expect(first == 0)
     #expect(second == 1)
+  }
+
+  @Test
+  func staleUnregisterDoesNotTearDownSuccessor() {
+    let embeddedNavigation = ClerkEmbeddedNavigation()
+    var pops: [Bool] = []
+    let old = embeddedNavigation.register { _ in }
+    _ = embeddedNavigation.register { toRoot in pops.append(toRoot) }
+
+    // An older component disappearing after its successor registered must not
+    // clear the successor's handler.
+    embeddedNavigation.unregister(old)
+    embeddedNavigation.pop()
+
+    #expect(pops == [false])
+  }
+
+  @Test
+  func staleDepthReportsAreIgnored() {
+    let embeddedNavigation = ClerkEmbeddedNavigation()
+    var received: [Int] = []
+    embeddedNavigation.onDepthChange = { received.append($0) }
+    let old = embeddedNavigation.register { _ in }
+    let current = embeddedNavigation.register { _ in }
+
+    embeddedNavigation.reportDepth(3, from: old)
+    embeddedNavigation.reportDepth(1, from: current)
+
+    #expect(received == [1])
   }
 }

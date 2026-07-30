@@ -66,6 +66,8 @@ public struct AuthView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @Environment(\.clerkEmbeddedNavigation) private var embeddedNavigation
+  /// This view's registration with the embedded-navigation coordinator, if any.
+  @State private var embeddedRegistration: ClerkEmbeddedNavigation.Registration?
   /// Navigation state for the auth flow.
   @State private var navigation = AuthNavigation()
 
@@ -166,7 +168,7 @@ public struct AuthView: View {
         resumeAuth(callbackContinuation)
       }
       if let embeddedNavigation {
-        embeddedNavigation.register { [navigation] toRoot in
+        let registration = embeddedNavigation.register { [navigation] toRoot in
           guard !navigation.path.isEmpty else { return }
           if toRoot {
             navigation.path = []
@@ -174,14 +176,19 @@ public struct AuthView: View {
             navigation.path.removeLast()
           }
         }
-        embeddedNavigation.reportDepth(navigation.path.count)
+        embeddedRegistration = registration
+        embeddedNavigation.reportDepth(navigation.path.count, from: registration)
       }
     }
     .onDisappear {
-      embeddedNavigation?.unregister()
+      if let embeddedRegistration {
+        embeddedNavigation?.unregister(embeddedRegistration)
+      }
+      embeddedRegistration = nil
     }
     .onChange(of: navigation.path.count) { _, newCount in
-      embeddedNavigation?.reportDepth(newCount)
+      guard let embeddedRegistration else { return }
+      embeddedNavigation?.reportDepth(newCount, from: embeddedRegistration)
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
