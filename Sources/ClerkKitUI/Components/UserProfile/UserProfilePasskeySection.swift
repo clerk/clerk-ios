@@ -6,6 +6,7 @@
 #if os(iOS) || os(macOS)
 
 import ClerkKit
+import Foundation
 import SwiftUI
 
 struct UserProfilePasskeySection: View {
@@ -53,7 +54,11 @@ extension UserProfilePasskeySection {
     } catch {
       if error.isUserCancelledError { return }
       self.error = error
-      ClerkLogger.error("Failed to create passkey", error: error)
+      let nsError = error as NSError
+      ClerkLogger.error(
+        "Failed to create passkey (phase: passkey_registration, domain: \(nsError.domain), code: \(nsError.code))",
+        error: error
+      )
     }
   }
 }

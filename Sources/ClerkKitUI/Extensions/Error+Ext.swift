@@ -12,8 +12,9 @@ extension Error {
   var isUserCancelledError: Bool {
     if case ASWebAuthenticationSessionError.canceledLogin = self { return true }
 
-    if let authError = self as? ASAuthorizationError, authError.errorUserInfo["NSLocalizedFailureReason"] == nil {
-      return true
+    let nsError = self as NSError
+    if nsError.domain == ASAuthorizationError.errorDomain {
+      return nsError.code == ASAuthorizationError.Code.canceled.rawValue
     }
 
     return false
