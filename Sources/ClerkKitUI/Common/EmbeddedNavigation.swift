@@ -37,10 +37,9 @@ private struct HostBackToolbarModifier: ViewModifier {
   @Environment(\.clerkHostBackAction) private var hostBackAction
 
   func body(content: Content) -> some View {
-    #if os(iOS)
     if let hostBackAction {
       content.toolbar {
-        ToolbarItem(placement: .topBarLeading) {
+        ToolbarItem(placement: hostBackToolbarPlacement) {
           Button {
             hostBackAction()
           } label: {
@@ -56,8 +55,13 @@ private struct HostBackToolbarModifier: ViewModifier {
     } else {
       content
     }
+  }
+
+  private var hostBackToolbarPlacement: ToolbarItemPlacement {
+    #if os(iOS)
+    .topBarLeading
     #else
-    content
+    .navigation
     #endif
   }
 }
