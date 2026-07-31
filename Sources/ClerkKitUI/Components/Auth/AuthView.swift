@@ -129,6 +129,7 @@ public struct AuthView: View {
           dismissToolbarItem
         }
         #endif
+        .hostBackToolbar()
         .navigationDestination(for: Destination.self) {
           $0.view
             #if os(iOS)

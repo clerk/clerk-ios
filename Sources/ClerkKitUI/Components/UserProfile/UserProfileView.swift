@@ -209,7 +209,10 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserProfileUpdateProfileView(user: user)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
+        // The add-account sheet is modal over the host, so it dismisses itself
+        // rather than showing the host's back button.
         AuthView()
+          .environment(\.clerkHostBackAction, nil)
       }
       .task {
         for await event in clerk.auth.events {
@@ -336,6 +339,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       #endif
     }
+    .hostBackToolbar()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
         .environment(sheetNavigation)
