@@ -71,7 +71,7 @@ struct SessionTaskChooseOrganizationView: View {
     ScrollView {
       VStack(spacing: 32) {
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Choose an Organization")
+          HeaderView(style: .title, text: "Choose an organization")
           if user?.createOrganizationEnabled == true {
             HeaderView(style: .subtitle, text: "Join an existing organization or create a new one")
           } else {

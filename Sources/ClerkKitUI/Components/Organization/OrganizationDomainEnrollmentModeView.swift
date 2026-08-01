@@ -95,12 +95,7 @@ struct OrganizationDomainEnrollmentModeView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
 
         ToolbarItem(placement: .principal) {
           Text("Update \(domain.name)", bundle: .module)
@@ -231,7 +226,7 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
       .init(
         mode: .automaticInvitation,
         title: "Automatic invitations",
-        description: "Users are automatically invited to join the organization when they sign-up and can join anytime."
+        description: "Users are automatically invited to join the organization when they sign up and can join anytime."
       ),
       .init(
         mode: .automaticSuggestion,

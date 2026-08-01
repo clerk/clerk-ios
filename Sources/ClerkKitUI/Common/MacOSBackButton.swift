@@ -26,6 +26,7 @@ struct MacOSBackButton: View {
           )
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(Text("Back", bundle: .module))
 
       Spacer()
     }

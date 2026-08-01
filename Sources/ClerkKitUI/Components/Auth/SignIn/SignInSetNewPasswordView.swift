@@ -63,7 +63,7 @@ struct SignInSetNewPasswordView: View {
             isSecure: true,
             fieldState: fieldError != nil ? .error : .default
           )
-          .textContentType(.newPassword)
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
           #if os(iOS)
           .textInputAutocapitalization(.never)
           #endif
@@ -85,7 +85,7 @@ struct SignInSetNewPasswordView: View {
               isSecure: true,
               fieldState: fieldError != nil ? .error : .default
             )
-            .textContentType(.newPassword)
+            .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
             #if os(iOS)
             .textInputAutocapitalization(.never)
             #endif

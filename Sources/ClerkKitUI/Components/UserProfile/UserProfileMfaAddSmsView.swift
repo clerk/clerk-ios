@@ -12,7 +12,6 @@ import SwiftUI
 struct UserProfileMfaAddSmsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var selectedPhoneNumber: ClerkKit.PhoneNumber?
@@ -109,12 +108,7 @@ struct UserProfileMfaAddSmsView: View {
         #endif
         .preGlassSolidNavBar()
         .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
-          }
+          CancelToolbarItem()
 
           ToolbarItem(placement: .principal) {
             Text("Add SMS code verification", bundle: .module)

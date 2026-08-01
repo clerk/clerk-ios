@@ -59,37 +59,7 @@ private struct ProfileHeaderView: View {
       Text("Profile")
         .font(.system(size: 34, weight: .bold))
         .foregroundStyle(.primary)
-
-      Spacer()
-
-      NotificationButton()
     }
-  }
-}
-
-// MARK: - NotificationButton
-
-private struct NotificationButton: View {
-  @Environment(\.colorScheme) private var colorScheme
-
-  var body: some View {
-    Button {} label: {
-      Image(systemName: "bell")
-        .font(.system(size: 18, weight: .medium))
-        .foregroundStyle(.primary)
-        .frame(width: 44, height: 44)
-        .background(Color(uiColor: .systemBackground))
-        .clipShape(.circle)
-        .overlay {
-          if colorScheme == .dark {
-            Circle()
-              .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-          }
-        }
-        .shadow(color: .black.opacity(0.10), radius: 14, x: 0, y: 8)
-        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-    }
-    .buttonStyle(.plain)
   }
 }
 

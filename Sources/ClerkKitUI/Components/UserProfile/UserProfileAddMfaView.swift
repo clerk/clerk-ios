@@ -12,7 +12,6 @@ struct UserProfileAddMfaView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
-  @Environment(\.dismiss) private var dismiss
 
   @State private var error: Error?
 
@@ -119,12 +118,7 @@ struct UserProfileAddMfaView: View {
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
-          }
+          CancelToolbarItem()
 
           ToolbarItem(placement: .principal) {
             Text("Add two-step verification", bundle: .module)

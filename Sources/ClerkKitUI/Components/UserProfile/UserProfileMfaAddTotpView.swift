@@ -11,7 +11,6 @@ import SwiftUI
 struct UserProfileMfaAddTotpView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
-  @Environment(\.dismiss) private var dismiss
 
   @State private var path = NavigationPath()
   @State private var error: Error?
@@ -106,12 +105,7 @@ struct UserProfileMfaAddTotpView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
 
         ToolbarItem(placement: .principal) {
           Text("Add authenticator application", bundle: .module)

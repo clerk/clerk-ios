@@ -78,7 +78,7 @@ struct OrganizationMemberRow: View {
           }
 
           if isCurrentUser {
-            Text(verbatim: "\(roleName) · Joined \(joinedDate)")
+            Text("\(roleName) · Joined \(joinedDate)", bundle: .module)
               .font(theme.fonts.footnote)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
@@ -87,7 +87,7 @@ struct OrganizationMemberRow: View {
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
-            Text(verbatim: "Joined \(joinedDate)")
+            Text("Joined \(joinedDate)", bundle: .module)
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
@@ -169,7 +169,7 @@ struct OrganizationInvitationRow: View {
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)
 
-          Text(verbatim: "Invited \(invitedDate)")
+          Text("Invited \(invitedDate)", bundle: .module)
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)
@@ -245,7 +245,7 @@ struct OrganizationMembershipRequestRow: View {
               .lineLimit(1)
           }
 
-          Text(verbatim: "Requested \(requestedDate)")
+          Text("Requested \(requestedDate)", bundle: .module)
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)

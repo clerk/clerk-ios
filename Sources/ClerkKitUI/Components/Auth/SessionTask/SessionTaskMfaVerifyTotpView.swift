@@ -25,7 +25,7 @@ struct SessionTaskMfaVerifyTotpView: View {
       VStack(spacing: 0) {
         SessionTaskHeaderSection(
           title: "Add authenticator application",
-          subtitle: "Enter the verification code from authenticator application"
+          subtitle: "Enter the verification code from your authenticator application."
         )
         .padding(.bottom, 24)
 

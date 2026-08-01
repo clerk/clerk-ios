@@ -183,12 +183,7 @@ struct UserProfileVerifyView: View {
     .preGlassSolidNavBar()
     .toolbar {
       if hasCancelAction {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
       }
 
       ToolbarItem(placement: .principal) {

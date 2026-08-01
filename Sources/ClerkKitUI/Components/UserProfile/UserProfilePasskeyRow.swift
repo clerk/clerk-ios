@@ -10,6 +10,7 @@ import SwiftUI
 
 struct UserProfilePasskeyRow: View {
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.locale) private var locale
 
   @State private var renameIsPresented = false
   @State private var isConfirmingRemoval = false
@@ -76,16 +77,23 @@ struct UserProfilePasskeyRow: View {
       UserProfilePasskeyRenameView(passkey: passkey)
     }
     .confirmationDialog(
-      removeResource?.messageLine1 ?? "",
+      removeResource?.messageLine1(locale: locale) ?? "",
       isPresented: $isConfirmingRemoval,
       titleVisibility: .visible,
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource()
         } label: { _ in
-          Text(removeResource?.title ?? "", bundle: .module)
+          Text(verbatim: removeResource?.title(locale: locale) ?? "")
         }
         .onIsRunningChanged { isLoading = $0 }
+
+        Button(role: .cancel) {
+          isConfirmingRemoval = false
+          removeResource = nil
+        } label: {
+          Text("Cancel", bundle: .module)
+        }
       }
     )
     .onChange(of: removeResource) {

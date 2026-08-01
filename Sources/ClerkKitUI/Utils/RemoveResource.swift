@@ -17,36 +17,36 @@ enum RemoveResource: Equatable {
   case totp
   case secondFactorPhoneNumber(PhoneNumber)
 
-  var title: LocalizedStringKey {
+  func title(locale: Locale) -> String {
     switch self {
     case .email:
-      "Remove email address"
+      String(localized: "Remove email address", bundle: .module, locale: locale)
     case .phoneNumber:
-      "Remove phone number"
+      String(localized: "Remove phone number", bundle: .module, locale: locale)
     case .externalAccount:
-      "Remove connected account"
+      String(localized: "Remove connected account", bundle: .module, locale: locale)
     case .passkey:
-      "Remove passkey"
+      String(localized: "Remove passkey", bundle: .module, locale: locale)
     case .totp, .secondFactorPhoneNumber:
-      "Remove two-step verification"
+      String(localized: "Remove two-step verification", bundle: .module, locale: locale)
     }
   }
 
   @MainActor
-  var messageLine1: LocalizedStringKey {
+  func messageLine1(locale: Locale) -> String {
     switch self {
     case let .email(emailAddress):
-      "\(emailAddress.emailAddress) will be removed from this account. You will no longer be able to sign in using this email address."
+      String(localized: "\(emailAddress.emailAddress) will be removed from this account. You will no longer be able to sign in using this email address.", bundle: .module, locale: locale)
     case let .phoneNumber(phoneNumber):
-      "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will be removed from this account. You will no longer be able to sign in using this phone number."
+      String(localized: "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will be removed from this account. You will no longer be able to sign in using this phone number.", bundle: .module, locale: locale)
     case let .externalAccount(externalAccount):
-      "\(externalAccount.oauthProvider.name) will be removed from this account. You will no longer be able to sign in using this connected account."
+      String(localized: "\(externalAccount.oauthProvider.name) will be removed from this account. You will no longer be able to sign in using this connected account.", bundle: .module, locale: locale)
     case let .passkey(passkey):
-      "\(passkey.name) will be removed from this account. You will no longer be able to sign in using this passkey."
+      String(localized: "\(passkey.name) will be removed from this account. You will no longer be able to sign in using this passkey.", bundle: .module, locale: locale)
     case .totp:
-      "Verification codes from this authenticator will no longer be required when signing in."
+      String(localized: "Verification codes from this authenticator will no longer be required when signing in.", bundle: .module, locale: locale)
     case let .secondFactorPhoneNumber(phoneNumber):
-      "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will no longer be receiving verification codes when signing in."
+      String(localized: "\(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible) will no longer be receiving verification codes when signing in.", bundle: .module, locale: locale)
     }
   }
 

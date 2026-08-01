@@ -100,12 +100,7 @@ struct UserProfileChangePasswordView: View {
     #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: .cancellationAction) {
-        Button("Cancel") {
-          dismiss()
-        }
-        .foregroundStyle(theme.colors.primary)
-      }
+      CancelToolbarItem()
 
       ToolbarItem(placement: .principal) {
         Text("Update password", bundle: .module)
@@ -181,12 +176,7 @@ struct UserProfileChangePasswordView: View {
     .preGlassSolidNavBar()
     .toolbar {
       if isAddingPassword {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
       }
 
       ToolbarItem(placement: .principal) {

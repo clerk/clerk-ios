@@ -30,7 +30,7 @@ struct SignInFactorTwoBackupCodeView: View {
       VStack(spacing: 0) {
         VStack(spacing: 8) {
           HeaderView(style: .title, text: "Enter a backup code")
-          HeaderView(style: .subtitle, text: "Your backup code is the one you got when setting up two-step authentication.")
+          HeaderView(style: .subtitle, text: "Your backup code is the one you got when setting up two-step verification.")
         }
         .padding(.bottom, 32)
 
@@ -78,6 +78,14 @@ struct SignInFactorTwoBackupCodeView: View {
           Text("Use another method", bundle: .module)
             .frame(maxWidth: .infinity)
         }
+        .buttonStyle(
+          .primary(
+            config: .init(
+              emphasis: .none,
+              size: .small
+            )
+          )
+        )
         .padding(.bottom, 32)
 
         SecuredByClerkView()

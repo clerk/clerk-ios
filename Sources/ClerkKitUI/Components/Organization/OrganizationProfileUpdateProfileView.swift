@@ -9,7 +9,6 @@ import SwiftUI
 
 struct OrganizationProfileUpdateProfileView: View {
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
 
   private let organization: Organization
 
@@ -27,12 +26,7 @@ struct OrganizationProfileUpdateProfileView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
 
         ToolbarItem(placement: .principal) {
           Text("Update profile", bundle: .module)

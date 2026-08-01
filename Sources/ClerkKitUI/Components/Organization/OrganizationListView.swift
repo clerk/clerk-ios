@@ -192,12 +192,7 @@ public struct OrganizationListView: View {
     .toolbar {
       #if os(iOS)
       if isDismissible {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
-        }
+        CancelToolbarItem()
       }
       #endif
 
