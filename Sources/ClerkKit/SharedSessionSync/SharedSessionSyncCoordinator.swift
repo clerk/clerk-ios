@@ -395,7 +395,12 @@ extension SharedSessionSyncCoordinator {
         revision: publicationRevision,
         clerk: clerk,
         operation: {
-          try await self.localIdentityIO.stagePendingPublication(event)
+          try await self.localIdentityIO.stagePendingPublication(
+            event,
+            completedAuthFlow: clerk.hasRegisteredAuthFlow
+              ? publication.completedAuthFlow
+              : nil
+          )
         },
         didComplete: {
           didStage = true
@@ -439,10 +444,7 @@ extension SharedSessionSyncCoordinator {
             eventID: event.id
           ),
           provisionalClientPreservingEventID: publication.clientPresentationPolicy
-            == .preserveProvisional ? event.id : nil,
-          completedAuthFlowCandidate: publication.completedAuthFlow.map {
-            (eventID: event.id, flow: $0)
-          }
+            == .preserveProvisional ? event.id : nil
         )
       }
       notifier.post()
@@ -729,8 +731,13 @@ extension SharedSessionSyncCoordinator {
       operation: {
         try await self.localIdentityIO.loadRecord()
       }
-    ), let pending = record.pendingPublication else {
+    ) else {
       return false
+    }
+    guard let pending = record.pendingPublication else {
+      guard record.pendingAuthFlowCompletion != nil else { return false }
+      _ = try await reduceApplyAndReplicate()
+      return true
     }
     let provisionalClientPreservingEventID = record.pendingTokenOnlyPublicationEventID(
       for: ownerIdentifier
@@ -797,13 +804,15 @@ extension SharedSessionSyncCoordinator {
   private func reduceApplyAndReplicate(
     clearingPendingPublicationID pendingPublicationID: UUID? = nil,
     networkResponseCandidate: (eventID: UUID, rootGeneration: UInt64)? = nil,
-    provisionalClientPreservingEventID: UUID? = nil,
-    completedAuthFlowCandidate: (eventID: UUID, flow: TransferFlowResult)? = nil
+    provisionalClientPreservingEventID: UUID? = nil
   ) async throws -> Bool {
     guard let clerk, isCurrent(clerk: clerk), !isLocalClearInProgress else {
       throw CancellationError()
     }
     let reductionRevision = operationRevision
+    let pendingAuthFlowCompletion = try await localIdentityIO
+      .loadRecord()?
+      .pendingAuthFlowCompletion
     let slots = try await slotIO.loadAllSlots()
     do {
       try validateActiveOperation(reductionRevision, clerk: clerk)
@@ -863,18 +872,41 @@ extension SharedSessionSyncCoordinator {
 
     let previousAcceptedEventID = acceptedEventID
     let didChange = winner.id != previousAcceptedEventID
+    if let pendingAuthFlowCompletion,
+       pendingAuthFlowCompletion.eventID == winner.id
+    {
+      clerk.holdDurableAuthFlowCompletion(
+        pendingAuthFlowCompletion.result,
+        eventID: pendingAuthFlowCompletion.eventID,
+        onConsume: { [weak self] in
+          await self?.acknowledgePendingAuthFlowCompletion(
+            eventID: pendingAuthFlowCompletion.eventID
+          )
+        }
+      )
+    }
     if didChange {
-      if let completedAuthFlowCandidate,
-         completedAuthFlowCandidate.eventID == winner.id
-      {
-        clerk.holdAuthFlowCompletion(completedAuthFlowCandidate.flow)
-      }
       applyToMemory(
         winner,
         clerk: clerk,
         clientPresentationPolicy: winner.id == provisionalClientPreservingEventID
           ? .preserveProvisional
           : .replaceWithIdentity
+      )
+    }
+    if let pendingAuthFlowCompletion,
+       pendingAuthFlowCompletion.eventID != winner.id
+    {
+      try await performCheckedOperation(
+        revision: reductionRevision,
+        clerk: clerk
+      ) {
+        try await self.localIdentityIO.clearPendingAuthFlowCompletion(
+          eventID: pendingAuthFlowCompletion.eventID
+        )
+      }
+      clerk.discardDurableAuthFlowCompletion(
+        eventID: pendingAuthFlowCompletion.eventID
       )
     }
     updateNetworkResponseLineage(
@@ -884,6 +916,28 @@ extension SharedSessionSyncCoordinator {
     )
     requiresSuccessfulReconciliation = false
     return didChange
+  }
+
+  private func acknowledgePendingAuthFlowCompletion(eventID: UUID) async {
+    let operation = enqueueSerializedOperation { [weak self] in
+      guard let self,
+            let clerk,
+            isCurrent(clerk: clerk),
+            !isLocalClearInProgress
+      else {
+        throw CancellationError()
+      }
+      try await localIdentityIO.clearPendingAuthFlowCompletion(eventID: eventID)
+    }
+
+    do {
+      try await operation.value
+    } catch is CancellationError {
+      // Destructive teardown clears the record; non-destructive teardown preserves it for restart.
+    } catch {
+      logError(error, "Failed to acknowledge shared-session auth-flow completion")
+      requestReconciliation()
+    }
   }
 
   private func applyToMemory(

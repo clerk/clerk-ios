@@ -151,7 +151,9 @@ struct ClerkLoggerTests {
     }
 
     let deadline = ContinuousClock.now + .seconds(1)
-    while entries.value.isEmpty, ContinuousClock.now < deadline {
+    while !entries.value.contains(where: {
+      $0.message.contains("Failed to delete keychain item")
+    }), ContinuousClock.now < deadline {
       await Task.yield()
     }
     let keychainEntry = try #require(entries.value.first {

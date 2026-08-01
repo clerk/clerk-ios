@@ -28,6 +28,7 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
   @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
+  @State private var trustedDeviceBiometryDisplayName: TrustedDeviceBiometryDisplayName?
 
   // MARK: - Configuration
 
@@ -333,7 +334,8 @@ extension AuthStartView {
   private var shouldShowTrustedDeviceSignIn: Bool {
     trustedDeviceFeatureIsEnabled &&
       authState.mode != .signUp &&
-      trustedDeviceAvailability?.isAvailable == true
+      trustedDeviceAvailability?.isAvailable == true &&
+      trustedDeviceBiometryDisplayName != nil
   }
 
   private var trustedDeviceAvailabilityRefreshState: AuthStartTrustedDeviceRefreshState {
@@ -437,13 +439,18 @@ extension AuthStartView {
     .simultaneousGesture(TapGesture())
   }
 
+  @ViewBuilder
   private var trustedDeviceSignInButton: some View {
-    TrustedDeviceSignInButton {
-      cancelAutomaticPasskeySignIn()
-      await signInWithTrustedDevice()
+    if let trustedDeviceBiometryDisplayName {
+      TrustedDeviceSignInButton(
+        biometryDisplayName: trustedDeviceBiometryDisplayName
+      ) {
+        cancelAutomaticPasskeySignIn()
+        await signInWithTrustedDevice()
+      }
+      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsTrustedDeviceBadge == true)
+      .simultaneousGesture(TapGesture())
     }
-    .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsTrustedDeviceBadge == true)
-    .simultaneousGesture(TapGesture())
   }
 
   private var alternativeAuthMethodsSection: some View {
@@ -743,6 +750,9 @@ extension AuthStartView {
       return
     }
 
+    if localAvailability.isAvailable, trustedDeviceBiometryDisplayName == nil {
+      trustedDeviceBiometryDisplayName = .current()
+    }
     trustedDeviceAvailability = localAvailability
     guard localAvailability.isAvailable else { return }
 

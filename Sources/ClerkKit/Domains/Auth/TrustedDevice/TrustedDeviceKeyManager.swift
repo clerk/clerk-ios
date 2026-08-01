@@ -56,8 +56,14 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       throw TrustedDeviceKeyManagerError.keyGenerationFailed(Self.errorMessage(from: error))
     }
 
-    let publicKeyJWK = try Self.publicKeyJWK(for: privateKey)
-    return TrustedDeviceLocalKey(localKeyId: localKeyId, publicKeyJWK: publicKeyJWK, policy: policy)
+    return try Self.completeKeyCreation(
+      localKeyId: localKeyId,
+      policy: policy,
+      exportPublicKeyJWK: {
+        try Self.publicKeyJWK(for: privateKey)
+      },
+      deleteKey: deleteKey(localKeyId:)
+    )
     #else
     throw TrustedDeviceKeyManagerError.unsupportedPlatform
     #endif
@@ -253,6 +259,33 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return """
     {"kty":"EC","crv":"P-256","x":"\(base64URLEncodedString(xCoordinate))","y":"\(base64URLEncodedString(yCoordinate))","alg":"ES256"}
     """
+  }
+
+  @MainActor
+  package static func completeKeyCreation(
+    localKeyId: String,
+    policy: TrustedDevicePolicy,
+    exportPublicKeyJWK: () throws -> String,
+    deleteKey: (String) throws -> Void
+  ) throws -> TrustedDeviceLocalKey {
+    do {
+      return try TrustedDeviceLocalKey(
+        localKeyId: localKeyId,
+        publicKeyJWK: exportPublicKeyJWK(),
+        policy: policy
+      )
+    } catch {
+      let exportError = error
+      do {
+        try deleteKey(localKeyId)
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to delete trusted-device key after public-key export failed."
+        )
+      }
+      throw exportError
+    }
   }
 
   package static func base64URLEncodedString(_ data: some DataProtocol) -> String {

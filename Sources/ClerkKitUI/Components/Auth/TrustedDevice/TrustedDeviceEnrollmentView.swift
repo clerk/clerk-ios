@@ -13,9 +13,9 @@ struct TrustedDeviceEnrollmentView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  @State private var error: Error?
+  private let biometryDisplayName: TrustedDeviceBiometryDisplayName
 
-  private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+  @State private var error: Error?
 
   private var title: LocalizedStringKey {
     "Allow \(biometryDisplayName.value)"
@@ -26,6 +26,10 @@ struct TrustedDeviceEnrollmentView: View {
       applicationName: TrustedDeviceEnrollmentStrings.applicationName(for: clerk),
       biometryDisplayName: biometryDisplayName
     )
+  }
+
+  init(biometryDisplayName: TrustedDeviceBiometryDisplayName) {
+    self.biometryDisplayName = biometryDisplayName
   }
 
   var body: some View {
@@ -132,7 +136,9 @@ extension TrustedDeviceEnrollmentView {
 }
 
 #Preview {
-  TrustedDeviceEnrollmentView()
+  TrustedDeviceEnrollmentView(
+    biometryDisplayName: .init(biometryType: .faceID)
+  )
     .clerkPreview()
 }
 

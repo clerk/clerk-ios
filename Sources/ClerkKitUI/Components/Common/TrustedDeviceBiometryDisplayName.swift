@@ -7,7 +7,7 @@
 
 import LocalAuthentication
 
-struct TrustedDeviceBiometryDisplayName: Equatable {
+struct TrustedDeviceBiometryDisplayName: Hashable {
   let value: String
   let systemImageName: String?
   let isSupported: Bool

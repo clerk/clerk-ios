@@ -1273,6 +1273,29 @@ struct ClerkTests {
     #expect(try credentialStore.all().isEmpty)
   }
 
+  @Test
+  func trustedDeviceInstallationMarkerPreservesConfigurationBoundaries() {
+    let first = Clerk.trustedDeviceInstallationMarkerKey(
+      for: .init(service: "a.b", accessGroup: "c"),
+      appIdentifier: "com.clerk.example"
+    )
+    let second = Clerk.trustedDeviceInstallationMarkerKey(
+      for: .init(service: "a", accessGroup: "b.c"),
+      appIdentifier: "com.clerk.example"
+    )
+    let missingAccessGroup = Clerk.trustedDeviceInstallationMarkerKey(
+      for: .init(service: "a", accessGroup: nil),
+      appIdentifier: "com.clerk.example"
+    )
+    let literalDefaultAccessGroup = Clerk.trustedDeviceInstallationMarkerKey(
+      for: .init(service: "a", accessGroup: "default"),
+      appIdentifier: "com.clerk.example"
+    )
+
+    #expect(first != second)
+    #expect(missingAccessGroup != literalDefaultAccessGroup)
+  }
+
   // MARK: - isLoaded Tests
 
   @Test
@@ -1409,7 +1432,7 @@ struct ClerkTests {
   }
 
   @Test
-  func completedAuthenticationHoldsAuthFlowUntilPostAuthCompletes() throws {
+  func completedAuthenticationHoldsAuthFlowUntilPostAuthCompletes() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
@@ -1419,9 +1442,43 @@ struct ClerkTests {
     #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
     #expect(clerk.readyPendingAuthFlowCompletion?.flowId == SignIn.mock.id)
 
-    clerk.consumePendingAuthFlowCompletion()
+    await clerk.consumePendingAuthFlowCompletion()
     #expect(clerk.pendingAuthFlowCompletion == nil)
     #expect(clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+
+    clerk.markAuthFlowComplete()
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func durableCompletionWaitsForLateRegistrationAndConsumption() async throws {
+    let clerk = Clerk.mock
+    let didAcknowledge = LockIsolated(false)
+    let eventID = UUID()
+
+    clerk.holdDurableAuthFlowCompletion(
+      completedAuthFlow(),
+      eventID: eventID,
+      onConsume: {
+        didAcknowledge.setValue(true)
+      }
+    )
+
+    #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    #expect(clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+
+    let registration = try #require(clerk.registerAuthFlow())
+
+    #expect(clerk.readyPendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    #expect(clerk.isAuthFlowComplete == false)
+
+    await clerk.consumePendingAuthFlowCompletion()
+
+    #expect(didAcknowledge.value)
+    #expect(clerk.pendingAuthFlowCompletion == nil)
     #expect(clerk.isAuthFlowComplete == false)
 
     clerk.markAuthFlowComplete()

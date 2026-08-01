@@ -945,6 +945,194 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func restartRestoresAuthFlowCompletionWithPendingPublication() async throws {
+    let backend = TestSlotBackend()
+    backend.failSavesForOwners = ["app.a"]
+    let localStore = TestLocalIdentityStore()
+    let original = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      ),
+      localStore: localStore
+    )
+    let originalRegistration = try #require(original.clerk.registerAuthFlow())
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+    let completedAuthFlow = TransferFlowResult.signIn(signIn)
+
+    await #expect(throws: TestSlotBackend.Failure.self) {
+      try await original.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(.mock),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: original.clerk.clientResponseGeneration,
+          responseSequence: 1,
+          completedAuthFlow: completedAuthFlow
+        )
+      )
+    }
+
+    let durableCompletion = try #require(
+      try localStore.loadPendingAuthFlowCompletion()
+    )
+    #expect(durableCompletion.result.flowId == signIn.id)
+    await original.coordinator.shutdown(deleteOwnSlot: false)
+
+    backend.failSavesForOwners = []
+    let restarted = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      localStore: localStore
+    )
+
+    #expect(await restarted.coordinator.start().value)
+
+    #expect(restarted.clerk.session?.id == signIn.createdSessionId)
+    #expect(restarted.clerk.pendingAuthFlowCompletion?.flowId == signIn.id)
+    #expect(restarted.clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(restarted.clerk.isAuthFlowComplete == false)
+    #expect(try localStore.loadPendingPublication() == nil)
+    #expect(try localStore.loadPendingAuthFlowCompletion()?.result.flowId == signIn.id)
+
+    let restartedRegistration = try #require(
+      restarted.clerk.registerAuthFlow()
+    )
+    #expect(restarted.clerk.readyPendingAuthFlowCompletion?.flowId == signIn.id)
+
+    await restarted.clerk.consumePendingAuthFlowCompletion()
+    await restarted.coordinator.waitForPendingOperations()
+
+    #expect(restarted.clerk.pendingAuthFlowCompletion == nil)
+    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
+    #expect(restarted.clerk.isAuthFlowComplete == false)
+
+    restarted.clerk.markAuthFlowComplete()
+    #expect(restarted.clerk.isAuthFlowComplete)
+    withExtendedLifetime(originalRegistration) {}
+    withExtendedLifetime(restartedRegistration) {}
+  }
+
+  @Test
+  func supersedingWinnerDiscardsDurableAuthFlowCompletion() async throws {
+    let backend = TestSlotBackend()
+    let localStore = TestLocalIdentityStore()
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token-a",
+        client: nil,
+        serverDate: nil
+      ),
+      localStore: localStore
+    )
+    let peer = try makeNode(owner: "app.b", backend: backend)
+    let registration = try #require(node.clerk.registerAuthFlow())
+
+    var clientA = Client.mock
+    clientA.id = "client-a"
+    var sessionA = try #require(clientA.currentSession)
+    sessionA.id = "session-a"
+    clientA.sessions = [sessionA]
+    clientA.lastActiveSessionId = sessionA.id
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+
+    try await node.coordinator.handleNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(clientA),
+        deviceTokenUpdate: .set("token-a"),
+        requestDeviceToken: "token-a",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 100),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 1,
+        completedAuthFlow: .signIn(signIn)
+      )
+    )
+
+    #expect(node.clerk.readyPendingAuthFlowCompletion?.flowId == signIn.id)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(try localStore.loadPendingAuthFlowCompletion() != nil)
+
+    var clientB = Client.mock
+    clientB.id = "client-b"
+    var sessionB = try #require(clientB.currentSession)
+    sessionB.id = "session-b"
+    clientB.sessions = [sessionB]
+    clientB.lastActiveSessionId = sessionB.id
+    try await peer.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "token-b",
+      client: clientB,
+      serverDate: Date(timeIntervalSince1970: 200),
+      baseGeneration: 1
+    )
+
+    #expect(await node.coordinator.reloadFromSharedStorage())
+
+    #expect(node.clerk.session?.id == sessionB.id)
+    #expect(node.clerk.pendingAuthFlowCompletion == nil)
+    #expect(node.clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func unregisteredCompletedAuthFlowDoesNotCreateDurableCompletion() async throws {
+    let backend = TestSlotBackend()
+    backend.failSavesForOwners = ["app.a"]
+    let localStore = TestLocalIdentityStore()
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      ),
+      localStore: localStore
+    )
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+
+    await #expect(throws: TestSlotBackend.Failure.self) {
+      try await node.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(.mock),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 1,
+          completedAuthFlow: .signIn(signIn)
+        )
+      )
+    }
+
+    #expect(try localStore.loadPendingPublication() != nil)
+    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
+  }
+
+  @Test
   func destructiveShutdownDiscardsPendingPublication() async throws {
     let backend = TestSlotBackend()
     backend.failSavesForOwners = ["app.a"]

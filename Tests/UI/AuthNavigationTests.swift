@@ -1,5 +1,6 @@
 @testable import ClerkKit
 @testable import ClerkKitUI
+import LocalAuthentication
 import Testing
 
 @MainActor
@@ -29,11 +30,17 @@ struct AuthNavigationTests {
   @Test
   func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
     let navigation = AuthNavigation()
+    let biometryDisplayName = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
     navigation.path = [.signUpCompleteProfile]
 
-    navigation.routeToTrustedDeviceEnrollment()
+    navigation.routeToTrustedDeviceEnrollment(
+      biometryDisplayName: biometryDisplayName
+    )
 
-    #expect(navigation.path == [.signUpCompleteProfile, .trustedDeviceEnrollment])
+    #expect(navigation.path == [
+      .signUpCompleteProfile,
+      .trustedDeviceEnrollment(biometryDisplayName: biometryDisplayName),
+    ])
     #expect(navigation.hasTrustedDeviceEnrollmentInPath)
     #expect(navigation.trustedDeviceEnrollmentWasOffered)
   }
@@ -41,8 +48,13 @@ struct AuthNavigationTests {
   @Test
   func resetForNewAuthFlowClearsPathAndPostAuthFlags() {
     let navigation = AuthNavigation()
-    navigation.path = [.trustedDeviceEnrollment]
-    navigation.routeToTrustedDeviceEnrollment()
+    let biometryDisplayName = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+    navigation.path = [
+      .trustedDeviceEnrollment(biometryDisplayName: biometryDisplayName),
+    ]
+    navigation.routeToTrustedDeviceEnrollment(
+      biometryDisplayName: biometryDisplayName
+    )
     navigation.markPostAuthStepsComplete()
 
     navigation.resetForNewAuthFlow()
@@ -74,6 +86,45 @@ struct AuthNavigationTests {
 
     #expect(didRoute)
     #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
+  }
+
+  @Test
+  func dismissibleAuthWaitsForItsCompletedSignInBeforeFinishing() {
+    var session = Session.mock
+    session.status = .active
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = session.id
+
+    let action = AuthView.existingSessionChangeAction(
+      oldValue: nil,
+      newValue: session,
+      isDismissible: true,
+      hasTrustedDeviceEnrollmentInPath: false,
+      hasSessionTaskStartInPath: false,
+      pendingAuthFlowCompletion: .signIn(signIn),
+      isAuthFlowComplete: false
+    )
+
+    #expect(action == .wait)
+  }
+
+  @Test
+  func dismissibleAuthFinishesForExternallyActivatedSession() {
+    var session = Session.mock
+    session.status = .active
+
+    let action = AuthView.existingSessionChangeAction(
+      oldValue: nil,
+      newValue: session,
+      isDismissible: true,
+      hasTrustedDeviceEnrollmentInPath: false,
+      hasSessionTaskStartInPath: false,
+      pendingAuthFlowCompletion: nil,
+      isAuthFlowComplete: true
+    )
+
+    #expect(action == .finishAuthFlow)
   }
 
   @Test

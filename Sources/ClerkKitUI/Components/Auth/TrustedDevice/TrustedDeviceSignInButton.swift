@@ -16,7 +16,7 @@ struct TrustedDeviceSignInButton: View {
   private let action: () async -> Void
 
   init(
-    biometryDisplayName: TrustedDeviceBiometryDisplayName = .current(),
+    biometryDisplayName: TrustedDeviceBiometryDisplayName,
     action: @escaping () async -> Void
   ) {
     self.biometryDisplayName = biometryDisplayName
