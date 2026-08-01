@@ -126,10 +126,12 @@ final class AuthNavigation {
   }
 
   @MainActor
-  func routeToTrustedDeviceEnrollment() {
+  func routeToTrustedDeviceEnrollment(
+    biometryDisplayName: TrustedDeviceBiometryDisplayName
+  ) {
     trustedDeviceEnrollmentWasOffered = true
     guard !hasTrustedDeviceEnrollmentInPath else { return }
-    path.append(.trustedDeviceEnrollment)
+    path.append(.trustedDeviceEnrollment(biometryDisplayName: biometryDisplayName))
   }
 
   var hasSessionTaskStartInPath: Bool {
@@ -143,7 +145,13 @@ final class AuthNavigation {
   }
 
   var hasTrustedDeviceEnrollmentInPath: Bool {
-    path.contains(.trustedDeviceEnrollment)
+    path.contains { destination in
+      if case .trustedDeviceEnrollment = destination {
+        true
+      } else {
+        false
+      }
+    }
   }
 
   @MainActor

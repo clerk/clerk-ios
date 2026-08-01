@@ -15,7 +15,6 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     try Task.checkCancellation()
     let metadata = ClientSyncResponseMetadata(response: response, request: request)
-    let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
     let update = Self.classifyClientUpdate(
       from: data,
       isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
@@ -24,6 +23,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
       return
     }
+    let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
     let context = metadata.context(
       update: update,
       completedAuthFlow: completedAuthFlow

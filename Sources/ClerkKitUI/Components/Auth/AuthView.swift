@@ -77,7 +77,7 @@ public struct AuthView: View {
   /// Error to present to the user.
   @State private var error: Error?
 
-  /// Keeps a non-dismissible auth flow registered for this view's lifetime.
+  /// Keeps this auth flow registered for the view's lifetime.
   @State private var authFlowRegistration: AuthFlowRegistration?
 
   /// Rate limiter for verification codes.
@@ -162,7 +162,7 @@ public struct AuthView: View {
     .environment(authState)
     .environment(codeLimiter)
     .onAppear {
-      if !isDismissible, authFlowRegistration == nil {
+      if authFlowRegistration == nil {
         authFlowRegistration = clerk.registerAuthFlow()
       }
       routeToSessionTaskStartIfNeeded(session: clerk.session)
@@ -178,11 +178,11 @@ public struct AuthView: View {
       for await event in clerk.auth.events {
         switch event {
         case .signInCompleted(let signIn):
-          if isDismissible || authFlowRegistration == nil {
+          if authFlowRegistration == nil {
             await finishAuthFlow(after: .signIn(signIn))
           }
         case .signUpCompleted(let signUp):
-          if isDismissible || authFlowRegistration == nil {
+          if authFlowRegistration == nil {
             await finishAuthFlow(after: .signUp(signUp))
           }
         case .signInNeedsContinuation(let signIn):
@@ -197,8 +197,7 @@ public struct AuthView: View {
       }
     }
     .task(id: clerk.readyPendingAuthFlowCompletion?.flowId) {
-      guard !isDismissible,
-            let pendingAuthFlowCompletion = clerk.readyPendingAuthFlowCompletion
+      guard let pendingAuthFlowCompletion = clerk.readyPendingAuthFlowCompletion
       else {
         return
       }
@@ -280,6 +279,7 @@ extension AuthView {
   private func finishAuthFlow(after result: TransferFlowResult) async {
     guard let session = clerk.session else {
       if result.createdSessionId == nil {
+        await clerk.consumePendingAuthFlowCompletion()
         markAuthFlowComplete()
       }
       return
@@ -294,16 +294,12 @@ extension AuthView {
     guard !Task.isCancelled else { return }
 
     if await presentTrustedDeviceEnrollmentIfNeeded(after: result) {
-      if !isDismissible {
-        clerk.consumePendingAuthFlowCompletion()
-      }
+      await clerk.consumePendingAuthFlowCompletion()
       return
     }
     guard !Task.isCancelled else { return }
 
-    if !isDismissible {
-      clerk.consumePendingAuthFlowCompletion()
-    }
+    await clerk.consumePendingAuthFlowCompletion()
 
     finishAuthFlow(with: session)
   }
@@ -321,45 +317,81 @@ extension AuthView {
   }
 
   private func routeToExistingSessionTaskStartIfNeeded(oldValue: Session?, newValue: Session?) {
-    if navigation.hasTrustedDeviceEnrollmentInPath {
+    switch Self.existingSessionChangeAction(
+      oldValue: oldValue,
+      newValue: newValue,
+      isDismissible: isDismissible,
+      hasTrustedDeviceEnrollmentInPath: navigation.hasTrustedDeviceEnrollmentInPath,
+      hasSessionTaskStartInPath: navigation.hasSessionTaskStartInPath,
+      pendingAuthFlowCompletion: clerk.pendingAuthFlowCompletion,
+      isAuthFlowComplete: clerk.isAuthFlowComplete
+    ) {
+    case .finishAuthFlow:
+      guard let newValue else { return }
+      finishAuthFlow(with: newValue)
+    case .routeToSessionTask:
+      routeToSessionTaskStartIfNeeded(session: newValue)
+    case .wait:
       return
     }
+  }
 
-    if !isDismissible,
-       let completion = clerk.pendingAuthFlowCompletion,
-       completion.createdSessionId == nil || completion.createdSessionId == newValue?.id
+  enum ExistingSessionChangeAction: Equatable {
+    case finishAuthFlow
+    case routeToSessionTask
+    case wait
+  }
+
+  static func existingSessionChangeAction(
+    oldValue: Session?,
+    newValue: Session?,
+    isDismissible: Bool,
+    hasTrustedDeviceEnrollmentInPath: Bool,
+    hasSessionTaskStartInPath: Bool,
+    pendingAuthFlowCompletion: TransferFlowResult?,
+    isAuthFlowComplete: Bool
+  ) -> ExistingSessionChangeAction {
+    if hasTrustedDeviceEnrollmentInPath {
+      return .wait
+    }
+
+    if let pendingAuthFlowCompletion,
+       pendingAuthFlowCompletion.createdSessionId == nil ||
+       pendingAuthFlowCompletion.createdSessionId == newValue?.id
     {
-      return
+      return .wait
     }
 
     if !isDismissible,
        newValue?.status == .active,
-       !clerk.isAuthFlowComplete
+       !isAuthFlowComplete
     {
-      return
+      return .wait
+    }
+
+    let becameActive = newValue?.status == .active &&
+      (oldValue?.status != .active || oldValue?.id != newValue?.id)
+    if isDismissible, becameActive {
+      return .finishAuthFlow
     }
 
     let shouldAdoptPendingSession = !isDismissible && newValue?.status == .pending
-
-    guard oldValue?.id == newValue?.id ||
-      navigation.hasSessionTaskStartInPath ||
+    if oldValue?.id == newValue?.id ||
+      hasSessionTaskStartInPath ||
       shouldAdoptPendingSession
-    else {
-      return
+    {
+      return .routeToSessionTask
     }
 
-    routeToSessionTaskStartIfNeeded(session: newValue)
+    return .wait
   }
 
   private func routeToSessionTaskStartIfNeeded(session: Session?) {
     guard navigation.routeToSessionTaskStartIfNeeded(session: session) else { return }
-    if !isDismissible {
-      clerk.markAuthFlowPending()
-    }
+    clerk.markAuthFlowPending()
   }
 
   private func markAuthFlowComplete() {
-    guard !isDismissible else { return }
     clerk.markAuthFlowComplete()
   }
 
@@ -401,7 +433,9 @@ extension AuthView {
         return false
       }
       promptStore.markPromptSeen(userID: userID)
-      navigation.routeToTrustedDeviceEnrollment()
+      navigation.routeToTrustedDeviceEnrollment(
+        biometryDisplayName: biometryDisplayName
+      )
       return true
     } catch {
       return false
@@ -519,7 +553,9 @@ extension AuthView {
       mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
     )
 
-    case trustedDeviceEnrollment
+    case trustedDeviceEnrollment(
+      biometryDisplayName: TrustedDeviceBiometryDisplayName
+    )
 
     @MainActor
     @ViewBuilder
@@ -571,8 +607,10 @@ extension AuthView {
           backupCodes: backupCodes,
           mfaType: mfaType
         )
-      case .trustedDeviceEnrollment:
-        TrustedDeviceEnrollmentView()
+      case let .trustedDeviceEnrollment(biometryDisplayName):
+        TrustedDeviceEnrollmentView(
+          biometryDisplayName: biometryDisplayName
+        )
       }
     }
   }

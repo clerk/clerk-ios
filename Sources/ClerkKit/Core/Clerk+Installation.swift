@@ -44,15 +44,20 @@ extension Clerk {
     }
   }
 
-  private static func trustedDeviceInstallationMarkerKey(
+  package static func trustedDeviceInstallationMarkerKey(
     for keychainConfig: Options.KeychainConfig,
     appIdentifier: String
   ) -> String {
     [
       trustedDeviceInstallationMarkerPrefix,
-      keychainConfig.service,
-      keychainConfig.accessGroup ?? "default",
-      appIdentifier,
+      encodeInstallationMarkerComponent(keychainConfig.service),
+      encodeInstallationMarkerComponent(keychainConfig.accessGroup),
+      encodeInstallationMarkerComponent(appIdentifier),
     ].joined(separator: ".")
+  }
+
+  private static func encodeInstallationMarkerComponent(_ value: String?) -> String {
+    guard let value else { return "n" }
+    return "s\(value.utf8.count):\(value)"
   }
 }

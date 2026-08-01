@@ -134,6 +134,35 @@ struct TrustedDeviceKeyManagerTests {
     }
   }
 
+  @MainActor
+  @Test
+  func failedPublicKeyExportDeletesCreatedKeyAndPreservesExportError() {
+    enum Failure: Error, Equatable {
+      case export
+    }
+
+    var deletedLocalKeyIds: [String] = []
+    do {
+      _ = try TrustedDeviceKeyManager.completeKeyCreation(
+        localKeyId: "tdlk_created",
+        policy: .biometryCurrentSet,
+        exportPublicKeyJWK: {
+          throw Failure.export
+        },
+        deleteKey: { localKeyId in
+          deletedLocalKeyIds.append(localKeyId)
+        }
+      )
+      Issue.record("Expected public-key export to fail.")
+    } catch let error as Failure {
+      #expect(error == .export)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+
+    #expect(deletedLocalKeyIds == ["tdlk_created"])
+  }
+
   @Test
   func base64URLEncodingOmitsPadding() {
     #expect(TrustedDeviceKeyManager.base64URLEncodedString(Data([0xFB, 0xFF, 0xEF])) == "-__v")

@@ -297,6 +297,12 @@ struct ClerkClientSyncResponseMiddlewareTests {
     #expect(clerk.session?.status == .active)
     #expect(clerk.isAuthFlowComplete == false)
     #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+
+    await clerk.consumePendingAuthFlowCompletion()
+    clerk.markAuthFlowComplete()
+
+    #expect(clerk.pendingAuthFlowCompletion == nil)
+    #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
 
