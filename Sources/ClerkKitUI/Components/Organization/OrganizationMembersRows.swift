@@ -35,10 +35,6 @@ struct OrganizationMemberRow: View {
     publicUserData?.identifier
   }
 
-  private var joinedDate: String {
-    membership.createdAt.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).year())
-  }
-
   private var roleMenuIsDisabled: Bool {
     roles.isEmpty || hasRoleSetMigration || isMutating
   }
@@ -78,7 +74,10 @@ struct OrganizationMemberRow: View {
           }
 
           if isCurrentUser {
-            Text("\(roleName) · Joined \(joinedDate)", bundle: .module)
+            Text(
+              "\(roleName) · Joined \(membership.createdAt, format: .dateTime.month(.defaultDigits).day(.defaultDigits).year())",
+              bundle: .module
+            )
               .font(theme.fonts.footnote)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
@@ -87,7 +86,10 @@ struct OrganizationMemberRow: View {
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
-            Text("Joined \(joinedDate)", bundle: .module)
+            Text(
+              "Joined \(membership.createdAt, format: .dateTime.month(.defaultDigits).day(.defaultDigits).year())",
+              bundle: .module
+            )
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
@@ -149,10 +151,6 @@ struct OrganizationInvitationRow: View {
   let isRevoking: Bool
   let onRevoke: () async -> Void
 
-  private var invitedDate: String {
-    invitation.createdAt.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).year())
-  }
-
   var body: some View {
     HStack(alignment: .center, spacing: 16) {
       HStack(alignment: .top, spacing: 16) {
@@ -169,7 +167,10 @@ struct OrganizationInvitationRow: View {
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)
 
-          Text("Invited \(invitedDate)", bundle: .module)
+          Text(
+            "Invited \(invitation.createdAt, format: .dateTime.month(.defaultDigits).day(.defaultDigits).year())",
+            bundle: .module
+          )
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)
@@ -221,10 +222,6 @@ struct OrganizationMembershipRequestRow: View {
     publicUserData?.identifier
   }
 
-  private var requestedDate: String {
-    request.createdAt.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).year())
-  }
-
   var body: some View {
     HStack(alignment: .center, spacing: 16) {
       HStack(alignment: .top, spacing: 16) {
@@ -245,7 +242,10 @@ struct OrganizationMembershipRequestRow: View {
               .lineLimit(1)
           }
 
-          Text("Requested \(requestedDate)", bundle: .module)
+          Text(
+            "Requested \(request.createdAt, format: .dateTime.month(.defaultDigits).day(.defaultDigits).year())",
+            bundle: .module
+          )
             .font(theme.fonts.subheadline)
             .foregroundStyle(theme.colors.mutedForeground)
             .lineLimit(1)

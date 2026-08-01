@@ -59,7 +59,9 @@ struct OrganizationDomainDeleteConfirmationView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Remove domain", bundle: .module)

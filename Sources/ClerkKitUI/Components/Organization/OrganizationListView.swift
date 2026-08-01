@@ -192,7 +192,9 @@ public struct OrganizationListView: View {
     .toolbar {
       #if os(iOS)
       if isDismissible {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
       }
       #endif
 

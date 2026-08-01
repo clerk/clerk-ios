@@ -93,7 +93,9 @@ struct UserProfileAddEmailView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Add email address", bundle: .module)

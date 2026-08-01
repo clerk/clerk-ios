@@ -11,6 +11,7 @@ import SwiftUI
 struct UserProfileAddMfaView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var error: Error?
@@ -118,7 +119,9 @@ struct UserProfileAddMfaView: View {
         .preGlassSolidNavBar()
         .preGlassDetentSheetBackground()
         .toolbar {
-          CancelToolbarItem()
+          CancelToolbarItem {
+            dismiss()
+          }
 
           ToolbarItem(placement: .principal) {
             Text("Add two-step verification", bundle: .module)

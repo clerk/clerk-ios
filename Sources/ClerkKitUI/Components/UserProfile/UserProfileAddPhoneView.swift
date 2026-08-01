@@ -96,7 +96,9 @@ struct UserProfileAddPhoneView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Add phone number", bundle: .module)

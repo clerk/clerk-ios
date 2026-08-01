@@ -183,7 +183,9 @@ struct UserProfileVerifyView: View {
     .preGlassSolidNavBar()
     .toolbar {
       if hasCancelAction {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
       }
 
       ToolbarItem(placement: .principal) {

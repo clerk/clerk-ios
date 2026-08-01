@@ -86,7 +86,9 @@ struct OrganizationProfileActionConfirmationView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text(action.title, bundle: .module)

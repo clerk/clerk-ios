@@ -65,7 +65,9 @@ struct UserProfilePasskeyRenameView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Rename passkey", bundle: .module)

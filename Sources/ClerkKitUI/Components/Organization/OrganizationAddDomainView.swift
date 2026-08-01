@@ -86,7 +86,9 @@ struct OrganizationAddDomainView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Add domain", bundle: .module)

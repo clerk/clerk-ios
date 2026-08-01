@@ -10,6 +10,7 @@ import SwiftUI
 
 struct UserProfileMfaAddTotpView: View {
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) private var dismiss
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var path = NavigationPath()
@@ -105,7 +106,9 @@ struct UserProfileMfaAddTotpView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Add authenticator application", bundle: .module)

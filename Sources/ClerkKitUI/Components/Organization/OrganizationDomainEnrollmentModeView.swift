@@ -95,7 +95,9 @@ struct OrganizationDomainEnrollmentModeView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Update \(domain.name)", bundle: .module)

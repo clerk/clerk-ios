@@ -80,7 +80,9 @@ struct UserProfileDeleteAccountConfirmationView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Delete account", bundle: .module)

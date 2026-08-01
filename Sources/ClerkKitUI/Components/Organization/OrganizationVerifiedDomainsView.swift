@@ -363,7 +363,9 @@ private struct OrganizationDomainVerificationFlowSheet: View {
         path.append(.verifyCode(preparedDomain, affiliationEmailAddress: affiliationEmailAddress))
       }
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
       }
       .navigationDestination(for: Destination.self) { destination in
         switch destination {

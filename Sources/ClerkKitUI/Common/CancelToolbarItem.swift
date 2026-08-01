@@ -3,14 +3,17 @@
 import SwiftUI
 
 struct CancelToolbarItem: ToolbarContent {
-  @Environment(\.dismiss) private var dismiss
   @Environment(\.clerkTheme) private var theme
+
+  private let action: () -> Void
+
+  init(action: @escaping () -> Void) {
+    self.action = action
+  }
 
   var body: some ToolbarContent {
     ToolbarItem(placement: .cancellationAction) {
-      Button {
-        dismiss()
-      } label: {
+      Button(action: action) {
         Text("Cancel", bundle: .module)
       }
       .foregroundStyle(theme.colors.primary)

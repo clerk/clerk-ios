@@ -80,7 +80,9 @@ struct UserProfileAddConnectedAccountView: View {
       .scrollBounceBehavior(.basedOnSize)
       .background(theme.colors.background)
       .toolbar {
-        CancelToolbarItem()
+        CancelToolbarItem {
+          dismiss()
+        }
 
         ToolbarItem(placement: .principal) {
           Text("Connect account", bundle: .module)
