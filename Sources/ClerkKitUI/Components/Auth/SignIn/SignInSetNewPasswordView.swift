@@ -158,7 +158,7 @@ extension SignInSetNewPasswordView {
 
     do {
       guard authState.signInNewPassword == authState.signInConfirmNewPassword else {
-        throw ClerkClientError(message: "Passwords don't match.")
+        throw ClerkClientError(message: "Passwords don't match.", localizationBundle: .module)
       }
 
       switch mode {

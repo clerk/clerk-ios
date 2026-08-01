@@ -50,7 +50,8 @@ final class HostedAuthService: HostedAuthServiceProtocol {
     let response = try await apiClient.send(request)
     guard let clientSyncMetadata = response.deferredClientSyncMetadata else {
       throw ClerkClientError(
-        message: "Hosted auth completion response was missing identity synchronization metadata."
+        message: "Hosted auth completion response was missing identity synchronization metadata.",
+        localizationBundle: .module
       )
     }
     let client = response.value.response

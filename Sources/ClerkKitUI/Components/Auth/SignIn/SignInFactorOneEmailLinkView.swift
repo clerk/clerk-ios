@@ -237,14 +237,14 @@ extension EmailLinkVerificationView {
   @MainActor
   private func openEmailApp() {
     guard let url = URL(string: "mailto:") else {
-      error = ClerkClientError(message: "No email app is available on this device.")
+      error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
       return
     }
 
     openURL(url) { accepted in
       if !accepted {
         Task { @MainActor in
-          error = ClerkClientError(message: "No email app is available on this device.")
+          error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
         }
       }
     }

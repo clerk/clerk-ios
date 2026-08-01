@@ -236,7 +236,7 @@ struct OrganizationInviteMembersView: View {
     let submittedEmailAddresses = emailAddresses
     guard !submittedEmailAddresses.isEmpty, roleOptions.contains(where: { $0.key == selectedRoleKey }) else { return }
     guard let organization = clerk.organization else {
-      error = ClerkClientError(message: "Unable to send invitations without an active organization.")
+      error = ClerkClientError(message: "Unable to send invitations without an active organization.", localizationBundle: .module)
       return
     }
 

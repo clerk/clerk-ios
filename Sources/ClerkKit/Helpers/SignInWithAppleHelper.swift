@@ -81,7 +81,7 @@ final class SignInWithAppleHelper: NSObject {
     let authorization = try await authManager.start(requestedScopes: requestedScopes)
 
     guard let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-      throw ClerkClientError(message: "Unable to get your Apple ID credential.")
+      throw ClerkClientError(message: "Unable to get your Apple ID credential.", localizationBundle: .module)
     }
 
     return appleIdCredential

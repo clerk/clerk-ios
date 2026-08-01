@@ -130,9 +130,9 @@ struct SessionTaskChooseOrganizationView: View {
        ["organization_not_found_or_unauthorized", "not_a_member_in_organization"].contains(clerkError.code)
     {
       if user?.createOrganizationEnabled == true {
-        return ClerkClientError(message: "You are no longer a member of this organization. Please choose or create another one.")
+        return ClerkClientError(message: "You are no longer a member of this organization. Please choose or create another one.", localizationBundle: .module)
       } else {
-        return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.")
+        return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
       }
     }
     return error

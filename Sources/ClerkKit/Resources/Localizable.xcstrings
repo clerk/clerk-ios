@@ -1,0 +1,100 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Redirect URL is missing or invalid. Unable to start external authentication flow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان URL لإعادة التوجيه مفقود أو غير صالح. لا يمكن بدء تدفق المصادقة الخارجية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Weiterleitungs-URL fehlt oder ist ungültig. Es ist nicht möglich, die externe Authentifizierung zu starten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η διεύθυνση URL ανακατεύθυνσης λείπει ή είναι άκυρη. Αδυναμία εκκίνησης της εξωτερικής ροής πιστοποίησης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta la URL de redirección o no es válida. No se puede iniciar el flujo de autenticación externa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL de redirection est manquante ou invalide. Impossible de démarrer le flux d'authentification externe."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रिडायरेक्ट URL गायब है या अमान्य है। बाहरी प्रमाणीकरण प्रवाह शुरू करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL di reindirizzamento è mancante o non valida. Impossibile avviare il flusso di autenticazione esterna."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リダイレクトURLが不足しているか無効です。外部認証フローを開始できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리디렉션 URL이 없거나 유효하지 않습니다. 외부 인증 흐름을 시작할 수 없습니다。"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brakuje adresu URL przekierowania lub jest on nieprawidłowy. Nie można uruchomić zewnętrznego przepływu uwierzytelniania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de redirecionamento está ausente ou inválida. Não foi possível iniciar o fluxo de autenticação externa."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresa URL de redirecționare lipsește sau nu este validă. Nu se poate porni fluxul de autentificare externă."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-адрес перенаправления отсутствует или недействителен. Не удалось запустить внешний поток аутентификации."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URL'si eksik veya geçersiz. Harici kimlik doğrulama akışı başlatılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

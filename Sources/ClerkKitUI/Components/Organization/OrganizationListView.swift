@@ -326,7 +326,7 @@ extension OrganizationListView {
     if let clerkError = error as? ClerkAPIError,
        ["organization_not_found_or_unauthorized", "not_a_member_in_organization"].contains(clerkError.code)
     {
-      return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.")
+      return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
     }
     return error
   }

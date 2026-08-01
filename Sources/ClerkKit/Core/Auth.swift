@@ -128,7 +128,7 @@ public struct Auth {
   public func signInWithEmailLink(emailAddress: String) async throws -> SignIn {
     let identifier = emailAddress.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !identifier.isEmpty else {
-      throw ClerkClientError(message: "Email address is required.")
+      throw ClerkClientError(message: "Email address is required.", localizationBundle: .module)
     }
 
     let signIn = try await signInService.create(params: .init(identifier: identifier))
@@ -428,7 +428,7 @@ public struct Auth {
       let redirectUrl = verification.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
     else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
     }
 
     let authSession = WebAuthentication(
@@ -529,7 +529,7 @@ public struct Auth {
       let redirectUrl = verification.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
     else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
     }
 
     let authSession = WebAuthentication(
@@ -704,19 +704,19 @@ extension Auth {
     let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard !resolvedFlowId.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing flow_id.")
+      throw ClerkClientError(message: "Magic link callback is missing flow_id.", localizationBundle: .module)
     }
 
     guard !resolvedApprovalToken.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing approval_token.")
+      throw ClerkClientError(message: "Magic link callback is missing approval_token.", localizationBundle: .module)
     }
 
     guard let pendingFlow = magicLinkStore.load() else {
-      throw ClerkClientError(message: "No pending magic link flow was found.")
+      throw ClerkClientError(message: "No pending magic link flow was found.", localizationBundle: .module)
     }
 
     if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
-      throw ClerkClientError(message: "Magic link callback does not match the pending flow.")
+      throw ClerkClientError(message: "Magic link callback does not match the pending flow.", localizationBundle: .module)
     }
 
     Clerk.shared.setCallbackContinuation(nil)
@@ -742,7 +742,7 @@ extension Auth {
     switch pendingFlow.kind {
     case .signIn:
       guard case .ticket(let completionResponse) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.")
+        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.", localizationBundle: .module)
       }
 
       let signIn = try await signInWithTicket(completionResponse.ticket)
@@ -754,7 +754,7 @@ extension Auth {
 
     case .signUp:
       guard case .signUp(let signUp) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.")
+        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.", localizationBundle: .module)
       }
 
       result = .signUp(signUp)

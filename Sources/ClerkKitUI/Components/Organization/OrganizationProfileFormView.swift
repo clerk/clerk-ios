@@ -377,9 +377,7 @@ extension OrganizationProfileFormView {
     guard !name.isEmpty else { return }
 
     guard !slugEnabled || isValidSlug(trimmedSlug) else {
-      slugValidationError = ClerkClientError(
-        message: "Enter a slug using lowercase letters, numbers, and hyphens."
-      )
+      slugValidationError = ClerkClientError(message: "Enter a slug using lowercase letters, numbers, and hyphens.", localizationBundle: .module)
       return
     }
 
@@ -424,7 +422,7 @@ extension OrganizationProfileFormView {
     slug: String?
   ) async throws -> Organization {
     guard let organization else {
-      throw ClerkClientError(message: "Unable to update organization without an active organization.")
+      throw ClerkClientError(message: "Unable to update organization without an active organization.", localizationBundle: .module)
     }
 
     let updatedOrganization = try await organization.update(name: name, slug: slug)
@@ -458,7 +456,7 @@ extension OrganizationProfileFormView {
           let data = try await item.loadTransferable(type: Data.self),
           let resizedData = processImageData(data)
         else {
-          throw ClerkClientError(message: "There was an error loading the image from the photos library.")
+          throw ClerkClientError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
         }
         guard !Task.isCancelled else { return }
         if mode.isUpdate {
@@ -490,7 +488,7 @@ extension OrganizationProfileFormView {
         let url = try result.get()
         let data = try await Self.readSecurityScopedFileData(from: url)
         guard let resizedData = processImageData(data) else {
-          throw ClerkClientError(message: "There was an error loading the selected image file.")
+          throw ClerkClientError(message: "There was an error loading the selected image file.", localizationBundle: .module)
         }
         guard !Task.isCancelled else { return }
         photosPickerItem = nil

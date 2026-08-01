@@ -29,6 +29,9 @@ let package = Package(
       name: "ClerkKit",
       dependencies: [],
       path: "Sources/ClerkKit",
+      resources: [
+        .process("Resources"),
+      ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]
@@ -60,6 +63,9 @@ let package = Package(
       path: "Tests",
       exclude: [
         "UI",
+      ],
+      resources: [
+        .process("Resources"),
       ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),

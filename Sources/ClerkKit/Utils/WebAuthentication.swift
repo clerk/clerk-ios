@@ -83,7 +83,7 @@ final class WebAuthentication: NSObject {
     } else if let error {
       continuation.resume(throwing: error)
     } else {
-      continuation.resume(throwing: ClerkClientError(message: "Missing callback URL"))
+      continuation.resume(throwing: ClerkClientError(message: "Missing callback URL", localizationBundle: .module))
     }
   }
 
@@ -106,7 +106,7 @@ final class WebAuthentication: NSObject {
 
   private func beginSession(identifier sessionIdentifier: Int, continuation: CheckedContinuation<URL, any Error>) {
     guard Self.activeSession == nil else {
-      continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress."))
+      continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress.", localizationBundle: .module))
       return
     }
 
@@ -153,7 +153,7 @@ final class WebAuthentication: NSObject {
       Self.completeSession(
         identifier: sessionIdentifier,
         with: nil,
-        error: ClerkClientError(message: "Unable to start web authentication session.")
+        error: ClerkClientError(message: "Unable to start web authentication session.", localizationBundle: .module)
       )
       return
     }

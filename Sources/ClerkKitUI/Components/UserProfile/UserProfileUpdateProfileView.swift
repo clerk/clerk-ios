@@ -123,7 +123,7 @@ struct UserProfileUpdateProfileView: View {
               let data = try await item.loadTransferable(type: Data.self),
               let resizedData = resizedImageData(from: data)
             else {
-              throw ClerkClientError(message: "There was an error loading the image from the photos library.")
+              throw ClerkClientError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
             }
 
             try await user.setProfileImage(imageData: resizedData)

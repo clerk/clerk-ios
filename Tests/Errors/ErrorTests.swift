@@ -180,6 +180,34 @@ struct ErrorTests {
     #expect(error.errorDescription == nil)
   }
 
+  @Test
+  func clerkClientErrorUsesLocalizedMessageResource() {
+    let error = ClerkClientError(
+      localizedMessage: LocalizedStringResource(
+        "Localized test error",
+        locale: Locale(identifier: "es"),
+        bundle: .module
+      )
+    )
+
+    #expect(error.message == "Error de prueba localizado")
+  }
+
+  @Test
+  func clerkClientErrorReplacesLocalizedMessage() {
+    var error = ClerkClientError(
+      message: "Localized test error",
+      localizationBundle: .module,
+      locale: Locale(identifier: "es")
+    )
+
+    #expect(error.message == "Error de prueba localizado")
+
+    error.messageLocalizationValue = "Replacement message"
+
+    #expect(error.message == "Replacement message")
+  }
+
   // MARK: - ClerkInitializationError Tests
 
   @Test

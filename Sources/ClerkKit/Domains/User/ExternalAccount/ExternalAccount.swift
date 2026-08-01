@@ -131,7 +131,7 @@ extension ExternalAccount {
       let redirectUrl = verification?.externalVerificationRedirectUrl,
       let url = URL(string: redirectUrl)
     else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
     }
 
     let authSession = WebAuthentication(
@@ -143,7 +143,7 @@ extension ExternalAccount {
 
     try await Clerk.shared.refreshClient()
     guard let externalAccount = Clerk.shared.user?.externalAccounts.first(where: { $0.id == id }) else {
-      throw ClerkClientError(message: "Something went wrong. Please try again.")
+      throw ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
     }
     return externalAccount
   }

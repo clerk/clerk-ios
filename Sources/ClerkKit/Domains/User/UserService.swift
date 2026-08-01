@@ -164,15 +164,15 @@ final class UserService: UserServiceProtocol {
     let passkey = try await passkeyService.create()
 
     guard let challenge = passkey.challenge else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
     }
 
     guard let name = passkey.username else {
-      throw ClerkClientError(message: "Unable to get the username for the passkey.")
+      throw ClerkClientError(message: "Unable to get the username for the passkey.", localizationBundle: .module)
     }
 
     guard let userId = passkey.userId else {
-      throw ClerkClientError(message: "Unable to get the user ID for the passkey.")
+      throw ClerkClientError(message: "Unable to get the user ID for the passkey.", localizationBundle: .module)
     }
 
     let manager = PasskeyHelper()
@@ -187,7 +187,7 @@ final class UserService: UserServiceProtocol {
       let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
       let rawAttestationObject = credentialRegistration.rawAttestationObject
     else {
-      throw ClerkClientError(message: "Invalid credential type.")
+      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
     }
 
     let publicKeyCredential: [String: any Encodable] = [
