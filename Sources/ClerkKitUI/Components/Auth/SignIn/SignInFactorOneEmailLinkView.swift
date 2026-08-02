@@ -44,11 +44,7 @@ struct EmailLinkVerificationView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {
-      if let authFlowRequestOwnerId {
-        await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
-          await sendInitialLinkIfNeeded()
-        }
-      } else {
+      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
         await sendInitialLinkIfNeeded()
       }
     }

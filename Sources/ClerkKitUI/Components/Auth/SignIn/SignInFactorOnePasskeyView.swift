@@ -99,11 +99,7 @@ struct SignInFactorOnePasskeyView: View {
     }
     .taskOnce {
       try? await Task.sleep(for: .seconds(0.5))
-      if let authFlowRequestOwnerId {
-        await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
-          await authWithPasskey()
-        }
-      } else {
+      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
         await authWithPasskey()
       }
     }
