@@ -52,4 +52,5 @@ struct ClerkIdentityRequestSnapshot {
   let deviceToken: String?
   let clientID: String?
   let clientResponseGeneration: ClientResponseGeneration
+  let authFlowRegistrationId: UUID?
 }

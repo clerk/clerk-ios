@@ -134,6 +134,7 @@ struct ClientSyncResponseContext {
   let clientResponseGeneration: ClientResponseGeneration?
   let responseSequence: Int?
   let completedAuthFlow: TransferFlowResult?
+  let authFlowRegistrationId: UUID?
 
   init(
     update: ClientResponseUpdate,
@@ -144,7 +145,8 @@ struct ClientSyncResponseContext {
     isCanonicalClientRequest: Bool,
     clientResponseGeneration: ClientResponseGeneration?,
     responseSequence: Int?,
-    completedAuthFlow: TransferFlowResult? = nil
+    completedAuthFlow: TransferFlowResult? = nil,
+    authFlowRegistrationId: UUID? = nil
   ) {
     self.update = update
     self.deviceTokenUpdate = deviceTokenUpdate
@@ -155,6 +157,7 @@ struct ClientSyncResponseContext {
     self.clientResponseGeneration = clientResponseGeneration
     self.responseSequence = responseSequence
     self.completedAuthFlow = completedAuthFlow
+    self.authFlowRegistrationId = authFlowRegistrationId
   }
 
   func resolvedIdentityPayload(
@@ -241,7 +244,8 @@ struct ClientSyncResponseMetadata {
       isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
       clientResponseGeneration: checkpoint.clientResponseGeneration,
       responseSequence: checkpoint.requestSequence,
-      completedAuthFlow: completedAuthFlow
+      completedAuthFlow: completedAuthFlow,
+      authFlowRegistrationId: checkpoint.authFlowRegistrationId
     )
   }
 }

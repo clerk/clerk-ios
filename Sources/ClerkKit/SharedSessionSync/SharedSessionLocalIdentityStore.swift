@@ -7,59 +7,22 @@ import Foundation
 
 typealias SharedSessionLocalIdentity = ClerkIdentitySnapshot
 
-struct SharedSessionPendingAuthFlowCompletion: Codable, Equatable {
-  private enum Flow: Codable, Equatable {
-    case signIn(SignIn)
-    case signUp(SignUp)
-  }
-
-  let eventID: UUID
-  private let flow: Flow
-
-  private enum CodingKeys: String, CodingKey {
-    case eventID = "eventId"
-    case flow
-  }
-
-  init(eventID: UUID, result: TransferFlowResult) {
-    self.eventID = eventID
-    switch result {
-    case .signIn(let signIn):
-      flow = .signIn(signIn)
-    case .signUp(let signUp):
-      flow = .signUp(signUp)
-    }
-  }
-
-  var result: TransferFlowResult {
-    switch flow {
-    case .signIn(let signIn):
-      .signIn(signIn)
-    case .signUp(let signUp):
-      .signUp(signUp)
-    }
-  }
-}
-
 struct SharedSessionLocalIdentityRecord: Codable, Equatable {
   static let schemaVersion = 1
 
   let schemaVersion: Int
   let acceptedIdentity: SharedSessionLocalIdentity?
   let pendingPublication: SharedSessionIdentityEvent?
-  let pendingAuthFlowCompletion: SharedSessionPendingAuthFlowCompletion?
   let requiresSharedSessionPublication: Bool
 
   init(
     acceptedIdentity: SharedSessionLocalIdentity?,
     pendingPublication: SharedSessionIdentityEvent?,
-    pendingAuthFlowCompletion: SharedSessionPendingAuthFlowCompletion? = nil,
     requiresSharedSessionPublication: Bool = false
   ) {
     schemaVersion = Self.schemaVersion
     self.acceptedIdentity = acceptedIdentity
     self.pendingPublication = pendingPublication
-    self.pendingAuthFlowCompletion = pendingAuthFlowCompletion
     self.requiresSharedSessionPublication = requiresSharedSessionPublication
   }
 
@@ -67,7 +30,6 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
     case schemaVersion
     case acceptedIdentity
     case pendingPublication
-    case pendingAuthFlowCompletion
     case requiresSharedSessionPublication = "requiresLegacyAdoptionPublication"
   }
 
@@ -82,10 +44,6 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
       SharedSessionIdentityEvent.self,
       forKey: .pendingPublication
     )
-    pendingAuthFlowCompletion = try container.decodeIfPresent(
-      SharedSessionPendingAuthFlowCompletion.self,
-      forKey: .pendingAuthFlowCompletion
-    )
     requiresSharedSessionPublication = try container.decodeIfPresent(
       Bool.self,
       forKey: .requiresSharedSessionPublication
@@ -98,12 +56,6 @@ struct SharedSessionLocalIdentityRecord: Codable, Equatable {
     }
     guard !requiresSharedSessionPublication || acceptedIdentity != nil else {
       throw SharedSessionLocalIdentityStoreError.missingRequiredPublicationIdentity
-    }
-    guard pendingPublication == nil ||
-      pendingAuthFlowCompletion == nil ||
-      pendingPublication?.id == pendingAuthFlowCompletion?.eventID
-    else {
-      throw SharedSessionLocalIdentityStoreError.pendingAuthFlowCompletionMismatch
     }
     _ = try acceptedIdentity?.validated()
     _ = try pendingPublication?.validated()
@@ -136,7 +88,6 @@ enum SharedSessionLocalIdentityStoreError: Error, Equatable {
   case missingRequiredPublicationIdentity
   case pendingPublicationAlreadyExists
   case pendingPublicationMismatch
-  case pendingAuthFlowCompletionMismatch
 }
 
 protocol SharedSessionLocalIdentityStoring: Sendable {
@@ -175,10 +126,6 @@ extension SharedSessionLocalIdentityStoring {
     try loadRecord()?.pendingPublication
   }
 
-  func loadPendingAuthFlowCompletion() throws -> SharedSessionPendingAuthFlowCompletion? {
-    try loadRecord()?.pendingAuthFlowCompletion
-  }
-
   func save(_ identity: SharedSessionLocalIdentity) throws {
     let identity = try identity.validated()
     try updateRecord { record in
@@ -187,8 +134,7 @@ extension SharedSessionLocalIdentityStoring {
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: identity,
-        pendingPublication: nil,
-        pendingAuthFlowCompletion: record?.pendingAuthFlowCompletion
+        pendingPublication: nil
       )
     }
   }
@@ -198,9 +144,7 @@ extension SharedSessionLocalIdentityStoring {
   ) throws {
     let identity = try identity.validated()
     try updateRecord { record in
-      guard record?.pendingPublication == nil,
-            record?.pendingAuthFlowCompletion == nil
-      else {
+      guard record?.pendingPublication == nil else {
         throw SharedSessionLocalIdentityStoreError.pendingPublicationAlreadyExists
       }
       return SharedSessionLocalIdentityRecord(
@@ -211,29 +155,18 @@ extension SharedSessionLocalIdentityStoring {
     }
   }
 
-  func stagePendingPublication(
-    _ event: SharedSessionIdentityEvent,
-    completedAuthFlow: TransferFlowResult? = nil
-  ) throws {
+  func stagePendingPublication(_ event: SharedSessionIdentityEvent) throws {
     let event = try event.validated()
-    let pendingAuthFlowCompletion = completedAuthFlow.map {
-      SharedSessionPendingAuthFlowCompletion(eventID: event.id, result: $0)
-    }
     try updateRecord { record in
-      if record?.pendingPublication == event,
-         record?.pendingAuthFlowCompletion == pendingAuthFlowCompletion
-      {
+      if record?.pendingPublication == event {
         return record
       }
-      guard record?.pendingPublication == nil,
-            record?.pendingAuthFlowCompletion == nil
-      else {
+      guard record?.pendingPublication == nil else {
         throw SharedSessionLocalIdentityStoreError.pendingPublicationAlreadyExists
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: record?.acceptedIdentity,
         pendingPublication: event,
-        pendingAuthFlowCompletion: pendingAuthFlowCompletion,
         requiresSharedSessionPublication:
         record?.requiresSharedSessionPublication ?? false
       )
@@ -251,18 +184,14 @@ extension SharedSessionLocalIdentityStoring {
       }
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: identity,
-        pendingPublication: nil,
-        pendingAuthFlowCompletion: record?.pendingAuthFlowCompletion
+        pendingPublication: nil
       )
     }
   }
 
   func clearPendingPublication() throws {
     try updateRecord { record in
-      guard let record,
-            record.pendingPublication != nil ||
-            record.pendingAuthFlowCompletion != nil
-      else {
+      guard let record, record.pendingPublication != nil else {
         return record
       }
       guard let acceptedIdentity = record.acceptedIdentity else {
@@ -271,25 +200,6 @@ extension SharedSessionLocalIdentityStoring {
       return SharedSessionLocalIdentityRecord(
         acceptedIdentity: acceptedIdentity,
         pendingPublication: nil,
-        requiresSharedSessionPublication:
-        record.requiresSharedSessionPublication
-      )
-    }
-  }
-
-  func clearPendingAuthFlowCompletion(eventID: UUID) throws {
-    try updateRecord { record in
-      guard let record,
-            let pendingAuthFlowCompletion = record.pendingAuthFlowCompletion
-      else {
-        return record
-      }
-      guard pendingAuthFlowCompletion.eventID == eventID else {
-        throw SharedSessionLocalIdentityStoreError.pendingAuthFlowCompletionMismatch
-      }
-      return SharedSessionLocalIdentityRecord(
-        acceptedIdentity: record.acceptedIdentity,
-        pendingPublication: record.pendingPublication,
         requiresSharedSessionPublication:
         record.requiresSharedSessionPublication
       )
@@ -463,14 +373,8 @@ actor SharedSessionLocalIdentityIO {
     try store.loadRecord()
   }
 
-  func stagePendingPublication(
-    _ event: SharedSessionIdentityEvent,
-    completedAuthFlow: TransferFlowResult? = nil
-  ) throws {
-    try store.stagePendingPublication(
-      event,
-      completedAuthFlow: completedAuthFlow
-    )
+  func stagePendingPublication(_ event: SharedSessionIdentityEvent) throws {
+    try store.stagePendingPublication(event)
   }
 
   func saveAcceptedIdentity(_ identity: SharedSessionLocalIdentity) throws {
@@ -519,9 +423,5 @@ actor SharedSessionLocalIdentityIO {
 
   func clearPendingPublication() throws {
     try store.clearPendingPublication()
-  }
-
-  func clearPendingAuthFlowCompletion(eventID: UUID) throws {
-    try store.clearPendingAuthFlowCompletion(eventID: eventID)
   }
 }

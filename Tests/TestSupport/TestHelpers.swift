@@ -21,7 +21,8 @@ extension Clerk {
       responseSequence: responseSequence,
       serverDate: serverDate,
       clientResponseGeneration: clientResponseGeneration,
-      completedAuthFlow: completedAuthFlow
+      completedAuthFlow: completedAuthFlow,
+      completedAuthFlowOwnerId: authFlowRegistrationId
     )
   }
 }

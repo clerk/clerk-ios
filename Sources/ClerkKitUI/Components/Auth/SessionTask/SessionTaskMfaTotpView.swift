@@ -8,10 +8,12 @@ import ClerkKit
 import SwiftUI
 
 struct SessionTaskMfaTotpView: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
   let totp: TOTPResource
+  let token: AuthFlowPresentationToken
 
   var body: some View {
     ScrollView {
@@ -59,7 +61,8 @@ struct SessionTaskMfaTotpView: View {
         }
 
         Button {
-          navigation.path.append(.taskVerifyTotp)
+          guard clerk.authFlowPresentationIsCurrent(token) else { return }
+          navigation.appendPostAuthDestination(.taskVerifyTotp(token: token))
         } label: {
           ContinueButtonLabelView()
         }

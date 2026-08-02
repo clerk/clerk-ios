@@ -272,6 +272,8 @@ struct ClerkClientSyncResponseMiddlewareTests {
     configureClerkForTesting()
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
+    let observer = AuthFlowGateRecordingObserver()
+    clerk.internalStateChanges.addObserver(observer)
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let data = try JSONEncoder.clerkEncoder.encode(ClientEnvelope(
       response: SignInResponsePayload(
@@ -291,17 +293,22 @@ struct ClerkClientSyncResponseMiddlewareTests {
     ))
     var request = URLRequest(url: url)
     request.setClerkRequestDeviceToken("request-token")
+    request.setClerkAuthFlowRegistrationId(registration.id)
 
     try await middleware.validate(response, data: data, for: request)
 
     #expect(clerk.session?.status == .active)
     #expect(clerk.isAuthFlowComplete == false)
-    #expect(clerk.pendingAuthFlowCompletion?.flowId == SignIn.mock.id)
+    let snapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(_, let completion) = snapshot.phase else {
+      Issue.record("Expected the accepted sign-in to await post-auth work")
+      return
+    }
+    #expect(completion?.flowId == SignIn.mock.id)
+    #expect(observer.valuesAtClientChange.last == false)
 
-    await clerk.consumePendingAuthFlowCompletion()
-    clerk.markAuthFlowComplete()
+    clerk.resetAuthFlow(for: registration)
 
-    #expect(clerk.pendingAuthFlowCompletion == nil)
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -327,7 +334,12 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
     #expect(clerk.session?.status == .active)
     #expect(clerk.isAuthFlowComplete)
-    #expect(clerk.pendingAuthFlowCompletion == nil)
+    let snapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(_, let completion) = snapshot.phase else {
+      Issue.record("Expected the externally refreshed session to be observed")
+      return
+    }
+    #expect(completion == nil)
     withExtendedLifetime(registration) {}
   }
 
@@ -537,6 +549,16 @@ struct ClerkClientSyncResponseMiddlewareTests {
     client.id = id
     client.updatedAt = updatedAt
     return client
+  }
+}
+
+@MainActor
+private final class AuthFlowGateRecordingObserver: ClerkInternalStateChangeObserver {
+  private(set) var valuesAtClientChange: [Bool] = []
+
+  func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
+    guard case .clientDidChange = change else { return }
+    valuesAtClientChange.append(clerk.isAuthFlowComplete)
   }
 }
 

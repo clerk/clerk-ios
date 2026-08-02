@@ -309,14 +309,14 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       throw invalidES256SignatureError()
     }
 
-    let r = try readDERInteger(bytes, offset: &offset)
-    let s = try readDERInteger(bytes, offset: &offset)
+    let rComponent = try readDERInteger(bytes, offset: &offset)
+    let sComponent = try readDERInteger(bytes, offset: &offset)
     guard offset == bytes.count else {
       throw invalidES256SignatureError()
     }
 
-    var raw = try paddedES256Component(r)
-    try raw.append(paddedES256Component(s))
+    var raw = try paddedES256Component(rComponent)
+    try raw.append(paddedES256Component(sComponent))
     return raw
   }
 

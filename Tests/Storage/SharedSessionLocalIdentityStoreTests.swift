@@ -18,7 +18,6 @@ struct SharedSessionLocalIdentityStoreTests {
 
     #expect(record.acceptedIdentity == identity)
     #expect(record.pendingPublication == nil)
-    #expect(record.pendingAuthFlowCompletion == nil)
     #expect(!record.requiresSharedSessionPublication)
   }
 
@@ -103,41 +102,6 @@ struct SharedSessionLocalIdentityStoreTests {
     let committed = try #require(try store.loadRecord())
     #expect(committed.acceptedIdentity == winner)
     #expect(committed.pendingPublication == nil)
-  }
-
-  @Test
-  func authFlowCompletionRemainsDurableUntilExplicitlyDelivered() throws {
-    let store = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
-    let pending = try makeEvent(clientID: "pending")
-    var signIn = SignIn.mock
-    signIn.status = .complete
-    signIn.createdSessionId = Client.mock.currentSession?.id
-
-    try store.stagePendingPublication(
-      pending,
-      completedAuthFlow: .signIn(signIn)
-    )
-
-    let stagedCompletion = try #require(
-      try store.loadPendingAuthFlowCompletion()
-    )
-    #expect(stagedCompletion.eventID == pending.id)
-    #expect(stagedCompletion.result.flowId == signIn.id)
-
-    try store.commitAcceptedIdentity(
-      makeIdentity(clientID: "winner"),
-      clearingPendingPublicationID: pending.id
-    )
-    try store.save(makeIdentity(clientID: "winner"))
-
-    #expect(try store.loadPendingPublication() == nil)
-    #expect(
-      try store.loadPendingAuthFlowCompletion()?.eventID == pending.id
-    )
-
-    try store.clearPendingAuthFlowCompletion(eventID: pending.id)
-
-    #expect(try store.loadPendingAuthFlowCompletion() == nil)
   }
 
   @Test

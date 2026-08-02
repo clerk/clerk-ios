@@ -290,6 +290,10 @@ public struct SessionActivity: Codable, Equatable, Sendable {
 }
 
 extension Session {
+  package var pendingTasks: [Task] {
+    tasks ?? []
+  }
+
   /// Format for the session token cache key
   ///
   /// For example:

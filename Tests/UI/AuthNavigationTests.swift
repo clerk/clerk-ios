@@ -6,146 +6,197 @@ import Testing
 @MainActor
 struct AuthNavigationTests {
   @Test
-  func handleSessionTaskCompletionRoutesToCurrentFirstPendingTask() {
+  func trustedDeviceEnrollmentPrecedesPendingSessionTasks() {
+    #expect(AuthView.postAuthStepOrder == [
+      .trustedDeviceEnrollment,
+      .sessionTasks,
+      .complete,
+    ])
+  }
+
+  @Test
+  func routesTheFirstPendingSessionTaskWithItsExactToken() {
     let navigation = AuthNavigation()
     let session = session(pendingTasks: [.setupMfa, .resetPassword])
+    let token = presentationToken(sessionId: session.id)
 
-    navigation.handleSessionTaskCompletion(session: session)
-
-    #expect(navigation.path == [.sessionTaskStart(task: .setupMfa)])
-    #expect(navigation.postAuthStepsComplete == false)
+    #expect(navigation.routeToSessionTaskStart(session: session, token: token))
+    #expect(navigation.path == [
+      .sessionTaskStart(task: .setupMfa, token: token),
+    ])
+    #expect(navigation.presentedAuthFlowToken == token)
   }
 
   @Test
-  func handleSessionTaskCompletionMarksPostAuthStepsCompleteWhenSessionHasNoPendingTasks() {
+  func backendTaskChangesDoNotDismissThePresentedScreen() {
     let navigation = AuthNavigation()
-    let session = session(pendingTasks: [])
+    var session = session(pendingTasks: [.setupMfa])
+    let token = presentationToken(sessionId: session.id)
 
-    navigation.handleSessionTaskCompletion(session: session)
+    #expect(navigation.routeToSessionTaskStart(session: session, token: token))
+    #expect(navigation.appendPostAuthDestination(.backupCodes(
+      backupCodes: ["backup-code"],
+      mfaType: .authenticatorApp,
+      token: token
+    )))
+    let presentedPath = navigation.path
 
-    #expect(navigation.path.isEmpty)
-    #expect(navigation.postAuthStepsComplete)
+    session.status = .active
+    session.tasks = []
+
+    #expect(navigation.routeToSessionTaskStart(session: session, token: token))
+    #expect(navigation.path == presentedPath)
+    #expect(navigation.presentedAuthFlowToken == token)
   }
 
   @Test
-  func routeToTrustedDeviceEnrollmentAppendsToAuthPathAndMarksOfferShown() {
+  func aNewPresentationTokenReplacesOnlyThePostAuthSuffix() {
     let navigation = AuthNavigation()
-    let biometryDisplayName = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+    var sessionA = session(pendingTasks: [.setupMfa])
+    sessionA.id = "session-a"
+    var sessionB = session(pendingTasks: [.chooseOrganization])
+    sessionB.id = "session-b"
+    let tokenA = presentationToken(sessionId: sessionA.id)
+    let tokenB = presentationToken(sessionId: sessionB.id)
+    navigation.path = [.signUpCompleteProfile]
+
+    #expect(navigation.routeToSessionTaskStart(session: sessionA, token: tokenA))
+    #expect(navigation.appendPostAuthDestination(.taskMfaSmsChooseNumber(token: tokenA)))
+    #expect(navigation.routeToSessionTaskStart(session: sessionB, token: tokenB))
+
+    #expect(navigation.path == [
+      .signUpCompleteProfile,
+      .sessionTaskStart(task: .chooseOrganization, token: tokenB),
+    ])
+  }
+
+  @Test
+  func sequentialPresentationsForTheSameWorkRemainPushed() {
+    let navigation = AuthNavigation()
+    let session = session(pendingTasks: [.setupMfa])
+    let work = AuthFlowWork(
+      ownerId: UUID(),
+      id: UUID(),
+      sessionId: session.id
+    )
+    let enrollmentToken = presentationToken(
+      work: work,
+      kind: .trustedDeviceEnrollment
+    )
+    let taskToken = presentationToken(work: work)
+    let biometry = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+
+    navigation.routeToTrustedDeviceEnrollment(
+      token: enrollmentToken,
+      biometryDisplayName: biometry
+    )
+    navigation.synchronizePostAuthPath(with: work)
+    #expect(navigation.routeToSessionTaskStart(
+      session: session,
+      token: taskToken
+    ))
+
+    #expect(navigation.path == [
+      .trustedDeviceEnrollment(
+        biometryDisplayName: biometry,
+        token: enrollmentToken
+      ),
+      .sessionTaskStart(task: .setupMfa, token: taskToken),
+    ])
+  }
+
+  @Test
+  func staleScreenCannotAppendIntoAReplacementPresentation() {
+    let navigation = AuthNavigation()
+    let session = session(pendingTasks: [.setupMfa])
+    let staleToken = presentationToken(sessionId: session.id)
+    let currentToken = presentationToken(sessionId: session.id)
+
+    #expect(navigation.routeToSessionTaskStart(
+      session: session,
+      token: currentToken
+    ))
+
+    #expect(navigation.appendPostAuthDestination(
+      .taskVerifyTotp(token: staleToken)
+    ) == false)
+    #expect(navigation.path == [
+      .sessionTaskStart(task: .setupMfa, token: currentToken),
+    ])
+  }
+
+  @Test
+  func trustedDeviceEnrollmentUsesItsExactPresentationToken() {
+    let navigation = AuthNavigation()
+    let token = presentationToken(
+      sessionId: "session-a",
+      kind: .trustedDeviceEnrollment
+    )
+    let biometry = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
     navigation.path = [.signUpCompleteProfile]
 
     navigation.routeToTrustedDeviceEnrollment(
-      biometryDisplayName: biometryDisplayName
+      token: token,
+      biometryDisplayName: biometry
+    )
+    navigation.routeToTrustedDeviceEnrollment(
+      token: token,
+      biometryDisplayName: biometry
     )
 
     #expect(navigation.path == [
       .signUpCompleteProfile,
-      .trustedDeviceEnrollment(biometryDisplayName: biometryDisplayName),
+      .trustedDeviceEnrollment(
+        biometryDisplayName: biometry,
+        token: token
+      ),
     ])
-    #expect(navigation.hasTrustedDeviceEnrollmentInPath)
-    #expect(navigation.trustedDeviceEnrollmentWasOffered)
   }
 
   @Test
-  func resetForNewAuthFlowClearsPathAndPostAuthFlags() {
+  func awaitingWorkClearsOnlyThePostAuthSuffix() {
     let navigation = AuthNavigation()
-    let biometryDisplayName = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+    let token = presentationToken(sessionId: "session-a")
     navigation.path = [
-      .trustedDeviceEnrollment(biometryDisplayName: biometryDisplayName),
+      .signUpCompleteProfile,
+      .sessionTaskStart(task: .setupMfa, token: token),
+      .taskMfaSmsChooseNumber(token: token),
     ]
-    navigation.routeToTrustedDeviceEnrollment(
-      biometryDisplayName: biometryDisplayName
+
+    navigation.synchronizePostAuthPath(with: nil)
+
+    #expect(navigation.path == [.signUpCompleteProfile])
+    #expect(navigation.presentedAuthFlowToken == nil)
+  }
+
+  @Test
+  func resetForNewAuthFlowClearsTheEntirePath() {
+    let navigation = AuthNavigation()
+    let token = presentationToken(
+      sessionId: "session-a",
+      kind: .trustedDeviceEnrollment
     )
-    navigation.markPostAuthStepsComplete()
+    navigation.path = [
+      .signUpCompleteProfile,
+      .trustedDeviceEnrollment(
+        biometryDisplayName: .init(biometryType: .touchID),
+        token: token
+      ),
+    ]
 
     navigation.resetForNewAuthFlow()
 
     #expect(navigation.path.isEmpty)
-    #expect(navigation.postAuthStepsComplete == false)
-    #expect(navigation.trustedDeviceEnrollmentWasOffered == false)
   }
 
   @Test
-  func routeToSessionTaskStartRoutesResetPasswordTaskOnce() {
-    let navigation = AuthNavigation()
-    let session = session(pendingTasks: [.resetPassword])
-
-    let didRoute = navigation.routeToSessionTaskStartIfNeeded(session: session)
-    let didRouteAgain = navigation.routeToSessionTaskStartIfNeeded(session: session)
-
-    #expect(didRoute)
-    #expect(didRouteAgain)
-    #expect(navigation.path == [.sessionTaskStart(task: .resetPassword)])
-  }
-
-  @Test
-  func routeToSessionTaskStartRoutesChooseOrganizationTask() {
-    let navigation = AuthNavigation()
-    let session = session(pendingTasks: [.chooseOrganization])
-
-    let didRoute = navigation.routeToSessionTaskStartIfNeeded(session: session)
-
-    #expect(didRoute)
-    #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
-  }
-
-  @Test
-  func dismissibleAuthWaitsForItsCompletedSignInBeforeFinishing() {
-    var session = Session.mock
-    session.status = .active
-    var signIn = SignIn.mock
-    signIn.status = .complete
-    signIn.createdSessionId = session.id
-
-    let action = AuthView.existingSessionChangeAction(
-      oldValue: nil,
-      newValue: session,
-      isDismissible: true,
-      hasTrustedDeviceEnrollmentInPath: false,
-      hasSessionTaskStartInPath: false,
-      pendingAuthFlowCompletion: .signIn(signIn),
-      isAuthFlowComplete: false
-    )
-
-    #expect(action == .wait)
-  }
-
-  @Test
-  func dismissibleAuthFinishesForExternallyActivatedSession() {
-    var session = Session.mock
-    session.status = .active
-
-    let action = AuthView.existingSessionChangeAction(
-      oldValue: nil,
-      newValue: session,
-      isDismissible: true,
-      hasTrustedDeviceEnrollmentInPath: false,
-      hasSessionTaskStartInPath: false,
-      pendingAuthFlowCompletion: nil,
-      isAuthFlowComplete: true
-    )
-
-    #expect(action == .finishAuthFlow)
-  }
-
-  @Test
-  func handleSessionTaskCompletionRoutesToChooseOrganizationWhenItIsNextPendingTask() {
-    let navigation = AuthNavigation()
-    let session = session(pendingTasks: [.chooseOrganization])
-
-    navigation.handleSessionTaskCompletion(session: session)
-
-    #expect(navigation.path == [.sessionTaskStart(task: .chooseOrganization)])
-    #expect(navigation.postAuthStepsComplete == false)
-  }
-
-  @Test
-  func signInNeedsNewPasswordRoutesToSetNewPassword() {
+  func signInNeedsNewPasswordRoutesWithoutAnAuthFlowToken() {
     let navigation = AuthNavigation()
     let signIn = SignIn(id: "sign_in_123", status: .needsNewPassword)
 
     navigation.setToStepForStatus(signIn: signIn)
 
-    #expect(navigation.path == [.signInSetNewPassword])
+    #expect(navigation.path == [.signInSetNewPassword(token: nil)])
   }
 
   @Test
@@ -191,7 +242,7 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func signUpUsernameMissingRequirementRoutesToCollectUsernameBeforeCompleteProfile() {
+  func signUpUsernameRoutesBeforeCompleteProfile() {
     let navigation = AuthNavigation()
     let signUp = signUp(
       missingFields: [.firstName, .legalAccepted, .username],
@@ -206,8 +257,34 @@ struct AuthNavigationTests {
 
   private func session(pendingTasks: [Session.Task]) -> Session {
     var session = Session.mock
+    session.status = .pending
     session.tasks = pendingTasks
     return session
+  }
+
+  private func presentationToken(
+    sessionId: String,
+    kind: AuthFlowRegistration.PostAuthPresentation = .sessionTasks
+  ) -> AuthFlowPresentationToken {
+    presentationToken(
+      work: AuthFlowWork(
+        ownerId: UUID(),
+        id: UUID(),
+        sessionId: sessionId
+      ),
+      kind: kind
+    )
+  }
+
+  private func presentationToken(
+    work: AuthFlowWork,
+    kind: AuthFlowRegistration.PostAuthPresentation = .sessionTasks
+  ) -> AuthFlowPresentationToken {
+    AuthFlowPresentationToken(
+      work: work,
+      id: UUID(),
+      kind: kind
+    )
   }
 
   private func signUp(

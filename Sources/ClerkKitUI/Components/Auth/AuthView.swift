@@ -15,6 +15,11 @@ import SwiftUI
 /// The view can be configured for different authentication modes and automatically handles
 /// navigation between authentication steps.
 ///
+/// > Important: Mount only one `AuthView` at a time for each `Clerk` instance. A single
+/// > `AuthView` can remain mounted while offscreen in a `TabView`; its in-process flow resumes
+/// > when it appears again. Don't place separate `AuthView` instances in multiple tabs or present
+/// > one over another retained `AuthView`.
+///
 /// ## Usage
 ///
 /// Basic usage as a dismissible sheet:
@@ -62,14 +67,14 @@ import SwiftUI
 /// }
 /// ```
 public struct AuthView: View {
-  @Environment(Clerk.self) private var clerk
+  @Environment(Clerk.self) var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  @Environment(\.dismiss) var dismiss
   /// Navigation state for the auth flow.
-  @State private var navigation = AuthNavigation()
+  @State var navigation = AuthNavigation()
 
   /// Form field state for auth views.
-  @State private var authState: AuthState
+  @State var authState: AuthState
 
   /// Configuration values for the auth flow.
   private let config: AuthConfig
@@ -78,7 +83,13 @@ public struct AuthView: View {
   @State private var error: Error?
 
   /// Keeps this auth flow registered for the view's lifetime.
-  @State private var authFlowRegistration: AuthFlowRegistration?
+  @State var authFlowRegistration: AuthFlowRegistration?
+
+  /// Prevents an explicitly finished flow from reacquiring coordinator ownership.
+  @State var authFlowRegistrationIsTerminated = false
+
+  /// The conflicting owner already reported for this view.
+  @State var reportedConflictingAuthFlowOwnerId: UUID?
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -108,7 +119,7 @@ public struct AuthView: View {
   ///   - isDismissible: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
-  ///     button is shown. Interactive presentation dismissal is always disabled.
+  ///     button is shown.
   ///     Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
     self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
@@ -140,12 +151,12 @@ public struct AuthView: View {
               dismissToolbarItem
             }
             #endif
-            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+            .authFooter(macOSDismissAction: showDismissButton ? { dismissAuthView() } : nil)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
-        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+        .authFooter(macOSDismissAction: showDismissButton ? { dismissAuthView() } : nil)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
@@ -161,11 +172,10 @@ public struct AuthView: View {
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
+    .environment(\.authFlowRequestOwnerId, authFlowRegistration?.id)
     .onAppear {
-      if authFlowRegistration == nil {
-        authFlowRegistration = clerk.registerAuthFlow()
-      }
-      routeToSessionTaskStartIfNeeded(session: clerk.session)
+      registerAuthFlowIfNeeded()
+      adoptPendingSessionIfNeeded(clerk.session)
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
@@ -177,49 +187,29 @@ public struct AuthView: View {
     .task {
       for await event in clerk.auth.events {
         switch event {
-        case .signInCompleted(let signIn):
-          if authFlowRegistration == nil {
-            await finishAuthFlow(after: .signIn(signIn))
-          }
-        case .signUpCompleted(let signUp):
-          if authFlowRegistration == nil {
-            await finishAuthFlow(after: .signUp(signUp))
-          }
         case .signInNeedsContinuation(let signIn):
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
           resumeAuth(.signUp(signUp))
-        case .sessionChanged(let oldValue, let newValue):
-          routeToExistingSessionTaskStartIfNeeded(oldValue: oldValue, newValue: newValue)
         default:
           break
         }
       }
     }
-    .task(id: clerk.readyPendingAuthFlowCompletion?.flowId) {
-      guard let pendingAuthFlowCompletion = clerk.readyPendingAuthFlowCompletion
-      else {
-        return
-      }
-      await finishAuthFlow(after: pendingAuthFlowCompletion)
-    }
-    .onChange(of: navigation.postAuthStepsComplete) { _, isComplete in
-      guard isComplete, let session = clerk.session else { return }
-      finishAuthFlow(with: session)
+    .task(id: authFlowReconciliationID) {
+      registerAuthFlowIfNeeded()
+      await reconcileAuthFlow()
     }
     .onChange(of: clerk.user) { _, newUser in
-      guard newUser == nil,
-            navigation.hasSessionTaskStartInPath ||
-            navigation.hasTrustedDeviceEnrollmentInPath ||
-            navigation.postAuthStepsComplete ||
-            navigation.trustedDeviceEnrollmentWasOffered
-      else {
-        return
-      }
-      if isDismissible {
-        dismiss()
+      guard newUser == nil else { return }
+
+      if isDismissible, navigation.presentedAuthFlowToken != nil {
+        dismissAuthView()
       } else {
         navigation.resetForNewAuthFlow()
+        resetAuthFlow(owner: authFlowRegistration)
+        authFlowRegistrationIsTerminated = false
+        registerAuthFlowIfNeeded()
       }
     }
     .onChange(of: config) { _, newConfig in
@@ -244,201 +234,6 @@ public struct AuthView: View {
           ]
         )
       )
-    }
-  }
-}
-
-extension AuthView {
-  /// Whether the dismiss button should be shown, accounting for final auth-flow steps.
-  private var showDismissButton: Bool {
-    isDismissible &&
-      !navigation.hasSessionTaskStartInPath &&
-      !navigation.hasTrustedDeviceEnrollmentInPath
-  }
-
-  @ToolbarContentBuilder
-  private var dismissToolbarItem: some ToolbarContent {
-    if showDismissButton {
-      DismissToolbarItem {
-        dismiss()
-      }
-    }
-  }
-
-  private func resumeAuth(_ result: TransferFlowResult) {
-    switch result {
-    case .signIn(let signIn):
-      navigation.setToStepForStatus(signIn: signIn)
-      clerk.setCallbackContinuation(nil)
-    case .signUp(let signUp):
-      navigation.setToStepForStatus(signUp: signUp)
-      clerk.setCallbackContinuation(nil)
-    }
-  }
-
-  private func finishAuthFlow(after result: TransferFlowResult) async {
-    guard let session = clerk.session else {
-      if result.createdSessionId == nil {
-        await clerk.consumePendingAuthFlowCompletion()
-        markAuthFlowComplete()
-      }
-      return
-    }
-
-    if let createdSessionId = result.createdSessionId,
-       createdSessionId != session.id
-    {
-      return
-    }
-
-    guard !Task.isCancelled else { return }
-
-    if await presentTrustedDeviceEnrollmentIfNeeded(after: result) {
-      await clerk.consumePendingAuthFlowCompletion()
-      return
-    }
-    guard !Task.isCancelled else { return }
-
-    await clerk.consumePendingAuthFlowCompletion()
-
-    finishAuthFlow(with: session)
-  }
-
-  private func finishAuthFlow(with session: Session) {
-    if navigation.routeToSessionTaskStartIfNeeded(session: session) {
-      return
-    }
-
-    markAuthFlowComplete()
-
-    if isDismissible {
-      dismiss()
-    }
-  }
-
-  private func routeToExistingSessionTaskStartIfNeeded(oldValue: Session?, newValue: Session?) {
-    switch Self.existingSessionChangeAction(
-      oldValue: oldValue,
-      newValue: newValue,
-      isDismissible: isDismissible,
-      hasTrustedDeviceEnrollmentInPath: navigation.hasTrustedDeviceEnrollmentInPath,
-      hasSessionTaskStartInPath: navigation.hasSessionTaskStartInPath,
-      pendingAuthFlowCompletion: clerk.pendingAuthFlowCompletion,
-      isAuthFlowComplete: clerk.isAuthFlowComplete
-    ) {
-    case .finishAuthFlow:
-      guard let newValue else { return }
-      finishAuthFlow(with: newValue)
-    case .routeToSessionTask:
-      routeToSessionTaskStartIfNeeded(session: newValue)
-    case .wait:
-      return
-    }
-  }
-
-  enum ExistingSessionChangeAction: Equatable {
-    case finishAuthFlow
-    case routeToSessionTask
-    case wait
-  }
-
-  static func existingSessionChangeAction(
-    oldValue: Session?,
-    newValue: Session?,
-    isDismissible: Bool,
-    hasTrustedDeviceEnrollmentInPath: Bool,
-    hasSessionTaskStartInPath: Bool,
-    pendingAuthFlowCompletion: TransferFlowResult?,
-    isAuthFlowComplete: Bool
-  ) -> ExistingSessionChangeAction {
-    if hasTrustedDeviceEnrollmentInPath {
-      return .wait
-    }
-
-    if let pendingAuthFlowCompletion,
-       pendingAuthFlowCompletion.createdSessionId == nil ||
-       pendingAuthFlowCompletion.createdSessionId == newValue?.id
-    {
-      return .wait
-    }
-
-    if !isDismissible,
-       newValue?.status == .active,
-       !isAuthFlowComplete
-    {
-      return .wait
-    }
-
-    let becameActive = newValue?.status == .active &&
-      (oldValue?.status != .active || oldValue?.id != newValue?.id)
-    if isDismissible, becameActive {
-      return .finishAuthFlow
-    }
-
-    let shouldAdoptPendingSession = !isDismissible && newValue?.status == .pending
-    if oldValue?.id == newValue?.id ||
-      hasSessionTaskStartInPath ||
-      shouldAdoptPendingSession
-    {
-      return .routeToSessionTask
-    }
-
-    return .wait
-  }
-
-  private func routeToSessionTaskStartIfNeeded(session: Session?) {
-    guard navigation.routeToSessionTaskStartIfNeeded(session: session) else { return }
-    clerk.markAuthFlowPending()
-  }
-
-  private func markAuthFlowComplete() {
-    clerk.markAuthFlowComplete()
-  }
-
-  @discardableResult
-  private func presentTrustedDeviceEnrollmentIfNeeded(after result: TransferFlowResult) async -> Bool {
-    guard clerk.callbackContinuation == nil,
-          let nativeSettings = clerk.environment?.authConfig.nativeSettings,
-          nativeSettings.apiEnabled,
-          nativeSettings.trustedDeviceSignInEnabled,
-          !navigation.hasSessionTaskStartInPath,
-          !navigation.trustedDeviceEnrollmentWasOffered,
-          let session = clerk.session,
-          let userID = session.user?.id
-    else {
-      return false
-    }
-
-    guard session.status.allowsTrustedDeviceEnrollment else {
-      return false
-    }
-
-    let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
-    guard biometryDisplayName.isSupported else {
-      return false
-    }
-
-    let promptStore = TrustedDeviceEnrollmentPromptStore()
-    guard result.shouldOfferTrustedDeviceEnrollmentPrompt(
-      userID: userID,
-      nativeSettings: nativeSettings,
-      promptStore: promptStore
-    ) else {
-      return false
-    }
-
-    do {
-      let availability = try await clerk.trustedDevices.currentUserAvailability()
-      guard !availability.isAvailable, availability.canPromptForEnrollment else {
-        return false
-      }
-      promptStore.markPromptSeen(userID: userID)
-      navigation.routeToTrustedDeviceEnrollment(
-        biometryDisplayName: biometryDisplayName
-      )
-      return true
-    } catch {
-      return false
     }
   }
 }
@@ -517,102 +312,6 @@ extension AuthView {
     var config = config
     config.unsafeMetadata = metadata
     return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
-  }
-}
-
-extension AuthView {
-  enum Destination: Hashable {
-    /// Auth Start
-    case authStart
-
-    // Sign In
-    case signInFactorOne(factor: Factor)
-    case signInFactorOneUseAnotherMethod(currentFactor: Factor)
-    case signInFactorTwo(factor: Factor)
-    case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
-    case signInClientTrust(factor: Factor)
-    case signInForgotPassword
-    case signInSetNewPassword
-    case getHelp(GetHelpView.Context)
-
-    // Sign up
-    case signUpCollectField(SignUpCollectFieldView.Field)
-    case signUpCode(SignUpCodeView.Field)
-    case signUpEmailLink
-    case signUpCompleteProfile
-
-    // Session tasks
-    case sessionTaskStart(task: Session.Task)
-    case taskMfaSmsChooseNumber
-    case taskVerifySms(phoneNumber: PhoneNumber)
-    case taskMfaTotp(totpResource: TOTPResource)
-    case taskVerifyTotp
-    case sessionTaskCreateOrganization(creationDefaults: OrganizationCreationDefaults?)
-    case backupCodes(
-      backupCodes: [String],
-      mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
-    )
-
-    case trustedDeviceEnrollment(
-      biometryDisplayName: TrustedDeviceBiometryDisplayName
-    )
-
-    @MainActor
-    @ViewBuilder
-    var view: some View {
-      switch self {
-      case .authStart:
-        AuthStartView()
-      case let .signInFactorOne(factor):
-        SignInFactorOneView(factor: factor)
-      case let .signInFactorOneUseAnotherMethod(currentFactor):
-        SignInFactorAlternativeMethodsView(currentFactor: currentFactor)
-      case let .signInFactorTwo(factor):
-        SignInFactorTwoView(factor: factor)
-      case let .signInFactorTwoUseAnotherMethod(currentFactor):
-        SignInFactorAlternativeMethodsView(
-          currentFactor: currentFactor,
-          isSecondFactor: true
-        )
-      case let .signInClientTrust(factor):
-        SignInClientTrustView(factor: factor)
-      case .signInForgotPassword:
-        SignInFactorOneForgotPasswordView()
-      case .signInSetNewPassword:
-        SignInSetNewPasswordView()
-      case let .getHelp(context):
-        GetHelpView(context: context)
-      case let .signUpCollectField(field):
-        SignUpCollectFieldView(field: field)
-      case let .signUpCode(field):
-        SignUpCodeView(field: field)
-      case .signUpEmailLink:
-        EmailLinkVerificationView(mode: .signUp)
-      case .signUpCompleteProfile:
-        SignUpCompleteProfileView()
-      case .sessionTaskStart(let task):
-        SessionTaskStartView(task: task)
-      case .taskMfaSmsChooseNumber:
-        SessionTaskMfaSmsChooseNumberView()
-      case .taskVerifySms(let phoneNumber):
-        SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
-      case .taskMfaTotp(let totpResource):
-        SessionTaskMfaTotpView(totp: totpResource)
-      case .sessionTaskCreateOrganization(let creationDefaults):
-        SessionTaskCreateOrganizationView(creationDefaults: creationDefaults, showBackButton: true)
-      case .taskVerifyTotp:
-        SessionTaskMfaVerifyTotpView()
-      case .backupCodes(let backupCodes, let mfaType):
-        SessionTaskBackupCodesView(
-          backupCodes: backupCodes,
-          mfaType: mfaType
-        )
-      case let .trustedDeviceEnrollment(biometryDisplayName):
-        TrustedDeviceEnrollmentView(
-          biometryDisplayName: biometryDisplayName
-        )
-      }
-    }
   }
 }
 

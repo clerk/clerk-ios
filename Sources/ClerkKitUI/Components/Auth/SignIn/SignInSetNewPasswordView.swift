@@ -10,6 +10,7 @@ import SwiftUI
 
 struct SignInSetNewPasswordView: View {
   let mode: Mode
+  let token: AuthFlowPresentationToken?
 
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -38,8 +39,12 @@ struct SignInSetNewPasswordView: View {
     case sessionTask
   }
 
-  init(mode: Mode = .signIn) {
+  init(
+    mode: Mode = .signIn,
+    token: AuthFlowPresentationToken? = nil
+  ) {
     self.mode = mode
+    self.token = token
   }
 
   var body: some View {
@@ -187,8 +192,10 @@ extension SignInSetNewPasswordView {
   }
 
   private func resetPasswordFromSessionTask() async throws {
-    guard let user = clerk.user else {
-      navigation.path = []
+    guard let token,
+          clerk.authFlowPresentationIsCurrent(token),
+          let user = clerk.user
+    else {
       return
     }
 
@@ -200,7 +207,8 @@ extension SignInSetNewPasswordView {
       )
     )
 
-    navigation.handleSessionTaskCompletion(session: clerk.session)
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
+    _ = clerk.finishAuthFlowPresentation(token)
   }
 }
 
