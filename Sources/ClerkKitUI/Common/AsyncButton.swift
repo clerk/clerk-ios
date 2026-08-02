@@ -34,14 +34,10 @@ struct AsyncButton<Label: View>: View {
         if isRunning { return }
         isRunning = true
         defer { isRunning = false }
-        if let authFlowRequestOwnerId {
-          await AuthFlowRequestScope.withOwner(
-            authFlowRequestOwnerId,
-            operation: action
-          )
-        } else {
-          await action()
-        }
+        await AuthFlowRequestScope.withOwner(
+          authFlowRequestOwnerId,
+          operation: action
+        )
       }
     } label: {
       label(isRunning)

@@ -68,11 +68,7 @@ struct OTPField: View {
         fieldState = .default
         let ownerId = authFlowRequestOwnerId
         Task {
-          if let ownerId {
-            await AuthFlowRequestScope.withOwner(ownerId) {
-              await onCodeEntry(code)
-            }
-          } else {
+          await AuthFlowRequestScope.withOwner(ownerId) {
             await onCodeEntry(code)
           }
         }
