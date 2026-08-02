@@ -17,6 +17,7 @@ struct AuthStartView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
   @Environment(\.dismissKeyboard) private var dismissKeyboard
 
   // MARK: - State
@@ -144,8 +145,15 @@ struct AuthStartView: View {
     #endif
   }
 
-  private var passkeySignInTaskID: Int? {
-    passkeySignInTaskIsEnabled ? automaticPasskeySignInRestartID : nil
+  private var passkeySignInTaskID: PasskeySignInTaskID? {
+    guard passkeySignInTaskIsEnabled, let authFlowRequestOwnerId else {
+      return nil
+    }
+
+    return PasskeySignInTaskID(
+      restartId: automaticPasskeySignInRestartID,
+      ownerId: authFlowRequestOwnerId
+    )
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -277,11 +285,15 @@ struct AuthStartView: View {
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInTaskID) {
-      guard passkeySignInTaskID != nil else { return }
+      guard let passkeySignInTaskID else { return }
       let includeAutomaticModal = !automaticPasskeySignInHasStarted
       automaticPasskeySignInTaskGeneration += 1
       let taskGeneration = automaticPasskeySignInTaskGeneration
-      let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
+      let task = Task {
+        await AuthFlowRequestScope.withOwner(passkeySignInTaskID.ownerId) {
+          await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal)
+        }
+      }
       automaticPasskeySignInTask = task
       await withTaskCancellationHandler {
         await task.value
@@ -300,6 +312,11 @@ struct AuthStartView: View {
       await refreshTrustedDeviceAvailability()
     }
   }
+}
+
+private struct PasskeySignInTaskID: Equatable {
+  let restartId: Int
+  let ownerId: UUID
 }
 
 enum AuthStartTrustedDeviceRefreshState: Equatable {

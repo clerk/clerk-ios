@@ -690,7 +690,18 @@ extension Auth {
     }
   }
 
-  func activateSession(sessionId: String) async throws {
+  func activateSession(
+    sessionId: String,
+    authFlowActivation: AuthFlowActivationToken? = nil
+  ) async throws {
+    defer {
+      if let authFlowActivation {
+        Clerk.shared.authSessionActivationDidFinish(
+          activation: authFlowActivation
+        )
+      }
+    }
+
     do {
       try await setActive(sessionId: sessionId)
     } catch {
@@ -744,53 +755,79 @@ extension Auth {
     if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
       throw ClerkClientError(message: "Magic link callback does not match the pending flow.", localizationBundle: .module)
     }
+    let authFlowOwnerId = magicLinkStore.authFlowOwnerId(for: pendingFlow)
 
-    Clerk.shared.setCallbackContinuation(nil)
+    return try await AuthFlowRequestScope.withOwner(authFlowOwnerId) {
+      Clerk.shared.setCallbackContinuation(nil)
 
-    let params = MagicLinkCompleteParams(
-      flowId: resolvedFlowId,
-      approvalToken: resolvedApprovalToken,
-      codeVerifier: pendingFlow.codeVerifier
-    )
+      let params = MagicLinkCompleteParams(
+        flowId: resolvedFlowId,
+        approvalToken: resolvedApprovalToken,
+        codeVerifier: pendingFlow.codeVerifier
+      )
 
-    let completionResult: MagicLinkCompleteResult
-    do {
-      completionResult = try await magicLinkService.complete(params: params)
-    } catch {
-      if MagicLinkTerminalError.contains(error) {
-        magicLinkStore.clear(flow: pendingFlow)
+      let completionResult: MagicLinkCompleteResult
+      do {
+        completionResult = try await magicLinkService.complete(params: params)
+      } catch {
+        if MagicLinkTerminalError.contains(error) {
+          magicLinkStore.clear(flow: pendingFlow)
+        }
+        throw error
       }
-      throw error
-    }
-    magicLinkStore.clear(flow: pendingFlow)
+      magicLinkStore.clear(flow: pendingFlow)
 
-    let result: TransferFlowResult
+      let result = try await resolveMagicLinkCompletion(
+        completionResult,
+        pendingFlow: pendingFlow,
+        authFlowOwnerId: authFlowOwnerId
+      )
+
+      if result.needsContinuation {
+        sendContinuation(for: result)
+      }
+
+      return result
+    }
+  }
+
+  private func resolveMagicLinkCompletion(
+    _ completion: MagicLinkCompleteResult,
+    pendingFlow: PendingMagicLinkFlow,
+    authFlowOwnerId: UUID?
+  ) async throws -> TransferFlowResult {
     switch pendingFlow.kind {
     case .signIn:
-      guard case .ticket(let completionResponse) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.", localizationBundle: .module)
+      guard case .ticket(let response) = completion else {
+        throw ClerkClientError(
+          message: "Magic link callback returned a sign-up for a sign-in flow.",
+          localizationBundle: .module
+        )
       }
 
-      let signIn = try await signInWithTicket(completionResponse.ticket)
-      result = .signIn(signIn)
-
+      let signIn = try await signInWithTicket(response.ticket)
       if let sessionId = signIn.createdSessionId {
-        try await activateSession(sessionId: sessionId)
+        let activation = Clerk.shared.beginCompletedAuthSessionActivation(
+          sessionId: sessionId,
+          flowId: signIn.id,
+          ownerId: authFlowOwnerId
+        )
+        try await activateSession(
+          sessionId: sessionId,
+          authFlowActivation: activation
+        )
       }
+      return .signIn(signIn)
 
     case .signUp:
-      guard case .signUp(let signUp) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.", localizationBundle: .module)
+      guard case .signUp(let signUp) = completion else {
+        throw ClerkClientError(
+          message: "Magic link callback returned a ticket for a sign-up flow.",
+          localizationBundle: .module
+        )
       }
-
-      result = .signUp(signUp)
+      return .signUp(signUp)
     }
-
-    if result.needsContinuation {
-      sendContinuation(for: result)
-    }
-
-    return result
   }
 
   @discardableResult

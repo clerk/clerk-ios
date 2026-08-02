@@ -18,6 +18,8 @@ struct SessionTaskMfaVerifyTotpView: View {
   @State private var otpFieldState = OTPField.FieldState.default
   @State private var backupCodes = [String]()
 
+  let token: AuthFlowPresentationToken
+
   @FocusState private var otpFieldIsFocused: Bool
 
   var body: some View {
@@ -76,11 +78,16 @@ struct SessionTaskMfaVerifyTotpView: View {
   }
 
   private func attempt() async {
-    guard let user = clerk.user else { return }
+    guard clerk.authFlowPresentationIsCurrent(token),
+          let user = clerk.user
+    else {
+      return
+    }
     verificationState = .verifying
 
     do {
       let totp = try await user.verifyTOTP(code: code)
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
       backupCodes = totp.backupCodes ?? []
       handleSuccessfulVerification()
     } catch {
@@ -95,11 +102,18 @@ struct SessionTaskMfaVerifyTotpView: View {
   }
 
   private func handleSuccessfulVerification() {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     verificationState = .success
     if !backupCodes.isEmpty {
-      navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .authenticatorApp))
+      navigation.appendPostAuthDestination(
+        .backupCodes(
+          backupCodes: backupCodes,
+          mfaType: .authenticatorApp,
+          token: token
+        )
+      )
     } else {
-      navigation.handleSessionTaskCompletion(session: clerk.session)
+      _ = clerk.finishAuthFlowPresentation(token)
     }
   }
 }

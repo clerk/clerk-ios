@@ -492,8 +492,11 @@ struct AuthTests {
     let completeParams = LockIsolated<MagicLinkCompleteParams?>(nil)
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
+    let capturedAuthFlowOwnerId = LockIsolated<UUID?>(nil)
+    let expectedAuthFlowOwnerId = UUID()
 
     let magicLinkService = MockMagicLinkService { params in
+      capturedAuthFlowOwnerId.setValue(AuthFlowRequestScope.ownerId)
       completeParams.setValue(params)
       return .ticket(MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_123"))
     }
@@ -518,7 +521,17 @@ struct AuthTests {
     )
     let clerk = Clerk.shared
     let callbackURL = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(
+      kind: .signIn,
+      flowId: "flow_123",
+      codeVerifier: "verifier_123",
+      authFlowOwnerId: expectedAuthFlowOwnerId
+    )
+    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    #expect(
+      clerk.dependencies.magicLinkStore.authFlowOwnerId(for: pendingFlow)
+        == expectedAuthFlowOwnerId
+    )
 
     let result = try await clerk.auth.completeMagicLink(callbackURL: callbackURL)
     let signIn = switch result {
@@ -535,7 +548,36 @@ struct AuthTests {
     #expect(completeParams.value?.codeVerifier == "verifier_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
+    #expect(capturedAuthFlowOwnerId.value == expectedAuthFlowOwnerId)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func magicLinkAuthFlowOwnershipIsInMemoryOnly() throws {
+    let keychain = InMemoryKeychain()
+    let ownerId = UUID()
+    let store = MagicLinkStore(keychain: keychain)
+    try store.save(
+      kind: .signIn,
+      flowId: "flow_123",
+      codeVerifier: "verifier_123",
+      authFlowOwnerId: ownerId
+    )
+
+    let pendingFlow = try #require(store.load())
+    #expect(store.authFlowOwnerId(for: pendingFlow) == ownerId)
+    let sameFlowWithDifferentDates = PendingMagicLinkFlow(
+      kind: pendingFlow.kind,
+      flowId: pendingFlow.flowId,
+      codeVerifier: pendingFlow.codeVerifier,
+      createdAt: pendingFlow.createdAt.addingTimeInterval(1),
+      expiresAt: pendingFlow.expiresAt.addingTimeInterval(1)
+    )
+    #expect(store.authFlowOwnerId(for: sameFlowWithDifferentDates) == ownerId)
+
+    let relaunchedStore = MagicLinkStore(keychain: keychain)
+    let reloadedFlow = try #require(relaunchedStore.load())
+    #expect(relaunchedStore.authFlowOwnerId(for: reloadedFlow) == nil)
   }
 
   @Test
@@ -1462,5 +1504,31 @@ struct AuthTests {
     let params = try #require(activeParams.value)
     #expect(params.0 == "sess_test123")
     #expect(params.1 == nil)
+  }
+
+  @Test
+  func recoveredSessionActivationCompletesAuthFlowSelection() async throws {
+    struct ActivationError: Error {}
+
+    let sessionService = MockSessionService(setActive: { _, _ in
+      throw ActivationError()
+    })
+    configureDependencies(sessionService: sessionService)
+    Clerk.shared.client = nil
+    let registration = try #require(Clerk.shared.registerAuthFlow())
+    let sessionId = try #require(Client.mock.currentSession?.id)
+    let activation = try #require(Clerk.shared.beginAuthSessionActivation(
+      sessionId: sessionId,
+      ownerId: registration.id
+    ))
+    Clerk.shared.client = .mock
+
+    try await Clerk.shared.auth.activateSession(
+      sessionId: sessionId,
+      authFlowActivation: activation
+    )
+
+    #expect(Clerk.shared.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
   }
 }

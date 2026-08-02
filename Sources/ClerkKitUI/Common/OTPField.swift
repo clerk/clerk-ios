@@ -5,9 +5,11 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkKit
 import SwiftUI
 
 struct OTPField: View {
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
   @Environment(\.clerkTheme) private var theme
 
   @Binding var code: String
@@ -64,7 +66,16 @@ struct OTPField: View {
 
       if code.count == numberOfInputs {
         fieldState = .default
-        Task { await onCodeEntry(code) }
+        let ownerId = authFlowRequestOwnerId
+        Task {
+          if let ownerId {
+            await AuthFlowRequestScope.withOwner(ownerId) {
+              await onCodeEntry(code)
+            }
+          } else {
+            await onCodeEntry(code)
+          }
+        }
       } else if code.isEmpty {
         fieldState = .default
       }

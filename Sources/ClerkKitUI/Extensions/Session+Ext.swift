@@ -8,10 +8,6 @@ import Foundation
 import SwiftUI
 
 extension Session {
-  var pendingTasks: [Task] {
-    tasks ?? []
-  }
-
   var requiresForcedMfa: Bool {
     status == .pending && pendingTasks.contains(.setupMfa)
   }

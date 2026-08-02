@@ -31,9 +31,12 @@ struct TrustedDevicesTests {
 
   @Test
   func revokeUsesTrustedDeviceService() async throws {
+    Clerk.shared.client = .mock
     let capturedTrustedDeviceId = LockIsolated<String?>(nil)
-    let service = MockTrustedDeviceService(revoke: { trustedDeviceId in
+    let capturedSessionId = LockIsolated<String?>(nil)
+    let service = MockTrustedDeviceService(revoke: { trustedDeviceId, sessionId in
       capturedTrustedDeviceId.setValue(trustedDeviceId)
+      capturedSessionId.setValue(sessionId)
       return .mock
     })
 
@@ -45,6 +48,7 @@ struct TrustedDevicesTests {
     let trustedDevice = try await Clerk.shared.trustedDevices.revoke(id: "tdc_123")
 
     #expect(capturedTrustedDeviceId.value == "tdc_123")
+    #expect(capturedSessionId.value == Session.mock.id)
     #expect(trustedDevice == .mock)
   }
 
@@ -498,11 +502,11 @@ struct TrustedDevicesTests {
     let preparedParams = LockIsolated<TrustedDevice.PrepareEnrollmentParams?>(nil)
     let attemptedParams = LockIsolated<TrustedDevice.AttemptEnrollmentParams?>(nil)
     let trustedDeviceService = MockTrustedDeviceService(
-      prepareEnrollment: { params in
+      prepareEnrollment: { _, params in
         preparedParams.setValue(params)
         return .mock
       },
-      attemptEnrollment: { params in
+      attemptEnrollment: { _, params in
         attemptedParams.setValue(params)
         return .mock
       }
@@ -548,13 +552,78 @@ struct TrustedDevicesTests {
   }
 
   @Test
+  func enrollPinsInitiatingSessionAcrossCurrentSessionChange() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let requestedSessionIds = LockIsolated<[String]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(
+        prepareEnrollment: { sessionId, _ in
+          requestedSessionIds.withValue { $0.append(sessionId) }
+          await MainActor.run {
+            var client = Client.mock
+            client.lastActiveSessionId = Session.mock2.id
+            Clerk.shared.client = client
+          }
+          return .mock
+        },
+        attemptEnrollment: { sessionId, _ in
+          requestedSessionIds.withValue { $0.append(sessionId) }
+          return .mock
+        }
+      )
+    )
+
+    _ = try await setup.trustedDevices.enroll()
+    let localCredential = try #require(try setup.credentialStore.credential(id: TrustedDevice.mock.id))
+
+    #expect(requestedSessionIds.value == [Session.mock.id, Session.mock.id])
+    #expect(Clerk.shared.session?.id == Session.mock2.id)
+    #expect(localCredential.userID == User.mock.id)
+  }
+
+  @Test
+  func enrollUsesInitiatingSessionForRollbackAfterLocalSaveFailure() async {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mock
+    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
+    let revokedSessionIds = LockIsolated<[String?]>([])
+    let setup = makeTrustedDevices(
+      trustedDeviceService: MockTrustedDeviceService(
+        attemptEnrollment: { _, _ in
+          await MainActor.run {
+            var client = Client.mock
+            client.lastActiveSessionId = Session.mock2.id
+            Clerk.shared.client = client
+          }
+          return .mock
+        },
+        revoke: { trustedDeviceId, sessionId in
+          revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+          revokedSessionIds.withValue { $0.append(sessionId) }
+          return .mock
+        }
+      ),
+      credentialStoreKeychain: SetFailingKeychain()
+    )
+
+    await #expect(throws: SetFailingKeychain.Failure.self) {
+      try await setup.trustedDevices.enroll()
+    }
+
+    #expect(revokedTrustedDeviceIds.value == [TrustedDevice.mock.id])
+    #expect(revokedSessionIds.value == [Session.mock.id])
+    #expect(Clerk.shared.session?.id == Session.mock2.id)
+  }
+
+  @Test
   func enrollReplacesOtherCurrentAppCredentialsAcrossUsersAfterSuccessfulEnrollment() async throws {
     Clerk.shared.environment = enabledTrustedDeviceEnvironment()
     Clerk.shared.client = .mock
     let revokedTrustedDeviceIds = LockIsolated<[String]>([])
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId in
+      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId, _ in
         revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
         return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
       }),
@@ -598,8 +667,8 @@ struct TrustedDevicesTests {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = makeTrustedDevices(
       trustedDeviceService: MockTrustedDeviceService(
-        prepareEnrollment: { _ in .mock },
-        attemptEnrollment: { _ in throw ClerkClientError(message: "Attempt failed") }
+        prepareEnrollment: { _, _ in .mock },
+        attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
       ),
       keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -626,7 +695,7 @@ struct TrustedDevicesTests {
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in
         throw ClerkClientError(message: "Revoke failed")
       }),
       keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
@@ -662,7 +731,7 @@ struct TrustedDevicesTests {
     let prepareWasCalled = LockIsolated(false)
     let setup = makeTrustedDevices(
       trustedDeviceService: MockTrustedDeviceService(
-        prepareEnrollment: { _ in
+        prepareEnrollment: { _, _ in
           prepareWasCalled.setValue(true)
           return .mock
         }
@@ -705,8 +774,8 @@ struct TrustedDevicesTests {
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let trustedDeviceService = MockTrustedDeviceService(
-      prepareEnrollment: { _ in .mock },
-      attemptEnrollment: { _ in throw ClerkClientError(message: "Attempt failed") }
+      prepareEnrollment: { _, _ in .mock },
+      attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
     )
     let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -745,7 +814,7 @@ struct TrustedDevicesTests {
   func revokeDeletesLocalCredentialAfterServerRevoke() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in .mock }),
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in .mock }),
       keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -762,7 +831,7 @@ struct TrustedDevicesTests {
   func revokeReturnsServerCredentialWhenLocalCleanupFails() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in .mock }),
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in .mock }),
       keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
         throw TestKeyDeletionError.failed
@@ -789,7 +858,7 @@ struct TrustedDevicesTests {
             trustedDevice(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
           ]
         },
-        revoke: { trustedDeviceId in
+        revoke: { trustedDeviceId, _ in
           revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
           return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
         }
@@ -824,7 +893,7 @@ struct TrustedDevicesTests {
     Clerk.shared.client = .mock
     let revokeWasCalled = LockIsolated(false)
     let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _ in
+      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in
         revokeWasCalled.setValue(true)
         return .mock
       })
@@ -851,7 +920,7 @@ struct TrustedDevicesTests {
     )
     let revokedTrustedDeviceIds = LockIsolated<[String]>([])
     let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId in
+      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId, _ in
         revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
         return .mock
       })
@@ -1339,12 +1408,13 @@ private func makeTrustedDevicesWithLocalCredential(
 private func makeTrustedDevices(
   trustedDeviceService: TrustedDeviceServiceProtocol = MockTrustedDeviceService(),
   signInService: SignInServiceProtocol = MockSignInService(),
-  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager()
+  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager(),
+  credentialStoreKeychain: any KeychainStorage = InMemoryKeychain()
 ) -> (
   trustedDevices: TrustedDevices,
   credentialStore: TrustedDeviceLocalCredentialStore
 ) {
-  let credentialStore = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+  let credentialStore = TrustedDeviceLocalCredentialStore(keychain: credentialStoreKeychain)
   let trustedDevices = TrustedDevices(
     trustedDeviceService: trustedDeviceService,
     signInService: signInService,

@@ -107,20 +107,6 @@ public final class Clerk {
     session?.user
   }
 
-  /// Whether Clerk currently has a user-backed active session.
-  private var hasActiveUserSession: Bool {
-    user != nil && session?.status == .active
-  }
-
-  /// Whether authentication and any Clerk-owned post-authentication steps are complete.
-  ///
-  /// Use this value when choosing between a root authentication view and authenticated content.
-  /// It becomes `true` when there is a current user, the current session is active, and a
-  /// registered `AuthView` is no longer completing a post-authentication step.
-  public var isAuthFlowComplete: Bool {
-    hasActiveUserSession && !isAuthFlowPending
-  }
-
   /// The current user's membership in the active organization.
   public var organizationMembership: OrganizationMembership? {
     guard let activeOrganizationId = session?.lastActiveOrganizationId else {
@@ -254,45 +240,8 @@ public final class Clerk {
   /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
-  /// The auth view currently managing authentication.
-  private var authFlowRegistrationId: UUID?
-
-  /// Whether that auth view is completing Clerk-owned post-authentication work.
-  private var isAuthFlowPending = false
-
-  /// The completed authentication result awaiting that view's post-authentication work.
-  package private(set) var pendingAuthFlowCompletion: TransferFlowResult?
-
-  /// The shared-session event that owns the durable pending completion.
-  @ObservationIgnored
-  private var pendingAuthFlowCompletionEventID: UUID?
-
-  /// Clears durable shared-session completion state after the registered view accepts it.
-  @ObservationIgnored
-  private var pendingAuthFlowCompletionAcknowledgement: (@MainActor @Sendable () async -> Void)?
-
-  /// The pending completion once its user-backed session is current and ready for post-auth work.
-  package var readyPendingAuthFlowCompletion: TransferFlowResult? {
-    guard authFlowRegistrationId != nil,
-          let pendingAuthFlowCompletion
-    else {
-      return nil
-    }
-
-    guard let createdSessionId = pendingAuthFlowCompletion.createdSessionId else {
-      return pendingAuthFlowCompletion
-    }
-
-    guard let session,
-          session.user != nil,
-          session.status == .active || session.status == .pending,
-          createdSessionId == session.id
-    else {
-      return nil
-    }
-
-    return pendingAuthFlowCompletion
-  }
+  /// Coordinates the active authentication view's transient post-authentication work.
+  var authFlowCoordinator = AuthFlowCoordinator()
 
   /// The main entry point for all authentication operations.
   ///
@@ -314,88 +263,6 @@ public final class Clerk {
 
   package func setCallbackContinuation(_ result: TransferFlowResult?) {
     callbackContinuation = result
-  }
-
-  var hasRegisteredAuthFlow: Bool {
-    authFlowRegistrationId != nil
-  }
-
-  package func registerAuthFlow() -> AuthFlowRegistration? {
-    guard !hasActiveUserSession || pendingAuthFlowCompletionEventID != nil else {
-      return nil
-    }
-
-    let registrationId = UUID()
-    authFlowRegistrationId = registrationId
-    isAuthFlowPending = pendingAuthFlowCompletion != nil || session?.status == .pending
-
-    return AuthFlowRegistration { [weak self] in
-      self?.unregisterAuthFlow(registrationId: registrationId)
-    }
-  }
-
-  package func markAuthFlowPending() {
-    guard authFlowRegistrationId != nil else { return }
-    isAuthFlowPending = true
-  }
-
-  package func markAuthFlowComplete() {
-    guard authFlowRegistrationId != nil else { return }
-    guard pendingAuthFlowCompletionEventID == nil else {
-      isAuthFlowPending = true
-      return
-    }
-    pendingAuthFlowCompletion = nil
-    pendingAuthFlowCompletionEventID = nil
-    pendingAuthFlowCompletionAcknowledgement = nil
-    isAuthFlowPending = false
-  }
-
-  package func consumePendingAuthFlowCompletion() async {
-    let acknowledgement = pendingAuthFlowCompletionAcknowledgement
-    pendingAuthFlowCompletion = nil
-    pendingAuthFlowCompletionEventID = nil
-    pendingAuthFlowCompletionAcknowledgement = nil
-    await acknowledgement?()
-  }
-
-  func holdAuthFlowCompletion(_ result: TransferFlowResult) {
-    guard authFlowRegistrationId != nil,
-          pendingAuthFlowCompletionEventID == nil
-    else {
-      return
-    }
-    isAuthFlowPending = true
-    pendingAuthFlowCompletion = result
-    pendingAuthFlowCompletionAcknowledgement = nil
-  }
-
-  func holdDurableAuthFlowCompletion(
-    _ result: TransferFlowResult,
-    eventID: UUID,
-    onConsume: @escaping @MainActor @Sendable () async -> Void
-  ) {
-    isAuthFlowPending = true
-    pendingAuthFlowCompletion = result
-    pendingAuthFlowCompletionEventID = eventID
-    pendingAuthFlowCompletionAcknowledgement = onConsume
-  }
-
-  func discardDurableAuthFlowCompletion(eventID: UUID) {
-    guard pendingAuthFlowCompletionEventID == eventID else { return }
-    pendingAuthFlowCompletion = nil
-    pendingAuthFlowCompletionEventID = nil
-    pendingAuthFlowCompletionAcknowledgement = nil
-    isAuthFlowPending = authFlowRegistrationId != nil && session?.status == .pending
-  }
-
-  private func unregisterAuthFlow(registrationId: UUID) {
-    guard authFlowRegistrationId == registrationId else { return }
-    authFlowRegistrationId = nil
-    if pendingAuthFlowCompletionEventID == nil {
-      pendingAuthFlowCompletion = nil
-      isAuthFlowPending = false
-    }
   }
 
   /// The main entry point for organization operations.
@@ -952,10 +819,7 @@ extension Clerk {
     await SessionTokenFetcher.shared.reset()
     await SessionTokensCache.shared.clear()
 
-    pendingAuthFlowCompletion = nil
-    pendingAuthFlowCompletionEventID = nil
-    pendingAuthFlowCompletionAcknowledgement = nil
-    isAuthFlowPending = false
+    resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()
     environment = nil
     sessionsByUserId = [:]
@@ -1043,7 +907,15 @@ extension Clerk: LifecycleEventHandling {
 
 extension Clerk {
   /// Applies a client value after the identity controller has established its mutation boundary.
-  func setClientFromIdentityController(_ client: Client?) {
+  func setClientFromIdentityController(
+    _ client: Client?,
+    authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
+  ) {
+    authFlowCoordinator.applyIdentity(
+      previousClient: self.client,
+      client: client,
+      update: authFlowUpdate
+    )
     self.client = client
   }
 

@@ -63,6 +63,7 @@ extension Auth {
 
     let clerk = Clerk.shared
     let runtime = clerk.runtimeScope
+    let authFlowOwnerId = AuthFlowRequestScope.ownerId
 
     let redirect = try HostedAuthRedirect(redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
     let state = try HostedAuthState.generate()
@@ -126,6 +127,18 @@ extension Auth {
         == browserStartClientResponseGeneration
     else {
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
+    }
+
+    let authFlowActivation = clerk.beginAuthSessionActivation(
+      sessionId: callback.createdSessionId,
+      ownerId: authFlowOwnerId
+    )
+    defer {
+      if let authFlowActivation {
+        clerk.authSessionActivationDidFinish(
+          activation: authFlowActivation
+        )
+      }
     }
 
     try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)

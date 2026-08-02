@@ -140,7 +140,12 @@ extension SignIn {
     }
 
     let pkcePair = try PKCE.generatePair()
-    try magicLinkStore.save(kind: .signIn, flowId: id, codeVerifier: pkcePair.verifier)
+    try magicLinkStore.save(
+      kind: .signIn,
+      flowId: id,
+      codeVerifier: pkcePair.verifier,
+      authFlowOwnerId: AuthFlowRequestScope.ownerId
+    )
 
     return try await signInService.prepareFirstFactor(
       signInId: id,

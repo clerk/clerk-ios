@@ -87,7 +87,7 @@ struct ClerkReconfigureTests {
   func reconfigurePreservesRegisteredAuthFlow() async throws {
     Clerk.shared.client = nil
     var registration = Clerk.shared.registerAuthFlow()
-    _ = try #require(registration)
+    let owner = try #require(registration)
 
     let reconfigured = try await Clerk.reconfigure(
       publishableKey: publishableKey(for: "registered-auth-flow.clerk.example.com")
@@ -100,8 +100,14 @@ struct ClerkReconfigureTests {
     reconfigured.applyResponseClient(.mock, completedAuthFlow: .signIn(signIn))
 
     #expect(reconfigured.isAuthFlowComplete == false)
+    let snapshot = try #require(reconfigured.authFlowSnapshot(for: owner))
+    guard case .awaiting(_, let completion) = snapshot.phase else {
+      Issue.record("Expected the accepted sign-in to await post-auth work")
+      return
+    }
+    #expect(completion?.flowId == signIn.id)
 
-    reconfigured.markAuthFlowComplete()
+    reconfigured.resetAuthFlow(for: owner)
 
     #expect(reconfigured.isAuthFlowComplete)
 

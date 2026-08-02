@@ -37,6 +37,7 @@ struct TrustedDeviceServiceTests {
 
   @Test
   func prepareEnrollment() async throws {
+    let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/prepare")!
 
@@ -49,6 +50,7 @@ struct TrustedDeviceServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.queryParam(named: "_clerk_session_id") == sessionId)
       #expect(request.urlEncodedFormBody?["platform"] == "ios")
       #expect(request.urlEncodedFormBody?["app_identifier"] == "com.clerk.example")
       #expect(request.urlEncodedFormBody?["name"] == "Sean's iPhone")
@@ -59,6 +61,7 @@ struct TrustedDeviceServiceTests {
     mock.register()
 
     _ = try await Clerk.shared.dependencies.trustedDeviceService.prepareEnrollment(
+      sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
         name: "Sean's iPhone",
@@ -71,6 +74,7 @@ struct TrustedDeviceServiceTests {
 
   @Test
   func attemptEnrollment() async throws {
+    let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/attempt")!
 
@@ -83,6 +87,7 @@ struct TrustedDeviceServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.url?.queryParam(named: "_clerk_session_id") == sessionId)
       #expect(request.urlEncodedFormBody?["platform"] == "ios")
       #expect(request.urlEncodedFormBody?["app_identifier"] == "com.clerk.example")
       #expect(request.urlEncodedFormBody?["name"] == "Sean's iPhone")
@@ -95,6 +100,7 @@ struct TrustedDeviceServiceTests {
     mock.register()
 
     _ = try await Clerk.shared.dependencies.trustedDeviceService.attemptEnrollment(
+      sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
         name: "Sean's iPhone",
@@ -142,6 +148,7 @@ struct TrustedDeviceServiceTests {
   @Test
   func revoke() async throws {
     let trustedDevice = TrustedDevice.mock
+    let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/\(trustedDevice.id)")!
 
@@ -154,11 +161,15 @@ struct TrustedDeviceServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "DELETE")
+      #expect(request.url?.queryParam(named: "_clerk_session_id") == sessionId)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.trustedDeviceService.revoke(trustedDeviceId: trustedDevice.id)
+    _ = try await Clerk.shared.dependencies.trustedDeviceService.revoke(
+      trustedDeviceId: trustedDevice.id,
+      sessionId: sessionId
+    )
 
     #expect(requestHandled.value)
   }

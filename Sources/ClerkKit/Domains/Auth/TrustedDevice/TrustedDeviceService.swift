@@ -7,10 +7,19 @@ import Foundation
 
 protocol TrustedDeviceServiceProtocol: Sendable {
   @MainActor func list() async throws -> [TrustedDevice]
-  @MainActor func prepareEnrollment(params: TrustedDevice.PrepareEnrollmentParams) async throws -> TrustedDeviceChallenge
-  @MainActor func attemptEnrollment(params: TrustedDevice.AttemptEnrollmentParams) async throws -> TrustedDevice
+  @MainActor func prepareEnrollment(
+    sessionId: String,
+    params: TrustedDevice.PrepareEnrollmentParams
+  ) async throws -> TrustedDeviceChallenge
+  @MainActor func attemptEnrollment(
+    sessionId: String,
+    params: TrustedDevice.AttemptEnrollmentParams
+  ) async throws -> TrustedDevice
   @MainActor func validateSignInCredential(trustedDeviceId: String) async throws -> TrustedDeviceValidation
-  @MainActor func revoke(trustedDeviceId: String) async throws -> TrustedDevice
+  @MainActor func revoke(
+    trustedDeviceId: String,
+    sessionId: String?
+  ) async throws -> TrustedDevice
 }
 
 final class TrustedDeviceService: TrustedDeviceServiceProtocol {
@@ -32,11 +41,14 @@ final class TrustedDeviceService: TrustedDeviceServiceProtocol {
   }
 
   @MainActor
-  func prepareEnrollment(params: TrustedDevice.PrepareEnrollmentParams) async throws -> TrustedDeviceChallenge {
+  func prepareEnrollment(
+    sessionId: String,
+    params: TrustedDevice.PrepareEnrollmentParams
+  ) async throws -> TrustedDeviceChallenge {
     let request = Request<ClientResponse<TrustedDeviceChallenge>>(
       path: "/v1/me/trusted_devices/prepare",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: params
     )
 
@@ -44,11 +56,14 @@ final class TrustedDeviceService: TrustedDeviceServiceProtocol {
   }
 
   @MainActor
-  func attemptEnrollment(params: TrustedDevice.AttemptEnrollmentParams) async throws -> TrustedDevice {
+  func attemptEnrollment(
+    sessionId: String,
+    params: TrustedDevice.AttemptEnrollmentParams
+  ) async throws -> TrustedDevice {
     let request = Request<ClientResponse<TrustedDevice>>(
       path: "/v1/me/trusted_devices/attempt",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      query: [("_clerk_session_id", value: sessionId)],
       body: params
     )
 
@@ -67,11 +82,14 @@ final class TrustedDeviceService: TrustedDeviceServiceProtocol {
   }
 
   @MainActor
-  func revoke(trustedDeviceId: String) async throws -> TrustedDevice {
+  func revoke(
+    trustedDeviceId: String,
+    sessionId: String?
+  ) async throws -> TrustedDevice {
     let request = Request<ClientResponse<TrustedDevice>>(
       path: "/v1/me/trusted_devices/\(trustedDeviceId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      query: [("_clerk_session_id", value: sessionId)]
     )
 
     return try await apiClient.send(request).value.response

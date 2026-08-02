@@ -124,11 +124,13 @@ extension ClerkIdentityController {
     startupClientRefreshTakeoverID: UUID? = nil
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
+    let authFlowRegistrationId = AuthFlowRequestScope.ownerId
     if let coordinator = clerk.sharedSessionSyncCoordinator {
       try await coordinator.waitForInitialReconciliation()
       await waitForPendingLocalOperations()
       return try await coordinator.captureRequestIdentity(
-        startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+        startupClientRefreshTakeoverID: startupClientRefreshTakeoverID,
+        authFlowRegistrationId: authFlowRegistrationId
       )
     }
 
@@ -138,7 +140,8 @@ extension ClerkIdentityController {
         return try captureSerializedRequestIdentity(
           baseGeneration: 0,
           deviceToken: localDeviceToken,
-          startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+          startupClientRefreshTakeoverID: startupClientRefreshTakeoverID,
+          authFlowRegistrationId: authFlowRegistrationId
         )
       }
       return try await task.value
@@ -147,14 +150,16 @@ extension ClerkIdentityController {
     return try captureSerializedRequestIdentity(
       baseGeneration: 0,
       deviceToken: currentDeviceToken,
-      startupClientRefreshTakeoverID: startupClientRefreshTakeoverID
+      startupClientRefreshTakeoverID: startupClientRefreshTakeoverID,
+      authFlowRegistrationId: authFlowRegistrationId
     )
   }
 
   func captureSerializedRequestIdentity(
     baseGeneration: UInt64,
     deviceToken: String?,
-    startupClientRefreshTakeoverID: UUID?
+    startupClientRefreshTakeoverID: UUID?,
+    authFlowRegistrationId: UUID?
   ) throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
     let deviceToken = deviceToken.nilIfEmpty
@@ -166,7 +171,8 @@ extension ClerkIdentityController {
       baseGeneration: baseGeneration,
       deviceToken: deviceToken,
       clientID: clerk.authoritativeClient?.id,
-      clientResponseGeneration: clientResponseGeneration
+      clientResponseGeneration: clientResponseGeneration,
+      authFlowRegistrationId: authFlowRegistrationId
     )
   }
 }

@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+// swiftlint:disable file_length
+
 import Foundation
 
 /// Owns Clerk's complete in-memory identity and selects its persistence mode.
@@ -201,71 +203,6 @@ extension ClerkIdentityController {
   }
 }
 
-// MARK: - Request and Response Routing
-
-extension ClerkIdentityController {
-  func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
-    guard let clerk else { throw CancellationError() }
-    switch persistenceMode(for: clerk) {
-    case .shared(let coordinator):
-      guard context.baseGeneration != nil else { return }
-      try await coordinator.handleNetworkResponse(context)
-    case .atomicLocal(let localIdentityIO):
-      _ = try await applyAtomicLocalResponse(
-        context,
-        localIdentityIO: localIdentityIO,
-        clerk: clerk
-      )
-    case .legacy:
-      try applyLegacyResponse(context, clerk: clerk)
-    }
-  }
-
-  func applyLegacyResponseClient(
-    _ incoming: Client?,
-    responseSequence: Int? = nil,
-    serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil,
-    completedAuthFlow: TransferFlowResult? = nil
-  ) {
-    guard let clerk,
-          case .legacy = persistenceMode(for: clerk),
-          responseCanBeAccepted(
-            incoming,
-            responseSequence: responseSequence,
-            serverDate: serverDate,
-            clientResponseGeneration: clientResponseGeneration,
-            clerk: clerk
-          )
-    else {
-      return
-    }
-
-    recordAcceptedServerDate(serverDate)
-    if let completedAuthFlow {
-      clerk.holdAuthFlowCompletion(completedAuthFlow)
-    }
-    setClient(incoming, on: clerk)
-    responseOrderingGate.record(sequence: responseSequence)
-  }
-
-  func applyDecodedClientFallback(
-    _ client: Client,
-    responseSequence: Int?,
-    serverDate: Date?,
-    clientResponseGeneration: ClientResponseGeneration
-  ) {
-    guard let clerk else { return }
-    guard case .legacy = persistenceMode(for: clerk) else { return }
-    applyLegacyResponseClient(
-      client,
-      responseSequence: responseSequence,
-      serverDate: serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    )
-  }
-}
-
 // MARK: - Identity Transitions
 
 extension ClerkIdentityController {
@@ -431,7 +368,8 @@ extension ClerkIdentityController {
   func applySharedEvent(
     _ event: SharedSessionIdentityEvent,
     previousDeviceToken: String?,
-    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity,
+    authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) {
     guard let clerk else { return }
     localDeviceToken = event.deviceToken
@@ -449,7 +387,8 @@ extension ClerkIdentityController {
       fenceAllClientResponses: false,
       emitIdentityChange: true,
       fenceTokenChange: false,
-      clientPresentationPolicy: clientPresentationPolicy
+      clientPresentationPolicy: clientPresentationPolicy,
+      authFlowUpdate: authFlowUpdate
     )
   }
 }
@@ -507,7 +446,8 @@ extension ClerkIdentityController {
     through localIdentityIO: SharedSessionLocalIdentityIO,
     operationRevision: UInt64,
     fenceAllClientResponses: Bool,
-    completedAuthFlow: TransferFlowResult? = nil
+    completedAuthFlow: TransferFlowResult? = nil,
+    completedAuthFlowOwnerId: UUID? = nil
   ) async throws -> Bool {
     guard let clerk else { return false }
     let identity = try identity.validated()
@@ -528,15 +468,16 @@ extension ClerkIdentityController {
 
     let previousToken = currentDeviceToken
     localDeviceToken = identity.deviceToken
-    if let completedAuthFlow {
-      clerk.holdAuthFlowCompletion(completedAuthFlow)
-    }
     applyIdentityToMemory(
       identity,
       clerk: clerk,
       fenceAllClientResponses: fenceAllClientResponses || previousToken != identity.deviceToken,
       emitIdentityChange: true,
-      fenceTokenChange: false
+      fenceTokenChange: false,
+      authFlowUpdate: authFlowUpdate(
+        for: completedAuthFlow,
+        ownerId: completedAuthFlowOwnerId
+      )
     )
     return true
   }
@@ -833,6 +774,197 @@ extension ClerkIdentityController {
     }
   }
 
+  private func persistLegacyIdentity(
+    _ identity: ClerkIdentitySnapshot,
+    clerk: Clerk
+  ) throws {
+    let identity = try identity.validated()
+    if let deviceToken = identity.deviceToken {
+      try clerk.dependencies.identityKeychain.set(
+        deviceToken,
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+    } else {
+      try clerk.dependencies.identityKeychain.deleteItem(
+        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
+      )
+    }
+  }
+
+  private func applyIdentityToMemory(
+    _ identity: ClerkIdentitySnapshot,
+    clerk: Clerk,
+    fenceAllClientResponses: Bool,
+    emitIdentityChange: Bool,
+    fenceTokenChange: Bool = true,
+    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity,
+    authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
+  ) {
+    let previousToken = currentDeviceToken
+    if fenceAllClientResponses || (fenceTokenChange && previousToken != identity.deviceToken) {
+      fenceClientResponses()
+    }
+    withApplyingIdentityTransition {
+      if identity.state == .cleared, identity.serverDate == nil {
+        lastServerDate = identity.serverDate
+      } else {
+        recordAcceptedServerDate(identity.serverDate)
+      }
+      if clientPresentationPolicy == .replaceWithIdentity || !isClientProvisional {
+        isClientProvisional = false
+        clerk.setClientFromIdentityController(
+          identity.client,
+          authFlowUpdate: authFlowUpdate
+        )
+      }
+    }
+    if emitIdentityChange {
+      clerk.emitInternalStateChange(.identityDidChange)
+    }
+  }
+
+  private func setClient(
+    _ client: Client?,
+    on clerk: Clerk,
+    completedAuthFlow: TransferFlowResult? = nil,
+    completedAuthFlowOwnerId: UUID? = nil
+  ) {
+    isClientProvisional = false
+    withApplyingIdentityTransition {
+      clerk.setClientFromIdentityController(
+        client,
+        authFlowUpdate: authFlowUpdate(
+          for: completedAuthFlow,
+          ownerId: completedAuthFlowOwnerId
+        )
+      )
+    }
+  }
+
+  private func authFlowUpdate(
+    for completedAuthFlow: TransferFlowResult?,
+    ownerId: UUID?
+  ) -> AuthFlowIdentityUpdate {
+    guard let completedAuthFlow, let ownerId else { return .ordinary }
+    return .completionAccepted(
+      completedAuthFlow,
+      ownerId: ownerId
+    )
+  }
+
+  private func withApplyingIdentityTransition(_ operation: () -> Void) {
+    let previousApplyingState = isApplyingIdentityTransition
+    isApplyingIdentityTransition = true
+    defer { isApplyingIdentityTransition = previousApplyingState }
+    operation()
+  }
+
+  private func recordAcceptedServerDate(_ serverDate: Date?) {
+    responseOrderingGate.advanceServerDateWatermark(to: serverDate)
+  }
+}
+
+// MARK: - Request and Response Routing
+
+extension ClerkIdentityController {
+  func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
+    guard let clerk else { throw CancellationError() }
+    switch persistenceMode(for: clerk) {
+    case .shared(let coordinator):
+      guard context.baseGeneration != nil else {
+        rejectAuthFlowCompletionIfNeeded(
+          context.completedAuthFlow,
+          ownerId: context.authFlowRegistrationId,
+          clerk: clerk
+        )
+        return
+      }
+      switch try await coordinator.handleNetworkResponse(context) {
+      case .applied, .completionHandled:
+        break
+      case .ignored:
+        rejectAuthFlowCompletionIfNeeded(
+          context.completedAuthFlow,
+          ownerId: context.authFlowRegistrationId,
+          clerk: clerk
+        )
+      }
+    case .atomicLocal(let localIdentityIO):
+      let didApply = try await applyAtomicLocalResponse(
+        context,
+        localIdentityIO: localIdentityIO,
+        clerk: clerk
+      )
+      if !didApply {
+        rejectAuthFlowCompletionIfNeeded(
+          context.completedAuthFlow,
+          ownerId: context.authFlowRegistrationId,
+          clerk: clerk
+        )
+      }
+    case .legacy:
+      if try !applyLegacyResponse(context, clerk: clerk) {
+        rejectAuthFlowCompletionIfNeeded(
+          context.completedAuthFlow,
+          ownerId: context.authFlowRegistrationId,
+          clerk: clerk
+        )
+      }
+    }
+  }
+
+  func applyLegacyResponseClient(
+    _ incoming: Client?,
+    responseSequence: Int? = nil,
+    serverDate: Date? = nil,
+    clientResponseGeneration: ClientResponseGeneration? = nil,
+    completedAuthFlow: TransferFlowResult? = nil,
+    completedAuthFlowOwnerId: UUID? = nil
+  ) {
+    guard let clerk else { return }
+    guard case .legacy = persistenceMode(for: clerk),
+          responseCanBeAccepted(
+            incoming,
+            responseSequence: responseSequence,
+            serverDate: serverDate,
+            clientResponseGeneration: clientResponseGeneration,
+            clerk: clerk
+          )
+    else {
+      rejectAuthFlowCompletionIfNeeded(
+        completedAuthFlow,
+        ownerId: completedAuthFlowOwnerId,
+        clerk: clerk
+      )
+      return
+    }
+
+    recordAcceptedServerDate(serverDate)
+    setClient(
+      incoming,
+      on: clerk,
+      completedAuthFlow: completedAuthFlow,
+      completedAuthFlowOwnerId: completedAuthFlowOwnerId
+    )
+    responseOrderingGate.record(sequence: responseSequence)
+  }
+
+  func applyDecodedClientFallback(
+    _ client: Client,
+    responseSequence: Int?,
+    serverDate: Date?,
+    clientResponseGeneration: ClientResponseGeneration
+  ) {
+    guard let clerk else { return }
+    guard case .legacy = persistenceMode(for: clerk) else { return }
+    applyLegacyResponseClient(
+      client,
+      responseSequence: responseSequence,
+      serverDate: serverDate,
+      clientResponseGeneration: clientResponseGeneration
+    )
+  }
+
   private func applyAtomicLocalResponse(
     _ context: ClientSyncResponseContext,
     localIdentityIO: SharedSessionLocalIdentityIO,
@@ -871,7 +1003,8 @@ extension ClerkIdentityController {
         through: localIdentityIO,
         operationRevision: operationRevision,
         fenceAllClientResponses: false,
-        completedAuthFlow: context.completedAuthFlow
+        completedAuthFlow: context.completedAuthFlow,
+        completedAuthFlowOwnerId: context.authFlowRegistrationId
       )
       if didApply {
         responseOrderingGate.record(sequence: context.responseSequence)
@@ -884,13 +1017,13 @@ extension ClerkIdentityController {
   private func applyLegacyResponse(
     _ context: ClientSyncResponseContext,
     clerk: Clerk
-  ) throws {
+  ) throws -> Bool {
     guard let identity = try context.resolvedIdentityPayload(
       currentDeviceToken: currentDeviceToken,
       currentClient: clerk.authoritativeClient,
       currentServerDate: lastServerDate
     ) else {
-      return
+      return false
     }
     guard responseCanBeAccepted(
       identity.client,
@@ -899,85 +1032,36 @@ extension ClerkIdentityController {
       clientResponseGeneration: context.clientResponseGeneration,
       clerk: clerk
     ) else {
-      return
+      return false
     }
 
     let deviceTokenChanged = currentDeviceToken != identity.deviceToken
     try persistLegacyIdentity(identity, clerk: clerk)
-    if let completedAuthFlow = context.completedAuthFlow {
-      clerk.holdAuthFlowCompletion(completedAuthFlow)
-    }
     applyIdentityToMemory(
       identity,
       clerk: clerk,
       fenceAllClientResponses: deviceTokenChanged,
       emitIdentityChange: true,
-      fenceTokenChange: false
+      fenceTokenChange: false,
+      authFlowUpdate: authFlowUpdate(
+        for: context.completedAuthFlow,
+        ownerId: context.authFlowRegistrationId
+      )
     )
     responseOrderingGate.record(sequence: context.responseSequence)
+    return true
   }
 
-  private func persistLegacyIdentity(
-    _ identity: ClerkIdentitySnapshot,
+  private func rejectAuthFlowCompletionIfNeeded(
+    _ completedAuthFlow: TransferFlowResult?,
+    ownerId: UUID?,
     clerk: Clerk
-  ) throws {
-    let identity = try identity.validated()
-    if let deviceToken = identity.deviceToken {
-      try clerk.dependencies.identityKeychain.set(
-        deviceToken,
-        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-      )
-    } else {
-      try clerk.dependencies.identityKeychain.deleteItem(
-        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-      )
-    }
-  }
-
-  private func applyIdentityToMemory(
-    _ identity: ClerkIdentitySnapshot,
-    clerk: Clerk,
-    fenceAllClientResponses: Bool,
-    emitIdentityChange: Bool,
-    fenceTokenChange: Bool = true,
-    clientPresentationPolicy: SharedSessionClientPresentationPolicy = .replaceWithIdentity
   ) {
-    let previousToken = currentDeviceToken
-    if fenceAllClientResponses || (fenceTokenChange && previousToken != identity.deviceToken) {
-      fenceClientResponses()
-    }
-    withApplyingIdentityTransition {
-      if identity.state == .cleared, identity.serverDate == nil {
-        lastServerDate = identity.serverDate
-      } else {
-        recordAcceptedServerDate(identity.serverDate)
-      }
-      if clientPresentationPolicy == .replaceWithIdentity || !isClientProvisional {
-        isClientProvisional = false
-        clerk.setClientFromIdentityController(identity.client)
-      }
-    }
-    if emitIdentityChange {
-      clerk.emitInternalStateChange(.identityDidChange)
-    }
-  }
-
-  private func setClient(_ client: Client?, on clerk: Clerk) {
-    isClientProvisional = false
-    withApplyingIdentityTransition {
-      clerk.setClientFromIdentityController(client)
-    }
-  }
-
-  private func withApplyingIdentityTransition(_ operation: () -> Void) {
-    let previousApplyingState = isApplyingIdentityTransition
-    isApplyingIdentityTransition = true
-    defer { isApplyingIdentityTransition = previousApplyingState }
-    operation()
-  }
-
-  private func recordAcceptedServerDate(_ serverDate: Date?) {
-    responseOrderingGate.advanceServerDateWatermark(to: serverDate)
+    guard let completedAuthFlow, let ownerId else { return }
+    clerk.resolveSupersededAuthFlowCompletion(
+      completedAuthFlow,
+      ownerId: ownerId
+    )
   }
 
   private func responseCanBeAccepted(

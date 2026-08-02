@@ -107,7 +107,9 @@ public struct TrustedDevices {
     reason: String? = nil,
     policy: TrustedDevicePolicy = .biometryOrDevicePasscode
   ) async throws -> TrustedDevice {
-    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
+    guard let session = Clerk.shared.session,
+          session.status.allowsTrustedDeviceEnrollment
+    else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without an active or pending Clerk session.")
     }
     try ensureTrustedDeviceFeatureEnabled()
@@ -115,32 +117,39 @@ public struct TrustedDevices {
     guard let appIdentifier = appIdentifierProvider() else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without a bundle identifier.")
     }
-    guard let userID = Clerk.shared.session?.user?.id else {
+    guard let userID = session.user?.id else {
       throw ClerkClientError(message: "Unable to enroll a trusted device without a user for the current session.")
     }
 
     let localKey = try keyManager.createKey(policy: policy)
     do {
-      let challenge = try await trustedDeviceService.prepareEnrollment(params: .init(
-        appIdentifier: appIdentifier,
-        name: deviceName,
-        publicKeyJWK: localKey.publicKeyJWK
-      ))
+      let challenge = try await trustedDeviceService.prepareEnrollment(
+        sessionId: session.id,
+        params: .init(
+          appIdentifier: appIdentifier,
+          name: deviceName,
+          publicKeyJWK: localKey.publicKeyJWK
+        )
+      )
       let signature = try keyManager.sign(
         clientData: challenge.clientData,
         localKeyId: localKey.localKeyId,
         localizedReason: reason ?? "Use biometrics to enroll this device."
       )
-      let trustedDevice = try await trustedDeviceService.attemptEnrollment(params: .init(
-        appIdentifier: appIdentifier,
-        name: deviceName,
-        publicKeyJWK: localKey.publicKeyJWK,
-        clientData: signature.clientData,
-        signature: signature.signature
-      ))
+      let trustedDevice = try await trustedDeviceService.attemptEnrollment(
+        sessionId: session.id,
+        params: .init(
+          appIdentifier: appIdentifier,
+          name: deviceName,
+          publicKeyJWK: localKey.publicKeyJWK,
+          clientData: signature.clientData,
+          signature: signature.signature
+        )
+      )
       try await saveLocalCredential(
         trustedDevice: trustedDevice,
         localKey: localKey,
+        sessionId: session.id,
         userID: userID,
         identifierHint: identifierHint
       )
@@ -155,7 +164,10 @@ public struct TrustedDevices {
   /// Revokes a trusted-device credential for the signed-in user.
   @discardableResult
   public func revoke(id: String) async throws -> TrustedDevice {
-    let trustedDevice = try await trustedDeviceService.revoke(trustedDeviceId: id)
+    let trustedDevice = try await trustedDeviceService.revoke(
+      trustedDeviceId: id,
+      sessionId: Clerk.shared.session?.id
+    )
     do {
       if let localCredential = try credentialStore.credential(id: id) {
         try deleteLocalCredential(localCredential)
@@ -493,6 +505,7 @@ extension TrustedDevices {
   private func saveLocalCredential(
     trustedDevice: TrustedDevice,
     localKey: TrustedDeviceLocalKey,
+    sessionId: String,
     userID: String,
     identifierHint: String?
   ) async throws {
@@ -509,7 +522,10 @@ extension TrustedDevices {
         }
       )
     } catch {
-      _ = try? await trustedDeviceService.revoke(trustedDeviceId: trustedDevice.id)
+      _ = try? await trustedDeviceService.revoke(
+        trustedDeviceId: trustedDevice.id,
+        sessionId: sessionId
+      )
       throw error
     }
   }

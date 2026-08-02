@@ -807,8 +807,8 @@ struct SharedSessionSyncTests {
     }
 
     backend.resumeSuspendedSave(failing: false)
-    try await clientResponse.value
-    try await tokenOnlyResponse.value
+    _ = try await clientResponse.value
+    _ = try await tokenOnlyResponse.value
 
     let event = try #require(backend.allSlots().first?.event)
     #expect(event.deviceToken == "rotated-token")
@@ -945,7 +945,116 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func restartRestoresAuthFlowCompletionWithPendingPublication() async throws {
+  func sameProcessRetryRecoversIdentityWithoutReplayingOptionalPostAuthFlow() async throws {
+    let backend = TestSlotBackend()
+    backend.failSavesForOwners = ["app.a"]
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let registration = try #require(node.clerk.registerAuthFlow())
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+
+    await #expect(throws: TestSlotBackend.Failure.self) {
+      try await node.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(.mock),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 1,
+          completedAuthFlow: .signIn(signIn),
+          authFlowRegistrationId: registration.id
+        )
+      )
+    }
+    #expect(try node.localStore.loadPendingPublication() != nil)
+
+    backend.failSavesForOwners = []
+    _ = await node.coordinator.reloadFromSharedStorage()
+    _ = await node.coordinator.reloadFromSharedStorage()
+
+    #expect(try node.localStore.loadPendingPublication() == nil)
+    #expect(node.clerk.session?.id == signIn.createdSessionId)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected recovered identity to be observed without replaying optional work")
+      return
+    }
+    #expect(work.sessionId == signIn.createdSessionId)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func sameProcessRetryDoesNotTransferCompletionToNewAuthView() async throws {
+    let backend = TestSlotBackend()
+    backend.failSavesForOwners = ["app.a"]
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let originalRegistration = try #require(node.clerk.registerAuthFlow())
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+
+    await #expect(throws: TestSlotBackend.Failure.self) {
+      try await node.coordinator.handleNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(.mock),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 1,
+          completedAuthFlow: .signIn(signIn),
+          authFlowRegistrationId: originalRegistration.id
+        )
+      )
+    }
+    originalRegistration.cancel()
+    let replacementRegistration = try #require(node.clerk.registerAuthFlow())
+
+    backend.failSavesForOwners = []
+    _ = await node.coordinator.reloadFromSharedStorage()
+    _ = await node.coordinator.reloadFromSharedStorage()
+
+    #expect(node.clerk.session?.id == signIn.createdSessionId)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: replacementRegistration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected replacement view to observe the recovered identity")
+      return
+    }
+    #expect(work.sessionId == signIn.createdSessionId)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(originalRegistration) {}
+    withExtendedLifetime(replacementRegistration) {}
+  }
+
+  @Test
+  func restartDoesNotReplayOptionalPostAuthFlow() async throws {
     let backend = TestSlotBackend()
     backend.failSavesForOwners = ["app.a"]
     let localStore = TestLocalIdentityStore()
@@ -960,11 +1069,10 @@ struct SharedSessionSyncTests {
       ),
       localStore: localStore
     )
-    let originalRegistration = try #require(original.clerk.registerAuthFlow())
+    let registration = try #require(original.clerk.registerAuthFlow())
     var signIn = SignIn.mock
     signIn.status = .complete
     signIn.createdSessionId = Client.mock.currentSession?.id
-    let completedAuthFlow = TransferFlowResult.signIn(signIn)
 
     await #expect(throws: TestSlotBackend.Failure.self) {
       try await original.coordinator.handleNetworkResponse(
@@ -977,15 +1085,11 @@ struct SharedSessionSyncTests {
           isCanonicalClientRequest: true,
           clientResponseGeneration: original.clerk.clientResponseGeneration,
           responseSequence: 1,
-          completedAuthFlow: completedAuthFlow
+          completedAuthFlow: .signIn(signIn),
+          authFlowRegistrationId: registration.id
         )
       )
     }
-
-    let durableCompletion = try #require(
-      try localStore.loadPendingAuthFlowCompletion()
-    )
-    #expect(durableCompletion.result.flowId == signIn.id)
     await original.coordinator.shutdown(deleteOwnSlot: false)
 
     backend.failSavesForOwners = []
@@ -994,38 +1098,29 @@ struct SharedSessionSyncTests {
       backend: backend,
       localStore: localStore
     )
+    let restartedRegistration = try #require(restarted.clerk.registerAuthFlow())
 
     #expect(await restarted.coordinator.start().value)
-
     #expect(restarted.clerk.session?.id == signIn.createdSessionId)
-    #expect(restarted.clerk.pendingAuthFlowCompletion?.flowId == signIn.id)
-    #expect(restarted.clerk.readyPendingAuthFlowCompletion == nil)
-    #expect(restarted.clerk.isAuthFlowComplete == false)
-    #expect(try localStore.loadPendingPublication() == nil)
-    #expect(try localStore.loadPendingAuthFlowCompletion()?.result.flowId == signIn.id)
-
-    let restartedRegistration = try #require(
-      restarted.clerk.registerAuthFlow()
+    let snapshot = try #require(
+      restarted.clerk.authFlowSnapshot(for: restartedRegistration)
     )
-    #expect(restarted.clerk.readyPendingAuthFlowCompletion?.flowId == signIn.id)
-
-    await restarted.clerk.consumePendingAuthFlowCompletion()
-    await restarted.coordinator.waitForPendingOperations()
-
-    #expect(restarted.clerk.pendingAuthFlowCompletion == nil)
-    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
-    #expect(restarted.clerk.isAuthFlowComplete == false)
-
-    restarted.clerk.markAuthFlowComplete()
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected restarted view to observe identity without replaying optional work")
+      return
+    }
+    #expect(work.sessionId == signIn.createdSessionId)
+    #expect(completion == nil)
     #expect(restarted.clerk.isAuthFlowComplete)
-    withExtendedLifetime(originalRegistration) {}
+    withExtendedLifetime(registration) {}
     withExtendedLifetime(restartedRegistration) {}
   }
 
-  @Test
-  func supersedingWinnerDiscardsDurableAuthFlowCompletion() async throws {
+  @Test(arguments: [false, true])
+  func differentSharedWinnerClearsPostAuthTargetWhenOldSessionRemainsStored(
+    completionWasPresented: Bool
+  ) async throws {
     let backend = TestSlotBackend()
-    let localStore = TestLocalIdentityStore()
     let node = try makeNode(
       owner: "app.a",
       backend: backend,
@@ -1034,8 +1129,7 @@ struct SharedSessionSyncTests {
         deviceToken: "token-a",
         client: nil,
         serverDate: nil
-      ),
-      localStore: localStore
+      )
     )
     let peer = try makeNode(owner: "app.b", backend: backend)
     let registration = try #require(node.clerk.registerAuthFlow())
@@ -1060,19 +1154,35 @@ struct SharedSessionSyncTests {
         isCanonicalClientRequest: true,
         clientResponseGeneration: node.clerk.clientResponseGeneration,
         responseSequence: 1,
-        completedAuthFlow: .signIn(signIn)
+        completedAuthFlow: .signIn(signIn),
+        authFlowRegistrationId: registration.id
       )
     )
 
-    #expect(node.clerk.readyPendingAuthFlowCompletion?.flowId == signIn.id)
+    let acceptedSnapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(
+      let work,
+      let acceptedCompletion
+    ) = acceptedSnapshot.phase else {
+      Issue.record("Expected the winning response event to retain its completion")
+      return
+    }
+    #expect(work.sessionId == sessionA.id)
+    #expect(acceptedCompletion?.flowId == signIn.id)
+    if completionWasPresented {
+      #expect(node.clerk.startAuthFlowPresentation(
+        for: registration,
+        work: work,
+        presentation: .trustedDeviceEnrollment
+      ) != nil)
+    }
     #expect(node.clerk.isAuthFlowComplete == false)
-    #expect(try localStore.loadPendingAuthFlowCompletion() != nil)
 
     var clientB = Client.mock
     clientB.id = "client-b"
     var sessionB = try #require(clientB.currentSession)
     sessionB.id = "session-b"
-    clientB.sessions = [sessionB]
+    clientB.sessions = [sessionA, sessionB]
     clientB.lastActiveSessionId = sessionB.id
     try await peer.coordinator.publishLocalIdentity(
       state: .present,
@@ -1083,39 +1193,130 @@ struct SharedSessionSyncTests {
     )
 
     #expect(await node.coordinator.reloadFromSharedStorage())
-
     #expect(node.clerk.session?.id == sessionB.id)
-    #expect(node.clerk.pendingAuthFlowCompletion == nil)
-    #expect(node.clerk.readyPendingAuthFlowCompletion == nil)
+    #expect(node.clerk.client?.sessions.contains { $0.id == sessionA.id } == true)
+    let supersededSnapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let supersedingWork, let completion) = supersededSnapshot.phase else {
+      Issue.record("Expected the new shared winner to replace the old post-auth target")
+      return
+    }
+    #expect(supersedingWork.sessionId == sessionB.id)
+    #expect(completion == nil)
     #expect(node.clerk.isAuthFlowComplete)
-    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
     withExtendedLifetime(registration) {}
   }
 
   @Test
-  func unregisteredCompletedAuthFlowDoesNotCreateDurableCompletion() async throws {
+  func staleCompletionSignalsDismissibleAuthBeforeSharedPublication() async throws {
     let backend = TestSlotBackend()
-    backend.failSavesForOwners = ["app.a"]
-    let localStore = TestLocalIdentityStore()
+    let node = try makeNode(owner: "app.a", backend: backend)
+    var clientB = Client.mock
+    clientB.id = "client-b"
+    var sessionB = try #require(clientB.currentSession)
+    sessionB.id = "session-b"
+    clientB.sessions = [sessionB]
+    clientB.lastActiveSessionId = sessionB.id
+    try await node.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "token-b",
+      client: clientB,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let registration = try #require(
+      node.clerk.registerAuthFlow(role: .dismissible)
+    )
+
+    var sessionA = sessionB
+    sessionA.id = "session-a"
+    var staleClient = clientB
+    staleClient.sessions = [sessionA, sessionB]
+    staleClient.lastActiveSessionId = sessionA.id
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+
+    try await node.clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(staleClient),
+        deviceTokenUpdate: .set("token-b"),
+        requestDeviceToken: "token-b",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 200),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 1,
+        completedAuthFlow: .signIn(signIn),
+        authFlowRegistrationId: registration.id
+      )
+    )
+
+    #expect(node.clerk.session?.id == sessionB.id)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected the dismissible flow to observe the authoritative session")
+      return
+    }
+    #expect(work.sessionId == sessionB.id)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func supersededResponseDoesNotTransferCompletionToReplacementAuthView() async throws {
+    let backend = TestSlotBackend()
     let node = try makeNode(
-      owner: "app.a",
+      owner: "app.local",
       backend: backend,
       initialIdentity: SharedSessionLocalIdentity(
         state: .cleared,
         deviceToken: "token",
         client: nil,
         serverDate: nil
-      ),
-      localStore: localStore
+      )
     )
+    let originalRegistration = try #require(node.clerk.registerAuthFlow())
+
+    var clientA = Client.mock
+    clientA.id = "client-a"
+    var sessionA = try #require(clientA.currentSession)
+    sessionA.id = "session-a"
+    clientA.sessions = [sessionA]
+    clientA.lastActiveSessionId = sessionA.id
+
+    var clientB = clientA
+    clientB.id = "client-b"
+    var sessionB = sessionA
+    sessionB.id = "session-b"
+    clientB.sessions = [sessionA, sessionB]
+    clientB.lastActiveSessionId = sessionB.id
+    let peerEvent = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.peer",
+      generation: 2,
+      state: .present,
+      deviceToken: "token",
+      client: clientB,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.peer",
+        event: peerEvent
+      ),
+      owner: "app.peer"
+    )
+
     var signIn = SignIn.mock
     signIn.status = .complete
-    signIn.createdSessionId = Client.mock.currentSession?.id
-
-    await #expect(throws: TestSlotBackend.Failure.self) {
-      try await node.coordinator.handleNetworkResponse(
+    signIn.createdSessionId = sessionA.id
+    backend.suspendNextSave()
+    let response = Task { @MainActor in
+      try await node.clerk.identityController.applyNetworkResponse(
         ClientSyncResponseContext(
-          update: .client(.mock),
+          update: .client(clientA),
           deviceTokenUpdate: .set("token"),
           requestDeviceToken: "token",
           baseGeneration: 0,
@@ -1123,13 +1324,170 @@ struct SharedSessionSyncTests {
           isCanonicalClientRequest: true,
           clientResponseGeneration: node.clerk.clientResponseGeneration,
           responseSequence: 1,
-          completedAuthFlow: .signIn(signIn)
+          completedAuthFlow: .signIn(signIn),
+          authFlowRegistrationId: originalRegistration.id
         )
       )
     }
+    try await waitUntil { backend.isSaveSuspended }
 
-    #expect(try localStore.loadPendingPublication() != nil)
-    #expect(try localStore.loadPendingAuthFlowCompletion() == nil)
+    originalRegistration.cancel()
+    let replacementRegistration = try #require(node.clerk.registerAuthFlow())
+    backend.resumeSuspendedSave(failing: false)
+    try await response.value
+
+    #expect(node.clerk.session?.id == sessionB.id)
+    let snapshot = try #require(
+      node.clerk.authFlowSnapshot(for: replacementRegistration)
+    )
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected replacement view to observe only the winning identity")
+      return
+    }
+    #expect(work.sessionId == sessionB.id)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(originalRegistration) {}
+    withExtendedLifetime(replacementRegistration) {}
+  }
+
+  @Test
+  func differentSharedEventWinningSameSessionSemanticallyAcceptsCompletion() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(
+      owner: "app.local",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let registration = try #require(node.clerk.registerAuthFlow())
+
+    var candidateClient = Client.mock
+    candidateClient.id = "client-a"
+    var sessionA = try #require(candidateClient.currentSession)
+    sessionA.id = "session-a"
+    candidateClient.sessions = [sessionA]
+    candidateClient.lastActiveSessionId = sessionA.id
+
+    var winningClient = candidateClient
+    winningClient.id = "client-b"
+    let peerEvent = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.peer",
+      generation: 2,
+      state: .present,
+      deviceToken: "token",
+      client: winningClient,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.peer",
+        event: peerEvent
+      ),
+      owner: "app.peer"
+    )
+
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+    try await node.clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(candidateClient),
+        deviceTokenUpdate: .set("token"),
+        requestDeviceToken: "token",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 100),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 1,
+        completedAuthFlow: .signIn(signIn),
+        authFlowRegistrationId: registration.id
+      )
+    )
+
+    #expect(node.clerk.client?.id == winningClient.id)
+    #expect(node.clerk.session?.id == sessionA.id)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected a winner for the created session to retain optional work")
+      return
+    }
+    #expect(work.sessionId == sessionA.id)
+    #expect(completion?.flowId == signIn.id)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func ownPublicationChangingCurrentSessionSupersedesExistingCompletion() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(
+      owner: "app.local",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let registration = try #require(node.clerk.registerAuthFlow())
+
+    var clientA = Client.mock
+    clientA.id = "client-a"
+    var sessionA = try #require(clientA.currentSession)
+    sessionA.id = "session-a"
+    clientA.sessions = [sessionA]
+    clientA.lastActiveSessionId = sessionA.id
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+    try await node.clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(clientA),
+        deviceTokenUpdate: .set("token"),
+        requestDeviceToken: "token",
+        baseGeneration: 0,
+        serverDate: Date(timeIntervalSince1970: 100),
+        isCanonicalClientRequest: true,
+        clientResponseGeneration: node.clerk.clientResponseGeneration,
+        responseSequence: 1,
+        completedAuthFlow: .signIn(signIn),
+        authFlowRegistrationId: registration.id
+      )
+    )
+
+    var clientB = clientA
+    clientB.id = "client-b"
+    var sessionB = sessionA
+    sessionB.id = "session-b"
+    clientB.sessions = [sessionA, sessionB]
+    clientB.lastActiveSessionId = sessionB.id
+    try await node.coordinator.publishLocalIdentity(
+      state: .present,
+      deviceToken: "token",
+      client: clientB,
+      serverDate: Date(timeIntervalSince1970: 200),
+      baseGeneration: 1
+    )
+
+    #expect(node.clerk.session?.id == sessionB.id)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected own publication to replace the old post-auth target")
+      return
+    }
+    #expect(work.sessionId == sessionB.id)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
   }
 
   @Test
@@ -1283,6 +1641,93 @@ struct SharedSessionSyncTests {
     #expect(try node.localStore.load()?.client?.id == "peer")
     #expect(try node.localStore.loadPendingPublication() == nil)
     #expect(backend.allSlots().allSatisfy { $0.slotOwnerIdentifier == "app.peer" })
+  }
+
+  @Test
+  func futureSchemaRecoveryAppliesWinnerWithoutReplayingOptionalCompletion() async throws {
+    let backend = TestSlotBackend()
+    let node = try makeNode(
+      owner: "app.local",
+      backend: backend,
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    let registration = try #require(node.clerk.registerAuthFlow())
+
+    var clientA = Client.mock
+    clientA.id = "client-a"
+    var sessionA = try #require(clientA.currentSession)
+    sessionA.id = "session-a"
+    clientA.sessions = [sessionA]
+    clientA.lastActiveSessionId = sessionA.id
+
+    var clientB = clientA
+    clientB.id = "client-b"
+    var sessionB = sessionA
+    sessionB.id = "session-b"
+    clientB.sessions = [sessionA, sessionB]
+    clientB.lastActiveSessionId = sessionB.id
+    let peerEvent = try SharedSessionIdentityEvent(
+      id: UUID(),
+      originOwnerIdentifier: "app.peer",
+      generation: 2,
+      state: .present,
+      deviceToken: "token",
+      client: clientB,
+      serverDate: Date(timeIntervalSince1970: 200)
+    ).validated()
+    try backend.save(
+      SharedSessionOwnerSlot(
+        schemaVersion: SharedSessionOwnerSlot.schemaVersion,
+        instanceFingerprint: "instance",
+        slotOwnerIdentifier: "app.peer",
+        event: peerEvent
+      ),
+      owner: "app.peer"
+    )
+
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+    backend.futureSchemaOwners = ["app.local"]
+    backend.failReads = true
+    await #expect(throws: TestSlotBackend.Failure.self) {
+      try await node.clerk.identityController.applyNetworkResponse(
+        ClientSyncResponseContext(
+          update: .client(clientA),
+          deviceTokenUpdate: .set("token"),
+          requestDeviceToken: "token",
+          baseGeneration: 0,
+          serverDate: Date(timeIntervalSince1970: 100),
+          isCanonicalClientRequest: true,
+          clientResponseGeneration: node.clerk.clientResponseGeneration,
+          responseSequence: 1,
+          completedAuthFlow: .signIn(signIn),
+          authFlowRegistrationId: registration.id
+        )
+      )
+    }
+    #expect(try node.localStore.loadPendingPublication() != nil)
+
+    backend.failReads = false
+    _ = await node.coordinator.reloadFromSharedStorage()
+    _ = await node.coordinator.reloadFromSharedStorage()
+
+    #expect(try node.localStore.loadPendingPublication() == nil)
+    #expect(node.clerk.session?.id == sessionB.id)
+    let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
+      Issue.record("Expected recovery to expose only the authoritative identity")
+      return
+    }
+    #expect(work.sessionId == sessionB.id)
+    #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
   }
 
   @Test
@@ -1563,6 +2008,51 @@ struct SharedSessionSyncTests {
     #expect(didPrepare)
     #expect(request.value(forHTTPHeaderField: "Authorization") == "peer-token")
     #expect(request.clerkSharedSessionBaseGeneration == 1)
+  }
+
+  @Test
+  func requestPreparationCapturesAuthFlowOwnerBeforeQueuedSharedWork() async throws {
+    let receiver = try makeNode(
+      owner: "app.receiver",
+      backend: TestSlotBackend(),
+      initialIdentity: SharedSessionLocalIdentity(
+        state: .cleared,
+        deviceToken: "token",
+        client: nil,
+        serverDate: nil
+      )
+    )
+    _ = await receiver.coordinator.start().value
+    let originalRegistration = try #require(receiver.clerk.registerAuthFlow())
+    let gate = SharedRequestPreparationGate()
+    let blocker = receiver.coordinator.enqueueSerializedLocalIdentityOperation {
+      await gate.suspend()
+    }
+    try await waitUntil { gate.isSuspended }
+
+    var didPrepare = false
+    let requestTask = Task { @MainActor in
+      try await AuthFlowRequestScope.withOwner(originalRegistration.id) {
+        var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client")))
+        try await ClerkHeaderRequestMiddleware(runtimeScope: receiver.clerk.runtimeScope)
+          .prepare(&request)
+        didPrepare = true
+        return request
+      }
+    }
+    await Task.yield()
+    #expect(!didPrepare)
+
+    originalRegistration.cancel()
+    let replacementRegistration = try #require(receiver.clerk.registerAuthFlow())
+    gate.resume()
+    _ = try await blocker.value
+    let request = try await requestTask.value
+
+    #expect(request.clerkAuthFlowRegistrationId == originalRegistration.id)
+    #expect(request.clerkAuthFlowRegistrationId != replacementRegistration.id)
+    withExtendedLifetime(originalRegistration) {}
+    withExtendedLifetime(replacementRegistration) {}
   }
 
   @Test
@@ -2851,16 +3341,40 @@ private final class TestSlotBackend: @unchecked Sendable {
   private var suspendedLoadShouldResume = false
   private var loadIsSuspended = false
   private var readsShouldFail = false
+  private var beforeFailingReadHandler: (@Sendable () -> Void)?
+  private var failingSaveOwners: Set<String> = []
+  private var failingDeleteOwners: Set<String> = []
+  private var ownersWithFutureSchema: Set<String> = []
+  private var configuredSaveDelay: TimeInterval = 0
   var failReads: Bool {
     get { lock.withLock { readsShouldFail } }
     set { lock.withLock { readsShouldFail = newValue } }
   }
 
-  var beforeFailingRead: (@Sendable () -> Void)?
-  var failSavesForOwners: Set<String> = []
-  var failDeletesForOwners: Set<String> = []
-  var futureSchemaOwners: Set<String> = []
-  var saveDelay: TimeInterval = 0
+  var beforeFailingRead: (@Sendable () -> Void)? {
+    get { lock.withLock { beforeFailingReadHandler } }
+    set { lock.withLock { beforeFailingReadHandler = newValue } }
+  }
+
+  var failSavesForOwners: Set<String> {
+    get { lock.withLock { failingSaveOwners } }
+    set { lock.withLock { failingSaveOwners = newValue } }
+  }
+
+  var failDeletesForOwners: Set<String> {
+    get { lock.withLock { failingDeleteOwners } }
+    set { lock.withLock { failingDeleteOwners = newValue } }
+  }
+
+  var futureSchemaOwners: Set<String> {
+    get { lock.withLock { ownersWithFutureSchema } }
+    set { lock.withLock { ownersWithFutureSchema = newValue } }
+  }
+
+  var saveDelay: TimeInterval {
+    get { lock.withLock { configuredSaveDelay } }
+    set { lock.withLock { configuredSaveDelay = newValue } }
+  }
 
   var saveCount: Int {
     lock.lock()
@@ -2941,7 +3455,7 @@ private final class TestSlotBackend: @unchecked Sendable {
   }
 
   func save(_ slot: SharedSessionOwnerSlot, owner: String) throws {
-    if futureSchemaOwners.contains(owner) {
+    if lock.withLock({ ownersWithFutureSchema.contains(owner) }) {
       throw SharedSessionOwnerSlotStoreError.futureSchemaVersion(3)
     }
     saveCondition.lock()
@@ -2961,12 +3475,13 @@ private final class TestSlotBackend: @unchecked Sendable {
       throw Failure.save
     }
 
-    if saveDelay > 0 {
-      Thread.sleep(forTimeInterval: saveDelay)
+    let delay = lock.withLock { configuredSaveDelay }
+    if delay > 0 {
+      Thread.sleep(forTimeInterval: delay)
     }
     lock.lock()
     defer { lock.unlock() }
-    guard !failSavesForOwners.contains(owner) else { throw Failure.save }
+    guard !failingSaveOwners.contains(owner) else { throw Failure.save }
     slots[owner] = slot
     saveOperations += 1
   }
@@ -2974,7 +3489,7 @@ private final class TestSlotBackend: @unchecked Sendable {
   func delete(owner: String) throws {
     lock.lock()
     defer { lock.unlock() }
-    guard !failDeletesForOwners.contains(owner) else { throw Failure.delete }
+    guard !failingDeleteOwners.contains(owner) else { throw Failure.delete }
     slots.removeValue(forKey: owner)
   }
 

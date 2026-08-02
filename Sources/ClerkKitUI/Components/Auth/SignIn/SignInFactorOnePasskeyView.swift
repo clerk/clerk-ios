@@ -13,6 +13,7 @@ struct SignInFactorOnePasskeyView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
 
   @State private var passkeyInProgress = true
   @State private var animateSymbol = false
@@ -98,7 +99,13 @@ struct SignInFactorOnePasskeyView: View {
     }
     .taskOnce {
       try? await Task.sleep(for: .seconds(0.5))
-      await authWithPasskey()
+      if let authFlowRequestOwnerId {
+        await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
+          await authWithPasskey()
+        }
+      } else {
+        await authWithPasskey()
+      }
     }
   }
 }

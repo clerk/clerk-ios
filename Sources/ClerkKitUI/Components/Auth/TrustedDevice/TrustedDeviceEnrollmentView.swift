@@ -11,9 +11,9 @@ import SwiftUI
 struct TrustedDeviceEnrollmentView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
 
   private let biometryDisplayName: TrustedDeviceBiometryDisplayName
+  private let token: AuthFlowPresentationToken
 
   @State private var error: Error?
 
@@ -28,8 +28,12 @@ struct TrustedDeviceEnrollmentView: View {
     )
   }
 
-  init(biometryDisplayName: TrustedDeviceBiometryDisplayName) {
+  init(
+    biometryDisplayName: TrustedDeviceBiometryDisplayName,
+    token: AuthFlowPresentationToken
+  ) {
     self.biometryDisplayName = biometryDisplayName
+    self.token = token
   }
 
   var body: some View {
@@ -95,13 +99,16 @@ extension TrustedDeviceEnrollmentView {
   }
 
   private var notNowButton: some View {
-    Button(action: continueAfterEnrollmentPrompt) {
+    Button {
+      continueAfterEnrollmentPrompt()
+    } label: {
       Text("Not now", bundle: .module)
     }
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
   }
 
   private func enrollTrustedDevice() async {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     error = nil
 
     do {
@@ -109,6 +116,7 @@ extension TrustedDeviceEnrollmentView {
         identifierHint: clerk.user?.trustedDeviceIdentifierHint,
         reason: enrollmentReason
       )
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
       continueAfterEnrollmentPrompt()
     } catch {
       if error.isUserCancelledError {
@@ -127,19 +135,8 @@ extension TrustedDeviceEnrollmentView {
   }
 
   private func continueAfterEnrollmentPrompt() {
-    guard !navigation.routeToSessionTaskStartIfNeeded(session: clerk.session) else {
-      return
-    }
-
-    navigation.markPostAuthStepsComplete()
+    _ = clerk.finishAuthFlowPresentation(token)
   }
-}
-
-#Preview {
-  TrustedDeviceEnrollmentView(
-    biometryDisplayName: .init(biometryType: .faceID)
-  )
-    .clerkPreview()
 }
 
 #endif
