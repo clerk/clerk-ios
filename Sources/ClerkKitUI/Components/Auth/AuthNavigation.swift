@@ -54,7 +54,7 @@ final class AuthNavigation {
       path.append(AuthView.Destination.signInSetNewPassword)
     case .needsClientTrust:
       guard let factor = signIn.startingSecondFactor else {
-        ClerkLogger.info("Navigating to GetHelp: No starting second factor available for client trust", force: true)
+        ClerkLogger.info("Navigating to GetHelp: No starting second factor available for device trust", force: true)
         path.append(AuthView.Destination.getHelp(.signIn))
         return
       }
