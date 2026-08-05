@@ -293,14 +293,14 @@ extension Session {
   /// Format for the session token cache key
   ///
   /// For example:
-  /// - If the template is null, the key will be 'sess_abc12345'
-  /// - If the template is 'supabase', the key will be 'sess_abc12345-supabase'
+  /// - If the template is null, the key includes the active organization.
+  /// - If the template is 'supabase', the key includes the active organization and template name.
   func tokenCacheKey(template: String?) -> String {
-    var tokenCacheKey = id
+    let organizationKey = "\(id)-organization-\(lastActiveOrganizationId ?? "")"
     if let template {
-      tokenCacheKey += "-\(template)"
+      return "\(organizationKey)-template-\(template)"
     }
-    return tokenCacheKey
+    return organizationKey
   }
 }
 

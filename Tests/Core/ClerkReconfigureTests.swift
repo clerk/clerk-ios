@@ -545,7 +545,7 @@ struct ClerkReconfigureTests {
   @Test
   func reconfigureClearsTokensBeforeSessionChangedEvent() async throws {
     let cachedJWT = try unexpiredJWT()
-    let sessionService = MockSessionService(fetchToken: { _, _ in
+    let sessionService = MockSessionService(fetchToken: { _, _, _ in
       throw CancellationError()
     })
     let dependencies = MockDependencyContainer(
