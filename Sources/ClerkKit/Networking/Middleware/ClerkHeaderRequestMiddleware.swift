@@ -36,7 +36,8 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
       clientResponseGeneration: identity.clientResponseGeneration,
       sharedSessionBaseGeneration: identity.baseGeneration,
       isCanonicalClientRequest: isCanonicalClientRequest,
-      requestDeviceToken: identity.deviceToken
+      requestDeviceToken: identity.deviceToken,
+      authFlowRegistrationId: identity.authFlowRegistrationId
     ))
 
     if let deviceToken = identity.deviceToken {

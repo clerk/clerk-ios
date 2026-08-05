@@ -194,6 +194,124 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func atomicResponseRetainsOwnedCompletionAcrossOrdinaryRefreshUntilActivation() async throws {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let store = SharedSessionLocalIdentityStore(keychain: keychain)
+    var sessionA = try #require(Client.mock.currentSession)
+    sessionA.id = "session-a"
+    var sessionB = sessionA
+    sessionB.id = "session-b"
+    var initialClient = Client.mock
+    initialClient.sessions = [sessionB]
+    initialClient.lastActiveSessionId = sessionB.id
+    let initialIdentity = ClerkIdentitySnapshot(
+      state: .present,
+      deviceToken: "token",
+      client: initialClient,
+      serverDate: Date(timeIntervalSince1970: 50)
+    )
+    try store.save(initialIdentity)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain,
+      atomicIdentityStore: store
+    )
+    clerk.hydrateIdentityIfNeeded(initialIdentity)
+    let registration = try #require(clerk.registerAuthFlow(role: .dismissible))
+
+    var client = Client.mock
+    client.sessions = [sessionB, sessionA]
+    client.lastActiveSessionId = sessionB.id
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = sessionA.id
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(client),
+        deviceTokenUpdate: .absent,
+        requestDeviceToken: "token",
+        baseGeneration: nil,
+        serverDate: Date(timeIntervalSince1970: 100),
+        isCanonicalClientRequest: false,
+        clientResponseGeneration: clerk.clientResponseGeneration,
+        responseSequence: 1,
+        completedAuthFlow: .signIn(signIn),
+        authFlowRegistrationId: registration.id
+      )
+    )
+
+    let initialSnapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(
+      let work,
+      let completion
+    ) = initialSnapshot.phase else {
+      Issue.record("Expected the accepted atomic response to create awaiting work.")
+      return
+    }
+    #expect(work.sessionId == sessionA.id)
+    #expect(completion?.flowId == signIn.id)
+
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(client),
+        deviceTokenUpdate: .absent,
+        requestDeviceToken: "token",
+        baseGeneration: nil,
+        serverDate: Date(timeIntervalSince1970: 200),
+        isCanonicalClientRequest: false,
+        clientResponseGeneration: clerk.clientResponseGeneration,
+        responseSequence: 2
+      )
+    )
+
+    #expect(clerk.session?.id == sessionB.id)
+    let refreshedSnapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(
+      let refreshedWork,
+      let refreshedCompletion
+    ) = refreshedSnapshot.phase else {
+      Issue.record("Expected an ordinary refresh to retain awaiting work.")
+      return
+    }
+    #expect(refreshedWork == work)
+    #expect(refreshedWork.sessionId == sessionA.id)
+    #expect(refreshedCompletion?.flowId == signIn.id)
+    #expect(clerk.isAuthFlowComplete)
+
+    var activatedClient = client
+    activatedClient.lastActiveSessionId = sessionA.id
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(activatedClient),
+        deviceTokenUpdate: .absent,
+        requestDeviceToken: "token",
+        baseGeneration: nil,
+        serverDate: Date(timeIntervalSince1970: 300),
+        isCanonicalClientRequest: false,
+        clientResponseGeneration: clerk.clientResponseGeneration,
+        responseSequence: 3
+      )
+    )
+
+    #expect(clerk.session?.id == sessionA.id)
+    let activatedSnapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(
+      let activatedWork,
+      let activatedCompletion
+    ) = activatedSnapshot.phase else {
+      Issue.record("Expected activation to preserve the owned work.")
+      return
+    }
+    #expect(activatedWork == work)
+    #expect(activatedWork.sessionId == sessionA.id)
+    #expect(activatedCompletion?.flowId == signIn.id)
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
   func atomicTokenOnlyResponseResolvesIdentityWhenItsSerializedTurnBegins() async throws {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()

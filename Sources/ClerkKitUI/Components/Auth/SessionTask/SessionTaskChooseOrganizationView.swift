@@ -17,6 +17,8 @@ struct SessionTaskChooseOrganizationView: View {
   @State private var accountList = OrganizationAccountListDataSource()
   @State private var isSelectingOrganization = false
 
+  let token: AuthFlowPresentationToken
+
   private var user: User? {
     clerk.user
   }
@@ -34,7 +36,10 @@ struct SessionTaskChooseOrganizationView: View {
             UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
           }
       } else if !accountList.isLoading, !accountList.hasExistingResources {
-        SessionTaskCreateOrganizationView(creationDefaults: accountList.creationDefaults)
+        SessionTaskCreateOrganizationView(
+          creationDefaults: accountList.creationDefaults,
+          token: token
+        )
       } else {
         Group {
           if accountList.isLoading {
@@ -92,10 +97,19 @@ struct SessionTaskChooseOrganizationView: View {
             }
           },
           onCreateOrganization: {
-            navigation.path.append(.sessionTaskCreateOrganization(creationDefaults: accountList.creationDefaults))
+            guard clerk.authFlowPresentationIsCurrent(token) else { return }
+            navigation.appendPostAuthDestination(
+              .sessionTaskCreateOrganization(
+                creationDefaults: accountList.creationDefaults,
+                token: token
+              )
+            )
           }
         )
-        .disabled(isSelectingOrganization)
+        .disabled(
+          isSelectingOrganization ||
+            !clerk.authFlowPresentationIsCurrent(token)
+        )
 
         SecuredByClerkView()
           .padding(.horizontal, 16)
@@ -112,14 +126,20 @@ struct SessionTaskChooseOrganizationView: View {
   }
 
   private func selectOrganization(id: String) async {
-    guard !isSelectingOrganization, let session = clerk.session else { return }
+    guard clerk.authFlowPresentationIsCurrent(token),
+          !isSelectingOrganization,
+          let session = clerk.session
+    else {
+      return
+    }
 
     isSelectingOrganization = true
     defer { isSelectingOrganization = false }
 
     do {
       try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
-      navigation.handleSessionTaskCompletion(session: clerk.session)
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
+      _ = clerk.finishAuthFlowPresentation(token)
     } catch {
       accountList.error = organizationError(from: error)
     }
@@ -137,11 +157,6 @@ struct SessionTaskChooseOrganizationView: View {
     }
     return error
   }
-}
-
-#Preview("Choose Organization") {
-  SessionTaskChooseOrganizationView()
-    .clerkPreview()
 }
 
 #endif

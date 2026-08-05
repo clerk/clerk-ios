@@ -25,7 +25,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     Group {
-///       if clerk.user != nil {
+///       if clerk.isAuthFlowComplete {
 ///         UserProfileView(isDismissible: false)
 ///       } else {
 ///         AuthView(isDismissible: false)
@@ -213,17 +213,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         // rather than showing the host's back button.
         AuthView()
           .environment(\.clerkHostBackAction, nil)
-      }
-      .task {
-        for await event in clerk.auth.events {
-          switch event {
-          case .signInCompleted, .signUpCompleted:
-            guard clerk.session?.pendingTasks.isEmpty != false else { break }
-            sheetNavigation.authViewIsPresented = false
-          default:
-            break
-          }
-        }
       }
       .task(id: user) {
         await getSessionsOnAllDevices()

@@ -13,13 +13,16 @@ struct SessionTaskCreateOrganizationView: View {
 
   let creationDefaults: OrganizationCreationDefaults?
   let showBackButton: Bool
+  let token: AuthFlowPresentationToken
 
   init(
     creationDefaults: OrganizationCreationDefaults? = nil,
-    showBackButton: Bool = false
+    showBackButton: Bool = false,
+    token: AuthFlowPresentationToken
   ) {
     self.creationDefaults = creationDefaults
     self.showBackButton = showBackButton
+    self.token = token
   }
 
   var body: some View {
@@ -28,8 +31,9 @@ struct SessionTaskCreateOrganizationView: View {
       skipInvitationScreen: true,
       createPresentation: .sessionTask
     ) {
-      navigation.handleSessionTaskCompletion(session: clerk.session)
+      _ = clerk.finishAuthFlowPresentation(token)
     }
+    .disabled(!clerk.authFlowPresentationIsCurrent(token))
     .navigationBarBackButtonHidden(!showBackButton)
     #if os(iOS)
     .navigationBarTitleDisplayMode(.inline)
@@ -42,11 +46,6 @@ struct SessionTaskCreateOrganizationView: View {
     .macOSBackButton(hidden: !showBackButton)
     #endif
   }
-}
-
-#Preview("Create Organization") {
-  SessionTaskCreateOrganizationView()
-    .clerkPreview()
 }
 
 #endif

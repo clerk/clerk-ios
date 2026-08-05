@@ -9,14 +9,15 @@ import SwiftUI
 
 struct SessionTaskStartView: View {
   let task: Session.Task
+  let token: AuthFlowPresentationToken
 
   @ViewBuilder
   private var viewForTask: some View {
     switch task {
     case .setupMfa:
-      SessionTaskMfaSetupView()
+      SessionTaskMfaSetupView(token: token)
     case .resetPassword:
-      SignInSetNewPasswordView(mode: .sessionTask)
+      SignInSetNewPasswordView(mode: .sessionTask, token: token)
       #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
       #endif
@@ -25,7 +26,7 @@ struct SessionTaskStartView: View {
         UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
       }
     case .chooseOrganization:
-      SessionTaskChooseOrganizationView()
+      SessionTaskChooseOrganizationView(token: token)
     case .unknown:
       GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
@@ -42,26 +43,6 @@ struct SessionTaskStartView: View {
   var body: some View {
     viewForTask
   }
-}
-
-#Preview("Setup MFA") {
-  SessionTaskStartView(task: .setupMfa)
-    .clerkPreview()
-}
-
-#Preview("Reset Password") {
-  SessionTaskStartView(task: .resetPassword)
-    .clerkPreview()
-}
-
-#Preview("Choose Organization") {
-  SessionTaskStartView(task: .chooseOrganization)
-    .clerkPreview()
-}
-
-#Preview("Unknown Task") {
-  SessionTaskStartView(task: .unknown("new-task"))
-    .clerkPreview()
 }
 
 #endif

@@ -13,6 +13,7 @@ struct EmailLinkVerificationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
   @Environment(\.openURL) private var openURL
 
   @State private var deliveryState = DeliveryState.idle
@@ -43,7 +44,9 @@ struct EmailLinkVerificationView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .taskOnce {
-      await sendInitialLinkIfNeeded()
+      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
+        await sendInitialLinkIfNeeded()
+      }
     }
   }
 }

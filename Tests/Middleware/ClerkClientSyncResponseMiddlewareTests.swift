@@ -268,6 +268,82 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
+  func validateHoldsRegisteredAuthFlowBeforeApplyingCompletedSignInClient() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let observer = AuthFlowGateRecordingObserver()
+    clerk.internalStateChanges.addObserver(observer)
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let data = try JSONEncoder.clerkEncoder.encode(ClientEnvelope(
+      response: SignInResponsePayload(
+        object: "sign_in_attempt",
+        id: SignIn.mock.id,
+        status: SignIn.Status.complete.rawValue,
+        createdSessionId: Client.mock.currentSession?.id
+      ),
+      client: Client.mock
+    ))
+    let url = try #require(URL(string: "https://example.com/v1/client/sign_ins/sign_in_123/attempt_first_factor"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkRequestDeviceToken("request-token")
+    request.setClerkAuthFlowRegistrationId(registration.id)
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete == false)
+    let snapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(_, let completion) = snapshot.phase else {
+      Issue.record("Expected the accepted sign-in to await post-auth work")
+      return
+    }
+    #expect(completion?.flowId == SignIn.mock.id)
+    #expect(observer.valuesAtClientChange.last == false)
+
+    clerk.resetAuthFlow(for: registration)
+
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func validateDoesNotHoldRegisteredAuthFlowForRefreshedActiveClient() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+    let data = try JSONEncoder.clerkEncoder.encode(ClientOnlyEnvelope(response: Client.mock, client: nil))
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+    var request = URLRequest(url: url)
+    request.setClerkRequestDeviceToken("request-token")
+
+    try await middleware.validate(response, data: data, for: request)
+
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.isAuthFlowComplete)
+    let snapshot = try #require(clerk.authFlowSnapshot(for: registration))
+    guard case .awaiting(_, let completion) = snapshot.phase else {
+      Issue.record("Expected the externally refreshed session to be observed")
+      return
+    }
+    #expect(completion == nil)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
   func validateIgnoresClientResponseFromStaleDeviceTokenGeneration() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
@@ -476,6 +552,16 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 }
 
+@MainActor
+private final class AuthFlowGateRecordingObserver: ClerkInternalStateChangeObserver {
+  private(set) var valuesAtClientChange: [Bool] = []
+
+  func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
+    guard case .clientDidChange = change else { return }
+    valuesAtClientChange.append(clerk.isAuthFlowComplete)
+  }
+}
+
 private final class ThreadRecordingIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
   private let lock = NSLock()
   private var record: SharedSessionLocalIdentityRecord?
@@ -517,6 +603,13 @@ private final class ThreadRecordingIdentityStore: @unchecked Sendable, SharedSes
 private struct ClientEnvelope<Response: Codable>: Codable {
   let response: Response
   let client: Client?
+}
+
+private struct SignInResponsePayload: Codable {
+  let object: String
+  let id: String
+  let status: String
+  let createdSessionId: String?
 }
 
 private struct ClientOnlyEnvelope: Codable {

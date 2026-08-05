@@ -15,6 +15,11 @@ import SwiftUI
 /// The view can be configured for different authentication modes and automatically handles
 /// navigation between authentication steps.
 ///
+/// > Important: Mount only one `AuthView` at a time for each `Clerk` instance. A single
+/// > `AuthView` can remain mounted while offscreen in a `TabView`; its in-process flow resumes
+/// > when it appears again. Don't place separate `AuthView` instances in multiple tabs or present
+/// > one over another retained `AuthView`.
+///
 /// ## Usage
 ///
 /// Basic usage as a dismissible sheet:
@@ -52,7 +57,7 @@ import SwiftUI
 ///
 ///   var body: some View {
 ///     Group {
-///       if clerk.user != nil {
+///       if clerk.isAuthFlowComplete {
 ///         UserProfileView(isDismissible: false)
 ///       } else {
 ///         AuthView(isDismissible: false)
@@ -62,20 +67,29 @@ import SwiftUI
 /// }
 /// ```
 public struct AuthView: View {
-  @Environment(Clerk.self) private var clerk
+  @Environment(Clerk.self) var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  @Environment(\.dismiss) var dismiss
   /// Navigation state for the auth flow.
-  @State private var navigation = AuthNavigation()
+  @State var navigation = AuthNavigation()
 
   /// Form field state for auth views.
-  @State private var authState: AuthState
+  @State var authState: AuthState
 
   /// Configuration values for the auth flow.
   private let config: AuthConfig
 
   /// Error to present to the user.
   @State private var error: Error?
+
+  /// Keeps this auth flow registered for the view's lifetime.
+  @State var authFlowRegistration: AuthFlowRegistration?
+
+  /// Prevents an explicitly finished flow from reacquiring coordinator ownership.
+  @State var authFlowRegistrationIsTerminated = false
+
+  /// The conflicting owner already reported for this view.
+  @State var reportedConflictingAuthFlowOwnerId: UUID?
 
   /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
@@ -105,15 +119,15 @@ public struct AuthView: View {
   ///   - isDismissible: Whether the view can be dismissed by the user.
   ///     When `true`, a dismiss button appears and the view automatically
   ///     dismisses on successful authentication. When `false`, no dismiss
-  ///     button is shown. Interactive presentation dismissal is always disabled.
+  ///     button is shown.
   ///     Defaults to `true`.
   public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
     self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
   }
 
   init(
-    mode: Mode,
-    isDismissible: Bool,
+    mode: Mode = .signInOrUp,
+    isDismissible: Bool = true,
     config: AuthConfig
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
@@ -137,12 +151,12 @@ public struct AuthView: View {
               dismissToolbarItem
             }
             #endif
-            .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+            .authFooter(macOSDismissAction: showDismissButton ? { dismissAuthView() } : nil)
             .environment(navigation)
             .environment(authState)
             .environment(codeLimiter)
         }
-        .authFooter(macOSDismissAction: showDismissButton ? { dismiss() } : nil)
+        .authFooter(macOSDismissAction: showDismissButton ? { dismissAuthView() } : nil)
     }
     .background(theme.colors.background)
     .presentationBackground(theme.colors.background)
@@ -158,8 +172,10 @@ public struct AuthView: View {
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
+    .environment(\.authFlowRequestOwnerId, authFlowRegistration?.id)
     .onAppear {
-      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+      registerAuthFlowIfNeeded()
+      adoptPendingSessionIfNeeded(clerk.session)
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
@@ -175,34 +191,25 @@ public struct AuthView: View {
           resumeAuth(.signIn(signIn))
         case .signUpNeedsContinuation(let signUp):
           resumeAuth(.signUp(signUp))
-        case .sessionChanged(let oldValue, let newValue):
-          guard !navigation.routeToSessionTaskStartIfNeeded(session: newValue) else { break }
-          let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
-          let isHandlingSessionTask = navigation.hasSessionTaskStartInPath
-          let sessionSwitched = oldValue?.id != newValue?.id
-          if becameActive, isDismissible, !isHandlingSessionTask || sessionSwitched {
-            dismiss()
-          }
         default:
           break
         }
       }
     }
-    .onChange(of: navigation.allTasksComplete) { _, isComplete in
-      guard isComplete else { return }
-      if isDismissible {
-        dismiss()
-      }
-    }
-    .onChange(of: clerk.session?.tasks) { _, _ in
-      navigation.routeToSessionTaskStartIfNeeded(session: clerk.session)
+    .task(id: authFlowReconciliationID) {
+      registerAuthFlowIfNeeded()
+      await reconcileAuthFlow()
     }
     .onChange(of: clerk.user) { _, newUser in
-      guard newUser == nil, navigation.hasSessionTaskStartInPath else { return }
-      if isDismissible {
-        dismiss()
+      guard newUser == nil else { return }
+
+      if isDismissible, navigation.presentedAuthFlowToken != nil {
+        dismissAuthView()
       } else {
-        navigation.path = []
+        navigation.resetForNewAuthFlow()
+        resetAuthFlow(owner: authFlowRegistration)
+        authFlowRegistrationIsTerminated = false
+        registerAuthFlowIfNeeded()
       }
     }
     .onChange(of: config) { _, newConfig in
@@ -227,33 +234,6 @@ public struct AuthView: View {
           ]
         )
       )
-    }
-  }
-}
-
-extension AuthView {
-  /// Whether the dismiss button should be shown, accounting for required session tasks.
-  private var showDismissButton: Bool {
-    isDismissible && !navigation.hasSessionTaskStartInPath
-  }
-
-  @ToolbarContentBuilder
-  private var dismissToolbarItem: some ToolbarContent {
-    if showDismissButton {
-      DismissToolbarItem {
-        dismiss()
-      }
-    }
-  }
-
-  private func resumeAuth(_ result: TransferFlowResult) {
-    switch result {
-    case .signIn(let signIn):
-      navigation.setToStepForStatus(signIn: signIn)
-      clerk.setCallbackContinuation(nil)
-    case .signUp(let signUp):
-      navigation.setToStepForStatus(signUp: signUp)
-      clerk.setCallbackContinuation(nil)
     }
   }
 }
@@ -332,94 +312,6 @@ extension AuthView {
     var config = config
     config.unsafeMetadata = metadata
     return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
-  }
-}
-
-extension AuthView {
-  enum Destination: Hashable {
-    /// Auth Start
-    case authStart
-
-    // Sign In
-    case signInFactorOne(factor: Factor)
-    case signInFactorOneUseAnotherMethod(currentFactor: Factor)
-    case signInFactorTwo(factor: Factor)
-    case signInFactorTwoUseAnotherMethod(currentFactor: Factor)
-    case signInClientTrust(factor: Factor)
-    case signInForgotPassword
-    case signInSetNewPassword
-    case getHelp(GetHelpView.Context)
-
-    // Sign up
-    case signUpCollectField(SignUpCollectFieldView.Field)
-    case signUpCode(SignUpCodeView.Field)
-    case signUpEmailLink
-    case signUpCompleteProfile
-
-    // Session tasks
-    case sessionTaskStart(task: Session.Task)
-    case taskMfaSmsChooseNumber
-    case taskVerifySms(phoneNumber: PhoneNumber)
-    case taskMfaTotp(totpResource: TOTPResource)
-    case taskVerifyTotp
-    case sessionTaskCreateOrganization(creationDefaults: OrganizationCreationDefaults?)
-    case backupCodes(
-      backupCodes: [String],
-      mfaType: SessionTaskBackupCodesView.BackupCodesMfaType
-    )
-
-    @MainActor
-    @ViewBuilder
-    var view: some View {
-      switch self {
-      case .authStart:
-        AuthStartView()
-      case let .signInFactorOne(factor):
-        SignInFactorOneView(factor: factor)
-      case let .signInFactorOneUseAnotherMethod(currentFactor):
-        SignInFactorAlternativeMethodsView(currentFactor: currentFactor)
-      case let .signInFactorTwo(factor):
-        SignInFactorTwoView(factor: factor)
-      case let .signInFactorTwoUseAnotherMethod(currentFactor):
-        SignInFactorAlternativeMethodsView(
-          currentFactor: currentFactor,
-          isSecondFactor: true
-        )
-      case let .signInClientTrust(factor):
-        SignInClientTrustView(factor: factor)
-      case .signInForgotPassword:
-        SignInFactorOneForgotPasswordView()
-      case .signInSetNewPassword:
-        SignInSetNewPasswordView()
-      case let .getHelp(context):
-        GetHelpView(context: context)
-      case let .signUpCollectField(field):
-        SignUpCollectFieldView(field: field)
-      case let .signUpCode(field):
-        SignUpCodeView(field: field)
-      case .signUpEmailLink:
-        EmailLinkVerificationView(mode: .signUp)
-      case .signUpCompleteProfile:
-        SignUpCompleteProfileView()
-      case .sessionTaskStart(let task):
-        SessionTaskStartView(task: task)
-      case .taskMfaSmsChooseNumber:
-        SessionTaskMfaSmsChooseNumberView()
-      case .taskVerifySms(let phoneNumber):
-        SessionTaskMfaVerifySmsView(phoneNumber: phoneNumber)
-      case .taskMfaTotp(let totpResource):
-        SessionTaskMfaTotpView(totp: totpResource)
-      case .sessionTaskCreateOrganization(let creationDefaults):
-        SessionTaskCreateOrganizationView(creationDefaults: creationDefaults, showBackButton: true)
-      case .taskVerifyTotp:
-        SessionTaskMfaVerifyTotpView()
-      case .backupCodes(let backupCodes, let mfaType):
-        SessionTaskBackupCodesView(
-          backupCodes: backupCodes,
-          mfaType: mfaType
-        )
-      }
-    }
   }
 }
 

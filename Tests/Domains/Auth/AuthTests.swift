@@ -70,6 +70,15 @@ struct AuthTests {
     return clerk
   }
 
+  private func enabledTrustedDeviceEnvironment() -> Clerk.Environment {
+    var environment = Clerk.Environment.mock
+    environment.authConfig.nativeSettings = .init(
+      apiEnabled: true,
+      trustedDeviceSignInEnabled: true
+    )
+    return environment
+  }
+
   struct SignOutScenario: Codable, Equatable {
     let sessionId: String?
   }
@@ -331,6 +340,92 @@ struct AuthTests {
   }
 
   @Test
+  func signInWithTrustedDeviceDelegatesToTrustedDevicesSignIn() async throws {
+    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.client = .mockSignedOut
+
+    let createParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let attemptedSignInId = LockIsolated<String?>(nil)
+    let attemptParams = LockIsolated<SignIn.AttemptFirstFactorParams?>(nil)
+    let signedLocalKeyIds = LockIsolated<[String]>([])
+    let signedReasons = LockIsolated<[String?]>([])
+
+    let challengeSignIn = SignIn(
+      id: "si_trusted_device",
+      status: .needsFirstFactor,
+      firstFactorVerification: .init(
+        status: .unverified,
+        strategy: .trustedDevice,
+        trustedDeviceChallenge: .mock
+      )
+    )
+    let completedSignIn = SignIn(
+      id: challengeSignIn.id,
+      status: .complete,
+      createdSessionId: "sess_trusted_device"
+    )
+    let signInService = MockSignInService(
+      create: { params in
+        createParams.setValue(params)
+        return challengeSignIn
+      },
+      attemptFirstFactor: { signInId, params in
+        attemptedSignInId.setValue(signInId)
+        attemptParams.setValue(params)
+        return completedSignIn
+      }
+    )
+    let keyManager = MockTrustedDeviceKeyManager(sign: { clientData, localKeyId, localizedReason in
+      #expect(clientData == TrustedDeviceChallenge.mock.clientData)
+      signedLocalKeyIds.withValue { $0.append(localKeyId) }
+      signedReasons.withValue { $0.append(localizedReason) }
+      return .init(clientData: clientData, signature: "trusted-device-signature")
+    })
+    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: InMemoryKeychain())
+    try credentialStore.save(.init(
+      id: TrustedDeviceLocalCredential.mock.id,
+      localKeyId: TrustedDeviceLocalCredential.mock.localKeyId,
+      userID: TrustedDeviceLocalCredential.mock.userID,
+      appIdentifier: "com.clerk.example",
+      createdAt: TrustedDeviceLocalCredential.mock.createdAt,
+      updatedAt: TrustedDeviceLocalCredential.mock.updatedAt
+    ))
+
+    let apiClient = createMockAPIClient(baseURL: mockBaseUrl)
+    let auth = Auth(
+      magicLinkStore: MagicLinkStore(keychain: InMemoryKeychain()),
+      magicLinkService: MagicLinkService(apiClient: apiClient),
+      hostedAuthService: MockHostedAuthService(),
+      signInService: signInService,
+      signUpService: MockSignUpService(),
+      sessionService: MockSessionService(),
+      trustedDevices: TrustedDevices(
+        trustedDeviceService: MockTrustedDeviceService(),
+        signInService: signInService,
+        keyManager: keyManager,
+        credentialStore: credentialStore,
+        appIdentifierProvider: { "com.clerk.example" }
+      ),
+      eventEmitter: EventEmitter<AuthEvent>(),
+      urlHandlingCoordinator: URLHandlingCoordinator()
+    )
+
+    let signIn = try await auth.signInWithTrustedDevice(reason: "Use Face ID to sign in.")
+
+    #expect(signIn == completedSignIn)
+    #expect(createParams.value?.strategy == .trustedDevice)
+    #expect(createParams.value?.trustedDeviceId == TrustedDeviceLocalCredential.mock.id)
+    #expect(attemptedSignInId.value == challengeSignIn.id)
+    #expect(attemptParams.value?.strategy == .trustedDevice)
+    #expect(attemptParams.value?.trustedDeviceId == TrustedDeviceLocalCredential.mock.id)
+    #expect(attemptParams.value?.clientData == TrustedDeviceChallenge.mock.clientData)
+    #expect(attemptParams.value?.signature == "trusted-device-signature")
+    #expect(attemptParams.value?.algorithm == .es256)
+    #expect(signedLocalKeyIds.value == [TrustedDeviceLocalCredential.mock.localKeyId])
+    #expect(signedReasons.value == ["Use Face ID to sign in."])
+  }
+
+  @Test
   func signInWithTicketUsesSignInServiceCreate() async throws {
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let signInService = MockSignInService(create: { params in
@@ -397,8 +492,11 @@ struct AuthTests {
     let completeParams = LockIsolated<MagicLinkCompleteParams?>(nil)
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
+    let capturedAuthFlowOwnerId = LockIsolated<UUID?>(nil)
+    let expectedAuthFlowOwnerId = UUID()
 
     let magicLinkService = MockMagicLinkService { params in
+      capturedAuthFlowOwnerId.setValue(AuthFlowRequestScope.ownerId)
       completeParams.setValue(params)
       return .ticket(MagicLinkCompleteResponse(flowId: params.flowId, ticket: "ticket_123"))
     }
@@ -423,7 +521,17 @@ struct AuthTests {
     )
     let clerk = Clerk.shared
     let callbackURL = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+    try clerk.dependencies.magicLinkStore.save(
+      kind: .signIn,
+      flowId: "flow_123",
+      codeVerifier: "verifier_123",
+      authFlowOwnerId: expectedAuthFlowOwnerId
+    )
+    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    #expect(
+      clerk.dependencies.magicLinkStore.authFlowOwnerId(for: pendingFlow)
+        == expectedAuthFlowOwnerId
+    )
 
     let result = try await clerk.auth.completeMagicLink(callbackURL: callbackURL)
     let signIn = switch result {
@@ -440,7 +548,36 @@ struct AuthTests {
     #expect(completeParams.value?.codeVerifier == "verifier_123")
     #expect(signInParams.value?.ticket == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
+    #expect(capturedAuthFlowOwnerId.value == expectedAuthFlowOwnerId)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
+  }
+
+  @Test
+  func magicLinkAuthFlowOwnershipIsInMemoryOnly() throws {
+    let keychain = InMemoryKeychain()
+    let ownerId = UUID()
+    let store = MagicLinkStore(keychain: keychain)
+    try store.save(
+      kind: .signIn,
+      flowId: "flow_123",
+      codeVerifier: "verifier_123",
+      authFlowOwnerId: ownerId
+    )
+
+    let pendingFlow = try #require(store.load())
+    #expect(store.authFlowOwnerId(for: pendingFlow) == ownerId)
+    let sameFlowWithDifferentDates = PendingMagicLinkFlow(
+      kind: pendingFlow.kind,
+      flowId: pendingFlow.flowId,
+      codeVerifier: pendingFlow.codeVerifier,
+      createdAt: pendingFlow.createdAt.addingTimeInterval(1),
+      expiresAt: pendingFlow.expiresAt.addingTimeInterval(1)
+    )
+    #expect(store.authFlowOwnerId(for: sameFlowWithDifferentDates) == ownerId)
+
+    let relaunchedStore = MagicLinkStore(keychain: keychain)
+    let reloadedFlow = try #require(relaunchedStore.load())
+    #expect(relaunchedStore.authFlowOwnerId(for: reloadedFlow) == nil)
   }
 
   @Test
@@ -1342,5 +1479,31 @@ struct AuthTests {
     let params = try #require(activeParams.value)
     #expect(params.0 == "sess_test123")
     #expect(params.1 == nil)
+  }
+
+  @Test
+  func recoveredSessionActivationCompletesAuthFlowSelection() async throws {
+    struct ActivationError: Error {}
+
+    let sessionService = MockSessionService(setActive: { _, _ in
+      throw ActivationError()
+    })
+    configureDependencies(sessionService: sessionService)
+    Clerk.shared.client = nil
+    let registration = try #require(Clerk.shared.registerAuthFlow())
+    let sessionId = try #require(Client.mock.currentSession?.id)
+    let activation = try #require(Clerk.shared.beginAuthSessionActivation(
+      sessionId: sessionId,
+      ownerId: registration.id
+    ))
+    Clerk.shared.client = .mock
+
+    try await Clerk.shared.auth.activateSession(
+      sessionId: sessionId,
+      authFlowActivation: activation
+    )
+
+    #expect(Clerk.shared.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
   }
 }

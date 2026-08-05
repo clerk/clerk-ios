@@ -18,6 +18,8 @@ struct SessionTaskMfaSetupView: View {
 
   @State private var error: Error?
 
+  let token: AuthFlowPresentationToken
+
   private var environment: Clerk.Environment? {
     clerk.environment
   }
@@ -60,7 +62,8 @@ struct SessionTaskMfaSetupView: View {
         VStack(spacing: 16) {
           if phoneCodeIsEnabled {
             Button {
-              navigation.path.append(.taskMfaSmsChooseNumber)
+              guard clerk.authFlowPresentationIsCurrent(token) else { return }
+              navigation.appendPostAuthDestination(.taskMfaSmsChooseNumber(token: token))
             } label: {
               StrategyOptionButton(iconName: "icon-phone", text: "SMS code")
             }
@@ -97,22 +100,24 @@ struct SessionTaskMfaSetupView: View {
   }
 
   private func createTotp() async {
-    guard let user else { return }
+    guard clerk.authFlowPresentationIsCurrent(token),
+          let user
+    else {
+      return
+    }
 
     do {
       let totp = try await user.createTOTP()
-      navigation.path.append(.taskMfaTotp(totpResource: totp))
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
+      navigation.appendPostAuthDestination(.taskMfaTotp(
+        totpResource: totp,
+        token: token
+      ))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)
     }
   }
-}
-
-#Preview("Choose Method") {
-  SessionTaskMfaSetupView()
-    .clerkPreview()
-    .environment(\.clerkTheme, .clerk)
 }
 
 #endif
