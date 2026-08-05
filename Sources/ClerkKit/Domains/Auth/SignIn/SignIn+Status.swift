@@ -23,7 +23,7 @@ extension SignIn {
     /// The user needs to set a new password.
     case needsNewPassword
 
-    /// Client trust verification is required.
+    /// Device trust verification is required.
     case needsClientTrust
 
     /// The sign-in returned an unknown status value.
