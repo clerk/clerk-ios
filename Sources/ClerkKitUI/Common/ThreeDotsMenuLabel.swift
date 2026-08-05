@@ -15,6 +15,7 @@ struct ThreeDotsMenuLabel: View {
       .scaledToFit()
       .foregroundColor(theme.colors.mutedForeground)
       .frame(width: 20, height: 20)
+      .accessibilityLabel(Text("Manage", bundle: .module))
   }
 }
 

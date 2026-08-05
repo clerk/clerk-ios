@@ -132,6 +132,9 @@ struct ClerkTextField: View {
             .foregroundStyle(theme.colors.mutedForeground)
         }
         .frame(width: 24)
+        .accessibilityLabel(
+          Text(revealText ? "Hide password" : "Show password", bundle: .module)
+        )
       }
     }
     .opacity(isEnabled ? 1 : 0.6)

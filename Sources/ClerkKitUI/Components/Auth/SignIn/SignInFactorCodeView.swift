@@ -323,7 +323,7 @@ extension SignInFactorCodeView {
     case .totp:
       return try await signIn.verifyMfaCode(code, type: .totp)
     default:
-      throw ClerkClientError(message: "Unknown code verification method. Please use another method.")
+      throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
     }
   }
 

@@ -63,7 +63,7 @@ struct SignInSetNewPasswordView: View {
             isSecure: true,
             fieldState: fieldError != nil ? .error : .default
           )
-          .textContentType(.newPassword)
+          .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
           #if os(iOS)
           .textInputAutocapitalization(.never)
           #endif
@@ -85,7 +85,7 @@ struct SignInSetNewPasswordView: View {
               isSecure: true,
               fieldState: fieldError != nil ? .error : .default
             )
-            .textContentType(.newPassword)
+            .textContentType(ClerkE2EEnvironment.isEnabled ? nil : .newPassword)
             #if os(iOS)
             .textInputAutocapitalization(.never)
             #endif
@@ -158,7 +158,7 @@ extension SignInSetNewPasswordView {
 
     do {
       guard authState.signInNewPassword == authState.signInConfirmNewPassword else {
-        throw ClerkClientError(message: "Passwords don't match.")
+        throw ClerkClientError(message: "Passwords don't match.", localizationBundle: .module)
       }
 
       switch mode {

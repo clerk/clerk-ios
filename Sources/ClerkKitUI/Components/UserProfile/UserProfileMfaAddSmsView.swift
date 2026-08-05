@@ -109,11 +109,8 @@ struct UserProfileMfaAddSmsView: View {
         #endif
         .preGlassSolidNavBar()
         .toolbar {
-          ToolbarItem(placement: .cancellationAction) {
-            Button("Cancel") {
-              dismiss()
-            }
-            .foregroundStyle(theme.colors.primary)
+          CancelToolbarItem {
+            dismiss()
           }
 
           ToolbarItem(placement: .principal) {

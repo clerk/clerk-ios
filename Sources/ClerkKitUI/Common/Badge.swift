@@ -118,7 +118,7 @@ extension View {
   func lastUsedAuthBadgeOverlay(_ isVisible: Bool) -> some View {
     overlay(alignment: .topTrailing) {
       if isVisible {
-        Badge(key: "Last Used", style: .secondary)
+        Badge(key: "Last used", style: .secondary)
           .padding(.trailing, 8)
           .visualEffect { content, proxy in
             content.offset(y: -proxy.size.height / 2)

@@ -583,7 +583,8 @@ extension Clerk {
 
     guard failures.isEmpty else {
       throw ClerkClientError(
-        message: "Unable to clear Clerk keychain items during reconfiguration."
+        message: "Unable to clear Clerk keychain items during reconfiguration.",
+        localizationBundle: .module
       )
     }
   }

@@ -10,8 +10,8 @@ import SwiftUI
 
 struct UserProfileMfaAddTotpView: View {
   @Environment(\.clerkTheme) private var theme
-  @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
+  @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var path = NavigationPath()
   @State private var error: Error?
@@ -106,11 +106,8 @@ struct UserProfileMfaAddTotpView: View {
       #endif
       .preGlassSolidNavBar()
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
+        CancelToolbarItem {
+          dismiss()
         }
 
         ToolbarItem(placement: .principal) {

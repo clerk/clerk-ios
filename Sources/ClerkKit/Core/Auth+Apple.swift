@@ -41,7 +41,7 @@ extension Auth {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard !credential.tokenString.isEmpty else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
     }
 
     return credential

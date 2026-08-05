@@ -1,0 +1,4706 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "A Watch identity metadata transition is still pending." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يزال انتقال بيانات تعريف هوية Watch معلقًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Metadatenübertragung der Watch-Identität steht noch aus."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια μετάβαση μεταδεδομένων ταυτότητας Watch παραμένει σε εκκρεμότητα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía hay una transición de metadatos de identidad de Watch pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une transition des métadonnées d’identité de la Watch est toujours en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch पहचान मेटाडेटा का एक ट्रांज़िशन अभी भी लंबित है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una transizione dei metadati dell’identità di Watch è ancora in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WatchのIDメタデータの移行がまだ保留中です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch ID 메타데이터 전환이 아직 보류 중입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przejście metadanych tożsamości Watch nadal oczekuje."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma transição de metadados de identidade do Watch ainda está pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O tranziție a metadatelor de identitate Watch este încă în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переход метаданных идентификации Watch всё ещё ожидает выполнения."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir Watch kimlik meta verisi geçişi hâlâ beklemede."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch 身份元数据转换仍处于待处理状态。"
+          }
+        }
+      }
+    },
+    "A hosted authentication session is already in progress." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هناك جلسة مصادقة مستضافة قيد التنفيذ بالفعل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine gehostete Authentifizierungssitzung läuft bereits."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια περίοδος λειτουργίας φιλοξενούμενου ελέγχου ταυτότητας βρίσκεται ήδη σε εξέλιξη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya hay una sesión de autenticación alojada en curso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une session d’authentification hébergée est déjà en cours."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "एक होस्टेड प्रमाणीकरण सत्र पहले से चल रहा है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È già in corso una sessione di autenticazione ospitata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証セッションがすでに進行中です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 세션이 이미 진행 중입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesja hostowanego uwierzytelniania jest już w toku."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma sessão de autenticação hospedada já está em andamento."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O sesiune de autentificare găzduită este deja în desfășurare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сеанс размещенной аутентификации уже выполняется."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan bir kimlik doğrulama oturumu zaten devam ediyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有托管身份验证会话正在进行。"
+          }
+        }
+      }
+    },
+    "A web authentication session is already in progress." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هناك جلسة مصادقة عبر الويب قيد التنفيذ بالفعل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Web-Authentifizierungssitzung läuft bereits."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια περίοδος λειτουργίας ελέγχου ταυτότητας μέσω web βρίσκεται ήδη σε εξέλιξη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya hay una sesión de autenticación web en curso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une session d’authentification web est déjà en cours."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "एक वेब प्रमाणीकरण सत्र पहले से चल रहा है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È già in corso una sessione di autenticazione web."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web認証セッションがすでに進行中です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "웹 인증 세션이 이미 진행 중입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesja uwierzytelniania internetowego jest już w toku."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma sessão de autenticação web já está em andamento."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O sesiune de autentificare web este deja în desfășurare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сеанс веб-аутентификации уже выполняется."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir web kimlik doğrulama oturumu zaten devam ediyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有网页身份验证会话正在进行。"
+          }
+        }
+      }
+    },
+    "Cannot publish unresolved Watch identity metadata." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن نشر بيانات تعريف هوية Watch التي لم تتم تسويتها."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht aufgelöste Metadaten der Watch-Identität können nicht veröffentlicht werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η δημοσίευση ανεπίλυτων μεταδεδομένων ταυτότητας Watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pueden publicar metadatos de identidad de Watch sin resolver."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de publier des métadonnées d’identité de la Watch non résolues."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अनसुलझा Watch पहचान मेटाडेटा प्रकाशित नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile pubblicare metadati dell’identità di Watch non risolti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未解決のWatch IDメタデータを公開できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "해결되지 않은 Watch ID 메타데이터를 게시할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można opublikować nierozstrzygniętych metadanych tożsamości Watch."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível publicar metadados de identidade do Watch não resolvidos."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se pot publica metadatele de identitate Watch nerezolvate."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно опубликовать неразрешенные метаданные идентификации Watch."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çözümlenmemiş Watch kimlik meta verileri yayımlanamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法发布尚未解析的 Watch 身份元数据。"
+          }
+        }
+      }
+    },
+    "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تجري إعادة تهيئة Clerk بالفعل. انتظر حتى تنتهي إعادة التهيئة الحالية قبل بدء أخرى."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk wird bereits neu konfiguriert. Warten Sie, bis die aktuelle Neukonfiguration abgeschlossen ist, bevor Sie eine weitere starten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το Clerk επαναδιαμορφώνεται ήδη. Περιμένετε να ολοκληρωθεί η τρέχουσα επαναδιαμόρφωση πριν ξεκινήσετε άλλη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk ya se está reconfigurando. Espere a que finalice la reconfiguración actual antes de iniciar otra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk est déjà en cours de reconfiguration. Attendez la fin de la reconfiguration actuelle avant d’en démarrer une autre."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk पहले से पुनः कॉन्फ़िगर हो रहा है। दूसरा शुरू करने से पहले मौजूदा पुनः कॉन्फ़िगरेशन के पूरा होने की प्रतीक्षा करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk è già in fase di riconfigurazione. Attendi il completamento della riconfigurazione corrente prima di avviarne un’altra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerkはすでに再構成中です。現在の再構成が完了してから、別の再構成を開始してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk가 이미 재구성 중입니다. 현재 재구성이 완료될 때까지 기다린 후 다시 시작하세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trwa już ponowna konfiguracja Clerk. Poczekaj na jej zakończenie przed rozpoczęciem kolejnej."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Clerk já está sendo reconfigurado. Aguarde a conclusão da reconfiguração atual antes de iniciar outra."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk este deja în curs de reconfigurare. Așteptați finalizarea reconfigurării curente înainte de a începe alta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk уже перенастраивается. Дождитесь завершения текущей перенастройки, прежде чем запускать новую."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk zaten yeniden yapılandırılıyor. Başka bir yapılandırma başlatmadan önce mevcut işlemin tamamlanmasını bekleyin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk 已在重新配置。请等待当前重新配置完成后再开始新的配置。"
+          }
+        }
+      }
+    },
+    "Clerk must be configured before getting a session token." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجب تهيئة Clerk قبل الحصول على رمز الجلسة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk muss konfiguriert sein, bevor ein Sitzungstoken abgerufen werden kann."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το Clerk πρέπει να διαμορφωθεί πριν από τη λήψη διακριτικού περιόδου λειτουργίας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk debe estar configurado antes de obtener un token de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk doit être configuré avant d’obtenir un jeton de session."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सत्र टोकन प्राप्त करने से पहले Clerk को कॉन्फ़िगर करना आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk deve essere configurato prima di ottenere un token di sessione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッショントークンを取得する前にClerkを構成する必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 토큰을 가져오기 전에 Clerk를 구성해야 합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przed pobraniem tokenu sesji należy skonfigurować Clerk."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Clerk deve ser configurado antes de obter um token de sessão."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk trebuie configurat înainte de obținerea unui token de sesiune."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перед получением токена сеанса необходимо настроить Clerk."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oturum belirteci alınmadan önce Clerk yapılandırılmalıdır."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "必须先配置 Clerk，才能获取会话令牌。"
+          }
+        }
+      }
+    },
+    "Client ID is unavailable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معرّف العميل غير متاح."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Client-ID ist nicht verfügbar."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το αναγνωριστικό πελάτη δεν είναι διαθέσιμο."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El ID de cliente no está disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’identifiant client n’est pas disponible."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "क्लाइंट ID उपलब्ध नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’ID client non è disponibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クライアントIDを利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "클라이언트 ID를 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identyfikator klienta jest niedostępny."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O ID do cliente não está disponível."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ID-ul clientului nu este disponibil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Идентификатор клиента недоступен."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İstemci kimliği kullanılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客户端 ID 不可用。"
+          }
+        }
+      }
+    },
+    "Conflicting Watch auth payload reused a pending version." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعادت حمولة مصادقة Watch المتعارضة استخدام إصدار معلق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Konflikt stehende Watch-Authentifizierungsdaten haben eine ausstehende Version erneut verwendet."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το αντικρουόμενο ωφέλιμο φορτίο ελέγχου ταυτότητας Watch επαναχρησιμοποίησε μια έκδοση σε εκκρεμότητα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La carga de autenticación de Watch en conflicto reutilizó una versión pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La charge utile d’authentification de la Watch en conflit a réutilisé une version en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विरोधी Watch प्रमाणीकरण पेलोड ने एक लंबित संस्करण का दोबारा उपयोग किया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il payload di autenticazione di Watch in conflitto ha riutilizzato una versione in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "競合するWatch認証ペイロードが保留中のバージョンを再利用しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "충돌하는 Watch 인증 페이로드가 보류 중인 버전을 재사용했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprzeczne dane uwierzytelniania Watch ponownie użyły oczekującej wersji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A carga de autenticação conflitante do Watch reutilizou uma versão pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datele de autentificare Watch aflate în conflict au reutilizat o versiune în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Конфликтующие данные аутентификации Watch повторно использовали ожидающую версию."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çakışan Watch kimlik doğrulama yükü, bekleyen bir sürümü yeniden kullandı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "存在冲突的 Watch 身份验证负载重复使用了待处理版本。"
+          }
+        }
+      }
+    },
+    "Conflicting Watch token payload reused a pending version." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعادت حمولة رمز Watch المتعارضة استخدام إصدار معلق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Konflikt stehende Watch-Tokendaten haben eine ausstehende Version erneut verwendet."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το αντικρουόμενο ωφέλιμο φορτίο διακριτικού Watch επαναχρησιμοποίησε μια έκδοση σε εκκρεμότητα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La carga del token de Watch en conflicto reutilizó una versión pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La charge utile du jeton de la Watch en conflit a réutilisé une version en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "विरोधी Watch टोकन पेलोड ने एक लंबित संस्करण का दोबारा उपयोग किया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il payload del token di Watch in conflitto ha riutilizzato una versione in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "競合するWatchトークンペイロードが保留中のバージョンを再利用しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "충돌하는 Watch 토큰 페이로드가 보류 중인 버전을 재사용했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprzeczne dane tokenu Watch ponownie użyły oczekującej wersji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A carga de token conflitante do Watch reutilizou uma versão pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datele tokenului Watch aflate în conflict au reutilizat o versiune în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Конфликтующие данные токена Watch повторно использовали ожидающую версию."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çakışan Watch belirteci yükü, bekleyen bir sürümü yeniden kullandı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "存在冲突的 Watch 令牌负载重复使用了待处理版本。"
+          }
+        }
+      }
+    },
+    "Email address is required." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان البريد الإلكتروني مطلوب."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine E-Mail-Adresse ist erforderlich."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Απαιτείται διεύθυνση email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se requiere una dirección de correo electrónico."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une adresse e-mail est requise."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ईमेल पता आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È richiesto un indirizzo email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メールアドレスが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일 주소가 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adres e-mail jest wymagany."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "É necessário informar um endereço de e-mail."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este necesară o adresă de e-mail."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Необходимо указать адрес электронной почты."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta adresi gereklidir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电子邮件地址为必填项。"
+          }
+        }
+      }
+    },
+    "Email link sign-in is not available for this sign-in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الدخول عبر رابط البريد الإلكتروني غير متاح لعملية تسجيل الدخول هذه."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anmeldung per E-Mail-Link ist für diese Anmeldung nicht verfügbar."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η σύνδεση μέσω συνδέσμου email δεν είναι διαθέσιμη για αυτήν τη σύνδεση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El inicio de sesión mediante enlace de correo electrónico no está disponible para este inicio de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion par lien e-mail n’est pas disponible pour cette connexion."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस साइन-इन के लिए ईमेल लिंक से साइन-इन उपलब्ध नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’accesso tramite link email non è disponibile per questo accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このサインインでは、メールリンクによるサインインを利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 로그인에는 이메일 링크 로그인을 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logowanie za pomocą linku e-mail nie jest dostępne dla tego logowania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O login por link de e-mail não está disponível para este login."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autentificarea prin link de e-mail nu este disponibilă pentru această autentificare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход по ссылке из электронного письма недоступен для этого входа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta bağlantısıyla oturum açma bu oturum açma işlemi için kullanılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此登录流程无法使用电子邮件链接登录。"
+          }
+        }
+      }
+    },
+    "Hosted auth callback URL did not match the initiated redirect URL." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتطابق عنوان URL لرد اتصال المصادقة المستضافة مع عنوان URL لإعادة التوجيه الذي بدأ العملية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Callback-URL der gehosteten Authentifizierung stimmte nicht mit der gestarteten Weiterleitungs-URL überein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η διεύθυνση URL επανάκλησης του φιλοξενούμενου ελέγχου ταυτότητας δεν αντιστοιχούσε στη διεύθυνση URL ανακατεύθυνσης που ξεκίνησε τη διαδικασία."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La URL de devolución de llamada de la autenticación alojada no coincidió con la URL de redirección iniciada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URL de rappel de l’authentification hébergée ne correspondait pas à l’URL de redirection initiale."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण कॉलबैक URL शुरू किए गए रीडायरेक्ट URL से मेल नहीं खाता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URL di callback dell’autenticazione ospitata non corrispondeva all’URL di reindirizzamento iniziale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証のコールバックURLが、開始時のリダイレクトURLと一致しませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 콜백 URL이 시작된 리디렉션 URL과 일치하지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adres URL wywołania zwrotnego hostowanego uwierzytelniania nie odpowiadał początkowemu adresowi URL przekierowania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A URL de retorno da autenticação hospedada não correspondeu à URL de redirecionamento iniciada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-ul de revenire al autentificării găzduite nu a corespuns URL-ului de redirecționare inițial."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-адрес обратного вызова размещенной аутентификации не совпал с исходным URL-адресом перенаправления."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama geri çağırma URL'si başlatılan yönlendirme URL'siyle eşleşmedi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证回调 URL 与启动时的重定向 URL 不匹配。"
+          }
+        }
+      }
+    },
+    "Hosted auth callback did not include a rotating token nonce." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتضمن رد اتصال المصادقة المستضافة قيمة nonce للرمز المتناوب."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Callback der gehosteten Authentifizierung enthielt keine Nonce für das rotierende Token."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επανάκληση του φιλοξενούμενου ελέγχου ταυτότητας δεν περιλάμβανε nonce περιστρεφόμενου διακριτικού."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La devolución de llamada de la autenticación alojada no incluyó un nonce de token rotatorio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le rappel de l’authentification hébergée ne contenait pas de nonce de jeton rotatif."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण कॉलबैक में रोटेटिंग टोकन nonce शामिल नहीं था।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il callback dell’autenticazione ospitata non includeva un nonce del token rotante."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証のコールバックにローテーショントークンのnonceが含まれていませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 콜백에 순환 토큰 nonce가 포함되지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wywołanie zwrotne hostowanego uwierzytelniania nie zawierało wartości nonce rotacyjnego tokenu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno da autenticação hospedada não incluiu um nonce de token rotativo."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenirea autentificării găzduite nu a inclus un nonce pentru tokenul rotativ."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обратный вызов размещенной аутентификации не содержал nonce для сменяемого токена."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama geri çağrısı, dönen bir belirteç nonce değeri içermiyordu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证回调未包含轮换令牌 nonce。"
+          }
+        }
+      }
+    },
+    "Hosted auth callback did not include the created session." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتضمن رد اتصال المصادقة المستضافة الجلسة التي تم إنشاؤها."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Callback der gehosteten Authentifizierung enthielt die erstellte Sitzung nicht."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επανάκληση του φιλοξενούμενου ελέγχου ταυτότητας δεν περιλάμβανε την περίοδο λειτουργίας που δημιουργήθηκε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La devolución de llamada de la autenticación alojada no incluyó la sesión creada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le rappel de l’authentification hébergée ne contenait pas la session créée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण कॉलबैक में बनाया गया सत्र शामिल नहीं था।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il callback dell’autenticazione ospitata non includeva la sessione creata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証のコールバックに作成されたセッションが含まれていませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 콜백에 생성된 세션이 포함되지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wywołanie zwrotne hostowanego uwierzytelniania nie zawierało utworzonej sesji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno da autenticação hospedada não incluiu a sessão criada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenirea autentificării găzduite nu a inclus sesiunea creată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обратный вызов размещенной аутентификации не содержал созданный сеанс."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama geri çağrısı oluşturulan oturumu içermiyordu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证回调未包含已创建的会话。"
+          }
+        }
+      }
+    },
+    "Hosted auth callback state was missing or did not match the initiated state." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كانت حالة رد اتصال المصادقة المستضافة مفقودة أو لم تتطابق مع الحالة التي بدأت العملية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Status des Callbacks der gehosteten Authentifizierung fehlte oder stimmte nicht mit dem gestarteten Status überein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η κατάσταση επανάκλησης του φιλοξενούμενου ελέγχου ταυτότητας έλειπε ή δεν αντιστοιχούσε στην κατάσταση που ξεκίνησε τη διαδικασία."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faltaba el estado de la devolución de llamada de la autenticación alojada o no coincidía con el estado iniciado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’état du rappel de l’authentification hébergée était absent ou ne correspondait pas à l’état initial."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण कॉलबैक की स्थिति मौजूद नहीं थी या शुरू की गई स्थिति से मेल नहीं खाती थी।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo stato del callback dell’autenticazione ospitata era mancante o non corrispondeva allo stato iniziale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証のコールバック状態が存在しないか、開始時の状態と一致しませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 콜백 상태가 없거나 시작된 상태와 일치하지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brakowało stanu wywołania zwrotnego hostowanego uwierzytelniania lub nie odpowiadał on stanowi początkowemu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O estado do retorno da autenticação hospedada estava ausente ou não correspondia ao estado iniciado."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starea revenirii autentificării găzduite lipsea sau nu corespundea stării inițiale."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Состояние обратного вызова размещенной аутентификации отсутствовало или не совпало с исходным состоянием."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama geri çağrı durumu eksikti veya başlatılan durumla eşleşmedi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证回调状态缺失或与启动时的状态不匹配。"
+          }
+        }
+      }
+    },
+    "Hosted auth completion could not activate the created session." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر على إكمال المصادقة المستضافة تنشيط الجلسة التي تم إنشاؤها."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die gehostete Authentifizierung konnte die erstellte Sitzung nicht aktivieren."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η ολοκλήρωση του φιλοξενούμενου ελέγχου ταυτότητας δεν μπόρεσε να ενεργοποιήσει την περίοδο λειτουργίας που δημιουργήθηκε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La autenticación alojada no pudo activar la sesión creada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’authentification hébergée n’a pas pu activer la session créée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण पूर्ण होने पर बनाया गया सत्र सक्रिय नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autenticazione ospitata non ha potuto attivare la sessione creata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証の完了処理で作成されたセッションを有効化できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 완료 과정에서 생성된 세션을 활성화할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hostowane uwierzytelnianie nie mogło aktywować utworzonej sesji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A autenticação hospedada não conseguiu ativar a sessão criada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autentificarea găzduită nu a putut activa sesiunea creată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Размещенная аутентификация не смогла активировать созданный сеанс."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama oluşturulan oturumu etkinleştiremedi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证无法激活已创建的会话。"
+          }
+        }
+      }
+    },
+    "Hosted auth completion could not update the current client." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر على إكمال المصادقة المستضافة تحديث العميل الحالي."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die gehostete Authentifizierung konnte den aktuellen Client nicht aktualisieren."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η ολοκλήρωση του φιλοξενούμενου ελέγχου ταυτότητας δεν μπόρεσε να ενημερώσει τον τρέχοντα πελάτη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La autenticación alojada no pudo actualizar el cliente actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’authentification hébergée n’a pas pu mettre à jour le client actuel."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण पूर्ण होने पर मौजूदा क्लाइंट अपडेट नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autenticazione ospitata non ha potuto aggiornare il client corrente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証の完了処理で現在のクライアントを更新できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 완료 과정에서 현재 클라이언트를 업데이트할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hostowane uwierzytelnianie nie mogło zaktualizować bieżącego klienta."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A autenticação hospedada não conseguiu atualizar o cliente atual."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autentificarea găzduită nu a putut actualiza clientul curent."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Размещенная аутентификация не смогла обновить текущий клиент."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama mevcut istemciyi güncelleyemedi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证无法更新当前客户端。"
+          }
+        }
+      }
+    },
+    "Hosted auth completion did not include the created session." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتضمن إكمال المصادقة المستضافة الجلسة التي تم إنشاؤها."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Abschluss der gehosteten Authentifizierung enthielt die erstellte Sitzung nicht."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η ολοκλήρωση του φιλοξενούμενου ελέγχου ταυτότητας δεν περιλάμβανε την περίοδο λειτουργίας που δημιουργήθηκε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La finalización de la autenticación alojada no incluyó la sesión creada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La finalisation de l’authentification hébergée ne contenait pas la session créée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण पूर्ण होने पर बनाया गया सत्र शामिल नहीं था।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il completamento dell’autenticazione ospitata non includeva la sessione creata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証の完了処理に作成されたセッションが含まれていませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 완료 과정에 생성된 세션이 포함되지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zakończenie hostowanego uwierzytelniania nie zawierało utworzonej sesji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A conclusão da autenticação hospedada não incluiu a sessão criada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finalizarea autentificării găzduite nu a inclus sesiunea creată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завершение размещенной аутентификации не содержало созданный сеанс."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama tamamlaması oluşturulan oturumu içermiyordu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证完成结果未包含已创建的会话。"
+          }
+        }
+      }
+    },
+    "Hosted auth completion response was missing identity synchronization metadata." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كان رد إكمال المصادقة المستضافة يفتقد بيانات تعريف مزامنة الهوية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Abschlussantwort der gehosteten Authentifizierung fehlten Metadaten zur Identitätssynchronisierung."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Από την απόκριση ολοκλήρωσης του φιλοξενούμενου ελέγχου ταυτότητας έλειπαν μεταδεδομένα συγχρονισμού ταυτότητας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A la respuesta de finalización de la autenticación alojada le faltaban los metadatos de sincronización de identidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La réponse de finalisation de l’authentification hébergée ne contenait pas les métadonnées de synchronisation d’identité."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण पूर्णता प्रतिक्रिया में पहचान सिंक्रोनाइज़ेशन मेटाडेटा मौजूद नहीं था।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nella risposta di completamento dell’autenticazione ospitata mancavano i metadati di sincronizzazione dell’identità."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証の完了レスポンスにID同期メタデータが含まれていませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 완료 응답에 ID 동기화 메타데이터가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W odpowiedzi kończącej hostowane uwierzytelnianie brakowało metadanych synchronizacji tożsamości."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A resposta de conclusão da autenticação hospedada não continha os metadados de sincronização de identidade."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Răspunsul de finalizare a autentificării găzduite nu conținea metadatele de sincronizare a identității."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В ответе завершения размещенной аутентификации отсутствовали метаданные синхронизации идентификации."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama tamamlama yanıtında kimlik eşitleme meta verileri eksikti."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证完成响应缺少身份同步元数据。"
+          }
+        }
+      }
+    },
+    "Hosted auth creation returned an invalid response." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد إنشاء المصادقة المستضافة استجابة غير صالحة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Erstellen der gehosteten Authentifizierung wurde eine ungültige Antwort zurückgegeben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η δημιουργία φιλοξενούμενου ελέγχου ταυτότητας επέστρεψε μη έγκυρη απόκριση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La creación de la autenticación alojada devolvió una respuesta no válida."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La création de l’authentification hébergée a renvoyé une réponse non valide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण बनाते समय अमान्य प्रतिक्रिया मिली।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La creazione dell’autenticazione ospitata ha restituito una risposta non valida."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証の作成で無効なレスポンスが返されました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 생성에서 잘못된 응답이 반환되었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utworzenie hostowanego uwierzytelniania zwróciło nieprawidłową odpowiedź."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A criação da autenticação hospedada retornou uma resposta inválida."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crearea autentificării găzduite a returnat un răspuns nevalid."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При создании размещенной аутентификации был получен недопустимый ответ."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama oluşturma işlemi geçersiz bir yanıt döndürdü."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建托管身份验证时返回了无效响应。"
+          }
+        }
+      }
+    },
+    "Hosted auth requires a valid custom-scheme redirect URL." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتطلب المصادقة المستضافة عنوان URL صالحًا لإعادة التوجيه بمخطط مخصص."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die gehostete Authentifizierung erfordert eine gültige Weiterleitungs-URL mit benutzerdefiniertem Schema."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο φιλοξενούμενος έλεγχος ταυτότητας απαιτεί έγκυρη διεύθυνση URL ανακατεύθυνσης προσαρμοσμένου σχήματος."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La autenticación alojada requiere una URL de redirección válida con un esquema personalizado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’authentification hébergée nécessite une URL de redirection valide avec un schéma personnalisé."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण के लिए मान्य कस्टम-स्कीम रीडायरेक्ट URL आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autenticazione ospitata richiede un URL di reindirizzamento valido con schema personalizzato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証には、有効なカスタムスキームのリダイレクトURLが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증에는 유효한 사용자 지정 스킴 리디렉션 URL이 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hostowane uwierzytelnianie wymaga prawidłowego adresu URL przekierowania z niestandardowym schematem."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A autenticação hospedada requer uma URL de redirecionamento válida com esquema personalizado."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autentificarea găzduită necesită un URL de redirecționare valid cu schemă personalizată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для размещенной аутентификации требуется допустимый URL-адрес перенаправления с пользовательской схемой."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama, geçerli bir özel şema yönlendirme URL'si gerektirir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证需要有效的自定义方案重定向 URL。"
+          }
+        }
+      }
+    },
+    "Injected Keychain storage cannot be used with persistent shared-session adoption." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن استخدام تخزين Keychain المحقون مع اعتماد الجلسة المشتركة الدائم."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eingefügter Keychain-Speicher kann nicht mit der dauerhaften Übernahme gemeinsam genutzter Sitzungen verwendet werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο παρεχόμενος χώρος αποθήκευσης Keychain δεν μπορεί να χρησιμοποιηθεί με μόνιμη υιοθέτηση κοινόχρηστης περιόδου λειτουργίας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El almacenamiento Keychain inyectado no se puede usar con la adopción persistente de sesiones compartidas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le stockage Keychain injecté ne peut pas être utilisé avec l’adoption persistante d’une session partagée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इंजेक्ट किए गए Keychain स्टोरेज का उपयोग स्थायी साझा-सत्र अपनाने के साथ नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’archiviazione Keychain inserita non può essere utilizzata con l’adozione persistente di sessioni condivise."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注入されたKeychainストレージは、永続的な共有セッションの採用には使用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주입된 Keychain 저장소는 영구 공유 세션 채택과 함께 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wstrzykniętej pamięci Keychain nie można używać z trwałym przejmowaniem sesji współdzielonej."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O armazenamento Keychain injetado não pode ser usado com a adoção persistente de sessão compartilhada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stocarea Keychain injectată nu poate fi utilizată cu adoptarea persistentă a sesiunii partajate."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Внедренное хранилище Keychain нельзя использовать с постоянным подключением общего сеанса."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eklenen Keychain depolaması, kalıcı paylaşılan oturum benimsemesiyle kullanılamaz."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注入的 Keychain 存储不能用于持久采用共享会话。"
+          }
+        }
+      }
+    },
+    "Invalid credential type." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوع بيانات الاعتماد غير صالح."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ungültiger Anmeldedatentyp."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μη έγκυρος τύπος διαπιστευτηρίων."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de credencial no válido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type d’identifiant non valide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "क्रेडेंशियल का प्रकार अमान्य है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo di credenziale non valido."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "資格情報の種類が無効です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자격 증명 유형이 올바르지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nieprawidłowy typ danych uwierzytelniających."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de credencial inválido."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tip de acreditare nevalid."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недопустимый тип учетных данных."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçersiz kimlik bilgisi türü."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "凭据类型无效。"
+          }
+        }
+      }
+    },
+    "Isolated Clerk configuration is only available while running tests." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يتوفر تكوين Clerk المعزول إلا أثناء تشغيل الاختبارات."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine isolierte Clerk-Konfiguration ist nur während der Ausführung von Tests verfügbar."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η απομονωμένη διαμόρφωση του Clerk είναι διαθέσιμη μόνο κατά την εκτέλεση δοκιμών."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configuración aislada de Clerk solo está disponible mientras se ejecutan pruebas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configuration isolée de Clerk est uniquement disponible pendant l’exécution des tests."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अलग Clerk कॉन्फ़िगरेशन केवल परीक्षण चलाते समय उपलब्ध है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configurazione isolata di Clerk è disponibile solo durante l’esecuzione dei test."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分離されたClerk構成は、テストの実行中のみ利用できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "격리된 Clerk 구성은 테스트를 실행하는 동안에만 사용할 수 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izolowana konfiguracja Clerk jest dostępna tylko podczas uruchamiania testów."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A configuração isolada do Clerk só está disponível durante a execução de testes."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurația Clerk izolată este disponibilă numai în timpul rulării testelor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Изолированная конфигурация Clerk доступна только во время выполнения тестов."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yalıtılmış Clerk yapılandırması yalnızca testler çalıştırılırken kullanılabilir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隔离的 Clerk 配置仅在运行测试时可用。"
+          }
+        }
+      }
+    },
+    "Magic link callback does not match the pending flow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يتطابق رد اتصال الرابط السحري مع التدفق المعلق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Callback des Magic Links stimmt nicht mit dem ausstehenden Ablauf überein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επανάκληση του μαγικού συνδέσμου δεν αντιστοιχεί στη ροή που εκκρεμεί."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La devolución de llamada del enlace mágico no coincide con el flujo pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le rappel du lien magique ne correspond pas au flux en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैजिक लिंक कॉलबैक लंबित प्रवाह से मेल नहीं खाता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il callback del link magico non corrisponde al flusso in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マジックリンクのコールバックが保留中のフローと一致しません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매직 링크 콜백이 보류 중인 흐름과 일치하지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wywołanie zwrotne magicznego linku nie odpowiada oczekującemu przepływowi."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno do link mágico não corresponde ao fluxo pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenirea linkului magic nu corespunde fluxului în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обратный вызов волшебной ссылки не соответствует ожидающему потоку."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sihirli bağlantı geri çağrısı bekleyen akışla eşleşmiyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法链接回调与待处理流程不匹配。"
+          }
+        }
+      }
+    },
+    "Magic link callback is missing approval_token." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفتقد رد اتصال الرابط السحري approval_token."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Callback des Magic Links fehlt approval_token."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Από την επανάκληση του μαγικού συνδέσμου λείπει το approval_token."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A la devolución de llamada del enlace mágico le falta approval_token."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il manque approval_token dans le rappel du lien magique."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैजिक लिंक कॉलबैक में approval_token मौजूद नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nel callback del link magico manca approval_token."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マジックリンクのコールバックにapproval_tokenがありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매직 링크 콜백에 approval_token이 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W wywołaniu zwrotnym magicznego linku brakuje approval_token."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno do link mágico não contém approval_token."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din revenirea linkului magic lipsește approval_token."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В обратном вызове волшебной ссылки отсутствует approval_token."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sihirli bağlantı geri çağrısında approval_token eksik."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法链接回调缺少 approval_token。"
+          }
+        }
+      }
+    },
+    "Magic link callback is missing flow_id." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفتقد رد اتصال الرابط السحري flow_id."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Callback des Magic Links fehlt flow_id."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Από την επανάκληση του μαγικού συνδέσμου λείπει το flow_id."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A la devolución de llamada del enlace mágico le falta flow_id."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il manque flow_id dans le rappel du lien magique."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैजिक लिंक कॉलबैक में flow_id मौजूद नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nel callback del link magico manca flow_id."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マジックリンクのコールバックにflow_idがありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매직 링크 콜백에 flow_id가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "W wywołaniu zwrotnym magicznego linku brakuje flow_id."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno do link mágico não contém flow_id."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din revenirea linkului magic lipsește flow_id."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В обратном вызове волшебной ссылки отсутствует flow_id."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sihirli bağlantı geri çağrısında flow_id eksik."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法链接回调缺少 flow_id。"
+          }
+        }
+      }
+    },
+    "Magic link callback returned a sign-up for a sign-in flow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد رد اتصال الرابط السحري عملية تسجيل لحساب جديد ضمن تدفق تسجيل دخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Callback des Magic Links gab eine Registrierung für einen Anmeldeablauf zurück."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επανάκληση του μαγικού συνδέσμου επέστρεψε εγγραφή για ροή σύνδεσης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La devolución de llamada del enlace mágico devolvió un registro para un flujo de inicio de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le rappel du lien magique a renvoyé une inscription pour un flux de connexion."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैजिक लिंक कॉलबैक ने साइन-इन प्रवाह के लिए साइन-अप लौटाया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il callback del link magico ha restituito una registrazione per un flusso di accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マジックリンクのコールバックが、サインインフローに対するサインアップを返しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매직 링크 콜백이 로그인 흐름에 대한 회원 가입을 반환했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wywołanie zwrotne magicznego linku zwróciło rejestrację dla przepływu logowania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno do link mágico retornou um cadastro para um fluxo de login."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenirea linkului magic a returnat o înregistrare pentru un flux de autentificare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обратный вызов волшебной ссылки вернул регистрацию для потока входа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sihirli bağlantı geri çağrısı, oturum açma akışı için bir kaydolma döndürdü."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法链接回调为登录流程返回了注册结果。"
+          }
+        }
+      }
+    },
+    "Magic link callback returned a ticket for a sign-up flow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد رد اتصال الرابط السحري تذكرة ضمن تدفق تسجيل حساب جديد."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Callback des Magic Links gab ein Ticket für einen Registrierungsablauf zurück."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η επανάκληση του μαγικού συνδέσμου επέστρεψε δελτίο για ροή εγγραφής."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La devolución de llamada del enlace mágico devolvió un ticket para un flujo de registro."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le rappel du lien magique a renvoyé un ticket pour un flux d’inscription."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैजिक लिंक कॉलबैक ने साइन-अप प्रवाह के लिए टिकट लौटाया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il callback del link magico ha restituito un ticket per un flusso di registrazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マジックリンクのコールバックが、サインアップフローに対するチケットを返しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매직 링크 콜백이 회원 가입 흐름에 대한 티켓을 반환했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wywołanie zwrotne magicznego linku zwróciło bilet dla przepływu rejestracji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O retorno do link mágico retornou um ticket para um fluxo de cadastro."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenirea linkului magic a returnat un tichet pentru un flux de înregistrare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обратный вызов волшебной ссылки вернул билет для потока регистрации."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sihirli bağlantı geri çağrısı, kaydolma akışı için bir bilet döndürdü."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法链接回调为注册流程返回了票证。"
+          }
+        }
+      }
+    },
+    "Missing callback URL" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان URL لرد الاتصال مفقود"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Callback-URL fehlt"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λείπει η διεύθυνση URL επανάκλησης"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta la URL de devolución de llamada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de rappel manquante"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कॉलबैक URL मौजूद नहीं है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL di callback mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コールバックURLがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "콜백 URL이 없습니다"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brak adresu URL wywołania zwrotnego"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de retorno ausente"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lipsește URL-ul de revenire"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отсутствует URL-адрес обратного вызова"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geri çağırma URL'si eksik"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缺少回调 URL"
+          }
+        }
+      }
+    },
+    "No pending magic link flow was found." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتم العثور على تدفق رابط سحري معلق."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es wurde kein ausstehender Magic-Link-Ablauf gefunden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν βρέθηκε ροή μαγικού συνδέσμου σε εκκρεμότητα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se encontró ningún flujo de enlace mágico pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun flux de lien magique en attente n’a été trouvé."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कोई लंबित मैजिक लिंक प्रवाह नहीं मिला।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non è stato trovato alcun flusso di link magico in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留中のマジックリンクフローが見つかりませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보류 중인 매직 링크 흐름을 찾을 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie znaleziono oczekującego przepływu magicznego linku."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum fluxo de link mágico pendente foi encontrado."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu a fost găsit niciun flux de link magic în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ожидающий поток волшебной ссылки не найден."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekleyen bir sihirli bağlantı akışı bulunamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到待处理的魔法链接流程。"
+          }
+        }
+      }
+    },
+    "Redirect URI is missing. Unable to start email link sign-in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معرّف URI لإعادة التوجيه مفقود. لا يمكن بدء تسجيل الدخول عبر رابط البريد الإلكتروني."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Weiterleitungs-URI fehlt. Die Anmeldung per E-Mail-Link kann nicht gestartet werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λείπει το URI ανακατεύθυνσης. Δεν είναι δυνατή η έναρξη σύνδεσης μέσω συνδέσμου email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta el URI de redirección. No se puede iniciar sesión mediante un enlace de correo electrónico."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URI de redirection est manquant. Impossible de démarrer la connexion par lien e-mail."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रीडायरेक्ट URI मौजूद नहीं है। ईमेल लिंक से साइन-इन शुरू नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URI di reindirizzamento mancante. Impossibile avviare l’accesso tramite link email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リダイレクトURIがありません。メールリンクによるサインインを開始できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리디렉션 URI가 없습니다. 이메일 링크 로그인을 시작할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brakuje identyfikatora URI przekierowania. Nie można rozpocząć logowania za pomocą linku e-mail."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O URI de redirecionamento está ausente. Não foi possível iniciar o login por link de e-mail."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lipsește URI-ul de redirecționare. Nu se poate porni autentificarea prin link de e-mail."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отсутствует URI перенаправления. Не удалось начать вход по ссылке из электронного письма."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URI'si eksik. E-posta bağlantısıyla oturum açma başlatılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缺少重定向 URI。无法开始通过电子邮件链接登录。"
+          }
+        }
+      }
+    },
+    "Redirect URI is missing. Unable to start email link sign-up verification." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معرّف URI لإعادة التوجيه مفقود. لا يمكن بدء التحقق من تسجيل الحساب عبر رابط البريد الإلكتروني."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Weiterleitungs-URI fehlt. Die Registrierungsbestätigung per E-Mail-Link kann nicht gestartet werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Λείπει το URI ανακατεύθυνσης. Δεν είναι δυνατή η έναρξη επαλήθευσης εγγραφής μέσω συνδέσμου email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta el URI de redirección. No se puede iniciar la verificación del registro mediante un enlace de correo electrónico."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URI de redirection est manquant. Impossible de démarrer la vérification de l’inscription par lien e-mail."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रीडायरेक्ट URI मौजूद नहीं है। ईमेल लिंक से साइन-अप सत्यापन शुरू नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URI di reindirizzamento mancante. Impossibile avviare la verifica della registrazione tramite link email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リダイレクトURIがありません。メールリンクによるサインアップの検証を開始できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리디렉션 URI가 없습니다. 이메일 링크 회원 가입 인증을 시작할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brakuje identyfikatora URI przekierowania. Nie można rozpocząć weryfikacji rejestracji za pomocą linku e-mail."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O URI de redirecionamento está ausente. Não foi possível iniciar a verificação de cadastro por link de e-mail."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lipsește URI-ul de redirecționare. Nu se poate porni verificarea înregistrării prin link de e-mail."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отсутствует URI перенаправления. Не удалось начать подтверждение регистрации по ссылке из электронного письма."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URI'si eksik. E-posta bağlantısıyla kaydolma doğrulaması başlatılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缺少重定向 URI。无法开始通过电子邮件链接进行注册验证。"
+          }
+        }
+      }
+    },
+    "Redirect URL is missing or invalid. Unable to start external authentication flow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوان URL لإعادة التوجيه مفقود أو غير صالح. لا يمكن بدء تدفق المصادقة الخارجية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Weiterleitungs-URL fehlt oder ist ungültig. Es ist nicht möglich, die externe Authentifizierung zu starten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η διεύθυνση URL ανακατεύθυνσης λείπει ή είναι άκυρη. Αδυναμία εκκίνησης της εξωτερικής ροής πιστοποίησης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falta la URL de redirección o no es válida. No se puede iniciar el flujo de autenticación externa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL de redirection est manquante ou invalide. Impossible de démarrer le flux d'authentification externe."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रिडायरेक्ट URL गायब है या अमान्य है। बाहरी प्रमाणीकरण प्रवाह शुरू करने में असमर्थ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'URL di reindirizzamento è mancante o non valida. Impossibile avviare il flusso di autenticazione esterna."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リダイレクトURLが不足しているか無効です。外部認証フローを開始できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "리디렉션 URL이 없거나 유효하지 않습니다. 외부 인증 흐름을 시작할 수 없습니다。"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brakuje adresu URL przekierowania lub jest on nieprawidłowy. Nie można uruchomić zewnętrznego przepływu uwierzytelniania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL de redirecionamento está ausente ou inválida. Não foi possível iniciar o fluxo de autenticação externa."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adresa URL de redirecționare lipsește sau nu este validă. Nu se poate porni fluxul de autentificare externă."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-адрес перенаправления отсутствует или недействителен. Не удалось запустить внешний поток аутентификации."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönlendirme URL'si eksik veya geçersiz. Harici kimlik doğrulama akışı başlatılamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重定向 URL 缺失或无效。无法启动外部身份验证流程。"
+          }
+        }
+      }
+    },
+    "Shared session sync requires a nonempty Keychain access group." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتطلب مزامنة الجلسة المشتركة مجموعة وصول غير فارغة في Keychain."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für die Synchronisierung gemeinsam genutzter Sitzungen ist eine nicht leere Keychain-Zugriffsgruppe erforderlich."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο συγχρονισμός κοινόχρηστης περιόδου λειτουργίας απαιτεί μη κενή ομάδα πρόσβασης Keychain."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronización de sesiones compartidas requiere un grupo de acceso de Keychain que no esté vacío."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La synchronisation de session partagée nécessite un groupe d’accès Keychain non vide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साझा सत्र सिंक के लिए एक गैर-रिक्त Keychain एक्सेस समूह आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronizzazione della sessione condivisa richiede un gruppo di accesso Keychain non vuoto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有セッションの同期には、空でないKeychainアクセスグループが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유 세션 동기화에는 비어 있지 않은 Keychain 접근 그룹이 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizacja sesji współdzielonej wymaga niepustej grupy dostępu Keychain."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronização de sessão compartilhada requer um grupo de acesso Keychain não vazio."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizarea sesiunii partajate necesită un grup de acces Keychain nevid."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для синхронизации общего сеанса требуется непустая группа доступа Keychain."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaşılan oturum eşitlemesi boş olmayan bir Keychain erişim grubu gerektirir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享会话同步需要非空的 Keychain 访问组。"
+          }
+        }
+      }
+    },
+    "Shared session sync requires a nonempty application bundle identifier." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتطلب مزامنة الجلسة المشتركة معرّف حزمة تطبيق غير فارغ."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für die Synchronisierung gemeinsam genutzter Sitzungen ist eine nicht leere Bundle-ID der Anwendung erforderlich."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο συγχρονισμός κοινόχρηστης περιόδου λειτουργίας απαιτεί μη κενό αναγνωριστικό πακέτου εφαρμογής."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronización de sesiones compartidas requiere un identificador de paquete de la aplicación que no esté vacío."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La synchronisation de session partagée nécessite un identifiant de bundle d’application non vide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साझा सत्र सिंक के लिए एक गैर-रिक्त एप्लिकेशन बंडल पहचानकर्ता आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronizzazione della sessione condivisa richiede un identificatore del bundle dell’applicazione non vuoto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有セッションの同期には、空でないアプリケーションバンドル識別子が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유 세션 동기화에는 비어 있지 않은 애플리케이션 번들 식별자가 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizacja sesji współdzielonej wymaga niepustego identyfikatora pakietu aplikacji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronização de sessão compartilhada requer um identificador de pacote do aplicativo não vazio."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizarea sesiunii partajate necesită un identificator nevid al pachetului aplicației."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для синхронизации общего сеанса требуется непустой идентификатор пакета приложения."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaşılan oturum eşitlemesi boş olmayan bir uygulama paketi tanımlayıcısı gerektirir."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享会话同步需要非空的应用程序包标识符。"
+          }
+        }
+      }
+    },
+    "Something went wrong. Please try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدث خطأ ما. يُرجى المحاولة مرة أخرى."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κάτι πήγε στραβά. Δοκιμάστε ξανά."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algo salió mal. Inténtelo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une erreur s’est produite. Veuillez réessayer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si è verificato un problema. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問題が発生しました。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문제가 발생했습니다. 다시 시도해 주세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coś poszło nie tak. Spróbuj ponownie."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algo deu errado. Tente novamente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ceva nu a funcționat. Încercați din nou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Что-то пошло не так. Повторите попытку."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir sorun oluştu. Lütfen tekrar deneyin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出现问题。请重试。"
+          }
+        }
+      }
+    },
+    "Unable to clear Clerk keychain items during reconfiguration." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر مسح عناصر Clerk من Keychain أثناء إعادة التهيئة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk-Keychain-Einträge konnten während der Neukonfiguration nicht gelöscht werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η διαγραφή των στοιχείων Keychain του Clerk κατά την επαναδιαμόρφωση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron eliminar los elementos de Clerk del Keychain durante la reconfiguración."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’effacer les éléments Clerk du Keychain pendant la reconfiguration."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पुनः कॉन्फ़िगरेशन के दौरान Clerk के Keychain आइटम साफ़ नहीं किए जा सके।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile cancellare gli elementi Clerk dal Keychain durante la riconfigurazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再構成中にClerkのKeychain項目を消去できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재구성 중에 Clerk Keychain 항목을 지울 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można wyczyścić elementów Clerk z Keychain podczas ponownej konfiguracji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível limpar os itens do Clerk no Keychain durante a reconfiguração."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elementele Clerk din Keychain nu au putut fi șterse în timpul reconfigurării."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось очистить элементы Clerk в Keychain во время перенастройки."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeniden yapılandırma sırasında Clerk Keychain öğeleri temizlenemedi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新配置期间无法清除 Clerk Keychain 项目。"
+          }
+        }
+      }
+    },
+    "Unable to delete membership: missing userId" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر حذف العضوية: userId مفقود"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitgliedschaft kann nicht gelöscht werden: userId fehlt"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η διαγραφή της ιδιότητας μέλους: λείπει το userId"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede eliminar la membresía: falta userId"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de supprimer l’adhésion : userId manquant"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सदस्यता हटाई नहीं जा सकी: userId मौजूद नहीं है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare l’appartenenza: userId mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メンバーシップを削除できません：userIdがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "멤버십을 삭제할 수 없습니다: userId가 없습니다"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można usunąć członkostwa: brakuje userId"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível excluir a associação: userId ausente"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calitatea de membru nu poate fi ștearsă: lipsește userId"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось удалить членство: отсутствует userId"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üyelik silinemiyor: userId eksik"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法删除成员资格：缺少 userId"
+          }
+        }
+      }
+    },
+    "Unable to generate secure random data." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر إنشاء بيانات عشوائية آمنة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sichere Zufallsdaten konnten nicht erzeugt werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η δημιουργία ασφαλών τυχαίων δεδομένων."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron generar datos aleatorios seguros."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de générer des données aléatoires sécurisées."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सुरक्षित रैंडम डेटा उत्पन्न नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile generare dati casuali sicuri."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全なランダムデータを生成できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "안전한 무작위 데이터를 생성할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można wygenerować bezpiecznych danych losowych."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível gerar dados aleatórios seguros."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-au putut genera date aleatorii securizate."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось создать безопасные случайные данные."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Güvenli rastgele veri oluşturulamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法生成安全随机数据。"
+          }
+        }
+      }
+    },
+    "Unable to get the challenge for the passkey." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر الحصول على تحدي مفتاح المرور."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Challenge für den Passkey konnte nicht abgerufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η λήψη της πρόκλησης για το passkey."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo obtener el desafío para la clave de acceso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’obtenir le défi pour la clé d’accès."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासकी के लिए चुनौती प्राप्त नहीं की जा सकी।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere la richiesta per la passkey."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのチャレンジを取得できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키에 대한 챌린지를 가져올 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można pobrać wyzwania dla klucza dostępu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível obter o desafio para a chave de acesso."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut obține provocarea pentru cheia de acces."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить запрос для ключа доступа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı sınaması alınamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法获取通行密钥的质询。"
+          }
+        }
+      }
+    },
+    "Unable to get the user ID for the passkey." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر الحصول على معرّف المستخدم لمفتاح المرور."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Benutzer-ID für den Passkey konnte nicht abgerufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η λήψη του αναγνωριστικού χρήστη για το passkey."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo obtener el ID de usuario para la clave de acceso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’obtenir l’identifiant utilisateur pour la clé d’accès."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासकी के लिए उपयोगकर्ता ID प्राप्त नहीं की जा सकी।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere l’ID utente per la passkey."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのユーザーIDを取得できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키의 사용자 ID를 가져올 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można pobrać identyfikatora użytkownika dla klucza dostępu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível obter o ID do usuário para a chave de acesso."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut obține ID-ul utilizatorului pentru cheia de acces."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить идентификатор пользователя для ключа доступа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı için kullanıcı kimliği alınamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法获取通行密钥的用户 ID。"
+          }
+        }
+      }
+    },
+    "Unable to get the username for the passkey." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر الحصول على اسم المستخدم لمفتاح المرور."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Benutzername für den Passkey konnte nicht abgerufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η λήψη του ονόματος χρήστη για το passkey."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo obtener el nombre de usuario para la clave de acceso."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’obtenir le nom d’utilisateur pour la clé d’accès."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पासकी के लिए उपयोगकर्ता नाम प्राप्त नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere il nome utente per la passkey."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "パスキーのユーザー名を取得できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "패스키의 사용자 이름을 가져올 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można pobrać nazwy użytkownika dla klucza dostępu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível obter o nome de usuário para a chave de acesso."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut obține numele de utilizator pentru cheia de acces."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить имя пользователя для ключа доступа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçiş anahtarı için kullanıcı adı alınamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法获取通行密钥的用户名。"
+          }
+        }
+      }
+    },
+    "Unable to get your Apple ID credential." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر الحصول على بيانات اعتماد Apple ID الخاصة بك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihre Apple-ID-Anmeldedaten konnten nicht abgerufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η λήψη των διαπιστευτηρίων Apple ID σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo obtener su credencial de Apple ID."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’obtenir vos identifiants Apple ID."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका Apple ID क्रेडेंशियल प्राप्त नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile ottenere le credenziali Apple ID."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple IDの資格情報を取得できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ID 자격 증명을 가져올 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można pobrać danych uwierzytelniających Apple ID."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível obter sua credencial do Apple ID."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-au putut obține acreditările Apple ID."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить учетные данные Apple ID."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ID kimlik bilgileriniz alınamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法获取您的 Apple ID 凭据。"
+          }
+        }
+      }
+    },
+    "Unable to retrieve the Apple identity token." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر استرداد رمز هوية Apple."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Apple-Identitätstoken konnte nicht abgerufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η ανάκτηση του διακριτικού ταυτότητας Apple."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo recuperar el token de identidad de Apple."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de récupérer le jeton d’identité Apple."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple पहचान टोकन प्राप्त नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile recuperare il token di identità Apple."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AppleのIDトークンを取得できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ID 토큰을 가져올 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można pobrać tokenu tożsamości Apple."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível recuperar o token de identidade da Apple."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut prelua tokenul de identitate Apple."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить токен идентификации Apple."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple kimlik belirteci alınamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法检索 Apple 身份令牌。"
+          }
+        }
+      }
+    },
+    "Unable to start web authentication session." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر بدء جلسة المصادقة عبر الويب."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Web-Authentifizierungssitzung konnte nicht gestartet werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η έναρξη περιόδου λειτουργίας ελέγχου ταυτότητας μέσω web."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo iniciar la sesión de autenticación web."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de démarrer la session d’authentification web."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वेब प्रमाणीकरण सत्र शुरू नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile avviare la sessione di autenticazione web."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web認証セッションを開始できませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "웹 인증 세션을 시작할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można rozpocząć sesji uwierzytelniania internetowego."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível iniciar a sessão de autenticação web."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut porni sesiunea de autentificare web."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось запустить сеанс веб-аутентификации."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web kimlik doğrulama oturumu başlatılamadı."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动网页身份验证会话。"
+          }
+        }
+      }
+    },
+    "Unable to update membership: missing userId" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر تحديث العضوية: userId مفقود"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitgliedschaft kann nicht aktualisiert werden: userId fehlt"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η ενημέρωση της ιδιότητας μέλους: λείπει το userId"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede actualizar la membresía: falta userId"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de mettre à jour l’adhésion : userId manquant"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सदस्यता अपडेट नहीं की जा सकी: userId मौजूद नहीं है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare l’appartenenza: userId mancante"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メンバーシップを更新できません：userIdがありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "멤버십을 업데이트할 수 없습니다: userId가 없습니다"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zaktualizować członkostwa: brakuje userId"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível atualizar a associação: userId ausente"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calitatea de membru nu poate fi actualizată: lipsește userId"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось обновить членство: отсутствует userId"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üyelik güncellenemiyor: userId eksik"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法更新成员资格：缺少 userId"
+          }
+        }
+      }
+    },
+    "Unable to verify code because no first factor strategy is set." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر التحقق من الرمز لأنه لم يتم تعيين استراتيجية العامل الأول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code kann nicht überprüft werden, da keine Strategie für den ersten Faktor festgelegt ist."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η επαλήθευση του κωδικού επειδή δεν έχει οριστεί στρατηγική πρώτου παράγοντα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede verificar el código porque no se ha establecido ninguna estrategia de primer factor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de vérifier le code, car aucune stratégie de premier facteur n’est définie."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कोड सत्यापित नहीं किया जा सका क्योंकि कोई प्रथम-कारक रणनीति सेट नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile verificare il codice perché non è impostata alcuna strategia di primo fattore."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第一要素の方式が設定されていないため、コードを検証できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "첫 번째 인증 요소 전략이 설정되지 않아 코드를 확인할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zweryfikować kodu, ponieważ nie ustawiono strategii pierwszego składnika."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível verificar o código porque nenhuma estratégia de primeiro fator foi definida."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codul nu poate fi verificat deoarece nu este setată nicio strategie pentru primul factor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно проверить код, поскольку не задана стратегия первого фактора."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İlk faktör stratejisi ayarlanmadığından kod doğrulanamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法验证代码，因为未设置第一因素策略。"
+          }
+        }
+      }
+    },
+    "Unable to verify code for strategy '%@'." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر التحقق من الرمز للاستراتيجية '%@'."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code für die Strategie '%@' kann nicht überprüft werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η επαλήθευση του κωδικού για τη στρατηγική '%@'."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede verificar el código para la estrategia '%@'."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de vérifier le code pour la stratégie '%@'."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रणनीति '%@' के लिए कोड सत्यापित नहीं किया जा सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile verificare il codice per la strategia '%@'."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "方式「%@」のコードを検証できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전략 '%@'의 코드를 확인할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zweryfikować kodu dla strategii „%@”."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível verificar o código para a estratégia '%@'."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codul nu poate fi verificat pentru strategia '%@'."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно проверить код для стратегии «%@»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "'%@' stratejisi için kod doğrulanamıyor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法验证策略“%@”的代码。"
+          }
+        }
+      }
+    },
+    "Watch identity metadata version is exhausted." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم استنفاد إصدار بيانات تعريف هوية Watch."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Version der Metadaten der Watch-Identität ist ausgeschöpft."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η έκδοση μεταδεδομένων ταυτότητας Watch έχει εξαντληθεί."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se agotó la versión de los metadatos de identidad de Watch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La version des métadonnées d’identité de la Watch est épuisée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch पहचान मेटाडेटा संस्करण समाप्त हो गया है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La versione dei metadati dell’identità di Watch è esaurita."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WatchのIDメタデータのバージョンを使い切りました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch ID 메타데이터 버전이 소진되었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wersja metadanych tożsamości Watch została wyczerpana."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A versão dos metadados de identidade do Watch foi esgotada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versiunea metadatelor de identitate Watch a fost epuizată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Версии метаданных идентификации Watch исчерпаны."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch kimlik meta verisi sürümü tükendi."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch 身份元数据版本已耗尽。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
