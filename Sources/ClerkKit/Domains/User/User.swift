@@ -343,7 +343,7 @@ extension User {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
     }
 
     return try await createExternalAccount(provider: .apple, idToken: idToken)

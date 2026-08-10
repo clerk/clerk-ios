@@ -14,6 +14,7 @@ struct UserProfileExternalAccountRow: View {
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.clerkUserProfileOAuthConfig) private var oauthConfig
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.locale) private var locale
 
   @State private var removeResource: RemoveResource?
   @State private var isConfirmingRemoval = false
@@ -116,14 +117,14 @@ struct UserProfileExternalAccountRow: View {
       if $1 != nil { isConfirmingRemoval = true }
     }
     .confirmationDialog(
-      removeResource?.messageLine1 ?? "",
+      removeResource?.messageLine1(locale: locale) ?? "",
       isPresented: $isConfirmingRemoval,
       titleVisibility: .visible,
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource(removeResource)
         } label: { _ in
-          Text(removeResource?.title ?? "", bundle: .module)
+          Text(verbatim: removeResource?.title(locale: locale) ?? "")
         }
         .onIsRunningChanged { isLoading = $0 }
 

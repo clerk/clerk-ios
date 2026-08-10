@@ -51,7 +51,7 @@ struct HostedAuthResource: Codable {
       let url = components.url,
       scheme == "https"
     else {
-      throw ClerkClientError(message: "Hosted auth creation returned an invalid response.")
+      throw ClerkClientError(message: "Hosted auth creation returned an invalid response.", localizationBundle: .module)
     }
     return url
   }
@@ -85,7 +85,7 @@ struct HostedAuthRedirect: Equatable {
       scheme.caseInsensitiveCompare("http") != .orderedSame,
       scheme.caseInsensitiveCompare("https") != .orderedSame
     else {
-      throw ClerkClientError(message: "Hosted auth requires a valid custom-scheme redirect URL.")
+      throw ClerkClientError(message: "Hosted auth requires a valid custom-scheme redirect URL.", localizationBundle: .module)
     }
 
     self.rawValue = rawValue
@@ -123,18 +123,18 @@ struct HostedAuthCallback: Equatable {
 
   init(url: URL, redirect: HostedAuthRedirect, state: String) throws {
     guard redirect.matches(url) else {
-      throw ClerkClientError(message: "Hosted auth callback URL did not match the initiated redirect URL.")
+      throw ClerkClientError(message: "Hosted auth callback URL did not match the initiated redirect URL.", localizationBundle: .module)
     }
 
     let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
     guard let callbackState = Self.nonEmptySingleValue(named: "state", in: queryItems), callbackState == state else {
-      throw ClerkClientError(message: "Hosted auth callback state was missing or did not match the initiated state.")
+      throw ClerkClientError(message: "Hosted auth callback state was missing or did not match the initiated state.", localizationBundle: .module)
     }
     guard let rotatingTokenNonce = Self.nonEmptySingleValue(named: "rotating_token_nonce", in: queryItems) else {
-      throw ClerkClientError(message: "Hosted auth callback did not include a rotating token nonce.")
+      throw ClerkClientError(message: "Hosted auth callback did not include a rotating token nonce.", localizationBundle: .module)
     }
     guard let createdSessionId = Self.nonEmptySingleValue(named: "created_session_id", in: queryItems) else {
-      throw ClerkClientError(message: "Hosted auth callback did not include the created session.")
+      throw ClerkClientError(message: "Hosted auth callback did not include the created session.", localizationBundle: .module)
     }
 
     self.rotatingTokenNonce = rotatingTokenNonce

@@ -44,7 +44,7 @@ struct SessionTaskMfaVerifySmsView: View {
       VStack(spacing: 0) {
         SessionTaskHeaderSection(
           title: "Verify your phone number",
-          subtitle: "A text message containing a verification code will be sent to this phone number. Message and data rates may apply."
+          subtitle: "Enter the verification code sent to"
         )
         .padding(.bottom, 16)
 

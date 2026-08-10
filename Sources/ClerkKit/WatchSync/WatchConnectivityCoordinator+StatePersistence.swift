@@ -191,7 +191,7 @@ struct WatchSyncMetadataStore {
     }
     let currentVersion = max(record.effectiveDeviceTokenVersion, record.effectiveAuthVersion)
     guard currentVersion < Int.max else {
-      throw ClerkClientError(message: "Watch identity metadata version is exhausted.")
+      throw ClerkClientError(message: "Watch identity metadata version is exhausted.", localizationBundle: .module)
     }
     let wallClockVersion = Int(Date().timeIntervalSince1970 * 1000)
     let clearVersion = max(currentVersion + 1, minimumVersion ?? wallClockVersion)
@@ -387,7 +387,7 @@ extension WatchConnectivityCoordinator {
       guard record.pendingDeviceTokenVersion != tokenVersion.rawValue
         || record.pendingDeviceTokenFingerprint == fingerprint
       else {
-        throw ClerkClientError(message: "Conflicting Watch token payload reused a pending version.")
+        throw ClerkClientError(message: "Conflicting Watch token payload reused a pending version.", localizationBundle: .module)
       }
       record.pendingDeviceTokenState = deviceToken == nil ? .cleared : .set
       record.pendingDeviceTokenVersion = tokenVersion.rawValue
@@ -407,7 +407,7 @@ extension WatchConnectivityCoordinator {
       guard record.pendingAuthVersion != authVersion.rawValue
         || record.pendingAuthFingerprint == fingerprint
       else {
-        throw ClerkClientError(message: "Conflicting Watch auth payload reused a pending version.")
+        throw ClerkClientError(message: "Conflicting Watch auth payload reused a pending version.", localizationBundle: .module)
       }
       record.pendingAuthState = intent.client == nil ? .cleared : .set
       record.pendingAuthVersion = authVersion.rawValue
@@ -537,7 +537,7 @@ extension WatchConnectivityCoordinator {
       }
     }
     guard !record.hasPendingIdentityMetadata else {
-      throw ClerkClientError(message: "A Watch identity metadata transition is still pending.")
+      throw ClerkClientError(message: "A Watch identity metadata transition is still pending.", localizationBundle: .module)
     }
     return record
   }

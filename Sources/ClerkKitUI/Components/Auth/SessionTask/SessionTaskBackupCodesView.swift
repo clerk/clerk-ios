@@ -25,7 +25,7 @@ struct SessionTaskBackupCodesView: View {
     case .phoneCode:
       "SMS code verification enabled"
     case .authenticatorApp:
-      "Authenticator app verification enabled"
+      "Authenticator application verification enabled"
     }
   }
 

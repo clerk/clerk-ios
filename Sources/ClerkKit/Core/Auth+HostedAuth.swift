@@ -56,7 +56,7 @@ extension Auth {
     webAuthentication: HostedAuthWebAuthentication
   ) async throws -> Session {
     guard !Self.isHostedAuthInFlight else {
-      throw ClerkClientError(message: "A hosted authentication session is already in progress.")
+      throw ClerkClientError(message: "A hosted authentication session is already in progress.", localizationBundle: .module)
     }
     Self.isHostedAuthInFlight = true
     defer { Self.isHostedAuthInFlight = false }
@@ -99,7 +99,7 @@ extension Auth {
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
     guard clerk.clientResponseGeneration == browserStartClientResponseGeneration else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
     let response = try await hostedAuthService.redeem(params: HostedAuthRedeemParams(
@@ -111,26 +111,26 @@ extension Auth {
 
     if response.clientSyncContext.update == .explicitClear {
       try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
     guard
       let returnedClient = response.client,
       returnedClient.sessions.contains(where: { $0.id == callback.createdSessionId })
     else {
-      throw ClerkClientError(message: "Hosted auth completion did not include the created session.")
+      throw ClerkClientError(message: "Hosted auth completion did not include the created session.", localizationBundle: .module)
     }
 
     guard
       response.clientSyncContext.clientResponseGeneration
         == browserStartClientResponseGeneration
     else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
     try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
     guard clerk.client?.sessions.contains(where: { $0.id == callback.createdSessionId }) == true else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.")
+      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
     try await activateSession(sessionId: callback.createdSessionId)
@@ -138,7 +138,7 @@ extension Auth {
       clerk.client?.lastActiveSessionId == callback.createdSessionId,
       let activeSession = clerk.client?.sessions.first(where: { $0.id == callback.createdSessionId })
     else {
-      throw ClerkClientError(message: "Hosted auth completion could not activate the created session.")
+      throw ClerkClientError(message: "Hosted auth completion could not activate the created session.", localizationBundle: .module)
     }
     return activeSession
   }

@@ -29,6 +29,7 @@ scan_sources_for() {
 is_allowed_e2e_usage_file() {
   case "$1" in
     Sources/ClerkKitUI/Components/Auth/SignIn/SignInFactorOnePasswordView.swift | \
+      Sources/ClerkKitUI/Components/Auth/SignIn/SignInSetNewPasswordView.swift | \
       Sources/ClerkKitUI/Components/Auth/SignUp/SignUpCollectFieldView.swift | \
       Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView.swift | \
       Sources/ClerkKitUI/Extensions/View+HiddenTextField.swift)
@@ -41,7 +42,7 @@ is_allowed_e2e_usage_file() {
 }
 
 reviewed_usage_count=0
-expected_reviewed_usage_count=6
+expected_reviewed_usage_count=8
 
 while IFS=: read -r file line _; do
   if [ -z "$file" ]; then

@@ -170,7 +170,7 @@ extension SignUp {
   public func sendEmailLink(redirectUri: String? = nil) async throws -> SignUp {
     let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
     guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-up verification.")
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-up verification.", localizationBundle: .module)
     }
 
     let pkcePair = try PKCE.generatePair()

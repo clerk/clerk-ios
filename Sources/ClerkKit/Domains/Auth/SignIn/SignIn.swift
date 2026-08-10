@@ -131,12 +131,12 @@ extension SignIn {
         ?? supportedFirstFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
 
     guard let emailId else {
-      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.")
+      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
     }
 
     let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
     guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.")
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
     }
 
     let pkcePair = try PKCE.generatePair()
@@ -180,13 +180,11 @@ extension SignIn {
   @MainActor
   public func verifyCode(_ code: String) async throws -> SignIn {
     guard let resolvedStrategy = firstFactorVerification?.strategy else {
-      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.")
+      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.", localizationBundle: .module)
     }
 
     guard resolvedStrategy.canAttemptFirstFactorCode else {
-      throw ClerkClientError(
-        message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'."
-      )
+      throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
 
     return try await signInService.attemptFirstFactor(
@@ -282,7 +280,7 @@ extension SignIn {
     let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
 
     guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.")
+      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
     }
 
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
@@ -427,7 +425,7 @@ extension SignIn {
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
     else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
     }
 
     let authSession = WebAuthentication(
@@ -475,7 +473,7 @@ extension SignIn {
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
     else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
     }
 
     let authSession = WebAuthentication(
@@ -603,7 +601,7 @@ extension SignIn {
       let challengeString = nonceJSON["challenge"]?.stringValue,
       let challenge = challengeString.dataFromBase64URL()
     else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
     }
 
     let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
@@ -639,7 +637,7 @@ extension SignIn {
       let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
       let authenticatorData = credentialAssertion.rawAuthenticatorData
     else {
-      throw ClerkClientError(message: "Invalid credential type.")
+      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
     }
 
     let publicKeyCredential: [String: Any] = [

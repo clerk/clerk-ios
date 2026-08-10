@@ -201,7 +201,8 @@ final class DependencyContainer: Dependencies {
             !usePersistentAdoptionState
       else {
         throw ClerkClientError(
-          message: "Injected Keychain storage cannot be used with persistent shared-session adoption."
+          message: "Injected Keychain storage cannot be used with persistent shared-session adoption.",
+          localizationBundle: .module
         )
       }
 
@@ -220,12 +221,14 @@ final class DependencyContainer: Dependencies {
     let syncEnabled = options.sharedSessionSync != nil
     if syncEnabled, config.normalizedAccessGroup == nil {
       throw ClerkClientError(
-        message: "Shared session sync requires a nonempty Keychain access group."
+        message: "Shared session sync requires a nonempty Keychain access group.",
+        localizationBundle: .module
       )
     }
     if syncEnabled, ownerIdentifier?.isEmpty != false {
       throw ClerkClientError(
-        message: "Shared session sync requires a nonempty application bundle identifier."
+        message: "Shared session sync requires a nonempty application bundle identifier.",
+        localizationBundle: .module
       )
     }
 

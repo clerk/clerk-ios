@@ -559,9 +559,7 @@ extension Clerk {
     keychainStorage: any KeychainStorage
   ) throws -> Clerk {
     guard EnvironmentDetection.isRunningInTests else {
-      throw ClerkClientError(
-        message: "Isolated Clerk configuration is only available while running tests."
-      )
+      throw ClerkClientError(message: "Isolated Clerk configuration is only available while running tests.", localizationBundle: .module)
     }
 
     if let existing = _shared {
@@ -935,7 +933,7 @@ extension Clerk {
   @MainActor
   static func beginRuntimeReconfiguration() throws {
     guard !isRuntimeReconfigurationInProgress else {
-      throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.")
+      throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.", localizationBundle: .module)
     }
     isRuntimeReconfigurationInProgress = true
     _shared?.runtimeState.beginReconfiguration()
@@ -970,7 +968,7 @@ extension Clerk {
     }
 
     guard let shared = _shared else {
-      throw ClerkClientError(message: "Clerk must be configured before getting a session token.")
+      throw ClerkClientError(message: "Clerk must be configured before getting a session token.", localizationBundle: .module)
     }
 
     return shared.runtimeScope
