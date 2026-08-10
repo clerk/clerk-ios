@@ -58,7 +58,7 @@ struct SignUpCompleteProfileView: View {
     ScrollView {
       VStack(spacing: 32) {
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: "Profile Details")
+          HeaderView(style: .title, text: "Profile details")
           HeaderView(style: .subtitle, text: "Complete your profile")
         }
 

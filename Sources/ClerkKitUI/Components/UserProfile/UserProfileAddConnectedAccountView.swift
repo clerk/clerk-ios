@@ -80,11 +80,8 @@ struct UserProfileAddConnectedAccountView: View {
       .scrollBounceBehavior(.basedOnSize)
       .background(theme.colors.background)
       .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
+        CancelToolbarItem {
+          dismiss()
         }
 
         ToolbarItem(placement: .principal) {

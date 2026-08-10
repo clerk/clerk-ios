@@ -53,7 +53,7 @@ extension View {
   @Previewable @State var error: Error?
 
   Button("Show Error") {
-    error = ClerkClientError(message: "Password is incorrect. Try again, or use another method.")
+    error = ClerkClientError(message: "Password is incorrect. Try again, or use another method.", localizationBundle: .module)
   }
   .clerkErrorPresenting(
     $error,

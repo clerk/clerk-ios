@@ -31,6 +31,7 @@ jobs:
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMENT_AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_ID: ${{ github.event.comment.id }}
           EVENT_ACTION: ${{ github.event.action }}
@@ -38,6 +39,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           SENDER_LOGIN: ${{ github.event.sender.login }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
           SERVER_URL: ${{ github.server_url }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
@@ -64,15 +66,11 @@ jobs:
           fi
 
           pr_json="$(gh api "repos/$REPO/pulls/$ISSUE_NUMBER")"
-          author="$(jq -r '.user.login' <<< "$pr_json")"
           base_ref="$(jq -r '.base.ref' <<< "$pr_json")"
           pr_state="$(jq -r '.state' <<< "$pr_json")"
           head_repository="$(jq -r '.head.repo.full_name' <<< "$pr_json")"
           head_sha="$(jq -r '.head.sha' <<< "$pr_json")"
           run_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID"
-          permission_json="$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" 2>/dev/null || printf '{}')"
-          actor_permission="$(jq -r '.permission // ""' <<< "$permission_json")"
-          actor_role="$(jq -r '.role_name // ""' <<< "$permission_json")"
 
           if [ "$base_ref" != "main" ]; then
             skip_ci "Ignoring comment because PR #$ISSUE_NUMBER targets '$base_ref', not 'main'."
@@ -84,21 +82,6 @@ jobs:
 
           if [ -z "$head_repository" ] || [ "$head_repository" = "null" ]; then
             skip_ci "Ignoring comment because PR #$ISSUE_NUMBER no longer has a checkout repository."
-          fi
-
-          actor_is_author="false"
-          if [ "$SENDER_LOGIN" = "$author" ]; then
-            actor_is_author="true"
-          fi
-
-          actor_can_manage="false"
-          if [ "$actor_permission" = "maintain" ] || [ "$actor_permission" = "admin" ] \
-            || [ "$actor_role" = "maintain" ] || [ "$actor_role" = "admin" ]; then
-            actor_can_manage="true"
-          fi
-
-          if [ "$actor_is_author" != "true" ] && [ "$actor_can_manage" != "true" ]; then
-            skip_ci "Ignoring comment because $SENDER_LOGIN is not the PR author or a repository maintainer."
           fi
 
           request_kind=""
@@ -117,10 +100,49 @@ jobs:
             skip_ci "Ignoring comment because it is not an authorized CI request."
           fi
 
-          if [ "$EVENT_ACTION" = "edited" ]; then
+          if [ "$request_kind" = "comment command" ]; then
+            if [ "$COMMENT_AUTHOR_ASSOCIATION" != "MEMBER" ] \
+              && [ "$COMMENT_AUTHOR_ASSOCIATION" != "OWNER" ]; then
+              skip_ci "Ignoring command because $SENDER_LOGIN is not a Clerk organization member."
+            fi
+          elif [ "$request_kind" = "checkbox" ]; then
             unchecked_body="$(sed -E 's/^- \[[xX]\] Run CI[[:space:]]*$/- [ ] Run CI/' <<< "$COMMENT_BODY")"
             jq -n --arg body "$unchecked_body" '{body: $body}' \
               | gh api --method PATCH "repos/$REPO/issues/comments/$COMMENT_ID" --input -
+
+            if [ "$SENDER_TYPE" != "User" ]; then
+              skip_ci "Ignoring checkbox because $SENDER_LOGIN is not a GitHub user."
+            fi
+
+            if ! permission_json="$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission")"; then
+              skip_ci "Ignoring checkbox because repository access for $SENDER_LOGIN could not be verified."
+            fi
+            actor_permission="$(jq -r '.permission // ""' <<< "$permission_json")"
+            actor_role="$(jq -r '.role_name // ""' <<< "$permission_json")"
+
+            actor_can_edit="false"
+            if [ "$actor_permission" = "write" ] || [ "$actor_permission" = "push" ] \
+              || [ "$actor_permission" = "maintain" ] || [ "$actor_permission" = "admin" ] \
+              || [ "$actor_role" = "write" ] || [ "$actor_role" = "maintain" ] \
+              || [ "$actor_role" = "admin" ]; then
+              actor_can_edit="true"
+            fi
+
+            if [ "$actor_can_edit" != "true" ]; then
+              skip_ci "Ignoring checkbox because $SENDER_LOGIN does not have write access to the repository."
+            fi
+
+            # Writers can edit bot-owned comments, so exclude writers who are outside collaborators.
+            if ! outside_collaborators="$(
+              gh api --paginate "repos/$REPO/collaborators?affiliation=outside&per_page=100" \
+                --jq '.[].login'
+            )"; then
+              skip_ci "Ignoring checkbox because outside collaborator access could not be verified."
+            fi
+
+            if grep -Fxiq -- "$SENDER_LOGIN" <<< "$outside_collaborators"; then
+              skip_ci "Ignoring checkbox because $SENDER_LOGIN is an outside collaborator."
+            fi
           fi
 
           latest_manual_ci="$(

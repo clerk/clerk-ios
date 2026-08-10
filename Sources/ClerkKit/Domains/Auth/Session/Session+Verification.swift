@@ -95,7 +95,7 @@ extension Session {
       let challengeString = nonceJSON["challenge"]?.stringValue,
       let challenge = challengeString.dataFromBase64URL()
     else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.")
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
     }
 
     let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
@@ -112,7 +112,7 @@ extension Session {
       let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
       let authenticatorData = credentialAssertion.rawAuthenticatorData
     else {
-      throw ClerkClientError(message: "Invalid credential type.")
+      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
     }
 
     let publicKeyCredential: [String: Any] = [

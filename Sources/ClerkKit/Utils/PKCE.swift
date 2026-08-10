@@ -32,7 +32,7 @@ enum SecureRandom {
   static func bytes(count: Int) throws -> [UInt8] {
     var bytes = [UInt8](repeating: 0, count: count)
     guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-      throw ClerkClientError(message: "Unable to generate secure random data.")
+      throw ClerkClientError(message: "Unable to generate secure random data.", localizationBundle: .module)
     }
     return bytes
   }

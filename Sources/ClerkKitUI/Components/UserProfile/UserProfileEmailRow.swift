@@ -11,6 +11,7 @@ import SwiftUI
 struct UserProfileEmailRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.locale) private var locale
 
   @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
   @State private var isLoading = false
@@ -116,14 +117,14 @@ struct UserProfileEmailRow: View {
       if $1 != nil { isConfirmingRemoval = true }
     }
     .confirmationDialog(
-      removeResource?.messageLine1 ?? "",
+      removeResource?.messageLine1(locale: locale) ?? "",
       isPresented: $isConfirmingRemoval,
       titleVisibility: .visible,
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource(removeResource)
         } label: { _ in
-          Text(removeResource?.title ?? "", bundle: .module)
+          Text(verbatim: removeResource?.title(locale: locale) ?? "")
         }
         .onIsRunningChanged { isLoading = $0 }
 

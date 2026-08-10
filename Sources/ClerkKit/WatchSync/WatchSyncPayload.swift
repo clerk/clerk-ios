@@ -220,7 +220,7 @@ package struct WatchSyncPayload {
     authGeneration: WatchSyncVersion
   ) throws {
     guard !metadata.hasPendingIdentityMetadata else {
-      throw ClerkClientError(message: "Cannot publish unresolved Watch identity metadata.")
+      throw ClerkClientError(message: "Cannot publish unresolved Watch identity metadata.", localizationBundle: .module)
     }
     deviceTokenUpdate = Self.deviceTokenUpdate(
       deviceToken: clerk.deviceToken,

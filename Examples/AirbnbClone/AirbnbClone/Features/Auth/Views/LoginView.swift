@@ -45,6 +45,8 @@ struct LoginView: View {
           )
           .disabled(loadingSocialProvider != nil)
 
+          ErrorMessage(message: errorMessage)
+
           Spacer(minLength: 40)
         }
         .padding(.horizontal, 24)
@@ -74,6 +76,7 @@ struct LoginView: View {
       }
     }
     .tint(Color(.label))
+    .animation(.default, value: errorMessage)
     .task {
       for await event in clerk.auth.events {
         switch event {

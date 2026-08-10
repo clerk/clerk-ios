@@ -45,11 +45,11 @@ jobs:
 
           Before merging, manual CI must be run and pass for the latest commit.
 
-          When this PR is ready for CI, the PR author or a repository maintainer can comment:
+          When this PR is ready for CI, a Clerk organization member can comment:
 
           `/run ci`
 
-          Or use the quick action below:
+          Clerk members with write access can also use the quick action below:
 
           - [ ] Run CI
           MARKDOWN

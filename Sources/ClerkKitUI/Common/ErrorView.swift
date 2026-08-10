@@ -75,7 +75,7 @@ struct ErrorView: View {
 
 #Preview {
   ErrorView(
-    error: ClerkClientError(message: "Similique qui enim placeat tempore. Labore voluptates aliquam est quaerat aut perferendis similique."),
+    error: ClerkClientError(message: "Similique qui enim placeat tempore. Labore voluptates aliquam est quaerat aut perferendis similique.", localizationBundle: .module),
     action: .init(
       text: "Call to action",
       action: {

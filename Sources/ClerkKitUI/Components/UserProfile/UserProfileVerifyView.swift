@@ -57,7 +57,7 @@ struct UserProfileVerifyView: View {
     case let .phone(phoneNumber):
       Text("Enter the verification code sent to \(phoneNumber.phoneNumber.formattedAsPhoneNumberIfPossible)", bundle: .module)
     case .totp:
-      Text("Enter the verification code from your authenticator application.", bundle: .module)
+      Text("Enter the verification code from your authenticator app.", bundle: .module)
     }
   }
 
@@ -183,11 +183,8 @@ struct UserProfileVerifyView: View {
     .preGlassSolidNavBar()
     .toolbar {
       if hasCancelAction {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") {
-            dismiss()
-          }
-          .foregroundStyle(theme.colors.primary)
+        CancelToolbarItem {
+          dismiss()
         }
       }
 

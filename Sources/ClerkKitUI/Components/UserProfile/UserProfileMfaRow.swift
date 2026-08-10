@@ -11,6 +11,7 @@ import SwiftUI
 struct UserProfileMfaRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.locale) private var locale
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var isConfirmingRemoval = false
@@ -43,7 +44,7 @@ struct UserProfileMfaRow: View {
   private var text: Text {
     switch style {
     case .authenticatorApp:
-      Text("Authenticator app", bundle: .module)
+      Text("Authenticator application", bundle: .module)
     case .sms:
       Text("SMS code", bundle: .module)
     case .backupCodes:
@@ -55,8 +56,10 @@ struct UserProfileMfaRow: View {
   private var menuItems: some View {
     switch style {
     case .authenticatorApp:
-      Button("Remove", role: .destructive) {
+      Button(role: .destructive) {
         removeResource = .totp
+      } label: {
+        Text("Remove", bundle: .module)
       }
     case let .sms(phoneNumber):
       if user?.totpEnabled != true, !phoneNumber.defaultSecondFactor {
@@ -68,8 +71,10 @@ struct UserProfileMfaRow: View {
         .onIsRunningChanged { isLoading = $0 }
       }
 
-      Button("Remove", role: .destructive) {
+      Button(role: .destructive) {
         removeResource = .secondFactorPhoneNumber(phoneNumber)
+      } label: {
+        Text("Remove", bundle: .module)
       }
     case .backupCodes:
       AsyncButton {
@@ -129,18 +134,19 @@ struct UserProfileMfaRow: View {
         .frame(height: 1)
         .foregroundStyle(theme.colors.border)
     }
+    .clerkErrorPresenting($error)
     .onChange(of: removeResource) {
       if $1 != nil { isConfirmingRemoval = true }
     }
     .confirmationDialog(
-      removeResource?.messageLine1 ?? "",
+      removeResource?.messageLine1(locale: locale) ?? "",
       isPresented: $isConfirmingRemoval,
       titleVisibility: .visible,
       actions: {
         AsyncButton(role: .destructive) {
           await removeResource()
         } label: { _ in
-          Text(removeResource?.title ?? "", bundle: .module)
+          Text(verbatim: removeResource?.title(locale: locale) ?? "")
         }
         .onIsRunningChanged { isLoading = $0 }
 
