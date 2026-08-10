@@ -377,6 +377,7 @@ public struct Auth {
   ///   - phoneNumber: The user's phone number in E.164 format (optional).
   ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   ///   - legalAccepted: Whether the user has accepted legal terms (optional).
+  ///   - transfer: Whether to create the sign-up from the client's current transferable sign-in attempt.
   /// - Returns: A `SignUp` object representing the sign-up attempt.
   /// - Throws: An error if the sign-up creation fails.
   @discardableResult
@@ -388,7 +389,8 @@ public struct Auth {
     username: String? = nil,
     phoneNumber: String? = nil,
     unsafeMetadata: JSON? = nil,
-    legalAccepted: Bool? = nil
+    legalAccepted: Bool? = nil,
+    transfer: Bool = false
   ) async throws -> SignUp {
     try await signUpService.create(params: .init(
       emailAddress: emailAddress,
@@ -398,7 +400,8 @@ public struct Auth {
       lastName: lastName,
       username: username,
       unsafeMetadata: unsafeMetadata,
-      legalAccepted: legalAccepted
+      legalAccepted: legalAccepted,
+      transfer: transfer ? true : nil
     ))
   }
 
