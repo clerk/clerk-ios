@@ -1105,6 +1105,31 @@ struct AuthTests {
     let params = try #require(signUpParams.value)
     #expect(params.emailAddress == "test@example.com")
     #expect(params.password == "password123")
+    #expect(params.transfer == nil)
+  }
+
+  @Test
+  func signUpTransfersCurrentSignInWithCollectedFields() async throws {
+    let metadata: JSON = ["birthday": "1990-01-01"]
+    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpService = MockSignUpService(create: { params in
+      signUpParams.setValue(params)
+      return .mock
+    })
+
+    configureDependencies(signUpService: signUpService)
+
+    let signUp = try await Clerk.shared.auth.signUp(
+      unsafeMetadata: metadata,
+      legalAccepted: true,
+      transfer: true
+    )
+
+    #expect(signUp == .mock)
+    let params = try #require(signUpParams.value)
+    #expect(params.unsafeMetadata == metadata)
+    #expect(params.legalAccepted == true)
+    #expect(params.transfer == true)
   }
 
   @Test
