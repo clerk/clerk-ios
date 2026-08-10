@@ -33,7 +33,7 @@ package struct TrustedDeviceLocalCredential: Codable, Equatable, Identifiable {
     userID: String,
     appIdentifier: String,
     identifierHint: String? = nil,
-    policy: TrustedDevicePolicy = .biometryOrDevicePasscode,
+    policy: TrustedDevicePolicy = .biometryCurrentSet,
     createdAt: Date,
     updatedAt: Date
   ) {

@@ -352,7 +352,7 @@ extension AuthStartView {
     trustedDeviceFeatureIsEnabled &&
       authState.mode != .signUp &&
       trustedDeviceAvailability?.isAvailable == true &&
-      trustedDeviceBiometryDisplayName != nil
+      trustedDeviceBiometryDisplayName?.isSupported == true
   }
 
   private var trustedDeviceAvailabilityRefreshState: AuthStartTrustedDeviceRefreshState {

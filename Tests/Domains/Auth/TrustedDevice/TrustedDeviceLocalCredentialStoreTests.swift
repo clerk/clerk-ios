@@ -382,6 +382,7 @@ struct TrustedDeviceLocalCredentialStoreTests {
         localKeyId: "tdlk_valid",
         userID: "user_valid",
         appIdentifier: "com.clerk.example",
+        policy: .biometryOrDevicePasscode,
         createdAt: Date(timeIntervalSince1970: 1_234_567_890),
         updatedAt: Date(timeIntervalSince1970: 1_234_567_890)
       ),

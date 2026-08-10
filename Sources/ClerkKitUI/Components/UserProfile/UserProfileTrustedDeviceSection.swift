@@ -108,7 +108,8 @@ extension UserProfileTrustedDeviceSection {
       if enabled {
         try await clerk.trustedDevices.enroll(
           identifierHint: user.trustedDeviceIdentifierHint,
-          reason: enrollmentReason
+          reason: enrollmentReason,
+          policy: .biometryCurrentSet
         )
       } else {
         try await clerk.trustedDevices.revokeCurrentDeviceCredential()

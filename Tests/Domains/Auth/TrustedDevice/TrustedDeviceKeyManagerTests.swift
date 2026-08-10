@@ -8,10 +8,10 @@ import Testing
 
 struct TrustedDeviceKeyManagerTests {
   @Test
-  func localKeyDefaultsToBiometryOrDevicePasscodePolicy() {
+  func localKeyDefaultsToBiometryCurrentSetPolicy() {
     let localKey = TrustedDeviceLocalKey(localKeyId: "tdlk_123", publicKeyJWK: "{}")
 
-    #expect(localKey.policy == .biometryOrDevicePasscode)
+    #expect(localKey.policy == .biometryCurrentSet)
   }
 
   @Test

@@ -114,7 +114,8 @@ extension TrustedDeviceEnrollmentView {
     do {
       try await clerk.trustedDevices.enroll(
         identifierHint: clerk.user?.trustedDeviceIdentifierHint,
-        reason: enrollmentReason
+        reason: enrollmentReason,
+        policy: .biometryCurrentSet
       )
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       continueAfterEnrollmentPrompt()
