@@ -261,7 +261,7 @@ jobs:
       MAESTRO_RUNNER_DARWIN_AMD64_SHA256: c69cc36f85fb639ff799bc00775c45ae98b6e4c50455ef08f6d594000253bc83
       MAESTRO_RUNNER_DARWIN_ARM64_SHA256: 192038da519ddaf817c43c94735662942ffc69a58fa467c1d9ff7f948323a4a8
       E2E_MAESTRO_REPORT_PATH: build/reports/maestro-${{ matrix.shard }}
-      IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro
+      IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
