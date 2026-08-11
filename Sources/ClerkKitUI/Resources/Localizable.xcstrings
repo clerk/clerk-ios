@@ -2498,6 +2498,12 @@
             "value" : "İzin ver"
           }
         },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дозволити"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2596,6 +2602,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ için izin ver"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дозволити %@"
           }
         },
         "zh-Hans" : {
@@ -2897,6 +2909,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uygulama"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Застосунок"
           }
         },
         "zh-Hans" : {
@@ -9428,6 +9446,12 @@
             "value" : "Daha hızlı erişim için %@ özelliğini etkinleştirin"
           }
         },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Увімкніть %@ для швидшого доступу"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -9526,6 +9550,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ özelliğini etkinleştirerek %@ uygulamasına daha hızlı erişin"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Увімкніть %@ для швидшого доступу до %@"
           }
         },
         "zh-Hans" : {
@@ -16552,6 +16582,12 @@
             "value" : "Şimdi değil"
           }
         },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не зараз"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -22875,6 +22911,12 @@
             "value" : "%@ ile giriş yap"
           }
         },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Увійти за допомогою %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -24275,6 +24317,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ uygulaması oturum açmanız için %@ kullanır."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Застосунок %@ використовує %@, щоб ви могли ввійти."
           }
         },
         "zh-Hans" : {
@@ -26883,6 +26931,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oturum açmak için %@ kullanın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Використайте %@, щоб увійти."
           }
         },
         "zh-Hans" : {
