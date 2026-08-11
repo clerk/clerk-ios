@@ -157,6 +157,21 @@ struct DecodedJWT: JWT {
     claim(name: "iat").date
   }
 
+  var originIssuedAt: Date? {
+    Claim(value: header["oiat"]).date
+  }
+
+  var sessionId: String? {
+    claim(name: "sid").string
+  }
+
+  var organizationId: String? {
+    if let organizationId = claim(name: "org_id").string {
+      return organizationId
+    }
+    return (body["o"] as? [String: Any])?["id"] as? String
+  }
+
   var notBefore: Date? {
     claim(name: "nbf").date
   }

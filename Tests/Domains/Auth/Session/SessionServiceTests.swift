@@ -5,14 +5,22 @@ import Mocker
 import Testing
 
 @MainActor
-@Suite(.serialized)
-struct SessionServiceTests {
-  init() {
-    configureClerkForTesting()
-  }
-
+extension SessionServiceAndTokenFetcherTests {
   @Test
   func signOut() async throws {
+    await SessionTokensCache.shared.clear()
+    let firstSession = Session.mock
+    var secondSession = Session.mock
+    secondSession.id = "sess_other"
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "first.jwt"),
+      cacheKey: firstSession.tokenCacheKey(template: nil)
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "second.jwt"),
+      cacheKey: secondSession.tokenCacheKey(template: nil)
+    )
+
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
 
@@ -31,11 +39,35 @@ struct SessionServiceTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
     #expect(requestHandled.value)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: firstSession.tokenCacheKey(template: nil)
+    ) == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: secondSession.tokenCacheKey(template: nil)
+    ) == nil)
   }
 
   @Test
   func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
+    var session = Session.mock
+    session.id = sessionId
+    var otherSession = Session.mock
+    otherSession.id = "sess_other"
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "default.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "template.jwt"),
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "other.jwt"),
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )
+
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
 
@@ -54,6 +86,104 @@ struct SessionServiceTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
     #expect(requestHandled.value)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    ) == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    ) == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )?.jwt == "other.jwt")
+  }
+
+  @Test
+  func signOutWithSessionIdPreservesCachedTokensWhenRequestFails() async throws {
+    let sessionId = "sess_test123"
+    var session = Session.mock
+    session.id = sessionId
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "cached.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "template.jwt"),
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    )
+
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(sessionId)/remove")!
+    let mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 500,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "internal_server_error",
+                message: "Something went wrong",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+    mock.register()
+
+    await #expect(throws: (any Error).self) {
+      try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
+    }
+
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    )?.jwt == "cached.jwt")
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    )?.jwt == "template.jwt")
+  }
+
+  @Test
+  func signOutPreservesCachedTokensWhenRequestFails() async throws {
+    let session = Session.mock
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "cached.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
+    let mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 500,
+      data: [
+        .delete: JSONEncoder.clerkEncoder.encode(
+          ClerkErrorResponse(
+            errors: [
+              ClerkAPIError(
+                code: "internal_server_error",
+                message: "Something went wrong",
+                longMessage: nil,
+                meta: nil,
+                clerkTraceId: nil
+              ),
+            ],
+            clerkTraceId: nil
+          )
+        ),
+      ]
+    )
+    mock.register()
+
+    await #expect(throws: (any Error).self) {
+      try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
+    }
+
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    )?.jwt == "cached.jwt")
   }
 
   struct SetActiveErrorScenario {
@@ -101,6 +231,21 @@ struct SessionServiceTests {
     var updatedClient = Client.mock
     updatedClient.lastActiveSessionId = session.id
     updatedClient.sessions = [session]
+    var otherSession = Session.mock
+    otherSession.id = "sess_other"
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "default.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "template.jwt"),
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    )
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "other.jwt"),
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )
 
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/touch")!
@@ -114,6 +259,7 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.shouldAutomaticallySyncClerkClient == false)
       let body = request.urlEncodedFormBody!
       #expect(body["active_organization_id"] == organizationId)
       #expect(body["intent"] == "select_org")
@@ -127,6 +273,99 @@ struct SessionServiceTests {
     )
 
     #expect(requestHandled.value)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    ) == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "firebase")
+    ) == nil)
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: nil)
+    )?.jwt == "other.jwt")
+  }
+
+  @Test
+  func setActiveInvalidatesTemplateTokenBeforePublishingSessionChange() async throws {
+    let identityKeychain = Clerk.shared.dependencies.identityKeychain
+    let deviceTokenKey = ClerkKeychainKey.clerkDeviceToken.rawValue
+    let previousDeviceToken = try identityKeychain.string(forKey: deviceTokenKey)
+    try identityKeychain.set("set-active-ordering-token", forKey: deviceTokenKey)
+    defer {
+      if let previousDeviceToken {
+        try? identityKeychain.set(previousDeviceToken, forKey: deviceTokenKey)
+      } else {
+        try? identityKeychain.deleteItem(forKey: deviceTokenKey)
+      }
+    }
+
+    var previousSession = Session.mock
+    previousSession.lastActiveOrganizationId = "org_previous"
+    var previousClient = Client.mock
+    previousClient.lastActiveSessionId = previousSession.id
+    previousClient.sessions = [previousSession]
+    Clerk.shared.client = previousClient
+
+    var updatedSession = previousSession
+    updatedSession.lastActiveOrganizationId = "org_updated"
+    var updatedClient = previousClient
+    updatedClient.sessions = [updatedSession]
+
+    let template = "firebase"
+    let cacheKey = previousSession.tokenCacheKey(template: template)
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "previous-organization.jwt"),
+      cacheKey: cacheKey
+    )
+
+    let originalURL = URL(
+      string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(previousSession.id)/touch"
+    )!
+    let mock = try Mock(
+      url: originalURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<Session>(response: updatedSession, client: updatedClient)
+        ),
+      ]
+    )
+    mock.register()
+
+    let observedCacheState = AsyncStream<Bool>.makeStream(
+      bufferingPolicy: .bufferingNewest(1)
+    )
+    let events = Clerk.shared.auth.events
+    let observer = Task { @MainActor in
+      for await event in events {
+        guard case .sessionChanged(_, let newSession) = event,
+              newSession?.lastActiveOrganizationId == updatedSession.lastActiveOrganizationId
+        else {
+          continue
+        }
+
+        let cachedToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)
+        observedCacheState.continuation.yield(cachedToken == nil)
+        return
+      }
+    }
+    defer {
+      observer.cancel()
+      observedCacheState.continuation.finish()
+    }
+
+    try await Clerk.shared.dependencies.sessionService.setActive(
+      sessionId: previousSession.id,
+      organizationId: updatedSession.lastActiveOrganizationId
+    )
+
+    let cacheWasEmptyWhenSessionChanged = try await waitForSessionServiceSignal(
+      observedCacheState.stream,
+      message: "Timed out waiting for the updated session to be published."
+    )
+    #expect(cacheWasEmptyWhenSessionChanged)
   }
 
   @Test
@@ -206,6 +445,11 @@ struct SessionServiceTests {
   )
   func setActiveWithOrganizationIdPropagatesAPIErrors(scenario: SetActiveErrorScenario) async throws {
     let session = Session.mock
+    await SessionTokensCache.shared.clear()
+    await SessionTokensCache.shared.insertToken(
+      .init(jwt: "cached.jwt"),
+      cacheKey: session.tokenCacheKey(template: nil)
+    )
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/touch")!
 
@@ -247,12 +491,19 @@ struct SessionServiceTests {
     } catch {
       #expect(Bool(false), "Expected ClerkAPIError, got \(error)")
     }
+
+    #expect(await SessionTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: nil)
+    )?.jwt == "cached.jwt")
   }
 
   @Test
   func fetchToken() async throws {
     let session = Session.mock
+    let organizationId = "org_test456"
+    let previousToken = "previous.jwt.value"
     let requestHandled = LockIsolated(false)
+    let capturedBodyLogging = LockIsolated<Bool?>(nil)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
 
     var mock = try Mock(
@@ -264,12 +515,60 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      let body = request.urlEncodedFormBody!
+      #expect(body["organization_id"] == organizationId)
+      #expect(body["token"] == previousToken)
+      #expect(body["force_origin"] == "true")
+      capturedBodyLogging.setValue(request.shouldLogClerkBodies)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: nil)
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: nil,
+      params: .init(
+        organizationId: organizationId,
+        token: previousToken,
+        forceOrigin: "true"
+      )
+    )
     #expect(requestHandled.value)
+    #expect(capturedBodyLogging.value == false)
+  }
+
+  @Test
+  func fetchTokenForFirstMintOmitsPreviousTokenAndForceOrigin() async throws {
+    let session = Session.mock
+    let requestHandled = LockIsolated(false)
+    let capturedBodyLogging = LockIsolated<Bool?>(nil)
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens")!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(TokenResource.mock),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      let body = request.urlEncodedFormBody!
+      #expect(body["organization_id"] == "")
+      #expect(body["token"] == nil)
+      #expect(body["force_origin"] == nil)
+      capturedBodyLogging.setValue(request.shouldLogClerkBodies)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: nil,
+      params: .init(organizationId: "")
+    )
+
+    #expect(requestHandled.value)
+    #expect(capturedBodyLogging.value == false)
   }
 
   @Test
@@ -277,6 +576,7 @@ struct SessionServiceTests {
     let session = Session.mock
     let template = "firebase"
     let requestHandled = LockIsolated(false)
+    let capturedBodyLogging = LockIsolated<Bool?>(nil)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/tokens/\(template)")!
 
     var mock = try Mock(
@@ -288,12 +588,23 @@ struct SessionServiceTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
+      #expect(request.httpBody == nil)
+      capturedBodyLogging.setValue(request.shouldLogClerkBodies)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(sessionId: session.id, template: template)
+    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+      sessionId: session.id,
+      template: template,
+      params: .init(
+        organizationId: "org_ignored",
+        token: "token_ignored",
+        forceOrigin: "true"
+      )
+    )
     #expect(requestHandled.value)
+    #expect(capturedBodyLogging.value == false)
   }
 
   @Test
@@ -494,5 +805,34 @@ struct SessionServiceTests {
 
     _ = try await Clerk.shared.dependencies.sessionService.revoke(sessionId: session.id)
     #expect(requestHandled.value)
+  }
+}
+
+private struct SessionServiceSignalTimeoutError: Error, CustomStringConvertible {
+  let description: String
+}
+
+private func waitForSessionServiceSignal<Value: Sendable>(
+  _ stream: AsyncStream<Value>,
+  timeout: Duration = .seconds(1),
+  message: String
+) async throws -> Value {
+  try await withThrowingTaskGroup(of: Value.self) { group in
+    group.addTask {
+      for await value in stream {
+        return value
+      }
+      throw SessionServiceSignalTimeoutError(description: message)
+    }
+    group.addTask {
+      try await Task.sleep(for: timeout)
+      throw SessionServiceSignalTimeoutError(description: message)
+    }
+
+    defer { group.cancelAll() }
+    guard let value = try await group.next() else {
+      throw SessionServiceSignalTimeoutError(description: message)
+    }
+    return value
   }
 }

@@ -21,8 +21,9 @@ package final class MockSessionService: SessionServiceProtocol {
   /// Custom handler for the `setActive(sessionId:organizationId:)` method.
   package nonisolated(unsafe) var setActiveHandler: ((String, String?) async throws -> Void)?
 
-  /// Custom handler for the `fetchToken(sessionId:template:)` method.
-  package nonisolated(unsafe) var fetchTokenHandler: ((String, String?) async throws -> TokenResource?)?
+  /// Custom handler for the `fetchToken(sessionId:template:params:)` method.
+  package nonisolated(unsafe) var fetchTokenHandler:
+    ((String, String?, SessionTokenRequestParams?) async throws -> TokenResource?)?
 
   /// Custom handler for the `startVerification(sessionId:params:)` method.
   nonisolated(unsafe) var startVerificationHandler: ((String, Session.StartVerificationParams) async throws -> SessionVerification)?
@@ -43,7 +44,7 @@ package final class MockSessionService: SessionServiceProtocol {
     revoke: ((String) async throws -> Session)? = nil,
     signOut: ((String?) async throws -> Void)? = nil,
     setActive: ((String, String?) async throws -> Void)? = nil,
-    fetchToken: ((String, String?) async throws -> TokenResource?)? = nil
+    fetchToken: ((String, String?, SessionTokenRequestParams?) async throws -> TokenResource?)? = nil
   ) {
     self.init(
       revoke: revoke,
@@ -62,7 +63,7 @@ package final class MockSessionService: SessionServiceProtocol {
     revoke: ((String) async throws -> Session)? = nil,
     signOut: ((String?) async throws -> Void)? = nil,
     setActive: ((String, String?) async throws -> Void)? = nil,
-    fetchToken: ((String, String?) async throws -> TokenResource?)? = nil,
+    fetchToken: ((String, String?, SessionTokenRequestParams?) async throws -> TokenResource?)? = nil,
     startVerification: ((String, Session.StartVerificationParams) async throws -> SessionVerification)? = nil,
     prepareFirstFactorVerification: ((String, Session.PrepareFirstFactorVerificationParams) async throws -> SessionVerification)? = nil,
     attemptFirstFactorVerification: ((String, Session.AttemptFirstFactorVerificationParams) async throws -> SessionVerification)? = nil,
@@ -104,9 +105,13 @@ package final class MockSessionService: SessionServiceProtocol {
   }
 
   @MainActor
-  package func fetchToken(sessionId: String, template: String?) async throws -> TokenResource? {
+  package func fetchToken(
+    sessionId: String,
+    template: String?,
+    params: SessionTokenRequestParams?
+  ) async throws -> TokenResource? {
     if let handler = fetchTokenHandler {
-      return try await handler(sessionId, template)
+      return try await handler(sessionId, template, params)
     }
 
     return .mock
