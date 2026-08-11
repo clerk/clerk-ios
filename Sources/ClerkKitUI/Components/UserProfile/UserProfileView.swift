@@ -207,6 +207,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
+          .environment(clerk)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
         // The add-account sheet is modal over the host, so it dismisses itself
