@@ -79,6 +79,9 @@ public struct AuthView: View {
   /// Configuration values for the auth flow.
   private let config: AuthConfig
 
+  /// Called after authentication and all Clerk-owned post-authentication steps complete.
+  let onCompletion: @MainActor (Session) -> Void
+
   /// Error to present to the user.
   @State private var error: Error?
 
@@ -117,22 +120,37 @@ public struct AuthView: View {
   ///   - mode: The authentication mode that determines available flows.
   ///     Defaults to `.signInOrUp()` which allows both sign-in and sign-up.
   ///   - isDismissible: Whether the view can be dismissed by the user.
-  ///     When `true`, a dismiss button appears and the view automatically
-  ///     dismisses on successful authentication. When `false`, no dismiss
+  ///     When `true`, a dismiss button appears and the view automatically dismisses
+  ///     when the authentication flow completes. When `false`, no dismiss
   ///     button is shown.
   ///     Defaults to `true`.
-  public init(mode: Mode = .signInOrUp, isDismissible: Bool = true) {
-    self.init(mode: mode, isDismissible: isDismissible, config: AuthConfig())
+  ///   - onCompletion: Called once after authentication and all Clerk-owned
+  ///     post-authentication steps complete. The callback receives the active session and
+  ///     runs before automatic dismissal. It is not called when authentication fails or
+  ///     when the view is dismissed without completing the flow.
+  public init(
+    mode: Mode = .signInOrUp,
+    isDismissible: Bool = true,
+    onCompletion: @escaping @MainActor (Session) -> Void = { _ in }
+  ) {
+    self.init(
+      mode: mode,
+      isDismissible: isDismissible,
+      config: AuthConfig(),
+      onCompletion: onCompletion
+    )
   }
 
   init(
     mode: Mode = .signInOrUp,
     isDismissible: Bool = true,
-    config: AuthConfig
+    config: AuthConfig,
+    onCompletion: @escaping @MainActor (Session) -> Void = { _ in }
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissible = isDismissible
     self.config = config
+    self.onCompletion = onCompletion
   }
 
   public var body: some View {
@@ -241,6 +259,15 @@ public struct AuthView: View {
 // MARK: - View Modifiers
 
 extension AuthView {
+  private func reconfigured(with config: AuthConfig) -> AuthView {
+    AuthView(
+      mode: authState.mode,
+      isDismissible: isDismissible,
+      config: config,
+      onCompletion: onCompletion
+    )
+  }
+
   /// Sets the initial value for the identifier field on the auth screen.
   ///
   /// The identifier is automatically detected as a phone number or email/username
@@ -251,7 +278,7 @@ extension AuthView {
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config
     config.initialIdentifier = identifier
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 
   /// Sets the initial value for the first name field during sign-up.
@@ -261,7 +288,7 @@ extension AuthView {
   public func initialFirstName(_ firstName: String) -> AuthView {
     var config = config
     config.initialFirstName = firstName
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 
   /// Sets the initial value for the last name field during sign-up.
@@ -271,7 +298,7 @@ extension AuthView {
   public func initialLastName(_ lastName: String) -> AuthView {
     var config = config
     config.initialLastName = lastName
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 
   /// Controls whether configured initial field values can be edited.
@@ -285,7 +312,7 @@ extension AuthView {
   public func lockPrefilledFields(_ locked: Bool = true) -> AuthView {
     var config = config
     config.prefilledFieldsAreLocked = locked
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 
   /// Controls whether auth identifier values are persisted between sessions.
@@ -298,7 +325,7 @@ extension AuthView {
   public func persistsIdentifiers(_ persists: Bool) -> AuthView {
     var config = config
     config.persistsIdentifiers = persists
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 
   /// Sets unsafe metadata to attach when this auth flow creates a sign-up.
@@ -311,7 +338,7 @@ extension AuthView {
   public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
     var config = config
     config.unsafeMetadata = metadata
-    return AuthView(mode: authState.mode, isDismissible: isDismissible, config: config)
+    return reconfigured(with: config)
   }
 }
 

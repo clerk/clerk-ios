@@ -233,11 +233,12 @@ extension AuthView {
     owner: AuthFlowRegistration,
     work: AuthFlowWork
   ) {
-    guard clerk.completeAuthFlow(work) else { return }
+    guard let session = clerk.completeAuthFlow(work) else { return }
 
     authFlowRegistrationIsTerminated = true
     owner.cancel()
     authFlowRegistration = nil
+    onCompletion(session)
     if isDismissible {
       dismiss()
     }

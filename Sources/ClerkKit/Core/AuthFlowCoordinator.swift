@@ -280,8 +280,7 @@ struct AuthFlowCoordinator {
   }
 
   mutating func finishPresentation(
-    token: AuthFlowPresentationToken,
-    completesWork: Bool
+    token: AuthFlowPresentationToken
   ) -> Bool {
     guard registration?.id == token.work.ownerId,
           case .presenting(let target, let currentToken) = phase,
@@ -292,7 +291,9 @@ struct AuthFlowCoordinator {
       return false
     }
 
-    phase = completesWork ? .observing : .awaiting(target)
+    // Finishing a presentation returns its work to the owner, which determines whether
+    // another post-auth step is required before completing the overall auth flow.
+    phase = .awaiting(target)
     advanceRevision()
     return true
   }

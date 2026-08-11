@@ -81,25 +81,23 @@ extension Clerk {
     _ token: AuthFlowPresentationToken
   ) -> Bool {
     guard session?.id == token.sessionId else { return false }
-    let completesWork = token.kind == .trustedDeviceEnrollment
-      && session?.status == .active
-      && session?.pendingTasks.isEmpty == true
     return authFlowCoordinator.finishPresentation(
-      token: token,
-      completesWork: completesWork
+      token: token
     )
   }
 
   @discardableResult
   package func completeAuthFlow(
     _ work: AuthFlowWork
-  ) -> Bool {
-    guard session?.id == work.sessionId,
-          session?.status == .active
+  ) -> Session? {
+    guard let session,
+          session.id == work.sessionId,
+          session.status == .active,
+          authFlowCoordinator.complete(work: work)
     else {
-      return false
+      return nil
     }
-    return authFlowCoordinator.complete(work: work)
+    return session
   }
 
   package func resetAuthFlow(for registration: AuthFlowRegistration) {
