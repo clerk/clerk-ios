@@ -22,12 +22,9 @@
     }
 
     public var body: some View {
-      if let forceUpdate = clerk.environment?.forceUpdate,
-        forceUpdate.required,
-        let appStoreURL = forceUpdate.validAppStoreURL
-      {
+      if !clerk.appVersionSupportStatus.isSupported {
         ForceUpdateContentView(
-          appStoreURL: appStoreURL,
+          appStoreURL: clerk.appVersionSupportStatus.updateURL,
           title: title,
           subtitle: subtitle
         )
@@ -39,7 +36,7 @@
     @Environment(\.clerkTheme) private var theme
     @Environment(\.openURL) private var openURL
 
-    let appStoreURL: URL
+    let appStoreURL: URL?
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
 
@@ -52,13 +49,15 @@
           HeaderView(style: .subtitle, text: subtitle)
         }
 
-        Button {
-          openURL(appStoreURL)
-        } label: {
-          Label("Update app", systemImage: "arrow.down.circle")
-            .frame(maxWidth: .infinity)
+        if let appStoreURL {
+          Button {
+            openURL(appStoreURL)
+          } label: {
+            Label("Update app", systemImage: "arrow.down.circle")
+              .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.primary(config: .init(emphasis: .high, size: .large)))
         }
-        .buttonStyle(.primary(config: .init(emphasis: .high, size: .large)))
       }
       .padding()
       .frame(maxWidth: 360)
@@ -73,21 +72,6 @@
       title: "Update required",
       subtitle: "A newer version of this app is required to continue."
     )
-  }
-
-  extension Clerk.Environment.ForceUpdate {
-    fileprivate var validAppStoreURL: URL? {
-      guard
-        let appStoreURL,
-        let scheme = appStoreURL.scheme,
-        ["http", "https"].contains(scheme),
-        appStoreURL.host != nil
-      else {
-        return nil
-      }
-
-      return appStoreURL
-    }
   }
 
 #endif

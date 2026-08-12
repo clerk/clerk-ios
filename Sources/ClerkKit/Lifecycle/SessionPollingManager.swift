@@ -14,6 +14,14 @@ import Foundation
 protocol SessionProviding: Sendable {
   /// Returns the current session, if available.
   @MainActor var session: Session? { get }
+
+  @MainActor var appVersionSupportStatus: Clerk.AppVersionSupportStatus { get }
+}
+
+extension SessionProviding {
+  @MainActor var appVersionSupportStatus: Clerk.AppVersionSupportStatus {
+    .supportedDefault
+  }
 }
 
 /// Manages periodic polling of session tokens to keep them refreshed.
@@ -200,6 +208,10 @@ final class SessionPollingManager {
   ///
   /// - Returns: `true` if the refresh succeeded or no active session exists, `false` if it failed.
   private func refreshTokenIfNeeded() async -> Bool {
+    guard sessionProvider.appVersionSupportStatus.isSupported else {
+      return true
+    }
+
     guard let session = sessionProvider.session else {
       return true // No session = not a failure
     }

@@ -171,8 +171,19 @@ public final class Clerk {
         cacheManager?.saveEnvironment(environment)
         emitInternalStateChange(.environmentDidChange)
       }
+
+      refreshAppVersionSupportStatus()
     }
   }
+
+  /// The app-version policy currently resolved for this build.
+  public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supportedDefault
+
+  /// A server-enforced unsupported status takes precedence over cacheable environment policy.
+  private var serverEnforcedAppVersionSupportStatus: AppVersionSupportStatus?
+
+  /// Orders enforcement results from concurrently running protected requests.
+  private var lastAppVersionEnforcementRequestSequence: Int?
 
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
@@ -397,9 +408,15 @@ extension Clerk {
     taskCoordinator?.task { @MainActor [weak self] in
       do {
         guard let self else { return }
+        let shouldRetryStartupRefresh: @MainActor @Sendable (Error) -> Bool = { error in
+          guard let apiError = error as? ClerkAPIError else { return true }
+          return !apiError.isUnsupportedAppVersion
+        }
+
         _ = try await retryingOperation(
           policy: retryPolicy,
-          operationName: "environment refresh"
+          operationName: "environment refresh",
+          shouldRetry: shouldRetryStartupRefresh
         ) {
           try await self.refreshEnvironment()
         }
@@ -436,9 +453,15 @@ extension Clerk {
       do {
         _ = await initialSharedSessionReconciliation?.value
         try Task.checkCancellation()
+        let shouldRetryStartupRefresh: @MainActor @Sendable (Error) -> Bool = { error in
+          guard let apiError = error as? ClerkAPIError else { return true }
+          return !apiError.isUnsupportedAppVersion
+        }
+
         _ = try await retryingOperation(
           policy: retryPolicy,
-          operationName: "client refresh"
+          operationName: "client refresh",
+          shouldRetry: shouldRetryStartupRefresh
         ) {
           try Task.checkCancellation()
           try await self.refreshClient(skipClientId: false)
@@ -793,6 +816,49 @@ extension Clerk {
     maximumDelay: .seconds(5)
   )
 
+  func refreshAppVersionSupportStatus() {
+    let environmentStatus = AppVersionSupportStatusResolver.resolve(
+      environment: environment,
+      bundleID: DeviceHelper.bundleID,
+      currentVersion: DeviceHelper.appVersion
+    )
+    appVersionSupportStatus = serverEnforcedAppVersionSupportStatus ?? environmentStatus
+  }
+
+  func applyUnsupportedAppVersionMeta(_ meta: JSON?, requestSequence: Int? = nil) {
+    guard let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
+      meta,
+      bundleID: DeviceHelper.bundleID
+    ), shouldApplyAppVersionEnforcementResult(requestSequence: requestSequence) else {
+      return
+    }
+
+    serverEnforcedAppVersionSupportStatus = status
+    refreshAppVersionSupportStatus()
+  }
+
+  func applySuccessfulProtectedResponse(requestSequence: Int?) {
+    guard shouldApplyAppVersionEnforcementResult(requestSequence: requestSequence) else {
+      return
+    }
+
+    serverEnforcedAppVersionSupportStatus = nil
+    refreshAppVersionSupportStatus()
+  }
+
+  private func shouldApplyAppVersionEnforcementResult(requestSequence: Int?) -> Bool {
+    guard let requestSequence else {
+      return true
+    }
+
+    guard lastAppVersionEnforcementRequestSequence.map({ requestSequence > $0 }) ?? true else {
+      return false
+    }
+
+    lastAppVersionEnforcementRequestSequence = requestSequence
+    return true
+  }
+
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
@@ -820,6 +886,8 @@ extension Clerk {
     await SessionTokensCache.shared.clear()
 
     resetAuthFlowForReconfiguration()
+    serverEnforcedAppVersionSupportStatus = nil
+    lastAppVersionEnforcementRequestSequence = nil
     identityController.resetRuntimeIdentity()
     environment = nil
     sessionsByUserId = [:]

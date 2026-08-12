@@ -10,7 +10,7 @@ extension Clerk {
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
     public var organizationSettings: OrganizationSettings
-    public var forceUpdate: ForceUpdate
+    public var nativeAppSettings: NativeAppSettings
 
     public init(
       authConfig: AuthConfig,
@@ -22,7 +22,7 @@ extension Clerk {
       self.userSettings = userSettings
       self.displayConfig = displayConfig
       self.organizationSettings = organizationSettings
-      forceUpdate = .empty
+      nativeAppSettings = .init()
     }
 
     public init(from decoder: Decoder) throws {
@@ -31,7 +31,7 @@ extension Clerk {
       userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
       displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
       organizationSettings = try container.decodeIfPresent(OrganizationSettings.self, forKey: .organizationSettings) ?? .default
-      forceUpdate = try container.decodeIfPresent(ForceUpdate.self, forKey: .forceUpdate) ?? .empty
+      nativeAppSettings = try container.decodeIfPresent(NativeAppSettings.self, forKey: .nativeAppSettings) ?? .init()
     }
   }
 }
