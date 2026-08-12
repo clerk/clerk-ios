@@ -240,6 +240,9 @@ public final class Clerk {
   /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
+  /// Coordinates the active authentication view's transient post-authentication work.
+  var authFlowCoordinator = AuthFlowCoordinator()
+
   /// The main entry point for all authentication operations.
   ///
   /// Use this property to perform sign in, sign up, and session management operations.
@@ -252,6 +255,7 @@ public final class Clerk {
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
+      trustedDevices: trustedDevices,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
     )
@@ -266,6 +270,16 @@ public final class Clerk {
   /// Use this property to create organizations.
   public var organizations: Organizations {
     Organizations(organizationService: dependencies.organizationService)
+  }
+
+  /// The main entry point for trusted-device credential operations.
+  public var trustedDevices: TrustedDevices {
+    TrustedDevices(
+      trustedDeviceService: dependencies.trustedDeviceService,
+      signInService: dependencies.signInService,
+      keyManager: dependencies.trustedDeviceKeyManager,
+      credentialStore: dependencies.trustedDeviceCredentialStore
+    )
   }
 
   /// Proxy configuration derived from `proxyUrl`, if present.
@@ -334,6 +348,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
+    reconcileTrustedDeviceCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
     // Set up session polling and lifecycle management
@@ -804,6 +819,7 @@ extension Clerk {
     await SessionTokenFetcher.shared.reset()
     await SessionTokensCache.shared.clear()
 
+    resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()
     environment = nil
     sessionsByUserId = [:]
@@ -891,7 +907,15 @@ extension Clerk: LifecycleEventHandling {
 
 extension Clerk {
   /// Applies a client value after the identity controller has established its mutation boundary.
-  func setClientFromIdentityController(_ client: Client?) {
+  func setClientFromIdentityController(
+    _ client: Client?,
+    authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
+  ) {
+    authFlowCoordinator.applyIdentity(
+      previousClient: self.client,
+      client: client,
+      update: authFlowUpdate
+    )
     self.client = client
   }
 

@@ -14,6 +14,7 @@ struct SessionTaskBackupCodesView: View {
 
   let backupCodes: [String]
   let mfaType: BackupCodesMfaType
+  let token: AuthFlowPresentationToken
 
   enum BackupCodesMfaType {
     case phoneCode
@@ -109,7 +110,7 @@ struct SessionTaskBackupCodesView: View {
         .padding(.bottom, 32)
 
         Button {
-          navigation.handleSessionTaskCompletion(session: clerk.session)
+          _ = clerk.finishAuthFlowPresentation(token)
         } label: {
           HStack {
             Text("Continue", bundle: .module)
@@ -143,7 +144,7 @@ extension SessionTaskBackupCodesView {
       UserButtonToolbarItem(presentationContext: .sessionTaskToolbar)
     } else {
       DismissToolbarItem {
-        navigation.handleSessionTaskCompletion(session: clerk.session)
+        _ = clerk.finishAuthFlowPresentation(token)
       }
     }
   }

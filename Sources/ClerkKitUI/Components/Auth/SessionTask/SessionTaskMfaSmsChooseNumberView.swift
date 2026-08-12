@@ -20,6 +20,8 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   @State private var isReservingForSecondFactor = false
   @State private var selectedPhoneNumber: PhoneNumber?
 
+  let token: AuthFlowPresentationToken
+
   private var user: User? {
     clerk.user
   }
@@ -66,9 +68,12 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     .sheet(isPresented: $addPhoneNumberIsPresented) {
       NavigationStack {
         ScrollView {
-          SessionTaskAddPhoneForm { _ in
-            addPhoneNumberIsPresented = false
-          }
+          SessionTaskAddPhoneForm(
+            token: token,
+            onPhoneNumberCreated: { _ in
+              addPhoneNumberIsPresented = false
+            }
+          )
         }
         .background(theme.colors.background)
         .toolbar {
@@ -86,10 +91,15 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     SessionTaskAddPhoneForm(
       onBeginSubmit: { isSubmittingPhone = true },
       onError: { isSubmittingPhone = false },
+      token: token,
       onPhoneNumberCreated: { newPhoneNumber in
+        guard clerk.authFlowPresentationIsCurrent(token) else { return }
         try await newPhoneNumber.sendCode()
+        guard clerk.authFlowPresentationIsCurrent(token) else { return }
         codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
-        navigation.path.append(.taskVerifySms(phoneNumber: newPhoneNumber))
+        navigation.appendPostAuthDestination(
+          .taskVerifySms(phoneNumber: newPhoneNumber, token: token)
+        )
       }
     )
   }
@@ -149,14 +159,22 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   }
 
   private func continueWithPhoneNumber(_ phoneNumber: PhoneNumber) async {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     if phoneNumber.verification?.status == .verified {
       isReservingForSecondFactor = true
       do {
         let reserved = try await phoneNumber.setReservedForSecondFactor()
+        guard clerk.authFlowPresentationIsCurrent(token) else { return }
         if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
-          navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
+          navigation.appendPostAuthDestination(
+            .backupCodes(
+              backupCodes: backupCodes,
+              mfaType: .phoneCode,
+              token: token
+            )
+          )
         } else {
-          navigation.handleSessionTaskCompletion(session: clerk.session)
+          _ = clerk.finishAuthFlowPresentation(token)
         }
       } catch {
         isReservingForSecondFactor = false
@@ -166,8 +184,11 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     } else {
       do {
         try await phoneNumber.sendCode()
+        guard clerk.authFlowPresentationIsCurrent(token) else { return }
         codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
-        navigation.path.append(.taskVerifySms(phoneNumber: phoneNumber))
+        navigation.appendPostAuthDestination(
+          .taskVerifySms(phoneNumber: phoneNumber, token: token)
+        )
       } catch {
         self.error = error
         ClerkLogger.error("Failed to send SMS code", error: error)

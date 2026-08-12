@@ -34,6 +34,22 @@ extension User {
     return nil
   }
 
+  var trustedDeviceIdentifierHint: String? {
+    if let primaryEmailAddress, !primaryEmailAddress.emailAddress.isEmptyTrimmed {
+      return primaryEmailAddress.emailAddress
+    }
+
+    if let primaryPhoneNumber, !primaryPhoneNumber.phoneNumber.isEmptyTrimmed {
+      return primaryPhoneNumber.phoneNumber
+    }
+
+    if let username, !username.isEmptyTrimmed {
+      return username
+    }
+
+    return nil
+  }
+
   @MainActor
   var usernameForPasswordKeeper: String {
     guard let environment = Clerk.shared.environment else { return "" }

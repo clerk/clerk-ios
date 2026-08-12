@@ -17,6 +17,7 @@ struct AuthStartView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
   @Environment(\.dismissKeyboard) private var dismissKeyboard
 
   // MARK: - State
@@ -27,6 +28,8 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
+  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
+  @State private var trustedDeviceBiometryDisplayName: TrustedDeviceBiometryDisplayName?
 
   // MARK: - Configuration
 
@@ -58,7 +61,7 @@ struct AuthStartView: View {
   }
 
   var showOrDivider: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty && showIdentifierField
+    hasAlternativeAuthMethods && showIdentifierField
   }
 
   var phoneNumberInputIsActive: Bool {
@@ -142,8 +145,15 @@ struct AuthStartView: View {
     #endif
   }
 
-  private var passkeySignInTaskID: Int? {
-    passkeySignInTaskIsEnabled ? automaticPasskeySignInRestartID : nil
+  private var passkeySignInTaskID: PasskeySignInTaskID? {
+    guard passkeySignInTaskIsEnabled, let authFlowRequestOwnerId else {
+      return nil
+    }
+
+    return PasskeySignInTaskID(
+      restartId: automaticPasskeySignInRestartID,
+      ownerId: authFlowRequestOwnerId
+    )
   }
 
   private var socialProvidersMinusLastUsed: [OAuthProvider] {
@@ -157,7 +167,18 @@ struct AuthStartView: View {
 
   private var lastUsedAuth: LastUsedAuth? {
     guard authState.persistsIdentifiers else { return nil }
-    return LastUsedAuth(environment: clerk.environment)
+    return LastUsedAuth(
+      environment: clerk.environment,
+      trustedDeviceSignInIsVisible: shouldShowTrustedDeviceSignIn
+    )
+  }
+
+  private var hasSocialProviders: Bool {
+    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
+  }
+
+  private var hasAlternativeAuthMethods: Bool {
+    hasSocialProviders || shouldShowTrustedDeviceSignIn
   }
 
   // MARK: - Display Strings
@@ -237,7 +258,9 @@ struct AuthStartView: View {
             TextDivider(string: "or")
           }
 
-          socialButtonsSection
+          if hasAlternativeAuthMethods {
+            alternativeAuthMethodsSection
+          }
         }
         .padding(.bottom, 32)
 
@@ -262,11 +285,15 @@ struct AuthStartView: View {
     }
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInTaskID) {
-      guard passkeySignInTaskID != nil else { return }
+      guard let passkeySignInTaskID else { return }
       let includeAutomaticModal = !automaticPasskeySignInHasStarted
       automaticPasskeySignInTaskGeneration += 1
       let taskGeneration = automaticPasskeySignInTaskGeneration
-      let task = Task { await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal) }
+      let task = Task {
+        await AuthFlowRequestScope.withOwner(passkeySignInTaskID.ownerId) {
+          await startPasskeySignIn(includeAutomaticModal: includeAutomaticModal)
+        }
+      }
       automaticPasskeySignInTask = task
       await withTaskCancellationHandler {
         await task.value
@@ -281,6 +308,59 @@ struct AuthStartView: View {
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
+    .task(id: trustedDeviceAvailabilityRefreshState) {
+      await refreshTrustedDeviceAvailability()
+    }
+  }
+}
+
+private struct PasskeySignInTaskID: Equatable {
+  let restartId: Int
+  let ownerId: UUID
+}
+
+enum AuthStartTrustedDeviceRefreshState: Equatable {
+  case disabled
+  case signedOut(clientID: String?)
+
+  static func state(
+    trustedDeviceFeatureIsEnabled: Bool,
+    activeSessionID: String?,
+    clientID: String?
+  ) -> Self {
+    guard trustedDeviceFeatureIsEnabled else {
+      return .disabled
+    }
+    guard activeSessionID == nil else {
+      return .disabled
+    }
+    return .signedOut(clientID: clientID)
+  }
+}
+
+extension AuthStartView {
+  private var trustedDeviceFeatureIsEnabled: Bool {
+    guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
+      return false
+    }
+
+    return nativeSettings.apiEnabled &&
+      nativeSettings.trustedDeviceSignInEnabled
+  }
+
+  private var shouldShowTrustedDeviceSignIn: Bool {
+    trustedDeviceFeatureIsEnabled &&
+      authState.mode != .signUp &&
+      trustedDeviceAvailability?.isAvailable == true &&
+      trustedDeviceBiometryDisplayName?.isSupported == true
+  }
+
+  private var trustedDeviceAvailabilityRefreshState: AuthStartTrustedDeviceRefreshState {
+    .state(
+      trustedDeviceFeatureIsEnabled: trustedDeviceFeatureIsEnabled,
+      activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil,
+      clientID: clerk.client?.id
+    )
   }
 }
 
@@ -374,6 +454,32 @@ extension AuthStartView {
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.identifierSwitcherButton)
     .simultaneousGesture(TapGesture())
+  }
+
+  @ViewBuilder
+  private var trustedDeviceSignInButton: some View {
+    if let trustedDeviceBiometryDisplayName {
+      TrustedDeviceSignInButton(
+        biometryDisplayName: trustedDeviceBiometryDisplayName
+      ) {
+        cancelAutomaticPasskeySignIn()
+        await signInWithTrustedDevice()
+      }
+      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsTrustedDeviceBadge == true)
+      .simultaneousGesture(TapGesture())
+    }
+  }
+
+  private var alternativeAuthMethodsSection: some View {
+    VStack(spacing: 16) {
+      if shouldShowTrustedDeviceSignIn {
+        trustedDeviceSignInButton
+      }
+
+      if hasSocialProviders {
+        socialButtonsSection
+      }
+    }
   }
 
   private var socialButtonsSection: some View {
@@ -642,6 +748,64 @@ extension AuthStartView {
       true
     default:
       false
+    }
+  }
+
+  private func refreshTrustedDeviceAvailability() async {
+    guard authState.mode != .signUp, trustedDeviceFeatureIsEnabled else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    guard clerk.session?.status != .active else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    guard let localAvailability = try? clerk.trustedDevices.localAvailability() else {
+      trustedDeviceAvailability = nil
+      return
+    }
+
+    if localAvailability.isAvailable, trustedDeviceBiometryDisplayName == nil {
+      trustedDeviceBiometryDisplayName = .current()
+    }
+    trustedDeviceAvailability = localAvailability
+    guard localAvailability.isAvailable else { return }
+
+    let validationResult = await clerk.trustedDevices.validateLocalCredentialIfPossible()
+    guard !Task.isCancelled else { return }
+
+    switch validationResult {
+    case .valid:
+      trustedDeviceAvailability = .available
+    case let .invalid(reason):
+      trustedDeviceAvailability = .unavailable(reason)
+    case .inconclusive:
+      break
+    }
+  }
+
+  private func signInWithTrustedDevice() async {
+    generalError = nil
+
+    do {
+      let signIn = try await clerk.auth.signInWithTrustedDevice()
+      guard !Task.isCancelled, navigation.path.isEmpty else { return }
+      navigation.setToStepForStatus(signIn: signIn)
+    } catch {
+      if error.isCancellationError {
+        return
+      }
+
+      if error.isUserCancelledError {
+        restartAutomaticPasskeySignInIfNeeded()
+        return
+      }
+
+      generalError = error
+      await refreshTrustedDeviceAvailability()
+      restartAutomaticPasskeySignInIfNeeded()
     }
   }
 }

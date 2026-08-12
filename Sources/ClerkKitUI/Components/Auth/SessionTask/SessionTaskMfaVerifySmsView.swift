@@ -22,6 +22,7 @@ struct SessionTaskMfaVerifySmsView: View {
   @FocusState private var otpFieldIsFocused: Bool
 
   let phoneNumber: PhoneNumber
+  let token: AuthFlowPresentationToken
 
   private var codeLimiterIdentifier: String {
     phoneNumber.phoneNumber
@@ -137,10 +138,12 @@ struct SessionTaskMfaVerifySmsView: View {
   }
 
   private func attempt() async {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     verificationState = .verifying
 
     do {
       try await phoneNumber.verifyCode(code)
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
       try await handleSuccessfulVerification()
     } catch {
       otpFieldState = .error
@@ -154,22 +157,32 @@ struct SessionTaskMfaVerifySmsView: View {
   }
 
   private func handleSuccessfulVerification() async throws {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     let reserved = try await phoneNumber.setReservedForSecondFactor()
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success
     if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
-      navigation.path.append(.backupCodes(backupCodes: backupCodes, mfaType: .phoneCode))
+      navigation.appendPostAuthDestination(
+        .backupCodes(
+          backupCodes: backupCodes,
+          mfaType: .phoneCode,
+          token: token
+        )
+      )
     } else {
-      navigation.handleSessionTaskCompletion(session: clerk.session)
+      _ = clerk.finishAuthFlowPresentation(token)
     }
   }
 
   private func resend() async {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     code = ""
     verificationState = .default
 
     do {
       try await phoneNumber.sendCode()
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       otpFieldIsFocused = false

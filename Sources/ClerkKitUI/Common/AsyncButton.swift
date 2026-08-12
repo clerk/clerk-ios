@@ -5,9 +5,11 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkKit
 import SwiftUI
 
 struct AsyncButton<Label: View>: View {
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
   @State private var isRunning = false
 
   let role: ButtonRole?
@@ -32,7 +34,10 @@ struct AsyncButton<Label: View>: View {
         if isRunning { return }
         isRunning = true
         defer { isRunning = false }
-        await action()
+        await AuthFlowRequestScope.withOwner(
+          authFlowRequestOwnerId,
+          operation: action
+        )
       }
     } label: {
       label(isRunning)

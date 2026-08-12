@@ -128,6 +128,10 @@ struct MagicLinkCallback: Equatable {
 final class MagicLinkStore {
   private let keychain: any KeychainStorage
   private let ttl: TimeInterval = 10 * 60
+  private var inMemoryAuthFlowOwnership: (
+    flowIdentity: FlowIdentity,
+    ownerId: UUID
+  )?
 
   init(keychain: any KeychainStorage) {
     self.keychain = keychain
@@ -137,7 +141,12 @@ final class MagicLinkStore {
   ///
   /// Only one pending flow is persisted at a time. Saving a new verifier
   /// replaces any previously stored pending flow.
-  func save(kind: PendingMagicLinkFlow.Kind, flowId: String, codeVerifier: String) throws {
+  func save(
+    kind: PendingMagicLinkFlow.Kind,
+    flowId: String,
+    codeVerifier: String,
+    authFlowOwnerId: UUID? = nil
+  ) throws {
     let createdAt = Date()
     let pendingFlow = PendingMagicLinkFlow(
       kind: kind,
@@ -148,6 +157,9 @@ final class MagicLinkStore {
     )
     let data = try JSONEncoder.clerkEncoder.encode(pendingFlow)
     try keychain.set(data, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
+    inMemoryAuthFlowOwnership = authFlowOwnerId.map {
+      (flowIdentity: FlowIdentity(pendingFlow), ownerId: $0)
+    }
   }
 
   func load() -> PendingMagicLinkFlow? {
@@ -176,7 +188,27 @@ final class MagicLinkStore {
     deletePendingFlow()
   }
 
+  func authFlowOwnerId(for flow: PendingMagicLinkFlow) -> UUID? {
+    guard inMemoryAuthFlowOwnership?.flowIdentity == FlowIdentity(flow) else {
+      return nil
+    }
+    return inMemoryAuthFlowOwnership?.ownerId
+  }
+
   private func deletePendingFlow() {
     try? keychain.deleteItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
+    inMemoryAuthFlowOwnership = nil
+  }
+
+  private struct FlowIdentity: Equatable {
+    let kind: PendingMagicLinkFlow.Kind
+    let flowId: String?
+    let codeVerifier: String
+
+    init(_ flow: PendingMagicLinkFlow) {
+      kind = flow.kind
+      flowId = flow.flowId
+      codeVerifier = flow.codeVerifier
+    }
   }
 }

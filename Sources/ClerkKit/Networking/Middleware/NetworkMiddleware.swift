@@ -146,19 +146,22 @@ struct ClerkRequestCheckpoint: Equatable {
   let sharedSessionBaseGeneration: UInt64?
   let isCanonicalClientRequest: Bool
   let requestDeviceToken: String?
+  let authFlowRegistrationId: UUID?
 
   init(
     requestSequence: Int?,
     clientResponseGeneration: ClientResponseGeneration?,
     sharedSessionBaseGeneration: UInt64?,
     isCanonicalClientRequest: Bool,
-    requestDeviceToken: String?
+    requestDeviceToken: String?,
+    authFlowRegistrationId: UUID? = nil
   ) {
     self.requestSequence = requestSequence
     self.clientResponseGeneration = clientResponseGeneration
     self.sharedSessionBaseGeneration = sharedSessionBaseGeneration
     self.isCanonicalClientRequest = isCanonicalClientRequest
     self.requestDeviceToken = requestDeviceToken
+    self.authFlowRegistrationId = authFlowRegistrationId
   }
 
   init(request: URLRequest) {
@@ -167,7 +170,8 @@ struct ClerkRequestCheckpoint: Equatable {
       clientResponseGeneration: request.clerkClientResponseGeneration,
       sharedSessionBaseGeneration: request.clerkSharedSessionBaseGeneration,
       isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
-      requestDeviceToken: request.clerkRequestDeviceToken
+      requestDeviceToken: request.clerkRequestDeviceToken,
+      authFlowRegistrationId: request.clerkAuthFlowRegistrationId
     )
   }
 
@@ -183,6 +187,7 @@ extension URLRequest {
   private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
+  private static let clerkAuthFlowRegistrationIdKey = "com.clerk.auth-flow-registration-id"
   private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
   private static let clerkBodyLoggingKey = "com.clerk.body-logging"
 
@@ -226,6 +231,16 @@ extension URLRequest {
 
   var clerkRequestDeviceToken: String? {
     URLProtocol.property(forKey: Self.clerkRequestDeviceTokenKey, in: self) as? String
+  }
+
+  var clerkAuthFlowRegistrationId: UUID? {
+    guard let value = URLProtocol.property(
+      forKey: Self.clerkAuthFlowRegistrationIdKey,
+      in: self
+    ) as? String else {
+      return nil
+    }
+    return UUID(uuidString: value)
   }
 
   var shouldAutomaticallySyncClerkClient: Bool {
@@ -285,6 +300,10 @@ extension URLRequest {
     setClerkProperty(deviceToken, key: Self.clerkRequestDeviceTokenKey)
   }
 
+  mutating func setClerkAuthFlowRegistrationId(_ id: UUID) {
+    setClerkProperty(id.uuidString, key: Self.clerkAuthFlowRegistrationIdKey)
+  }
+
   mutating func setClerkRequestCheckpoint(_ checkpoint: ClerkRequestCheckpoint) {
     setClerkProperties([
       (value: checkpoint.requestSequence, key: Self.clerkRequestSequenceKey),
@@ -301,6 +320,10 @@ extension URLRequest {
         key: Self.clerkCanonicalClientRequestKey
       ),
       (value: checkpoint.requestDeviceToken, key: Self.clerkRequestDeviceTokenKey),
+      (
+        value: checkpoint.authFlowRegistrationId?.uuidString,
+        key: Self.clerkAuthFlowRegistrationIdKey
+      ),
     ])
   }
 

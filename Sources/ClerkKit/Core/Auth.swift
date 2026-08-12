@@ -20,6 +20,7 @@ public struct Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
+  private let trustedDevices: TrustedDevices
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
 
@@ -30,6 +31,7 @@ public struct Auth {
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
+    trustedDevices: TrustedDevices,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
@@ -39,6 +41,7 @@ public struct Auth {
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
+    self.trustedDevices = trustedDevices
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
   }
@@ -282,6 +285,26 @@ public struct Auth {
     return try await signIn.authenticateWithPasskey()
   }
   #endif
+
+  /// Signs in with a locally enrolled trusted-device credential.
+  ///
+  /// The trusted-device domain owns local credential selection, key access, challenge signing,
+  /// and stale local credential cleanup.
+  ///
+  /// - Parameters:
+  ///   - id: The trusted-device credential ID to use. When omitted, the available local credential is used.
+  ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
+  ///   - reason: The reason shown in the system biometric prompt.
+  /// - Returns: A `SignIn` object representing the trusted-device sign-in attempt.
+  /// - Throws: An error if trusted-device sign-in fails.
+  @discardableResult
+  public func signInWithTrustedDevice(
+    id: String? = nil,
+    identifierHint: String? = nil,
+    reason: String? = nil
+  ) async throws -> SignIn {
+    try await trustedDevices.signIn(id: id, identifierHint: identifierHint, reason: reason)
+  }
 
   #if !os(tvOS) && !os(watchOS)
   /// Starts Enterprise SSO and returns the prepared sign-in state.
@@ -667,7 +690,18 @@ extension Auth {
     }
   }
 
-  func activateSession(sessionId: String) async throws {
+  func activateSession(
+    sessionId: String,
+    authFlowActivation: AuthFlowActivationToken? = nil
+  ) async throws {
+    defer {
+      if let authFlowActivation {
+        Clerk.shared.authSessionActivationDidFinish(
+          activation: authFlowActivation
+        )
+      }
+    }
+
     do {
       try await setActive(sessionId: sessionId)
     } catch {
@@ -721,53 +755,79 @@ extension Auth {
     if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
       throw ClerkClientError(message: "Magic link callback does not match the pending flow.", localizationBundle: .module)
     }
+    let authFlowOwnerId = magicLinkStore.authFlowOwnerId(for: pendingFlow)
 
-    Clerk.shared.setCallbackContinuation(nil)
+    return try await AuthFlowRequestScope.withOwner(authFlowOwnerId) {
+      Clerk.shared.setCallbackContinuation(nil)
 
-    let params = MagicLinkCompleteParams(
-      flowId: resolvedFlowId,
-      approvalToken: resolvedApprovalToken,
-      codeVerifier: pendingFlow.codeVerifier
-    )
+      let params = MagicLinkCompleteParams(
+        flowId: resolvedFlowId,
+        approvalToken: resolvedApprovalToken,
+        codeVerifier: pendingFlow.codeVerifier
+      )
 
-    let completionResult: MagicLinkCompleteResult
-    do {
-      completionResult = try await magicLinkService.complete(params: params)
-    } catch {
-      if MagicLinkTerminalError.contains(error) {
-        magicLinkStore.clear(flow: pendingFlow)
+      let completionResult: MagicLinkCompleteResult
+      do {
+        completionResult = try await magicLinkService.complete(params: params)
+      } catch {
+        if MagicLinkTerminalError.contains(error) {
+          magicLinkStore.clear(flow: pendingFlow)
+        }
+        throw error
       }
-      throw error
-    }
-    magicLinkStore.clear(flow: pendingFlow)
+      magicLinkStore.clear(flow: pendingFlow)
 
-    let result: TransferFlowResult
+      let result = try await resolveMagicLinkCompletion(
+        completionResult,
+        pendingFlow: pendingFlow,
+        authFlowOwnerId: authFlowOwnerId
+      )
+
+      if result.needsContinuation {
+        sendContinuation(for: result)
+      }
+
+      return result
+    }
+  }
+
+  private func resolveMagicLinkCompletion(
+    _ completion: MagicLinkCompleteResult,
+    pendingFlow: PendingMagicLinkFlow,
+    authFlowOwnerId: UUID?
+  ) async throws -> TransferFlowResult {
     switch pendingFlow.kind {
     case .signIn:
-      guard case .ticket(let completionResponse) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a sign-up for a sign-in flow.", localizationBundle: .module)
+      guard case .ticket(let response) = completion else {
+        throw ClerkClientError(
+          message: "Magic link callback returned a sign-up for a sign-in flow.",
+          localizationBundle: .module
+        )
       }
 
-      let signIn = try await signInWithTicket(completionResponse.ticket)
-      result = .signIn(signIn)
-
+      let signIn = try await signInWithTicket(response.ticket)
       if let sessionId = signIn.createdSessionId {
-        try await activateSession(sessionId: sessionId)
+        let activation = Clerk.shared.beginCompletedAuthSessionActivation(
+          sessionId: sessionId,
+          flowId: signIn.id,
+          ownerId: authFlowOwnerId
+        )
+        try await activateSession(
+          sessionId: sessionId,
+          authFlowActivation: activation
+        )
       }
+      return .signIn(signIn)
 
     case .signUp:
-      guard case .signUp(let signUp) = completionResult else {
-        throw ClerkClientError(message: "Magic link callback returned a ticket for a sign-up flow.", localizationBundle: .module)
+      guard case .signUp(let signUp) = completion else {
+        throw ClerkClientError(
+          message: "Magic link callback returned a ticket for a sign-up flow.",
+          localizationBundle: .module
+        )
       }
-
-      result = .signUp(signUp)
+      return .signUp(signUp)
     }
-
-    if result.needsContinuation {
-      sendContinuation(for: result)
-    }
-
-    return result
   }
 
   @discardableResult

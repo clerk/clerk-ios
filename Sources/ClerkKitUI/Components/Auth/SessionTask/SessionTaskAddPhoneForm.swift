@@ -18,6 +18,7 @@ struct SessionTaskAddPhoneForm: View {
 
   var onBeginSubmit: (() -> Void)?
   var onError: (() -> Void)?
+  let token: AuthFlowPresentationToken
   let onPhoneNumberCreated: (PhoneNumber) async throws -> Void
 
   private var user: User? {
@@ -72,11 +73,16 @@ struct SessionTaskAddPhoneForm: View {
   }
 
   private func addPhoneNumber() async {
-    guard let user else { return }
+    guard clerk.authFlowPresentationIsCurrent(token),
+          let user
+    else {
+      return
+    }
 
     do {
       onBeginSubmit?()
       let newPhoneNumber = try await user.createPhoneNumber(phoneNumber)
+      guard clerk.authFlowPresentationIsCurrent(token) else { return }
       try await onPhoneNumberCreated(newPhoneNumber)
     } catch {
       self.error = error

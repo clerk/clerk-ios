@@ -23,7 +23,11 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
       return
     }
-    let context = metadata.context(update: update)
+    let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
+    let context = metadata.context(
+      update: update,
+      completedAuthFlow: completedAuthFlow
+    )
 
     let clerk = try await runtimeScope.requireCurrentClerk()
     try Task.checkCancellation()
@@ -129,6 +133,32 @@ struct ClientSyncResponseContext {
   let isCanonicalClientRequest: Bool
   let clientResponseGeneration: ClientResponseGeneration?
   let responseSequence: Int?
+  let completedAuthFlow: TransferFlowResult?
+  let authFlowRegistrationId: UUID?
+
+  init(
+    update: ClientResponseUpdate,
+    deviceTokenUpdate: ClerkDeviceTokenResponseUpdate,
+    requestDeviceToken: String?,
+    baseGeneration: UInt64?,
+    serverDate: Date?,
+    isCanonicalClientRequest: Bool,
+    clientResponseGeneration: ClientResponseGeneration?,
+    responseSequence: Int?,
+    completedAuthFlow: TransferFlowResult? = nil,
+    authFlowRegistrationId: UUID? = nil
+  ) {
+    self.update = update
+    self.deviceTokenUpdate = deviceTokenUpdate
+    self.requestDeviceToken = requestDeviceToken
+    self.baseGeneration = baseGeneration
+    self.serverDate = serverDate
+    self.isCanonicalClientRequest = isCanonicalClientRequest
+    self.clientResponseGeneration = clientResponseGeneration
+    self.responseSequence = responseSequence
+    self.completedAuthFlow = completedAuthFlow
+    self.authFlowRegistrationId = authFlowRegistrationId
+  }
 
   func resolvedIdentityPayload(
     currentDeviceToken: String?,
@@ -201,7 +231,10 @@ struct ClientSyncResponseMetadata {
     serverDate = response.serverDate
   }
 
-  func context(update: ClientResponseUpdate) -> ClientSyncResponseContext {
+  func context(
+    update: ClientResponseUpdate,
+    completedAuthFlow: TransferFlowResult? = nil
+  ) -> ClientSyncResponseContext {
     ClientSyncResponseContext(
       update: update,
       deviceTokenUpdate: deviceTokenUpdate,
@@ -210,7 +243,9 @@ struct ClientSyncResponseMetadata {
       serverDate: serverDate,
       isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
       clientResponseGeneration: checkpoint.clientResponseGeneration,
-      responseSequence: checkpoint.requestSequence
+      responseSequence: checkpoint.requestSequence,
+      completedAuthFlow: completedAuthFlow,
+      authFlowRegistrationId: checkpoint.authFlowRegistrationId
     )
   }
 }

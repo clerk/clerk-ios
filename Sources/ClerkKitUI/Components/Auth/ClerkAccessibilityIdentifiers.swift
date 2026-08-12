@@ -37,6 +37,7 @@ enum ClerkAccessibilityIdentifiers {
 
     enum Security {
       static let changePassword = "clerk.userProfile.security.changePassword"
+      static let trustedDeviceToggle = "clerk.userProfile.security.trustedDeviceToggle"
       static let addMfa = "clerk.userProfile.security.addMfa"
       static let deleteAccount = "clerk.userProfile.security.deleteAccount"
     }
@@ -84,6 +85,7 @@ enum ClerkAccessibilityIdentifiers {
       static let identifier = "clerk.auth.start.identifier"
       static let phoneNumber = "clerk.auth.start.phoneNumber"
       static let continueButton = "clerk.auth.start.continue"
+      static let trustedDeviceSignInButton = "clerk.auth.start.trustedDeviceSignIn"
       static let identifierSwitcherButton = "clerk.auth.start.identifierSwitcher"
     }
 
