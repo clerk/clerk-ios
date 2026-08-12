@@ -39,6 +39,10 @@ extension ClerkAPIError {
   public var errorDescription: String? {
     longMessage ?? message
   }
+
+  package var isUnsupportedAppVersion: Bool {
+    code == "unsupported_app_version"
+  }
 }
 
 /// Represents the body of Clerk API error responses.

@@ -46,6 +46,29 @@ struct RetryingOperationTests {
   }
 
   @Test
+  @MainActor
+  func stopsWhenRetryPredicateRejectsError() async {
+    let policy = RetryPolicy(maxAttempts: 3, initialDelay: .zero, maximumDelay: .zero)
+    let counter = AttemptCounter()
+
+    do {
+      _ = try await retryingOperation(
+        policy: policy,
+        operationName: "test",
+        shouldRetry: { _ in false }
+      ) {
+        _ = await counter.incrementAndGet()
+        throw TestError.sample
+      }
+      #expect(Bool(false), "Expected retryingOperation to throw immediately")
+    } catch is TestError {
+      #expect(await counter.value == 1)
+    } catch {
+      #expect(Bool(false), "Unexpected error type: \(error)")
+    }
+  }
+
+  @Test
   func policySanitizesInputs() {
     let policy = RetryPolicy(maxAttempts: 0, initialDelay: .seconds(-1), maximumDelay: .seconds(-2))
 

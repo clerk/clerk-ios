@@ -12,23 +12,15 @@ struct ForceUpdateTests {
   }
 
   @Test
-  func isForceUpdateRequiredReflectsResolvedEnvironmentValue() {
-    var environment = Clerk.Environment.mock
-    environment.forceUpdate = .init(
-      required: true,
-      minimumAppVersion: "2.0.0",
-      appStoreURL: URL(string: "https://apps.apple.com/app/id123456789")
-    )
-
+  func isForceUpdateRequiredReflectsAppVersionSupportStatus() {
     let clerk = Clerk()
-    clerk.environment = environment
+    clerk.appVersionSupportStatus = .init(
+      isSupported: false,
+      minimumVersion: "2.0.0",
+      updateURL: URL(string: "https://apps.apple.com/app/id123456789")
+    )
 
     #expect(clerk.isForceUpdateRequired)
-    #expect(clerk.environment?.forceUpdate.required == true)
-    #expect(clerk.environment?.forceUpdate.minimumAppVersion == "2.0.0")
-    #expect(
-      clerk.environment?.forceUpdate.appStoreURL?.absoluteString
-        == "https://apps.apple.com/app/id123456789"
-    )
+    #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0.0")
   }
 }
