@@ -116,7 +116,7 @@ extension NetworkingPipeline {
         ClerkClientSyncResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAuthEventEmitterResponseMiddleware(runtimeScope: runtimeScope),
         ClerkInvalidAuthResponseMiddleware(runtimeScope: runtimeScope),
-        ClerkErrorThrowingResponseMiddleware(),
+        ClerkErrorThrowingResponseMiddleware(runtimeScope: runtimeScope),
       ],
       retryMiddleware: [
         ClerkRateLimitRetryMiddleware(),
