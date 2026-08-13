@@ -11,12 +11,12 @@ struct OTPSubmissionTracker {
   private var isExecuting = false
 
   mutating func codeDidChange(to code: String, requiredLength: Int) -> Bool {
-    guard activeCode == nil else { return false }
-
     if code.count < requiredLength {
       lastSubmittedCode = nil
       return false
     }
+
+    guard activeCode == nil else { return false }
 
     guard code.count == requiredLength,
           code != lastSubmittedCode
@@ -45,11 +45,13 @@ struct OTPSubmissionTracker {
     requiredLength: Int,
     disposition: OTPSubmissionDisposition
   ) -> String? {
+    let completedCode = activeCode
     activeCode = nil
 
-    guard disposition == .submitPendingCode,
+    guard let completedCode,
+          disposition == .submitPendingCode,
           currentCode.count == requiredLength,
-          currentCode != lastSubmittedCode
+          currentCode != completedCode
     else {
       isExecuting = false
       return nil

@@ -80,6 +80,49 @@ struct OTPSubmissionTrackerTests {
   }
 
   @Test
+  func incompleteEditDuringSubmissionAllowsRetryAfterTerminalError() {
+    var tracker = OTPSubmissionTracker()
+    let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
+    let submittedCode = tracker.beginSubmission()
+    let didStartIncompleteCode = tracker.codeDidChange(to: "12345", requiredLength: 6)
+    let nextCode = tracker.completeSubmission(
+      currentCode: "12345",
+      requiredLength: 6,
+      disposition: .stop
+    )
+
+    let didStartRetry = tracker.codeDidChange(to: "123456", requiredLength: 6)
+
+    #expect(didStart)
+    #expect(submittedCode == "123456")
+    #expect(!didStartIncompleteCode)
+    #expect(nextCode == nil)
+    #expect(didStartRetry)
+  }
+
+  @Test
+  func reenteredSameCodeIsNotResubmittedAfterIncorrectResult() {
+    var tracker = OTPSubmissionTracker()
+    let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
+    let submittedCode = tracker.beginSubmission()
+    let didStartIncompleteCode = tracker.codeDidChange(to: "12345", requiredLength: 6)
+    let didStartReenteredCode = tracker.codeDidChange(to: "123456", requiredLength: 6)
+
+    let nextCode = tracker.completeSubmission(
+      currentCode: "123456",
+      requiredLength: 6,
+      disposition: .submitPendingCode
+    )
+
+    #expect(didStart)
+    #expect(submittedCode == "123456")
+    #expect(!didStartIncompleteCode)
+    #expect(!didStartReenteredCode)
+    #expect(nextCode == nil)
+    #expect(tracker.activeCode == nil)
+  }
+
+  @Test
   func unchangedIncorrectCodeIsNotResubmittedAutomatically() {
     var tracker = OTPSubmissionTracker()
     let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
