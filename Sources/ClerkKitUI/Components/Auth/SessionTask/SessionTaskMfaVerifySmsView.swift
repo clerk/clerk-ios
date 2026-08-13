@@ -18,7 +18,6 @@ struct SessionTaskMfaVerifySmsView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var verificationAttempts = OTPVerificationAttemptTracker()
 
   @FocusState private var otpFieldIsFocused: Bool
 
@@ -138,40 +137,30 @@ struct SessionTaskMfaVerifySmsView: View {
     }
   }
 
-  private func attempt(code: String) async {
-    guard clerk.authFlowPresentationIsCurrent(token) else { return }
-    let attemptID = verificationAttempts.begin()
+  private func attempt(code: String) async -> OTPSubmissionDisposition {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
     verificationState = .verifying
 
     do {
       try await phoneNumber.verifyCode(code)
-      guard clerk.authFlowPresentationIsCurrent(token) else {
-        _ = verificationAttempts.complete(attemptID)
-        return
-      }
-      guard !Task.isCancelled else {
-        _ = verificationAttempts.complete(attemptID)
-        otpFieldState = .default
-        verificationState = .default
-        return
-      }
-      guard let reserved = try await reservePhoneNumberForSecondFactor() else {
-        _ = verificationAttempts.complete(attemptID)
-        return
-      }
-      guard verificationAttempts.complete(attemptID) else { return }
+      guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
-      handleSuccessfulVerification(reserved)
+      try await handleSuccessfulVerification()
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
+      return .stop
     } catch {
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       otpFieldState = .error
       verificationState = .error(error)
@@ -180,22 +169,15 @@ struct SessionTaskMfaVerifySmsView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 
   private func handleSuccessfulVerification() async throws {
-    guard let reserved = try await reservePhoneNumberForSecondFactor() else { return }
-    handleSuccessfulVerification(reserved)
-  }
-
-  private func reservePhoneNumberForSecondFactor() async throws -> PhoneNumber? {
-    guard clerk.authFlowPresentationIsCurrent(token) else { return nil }
+    guard clerk.authFlowPresentationIsCurrent(token) else { return }
     let reserved = try await phoneNumber.setReservedForSecondFactor()
-    guard clerk.authFlowPresentationIsCurrent(token) else { return nil }
-    return reserved
-  }
-
-  private func handleSuccessfulVerification(_ reserved: PhoneNumber) {
+    guard clerk.authFlowPresentationIsCurrent(token), !Task.isCancelled else { return }
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success
     if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {

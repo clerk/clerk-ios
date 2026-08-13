@@ -17,7 +17,7 @@ struct OTPField: View {
   @Binding var fieldState: FieldState
   @FocusState.Binding var isFocused: Bool
   var accessibilityIdentifier: String = ""
-  var onCodeEntry: (String) async -> Void
+  var onCodeEntry: (String) async -> OTPSubmissionDisposition
 
   enum FieldState {
     case `default`
@@ -28,6 +28,7 @@ struct OTPField: View {
   @State private var inputSize = CGSize.zero
   @State private var errorTrigger = false
   @State private var submissionTracker = OTPSubmissionTracker()
+  @State private var submissionID = 0
 
   var body: some View {
     HStack(spacing: 12) {
@@ -65,10 +66,7 @@ struct OTPField: View {
       code = String(newValue.prefix(numberOfInputs))
       if previousCode == code { return }
 
-      submissionTracker.codeDidChange(
-        to: code,
-        requiredLength: numberOfInputs
-      )
+      startSubmissionIfNeeded()
 
       if code.count == numberOfInputs {
         fieldState = .default
@@ -89,17 +87,41 @@ struct OTPField: View {
     .onAppear {
       fieldState = .default
     }
-    .task(id: code) {
-      guard let submittedCode = submissionTracker.claimCode(
-        code,
-        requiredLength: numberOfInputs
-      ) else {
+    .task(id: submissionID) {
+      await submitActiveCodes()
+    }
+  }
+
+  private func startSubmissionIfNeeded() {
+    guard submissionTracker.codeDidChange(
+      to: code,
+      requiredLength: numberOfInputs
+    ) else {
+      return
+    }
+
+    submissionID += 1
+  }
+
+  private func submitActiveCodes() async {
+    var submittedCode = submissionTracker.beginSubmission()
+
+    while let code = submittedCode {
+      guard !Task.isCancelled else {
+        submissionTracker.cancelSubmission()
         return
       }
 
-      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
-        await onCodeEntry(submittedCode)
+      fieldState = .default
+      let disposition = await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
+        await onCodeEntry(code)
       }
+
+      submittedCode = submissionTracker.completeSubmission(
+        currentCode: self.code,
+        requiredLength: numberOfInputs,
+        disposition: disposition
+      )
     }
   }
 
@@ -176,10 +198,12 @@ struct OTPField: View {
   VStack(spacing: 20) {
     OTPField(code: $code, fieldState: $fieldState1, isFocused: $isFocused) { _ in
       fieldState1 = .default
+      return .stop
     }
 
     OTPField(code: $code, fieldState: $fieldState2, isFocused: $isFocused) { _ in
       fieldState2 = .error
+      return .stop
     }
   }
   .padding()

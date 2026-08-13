@@ -18,7 +18,6 @@ struct UserProfileVerifyView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var verificationAttempts = OTPVerificationAttemptTracker()
 
   @FocusState private var otpFieldIsFocused: Bool
 
@@ -226,40 +225,51 @@ extension UserProfileVerifyView {
     }
   }
 
-  func attempt(code: String) async {
+  func attempt(code: String) async -> OTPSubmissionDisposition {
     let verificationMode = mode
-    let attemptID = verificationAttempts.begin()
     verificationState = .verifying
 
     do {
-      guard let result = try await verificationResult(
-        for: verificationMode,
-        code: code
-      ) else {
-        _ = verificationAttempts.complete(attemptID)
-        verificationState = .default
-        return
+      let backupCodes: [String]?
+      let codeLimiterIdentifier: String?
+
+      switch verificationMode {
+      case let .email(emailAddress):
+        try await emailAddress.verifyCode(code)
+        backupCodes = nil
+        codeLimiterIdentifier = emailAddress.emailAddress
+      case let .phone(phoneNumber):
+        try await phoneNumber.verifyCode(code)
+        backupCodes = nil
+        codeLimiterIdentifier = phoneNumber.phoneNumber
+      case .totp:
+        guard let user else {
+          verificationState = .default
+          return .stop
+        }
+        let totp = try await user.verifyTOTP(code: code)
+        backupCodes = totp.backupCodes
+        codeLimiterIdentifier = nil
       }
 
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
 
-      if let codeLimiterIdentifier = result.codeLimiterIdentifier {
+      if let codeLimiterIdentifier {
         codeLimiter.clearRecord(for: codeLimiterIdentifier)
       }
 
       verificationState = .success
-      onCompletion(result.backupCodes)
+      onCompletion(backupCodes)
+      return .stop
     } catch {
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       otpFieldState = .error
       verificationState = .error(error)
@@ -268,40 +278,10 @@ extension UserProfileVerifyView {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
-
-  private func verificationResult(
-    for mode: Mode,
-    code: String
-  ) async throws -> VerificationResult? {
-    switch mode {
-    case let .email(emailAddress):
-      try await emailAddress.verifyCode(code)
-      return VerificationResult(
-        backupCodes: nil,
-        codeLimiterIdentifier: emailAddress.emailAddress
-      )
-    case let .phone(phoneNumber):
-      try await phoneNumber.verifyCode(code)
-      return VerificationResult(
-        backupCodes: nil,
-        codeLimiterIdentifier: phoneNumber.phoneNumber
-      )
-    case .totp:
-      guard let user else { return nil }
-      let totp = try await user.verifyTOTP(code: code)
-      return VerificationResult(
-        backupCodes: totp.backupCodes,
-        codeLimiterIdentifier: nil
-      )
-    }
-  }
-}
-
-private struct VerificationResult {
-  let backupCodes: [String]?
-  let codeLimiterIdentifier: String?
 }
 
 #Preview("Email") {

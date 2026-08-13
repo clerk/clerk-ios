@@ -24,7 +24,6 @@ struct SignInFactorCodeView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState: OTPField.FieldState = .default
-  @State private var verificationAttempts = OTPVerificationAttemptTracker()
   @FocusState private var otpFieldIsFocused: Bool
 
   var signIn: SignIn? {
@@ -286,35 +285,34 @@ extension SignInFactorCodeView {
     }
   }
 
-  func attempt(code: String) async {
+  func attempt(code: String) async -> OTPSubmissionDisposition {
     guard var signIn else {
       navigation.path = []
-      return
+      return .stop
     }
 
-    let attemptID = verificationAttempts.begin()
     otpFieldState = .default
     verificationState = .verifying
 
     do {
       signIn = try await attemptVerification(signIn: signIn, code: code)
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       otpFieldIsFocused = false
       verificationState = .success
       navigation.setToStepForStatus(signIn: signIn)
+      return .stop
     } catch {
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       handleVerificationError(error)
+      return error.otpSubmissionDisposition
     }
   }
 

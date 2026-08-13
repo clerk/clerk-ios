@@ -7,39 +7,57 @@
 
 struct OTPSubmissionTracker {
   private var lastSubmittedCode: String?
+  private(set) var activeCode: String?
+  private var isExecuting = false
 
-  mutating func codeDidChange(to code: String, requiredLength: Int) {
+  mutating func codeDidChange(to code: String, requiredLength: Int) -> Bool {
+    guard activeCode == nil else { return false }
+
     if code.count < requiredLength {
       lastSubmittedCode = nil
+      return false
     }
-  }
 
-  mutating func claimCode(_ code: String, requiredLength: Int) -> String? {
     guard code.count == requiredLength,
           code != lastSubmittedCode
     else {
+      return false
+    }
+
+    activeCode = code
+    lastSubmittedCode = code
+    return true
+  }
+
+  mutating func beginSubmission() -> String? {
+    guard !isExecuting, let activeCode else { return nil }
+    isExecuting = true
+    return activeCode
+  }
+
+  mutating func cancelSubmission() {
+    activeCode = nil
+    isExecuting = false
+  }
+
+  mutating func completeSubmission(
+    currentCode: String,
+    requiredLength: Int,
+    disposition: OTPSubmissionDisposition
+  ) -> String? {
+    activeCode = nil
+
+    guard disposition == .submitPendingCode,
+          currentCode.count == requiredLength,
+          currentCode != lastSubmittedCode
+    else {
+      isExecuting = false
       return nil
     }
 
-    lastSubmittedCode = code
-    return code
-  }
-}
-
-struct OTPVerificationAttemptTracker {
-  private var nextAttemptID = 0
-  private var activeAttemptID: Int?
-
-  mutating func begin() -> Int {
-    nextAttemptID += 1
-    activeAttemptID = nextAttemptID
-    return nextAttemptID
-  }
-
-  mutating func complete(_ attemptID: Int) -> Bool {
-    guard activeAttemptID == attemptID else { return false }
-    activeAttemptID = nil
-    return true
+    activeCode = currentCode
+    lastSubmittedCode = currentCode
+    return currentCode
   }
 }
 

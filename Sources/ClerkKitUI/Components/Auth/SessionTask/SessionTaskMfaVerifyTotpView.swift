@@ -17,7 +17,6 @@ struct SessionTaskMfaVerifyTotpView: View {
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
   @State private var backupCodes = [String]()
-  @State private var verificationAttempts = OTPVerificationAttemptTracker()
 
   let token: AuthFlowPresentationToken
 
@@ -78,32 +77,30 @@ struct SessionTaskMfaVerifyTotpView: View {
     }
   }
 
-  private func attempt(code: String) async {
+  private func attempt(code: String) async -> OTPSubmissionDisposition {
     guard clerk.authFlowPresentationIsCurrent(token),
           let user = clerk.user
     else {
-      return
+      return .stop
     }
-    let attemptID = verificationAttempts.begin()
     verificationState = .verifying
 
     do {
       let totp = try await user.verifyTOTP(code: code)
-      guard clerk.authFlowPresentationIsCurrent(token) else { return }
-      guard verificationAttempts.complete(attemptID) else { return }
+      guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       backupCodes = totp.backupCodes ?? []
       handleSuccessfulVerification()
+      return .stop
     } catch {
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       otpFieldState = .error
       verificationState = .error(error)
@@ -112,6 +109,8 @@ struct SessionTaskMfaVerifyTotpView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 

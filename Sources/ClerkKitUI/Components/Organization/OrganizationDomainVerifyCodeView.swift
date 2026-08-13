@@ -19,7 +19,6 @@ struct OrganizationDomainVerifyCodeView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
-  @State private var verificationAttempts = OTPVerificationAttemptTracker()
   @FocusState private var otpFieldIsFocused: Bool
 
   init(
@@ -136,27 +135,25 @@ struct OrganizationDomainVerifyCodeView: View {
   }
 
   @MainActor
-  private func attempt(code: String) async {
-    let attemptID = verificationAttempts.begin()
+  private func attempt(code: String) async -> OTPSubmissionDisposition {
     verificationState = .verifying
 
     do {
       try await currentDomain.verifyCode(code)
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       codeLimiter.clearRecord(for: emailAddress)
       verificationState = .success
       onVerified()
+      return .stop
     } catch {
-      guard verificationAttempts.complete(attemptID) else { return }
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
-        return
+        return .stop
       }
       otpFieldState = .error
       verificationState = .error(error)
@@ -165,6 +162,8 @@ struct OrganizationDomainVerifyCodeView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 }
