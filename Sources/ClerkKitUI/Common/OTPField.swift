@@ -104,7 +104,10 @@ struct OTPField: View {
   }
 
   private func submitActiveCodes() async {
-    var submittedCode = submissionTracker.beginSubmission()
+    var submittedCode = submissionTracker.beginSubmission(
+      for: code,
+      requiredLength: numberOfInputs
+    )
 
     while let code = submittedCode {
       guard !Task.isCancelled else {

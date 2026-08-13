@@ -7,13 +7,25 @@ import Testing
 
 struct OTPSubmissionTrackerTests {
   @Test
-  func completeCodeStartsSubmission() {
+  func changedCompleteCodeStartsSubmission() {
     var tracker = OTPSubmissionTracker()
 
     let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
     let submittedCode = tracker.beginSubmission()
 
     #expect(didStart)
+    #expect(submittedCode == "123456")
+  }
+
+  @Test
+  func initiallyCompleteCodeStartsSubmission() {
+    var tracker = OTPSubmissionTracker()
+
+    let submittedCode = tracker.beginSubmission(
+      for: "123456",
+      requiredLength: 6
+    )
+
     #expect(submittedCode == "123456")
   }
 
@@ -171,21 +183,28 @@ struct OTPSubmissionTrackerTests {
       disposition: .stop
     )
 
-    let didRestart = tracker.codeDidChange(to: "123456", requiredLength: 6)
+    let reappearingTaskCode = tracker.beginSubmission(
+      for: "123456",
+      requiredLength: 6
+    )
 
     #expect(didStart)
     #expect(submittedCode == "123456")
-    #expect(!didRestart)
+    #expect(reappearingTaskCode == nil)
   }
 
   @Test
   func reappearingTaskCannotAcquireInFlightSubmission() {
     var tracker = OTPSubmissionTracker()
-    let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
-    let firstTaskCode = tracker.beginSubmission()
-    let reappearingTaskCode = tracker.beginSubmission()
+    let firstTaskCode = tracker.beginSubmission(
+      for: "123456",
+      requiredLength: 6
+    )
+    let reappearingTaskCode = tracker.beginSubmission(
+      for: "123456",
+      requiredLength: 6
+    )
 
-    #expect(didStart)
     #expect(firstTaskCode == "123456")
     #expect(reappearingTaskCode == nil)
   }
@@ -198,13 +217,16 @@ struct OTPSubmissionTrackerTests {
 
     tracker.cancelSubmission()
 
-    let didRestartUnchangedCode = tracker.codeDidChange(to: "123456", requiredLength: 6)
+    let reappearingTaskCode = tracker.beginSubmission(
+      for: "123456",
+      requiredLength: 6
+    )
     let didStartIncompleteCode = tracker.codeDidChange(to: "12345", requiredLength: 6)
     let didStartRetry = tracker.codeDidChange(to: "123456", requiredLength: 6)
 
     #expect(didStart)
     #expect(submittedCode == "123456")
-    #expect(!didRestartUnchangedCode)
+    #expect(reappearingTaskCode == nil)
     #expect(!didStartIncompleteCode)
     #expect(didStartRetry)
   }

@@ -35,6 +35,17 @@ struct OTPSubmissionTracker {
     return activeCode
   }
 
+  mutating func beginSubmission(
+    for currentCode: String,
+    requiredLength: Int
+  ) -> String? {
+    if activeCode == nil {
+      _ = codeDidChange(to: currentCode, requiredLength: requiredLength)
+    }
+
+    return beginSubmission()
+  }
+
   mutating func cancelSubmission() {
     activeCode = nil
     isExecuting = false
