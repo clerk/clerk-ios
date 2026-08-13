@@ -150,11 +150,6 @@ struct SessionTaskMfaVerifySmsView: View {
         return .stop
       }
       try await handleSuccessfulVerification()
-      guard !Task.isCancelled else {
-        otpFieldState = .default
-        verificationState = .default
-        return .stop
-      }
       return .stop
     } catch {
       guard !Task.isCancelled, !error.isCancellationError else {
