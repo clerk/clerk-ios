@@ -19,6 +19,7 @@ struct SignUpCodeView: View {
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState = OTPField.FieldState.default
   @State private var error: Error?
+  @State private var verificationAttempts = OTPVerificationAttemptTracker()
 
   @FocusState private var otpFieldIsFocused: Bool
 
@@ -101,8 +102,8 @@ struct SignUpCodeView: View {
             fieldState: $otpFieldState,
             isFocused: $otpFieldIsFocused,
             accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.code
-          ) { _ in
-            await attempt()
+          ) { submittedCode in
+            await attempt(code: submittedCode)
           }
           .onAppear {
             verificationState = .default
@@ -207,12 +208,13 @@ extension SignUpCodeView {
     }
   }
 
-  func attempt() async {
+  func attempt(code: String) async {
     guard var signUp else {
       navigation.path = []
       return
     }
 
+    let attemptID = verificationAttempts.begin()
     otpFieldState = .default
     verificationState = .verifying
 
@@ -224,10 +226,22 @@ extension SignUpCodeView {
         signUp = try await signUp.verifyPhoneCode(code)
       }
 
+      guard verificationAttempts.complete(attemptID) else { return }
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return
+      }
       otpFieldIsFocused = false
       verificationState = .success
       navigation.setToStepForStatus(signUp: signUp)
     } catch {
+      guard verificationAttempts.complete(attemptID) else { return }
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return
+      }
       otpFieldState = .error
       verificationState = .error(error)
 

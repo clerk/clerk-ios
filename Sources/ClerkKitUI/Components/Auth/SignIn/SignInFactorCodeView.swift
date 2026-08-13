@@ -24,6 +24,7 @@ struct SignInFactorCodeView: View {
   @State private var error: Error?
   @State private var verificationState = CodeVerificationState.default
   @State private var otpFieldState: OTPField.FieldState = .default
+  @State private var verificationAttempts = OTPVerificationAttemptTracker()
   @FocusState private var otpFieldIsFocused: Bool
 
   var signIn: SignIn? {
@@ -125,8 +126,8 @@ extension SignInFactorCodeView {
       fieldState: $otpFieldState,
       isFocused: $otpFieldIsFocused,
       accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignIn.code
-    ) { _ in
-      await attempt()
+    ) { submittedCode in
+      await attempt(code: submittedCode)
     }
     .onAppear {
       verificationState = .default
@@ -285,26 +286,39 @@ extension SignInFactorCodeView {
     }
   }
 
-  func attempt() async {
+  func attempt(code: String) async {
     guard var signIn else {
       navigation.path = []
       return
     }
 
+    let attemptID = verificationAttempts.begin()
     otpFieldState = .default
     verificationState = .verifying
 
     do {
-      signIn = try await attemptVerification(signIn: signIn)
+      signIn = try await attemptVerification(signIn: signIn, code: code)
+      guard verificationAttempts.complete(attemptID) else { return }
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return
+      }
       otpFieldIsFocused = false
       verificationState = .success
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
+      guard verificationAttempts.complete(attemptID) else { return }
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return
+      }
       handleVerificationError(error)
     }
   }
 
-  private func attemptVerification(signIn: SignIn) async throws -> SignIn {
+  private func attemptVerification(signIn: SignIn, code: String) async throws -> SignIn {
     switch factor.strategy {
     case .emailCode:
       if mode.usesSecondFactorAPI {

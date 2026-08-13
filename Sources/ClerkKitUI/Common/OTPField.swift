@@ -27,6 +27,7 @@ struct OTPField: View {
   @State private var cursorAnimating = false
   @State private var inputSize = CGSize.zero
   @State private var errorTrigger = false
+  @State private var submissionTracker = OTPSubmissionTracker()
 
   var body: some View {
     HStack(spacing: 12) {
@@ -64,14 +65,13 @@ struct OTPField: View {
       code = String(newValue.prefix(numberOfInputs))
       if previousCode == code { return }
 
+      submissionTracker.codeDidChange(
+        to: code,
+        requiredLength: numberOfInputs
+      )
+
       if code.count == numberOfInputs {
         fieldState = .default
-        let ownerId = authFlowRequestOwnerId
-        Task {
-          await AuthFlowRequestScope.withOwner(ownerId) {
-            await onCodeEntry(code)
-          }
-        }
       } else if code.isEmpty {
         fieldState = .default
       }
@@ -88,6 +88,18 @@ struct OTPField: View {
     )
     .onAppear {
       fieldState = .default
+    }
+    .task(id: code) {
+      guard let submittedCode = submissionTracker.claimCode(
+        code,
+        requiredLength: numberOfInputs
+      ) else {
+        return
+      }
+
+      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
+        await onCodeEntry(submittedCode)
+      }
     }
   }
 
