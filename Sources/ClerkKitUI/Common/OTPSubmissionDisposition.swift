@@ -14,13 +14,16 @@ enum OTPSubmissionDisposition: Equatable {
 
 extension Error {
   var otpSubmissionDisposition: OTPSubmissionDisposition {
-    guard let clerkError = self as? ClerkAPIError,
-          clerkError.code == "form_code_incorrect"
-    else {
+    guard let clerkError = self as? ClerkAPIError else {
       return .stop
     }
 
-    return .submitPendingCode
+    switch clerkError.code {
+    case "form_code_incorrect", "totp_incorrect_code":
+      return .submitPendingCode
+    default:
+      return .stop
+    }
   }
 }
 

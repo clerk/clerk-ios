@@ -211,10 +211,16 @@ struct OTPSubmissionTrackerTests {
 }
 
 struct OTPSubmissionDispositionTests {
-  @Test
-  func incorrectCodeAllowsPendingSubmission() {
+  @Test(
+    "Incorrect code errors allow pending submission",
+    arguments: [
+      "form_code_incorrect",
+      "totp_incorrect_code",
+    ]
+  )
+  func incorrectCodeAllowsPendingSubmission(code: String) {
     let error = ClerkAPIError(
-      code: "form_code_incorrect",
+      code: code,
       message: nil,
       longMessage: nil,
       meta: nil,
