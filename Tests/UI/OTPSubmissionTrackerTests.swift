@@ -74,7 +74,7 @@ struct OTPSubmissionTrackerTests {
   }
 
   @Test
-  func terminalErrorDoesNotSubmitEditedCode() {
+  func terminalErrorDoesNotReplayEditedCodeAfterReappearance() {
     var tracker = OTPSubmissionTracker()
     let didStart = tracker.codeDidChange(to: "123456", requiredLength: 6)
     let submittedCode = tracker.beginSubmission()
@@ -85,10 +85,20 @@ struct OTPSubmissionTrackerTests {
       disposition: .stop
     )
 
+    let reappearingTaskCode = tracker.beginSubmission(
+      for: "123457",
+      requiredLength: 6
+    )
+    let didStartIncompleteCode = tracker.codeDidChange(to: "12345", requiredLength: 6)
+    let didStartRetry = tracker.codeDidChange(to: "123457", requiredLength: 6)
+
     #expect(didStart)
     #expect(submittedCode == "123456")
     #expect(nextCode == nil)
-    #expect(tracker.activeCode == nil)
+    #expect(reappearingTaskCode == nil)
+    #expect(!didStartIncompleteCode)
+    #expect(didStartRetry)
+    #expect(tracker.activeCode == "123457")
   }
 
   @Test

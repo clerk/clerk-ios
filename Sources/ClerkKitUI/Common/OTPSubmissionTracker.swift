@@ -59,11 +59,18 @@ struct OTPSubmissionTracker {
     let completedCode = activeCode
     activeCode = nil
 
-    guard let completedCode,
-          disposition == .submitPendingCode,
+    guard let completedCode else {
+      isExecuting = false
+      return nil
+    }
+
+    guard disposition == .submitPendingCode,
           currentCode.count == requiredLength,
           currentCode != completedCode
     else {
+      if currentCode.count == requiredLength {
+        lastSubmittedCode = currentCode
+      }
       isExecuting = false
       return nil
     }
