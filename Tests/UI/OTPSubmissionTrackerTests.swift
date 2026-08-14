@@ -30,6 +30,52 @@ struct OTPSubmissionTrackerTests {
   }
 
   @Test
+  func incompleteEditBeforeSubmissionClearsQueuedCode() {
+    var tracker = OTPSubmissionTracker()
+
+    let didQueueOriginalCode = tracker.codeDidChange(
+      to: "123456",
+      requiredLength: 6
+    )
+    let didQueueIncompleteCode = tracker.codeDidChange(
+      to: "12345",
+      requiredLength: 6
+    )
+    let submittedCode = tracker.beginSubmission(
+      for: "12345",
+      requiredLength: 6
+    )
+
+    #expect(didQueueOriginalCode)
+    #expect(!didQueueIncompleteCode)
+    #expect(submittedCode == nil)
+    #expect(tracker.activeCode == nil)
+  }
+
+  @Test
+  func completeEditBeforeSubmissionReplacesQueuedCode() {
+    var tracker = OTPSubmissionTracker()
+
+    let didQueueOriginalCode = tracker.codeDidChange(
+      to: "123456",
+      requiredLength: 6
+    )
+    let didQueueReplacementCode = tracker.codeDidChange(
+      to: "123457",
+      requiredLength: 6
+    )
+    let submittedCode = tracker.beginSubmission(
+      for: "123457",
+      requiredLength: 6
+    )
+
+    #expect(didQueueOriginalCode)
+    #expect(didQueueReplacementCode)
+    #expect(submittedCode == "123457")
+    #expect(tracker.activeCode == "123457")
+  }
+
+  @Test
   func incompleteCodeDoesNotStartSubmission() {
     var tracker = OTPSubmissionTracker()
 
