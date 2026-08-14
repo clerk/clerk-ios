@@ -130,8 +130,8 @@ struct UserProfileVerifyView: View {
           fieldState: $otpFieldState,
           isFocused: $otpFieldIsFocused,
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Mfa.verificationCode
-        ) { _ in
-          await attempt()
+        ) { submittedCode in
+          await attempt(code: submittedCode)
         }
         .onAppear {
           verificationState = .default
@@ -225,28 +225,52 @@ extension UserProfileVerifyView {
     }
   }
 
-  func attempt() async {
+  func attempt(code: String) async -> OTPSubmissionDisposition {
+    let verificationMode = mode
     verificationState = .verifying
 
     do {
-      switch mode {
+      let backupCodes: [String]?
+      let codeLimiterIdentifier: String?
+
+      switch verificationMode {
       case let .email(emailAddress):
         try await emailAddress.verifyCode(code)
-        codeLimiter.clearRecord(for: emailAddress.emailAddress)
-        verificationState = .success
-        onCompletion(nil)
+        backupCodes = nil
+        codeLimiterIdentifier = emailAddress.emailAddress
       case let .phone(phoneNumber):
         try await phoneNumber.verifyCode(code)
-        codeLimiter.clearRecord(for: phoneNumber.phoneNumber)
-        verificationState = .success
-        onCompletion(nil)
+        backupCodes = nil
+        codeLimiterIdentifier = phoneNumber.phoneNumber
       case .totp:
-        guard let user else { return }
+        guard let user else {
+          verificationState = .default
+          return .stop
+        }
         let totp = try await user.verifyTOTP(code: code)
-        verificationState = .success
-        onCompletion(totp.backupCodes)
+        backupCodes = totp.backupCodes
+        codeLimiterIdentifier = nil
       }
+
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
+
+      if let codeLimiterIdentifier {
+        codeLimiter.clearRecord(for: codeLimiterIdentifier)
+      }
+
+      verificationState = .success
+      onCompletion(backupCodes)
+      return .stop
     } catch {
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldState = .error
       verificationState = .error(error)
 
@@ -254,6 +278,8 @@ extension UserProfileVerifyView {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 }

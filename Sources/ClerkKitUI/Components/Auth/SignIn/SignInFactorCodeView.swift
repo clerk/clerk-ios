@@ -125,8 +125,8 @@ extension SignInFactorCodeView {
       fieldState: $otpFieldState,
       isFocused: $otpFieldIsFocused,
       accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignIn.code
-    ) { _ in
-      await attempt()
+    ) { submittedCode in
+      await attempt(code: submittedCode)
     }
     .onAppear {
       verificationState = .default
@@ -285,26 +285,38 @@ extension SignInFactorCodeView {
     }
   }
 
-  func attempt() async {
+  func attempt(code: String) async -> OTPSubmissionDisposition {
     guard var signIn else {
       navigation.path = []
-      return
+      return .stop
     }
 
     otpFieldState = .default
     verificationState = .verifying
 
     do {
-      signIn = try await attemptVerification(signIn: signIn)
+      signIn = try await attemptVerification(signIn: signIn, code: code)
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldIsFocused = false
       verificationState = .success
       navigation.setToStepForStatus(signIn: signIn)
+      return .stop
     } catch {
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       handleVerificationError(error)
+      return error.otpSubmissionDisposition
     }
   }
 
-  private func attemptVerification(signIn: SignIn) async throws -> SignIn {
+  private func attemptVerification(signIn: SignIn, code: String) async throws -> SignIn {
     switch factor.strategy {
     case .emailCode:
       if mode.usesSecondFactorAPI {

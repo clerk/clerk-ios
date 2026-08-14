@@ -36,8 +36,8 @@ struct SessionTaskMfaVerifyTotpView: View {
           fieldState: $otpFieldState,
           isFocused: $otpFieldIsFocused,
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Totp.code
-        ) { _ in
-          await attempt()
+        ) { submittedCode in
+          await attempt(code: submittedCode)
         }
         .onAppear {
           verificationState = .default
@@ -77,20 +77,31 @@ struct SessionTaskMfaVerifyTotpView: View {
     }
   }
 
-  private func attempt() async {
+  private func attempt(code: String) async -> OTPSubmissionDisposition {
     guard clerk.authFlowPresentationIsCurrent(token),
           let user = clerk.user
     else {
-      return
+      return .stop
     }
     verificationState = .verifying
 
     do {
       let totp = try await user.verifyTOTP(code: code)
-      guard clerk.authFlowPresentationIsCurrent(token) else { return }
+      guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       backupCodes = totp.backupCodes ?? []
       handleSuccessfulVerification()
+      return .stop
     } catch {
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldState = .error
       verificationState = .error(error)
 
@@ -98,6 +109,8 @@ struct SessionTaskMfaVerifyTotpView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 

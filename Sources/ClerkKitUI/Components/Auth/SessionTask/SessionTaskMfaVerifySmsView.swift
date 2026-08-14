@@ -59,8 +59,8 @@ struct SessionTaskMfaVerifySmsView: View {
           fieldState: $otpFieldState,
           isFocused: $otpFieldIsFocused,
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SessionTask.Sms.code
-        ) { _ in
-          await attempt()
+        ) { submittedCode in
+          await attempt(code: submittedCode)
         }
         .onAppear {
           verificationState = .default
@@ -137,15 +137,26 @@ struct SessionTaskMfaVerifySmsView: View {
     }
   }
 
-  private func attempt() async {
-    guard clerk.authFlowPresentationIsCurrent(token) else { return }
+  private func attempt(code: String) async -> OTPSubmissionDisposition {
+    guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
     verificationState = .verifying
 
     do {
       try await phoneNumber.verifyCode(code)
-      guard clerk.authFlowPresentationIsCurrent(token) else { return }
+      guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       try await handleSuccessfulVerification()
+      return .stop
     } catch {
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldState = .error
       verificationState = .error(error)
 
@@ -153,13 +164,15 @@ struct SessionTaskMfaVerifySmsView: View {
         self.error = clerkError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 
   private func handleSuccessfulVerification() async throws {
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
     let reserved = try await phoneNumber.setReservedForSecondFactor()
-    guard clerk.authFlowPresentationIsCurrent(token) else { return }
+    guard clerk.authFlowPresentationIsCurrent(token), !Task.isCancelled else { return }
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success
     if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {

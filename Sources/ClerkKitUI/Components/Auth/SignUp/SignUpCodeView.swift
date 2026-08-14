@@ -101,8 +101,8 @@ struct SignUpCodeView: View {
             fieldState: $otpFieldState,
             isFocused: $otpFieldIsFocused,
             accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.SignUp.code
-          ) { _ in
-            await attempt()
+          ) { submittedCode in
+            await attempt(code: submittedCode)
           }
           .onAppear {
             verificationState = .default
@@ -207,10 +207,10 @@ extension SignUpCodeView {
     }
   }
 
-  func attempt() async {
+  func attempt(code: String) async -> OTPSubmissionDisposition {
     guard var signUp else {
       navigation.path = []
-      return
+      return .stop
     }
 
     otpFieldState = .default
@@ -224,10 +224,21 @@ extension SignUpCodeView {
         signUp = try await signUp.verifyPhoneCode(code)
       }
 
+      guard !Task.isCancelled else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldIsFocused = false
       verificationState = .success
       navigation.setToStepForStatus(signUp: signUp)
+      return .stop
     } catch {
+      guard !Task.isCancelled, !error.isCancellationError else {
+        otpFieldState = .default
+        verificationState = .default
+        return .stop
+      }
       otpFieldState = .error
       verificationState = .error(error)
 
@@ -235,6 +246,8 @@ extension SignUpCodeView {
         self.error = clerkApiError
         otpFieldIsFocused = false
       }
+
+      return error.otpSubmissionDisposition
     }
   }
 }
