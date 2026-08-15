@@ -406,6 +406,7 @@ extension AuthStartView {
           accessibilityIdentifier: ClerkAccessibilityIdentifiers.Auth.Start.identifier
         )
         .textContentType(.username)
+        .autocorrectionDisabled()
         #if os(iOS)
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
