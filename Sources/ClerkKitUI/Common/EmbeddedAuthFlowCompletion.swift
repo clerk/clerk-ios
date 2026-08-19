@@ -1,5 +1,5 @@
 //
-//  EmbeddedAuthCompletion.swift
+//  EmbeddedAuthFlowCompletion.swift
 //  Clerk
 //
 
@@ -13,7 +13,7 @@ import SwiftUI
 /// completion signal such a host receives.
 @_spi(FrameworkIntegration)
 @MainActor
-public struct ClerkAuthCompletionAction {
+public struct ClerkAuthFlowCompletionAction {
   private let handler: () -> Void
 
   public init(_ handler: @escaping () -> Void) {
@@ -29,7 +29,7 @@ public struct ClerkAuthCompletionAction {
 extension EnvironmentValues {
   /// The host's action to run when an embedded auth flow completes.
   /// `nil` (the default) leaves the component unchanged.
-  @Entry public var clerkAuthCompletionAction: ClerkAuthCompletionAction?
+  @Entry public var clerkAuthFlowCompletionAction: ClerkAuthFlowCompletionAction?
 }
 
 #endif

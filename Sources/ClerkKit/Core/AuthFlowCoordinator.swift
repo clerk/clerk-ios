@@ -280,8 +280,7 @@ struct AuthFlowCoordinator {
   }
 
   mutating func finishPresentation(
-    token: AuthFlowPresentationToken,
-    completesWork: Bool
+    token: AuthFlowPresentationToken
   ) -> Bool {
     guard registration?.id == token.work.ownerId,
           case .presenting(let target, let currentToken) = phase,
@@ -292,7 +291,7 @@ struct AuthFlowCoordinator {
       return false
     }
 
-    phase = completesWork ? .observing : .awaiting(target)
+    phase = .awaiting(target)
     advanceRevision()
     return true
   }

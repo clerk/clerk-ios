@@ -81,13 +81,8 @@ extension Clerk {
     _ token: AuthFlowPresentationToken
   ) -> Bool {
     guard session?.id == token.sessionId else { return false }
-    let completesWork = token.kind == .trustedDeviceEnrollment
-      && session?.status == .active
-      && session?.pendingTasks.isEmpty == true
-    return authFlowCoordinator.finishPresentation(
-      token: token,
-      completesWork: completesWork
-    )
+    // Completing here would mark the flow complete before reconciliation can deliver it.
+    return authFlowCoordinator.finishPresentation(token: token)
   }
 
   @discardableResult
