@@ -5,6 +5,16 @@ import Testing
 @MainActor
 struct AuthViewTests {
   @Test
+  func twoArgumentInitializerCanBeReferencedAsAFunction() {
+    let factory: (AuthView.Mode, Bool) -> AuthView = AuthView.init
+
+    let view = factory(.signIn, false)
+
+    #expect(view.authState.mode == .signIn)
+    #expect(view.isDismissible == false)
+  }
+
+  @Test
   func initializerStoresTheAuthCompleteHandler() {
     var receivedSessionId: String?
     let view = AuthView(onAuthComplete: { session in

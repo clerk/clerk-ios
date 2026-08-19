@@ -139,7 +139,7 @@ struct AuthFlowCoordinator {
     }
 
     var holdsRoot: Bool {
-      origin.holdsRoot
+      origin.holdsRoot || canReportAuthenticationCompletion
     }
 
     var flowId: String? {

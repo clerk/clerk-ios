@@ -165,6 +165,20 @@ extension AuthFlowCoordinator {
       return true
     }
 
+    if case .awaiting(var target) = phase,
+       target.sessionId == sessionId
+    {
+      if target.completion == nil {
+        target.origin = .completed(result, activationId: nil)
+        target.canReportAuthenticationCompletion = true
+        phase = .awaiting(target)
+        return true
+      }
+      if target.flowId == result.flowId {
+        return false
+      }
+    }
+
     phase = .awaiting(Target(
       id: UUID(),
       sessionId: sessionId,

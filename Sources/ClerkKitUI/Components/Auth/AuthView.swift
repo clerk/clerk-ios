@@ -124,6 +124,27 @@ public struct AuthView: View {
   ///     successful authentication and any remaining Clerk UI is finished. When `false`,
   ///     no dismiss button is shown.
   ///     Defaults to `true`.
+  public init(
+    mode: Mode = .signInOrUp,
+    isDismissible: Bool = true
+  ) {
+    self.init(
+      mode: mode,
+      isDismissible: isDismissible,
+      config: AuthConfig()
+    )
+  }
+
+  /// Creates a new authentication view with an authentication-completion handler.
+  ///
+  /// - Parameters:
+  ///   - mode: The authentication mode that determines available flows.
+  ///     Defaults to `.signInOrUp()` which allows both sign-in and sign-up.
+  ///   - isDismissible: Whether the view can be dismissed by the user.
+  ///     When `true`, a dismiss button appears and the view automatically dismisses after
+  ///     successful authentication and any remaining Clerk UI is finished. When `false`,
+  ///     no dismiss button is shown.
+  ///     Defaults to `true`.
   ///   - onAuthComplete: Called once when the authentication flow owned by this view produces an
   ///     active session. The callback is scoped to the flow handled by this view and may run while
   ///     post-authentication UI, such as backup codes or trusted-device enrollment, remains visible.
@@ -138,7 +159,7 @@ public struct AuthView: View {
   public init(
     mode: Mode = .signInOrUp,
     isDismissible: Bool = true,
-    onAuthComplete: @escaping @MainActor (Session) -> Void = { _ in }
+    onAuthComplete: @escaping @MainActor (Session) -> Void
   ) {
     self.init(
       mode: mode,
