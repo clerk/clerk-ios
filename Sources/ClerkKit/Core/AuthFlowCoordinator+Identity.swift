@@ -67,12 +67,14 @@ extension AuthFlowCoordinator {
       guard target.completion == nil else { return nil }
       _ = mutateCurrentTarget {
         $0.origin = .ownedActivation(id: activation.id)
+        $0.canReportAuthenticationCompletion = true
       }
     } else {
       phase = .awaiting(Target(
         id: UUID(),
         sessionId: sessionId,
-        origin: .ownedActivation(id: activation.id)
+        origin: .ownedActivation(id: activation.id),
+        canReportAuthenticationCompletion: true
       ))
     }
     advanceRevision()
@@ -158,6 +160,7 @@ extension AuthFlowCoordinator {
     {
       guard target.completion == nil else { return false }
       target.origin = .completed(result, activationId: nil)
+      target.canReportAuthenticationCompletion = true
       phase = .presenting(target: target, token: token)
       return true
     }
@@ -165,7 +168,8 @@ extension AuthFlowCoordinator {
     phase = .awaiting(Target(
       id: UUID(),
       sessionId: sessionId,
-      origin: .completed(result, activationId: nil)
+      origin: .completed(result, activationId: nil),
+      canReportAuthenticationCompletion: true
     ))
     return true
   }
@@ -226,7 +230,10 @@ extension AuthFlowCoordinator {
     else {
       return false
     }
-    phase = .awaiting(externalTarget(for: currentSession))
+    phase = .awaiting(target(
+      for: currentSession,
+      canReportAuthenticationCompletion: false
+    ))
     return true
   }
 
@@ -287,7 +294,10 @@ extension AuthFlowCoordinator {
       phase = .observing
       return true
     }
-    phase = .awaiting(externalTarget(for: currentSession))
+    phase = .awaiting(target(
+      for: currentSession,
+      canReportAuthenticationCompletion: false
+    ))
     return true
   }
 

@@ -115,6 +115,7 @@ extension AuthView {
     case .observing:
       reconcileObserving(owner: owner)
     case .awaiting(let work, let completion):
+      reportAuthCompletionIfNeeded(for: work)
       navigation.synchronizePostAuthPath(with: work)
       await reconcileAwaitingWork(
         owner: owner,
@@ -122,6 +123,7 @@ extension AuthView {
         completion: completion
       )
     case .presenting(let token, _):
+      reportAuthCompletionIfNeeded(for: token.work)
       reconcilePresentation(token)
     }
   }
@@ -189,7 +191,7 @@ extension AuthView {
         }
       case .complete:
         guard session.status == .active else { continue }
-        completeAuthFlow(owner: owner, work: work)
+        finishAuthFlow(owner: owner, work: work)
         return
       }
     }
@@ -229,19 +231,27 @@ extension AuthView {
     return navigation.routeToSessionTaskStart(session: session, token: token)
   }
 
-  private func completeAuthFlow(
+  private func finishAuthFlow(
     owner: AuthFlowRegistration,
     work: AuthFlowWork
   ) {
-    guard let session = clerk.completeAuthFlow(work) else { return }
+    let authCompletionSession = clerk.claimAuthFlowCompletion(work)
+    guard clerk.completeAuthFlow(work) != nil else { return }
 
     authFlowRegistrationIsTerminated = true
     owner.cancel()
     authFlowRegistration = nil
-    onCompletion(session)
+    if let authCompletionSession {
+      onAuthComplete(authCompletionSession)
+    }
     if isDismissible {
       dismiss()
     }
+  }
+
+  private func reportAuthCompletionIfNeeded(for work: AuthFlowWork) {
+    guard let session = clerk.claimAuthFlowCompletion(work) else { return }
+    onAuthComplete(session)
   }
 
   @discardableResult

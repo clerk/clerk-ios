@@ -79,8 +79,8 @@ public struct AuthView: View {
   /// Configuration values for the auth flow.
   private let config: AuthConfig
 
-  /// Called after authentication and all Clerk-owned post-authentication steps complete.
-  let onCompletion: @MainActor (Session) -> Void
+  /// Called when authentication initiated by this view completes.
+  let onAuthComplete: @MainActor (Session) -> Void
 
   /// Error to present to the user.
   @State private var error: Error?
@@ -120,24 +120,31 @@ public struct AuthView: View {
   ///   - mode: The authentication mode that determines available flows.
   ///     Defaults to `.signInOrUp()` which allows both sign-in and sign-up.
   ///   - isDismissible: Whether the view can be dismissed by the user.
-  ///     When `true`, a dismiss button appears and the view automatically dismisses
-  ///     when the authentication flow completes. When `false`, no dismiss
-  ///     button is shown.
+  ///     When `true`, a dismiss button appears and the view automatically dismisses after
+  ///     successful authentication and any remaining Clerk UI is finished. When `false`,
+  ///     no dismiss button is shown.
   ///     Defaults to `true`.
-  ///   - onCompletion: Called once after authentication and all Clerk-owned
-  ///     post-authentication steps complete. The callback receives the active session and
-  ///     runs before automatic dismissal. It is not called when authentication fails or
-  ///     when the view is dismissed without completing the flow.
+  ///   - onAuthComplete: Called once when the authentication flow owned by this view produces an
+  ///     active session. The callback is scoped to the flow handled by this view and may run while
+  ///     post-authentication UI, such as backup codes or trusted-device enrollment, remains visible.
+  ///     It is not called for unrelated session changes, authentication failures, or dismissal
+  ///     before authentication completes.
+  ///
+  /// > Important: `onAuthComplete` reports authentication success, not the end of the `AuthView`
+  /// > presentation. A dismissible `AuthView` dismisses itself after any remaining
+  /// > post-authentication UI. For a non-dismissible root `AuthView`, use
+  /// > `Clerk.isAuthFlowComplete` to decide when to show authenticated content. Use SwiftUI's
+  /// > sheet `onDismiss` callback to observe when a sheet actually closes.
   public init(
     mode: Mode = .signInOrUp,
     isDismissible: Bool = true,
-    onCompletion: @escaping @MainActor (Session) -> Void = { _ in }
+    onAuthComplete: @escaping @MainActor (Session) -> Void = { _ in }
   ) {
     self.init(
       mode: mode,
       isDismissible: isDismissible,
       config: AuthConfig(),
-      onCompletion: onCompletion
+      onAuthComplete: onAuthComplete
     )
   }
 
@@ -145,12 +152,12 @@ public struct AuthView: View {
     mode: Mode = .signInOrUp,
     isDismissible: Bool = true,
     config: AuthConfig,
-    onCompletion: @escaping @MainActor (Session) -> Void = { _ in }
+    onAuthComplete: @escaping @MainActor (Session) -> Void = { _ in }
   ) {
     _authState = State(initialValue: AuthState(mode: mode, config: config))
     self.isDismissible = isDismissible
     self.config = config
-    self.onCompletion = onCompletion
+    self.onAuthComplete = onAuthComplete
   }
 
   public var body: some View {
@@ -264,7 +271,7 @@ extension AuthView {
       mode: authState.mode,
       isDismissible: isDismissible,
       config: config,
-      onCompletion: onCompletion
+      onAuthComplete: onAuthComplete
     )
   }
 

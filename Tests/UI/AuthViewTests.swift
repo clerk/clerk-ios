@@ -5,20 +5,20 @@ import Testing
 @MainActor
 struct AuthViewTests {
   @Test
-  func initializerStoresTheCompletionHandler() {
+  func initializerStoresTheAuthCompleteHandler() {
     var receivedSessionId: String?
-    let view = AuthView { session in
+    let view = AuthView(onAuthComplete: { session in
       receivedSessionId = session.id
-    }
+    })
     let session = Session.mock
 
-    view.onCompletion(session)
+    view.onAuthComplete(session)
 
     #expect(receivedSessionId == session.id)
   }
 
   @Test
-  func configurationModifiersPreserveTheCompletionHandler() {
+  func configurationModifiersPreserveTheAuthCompleteHandler() {
     var receivedSessionId: String?
     let view = AuthView { session in
       receivedSessionId = session.id
@@ -26,7 +26,7 @@ struct AuthViewTests {
     let configuredView = view.initialIdentifier("test@example.com")
     let session = Session.mock
 
-    configuredView.onCompletion(session)
+    configuredView.onAuthComplete(session)
 
     #expect(receivedSessionId == session.id)
   }

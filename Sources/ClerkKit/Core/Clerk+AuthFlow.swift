@@ -87,6 +87,20 @@ extension Clerk {
   }
 
   @discardableResult
+  package func claimAuthFlowCompletion(
+    _ work: AuthFlowWork
+  ) -> Session? {
+    guard let session,
+          session.id == work.sessionId,
+          session.status == .active,
+          authFlowCoordinator.claimAuthenticationCompletion(work: work)
+    else {
+      return nil
+    }
+    return session
+  }
+
+  @discardableResult
   package func completeAuthFlow(
     _ work: AuthFlowWork
   ) -> Session? {

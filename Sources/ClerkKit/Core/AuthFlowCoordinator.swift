@@ -121,6 +121,12 @@ struct AuthFlowCoordinator {
     let sessionId: String
     var origin: TargetOrigin
 
+    /// Whether authentication for this target belongs to the registered AuthView.
+    var canReportAuthenticationCompletion: Bool
+
+    /// Whether the registered AuthView has already reported authentication completion.
+    var hasReportedAuthenticationCompletion = false
+
     /// Whether this work has already presented or moved past enrollment.
     var hasResolvedEnrollmentStep = false
 
@@ -239,7 +245,10 @@ struct AuthFlowCoordinator {
 
     switch phase {
     case .observing:
-      phase = .awaiting(externalTarget(for: session))
+      phase = .awaiting(target(
+        for: session,
+        canReportAuthenticationCompletion: true
+      ))
       advanceRevision()
     case .awaiting, .presenting:
       break
@@ -319,11 +328,15 @@ struct AuthFlowCoordinator {
     advanceRevision()
   }
 
-  func externalTarget(for session: Session) -> Target {
+  func target(
+    for session: Session,
+    canReportAuthenticationCompletion: Bool
+  ) -> Target {
     Target(
       id: UUID(),
       sessionId: session.id,
-      origin: .external
+      origin: .external,
+      canReportAuthenticationCompletion: canReportAuthenticationCompletion
     )
   }
 
