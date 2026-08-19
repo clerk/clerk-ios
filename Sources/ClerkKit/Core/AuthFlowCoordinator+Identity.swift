@@ -308,6 +308,9 @@ extension AuthFlowCoordinator {
       phase = .observing
       return true
     }
+    if currentTarget?.sessionId == currentSession.id {
+      return false
+    }
     phase = .awaiting(target(
       for: currentSession,
       canReportAuthenticationCompletion: false

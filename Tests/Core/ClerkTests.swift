@@ -1537,6 +1537,43 @@ struct ClerkTests {
   }
 
   @Test
+  func supersededCompletionPreservesOwnedCurrentSessionWork() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let sessionId = try #require(Client.mock.currentSession?.id)
+    let activation = try #require(clerk.beginAuthSessionActivation(
+      sessionId: sessionId,
+      ownerId: registration.id
+    ))
+    clerk.setClientFromIdentityController(.mock)
+    clerk.authSessionActivationDidFinish(activation: activation)
+
+    let initial = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(clerk.isAuthFlowComplete == false)
+
+    var supersededSignIn = SignIn.mock
+    supersededSignIn.id = "superseded-sign-in"
+    supersededSignIn.status = .complete
+    supersededSignIn.createdSessionId = "superseded-session"
+    clerk.setClientFromIdentityController(
+      clerk.client,
+      authFlowUpdate: .resolvingSupersededCompletion(
+        .signIn(supersededSignIn),
+        ownerId: registration.id,
+        authoritativeClient: clerk.client
+      )
+    )
+
+    let preserved = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(preserved.work == initial.work)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.claimAuthFlowCompletion(preserved.work)?.id == sessionId)
+    #expect(clerk.completeAuthFlow(preserved.work) != nil)
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
   func hostedActivationRetainsItsTargetWhileAnotherSessionIsCurrent() throws {
     var sessionA = try #require(Client.mock.currentSession)
     sessionA.id = "session-a"
