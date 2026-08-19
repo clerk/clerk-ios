@@ -238,6 +238,7 @@ extension AuthView {
     authFlowRegistrationIsTerminated = true
     owner.cancel()
     authFlowRegistration = nil
+    authFlowCompletionAction?()
     if isDismissible {
       dismiss()
     }

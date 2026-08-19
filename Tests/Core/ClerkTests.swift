@@ -1624,6 +1624,11 @@ struct ClerkTests {
     #expect(clerk.isAuthFlowComplete == false)
 
     #expect(clerk.finishAuthFlowPresentation(token))
+    let reconciled = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(reconciled.workId == awaiting.workId)
+    #expect(clerk.isAuthFlowComplete == false)
+
+    #expect(clerk.completeAuthFlow(reconciled.work))
     #expect(observesAuthFlow(in: clerk, for: registration))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
@@ -2079,7 +2084,7 @@ struct ClerkTests {
   }
 
   @Test
-  func finishingTrustedDeviceEnrollmentCompletesItsExactAuthWork() throws {
+  func finishingTrustedDeviceEnrollmentReturnsItsExactAuthWorkForCompletion() throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
@@ -2091,11 +2096,55 @@ struct ClerkTests {
       presentation: .trustedDeviceEnrollment
     ))
     #expect(clerk.finishAuthFlowPresentation(token))
+
+    // A host gated on isAuthFlowComplete must not see completion before it is delivered.
+    #expect(clerk.isAuthFlowComplete == false)
+    let resumed = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(resumed.workId == awaiting.workId)
+
+    #expect(clerk.completeAuthFlow(resumed.work))
     #expect(clerk.isAuthFlowComplete)
     guard case .observing = clerk.authFlowSnapshot(for: registration)?.phase else {
-      Issue.record("Expected enrollment completion to finish the auth work.")
+      Issue.record("Expected completion to finish the auth work.")
       return
     }
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
+
+    #expect(clerk.completeAuthFlow(awaiting.work))
+    // A second attempt is rejected, so a host bound to this call site is told once.
+    #expect(clerk.completeAuthFlow(awaiting.work) == false)
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func completingAuthFlowIsAcceptedOnceAfterTrustedDeviceEnrollment() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
+
+    let token = try #require(clerk.startAuthFlowPresentation(
+      for: registration,
+      work: awaiting.work,
+      presentation: .trustedDeviceEnrollment
+    ))
+    #expect(clerk.finishAuthFlowPresentation(token))
+    let resumed = try #require(awaitingAuthFlow(in: clerk, for: registration))
+
+    #expect(clerk.completeAuthFlow(resumed.work))
+    #expect(clerk.completeAuthFlow(resumed.work) == false)
+    // Finishing the presentation again must not re-open a completed flow.
+    #expect(clerk.finishAuthFlowPresentation(token) == false)
+    #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
 
