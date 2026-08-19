@@ -144,6 +144,11 @@ extension AuthView {
       return
     }
 
+    // Trusted device enrollment completes work in `finishPresentation`, not `completeAuthFlow`.
+    if clerk.isAuthFlowComplete {
+      authCompletionAction?()
+    }
+
     if isDismissible {
       dismissAuthView()
     } else if !clerk.isAuthFlowComplete {
@@ -238,6 +243,7 @@ extension AuthView {
     authFlowRegistrationIsTerminated = true
     owner.cancel()
     authFlowRegistration = nil
+    authCompletionAction?()
     if isDismissible {
       dismiss()
     }
