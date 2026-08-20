@@ -6,9 +6,9 @@ import Testing
 @MainActor
 struct AuthNavigationTests {
   @Test
-  func trustedDeviceEnrollmentPrecedesPendingSessionTasks() {
+  func biometricCredentialEnrollmentPrecedesPendingSessionTasks() {
     #expect(AuthView.postAuthStepOrder == [
-      .trustedDeviceEnrollment,
+      .biometricCredentialEnrollment,
       .sessionTasks,
       .complete,
     ])
@@ -81,12 +81,12 @@ struct AuthNavigationTests {
     )
     let enrollmentToken = presentationToken(
       work: work,
-      kind: .trustedDeviceEnrollment
+      kind: .biometricCredentialEnrollment
     )
     let taskToken = presentationToken(work: work)
-    let biometry = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+    let biometry = BiometryDisplayName(biometryType: .faceID)
 
-    navigation.routeToTrustedDeviceEnrollment(
+    navigation.routeToBiometricCredentialEnrollment(
       token: enrollmentToken,
       biometryDisplayName: biometry
     )
@@ -97,7 +97,7 @@ struct AuthNavigationTests {
     ))
 
     #expect(navigation.path == [
-      .trustedDeviceEnrollment(
+      .biometricCredentialEnrollment(
         biometryDisplayName: biometry,
         token: enrollmentToken
       ),
@@ -126,27 +126,27 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func trustedDeviceEnrollmentUsesItsExactPresentationToken() {
+  func biometricCredentialEnrollmentUsesItsExactPresentationToken() {
     let navigation = AuthNavigation()
     let token = presentationToken(
       sessionId: "session-a",
-      kind: .trustedDeviceEnrollment
+      kind: .biometricCredentialEnrollment
     )
-    let biometry = TrustedDeviceBiometryDisplayName(biometryType: .faceID)
+    let biometry = BiometryDisplayName(biometryType: .faceID)
     navigation.path = [.signUpCompleteProfile]
 
-    navigation.routeToTrustedDeviceEnrollment(
+    navigation.routeToBiometricCredentialEnrollment(
       token: token,
       biometryDisplayName: biometry
     )
-    navigation.routeToTrustedDeviceEnrollment(
+    navigation.routeToBiometricCredentialEnrollment(
       token: token,
       biometryDisplayName: biometry
     )
 
     #expect(navigation.path == [
       .signUpCompleteProfile,
-      .trustedDeviceEnrollment(
+      .biometricCredentialEnrollment(
         biometryDisplayName: biometry,
         token: token
       ),
@@ -174,11 +174,11 @@ struct AuthNavigationTests {
     let navigation = AuthNavigation()
     let token = presentationToken(
       sessionId: "session-a",
-      kind: .trustedDeviceEnrollment
+      kind: .biometricCredentialEnrollment
     )
     navigation.path = [
       .signUpCompleteProfile,
-      .trustedDeviceEnrollment(
+      .biometricCredentialEnrollment(
         biometryDisplayName: .init(biometryType: .touchID),
         token: token
       ),

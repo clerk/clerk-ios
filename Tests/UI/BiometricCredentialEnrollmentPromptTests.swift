@@ -5,14 +5,14 @@
 import Foundation
 import Testing
 
-struct TrustedDeviceEnrollmentPromptTests {
+struct BiometricCredentialEnrollmentPromptTests {
   @Test
   func signInPromptIsSuppressedAfterItHasBeenSeen() throws {
     let (store, suiteName) = try makePromptStore()
     defer { removePromptStoreSuite(named: suiteName) }
     let result = completedSignInResult()
 
-    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    #expect(result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: "user_123",
       nativeSettings: nativeSettings(promptAfterSignIn: true),
       promptStore: store
@@ -20,7 +20,7 @@ struct TrustedDeviceEnrollmentPromptTests {
 
     store.markPromptSeen(userID: "user_123")
 
-    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    #expect(result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: "user_123",
       nativeSettings: nativeSettings(promptAfterSignIn: true),
       promptStore: store
@@ -35,7 +35,7 @@ struct TrustedDeviceEnrollmentPromptTests {
 
     store.markPromptSeen(userID: "user_123")
 
-    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    #expect(result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: "user_123",
       nativeSettings: nativeSettings(promptAfterSignUp: true),
       promptStore: store
@@ -48,7 +48,7 @@ struct TrustedDeviceEnrollmentPromptTests {
     defer { removePromptStoreSuite(named: suiteName) }
     let result = completedSignInResult()
 
-    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    #expect(result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: "user_123",
       nativeSettings: nativeSettings(promptAfterSignIn: false),
       promptStore: store
@@ -61,7 +61,7 @@ struct TrustedDeviceEnrollmentPromptTests {
     defer { removePromptStoreSuite(named: suiteName) }
     let result = completedSignUpResult()
 
-    #expect(result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    #expect(result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: "user_123",
       nativeSettings: nativeSettings(promptAfterSignUp: false),
       promptStore: store
@@ -79,11 +79,11 @@ struct TrustedDeviceEnrollmentPromptTests {
     #expect(store.hasSeenPrompt(userID: "user_456") == false)
   }
 
-  private func makePromptStore() throws -> (TrustedDeviceEnrollmentPromptStore, String) {
-    let suiteName = "com.clerk.tests.trusted-device-enrollment-prompt.\(UUID().uuidString)"
+  private func makePromptStore() throws -> (BiometricCredentialEnrollmentPromptStore, String) {
+    let suiteName = "com.clerk.tests.biometric-credential-enrollment-prompt.\(UUID().uuidString)"
     let userDefaults = try #require(UserDefaults(suiteName: suiteName))
     userDefaults.removePersistentDomain(forName: suiteName)
-    return (TrustedDeviceEnrollmentPromptStore(userDefaults: userDefaults), suiteName)
+    return (BiometricCredentialEnrollmentPromptStore(userDefaults: userDefaults), suiteName)
   }
 
   private func removePromptStoreSuite(named suiteName: String) {
@@ -97,9 +97,9 @@ struct TrustedDeviceEnrollmentPromptTests {
   ) -> Clerk.Environment.AuthConfig.NativeSettings {
     .init(
       apiEnabled: true,
-      trustedDeviceSignInEnabled: true,
-      trustedDevicePromptAfterSignInEnabled: promptAfterSignIn,
-      trustedDevicePromptAfterSignUpEnabled: promptAfterSignUp
+      biometricSignInEnabled: true,
+      biometricCredentialPromptAfterSignInEnabled: promptAfterSignIn,
+      biometricCredentialPromptAfterSignUpEnabled: promptAfterSignUp
     )
   }
 

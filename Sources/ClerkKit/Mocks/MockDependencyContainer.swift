@@ -23,8 +23,8 @@ final class MockDependencyContainer: Dependencies {
   let sharedSessionOwnerIdentifier: String?
   let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
-  let trustedDeviceKeyManager: any TrustedDeviceKeyManagerProtocol
-  let trustedDeviceCredentialStore: any TrustedDeviceLocalCredentialStoreProtocol
+  let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
+  let biometricCredentialStore: any BiometricCredentialLocalCredentialStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -37,7 +37,7 @@ final class MockDependencyContainer: Dependencies {
   let sessionService: SessionServiceProtocol
   let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
-  let trustedDeviceService: TrustedDeviceServiceProtocol
+  let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let environmentService: EnvironmentServiceProtocol
   let emailAddressService: EmailAddressServiceProtocol
@@ -52,8 +52,8 @@ final class MockDependencyContainer: Dependencies {
   /// - Parameters:
   ///   - apiClient: The API client to use (typically a mock for tests/previews).
   ///   - keychain: Optional keychain storage (defaults to InMemoryKeychain).
-  ///   - trustedDeviceKeyManager: Optional trusted-device key manager (defaults to MockTrustedDeviceKeyManager).
-  ///   - trustedDeviceCredentialStore: Optional trusted-device credential store.
+  ///   - biometricCredentialKeyManager: Optional biometric-credential key manager (defaults to MockBiometricCredentialKeyManager).
+  ///   - biometricCredentialStore: Optional biometric credential store.
   ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
   ///   - clientService: Optional custom client service (defaults to MockClientService with Client.mock).
   ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
@@ -63,7 +63,7 @@ final class MockDependencyContainer: Dependencies {
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
   ///   - magicLinkService: Optional custom magic-link service (defaults to MockMagicLinkService).
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
-  ///   - trustedDeviceService: Optional custom trusted-device service (defaults to MockTrustedDeviceService).
+  ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
   ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
   ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
@@ -79,8 +79,8 @@ final class MockDependencyContainer: Dependencies {
     sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
     sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? = nil,
     shouldHydrateProvisionalLegacyClient: Bool = false,
-    trustedDeviceKeyManager: (any TrustedDeviceKeyManagerProtocol)? = nil,
-    trustedDeviceCredentialStore: (any TrustedDeviceLocalCredentialStoreProtocol)? = nil,
+    biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
+    biometricCredentialStore: (any BiometricCredentialLocalCredentialStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
     hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
@@ -90,7 +90,7 @@ final class MockDependencyContainer: Dependencies {
     sessionService: (any SessionServiceProtocol)? = nil,
     magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
-    trustedDeviceService: (any TrustedDeviceServiceProtocol)? = nil,
+    biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
     environmentService: (any EnvironmentServiceProtocol)? = nil,
     emailAddressService: (any EmailAddressServiceProtocol)? = nil,
@@ -111,9 +111,9 @@ final class MockDependencyContainer: Dependencies {
     self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier
     self.sharedSessionOwnerSlotClearRecovery = sharedSessionOwnerSlotClearRecovery
     self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
-    self.trustedDeviceKeyManager = trustedDeviceKeyManager ?? MockTrustedDeviceKeyManager()
-    self.trustedDeviceCredentialStore =
-      trustedDeviceCredentialStore ?? TrustedDeviceLocalCredentialStore(keychain: resolvedAppLocalKeychain)
+    self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
+    self.biometricCredentialStore =
+      biometricCredentialStore ?? BiometricCredentialLocalCredentialStore(keychain: resolvedAppLocalKeychain)
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
@@ -129,7 +129,7 @@ final class MockDependencyContainer: Dependencies {
     self.sessionService = sessionService ?? MockSessionService()
     self.magicLinkService = magicLinkService ?? MockMagicLinkService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
-    self.trustedDeviceService = trustedDeviceService ?? MockTrustedDeviceService()
+    self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.environmentService = environmentService ?? MockEnvironmentService()
     self.emailAddressService = emailAddressService ?? MockEmailAddressService()

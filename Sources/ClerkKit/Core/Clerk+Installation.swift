@@ -9,19 +9,19 @@ extension Clerk {
   @MainActor
   package static var installationMarkerUserDefaults: UserDefaults = .standard
   @MainActor
-  package static var trustedDeviceAppIdentifierProvider: () -> String? = {
+  package static var biometricCredentialAppIdentifierProvider: () -> String? = {
     Bundle.main.bundleIdentifier
   }
 
-  private static let trustedDeviceInstallationMarkerPrefix = "com.clerk.trusted-device-installation-marker"
+  private static let biometricCredentialInstallationMarkerPrefix = "com.clerk.trusted-device-installation-marker"
 
   @MainActor
-  package func reconcileTrustedDeviceCredentialsForCurrentInstallation() {
-    guard let appIdentifier = Self.trustedDeviceAppIdentifierProvider() else {
+  package func reconcileBiometricCredentialsForCurrentInstallation() {
+    guard let appIdentifier = Self.biometricCredentialAppIdentifierProvider() else {
       return
     }
 
-    let markerKey = Self.trustedDeviceInstallationMarkerKey(
+    let markerKey = Self.biometricCredentialInstallationMarkerKey(
       for: options.keychainConfig,
       appIdentifier: appIdentifier
     )
@@ -30,26 +30,26 @@ extension Clerk {
     }
 
     do {
-      try dependencies.trustedDeviceCredentialStore
+      try dependencies.biometricCredentialStore
         .deleteLocalCredentials(
           appIdentifier: appIdentifier,
-          keyManager: dependencies.trustedDeviceKeyManager
+          keyManager: dependencies.biometricCredentialKeyManager
         )
       Self.installationMarkerUserDefaults.set(true, forKey: markerKey)
     } catch {
       ClerkLogger.logError(
         error,
-        message: "Failed to clear trusted-device local credentials for a new app installation."
+        message: "Failed to clear biometric-credential local credentials for a new app installation."
       )
     }
   }
 
-  package static func trustedDeviceInstallationMarkerKey(
+  package static func biometricCredentialInstallationMarkerKey(
     for keychainConfig: Options.KeychainConfig,
     appIdentifier: String
   ) -> String {
     [
-      trustedDeviceInstallationMarkerPrefix,
+      biometricCredentialInstallationMarkerPrefix,
       encodeInstallationMarkerComponent(keychainConfig.service),
       encodeInstallationMarkerComponent(keychainConfig.accessGroup),
       encodeInstallationMarkerComponent(appIdentifier),

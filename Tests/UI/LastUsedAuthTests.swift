@@ -8,8 +8,8 @@ import Testing
 @Suite(.serialized)
 struct LastUsedAuthTests {
   @Test
-  func trustedDeviceStrategyShowsTrustedDeviceBadgeWhenAnotherMethodIsVisible() {
-    configureTrustedDeviceLastAuth()
+  func biometricCredentialStrategyShowsBiometricCredentialBadgeWhenAnotherMethodIsVisible() {
+    configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock
     environment.userSettings.social = [:]
@@ -19,16 +19,16 @@ struct LastUsedAuthTests {
 
     let lastUsedAuth = LastUsedAuth(
       environment: environment,
-      trustedDeviceSignInIsVisible: true
+      biometricSignInIsVisible: true
     )
 
-    #expect(lastUsedAuth == .trustedDevice)
-    #expect(lastUsedAuth?.showsTrustedDeviceBadge == true)
+    #expect(lastUsedAuth == .biometricCredential)
+    #expect(lastUsedAuth?.showsBiometricCredentialBadge == true)
   }
 
   @Test
-  func trustedDeviceStrategyDoesNotShowBadgeWhenOnlyTrustedDeviceIsVisible() {
-    configureTrustedDeviceLastAuth()
+  func biometricCredentialStrategyDoesNotShowBadgeWhenOnlyBiometricCredentialIsVisible() {
+    configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock
     environment.userSettings.social = [:]
@@ -38,16 +38,16 @@ struct LastUsedAuthTests {
 
     let lastUsedAuth = LastUsedAuth(
       environment: environment,
-      trustedDeviceSignInIsVisible: true
+      biometricSignInIsVisible: true
     )
 
     #expect(lastUsedAuth == nil)
   }
 
-  private func configureTrustedDeviceLastAuth() {
+  private func configureBiometricCredentialLastAuth() {
     Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
     var client = Client.mock
-    client.lastAuthenticationStrategy = .trustedDevice
+    client.lastAuthenticationStrategy = .biometricCredential
     Clerk.shared.client = client
   }
 }

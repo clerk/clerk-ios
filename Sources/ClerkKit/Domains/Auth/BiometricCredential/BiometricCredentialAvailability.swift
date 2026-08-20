@@ -1,16 +1,16 @@
 //
-//  TrustedDeviceAvailability.swift
+//  BiometricCredentialAvailability.swift
 //  Clerk
 //
 
 import Foundation
 
-/// Local availability state for biometric trusted-device sign-in.
-public enum TrustedDeviceAvailability: Equatable, Sendable {
+/// Local availability state for biometric biometric-credential sign-in.
+public enum BiometricCredentialAvailability: Equatable, Sendable {
   case available
   case unavailable(UnavailableReason)
 
-  /// Whether the SDK has a local credential and key that can be used for trusted-device sign-in.
+  /// Whether the SDK has a local credential and key that can be used for biometric-credential sign-in.
   public var isAvailable: Bool {
     switch self {
     case .available:
@@ -20,7 +20,7 @@ public enum TrustedDeviceAvailability: Equatable, Sendable {
     }
   }
 
-  /// The reason trusted-device sign-in is unavailable, if any.
+  /// The reason biometric-credential sign-in is unavailable, if any.
   public var unavailableReason: UnavailableReason? {
     switch self {
     case .available:

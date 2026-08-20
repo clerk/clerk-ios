@@ -255,7 +255,7 @@ public final class Clerk {
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
-      trustedDevices: trustedDevices,
+      biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
     )
@@ -272,13 +272,13 @@ public final class Clerk {
     Organizations(organizationService: dependencies.organizationService)
   }
 
-  /// The main entry point for trusted-device credential operations.
-  public var trustedDevices: TrustedDevices {
-    TrustedDevices(
-      trustedDeviceService: dependencies.trustedDeviceService,
+  /// The main entry point for biometric credential operations.
+  public var biometricCredentials: BiometricCredentials {
+    BiometricCredentials(
+      biometricCredentialService: dependencies.biometricCredentialService,
       signInService: dependencies.signInService,
-      keyManager: dependencies.trustedDeviceKeyManager,
-      credentialStore: dependencies.trustedDeviceCredentialStore
+      keyManager: dependencies.biometricCredentialKeyManager,
+      credentialStore: dependencies.biometricCredentialStore
     )
   }
 
@@ -348,7 +348,7 @@ extension Clerk {
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
-    reconcileTrustedDeviceCredentialsForCurrentInstallation()
+    reconcileBiometricCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
     // Set up session polling and lifecycle management

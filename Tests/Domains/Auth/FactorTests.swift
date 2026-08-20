@@ -28,21 +28,21 @@ struct FactorTests {
   }
 
   @Test
-  func trustedDeviceStrategyRoundTripsThroughJSON() throws {
-    let strategy = FactorStrategy.trustedDevice
+  func biometricCredentialStrategyRoundTripsThroughJSON() throws {
+    let strategy = FactorStrategy.biometricCredential
 
     let data = try JSONEncoder.clerkEncoder.encode(strategy)
     let rawValue = try #require(String(data: data, encoding: .utf8))
 
     #expect(rawValue == "\"trusted_device\"")
-    #expect(try JSONDecoder.clerkDecoder.decode(FactorStrategy.self, from: data) == .trustedDevice)
+    #expect(try JSONDecoder.clerkDecoder.decode(FactorStrategy.self, from: data) == .biometricCredential)
   }
 
   @Test
-  func trustedDeviceFactorRoundTripsThroughJSON() throws {
+  func biometricCredentialFactorRoundTripsThroughJSON() throws {
     let factor = Factor(
-      strategy: .trustedDevice,
-      trustedDeviceId: "tdc_123",
+      strategy: .biometricCredential,
+      biometricCredentialId: "tdc_123",
       safeIdentifier: "Sean's iPhone"
     )
 
@@ -56,6 +56,6 @@ struct FactorTests {
     let decoded = try JSONDecoder.clerkDecoder.decode(Factor.self, from: data)
 
     #expect(decoded == factor)
-    #expect(decoded.trustedDeviceId == "tdc_123")
+    #expect(decoded.biometricCredentialId == "tdc_123")
   }
 }

@@ -48,17 +48,17 @@ extension AuthNavigation {
     return true
   }
 
-  func routeToTrustedDeviceEnrollment(
+  func routeToBiometricCredentialEnrollment(
     token: AuthFlowPresentationToken,
-    biometryDisplayName: TrustedDeviceBiometryDisplayName
+    biometryDisplayName: BiometryDisplayName
   ) {
-    guard token.kind == .trustedDeviceEnrollment else { return }
+    guard token.kind == .biometricCredentialEnrollment else { return }
     if presentedAuthFlowToken == token {
       return
     }
 
     synchronizePostAuthPath(with: token)
-    path.append(.trustedDeviceEnrollment(
+    path.append(.biometricCredentialEnrollment(
       biometryDisplayName: biometryDisplayName,
       token: token
     ))
@@ -96,9 +96,9 @@ extension AuthNavigation {
     }
   }
 
-  var hasTrustedDeviceEnrollmentInPath: Bool {
+  var hasBiometricCredentialEnrollmentInPath: Bool {
     path.contains { destination in
-      if case .trustedDeviceEnrollment = destination {
+      if case .biometricCredentialEnrollment = destination {
         true
       } else {
         false
