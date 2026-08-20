@@ -162,6 +162,9 @@ public struct TrustedDevices {
   }
 
   /// Revokes a trusted-device credential for the signed-in user.
+  ///
+  /// After server revocation succeeds, the SDK attempts to remove any matching local private key
+  /// and metadata. A local cleanup failure does not affect the returned revoked credential.
   @discardableResult
   public func revoke(id: String) async throws -> TrustedDevice {
     let trustedDevice = try await trustedDeviceService.revoke(
@@ -181,9 +184,17 @@ public struct TrustedDevices {
     return trustedDevice
   }
 
-  /// Revokes the available local trusted-device credential for the current signed-in user.
+  /// Revokes the trusted-device credential for the current app installation and signed-in user.
+  ///
+  /// Call this method before signing out because it requires an active or pending Clerk session.
+  /// When a credential is available, it is revoked on the server and the SDK attempts to remove
+  /// its local private key and metadata. A local cleanup failure does not affect the returned
+  /// revoked credential.
+  ///
+  /// - Returns: The revoked trusted-device credential, or `nil` when this app installation has no
+  ///   available local credential for the current user.
   @discardableResult
-  package func revokeCurrentDeviceCredential() async throws -> TrustedDevice? {
+  public func revokeCurrentDeviceCredential() async throws -> TrustedDevice? {
     guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
       throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
     }
