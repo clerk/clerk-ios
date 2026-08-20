@@ -431,11 +431,11 @@ extension Passkey {
   }
 }
 
-// MARK: TrustedDevice
+// MARK: BiometricCredential
 
-extension TrustedDevice {
-  public static var mock: TrustedDevice {
-    TrustedDevice(
+extension BiometricCredential {
+  public static var mock: BiometricCredential {
+    BiometricCredential(
       id: "tdc_123",
       platform: .iOS,
       appIdentifier: "com.clerk.example",
@@ -449,14 +449,14 @@ extension TrustedDevice {
   }
 }
 
-// MARK: TrustedDeviceChallenge
+// MARK: BiometricCredentialChallenge
 
-extension TrustedDeviceChallenge {
-  public static var mock: TrustedDeviceChallenge {
-    TrustedDeviceChallenge(
+extension BiometricCredentialChallenge {
+  public static var mock: BiometricCredentialChallenge {
+    BiometricCredentialChallenge(
       challenge: "mock_challenge",
       challengeId: "tdch_123",
-      trustedDeviceId: "tdc_123",
+      biometricCredentialId: "tdc_123",
       clientData: "{\"challenge_id\":\"tdch_123\"}",
       expiresAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       algorithm: .es256
@@ -464,22 +464,22 @@ extension TrustedDeviceChallenge {
   }
 }
 
-// MARK: TrustedDeviceLocalKey
+// MARK: BiometricCredentialLocalKey
 
-extension TrustedDeviceLocalKey {
-  package static var mock: TrustedDeviceLocalKey {
-    TrustedDeviceLocalKey(
+extension BiometricCredentialLocalKey {
+  package static var mock: BiometricCredentialLocalKey {
+    BiometricCredentialLocalKey(
       localKeyId: "tdlk_mock",
       publicKeyJWK: "{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"x\",\"y\":\"y\",\"alg\":\"ES256\"}"
     )
   }
 }
 
-// MARK: TrustedDeviceLocalCredential
+// MARK: BiometricCredentialLocalCredential
 
-extension TrustedDeviceLocalCredential {
-  package static var mock: TrustedDeviceLocalCredential {
-    TrustedDeviceLocalCredential(
+extension BiometricCredentialLocalCredential {
+  package static var mock: BiometricCredentialLocalCredential {
+    BiometricCredentialLocalCredential(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       userID: User.mock.id,

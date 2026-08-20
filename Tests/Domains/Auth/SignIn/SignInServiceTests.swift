@@ -149,7 +149,7 @@ struct SignInServiceTests {
   }
 
   @Test
-  func createWithTrustedDevice() async throws {
+  func createWithBiometricCredential() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
 
@@ -170,7 +170,7 @@ struct SignInServiceTests {
     mock.register()
 
     _ = try await Clerk.shared.dependencies.signInService.create(
-      params: .init(strategy: .trustedDevice, trustedDeviceId: "tdc_123")
+      params: .init(strategy: .biometricCredential, biometricCredentialId: "tdc_123")
     )
     #expect(requestHandled.value)
   }
@@ -515,7 +515,7 @@ struct SignInServiceTests {
   }
 
   @Test
-  func attemptFirstFactorTrustedDevice() async throws {
+  func attemptFirstFactorBiometricCredential() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins/\(signIn.id)/attempt_first_factor")!
@@ -541,8 +541,8 @@ struct SignInServiceTests {
     _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(
-        strategy: .trustedDevice,
-        trustedDeviceId: "tdc_123",
+        strategy: .biometricCredential,
+        biometricCredentialId: "tdc_123",
         clientData: "{\"challenge_id\":\"tdch_123\"}",
         signature: "mock_signature",
         algorithm: .es256

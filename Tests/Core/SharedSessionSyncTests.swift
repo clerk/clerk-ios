@@ -1173,7 +1173,7 @@ struct SharedSessionSyncTests {
       #expect(node.clerk.startAuthFlowPresentation(
         for: registration,
         work: work,
-        presentation: .trustedDeviceEnrollment
+        presentation: .biometricCredentialEnrollment
       ) != nil)
     }
     #expect(node.clerk.isAuthFlowComplete == false)

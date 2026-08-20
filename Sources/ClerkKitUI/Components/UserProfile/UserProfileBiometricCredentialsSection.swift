@@ -1,5 +1,5 @@
 //
-//  UserProfileTrustedDeviceSection.swift
+//  UserProfileBiometricCredentialsSection.swift
 //  Clerk
 //
 
@@ -8,18 +8,18 @@
 import ClerkKit
 import SwiftUI
 
-struct UserProfileTrustedDeviceSection: View {
+struct UserProfileBiometricCredentialsSection: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   let isEnabled: Bool
-  let refreshAvailability: @MainActor () async -> TrustedDeviceAvailability?
+  let refreshAvailability: @MainActor () async -> BiometricCredentialAvailability?
 
   @State private var optimisticIsEnabled: Bool?
   @State private var isLoading = false
   @State private var error: Error?
 
-  private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+  private let biometryDisplayName = BiometryDisplayName.current()
 
   private var user: User? {
     clerk.user
@@ -41,7 +41,7 @@ struct UserProfileTrustedDeviceSection: View {
       isLoading = true
       optimisticIsEnabled = newValue
       Task {
-        await setTrustedDeviceSignInEnabled(newValue)
+        await setBiometricSignInEnabled(newValue)
       }
     }
   }
@@ -67,7 +67,7 @@ struct UserProfileTrustedDeviceSection: View {
           .labelsHidden()
           .tint(theme.colors.switchTint)
           .accessibilityLabel(Text("Sign in with \(biometryDisplayName.value)", bundle: .module))
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.trustedDeviceToggle)
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Security.biometricCredentialToggle)
       }
       .padding(.horizontal, 24)
       .padding(.vertical, 16)
@@ -86,15 +86,15 @@ struct UserProfileTrustedDeviceSection: View {
   }
 }
 
-extension UserProfileTrustedDeviceSection {
+extension UserProfileBiometricCredentialsSection {
   private var enrollmentReason: String {
-    TrustedDeviceEnrollmentStrings.enrollmentReason(
-      applicationName: TrustedDeviceEnrollmentStrings.applicationName(for: clerk),
+    BiometricCredentialEnrollmentStrings.enrollmentReason(
+      applicationName: BiometricCredentialEnrollmentStrings.applicationName(for: clerk),
       biometryDisplayName: biometryDisplayName
     )
   }
 
-  private func setTrustedDeviceSignInEnabled(_ enabled: Bool) async {
+  private func setBiometricSignInEnabled(_ enabled: Bool) async {
     guard let user else {
       optimisticIsEnabled = nil
       isLoading = false
@@ -106,13 +106,13 @@ extension UserProfileTrustedDeviceSection {
 
     do {
       if enabled {
-        try await clerk.trustedDevices.enroll(
-          identifierHint: user.trustedDeviceIdentifierHint,
+        try await clerk.biometricCredentials.enroll(
+          identifierHint: user.biometricCredentialIdentifierHint,
           reason: enrollmentReason,
           policy: .biometryCurrentSet
         )
       } else {
-        try await clerk.trustedDevices.revokeCurrentDeviceCredential()
+        try await clerk.biometricCredentials.revokeCurrentDeviceCredential()
       }
 
       if await refreshAvailability() != nil {
@@ -127,13 +127,13 @@ extension UserProfileTrustedDeviceSection {
       }
 
       self.error = error
-      ClerkLogger.error("Failed to update trusted-device sign-in", error: error)
+      ClerkLogger.error("Failed to update biometric-credential sign-in", error: error)
     }
   }
 }
 
 #Preview {
-  UserProfileTrustedDeviceSection(
+  UserProfileBiometricCredentialsSection(
     isEnabled: true,
     refreshAvailability: { .available }
   )

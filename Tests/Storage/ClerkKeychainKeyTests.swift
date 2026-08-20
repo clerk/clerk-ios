@@ -36,7 +36,7 @@ struct ClerkKeychainKeyTests {
     #expect(allCases.contains(.watchSyncDeviceTokenSynced))
     #expect(allCases.contains(.attestKeyId))
     #expect(allCases.contains(.pendingMagicLinkFlow))
-    #expect(allCases.contains(.trustedDeviceCredentials))
+    #expect(allCases.contains(.biometricCredentials))
   }
 
   @Test
@@ -59,6 +59,6 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue == "clerkDeviceTokenSynced")
     #expect(ClerkKeychainKey.attestKeyId.rawValue == "AttestKeyId")
     #expect(ClerkKeychainKey.pendingMagicLinkFlow.rawValue == "pendingMagicLinkFlow")
-    #expect(ClerkKeychainKey.trustedDeviceCredentials.rawValue == "trustedDeviceCredentials")
+    #expect(ClerkKeychainKey.biometricCredentials.rawValue == "trustedDeviceCredentials")
   }
 }

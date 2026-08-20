@@ -1,13 +1,13 @@
 //
-//  TrustedDevice.swift
+//  BiometricCredential.swift
 //  Clerk
 //
 
 import Foundation
 
-/// A biometric-gated trusted-device credential associated with a user.
-public struct TrustedDevice: Codable, Identifiable, Equatable, Sendable {
-  /// The unique identifier of the trusted-device credential.
+/// A biometric credential associated with a user.
+public struct BiometricCredential: Codable, Identifiable, Equatable, Sendable {
+  /// The unique identifier of the biometric credential.
   public var id: String
 
   /// The resource object name.
@@ -67,8 +67,8 @@ public struct TrustedDevice: Codable, Identifiable, Equatable, Sendable {
   }
 }
 
-extension TrustedDevice {
-  /// The platform a trusted-device credential belongs to.
+extension BiometricCredential {
+  /// The platform a biometric credential belongs to.
   public enum Platform: Codable, Equatable, Hashable, Sendable {
     case iOS
     case android
@@ -141,7 +141,7 @@ extension TrustedDevice {
     }
   }
 
-  /// The server-side trusted-device credential status.
+  /// The server-side biometric credential status.
   public enum Status: Codable, Equatable, Hashable, Sendable {
     case active
     case revoked
@@ -181,7 +181,7 @@ extension TrustedDevice {
   }
 }
 
-extension TrustedDevice {
+extension BiometricCredential {
   package struct PrepareEnrollmentParams: Encodable {
     package let platform: Platform
     package let appIdentifier: String

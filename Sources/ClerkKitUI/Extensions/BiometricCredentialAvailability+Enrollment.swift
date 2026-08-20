@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceAvailability+Enrollment.swift
+//  BiometricCredentialAvailability+Enrollment.swift
 //  Clerk
 //
 
@@ -7,7 +7,7 @@
 
 import ClerkKit
 
-extension TrustedDeviceAvailability {
+extension BiometricCredentialAvailability {
   var canPromptForEnrollment: Bool {
     switch unavailableReason {
     case .noLocalCredential,

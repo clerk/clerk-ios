@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct TrustedDeviceServiceTests {
+struct BiometricCredentialServiceTests {
   init() {
     configureClerkForTesting()
   }
@@ -14,12 +14,12 @@ struct TrustedDeviceServiceTests {
   @Test
   func list() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/biometric_credentials")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<[TrustedDevice]>(response: [.mock], client: .mock)),
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<[BiometricCredential]>(response: [.mock], client: .mock)),
       ]
     )
 
@@ -29,22 +29,22 @@ struct TrustedDeviceServiceTests {
     }
     mock.register()
 
-    let trustedDevices = try await Clerk.shared.dependencies.trustedDeviceService.list()
+    let biometricCredentials = try await Clerk.shared.dependencies.biometricCredentialService.list()
 
     #expect(requestHandled.value)
-    #expect(trustedDevices == [.mock])
+    #expect(biometricCredentials == [.mock])
   }
 
   @Test
   func prepareEnrollment() async throws {
     let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/prepare")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/biometric_credentials/prepare")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<TrustedDeviceChallenge>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredentialChallenge>(response: .mock, client: .mock)),
       ]
     )
 
@@ -60,7 +60,7 @@ struct TrustedDeviceServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.trustedDeviceService.prepareEnrollment(
+    _ = try await Clerk.shared.dependencies.biometricCredentialService.prepareEnrollment(
       sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
@@ -76,12 +76,12 @@ struct TrustedDeviceServiceTests {
   func attemptEnrollment() async throws {
     let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/attempt")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/biometric_credentials/attempt")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<TrustedDevice>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: .mock)),
       ]
     )
 
@@ -99,7 +99,7 @@ struct TrustedDeviceServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.trustedDeviceService.attemptEnrollment(
+    _ = try await Clerk.shared.dependencies.biometricCredentialService.attemptEnrollment(
       sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
@@ -116,13 +116,13 @@ struct TrustedDeviceServiceTests {
   @Test
   func validateSignInCredential() async throws {
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/trusted_devices/validate")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/biometric_credentials/validate")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          ClientResponse<TrustedDeviceValidation>(
+          ClientResponse<BiometricCredentialValidation>(
             response: .init(valid: true),
             client: .mock
           )
@@ -137,8 +137,8 @@ struct TrustedDeviceServiceTests {
     }
     mock.register()
 
-    let validation = try await Clerk.shared.dependencies.trustedDeviceService.validateSignInCredential(
-      trustedDeviceId: "tdc_123"
+    let validation = try await Clerk.shared.dependencies.biometricCredentialService.validateSignInCredential(
+      biometricCredentialId: "tdc_123"
     )
 
     #expect(requestHandled.value)
@@ -147,15 +147,15 @@ struct TrustedDeviceServiceTests {
 
   @Test
   func revoke() async throws {
-    let trustedDevice = TrustedDevice.mock
+    let biometricCredential = BiometricCredential.mock
     let sessionId = "sess_enrollment"
     let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/trusted_devices/\(trustedDevice.id)")!
+    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/biometric_credentials/\(biometricCredential.id)")!
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<TrustedDevice>(response: .mock, client: .mock)),
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: .mock)),
       ]
     )
 
@@ -166,8 +166,8 @@ struct TrustedDeviceServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.trustedDeviceService.revoke(
-      trustedDeviceId: trustedDevice.id,
+    _ = try await Clerk.shared.dependencies.biometricCredentialService.revoke(
+      biometricCredentialId: biometricCredential.id,
       sessionId: sessionId
     )
 

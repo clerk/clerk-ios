@@ -10,13 +10,13 @@ import SwiftUI
 
 extension AuthView {
   enum PostAuthStep: Equatable {
-    case trustedDeviceEnrollment
+    case biometricCredentialEnrollment
     case sessionTasks
     case complete
   }
 
   static let postAuthStepOrder: [PostAuthStep] = [
-    .trustedDeviceEnrollment,
+    .biometricCredentialEnrollment,
     .sessionTasks,
     .complete,
   ]
@@ -47,7 +47,7 @@ extension AuthView {
   var showDismissButton: Bool {
     isDismissible &&
       !navigation.hasSessionTaskStartInPath &&
-      !navigation.hasTrustedDeviceEnrollmentInPath
+      !navigation.hasBiometricCredentialEnrollmentInPath
   }
 
   @ToolbarContentBuilder
@@ -166,13 +166,13 @@ extension AuthView {
       }
 
       switch step {
-      case .trustedDeviceEnrollment:
+      case .biometricCredentialEnrollment:
         guard let completion else { continue }
         let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
         _ = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint)
         guard !Task.isCancelled else { return }
 
-        if await presentTrustedDeviceEnrollmentIfNeeded(
+        if await presentBiometricCredentialEnrollmentIfNeeded(
           after: completion,
           owner: owner,
           work: work
@@ -201,8 +201,8 @@ extension AuthView {
     switch token.kind {
     case .sessionTasks:
       _ = navigation.routeToSessionTaskStart(session: session, token: token)
-    case .trustedDeviceEnrollment:
-      navigation.routeToTrustedDeviceEnrollment(
+    case .biometricCredentialEnrollment:
+      navigation.routeToBiometricCredentialEnrollment(
         token: token,
         biometryDisplayName: .current()
       )
@@ -245,12 +245,12 @@ extension AuthView {
   }
 
   @discardableResult
-  private func presentTrustedDeviceEnrollmentIfNeeded(
+  private func presentBiometricCredentialEnrollmentIfNeeded(
     after result: TransferFlowResult,
     owner: AuthFlowRegistration,
     work: AuthFlowWork
   ) async -> Bool {
-    guard let context = trustedDeviceEnrollmentContext(
+    guard let context = biometricCredentialEnrollmentContext(
       after: result,
       sessionId: work.sessionId
     ) else {
@@ -258,18 +258,18 @@ extension AuthView {
     }
 
     do {
-      let availability = try await clerk.trustedDevices.currentUserAvailability()
+      let availability = try await clerk.biometricCredentials.currentUserAvailability()
       guard enrollmentContextIsCurrent(context, availability: availability),
             let token = clerk.startAuthFlowPresentation(
               for: owner,
               work: work,
-              presentation: .trustedDeviceEnrollment
+              presentation: .biometricCredentialEnrollment
             )
       else {
         return false
       }
       context.promptStore.markPromptSeen(userID: context.userId)
-      navigation.routeToTrustedDeviceEnrollment(
+      navigation.routeToBiometricCredentialEnrollment(
         token: token,
         biometryDisplayName: context.biometryDisplayName
       )
@@ -279,41 +279,41 @@ extension AuthView {
     }
   }
 
-  private struct TrustedDeviceEnrollmentContext {
+  private struct BiometricCredentialEnrollmentContext {
     let session: Session
     let userId: String
-    let biometryDisplayName: TrustedDeviceBiometryDisplayName
-    let promptStore: TrustedDeviceEnrollmentPromptStore
+    let biometryDisplayName: BiometryDisplayName
+    let promptStore: BiometricCredentialEnrollmentPromptStore
   }
 
-  private func trustedDeviceEnrollmentContext(
+  private func biometricCredentialEnrollmentContext(
     after result: TransferFlowResult,
     sessionId: String
-  ) -> TrustedDeviceEnrollmentContext? {
+  ) -> BiometricCredentialEnrollmentContext? {
     guard clerk.callbackContinuation == nil,
           let nativeSettings = clerk.environment?.authConfig.nativeSettings,
           nativeSettings.apiEnabled,
-          nativeSettings.trustedDeviceSignInEnabled,
+          nativeSettings.biometricSignInEnabled,
           let session = clerk.session,
           session.id == sessionId,
-          session.status.allowsTrustedDeviceEnrollment,
+          session.status.allowsBiometricCredentialEnrollment,
           let userId = session.user?.id
     else {
       return nil
     }
 
-    let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+    let biometryDisplayName = BiometryDisplayName.current()
     guard biometryDisplayName.isSupported else { return nil }
 
-    let promptStore = TrustedDeviceEnrollmentPromptStore()
-    guard result.shouldOfferTrustedDeviceEnrollmentPrompt(
+    let promptStore = BiometricCredentialEnrollmentPromptStore()
+    guard result.shouldOfferBiometricCredentialEnrollmentPrompt(
       userID: userId,
       nativeSettings: nativeSettings,
       promptStore: promptStore
     ) else {
       return nil
     }
-    return TrustedDeviceEnrollmentContext(
+    return BiometricCredentialEnrollmentContext(
       session: session,
       userId: userId,
       biometryDisplayName: biometryDisplayName,
@@ -322,12 +322,12 @@ extension AuthView {
   }
 
   private func enrollmentContextIsCurrent(
-    _ context: TrustedDeviceEnrollmentContext,
-    availability: TrustedDeviceAvailability
+    _ context: BiometricCredentialEnrollmentContext,
+    availability: BiometricCredentialAvailability
   ) -> Bool {
     !Task.isCancelled
       && clerk.session?.id == context.session.id
-      && clerk.session?.status.allowsTrustedDeviceEnrollment == true
+      && clerk.session?.status.allowsBiometricCredentialEnrollment == true
       && clerk.user?.id == context.userId
       && !availability.isAvailable
       && availability.canPromptForEnrollment

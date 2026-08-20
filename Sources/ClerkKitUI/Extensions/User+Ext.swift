@@ -34,7 +34,7 @@ extension User {
     return nil
   }
 
-  var trustedDeviceIdentifierHint: String? {
+  var biometricCredentialIdentifierHint: String? {
     if let primaryEmailAddress, !primaryEmailAddress.emailAddress.isEmptyTrimmed {
       return primaryEmailAddress.emailAddress
     }

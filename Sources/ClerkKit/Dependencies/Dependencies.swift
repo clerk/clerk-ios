@@ -44,11 +44,11 @@ protocol Dependencies: AnyObject {
   /// use the legacy Client as provisional launch UI.
   var shouldHydrateProvisionalLegacyClient: Bool { get }
 
-  /// Manager for local trusted-device private keys.
-  var trustedDeviceKeyManager: any TrustedDeviceKeyManagerProtocol { get }
+  /// Manager for local biometric-credential private keys.
+  var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
 
-  /// Store for local trusted-device credential metadata.
-  var trustedDeviceCredentialStore: any TrustedDeviceLocalCredentialStoreProtocol { get }
+  /// Store for local biometric credential metadata.
+  var biometricCredentialStore: any BiometricCredentialLocalCredentialStoreProtocol { get }
 
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
@@ -77,8 +77,8 @@ protocol Dependencies: AnyObject {
   /// Service for passkey operations.
   var passkeyService: PasskeyServiceProtocol { get }
 
-  /// Service for trusted-device operations.
-  var trustedDeviceService: TrustedDeviceServiceProtocol { get }
+  /// Service for biometric-credential operations.
+  var biometricCredentialService: BiometricCredentialServiceProtocol { get }
 
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }

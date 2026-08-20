@@ -121,7 +121,7 @@ struct ClerkTests {
     try keychain.set("true", forKey: ClerkKeychainKey.watchSyncDeviceTokenSynced.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
     try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
-    try keychain.set(Data("[]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    try keychain.set(Data("[]".utf8), forKey: ClerkKeychainKey.biometricCredentials.rawValue)
 
     // Verify all keys exist before clearing
     for key in ClerkKeychainKey.allCases {
@@ -1117,47 +1117,47 @@ struct ClerkTests {
   }
 
   @Test
-  func clearAllKeychainItemsPreservesTrustedDeviceMetadataWhenCredentialCleanupFails() throws {
-    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+  func clearAllKeychainItemsPreservesBiometricCredentialMetadataWhenCredentialCleanupFails() throws {
+    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.biometricCredentials.rawValue)
     try keychain.set("test-client-data", forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.biometricCredentials.rawValue)
 
     Clerk.clearAllKeychainItems(in: keychain)
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == true)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.biometricCredentials.rawValue) == true)
   }
 
   @Test
-  func clearAllKeychainItemsStrictlyPreservesTrustedDeviceMetadataWhenCredentialCleanupFails() throws {
-    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+  func clearAllKeychainItemsStrictlyPreservesBiometricCredentialMetadataWhenCredentialCleanupFails() throws {
+    let keychain = DataFailingKeychain(failingKey: ClerkKeychainKey.biometricCredentials.rawValue)
     try keychain.set("test-client-data", forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue)
+    try keychain.set(Data("[{}]".utf8), forKey: ClerkKeychainKey.biometricCredentials.rawValue)
 
     #expect(throws: ClerkClientError.self) {
       try Clerk.clearAllKeychainItemsStrictly(in: keychain)
     }
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.trustedDeviceCredentials.rawValue) == true)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.biometricCredentials.rawValue) == true)
   }
 
   @Test
-  func configureClearsCurrentAppTrustedDeviceCredentialsWhenInstallMarkerIsMissing() throws {
+  func configureClearsCurrentAppBiometricCredentialsWhenInstallMarkerIsMissing() throws {
     let suiteName = installationMarkerDefaultsSuiteName()
     let defaults = try #require(UserDefaults(suiteName: suiteName))
     let originalDefaults = Clerk.installationMarkerUserDefaults
-    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    let originalAppIdentifierProvider = Clerk.biometricCredentialAppIdentifierProvider
     Clerk.installationMarkerUserDefaults = defaults
-    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    Clerk.biometricCredentialAppIdentifierProvider = { "com.clerk.example" }
     defer {
       Clerk.installationMarkerUserDefaults = originalDefaults
-      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      Clerk.biometricCredentialAppIdentifierProvider = originalAppIdentifierProvider
       defaults.removePersistentDomain(forName: suiteName)
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
-    let otherAppCredential = TrustedDeviceLocalCredential(
+    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let otherAppCredential = BiometricCredentialLocalCredential(
       id: "tdc_other_app",
       localKeyId: "tdlk_other_app",
       userID: User.mock.id,
@@ -1169,10 +1169,10 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
-      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       }),
-      trustedDeviceCredentialStore: credentialStore
+      biometricCredentialStore: credentialStore
     )
     try credentialStore.save(.mock)
     try credentialStore.save(otherAppCredential)
@@ -1186,61 +1186,68 @@ struct ClerkTests {
   }
 
   @Test
-  func configureKeepsTrustedDeviceCredentialsWhenInstallMarkerExists() throws {
+  func configureKeepsBiometricCredentialsWhenLegacyInstallMarkerExists() throws {
     let suiteName = installationMarkerDefaultsSuiteName()
     let defaults = try #require(UserDefaults(suiteName: suiteName))
     let originalDefaults = Clerk.installationMarkerUserDefaults
-    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    let originalAppIdentifierProvider = Clerk.biometricCredentialAppIdentifierProvider
     Clerk.installationMarkerUserDefaults = defaults
-    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    Clerk.biometricCredentialAppIdentifierProvider = { "com.clerk.example" }
     defer {
       Clerk.installationMarkerUserDefaults = originalDefaults
-      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      Clerk.biometricCredentialAppIdentifierProvider = originalAppIdentifierProvider
       defaults.removePersistentDomain(forName: suiteName)
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
+    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
-      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       }),
-      trustedDeviceCredentialStore: credentialStore
+      biometricCredentialStore: credentialStore
     )
 
-    let firstConfigure = Clerk()
-    try firstConfigure.performConfiguration(dependencies: dependencies)
-    firstConfigure.cleanupManagers()
+    let keychainConfig = dependencies.configurationManager.options.keychainConfig
+    let serviceComponent = "s\(keychainConfig.service.utf8.count):\(keychainConfig.service)"
+    let accessGroupComponent = keychainConfig.accessGroup.map { "s\($0.utf8.count):\($0)" } ?? "n"
+    let legacyMarkerKey = [
+      "com.clerk.trusted-device-installation-marker",
+      serviceComponent,
+      accessGroupComponent,
+      "s17:com.clerk.example",
+    ].joined(separator: ".")
+    defaults.set(true, forKey: legacyMarkerKey)
 
     try credentialStore.save(.mock)
-    let secondConfigure = Clerk()
-    try secondConfigure.performConfiguration(dependencies: dependencies)
-    defer { secondConfigure.cleanupManagers() }
+    let clerk = Clerk()
+    try clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
 
     #expect(deletedLocalKeyIds.value.isEmpty)
     #expect(try credentialStore.all() == [.mock])
   }
 
   @Test
-  func configureUsesAppScopedTrustedDeviceInstallationMarkers() throws {
+  func configureUsesAppScopedBiometricCredentialInstallationMarkers() throws {
     let suiteName = installationMarkerDefaultsSuiteName()
     let defaults = try #require(UserDefaults(suiteName: suiteName))
     let originalDefaults = Clerk.installationMarkerUserDefaults
-    let originalAppIdentifierProvider = Clerk.trustedDeviceAppIdentifierProvider
+    let originalAppIdentifierProvider = Clerk.biometricCredentialAppIdentifierProvider
     Clerk.installationMarkerUserDefaults = defaults
-    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.example" }
+    Clerk.biometricCredentialAppIdentifierProvider = { "com.clerk.example" }
     defer {
       Clerk.installationMarkerUserDefaults = originalDefaults
-      Clerk.trustedDeviceAppIdentifierProvider = originalAppIdentifierProvider
+      Clerk.biometricCredentialAppIdentifierProvider = originalAppIdentifierProvider
       defaults.removePersistentDomain(forName: suiteName)
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = TrustedDeviceLocalCredentialStore(keychain: keychain)
-    let otherAppCredential = TrustedDeviceLocalCredential(
+    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let otherAppCredential = BiometricCredentialLocalCredential(
       id: "tdc_other_app",
       localKeyId: "tdlk_other_app",
       userID: User.mock.id,
@@ -1252,10 +1259,10 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
-      trustedDeviceKeyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       }),
-      trustedDeviceCredentialStore: credentialStore
+      biometricCredentialStore: credentialStore
     )
 
     let firstConfigure = Clerk()
@@ -1263,7 +1270,7 @@ struct ClerkTests {
     firstConfigure.cleanupManagers()
 
     try credentialStore.save(otherAppCredential)
-    Clerk.trustedDeviceAppIdentifierProvider = { "com.clerk.other" }
+    Clerk.biometricCredentialAppIdentifierProvider = { "com.clerk.other" }
 
     let secondConfigure = Clerk()
     try secondConfigure.performConfiguration(dependencies: dependencies)
@@ -1274,20 +1281,20 @@ struct ClerkTests {
   }
 
   @Test
-  func trustedDeviceInstallationMarkerPreservesConfigurationBoundaries() {
-    let first = Clerk.trustedDeviceInstallationMarkerKey(
+  func biometricCredentialInstallationMarkerPreservesConfigurationBoundaries() {
+    let first = Clerk.biometricCredentialInstallationMarkerKey(
       for: .init(service: "a.b", accessGroup: "c"),
       appIdentifier: "com.clerk.example"
     )
-    let second = Clerk.trustedDeviceInstallationMarkerKey(
+    let second = Clerk.biometricCredentialInstallationMarkerKey(
       for: .init(service: "a", accessGroup: "b.c"),
       appIdentifier: "com.clerk.example"
     )
-    let missingAccessGroup = Clerk.trustedDeviceInstallationMarkerKey(
+    let missingAccessGroup = Clerk.biometricCredentialInstallationMarkerKey(
       for: .init(service: "a", accessGroup: nil),
       appIdentifier: "com.clerk.example"
     )
-    let literalDefaultAccessGroup = Clerk.trustedDeviceInstallationMarkerKey(
+    let literalDefaultAccessGroup = Clerk.biometricCredentialInstallationMarkerKey(
       for: .init(service: "a", accessGroup: "default"),
       appIdentifier: "com.clerk.example"
     )
@@ -1606,7 +1613,7 @@ struct ClerkTests {
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaiting.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
 
     var laterSignIn = SignIn.mock
@@ -1619,7 +1626,7 @@ struct ClerkTests {
     let presenting = try #require(presentingAuthFlow(in: clerk, for: registration))
     #expect(presenting.workId == awaiting.workId)
     #expect(presenting.sessionId == awaiting.sessionId)
-    #expect(presenting.presentation == .trustedDeviceEnrollment)
+    #expect(presenting.presentation == .biometricCredentialEnrollment)
     #expect(presenting.completion?.flowId == completion.flowId)
     #expect(clerk.isAuthFlowComplete == false)
 
@@ -1652,7 +1659,7 @@ struct ClerkTests {
     let tokenA = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaitingA.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
     var sessionB = sessionA
     sessionB.id = "session-b"
@@ -1694,7 +1701,7 @@ struct ClerkTests {
     #expect(clerk.startAuthFlowPresentation(
       for: registration,
       work: first.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ) == nil)
     #expect(clerk.isAuthFlowComplete == false)
     withExtendedLifetime(registration) {}
@@ -2084,7 +2091,7 @@ struct ClerkTests {
   }
 
   @Test
-  func finishingTrustedDeviceEnrollmentReturnsItsExactAuthWorkForCompletion() throws {
+  func finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion() throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
@@ -2093,7 +2100,7 @@ struct ClerkTests {
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaiting.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
     #expect(clerk.finishAuthFlowPresentation(token))
 
@@ -2126,7 +2133,7 @@ struct ClerkTests {
   }
 
   @Test
-  func completingAuthFlowIsAcceptedOnceAfterTrustedDeviceEnrollment() throws {
+  func completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment() throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
@@ -2135,7 +2142,7 @@ struct ClerkTests {
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaiting.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
     #expect(clerk.finishAuthFlowPresentation(token))
     let resumed = try #require(awaitingAuthFlow(in: clerk, for: registration))
@@ -2172,7 +2179,7 @@ struct ClerkTests {
     let enrollmentToken = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaitingEnrollment.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
     #expect(clerk.finishAuthFlowPresentation(enrollmentToken))
 
@@ -2202,7 +2209,7 @@ struct ClerkTests {
     let enrollmentToken = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaitingEnrollment.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
 
     var pendingClient = Client.mock
@@ -2213,7 +2220,7 @@ struct ClerkTests {
     #expect(clerk.authFlowPresentationIsCurrent(enrollmentToken))
     #expect(
       presentingAuthFlow(in: clerk, for: registration)?.presentation
-        == .trustedDeviceEnrollment
+        == .biometricCredentialEnrollment
     )
     #expect(clerk.finishAuthFlowPresentation(enrollmentToken))
 
@@ -2421,7 +2428,7 @@ struct ClerkTests {
     #expect(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaiting.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ) != nil)
     var terminalClient = Client.mock
     terminalClient.sessions[0].status = .ended
@@ -2505,7 +2512,7 @@ struct ClerkTests {
     #expect(clerk.startAuthFlowPresentation(
       for: previousRegistration,
       work: current.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ) == nil)
     clerk.resetAuthFlow(for: previousRegistration)
 

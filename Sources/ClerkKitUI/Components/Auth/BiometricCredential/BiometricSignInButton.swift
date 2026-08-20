@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceSignInButton.swift
+//  BiometricSignInButton.swift
 //  Clerk
 //
 
@@ -9,14 +9,14 @@ import ClerkKit
 import LocalAuthentication
 import SwiftUI
 
-struct TrustedDeviceSignInButton: View {
+struct BiometricSignInButton: View {
   @Environment(\.clerkTheme) private var theme
 
-  private let biometryDisplayName: TrustedDeviceBiometryDisplayName
+  private let biometryDisplayName: BiometryDisplayName
   private let action: () async -> Void
 
   init(
-    biometryDisplayName: TrustedDeviceBiometryDisplayName,
+    biometryDisplayName: BiometryDisplayName,
     action: @escaping () async -> Void
   ) {
     self.biometryDisplayName = biometryDisplayName
@@ -32,7 +32,7 @@ struct TrustedDeviceSignInButton: View {
         .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
-    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.trustedDeviceSignInButton)
+    .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.biometricSignInButton)
     .accessibilityLabel(Text("Continue with \(biometryDisplayName.value)", bundle: .module))
   }
 
@@ -62,12 +62,12 @@ struct TrustedDeviceSignInButton: View {
 
 #Preview {
   VStack(spacing: 12) {
-    TrustedDeviceSignInButton(
+    BiometricSignInButton(
       biometryDisplayName: .init(biometryType: .faceID),
       action: {}
     )
 
-    TrustedDeviceSignInButton(
+    BiometricSignInButton(
       biometryDisplayName: .init(biometryType: .touchID),
       action: {}
     )
