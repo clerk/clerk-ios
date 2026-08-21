@@ -48,6 +48,17 @@ enum ClerkAuthResponseDecoder {
       nil
     }
   }
+
+  static func decodeIndependentEvent(from data: Data) -> AuthEvent? {
+    switch decodeEvent(from: data) {
+    case .signInCompleted, .signUpCompleted:
+      nil
+    case .signedOut(let session):
+      .signedOut(session: session)
+    default:
+      nil
+    }
+  }
 }
 
 extension ClerkAuthResponseDecoder {

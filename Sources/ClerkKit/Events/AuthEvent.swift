@@ -10,11 +10,17 @@ import Foundation
 /// `AuthEvent` represents specific events that occur during authentication processes,
 /// such as signing in or signing up.
 public enum AuthEvent: Sendable {
-  /// The current sign in was completed.
+  /// A completed sign-in response was accepted for Clerk's current authentication state.
+  ///
+  /// The created session may still be pending, and post-authentication presentation may
+  /// still be in progress.
   case signInCompleted(signIn: SignIn)
   /// A Clerk callback recovered an incomplete sign-in flow that can continue.
   case signInNeedsContinuation(signIn: SignIn)
-  /// The current sign up was completed.
+  /// A completed sign-up response was accepted for Clerk's current authentication state.
+  ///
+  /// The created session may still be pending, and post-authentication presentation may
+  /// still be in progress.
   case signUpCompleted(signUp: SignUp)
   /// A Clerk callback recovered an incomplete sign-up flow that can continue.
   case signUpNeedsContinuation(signUp: SignUp)
