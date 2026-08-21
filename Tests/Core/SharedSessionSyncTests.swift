@@ -1276,6 +1276,7 @@ struct SharedSessionSyncTests {
       )
     )
     let originalRegistration = try #require(node.clerk.registerAuthFlow())
+    let eventStream = node.clerk.auth.events
 
     var clientA = Client.mock
     clientA.id = "client-a"
@@ -1335,8 +1336,11 @@ struct SharedSessionSyncTests {
     let replacementRegistration = try #require(node.clerk.registerAuthFlow())
     backend.resumeSuspendedSave(failing: false)
     try await response.value
+    node.clerk.auth.send(.accountDeleted)
 
     #expect(node.clerk.session?.id == sessionB.id)
+    let completionEvents = await completionEventsBeforeSentinel(from: eventStream)
+    #expect(completionEvents.isEmpty)
     let snapshot = try #require(
       node.clerk.authFlowSnapshot(for: replacementRegistration)
     )
@@ -1365,6 +1369,7 @@ struct SharedSessionSyncTests {
       )
     )
     let registration = try #require(node.clerk.registerAuthFlow())
+    let eventStream = node.clerk.auth.events
 
     var candidateClient = Client.mock
     candidateClient.id = "client-a"
@@ -1411,9 +1416,18 @@ struct SharedSessionSyncTests {
         authFlowRegistrationId: registration.id
       )
     )
+    node.clerk.auth.send(.accountDeleted)
 
     #expect(node.clerk.client?.id == winningClient.id)
     #expect(node.clerk.session?.id == sessionA.id)
+    let completionEvents = await completionEventsBeforeSentinel(from: eventStream)
+    let event = try #require(completionEvents.first)
+    #expect(completionEvents.count == 1)
+    guard case .signInCompleted(let completedSignIn) = event else {
+      Issue.record("Expected the semantically accepted peer winner to emit signInCompleted")
+      return
+    }
+    #expect(completedSignIn.id == signIn.id)
     let snapshot = try #require(node.clerk.authFlowSnapshot(for: registration))
     guard case .awaiting(let work, let completion) = snapshot.phase else {
       Issue.record("Expected a winner for the created session to retain optional work")
@@ -3282,6 +3296,23 @@ struct SharedSessionSyncTests {
       client: makeClient(id: clientID),
       serverDate: nil
     ).validated()
+  }
+
+  private nonisolated func completionEventsBeforeSentinel(
+    from stream: AsyncStream<AuthEvent>
+  ) async -> [AuthEvent] {
+    var events: [AuthEvent] = []
+    for await event in stream {
+      switch event {
+      case .signInCompleted, .signUpCompleted:
+        events.append(event)
+      case .accountDeleted:
+        return events
+      default:
+        continue
+      }
+    }
+    return events
   }
 
   private func waitUntil(_ condition: () -> Bool) async throws {

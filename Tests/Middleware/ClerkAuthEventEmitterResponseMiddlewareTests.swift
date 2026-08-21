@@ -7,19 +7,28 @@ import Testing
 @Suite(.serialized)
 struct ClerkAuthEventEmitterResponseMiddlewareTests {
   @Test
-  func validateEmitsSignInCompletedForSignInAttemptResponseObject() async throws {
-    let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+  func validateEmitsSignInCompletedOnceAfterClientAcceptance() async throws {
+    let clerk = try makeIdentityClerk()
+    let pipeline = authResponsePipeline(for: clerk)
+    var client = Client.mock
+    client.id = "client-sign-in"
+    let eventStream = clerk.auth.events
 
-    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(
-        signInResponse,
-        data: signInResponseData(object: "sign_in_attempt", status: "complete"),
-        for: signInRequest
-      )
-    }
+    try await pipeline.validate(
+      signInResponse,
+      data: signInResponseData(
+        object: "sign_in_attempt",
+        status: "complete",
+        client: client
+      ),
+      for: request(signInRequest, sequence: 1, clerk: clerk)
+    )
+    clerk.auth.send(.accountDeleted)
 
-    let event = try #require(capturedEvent)
+    let events = await completionEventsBeforeSentinel(from: eventStream)
+    let event = try #require(events.first)
+    #expect(events.count == 1)
+    #expect(clerk.client?.id == client.id)
 
     switch event {
     case .signInCompleted(let signIn):
@@ -32,19 +41,28 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
   }
 
   @Test
-  func validateEmitsSignUpCompletedForSignUpAttemptResponseObject() async throws {
-    let clerk = Clerk()
-    let middleware = ClerkAuthEventEmitterResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
+  func validateEmitsSignUpCompletedOnceAfterClientAcceptance() async throws {
+    let clerk = try makeIdentityClerk()
+    let pipeline = authResponsePipeline(for: clerk)
+    var client = Client.mock
+    client.id = "client-sign-up"
+    let eventStream = clerk.auth.events
 
-    let capturedEvent = try await captureNextAuthEvent(from: clerk) {
-      try await middleware.validate(
-        signUpResponse,
-        data: signUpResponseData(object: "sign_up_attempt", status: "complete"),
-        for: signUpRequest
-      )
-    }
+    try await pipeline.validate(
+      signUpResponse,
+      data: signUpResponseData(
+        object: "sign_up_attempt",
+        status: "complete",
+        client: client
+      ),
+      for: request(signUpRequest, sequence: 1, clerk: clerk)
+    )
+    clerk.auth.send(.accountDeleted)
 
-    let event = try #require(capturedEvent)
+    let events = await completionEventsBeforeSentinel(from: eventStream)
+    let event = try #require(events.first)
+    #expect(events.count == 1)
+    #expect(clerk.client?.id == client.id)
 
     switch event {
     case .signUpCompleted(let signUp):
@@ -55,6 +73,45 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     default:
       Issue.record("Expected signUpCompleted event but received \(String(describing: event))")
     }
+  }
+
+  @Test
+  func validateDoesNotEmitCompletionForAStaleResponse() async throws {
+    let clerk = try makeIdentityClerk()
+    var currentClient = Client.mock
+    currentClient.id = "current-client"
+    try await clerk.identityController.applyNetworkResponse(
+      ClientSyncResponseContext(
+        update: .client(currentClient),
+        deviceTokenUpdate: .absent,
+        requestDeviceToken: "token",
+        baseGeneration: nil,
+        serverDate: nil,
+        isCanonicalClientRequest: false,
+        clientResponseGeneration: clerk.clientResponseGeneration,
+        responseSequence: 2
+      )
+    )
+
+    let pipeline = authResponsePipeline(for: clerk)
+    var staleClient = Client.mock
+    staleClient.id = "stale-client"
+    let eventStream = clerk.auth.events
+
+    try await pipeline.validate(
+      signInResponse,
+      data: signInResponseData(
+        object: "sign_in_attempt",
+        status: "complete",
+        client: staleClient
+      ),
+      for: request(signInRequest, sequence: 1, clerk: clerk)
+    )
+    clerk.auth.send(.accountDeleted)
+
+    let events = await completionEventsBeforeSentinel(from: eventStream)
+    #expect(events.isEmpty)
+    #expect(clerk.client?.id == currentClient.id)
   }
 
   @Test
@@ -191,18 +248,74 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
     return captured.value
   }
 
-  private func signInResponseData(object: String, status: String) throws -> Data {
+  private func authResponsePipeline(for clerk: Clerk) -> NetworkingPipeline {
+    NetworkingPipeline(responseMiddleware: [
+      ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope),
+      ClerkAuthEventEmitterResponseMiddleware(runtimeScope: clerk.runtimeScope),
+    ])
+  }
+
+  private func makeIdentityClerk() throws -> Clerk {
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: keychain
+    )
+    return clerk
+  }
+
+  private func request(
+    _ request: URLRequest,
+    sequence: Int,
+    clerk: Clerk
+  ) -> URLRequest {
+    var request = request
+    request.setClerkRequestSequence(sequence)
+    request.setClerkRequestDeviceToken("token")
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+    return request
+  }
+
+  private nonisolated func completionEventsBeforeSentinel(
+    from stream: AsyncStream<AuthEvent>
+  ) async -> [AuthEvent] {
+    var events: [AuthEvent] = []
+    for await event in stream {
+      switch event {
+      case .signInCompleted, .signUpCompleted:
+        events.append(event)
+      case .accountDeleted:
+        return events
+      default:
+        continue
+      }
+    }
+    return events
+  }
+
+  private func signInResponseData(
+    object: String,
+    status: String,
+    client: Client? = nil
+  ) throws -> Data {
     try JSONEncoder.clerkEncoder.encode(Envelope(
       response: SignInResponsePayload(
         object: object,
         id: "sia_test",
         status: status,
         createdSessionId: "sess_test"
-      )
+      ),
+      client: client
     ))
   }
 
-  private func signUpResponseData(object: String, status: String) throws -> Data {
+  private func signUpResponseData(
+    object: String,
+    status: String,
+    client: Client? = nil
+  ) throws -> Data {
     try JSONEncoder.clerkEncoder.encode(Envelope(
       response: SignUpResponsePayload(
         object: object,
@@ -217,7 +330,8 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         createdSessionId: "sess_test",
         createdUserId: "user_test",
         abandonAt: Date(timeIntervalSince1970: 1_774_364_830)
-      )
+      ),
+      client: client
     ))
   }
 
@@ -232,13 +346,15 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         lastActiveAt: Date(timeIntervalSince1970: 1_774_364_830),
         createdAt: Date(timeIntervalSince1970: 1_774_364_830),
         updatedAt: Date(timeIntervalSince1970: 1_774_364_830)
-      )
+      ),
+      client: nil
     ))
   }
 }
 
 private struct Envelope<Response: Codable>: Codable {
   let response: Response
+  let client: Client?
 }
 
 private struct SignInResponsePayload: Codable {
