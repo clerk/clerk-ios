@@ -1,0 +1,9 @@
+{
+  "name": "Clerk multi-repo (iOS + Android + Expo)",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "repositoryDependencies": [
+    "github.com/clerk/clerk-android",
+    "github.com/clerk/javascript"
+  ]
+}
