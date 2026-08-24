@@ -1,5 +1,5 @@
 //
-//  SignInFactorOnePasskeyView.swift
+//  SignInPasskeyView.swift
 //  Clerk
 //
 
@@ -8,14 +8,6 @@
 import ClerkKit
 import SwiftUI
 
-struct SignInFactorOnePasskeyView: View {
-  let factor: Factor
-
-  var body: some View {
-    SignInPasskeyView(factor: factor, isSecondFactor: false)
-  }
-}
-
 struct SignInPasskeyView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
@@ -23,16 +15,16 @@ struct SignInPasskeyView: View {
   @Environment(AuthState.self) private var authState
   @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
 
+  let factor: Factor
+  let mode: SignInFactorMode
+
   @State private var passkeyInProgress = true
   @State private var animateSymbol = false
-  @State var error: Error?
+  @State private var error: Error?
 
-  var signIn: SignIn? {
+  private var signIn: SignIn? {
     clerk.auth.currentSignIn
   }
-
-  let factor: Factor
-  let isSecondFactor: Bool
 
   var body: some View {
     ScrollView {
@@ -52,6 +44,11 @@ struct SignInPasskeyView: View {
           }
         }
         .padding(.bottom, 32)
+
+        if mode.showsClientTrustWarning {
+          SignInClientTrustWarningView()
+            .padding(.bottom, 32)
+        }
 
         VStack(spacing: 24) {
           Image(systemName: "faceid")
@@ -76,17 +73,7 @@ struct SignInPasskeyView: View {
           .disabled(passkeyInProgress)
           .simultaneousGesture(TapGesture())
 
-          Button {
-            if isSecondFactor {
-              navigation.path.append(
-                AuthView.Destination.signInFactorTwoUseAnotherMethod(currentFactor: factor)
-              )
-            } else {
-              navigation.path.append(
-                AuthView.Destination.signInFactorOneUseAnotherMethod(currentFactor: factor)
-              )
-            }
-          } label: {
+          Button(action: showAlternativeMethods) {
             Text("Use another method", bundle: .module)
           }
           .buttonStyle(
@@ -120,7 +107,13 @@ struct SignInPasskeyView: View {
 }
 
 extension SignInPasskeyView {
-  func authWithPasskey() async {
+  private func showAlternativeMethods() {
+    navigation.path.append(
+      mode.alternativeMethodsDestination(currentFactor: factor)
+    )
+  }
+
+  private func authWithPasskey() async {
     guard var signIn else {
       navigation.path = []
       return
@@ -143,13 +136,13 @@ extension SignInPasskeyView {
 }
 
 #Preview {
-  SignInFactorOnePasskeyView(factor: .mockPasskey)
+  SignInPasskeyView(factor: .mockPasskey, mode: .firstFactor)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
-  SignInFactorOnePasskeyView(factor: .mockPasskey)
+  SignInPasskeyView(factor: .mockPasskey, mode: .firstFactor)
     .clerkPreview()
     .environment(\.locale, .init(identifier: "fr"))
 }

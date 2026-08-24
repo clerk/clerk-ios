@@ -37,6 +37,7 @@ extension Factor {
     .passkey,
     .totp,
     .phoneCode,
+    .emailCode,
     .backupCode,
   ]
 
@@ -73,11 +74,12 @@ extension Factor {
     var order: SortOrder = .forward
 
     func compare(_ lhs: Factor, _ rhs: Factor) -> ComparisonResult {
-      guard let order1 = strategySortOrderBackupCodePref.firstIndex(of: lhs.strategy),
-            let order2 = strategySortOrderBackupCodePref.firstIndex(of: rhs.strategy)
-      else {
-        return .orderedSame
-      }
+      let order1 = strategySortOrderBackupCodePref.firstIndex(of: lhs.strategy)
+        ?? strategySortOrderBackupCodePref.endIndex
+      let order2 = strategySortOrderBackupCodePref.firstIndex(of: rhs.strategy)
+        ?? strategySortOrderBackupCodePref.endIndex
+
+      guard order1 != order2 else { return .orderedSame }
       return order1 < order2 ? .orderedAscending : .orderedDescending
     }
   }

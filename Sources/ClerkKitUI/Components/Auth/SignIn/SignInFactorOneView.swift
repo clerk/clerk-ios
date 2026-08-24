@@ -17,7 +17,7 @@ struct SignInFactorOneView: View {
   var viewForFactor: some View {
     switch factor.strategy {
     case .passkey:
-      SignInFactorOnePasskeyView(factor: factor)
+      SignInPasskeyView(factor: factor, mode: .firstFactor)
     case .password:
       SignInFactorOnePasswordView(factor: factor)
     case .emailLink:

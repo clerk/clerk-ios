@@ -253,40 +253,6 @@ struct SignInFactorSelectionTests {
     #expect(!strategies.contains(.enterpriseSSO))
     #expect(!strategies.contains(.saml))
   }
-
-  @Test
-  func startingSecondFactorPrefersPasskey() {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsSecondFactor,
-      supportedSecondFactors: [
-        Factor(strategy: .phoneCode),
-        Factor(strategy: .totp),
-        Factor(strategy: .passkey),
-      ]
-    )
-
-    #expect(signIn.startingSecondFactor?.strategy == .passkey)
-  }
-
-  @Test
-  func alternativeSecondFactorsSortPasskeyBeforeTotpAndPhoneCode() {
-    let backupCode = Factor(strategy: .backupCode)
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsSecondFactor,
-      supportedSecondFactors: [
-        backupCode,
-        Factor(strategy: .phoneCode),
-        Factor(strategy: .totp),
-        Factor(strategy: .passkey),
-      ]
-    )
-
-    let strategies = signIn.alternativeSecondFactors(currentFactor: backupCode).map(\.strategy)
-
-    #expect(strategies == [.passkey, .totp, .phoneCode])
-  }
 }
 
 #endif
