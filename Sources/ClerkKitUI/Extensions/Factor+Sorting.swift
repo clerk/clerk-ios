@@ -34,6 +34,7 @@ extension Factor {
   ]
 
   private static let strategySortOrderBackupCodePref: [FactorStrategy] = [
+    .passkey,
     .totp,
     .phoneCode,
     .backupCode,

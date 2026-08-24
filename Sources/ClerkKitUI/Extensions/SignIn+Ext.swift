@@ -73,6 +73,10 @@ extension SignIn {
   }
 
   var startingSecondFactor: Factor? {
+    if let passkey = supportedSecondFactors?.first(where: { $0.strategy == .passkey }) {
+      return passkey
+    }
+
     if let totp = supportedSecondFactors?.first(where: { $0.strategy == .totp }) {
       return totp
     }

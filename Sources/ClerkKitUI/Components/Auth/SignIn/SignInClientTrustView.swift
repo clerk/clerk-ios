@@ -15,6 +15,8 @@ struct SignInClientTrustView: View {
     switch factor.strategy {
     case .phoneCode, .emailCode:
       SignInFactorCodeView(factor: factor, mode: .clientTrust)
+    case .passkey:
+      SignInFactorTwoPasskeyView(factor: factor)
     default:
       GetHelpView(context: .signIn)
     }

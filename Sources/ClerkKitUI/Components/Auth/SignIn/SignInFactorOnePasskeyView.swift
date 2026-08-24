@@ -9,6 +9,14 @@ import ClerkKit
 import SwiftUI
 
 struct SignInFactorOnePasskeyView: View {
+  let factor: Factor
+
+  var body: some View {
+    SignInPasskeyView(factor: factor, isSecondFactor: false)
+  }
+}
+
+struct SignInPasskeyView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
@@ -24,6 +32,7 @@ struct SignInFactorOnePasskeyView: View {
   }
 
   let factor: Factor
+  let isSecondFactor: Bool
 
   var body: some View {
     ScrollView {
@@ -68,11 +77,15 @@ struct SignInFactorOnePasskeyView: View {
           .simultaneousGesture(TapGesture())
 
           Button {
-            navigation.path.append(
-              AuthView.Destination.signInFactorOneUseAnotherMethod(
-                currentFactor: factor
+            if isSecondFactor {
+              navigation.path.append(
+                AuthView.Destination.signInFactorTwoUseAnotherMethod(currentFactor: factor)
               )
-            )
+            } else {
+              navigation.path.append(
+                AuthView.Destination.signInFactorOneUseAnotherMethod(currentFactor: factor)
+              )
+            }
           } label: {
             Text("Use another method", bundle: .module)
           }
@@ -106,7 +119,7 @@ struct SignInFactorOnePasskeyView: View {
   }
 }
 
-extension SignInFactorOnePasskeyView {
+extension SignInPasskeyView {
   func authWithPasskey() async {
     guard var signIn else {
       navigation.path = []

@@ -8,8 +8,10 @@ import Testing
 struct SignInTests {
   private enum PasskeyTestError: Error {
     case preparationFailed
+    case secondFactorPreparationFailed
     case authorizationFailed
     case attemptFailed
+    case secondFactorAttemptFailed
   }
 
   init() {
@@ -110,10 +112,96 @@ struct SignInTests {
     switch stage {
     case .preparingFirstFactor:
       .preparationFailed
+    case .preparingSecondFactor:
+      .secondFactorPreparationFailed
     case .requestingAuthorization:
       .authorizationFailed
     case .attemptingFirstFactor:
       .attemptFailed
+    case .attemptingSecondFactor:
+      .secondFactorAttemptFailed
+    }
+  }
+
+  @Test
+  func passkeyAuthenticationUsesSecondFactorEndpointsWhenAdvertised() async throws {
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsSecondFactor,
+      supportedSecondFactors: [Factor(strategy: .passkey)]
+    )
+    let preparedSignIn = SignIn(
+      id: signIn.id,
+      status: .needsSecondFactor,
+      supportedSecondFactors: signIn.supportedSecondFactors,
+      secondFactorVerification: Verification(
+        status: .unverified,
+        strategy: .passkey,
+        nonce: "{\"challenge\":\"challenge\"}"
+      )
+    )
+    let capturedPrepare = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
+    let capturedAttempt = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
+    let service = MockSignInService(
+      prepareSecondFactor: { id, params in
+        capturedPrepare.setValue((id, params))
+        return preparedSignIn
+      },
+      attemptSecondFactor: { id, params in
+        capturedAttempt.setValue((id, params))
+        return preparedSignIn
+      }
+    )
+
+    configureService(service)
+
+    _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
+
+    let prepare = try #require(capturedPrepare.value)
+    #expect(prepare.0 == signIn.id)
+    #expect(prepare.1.strategy == .passkey)
+    let attempt = try #require(capturedAttempt.value)
+    #expect(attempt.0 == signIn.id)
+    #expect(attempt.1.strategy == .passkey)
+    #expect(attempt.1.code == nil)
+    #expect(attempt.1.publicKeyCredential == "credential")
+  }
+
+  @Test(arguments: [
+    PasskeyAuthenticationFailure.Stage.preparingSecondFactor,
+    .attemptingSecondFactor,
+  ])
+  func passkeySecondFactorFailureContextIdentifiesFailureStage(
+    _ expectedStage: PasskeyAuthenticationFailure.Stage
+  ) async {
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsSecondFactor,
+      supportedSecondFactors: [Factor(strategy: .passkey)]
+    )
+    let service = MockSignInService(
+      prepareSecondFactor: { _, _ in
+        if expectedStage == .preparingSecondFactor {
+          throw PasskeyTestError.secondFactorPreparationFailed
+        }
+        return signIn
+      },
+      attemptSecondFactor: { _, _ in
+        if expectedStage == .attemptingSecondFactor {
+          throw PasskeyTestError.secondFactorAttemptFailed
+        }
+        return signIn
+      }
+    )
+
+    configureService(service)
+
+    do {
+      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
+      Issue.record("Expected passkey authentication to fail.")
+    } catch {
+      #expect(error.stage == expectedStage)
+      #expect(error.underlyingError as? PasskeyTestError == passkeyTestError(for: expectedStage))
     }
   }
 
