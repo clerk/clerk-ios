@@ -183,6 +183,10 @@ setup_javascript() {
   export PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
   log "javascript: pnpm install (frozen lockfile)"
   ( cd "$JS_REPO" && pnpm install --frozen-lockfile )
+  # Build @clerk/expo and its workspace deps so `pnpm test` works out of the box.
+  log "javascript: building @clerk/expo (+ workspace deps)"
+  ( cd "$JS_REPO" && pnpm turbo build --filter=@clerk/expo ) \
+    || log "javascript @clerk/expo build skipped/failed (non-fatal)"
 }
 
 main() {
