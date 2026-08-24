@@ -23,11 +23,26 @@ ANDROID_BUILD_TOOLS="36.0.0"
 # --- Locate repos ----------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IOS_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPOS_ROOT="$(cd "$IOS_REPO/.." && pwd)"
-ANDROID_REPO="$REPOS_ROOT/clerk-android"
-JS_REPO="$REPOS_ROOT/javascript"
 
 log() { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
+
+# Find a sibling repo by name + a marker file, searching the layouts a Cloud
+# Agent might use (repositoryDependencies land next to the primary /workspace
+# checkout, but exact roots vary, so probe several candidates).
+locate_repo() {
+  local name="$1" marker="$2" root
+  for root in "$(dirname "$IOS_REPO")" "$HOME/repos" "$HOME" /agent/repos \
+              "$(dirname "${WORKSPACE_ROOT:-/workspace}")" /workspace /workspaces; do
+    if [ -n "$root" ] && [ -f "$root/$name/$marker" ]; then
+      printf '%s' "$root/$name"
+      return 0
+    fi
+  done
+  return 1
+}
+
+ANDROID_REPO="$(locate_repo clerk-android settings.gradle.kts || true)"
+JS_REPO="$(locate_repo javascript pnpm-workspace.yaml || true)"
 
 # --- System packages -------------------------------------------------------
 install_apt_packages() {
