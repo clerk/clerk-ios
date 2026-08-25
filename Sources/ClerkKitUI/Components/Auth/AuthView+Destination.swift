@@ -61,7 +61,7 @@ extension AuthView {
       case let .signInFactorTwoUseAnotherMethod(currentFactor):
         SignInFactorAlternativeMethodsView(
           currentFactor: currentFactor,
-          isSecondFactor: true
+          mode: .secondFactor
         )
       case let .signInClientTrust(factor):
         SignInClientTrustView(factor: factor)

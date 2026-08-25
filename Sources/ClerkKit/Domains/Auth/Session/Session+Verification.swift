@@ -8,6 +8,16 @@ import AuthenticationServices
 import Foundation
 
 extension Session {
+  /// The factor stage a passkey should verify during session reverification.
+  public enum PasskeyVerificationLevel: Sendable {
+    /// Verifies the first-factor stage. Depending on instance configuration, a
+    /// user-verified passkey may also satisfy an existing second-factor requirement.
+    case firstFactor
+
+    /// Verifies a second-factor stage that is already in progress.
+    case secondFactor
+  }
+
   // MARK: - Reverification (Step-up)
 
   /// Starts an in-session reverification (step-up) flow.
@@ -76,10 +86,10 @@ extension Session {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Verifies the current session with a passkey.
+  /// Verifies the first-factor stage of the current session with a passkey.
   ///
-  /// This convenience method prepares the passkey first-factor verification, requests the
-  /// platform credential, and attempts the verification in a single call.
+  /// Depending on instance configuration, a user-verified passkey may also satisfy an
+  /// existing second-factor requirement and complete a multi-factor reverification.
   ///
   /// - Parameter preferImmediatelyAvailableCredentials: Whether to prefer immediately
   ///   available credentials (default is `true`).
@@ -88,10 +98,63 @@ extension Session {
   public func verifyWithPasskey(
     preferImmediatelyAvailableCredentials: Bool = true
   ) async throws -> SessionVerification {
-    let prepared = try await prepareFirstFactorVerification(strategy: .passkey)
+    try await verifyWithPasskey(
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials,
+      level: .firstFactor
+    )
+  }
 
+  /// Verifies the requested factor stage of the current session with a passkey.
+  ///
+  /// Use `.secondFactor` only when the session verification is already waiting for its
+  /// second factor. To begin a multi-factor reverification, call
+  /// ``startVerification(level:)`` with `.multiFactor`, then follow the returned status.
+  /// A passkey submitted as the first factor may satisfy both stages automatically.
+  ///
+  /// - Parameters:
+  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available
+  ///     credentials (default is `true`).
+  ///   - level: The factor stage the passkey should verify.
+  /// - Returns: The resulting ``SessionVerification``.
+  @discardableResult @MainActor
+  public func verifyWithPasskey(
+    preferImmediatelyAvailableCredentials: Bool = true,
+    level: PasskeyVerificationLevel
+  ) async throws -> SessionVerification {
+    let prepared =
+      if level == .secondFactor {
+        try await prepareSecondFactorVerification(strategy: .passkey)
+      } else {
+        try await prepareFirstFactorVerification(strategy: .passkey)
+      }
+
+    let verification =
+      level == .secondFactor
+        ? prepared.secondFactorVerification
+        : prepared.firstFactorVerification
+
+    let credentialString = try await passkeyCredential(
+      for: verification,
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+    )
+
+    if level == .secondFactor {
+      return try await attemptSecondFactorVerification(
+        strategy: .passkey,
+        publicKeyCredential: credentialString
+      )
+    }
+
+    return try await attemptFirstFactorVerification(strategy: .passkey, publicKeyCredential: credentialString)
+  }
+
+  @MainActor
+  private func passkeyCredential(
+    for verification: Verification?,
+    preferImmediatelyAvailableCredentials: Bool
+  ) async throws -> String {
     guard
-      let nonceJSON = prepared.firstFactorVerification?.nonce?.toJSON(),
+      let nonceJSON = verification?.nonce?.toJSON(),
       let challengeString = nonceJSON["challenge"]?.stringValue,
       let challenge = challengeString.dataFromBase64URL()
     else {
@@ -128,12 +191,7 @@ extension Session {
     ]
 
     let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential, options: [])
-    let credentialString = String(data: jsonData, encoding: .utf8) ?? ""
-
-    return try await attemptFirstFactorVerification(
-      strategy: .passkey,
-      publicKeyCredential: credentialString
-    )
+    return String(data: jsonData, encoding: .utf8) ?? ""
   }
   #endif
 
@@ -221,11 +279,16 @@ extension Session {
   @discardableResult @MainActor
   func attemptSecondFactorVerification(
     strategy: FactorStrategy,
-    code: String
+    code: String? = nil,
+    publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
     try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
       sessionId: id,
-      params: .init(strategy: strategy, code: code)
+      params: .init(
+        strategy: strategy,
+        code: code,
+        publicKeyCredential: publicKeyCredential
+      )
     )
   }
 }

@@ -1,5 +1,5 @@
 //
-//  SignInFactorOnePasskeyView.swift
+//  SignInPasskeyView.swift
 //  Clerk
 //
 
@@ -8,22 +8,24 @@
 import ClerkKit
 import SwiftUI
 
-struct SignInFactorOnePasskeyView: View {
+struct SignInPasskeyView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
   @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
 
-  @State private var passkeyInProgress = true
-  @State private var animateSymbol = false
-  @State var error: Error?
+  let factor: Factor
+  let mode: SignInFactorMode
 
-  var signIn: SignIn? {
+  @State private var passkeyInProgress = true
+  @State private var automaticPasskeyAuthenticationHasStarted = false
+  @State private var animateSymbol = false
+  @State private var error: Error?
+
+  private var signIn: SignIn? {
     clerk.auth.currentSignIn
   }
-
-  let factor: Factor
 
   var body: some View {
     ScrollView {
@@ -43,6 +45,11 @@ struct SignInFactorOnePasskeyView: View {
           }
         }
         .padding(.bottom, 32)
+
+        if mode.showsClientTrustWarning {
+          SignInClientTrustWarningView()
+            .padding(.bottom, 32)
+        }
 
         VStack(spacing: 24) {
           Image(systemName: "faceid")
@@ -67,13 +74,7 @@ struct SignInFactorOnePasskeyView: View {
           .disabled(passkeyInProgress)
           .simultaneousGesture(TapGesture())
 
-          Button {
-            navigation.path.append(
-              AuthView.Destination.signInFactorOneUseAnotherMethod(
-                currentFactor: factor
-              )
-            )
-          } label: {
+          Button(action: showAlternativeMethods) {
             Text("Use another method", bundle: .module)
           }
           .buttonStyle(
@@ -97,17 +98,49 @@ struct SignInFactorOnePasskeyView: View {
     .onFirstAppear {
       animateSymbol.toggle()
     }
-    .taskOnce {
-      try? await Task.sleep(for: .seconds(0.5))
+    .task {
+      await authenticateWithPasskeyAutomatically()
+    }
+  }
+}
+
+extension SignInPasskeyView {
+  @MainActor
+  static func performAutomaticPasskeyAuthentication(
+    delay: () async throws -> Void = {
+      try await Task.sleep(for: .seconds(0.5))
+    },
+    authenticate: () async -> Void
+  ) async -> Bool {
+    do {
+      try await delay()
+      try Task.checkCancellation()
+    } catch {
+      return false
+    }
+
+    await authenticate()
+    return true
+  }
+
+  private func showAlternativeMethods() {
+    navigation.path.append(
+      mode.alternativeMethodsDestination(currentFactor: factor)
+    )
+  }
+
+  private func authenticateWithPasskeyAutomatically() async {
+    guard !automaticPasskeyAuthenticationHasStarted else { return }
+
+    _ = await Self.performAutomaticPasskeyAuthentication {
+      automaticPasskeyAuthenticationHasStarted = true
       await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
         await authWithPasskey()
       }
     }
   }
-}
 
-extension SignInFactorOnePasskeyView {
-  func authWithPasskey() async {
+  private func authWithPasskey() async {
     guard var signIn else {
       navigation.path = []
       return
@@ -122,7 +155,7 @@ extension SignInFactorOnePasskeyView {
       error = nil
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
-      if error.isUserCancelledError { return }
+      if Task.isCancelled || error.isCancellationError || error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to authenticate with passkey", error: error)
     }
@@ -130,13 +163,13 @@ extension SignInFactorOnePasskeyView {
 }
 
 #Preview {
-  SignInFactorOnePasskeyView(factor: .mockPasskey)
+  SignInPasskeyView(factor: .mockPasskey, mode: .firstFactor)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Localized") {
-  SignInFactorOnePasskeyView(factor: .mockPasskey)
+  SignInPasskeyView(factor: .mockPasskey, mode: .firstFactor)
     .clerkPreview()
     .environment(\.locale, .init(identifier: "fr"))
 }

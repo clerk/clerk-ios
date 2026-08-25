@@ -18,7 +18,7 @@ struct SignInFactorCodeView: View {
   @Environment(CodeLimiter.self) private var codeLimiter
 
   let factor: Factor
-  var mode: FactorMode = .firstFactor
+  let mode: SignInFactorMode
 
   @State private var code = ""
   @State private var error: Error?
@@ -48,13 +48,22 @@ struct SignInFactorCodeView: View {
     }
   }
 
+  init(
+    factor: Factor,
+    mode: SignInFactorMode = .firstFactor
+  ) {
+    self.factor = factor
+    self.mode = mode
+  }
+
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
         headerSection
 
-        if mode == .clientTrust {
-          clientTrustWarning
+        if mode.showsClientTrustWarning {
+          SignInClientTrustWarningView()
+            .padding(.bottom, 32)
         }
 
         inputSection
@@ -96,11 +105,6 @@ extension SignInFactorCodeView {
       }
     }
     .padding(.bottom, 32)
-  }
-
-  private var clientTrustWarning: some View {
-    WarningText("You're signing in from a new device. We're asking for verification to keep your account secure.", bundle: .module)
-      .padding(.bottom, 32)
   }
 
   private var inputSection: some View {
@@ -145,21 +149,7 @@ extension SignInFactorCodeView {
   }
 
   private var useAnotherMethodButton: some View {
-    Button {
-      if mode.usesSecondFactorAPI {
-        navigation.path.append(
-          AuthView.Destination.signInFactorTwoUseAnotherMethod(
-            currentFactor: factor
-          )
-        )
-      } else {
-        navigation.path.append(
-          AuthView.Destination.signInFactorOneUseAnotherMethod(
-            currentFactor: factor
-          )
-        )
-      }
-    } label: {
+    Button(action: showAlternativeMethods) {
       Text("Use another method", bundle: .module)
     }
     .buttonStyle(
@@ -211,25 +201,6 @@ extension SignInFactorCodeView {
   }
 }
 
-// MARK: - Enums
-
-extension SignInFactorCodeView {
-  enum FactorMode {
-    case firstFactor
-    case secondFactor
-    case clientTrust
-
-    var usesSecondFactorAPI: Bool {
-      switch self {
-      case .firstFactor:
-        false
-      case .secondFactor, .clientTrust:
-        true
-      }
-    }
-  }
-}
-
 // MARK: - Helpers
 
 extension SignInFactorCodeView {
@@ -242,6 +213,12 @@ extension SignInFactorCodeView {
 // MARK: - Actions
 
 extension SignInFactorCodeView {
+  private func showAlternativeMethods() {
+    navigation.path.append(
+      mode.alternativeMethodsDestination(currentFactor: factor)
+    )
+  }
+
   func prepare() async {
     code = ""
     verificationState = .default

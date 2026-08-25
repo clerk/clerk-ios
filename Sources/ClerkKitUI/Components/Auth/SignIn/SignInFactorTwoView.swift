@@ -20,6 +20,8 @@ struct SignInFactorTwoView: View {
       SignInFactorCodeView(factor: factor, mode: .secondFactor)
     case .backupCode:
       SignInFactorTwoBackupCodeView(factor: factor)
+    case .passkey:
+      SignInPasskeyView(factor: factor, mode: .secondFactor)
     default:
       GetHelpView(context: .signIn)
     }

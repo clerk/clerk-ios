@@ -14,17 +14,17 @@ struct SignInFactorAlternativeMethodsView: View {
   @Environment(AuthNavigation.self) private var navigation
   @Environment(AuthState.self) private var authState
 
-  @State private var error: Error?
-
   let currentFactor: Factor
-  var isSecondFactor: Bool = false
+  let mode: SignInFactorMode
+
+  @State private var error: Error?
 
   var signIn: SignIn? {
     clerk.auth.currentSignIn
   }
 
   var alternativeFactors: [Factor] {
-    if isSecondFactor {
+    if mode.usesSecondFactorAPI {
       signIn?.alternativeSecondFactors(currentFactor: currentFactor) ?? []
     } else {
       signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
@@ -32,11 +32,19 @@ struct SignInFactorAlternativeMethodsView: View {
   }
 
   var socialProviders: [OAuthProvider] {
-    if isSecondFactor {
+    if mode.usesSecondFactorAPI {
       []
     } else {
       clerk.environment?.authenticatableSocialProviders ?? []
     }
+  }
+
+  init(
+    currentFactor: Factor,
+    mode: SignInFactorMode = .firstFactor
+  ) {
+    self.currentFactor = currentFactor
+    self.mode = mode
   }
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
@@ -120,15 +128,7 @@ struct SignInFactorAlternativeMethodsView: View {
           ForEach(alternativeFactors, id: \.self) { factor in
             if let actionText = actionText(factor: factor) {
               Button {
-                if isSecondFactor {
-                  navigation.path.append(
-                    AuthView.Destination.signInFactorTwo(factor: factor)
-                  )
-                } else {
-                  navigation.path.append(
-                    AuthView.Destination.signInFactorOne(factor: factor)
-                  )
-                }
+                navigation.path.append(mode.destination(for: factor))
               } label: {
                 if let iconName = iconName(factor: factor) {
                   StrategyOptionButton(iconName: iconName, text: actionText)

@@ -351,6 +351,35 @@ struct SessionTests {
   }
 
   @Test
+  func passkeyCredentialCallsAttemptSecondFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let capturedCredential = LockIsolated<String?>(nil)
+    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
+      capturedStrategy.setValue(params.strategy)
+      capturedCode.setValue(params.code)
+      capturedCredential.setValue(params.publicKeyCredential)
+      return .mockComplete
+    })
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      sessionService: service
+    )
+
+    let verification = try await session.attemptSecondFactorVerification(
+      strategy: .passkey,
+      publicKeyCredential: "credential"
+    )
+
+    #expect(capturedStrategy.value == .passkey)
+    #expect(capturedCode.value == nil)
+    #expect(capturedCredential.value == "credential")
+    #expect(verification.status == .complete)
+  }
+
+  @Test
   func verifyWithTOTPCallsAttemptSecondFactor() async throws {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)

@@ -499,11 +499,13 @@ extension SignIn {
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   /// Authenticates with a passkey.
   ///
-  /// This method prepares the passkey first factor, gets the credential from the device,
-  /// and completes the authentication flow.
+  /// If this sign-in requires a second factor and advertises passkey support, this method reuses
+  /// the in-progress sign-in and completes the passkey as its second factor. Otherwise, it prepares
+  /// and attempts the passkey as the first factor.
   ///
   /// - Parameters:
-  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
+  ///   - autofill: Whether to use autofill-assisted flow for a first factor (default is `false`).
+  ///     This value is ignored when passkey is used as a second factor.
   ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
   /// - Returns: An updated `SignIn` object reflecting the authentication result.
   /// - Throws: An error if passkey authentication fails.
@@ -526,9 +528,10 @@ extension SignIn {
     autofill: Bool = false,
     preferImmediatelyAvailableCredentials: Bool = true
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
-    try await authenticateWithPasskeyWithFailureContext { signIn in
+    let usesSecondFactor = usesPasskeyAsSecondFactor
+    return try await authenticateWithPasskeyWithFailureContext { signIn in
       try await signIn.getCredentialForPasskey(
-        autofill: autofill,
+        autofill: usesSecondFactor ? false : autofill,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
     }
@@ -539,15 +542,23 @@ extension SignIn {
   func authenticateWithPasskeyWithFailureContext(
     credentialProvider: @MainActor (SignIn) async throws -> String
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
+    let usesSecondFactor = usesPasskeyAsSecondFactor
     let signIn: SignIn
     do {
-      signIn = try await signInService.prepareFirstFactor(
-        signInId: id,
-        params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
-      )
+      if usesSecondFactor {
+        signIn = try await signInService.prepareSecondFactor(
+          signInId: id,
+          params: .init(strategy: .passkey)
+        )
+      } else {
+        signIn = try await signInService.prepareFirstFactor(
+          signInId: id,
+          params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
+        )
+      }
     } catch {
       throw PasskeyAuthenticationFailure(
-        stage: .preparingFirstFactor,
+        stage: usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor,
         underlyingError: error
       )
     }
@@ -563,13 +574,20 @@ extension SignIn {
     }
 
     do {
+      if usesSecondFactor {
+        return try await signInService.attemptSecondFactor(
+          signInId: signIn.id,
+          params: .init(strategy: .passkey, publicKeyCredential: credential)
+        )
+      }
+
       return try await signInService.attemptFirstFactor(
         signInId: signIn.id,
         params: .init(strategy: .passkey, publicKeyCredential: credential)
       )
     } catch {
       throw PasskeyAuthenticationFailure(
-        stage: .attemptingFirstFactor,
+        stage: usesSecondFactor ? .attemptingSecondFactor : .attemptingFirstFactor,
         underlyingError: error
       )
     }
@@ -601,8 +619,13 @@ extension SignIn {
   /// - Throws: An error if getting the credential fails.
   @MainActor
   func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
+    let verification =
+      usesPasskeyAsSecondFactor
+        ? secondFactorVerification
+        : firstFactorVerification
+
     guard
-      let nonceJSON = firstFactorVerification?.nonce?.toJSON(),
+      let nonceJSON = verification?.nonce?.toJSON(),
       let challengeString = nonceJSON["challenge"]?.stringValue,
       let challenge = challengeString.dataFromBase64URL()
     else {
@@ -725,6 +748,12 @@ extension SignIn {
   /// Helper to determine if the SignIn needs to be transferred to a SignUp
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+  }
+
+  var usesPasskeyAsSecondFactor: Bool {
+    let needsSecondFactor = status == .needsSecondFactor || status == .needsClientTrust
+    let supportsPasskey = supportedSecondFactors?.contains(where: { $0.strategy == .passkey }) == true
+    return needsSecondFactor && supportsPasskey
   }
 
   /// The first factor matching the specified strategy string.

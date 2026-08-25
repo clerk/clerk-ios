@@ -143,7 +143,18 @@ extension SignIn {
 
   struct AttemptSecondFactorParams: Encodable {
     let strategy: FactorStrategy
-    let code: String
+    let code: String?
+    let publicKeyCredential: String?
+
+    init(
+      strategy: FactorStrategy,
+      code: String? = nil,
+      publicKeyCredential: String? = nil
+    ) {
+      self.strategy = strategy
+      self.code = code
+      self.publicKeyCredential = publicKeyCredential
+    }
   }
 
   struct ResetPasswordParams: Encodable {
