@@ -98,13 +98,7 @@ struct SignInPasskeyView: View {
       animateSymbol.toggle()
     }
     .taskOnce {
-      do {
-        try await Task.sleep(for: .seconds(0.5))
-        try Task.checkCancellation()
-      } catch {
-        return
-      }
-
+      try? await Task.sleep(for: .seconds(0.5))
       await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
         await authWithPasskey()
       }
