@@ -19,6 +19,7 @@ struct SignInPasskeyView: View {
   let mode: SignInFactorMode
 
   @State private var passkeyInProgress = true
+  @State private var automaticPasskeyAuthenticationHasStarted = false
   @State private var animateSymbol = false
   @State private var error: Error?
 
@@ -97,20 +98,46 @@ struct SignInPasskeyView: View {
     .onFirstAppear {
       animateSymbol.toggle()
     }
-    .taskOnce {
-      try? await Task.sleep(for: .seconds(0.5))
-      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
-        await authWithPasskey()
-      }
+    .task {
+      await authenticateWithPasskeyAutomatically()
     }
   }
 }
 
 extension SignInPasskeyView {
+  @MainActor
+  static func performAutomaticPasskeyAuthentication(
+    delay: () async throws -> Void = {
+      try await Task.sleep(for: .seconds(0.5))
+    },
+    authenticate: () async -> Void
+  ) async -> Bool {
+    do {
+      try await delay()
+      try Task.checkCancellation()
+    } catch {
+      return false
+    }
+
+    await authenticate()
+    return true
+  }
+
   private func showAlternativeMethods() {
     navigation.path.append(
       mode.alternativeMethodsDestination(currentFactor: factor)
     )
+  }
+
+  private func authenticateWithPasskeyAutomatically() async {
+    guard !automaticPasskeyAuthenticationHasStarted else { return }
+
+    _ = await Self.performAutomaticPasskeyAuthentication {
+      automaticPasskeyAuthenticationHasStarted = true
+      await AuthFlowRequestScope.withOwner(authFlowRequestOwnerId) {
+        await authWithPasskey()
+      }
+    }
   }
 
   private func authWithPasskey() async {
@@ -128,7 +155,7 @@ extension SignInPasskeyView {
       error = nil
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
-      if error.isUserCancelledError { return }
+      if Task.isCancelled || error.isCancellationError || error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to authenticate with passkey", error: error)
     }
