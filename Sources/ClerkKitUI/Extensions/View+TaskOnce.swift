@@ -14,10 +14,10 @@ private struct TaskOnce: ViewModifier {
   @State private var hasAppeared = false
 
   func body(content: Content) -> some View {
-    content.onAppear {
+    content.task {
       guard !hasAppeared else { return }
       hasAppeared = true
-      Task { await task() }
+      await task()
     }
   }
 }
