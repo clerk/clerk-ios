@@ -41,8 +41,8 @@ extension AuthView {
       token: AuthFlowPresentationToken
     )
 
-    case trustedDeviceEnrollment(
-      biometryDisplayName: TrustedDeviceBiometryDisplayName,
+    case biometricCredentialEnrollment(
+      biometryDisplayName: BiometryDisplayName,
       token: AuthFlowPresentationToken
     )
 
@@ -104,8 +104,8 @@ extension AuthView {
           mfaType: mfaType,
           token: token
         )
-      case let .trustedDeviceEnrollment(biometryDisplayName, token):
-        TrustedDeviceEnrollmentView(
+      case let .biometricCredentialEnrollment(biometryDisplayName, token):
+        BiometricCredentialEnrollmentView(
           biometryDisplayName: biometryDisplayName,
           token: token
         )
@@ -123,7 +123,7 @@ extension AuthView {
            .taskVerifyTotp(let token),
            .sessionTaskCreateOrganization(_, let token),
            .backupCodes(_, _, let token),
-           .trustedDeviceEnrollment(_, let token):
+           .biometricCredentialEnrollment(_, let token):
         token
       default:
         nil

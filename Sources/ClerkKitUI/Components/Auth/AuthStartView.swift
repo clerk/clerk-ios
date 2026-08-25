@@ -28,8 +28,8 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
-  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
-  @State private var trustedDeviceBiometryDisplayName: TrustedDeviceBiometryDisplayName?
+  @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
+  @State private var biometryDisplayName: BiometryDisplayName?
 
   // MARK: - Configuration
 
@@ -169,7 +169,7 @@ struct AuthStartView: View {
     guard authState.persistsIdentifiers else { return nil }
     return LastUsedAuth(
       environment: clerk.environment,
-      trustedDeviceSignInIsVisible: shouldShowTrustedDeviceSignIn
+      biometricSignInIsVisible: shouldShowBiometricSignIn
     )
   }
 
@@ -178,7 +178,7 @@ struct AuthStartView: View {
   }
 
   private var hasAlternativeAuthMethods: Bool {
-    hasSocialProviders || shouldShowTrustedDeviceSignIn
+    hasSocialProviders || shouldShowBiometricSignIn
   }
 
   // MARK: - Display Strings
@@ -308,8 +308,8 @@ struct AuthStartView: View {
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
-    .task(id: trustedDeviceAvailabilityRefreshState) {
-      await refreshTrustedDeviceAvailability()
+    .task(id: biometricCredentialAvailabilityRefreshState) {
+      await refreshBiometricCredentialAvailability()
     }
   }
 }
@@ -319,16 +319,16 @@ private struct PasskeySignInTaskID: Equatable {
   let ownerId: UUID
 }
 
-enum AuthStartTrustedDeviceRefreshState: Equatable {
+enum AuthStartBiometricCredentialRefreshState: Equatable {
   case disabled
   case signedOut(clientID: String?)
 
   static func state(
-    trustedDeviceFeatureIsEnabled: Bool,
+    biometricCredentialFeatureIsEnabled: Bool,
     activeSessionID: String?,
     clientID: String?
   ) -> Self {
-    guard trustedDeviceFeatureIsEnabled else {
+    guard biometricCredentialFeatureIsEnabled else {
       return .disabled
     }
     guard activeSessionID == nil else {
@@ -339,25 +339,25 @@ enum AuthStartTrustedDeviceRefreshState: Equatable {
 }
 
 extension AuthStartView {
-  private var trustedDeviceFeatureIsEnabled: Bool {
+  private var biometricCredentialFeatureIsEnabled: Bool {
     guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
       return false
     }
 
     return nativeSettings.apiEnabled &&
-      nativeSettings.trustedDeviceSignInEnabled
+      nativeSettings.biometricSignInEnabled
   }
 
-  private var shouldShowTrustedDeviceSignIn: Bool {
-    trustedDeviceFeatureIsEnabled &&
+  private var shouldShowBiometricSignIn: Bool {
+    biometricCredentialFeatureIsEnabled &&
       authState.mode != .signUp &&
-      trustedDeviceAvailability?.isAvailable == true &&
-      trustedDeviceBiometryDisplayName?.isSupported == true
+      biometricCredentialAvailability?.isAvailable == true &&
+      biometryDisplayName?.isSupported == true
   }
 
-  private var trustedDeviceAvailabilityRefreshState: AuthStartTrustedDeviceRefreshState {
+  private var biometricCredentialAvailabilityRefreshState: AuthStartBiometricCredentialRefreshState {
     .state(
-      trustedDeviceFeatureIsEnabled: trustedDeviceFeatureIsEnabled,
+      biometricCredentialFeatureIsEnabled: biometricCredentialFeatureIsEnabled,
       activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil,
       clientID: clerk.client?.id
     )
@@ -458,23 +458,23 @@ extension AuthStartView {
   }
 
   @ViewBuilder
-  private var trustedDeviceSignInButton: some View {
-    if let trustedDeviceBiometryDisplayName {
-      TrustedDeviceSignInButton(
-        biometryDisplayName: trustedDeviceBiometryDisplayName
+  private var biometricSignInButton: some View {
+    if let biometryDisplayName {
+      BiometricSignInButton(
+        biometryDisplayName: biometryDisplayName
       ) {
         cancelAutomaticPasskeySignIn()
-        await signInWithTrustedDevice()
+        await signInWithBiometrics()
       }
-      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsTrustedDeviceBadge == true)
+      .lastUsedAuthBadgeOverlay(lastUsedAuth?.showsBiometricCredentialBadge == true)
       .simultaneousGesture(TapGesture())
     }
   }
 
   private var alternativeAuthMethodsSection: some View {
     VStack(spacing: 16) {
-      if shouldShowTrustedDeviceSignIn {
-        trustedDeviceSignInButton
+      if shouldShowBiometricSignIn {
+        biometricSignInButton
       }
 
       if hasSocialProviders {
@@ -752,46 +752,46 @@ extension AuthStartView {
     }
   }
 
-  private func refreshTrustedDeviceAvailability() async {
-    guard authState.mode != .signUp, trustedDeviceFeatureIsEnabled else {
-      trustedDeviceAvailability = nil
+  private func refreshBiometricCredentialAvailability() async {
+    guard authState.mode != .signUp, biometricCredentialFeatureIsEnabled else {
+      biometricCredentialAvailability = nil
       return
     }
 
     guard clerk.session?.status != .active else {
-      trustedDeviceAvailability = nil
+      biometricCredentialAvailability = nil
       return
     }
 
-    guard let localAvailability = try? clerk.trustedDevices.localAvailability() else {
-      trustedDeviceAvailability = nil
+    guard let localAvailability = try? clerk.biometricCredentials.localAvailability() else {
+      biometricCredentialAvailability = nil
       return
     }
 
-    if localAvailability.isAvailable, trustedDeviceBiometryDisplayName == nil {
-      trustedDeviceBiometryDisplayName = .current()
+    if localAvailability.isAvailable, biometryDisplayName == nil {
+      biometryDisplayName = .current()
     }
-    trustedDeviceAvailability = localAvailability
+    biometricCredentialAvailability = localAvailability
     guard localAvailability.isAvailable else { return }
 
-    let validationResult = await clerk.trustedDevices.validateLocalCredentialIfPossible()
+    let validationResult = await clerk.biometricCredentials.validateLocalCredentialIfPossible()
     guard !Task.isCancelled else { return }
 
     switch validationResult {
     case .valid:
-      trustedDeviceAvailability = .available
+      biometricCredentialAvailability = .available
     case let .invalid(reason):
-      trustedDeviceAvailability = .unavailable(reason)
+      biometricCredentialAvailability = .unavailable(reason)
     case .inconclusive:
       break
     }
   }
 
-  private func signInWithTrustedDevice() async {
+  private func signInWithBiometrics() async {
     generalError = nil
 
     do {
-      let signIn = try await clerk.auth.signInWithTrustedDevice()
+      let signIn = try await clerk.auth.signInWithBiometrics()
       guard !Task.isCancelled, navigation.path.isEmpty else { return }
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
@@ -805,7 +805,7 @@ extension AuthStartView {
       }
 
       generalError = error
-      await refreshTrustedDeviceAvailability()
+      await refreshBiometricCredentialAvailability()
       restartAutomaticPasskeySignInIfNeeded()
     }
   }

@@ -66,6 +66,6 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for the pending magic-link flow.
   case pendingMagicLinkFlow
 
-  /// Key for trusted-device credential metadata.
-  case trustedDeviceCredentials
+  /// Key for biometric credential metadata.
+  case biometricCredentials = "trustedDeviceCredentials"
 }

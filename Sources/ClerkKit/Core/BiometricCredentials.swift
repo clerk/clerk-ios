@@ -1,49 +1,49 @@
 //
-//  TrustedDevices.swift
+//  BiometricCredentials.swift
 //  Clerk
 //
 
 import Foundation
 
-/// The main entry point for trusted-device credential operations.
+/// The main entry point for biometric credential operations.
 @MainActor
-public struct TrustedDevices {
-  private let trustedDeviceService: TrustedDeviceServiceProtocol
+public struct BiometricCredentials {
+  private let biometricCredentialService: BiometricCredentialServiceProtocol
   private let signInService: SignInServiceProtocol
-  private let keyManager: any TrustedDeviceKeyManagerProtocol
-  private let credentialStore: any TrustedDeviceLocalCredentialStoreProtocol
+  private let keyManager: any BiometricCredentialKeyManagerProtocol
+  private let credentialStore: any BiometricCredentialLocalStoreProtocol
   private let appIdentifierProvider: @MainActor @Sendable () -> String?
 
   init(
-    trustedDeviceService: TrustedDeviceServiceProtocol,
+    biometricCredentialService: BiometricCredentialServiceProtocol,
     signInService: SignInServiceProtocol,
-    keyManager: any TrustedDeviceKeyManagerProtocol,
-    credentialStore: any TrustedDeviceLocalCredentialStoreProtocol,
+    keyManager: any BiometricCredentialKeyManagerProtocol,
+    credentialStore: any BiometricCredentialLocalStoreProtocol,
     appIdentifierProvider: @escaping @MainActor @Sendable () -> String? = {
       Bundle.main.bundleIdentifier
     }
   ) {
-    self.trustedDeviceService = trustedDeviceService
+    self.biometricCredentialService = biometricCredentialService
     self.signInService = signInService
     self.keyManager = keyManager
     self.credentialStore = credentialStore
     self.appIdentifierProvider = appIdentifierProvider
   }
 
-  /// Lists active trusted-device credentials for the signed-in user.
-  public func list() async throws -> [TrustedDevice] {
-    try await trustedDeviceService.list()
+  /// Lists active biometric credentials for the signed-in user.
+  public func list() async throws -> [BiometricCredential] {
+    try await biometricCredentialService.list()
   }
 
-  /// Returns local trusted-device sign-in availability.
+  /// Returns local biometric sign-in availability.
   ///
   /// When a Clerk session is active, this also reconciles the local credential with the server.
   /// Without an active session, this reports whether the local biometric-gated credential can
-  /// be used to start trusted-device sign-in.
+  /// be used to start biometric sign-in.
   public func availability(
     id: String? = nil,
     identifierHint: String? = nil
-  ) async throws -> TrustedDeviceAvailability {
+  ) async throws -> BiometricCredentialAvailability {
     switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
     case .available:
       .available
@@ -52,7 +52,7 @@ public struct TrustedDevices {
     }
   }
 
-  package func currentUserAvailability() async throws -> TrustedDeviceAvailability {
+  package func currentUserAvailability() async throws -> BiometricCredentialAvailability {
     guard let userID = Clerk.shared.user?.id else {
       return .unavailable(.noLocalCredential)
     }
@@ -65,11 +65,11 @@ public struct TrustedDevices {
     }
   }
 
-  /// Returns local trusted-device sign-in availability without reconciling with the server.
+  /// Returns local biometric sign-in availability without reconciling with the server.
   package func localAvailability(
     id: String? = nil,
     identifierHint: String? = nil
-  ) throws -> TrustedDeviceAvailability {
+  ) throws -> BiometricCredentialAvailability {
     switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
     case .available:
       .available
@@ -78,7 +78,7 @@ public struct TrustedDevices {
     }
   }
 
-  package func currentUserLocalAvailability() throws -> TrustedDeviceAvailability {
+  package func currentUserLocalAvailability() throws -> BiometricCredentialAvailability {
     guard let userID = Clerk.shared.user?.id else {
       return .unavailable(.noLocalCredential)
     }
@@ -91,43 +91,43 @@ public struct TrustedDevices {
     }
   }
 
-  /// Enrolls the current app installation as a biometric trusted device.
+  /// Enrolls the current app installation as a biometric credential.
   ///
   /// This requires an active or pending Clerk session. The generated private key stays on the device.
   /// - Parameters:
-  ///   - deviceName: A human-readable device name stored with the trusted-device credential.
+  ///   - name: A human-readable name stored with the biometric credential.
   ///   - identifierHint: A local-only user identifier hint for selecting this credential later.
   ///   - reason: The reason shown in the system biometric prompt.
   ///   - policy: The local authentication policy used to protect the generated private key.
   ///     Defaults to requiring a biometric from the currently enrolled set.
   @discardableResult
   public func enroll(
-    deviceName: String? = nil,
+    name: String? = nil,
     identifierHint: String? = nil,
     reason: String? = nil,
-    policy: TrustedDevicePolicy = .biometryCurrentSet
-  ) async throws -> TrustedDevice {
+    policy: BiometricCredentialPolicy = .biometryCurrentSet
+  ) async throws -> BiometricCredential {
     guard let session = Clerk.shared.session,
-          session.status.allowsTrustedDeviceEnrollment
+          session.status.allowsBiometricCredentialEnrollment
     else {
-      throw ClerkClientError(message: "Unable to enroll a trusted device without an active or pending Clerk session.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without an active or pending Clerk session.")
     }
-    try ensureTrustedDeviceFeatureEnabled()
+    try ensureBiometricCredentialFeatureEnabled()
 
     guard let appIdentifier = appIdentifierProvider() else {
-      throw ClerkClientError(message: "Unable to enroll a trusted device without a bundle identifier.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without a bundle identifier.")
     }
     guard let userID = session.user?.id else {
-      throw ClerkClientError(message: "Unable to enroll a trusted device without a user for the current session.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without a user for the current session.")
     }
 
     let localKey = try keyManager.createKey(policy: policy)
     do {
-      let challenge = try await trustedDeviceService.prepareEnrollment(
+      let challenge = try await biometricCredentialService.prepareEnrollment(
         sessionId: session.id,
         params: .init(
           appIdentifier: appIdentifier,
-          name: deviceName,
+          name: name,
           publicKeyJWK: localKey.publicKeyJWK
         )
       )
@@ -136,39 +136,39 @@ public struct TrustedDevices {
         localKeyId: localKey.localKeyId,
         localizedReason: reason ?? "Use biometrics to enroll this device."
       )
-      let trustedDevice = try await trustedDeviceService.attemptEnrollment(
+      let biometricCredential = try await biometricCredentialService.attemptEnrollment(
         sessionId: session.id,
         params: .init(
           appIdentifier: appIdentifier,
-          name: deviceName,
+          name: name,
           publicKeyJWK: localKey.publicKeyJWK,
           clientData: signature.clientData,
           signature: signature.signature
         )
       )
       try await saveLocalCredential(
-        trustedDevice: trustedDevice,
+        biometricCredential: biometricCredential,
         localKey: localKey,
         sessionId: session.id,
         userID: userID,
         identifierHint: identifierHint
       )
-      removeOtherLocalCredentialsForCurrentApp(keeping: trustedDevice)
-      return trustedDevice
+      removeOtherLocalCredentialsForCurrentApp(keeping: biometricCredential)
+      return biometricCredential
     } catch {
       try? keyManager.deleteKey(localKeyId: localKey.localKeyId)
       throw error
     }
   }
 
-  /// Revokes a trusted-device credential for the signed-in user.
+  /// Revokes a biometric credential for the signed-in user.
   ///
   /// After server revocation succeeds, the SDK attempts to remove any matching local private key
   /// and metadata. A local cleanup failure does not affect the returned revoked credential.
   @discardableResult
-  public func revoke(id: String) async throws -> TrustedDevice {
-    let trustedDevice = try await trustedDeviceService.revoke(
-      trustedDeviceId: id,
+  public func revoke(id: String) async throws -> BiometricCredential {
+    let biometricCredential = try await biometricCredentialService.revoke(
+      biometricCredentialId: id,
       sessionId: Clerk.shared.session?.id
     )
     do {
@@ -178,25 +178,25 @@ public struct TrustedDevices {
     } catch {
       ClerkLogger.logError(
         error,
-        message: "Failed to delete local trusted-device credential after server revocation. This is non-critical."
+        message: "Failed to delete local biometric credential after server revocation. This is non-critical."
       )
     }
-    return trustedDevice
+    return biometricCredential
   }
 
-  /// Revokes the trusted-device credential for the current app installation and signed-in user.
+  /// Revokes the biometric credential for the current app installation and signed-in user.
   ///
   /// Call this method before signing out because it requires an active or pending Clerk session.
   /// When a credential is available, it is revoked on the server and the SDK attempts to remove
   /// its local private key and metadata. A local cleanup failure does not affect the returned
   /// revoked credential.
   ///
-  /// - Returns: The revoked trusted-device credential, or `nil` when this app installation has no
+  /// - Returns: The revoked biometric credential, or `nil` when this app installation has no
   ///   available local credential for the current user.
   @discardableResult
-  public func revokeCurrentDeviceCredential() async throws -> TrustedDevice? {
-    guard Clerk.shared.session?.status.allowsTrustedDeviceEnrollment == true else {
-      throw ClerkClientError(message: "Unable to revoke a trusted device without an active or pending Clerk session.")
+  public func revokeCurrentDeviceCredential() async throws -> BiometricCredential? {
+    guard Clerk.shared.session?.status.allowsBiometricCredentialEnrollment == true else {
+      throw ClerkClientError(message: "Unable to revoke a biometric credential without an active or pending Clerk session.")
     }
     guard let userID = Clerk.shared.user?.id else {
       return nil
@@ -225,10 +225,10 @@ public struct TrustedDevices {
     return credentials.count
   }
 
-  /// Signs in with a locally enrolled biometric trusted-device credential.
+  /// Signs in with a locally enrolled biometric credential.
   ///
   /// - Parameters:
-  ///   - id: The trusted-device credential ID to use. When omitted, the available local credential is used. If
+  ///   - id: The biometric credential ID to use. When omitted, the available local credential is used. If
   ///     legacy local state contains multiple credentials for this app installation, the newest supported
   ///     credential is used.
   ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
@@ -239,28 +239,28 @@ public struct TrustedDevices {
     identifierHint: String? = nil,
     reason: String? = nil
   ) async throws -> SignIn {
-    let localCredential: TrustedDeviceLocalCredential
+    let localCredential: BiometricCredentialLocalRecord
     switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
     case let .available(credential):
       localCredential = credential
     case .unavailable:
       throw ClerkClientError(
-        message: "Trusted-device sign-in is unavailable."
+        message: "Biometric sign-in is unavailable."
       )
     }
-    let trustedDeviceId = localCredential.id
+    let biometricCredentialId = localCredential.id
 
     let signIn: SignIn
     do {
       signIn = try await signInService.create(params: .init(
-        strategy: .trustedDevice,
-        trustedDeviceId: trustedDeviceId
+        strategy: .biometricCredential,
+        biometricCredentialId: biometricCredentialId
       ))
     } catch {
-      throw handleTrustedDeviceSignInError(error, localCredential: localCredential)
+      throw handleBiometricSignInError(error, localCredential: localCredential)
     }
 
-    let challenge = try trustedDeviceChallenge(from: signIn)
+    let challenge = try biometricCredentialChallenge(from: signIn)
     let signature = try keyManager.sign(
       clientData: challenge.clientData,
       localKeyId: localCredential.localKeyId,
@@ -271,29 +271,29 @@ public struct TrustedDevices {
       return try await signInService.attemptFirstFactor(
         signInId: signIn.id,
         params: .init(
-          strategy: .trustedDevice,
-          trustedDeviceId: trustedDeviceId,
+          strategy: .biometricCredential,
+          biometricCredentialId: biometricCredentialId,
           clientData: signature.clientData,
           signature: signature.signature,
           algorithm: signature.algorithm
         )
       )
     } catch {
-      throw handleTrustedDeviceSignInError(error, localCredential: localCredential)
+      throw handleBiometricSignInError(error, localCredential: localCredential)
     }
   }
 }
 
-extension TrustedDevices {
+extension BiometricCredentials {
   package func validateLocalCredentialIfPossible(
     id: String? = nil,
     identifierHint: String? = nil
-  ) async -> TrustedDeviceValidationResult {
-    if trustedDeviceFeatureUnavailableReason == .environmentUnavailable {
+  ) async -> BiometricCredentialValidationResult {
+    if biometricCredentialFeatureUnavailableReason == .environmentUnavailable {
       return .inconclusive
     }
 
-    let localCredentials: [TrustedDeviceLocalCredential]
+    let localCredentials: [BiometricCredentialLocalRecord]
     do {
       switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
       case let .available(credentials):
@@ -309,11 +309,11 @@ extension TrustedDevices {
       return .inconclusive
     }
 
-    var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
+    var firstUnavailableReason: BiometricCredentialAvailability.UnavailableReason?
 
     for localCredential in localCredentials {
       do {
-        let validation = try await trustedDeviceService.validateSignInCredential(trustedDeviceId: localCredential.id)
+        let validation = try await biometricCredentialService.validateSignInCredential(biometricCredentialId: localCredential.id)
         guard validation.valid else {
           try? deleteLocalCredential(localCredential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
@@ -321,12 +321,12 @@ extension TrustedDevices {
         }
         return .valid
       } catch {
-        if error.isMissingTrustedDeviceCredential {
+        if error.isMissingBiometricCredential {
           try? deleteLocalCredential(localCredential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
           continue
         }
-        if let unavailableReason = error.trustedDeviceValidationUnavailableReason {
+        if let unavailableReason = error.biometricCredentialValidationUnavailableReason {
           return .invalid(unavailableReason)
         }
         return .inconclusive
@@ -336,46 +336,46 @@ extension TrustedDevices {
     return .invalid(firstUnavailableReason ?? .serverCredentialMissing)
   }
 
-  private var trustedDeviceFeatureUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
+  private var biometricCredentialFeatureUnavailableReason: BiometricCredentialAvailability.UnavailableReason? {
     guard let nativeSettings = Clerk.shared.environment?.authConfig.nativeSettings else {
       return .environmentUnavailable
     }
     guard nativeSettings.apiEnabled else {
       return .nativeAPIDisabled
     }
-    guard nativeSettings.trustedDeviceSignInEnabled else {
+    guard nativeSettings.biometricSignInEnabled else {
       return .featureDisabled
     }
     return nil
   }
 
-  private func ensureTrustedDeviceFeatureEnabled() throws {
-    guard let reason = trustedDeviceFeatureUnavailableReason else {
+  private func ensureBiometricCredentialFeatureEnabled() throws {
+    guard let reason = biometricCredentialFeatureUnavailableReason else {
       return
     }
 
     switch reason {
     case .environmentUnavailable:
-      throw ClerkClientError(message: "Unable to use trusted-device sign-in before the Clerk environment is loaded.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in before the Clerk environment is loaded.")
     case .nativeAPIDisabled:
-      throw ClerkClientError(message: "Unable to use trusted-device sign-in because Native API is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because Native API is disabled.")
     case .featureDisabled:
-      throw ClerkClientError(message: "Unable to use trusted-device sign-in because it is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because it is disabled.")
     default:
-      throw ClerkClientError(message: "Trusted-device sign-in is unavailable.")
+      throw ClerkClientError(message: "Biometric sign-in is unavailable.")
     }
   }
 
   private enum LocalCredentialResult<Value> {
     case available(Value)
-    case unavailable(TrustedDeviceAvailability.UnavailableReason)
+    case unavailable(BiometricCredentialAvailability.UnavailableReason)
   }
 
   private func selectedLocalCredential(
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) async throws -> LocalCredentialResult<TrustedDeviceLocalCredential> {
+  ) async throws -> LocalCredentialResult<BiometricCredentialLocalRecord> {
     switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID) {
     case let .available(supportedCredentials):
       guard Clerk.shared.session?.status == .active else {
@@ -386,30 +386,30 @@ extension TrustedDevices {
         return .available(supportedCredentials[0])
       }
 
-      var trustedDevices: [TrustedDevice]?
-      var firstUnavailableReason: TrustedDeviceAvailability.UnavailableReason?
+      var biometricCredentials: [BiometricCredential]?
+      var firstUnavailableReason: BiometricCredentialAvailability.UnavailableReason?
       let activeUserCredentials = supportedCredentials.filter { $0.userID == activeUserID }
       guard !activeUserCredentials.isEmpty else {
         return .unavailable(.noLocalCredential)
       }
 
       for credential in activeUserCredentials {
-        let activeUserTrustedDevices: [TrustedDevice]
-        if let trustedDevices {
-          activeUserTrustedDevices = trustedDevices
+        let activeUserBiometricCredentials: [BiometricCredential]
+        if let biometricCredentials {
+          activeUserBiometricCredentials = biometricCredentials
         } else {
-          let fetchedTrustedDevices = try await trustedDeviceService.list()
-          trustedDevices = fetchedTrustedDevices
-          activeUserTrustedDevices = fetchedTrustedDevices
+          let fetchedBiometricCredentials = try await biometricCredentialService.list()
+          biometricCredentials = fetchedBiometricCredentials
+          activeUserBiometricCredentials = fetchedBiometricCredentials
         }
 
-        guard let trustedDevice = activeUserTrustedDevices.first(where: { $0.id == credential.id }) else {
+        guard let biometricCredential = activeUserBiometricCredentials.first(where: { $0.id == credential.id }) else {
           try deleteLocalCredential(credential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
           continue
         }
 
-        guard trustedDevice.status == .active else {
+        guard biometricCredential.status == .active else {
           try deleteLocalCredential(credential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialRevoked
           continue
@@ -428,8 +428,8 @@ extension TrustedDevices {
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) throws -> LocalCredentialResult<[TrustedDeviceLocalCredential]> {
-    if let unavailableReason = trustedDeviceFeatureUnavailableReason {
+  ) throws -> LocalCredentialResult<[BiometricCredentialLocalRecord]> {
+    if let unavailableReason = biometricCredentialFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
 
@@ -455,7 +455,7 @@ extension TrustedDevices {
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) throws -> [TrustedDeviceLocalCredential] {
+  ) throws -> [BiometricCredentialLocalRecord] {
     var credentials = try storedLocalCredentialsForCurrentApp()
     if let id {
       credentials = credentials.filter { $0.id == id }
@@ -476,7 +476,7 @@ extension TrustedDevices {
     }
   }
 
-  private func storedLocalCredentialsForCurrentApp() throws -> [TrustedDeviceLocalCredential] {
+  private func storedLocalCredentialsForCurrentApp() throws -> [BiometricCredentialLocalRecord] {
     guard let appIdentifier = appIdentifierProvider() else {
       return []
     }
@@ -485,9 +485,9 @@ extension TrustedDevices {
   }
 
   private func localCredentialsWithExistingKeys(
-    from credentials: [TrustedDeviceLocalCredential]
-  ) throws -> [TrustedDeviceLocalCredential] {
-    var credentialsWithKeys: [TrustedDeviceLocalCredential] = []
+    from credentials: [BiometricCredentialLocalRecord]
+  ) throws -> [BiometricCredentialLocalRecord] {
+    var credentialsWithKeys: [BiometricCredentialLocalRecord] = []
 
     for credential in credentials {
       if try localKeyExists(for: credential) {
@@ -500,22 +500,22 @@ extension TrustedDevices {
     return credentialsWithKeys
   }
 
-  private func localKeyExists(for credential: TrustedDeviceLocalCredential) throws -> Bool {
+  private func localKeyExists(for credential: BiometricCredentialLocalRecord) throws -> Bool {
     do {
       return try keyManager.hasKey(localKeyId: credential.localKeyId)
-    } catch let error as TrustedDeviceKeyManagerError where error == .keyNotFound {
+    } catch let error as BiometricCredentialKeyManagerError where error == .keyNotFound {
       return false
     }
   }
 
-  private func deleteLocalCredential(_ credential: TrustedDeviceLocalCredential) throws {
+  private func deleteLocalCredential(_ credential: BiometricCredentialLocalRecord) throws {
     try keyManager.deleteKey(localKeyId: credential.localKeyId)
     try credentialStore.delete(id: credential.id)
   }
 
   private func saveLocalCredential(
-    trustedDevice: TrustedDevice,
-    localKey: TrustedDeviceLocalKey,
+    biometricCredential: BiometricCredential,
+    localKey: BiometricCredentialLocalKey,
     sessionId: String,
     userID: String,
     identifierHint: String?
@@ -523,7 +523,7 @@ extension TrustedDevices {
     do {
       try credentialStore.save(
         .init(
-          trustedDevice: trustedDevice,
+          biometricCredential: biometricCredential,
           localKey: localKey,
           userID: userID,
           identifierHint: identifierHint
@@ -533,22 +533,22 @@ extension TrustedDevices {
         }
       )
     } catch {
-      _ = try? await trustedDeviceService.revoke(
-        trustedDeviceId: trustedDevice.id,
+      _ = try? await biometricCredentialService.revoke(
+        biometricCredentialId: biometricCredential.id,
         sessionId: sessionId
       )
       throw error
     }
   }
 
-  private func removeOtherLocalCredentialsForCurrentApp(keeping trustedDevice: TrustedDevice) {
-    let credentialsToReplace: [TrustedDeviceLocalCredential]
+  private func removeOtherLocalCredentialsForCurrentApp(keeping biometricCredential: BiometricCredential) {
+    let credentialsToReplace: [BiometricCredentialLocalRecord]
     do {
       // The backend replaces active credentials by installation and app identifier, even across users.
-      credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != trustedDevice.id }
+      credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != biometricCredential.id }
     } catch {
       ClerkLogger.warning(
-        "Failed to load replaced trusted-device credentials for local cleanup. Error: \(error)"
+        "Failed to load replaced biometric credentials for local cleanup. Error: \(error)"
       )
       return
     }
@@ -558,24 +558,24 @@ extension TrustedDevices {
         try deleteLocalCredential(credential)
       } catch {
         ClerkLogger.warning(
-          "Failed to remove replaced trusted-device credential locally. Error: \(error)"
+          "Failed to remove replaced biometric credential locally. Error: \(error)"
         )
       }
     }
   }
 
-  private func trustedDeviceChallenge(from signIn: SignIn) throws -> TrustedDeviceChallenge {
-    guard let trustedDeviceChallenge = signIn.firstFactorVerification?.trustedDeviceChallenge else {
-      throw ClerkClientError(message: "Trusted-device sign-in did not return a challenge.")
+  private func biometricCredentialChallenge(from signIn: SignIn) throws -> BiometricCredentialChallenge {
+    guard let biometricCredentialChallenge = signIn.firstFactorVerification?.biometricCredentialChallenge else {
+      throw ClerkClientError(message: "Biometric sign-in did not return a challenge.")
     }
-    return trustedDeviceChallenge
+    return biometricCredentialChallenge
   }
 
-  private func handleTrustedDeviceSignInError(
+  private func handleBiometricSignInError(
     _ error: Error,
-    localCredential: TrustedDeviceLocalCredential
+    localCredential: BiometricCredentialLocalRecord
   ) -> Error {
-    guard error.isMissingTrustedDeviceCredential else {
+    guard error.isMissingBiometricCredential else {
       return error
     }
 
@@ -585,24 +585,24 @@ extension TrustedDevices {
 }
 
 extension Error {
-  fileprivate var isMissingTrustedDeviceCredential: Bool {
+  fileprivate var isMissingBiometricCredential: Bool {
     guard let error = self as? ClerkAPIError else {
       return false
     }
 
-    return TrustedDeviceAPIError.missingCredentialCodes.contains(error.code) &&
-      error.meta?["param_name"]?.stringValue == TrustedDeviceAPIError.trustedDeviceIDParamName
+    return BiometricCredentialAPIError.missingCredentialCodes.contains(error.code) &&
+      error.meta?["param_name"]?.stringValue == BiometricCredentialAPIError.biometricCredentialIDParamName
   }
 
-  fileprivate var trustedDeviceValidationUnavailableReason: TrustedDeviceAvailability.UnavailableReason? {
+  fileprivate var biometricCredentialValidationUnavailableReason: BiometricCredentialAvailability.UnavailableReason? {
     guard let error = self as? ClerkAPIError else {
       return nil
     }
 
     switch error.code {
-    case TrustedDeviceAPIError.nativeAPIDisabledCode:
+    case BiometricCredentialAPIError.nativeAPIDisabledCode:
       return .nativeAPIDisabled
-    case TrustedDeviceAPIError.featureNotEnabledCode:
+    case BiometricCredentialAPIError.featureNotEnabledCode:
       return .featureDisabled
     default:
       return nil
@@ -610,21 +610,21 @@ extension Error {
   }
 }
 
-private enum TrustedDeviceAPIError {
+private enum BiometricCredentialAPIError {
   static let formResourceNotFoundCode = "form_resource_not_found"
-  static let trustedDeviceNotRegisteredCode = "trusted_device_not_registered"
-  static let trustedDeviceIDParamName = "trusted_device_id"
+  static let biometricCredentialNotRegisteredCode = "trusted_device_not_registered"
+  static let biometricCredentialIDParamName = "trusted_device_id"
   static let nativeAPIDisabledCode = "native_api_disabled"
   static let featureNotEnabledCode = "feature_not_enabled"
 
   static let missingCredentialCodes = [
     formResourceNotFoundCode,
-    trustedDeviceNotRegisteredCode,
+    biometricCredentialNotRegisteredCode,
   ]
 }
 
 extension Session.SessionStatus {
-  package var allowsTrustedDeviceEnrollment: Bool {
+  package var allowsBiometricCredentialEnrollment: Bool {
     switch self {
     case .active, .pending:
       true

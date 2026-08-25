@@ -1,24 +1,24 @@
 //
-//  MockTrustedDeviceKeyManager.swift
+//  MockBiometricCredentialKeyManager.swift
 //  Clerk
 //
 
 import Foundation
 
-package final class MockTrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
+package final class MockBiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol {
   package nonisolated(unsafe) var isSupportedValue: Bool
-  package nonisolated(unsafe) var isSupportedForPolicyHandler: ((TrustedDevicePolicy) -> Bool)?
-  package nonisolated(unsafe) var createKeyHandler: ((TrustedDevicePolicy) throws -> TrustedDeviceLocalKey)?
-  package nonisolated(unsafe) var signHandler: ((String, String, String?) throws -> TrustedDeviceKeySignature)?
+  package nonisolated(unsafe) var isSupportedForPolicyHandler: ((BiometricCredentialPolicy) -> Bool)?
+  package nonisolated(unsafe) var createKeyHandler: ((BiometricCredentialPolicy) throws -> BiometricCredentialLocalKey)?
+  package nonisolated(unsafe) var signHandler: ((String, String, String?) throws -> BiometricCredentialKeySignature)?
   package nonisolated(unsafe) var hasKeyHandler: ((String) throws -> Bool)?
   package nonisolated(unsafe) var deleteKeyHandler: ((String) throws -> Void)?
 
   package init(
     isSupported: Bool = true,
-    isSupportedForPolicy: ((TrustedDevicePolicy) -> Bool)? = nil,
-    createKey: (() throws -> TrustedDeviceLocalKey)? = nil,
-    createKeyWithPolicy: ((TrustedDevicePolicy) throws -> TrustedDeviceLocalKey)? = nil,
-    sign: ((String, String, String?) throws -> TrustedDeviceKeySignature)? = nil,
+    isSupportedForPolicy: ((BiometricCredentialPolicy) -> Bool)? = nil,
+    createKey: (() throws -> BiometricCredentialLocalKey)? = nil,
+    createKeyWithPolicy: ((BiometricCredentialPolicy) throws -> BiometricCredentialLocalKey)? = nil,
+    sign: ((String, String, String?) throws -> BiometricCredentialKeySignature)? = nil,
     hasKey: ((String) throws -> Bool)? = nil,
     deleteKey: ((String) throws -> Void)? = nil
   ) {
@@ -35,18 +35,18 @@ package final class MockTrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol
   }
 
   @MainActor
-  package func isSupported(policy: TrustedDevicePolicy) -> Bool {
+  package func isSupported(policy: BiometricCredentialPolicy) -> Bool {
     isSupportedForPolicyHandler?(policy) ?? isSupportedValue
   }
 
   @MainActor
-  package func createKey(policy: TrustedDevicePolicy) throws -> TrustedDeviceLocalKey {
+  package func createKey(policy: BiometricCredentialPolicy) throws -> BiometricCredentialLocalKey {
     if let createKeyHandler {
       return try createKeyHandler(policy)
     }
     return .init(
-      localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
-      publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+      localKeyId: BiometricCredentialLocalKey.mock.localKeyId,
+      publicKeyJWK: BiometricCredentialLocalKey.mock.publicKeyJWK,
       policy: policy
     )
   }
@@ -56,7 +56,7 @@ package final class MockTrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol
     clientData: String,
     localKeyId: String,
     localizedReason: String?
-  ) throws -> TrustedDeviceKeySignature {
+  ) throws -> BiometricCredentialKeySignature {
     if let signHandler {
       return try signHandler(clientData, localKeyId, localizedReason)
     }

@@ -14,8 +14,8 @@ struct UserProfileSecurityView: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @State private var error: Error?
 
-  @State private var trustedDeviceAvailability: TrustedDeviceAvailability?
-  private let biometryDisplayName = TrustedDeviceBiometryDisplayName.current()
+  @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
+  private let biometryDisplayName = BiometryDisplayName.current()
 
   private var user: User? {
     clerk.user
@@ -30,46 +30,46 @@ struct UserProfileSecurityView: View {
     return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
   }
 
-  private var trustedDeviceFeatureIsEnabled: Bool {
+  private var biometricCredentialFeatureIsEnabled: Bool {
     guard let nativeSettings = environment?.authConfig.nativeSettings else {
       return false
     }
 
     return nativeSettings.apiEnabled &&
-      nativeSettings.trustedDeviceSignInEnabled &&
+      nativeSettings.biometricSignInEnabled &&
       biometryDisplayName.isSupported
   }
 
-  private struct TrustedDeviceAvailabilityRefreshKey: Hashable {
+  private struct BiometricCredentialAvailabilityRefreshKey: Hashable {
     let sessionID: String
     let userID: String
   }
 
-  private var trustedDeviceIsEnabled: Bool {
-    if let trustedDeviceAvailability {
-      return trustedDeviceAvailability.isAvailable
+  private var biometricCredentialIsEnabled: Bool {
+    if let biometricCredentialAvailability {
+      return biometricCredentialAvailability.isAvailable
     }
 
-    return localTrustedDeviceAvailability?.isAvailable == true
+    return localBiometricCredentialAvailability?.isAvailable == true
   }
 
-  private var localTrustedDeviceAvailability: TrustedDeviceAvailability? {
-    guard trustedDeviceFeatureIsEnabled else {
+  private var localBiometricCredentialAvailability: BiometricCredentialAvailability? {
+    guard biometricCredentialFeatureIsEnabled else {
       return nil
     }
 
-    return try? clerk.trustedDevices.currentUserLocalAvailability()
+    return try? clerk.biometricCredentials.currentUserLocalAvailability()
   }
 
-  private var trustedDeviceAvailabilityRefreshKey: TrustedDeviceAvailabilityRefreshKey? {
-    guard trustedDeviceFeatureIsEnabled,
+  private var biometricCredentialAvailabilityRefreshKey: BiometricCredentialAvailabilityRefreshKey? {
+    guard biometricCredentialFeatureIsEnabled,
           let user,
           let sessionID = clerk.session?.id
     else {
       return nil
     }
 
-    return TrustedDeviceAvailabilityRefreshKey(
+    return BiometricCredentialAvailabilityRefreshKey(
       sessionID: sessionID,
       userID: user.id
     )
@@ -86,10 +86,10 @@ struct UserProfileSecurityView: View {
               UserProfilePasswordSection()
             }
 
-            if trustedDeviceFeatureIsEnabled {
-              UserProfileTrustedDeviceSection(
-                isEnabled: trustedDeviceIsEnabled,
-                refreshAvailability: refreshTrustedDeviceAvailability
+            if biometricCredentialFeatureIsEnabled {
+              UserProfileBiometricCredentialsSection(
+                isEnabled: biometricCredentialIsEnabled,
+                refreshAvailability: refreshBiometricCredentialAvailability
               )
             }
 
@@ -134,9 +134,9 @@ struct UserProfileSecurityView: View {
     .task {
       _ = try? await user?.getSessions()
     }
-    .task(id: trustedDeviceAvailabilityRefreshKey) {
-      refreshLocalTrustedDeviceAvailability()
-      await refreshTrustedDeviceAvailability()
+    .task(id: biometricCredentialAvailabilityRefreshKey) {
+      refreshLocalBiometricCredentialAvailability()
+      await refreshBiometricCredentialAvailability()
     }
     .task {
       _ = try? await clerk.refreshClient()
@@ -152,38 +152,38 @@ struct UserProfileSecurityView: View {
 
 extension UserProfileSecurityView {
   @MainActor
-  private func refreshLocalTrustedDeviceAvailability() {
-    guard trustedDeviceFeatureIsEnabled else {
-      trustedDeviceAvailability = nil
+  private func refreshLocalBiometricCredentialAvailability() {
+    guard biometricCredentialFeatureIsEnabled else {
+      biometricCredentialAvailability = nil
       return
     }
 
     do {
-      trustedDeviceAvailability = try clerk.trustedDevices.currentUserLocalAvailability()
+      biometricCredentialAvailability = try clerk.biometricCredentials.currentUserLocalAvailability()
     } catch {
-      trustedDeviceAvailability = nil
-      ClerkLogger.error("Failed to refresh local trusted-device availability", error: error)
+      biometricCredentialAvailability = nil
+      ClerkLogger.error("Failed to refresh local biometric sign-in availability", error: error)
     }
   }
 
   @MainActor
   @discardableResult
-  private func refreshTrustedDeviceAvailability() async -> TrustedDeviceAvailability? {
-    guard trustedDeviceFeatureIsEnabled else {
-      trustedDeviceAvailability = nil
+  private func refreshBiometricCredentialAvailability() async -> BiometricCredentialAvailability? {
+    guard biometricCredentialFeatureIsEnabled else {
+      biometricCredentialAvailability = nil
       return nil
     }
 
     do {
-      let availability = try await clerk.trustedDevices.currentUserAvailability()
-      trustedDeviceAvailability = availability
+      let availability = try await clerk.biometricCredentials.currentUserAvailability()
+      biometricCredentialAvailability = availability
       return availability
     } catch {
       if error.isCancellationError {
         return nil
       } else {
-        trustedDeviceAvailability = nil
-        ClerkLogger.error("Failed to refresh trusted-device availability", error: error)
+        biometricCredentialAvailability = nil
+        ClerkLogger.error("Failed to refresh biometric sign-in availability", error: error)
       }
       return nil
     }

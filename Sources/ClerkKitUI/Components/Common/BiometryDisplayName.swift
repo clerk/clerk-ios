@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceBiometryDisplayName.swift
+//  BiometryDisplayName.swift
 //  Clerk
 //
 
@@ -7,7 +7,7 @@
 
 import LocalAuthentication
 
-struct TrustedDeviceBiometryDisplayName: Hashable {
+struct BiometryDisplayName: Hashable {
   let value: String
   let systemImageName: String?
   let isSupported: Bool

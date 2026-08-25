@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceKeyManager.swift
+//  BiometricCredentialKeyManager.swift
 //  Clerk
 //
 
@@ -9,28 +9,28 @@ import LocalAuthentication
 #endif
 import Security
 
-extension TrustedDeviceKeyManagerProtocol {
+extension BiometricCredentialKeyManagerProtocol {
   @MainActor
   var isSupported: Bool {
     isSupported(policy: .biometryCurrentSet)
   }
 
   @MainActor
-  func createKey() throws -> TrustedDeviceLocalKey {
+  func createKey() throws -> BiometricCredentialLocalKey {
     try createKey(policy: .biometryCurrentSet)
   }
 
   @MainActor
-  func sign(clientData: String, localKeyId: String) throws -> TrustedDeviceKeySignature {
+  func sign(clientData: String, localKeyId: String) throws -> BiometricCredentialKeySignature {
     try sign(clientData: clientData, localKeyId: localKeyId, localizedReason: nil)
   }
 }
 
-final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
+final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol {
   private static let applicationTagPrefix = "dev.clerk.trusted_device"
 
   @MainActor
-  func isSupported(policy: TrustedDevicePolicy) -> Bool {
+  func isSupported(policy: BiometricCredentialPolicy) -> Bool {
     #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     let context = LAContext()
     var error: NSError?
@@ -41,10 +41,10 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   }
 
   @MainActor
-  func createKey(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> TrustedDeviceLocalKey {
+  func createKey(policy: BiometricCredentialPolicy = .biometryCurrentSet) throws -> BiometricCredentialLocalKey {
     #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     guard canCreateKey(policy: policy) else {
-      throw TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
+      throw BiometricCredentialKeyManagerError.biometricAuthenticationUnavailable
     }
 
     let localKeyId = Self.makeLocalKeyId()
@@ -53,7 +53,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
     var error: Unmanaged<CFError>?
     guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-      throw TrustedDeviceKeyManagerError.keyGenerationFailed(Self.errorMessage(from: error))
+      throw BiometricCredentialKeyManagerError.keyGenerationFailed(Self.errorMessage(from: error))
     }
 
     return try Self.completeKeyCreation(
@@ -65,12 +65,12 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       deleteKey: deleteKey(localKeyId:)
     )
     #else
-    throw TrustedDeviceKeyManagerError.unsupportedPlatform
+    throw BiometricCredentialKeyManagerError.unsupportedPlatform
     #endif
   }
 
   @MainActor
-  private func canCreateKey(policy: TrustedDevicePolicy) -> Bool {
+  private func canCreateKey(policy: BiometricCredentialPolicy) -> Bool {
     #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     let context = LAContext()
     var error: NSError?
@@ -85,11 +85,11 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     clientData: String,
     localKeyId: String,
     localizedReason: String? = nil
-  ) throws -> TrustedDeviceKeySignature {
+  ) throws -> BiometricCredentialKeySignature {
     let privateKey = try privateKey(localKeyId: localKeyId, localizedReason: localizedReason)
     let algorithm = SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
     guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
-      throw TrustedDeviceKeyManagerError.unsupportedAlgorithm
+      throw BiometricCredentialKeyManagerError.unsupportedAlgorithm
     }
 
     var error: Unmanaged<CFError>?
@@ -99,12 +99,12 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       Data(clientData.utf8) as CFData,
       &error
     ) as Data? else {
-      throw TrustedDeviceKeyManagerError.signingFailed(Self.errorMessage(from: error))
+      throw BiometricCredentialKeyManagerError.signingFailed(Self.errorMessage(from: error))
     }
 
     let rawSignature = try Self.rawES256Signature(fromDEREncoded: signature)
 
-    return TrustedDeviceKeySignature(
+    return BiometricCredentialKeySignature(
       clientData: clientData,
       signature: Self.base64URLEncodedString(rawSignature)
     )
@@ -133,7 +133,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     case errSecSuccess, errSecItemNotFound:
       return
     default:
-      throw TrustedDeviceKeyManagerError.deletionFailed(status)
+      throw BiometricCredentialKeyManagerError.deletionFailed(status)
     }
   }
 
@@ -160,11 +160,11 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     switch status {
     case errSecSuccess:
       guard let privateKey else {
-        throw TrustedDeviceKeyManagerError.keyNotFound
+        throw BiometricCredentialKeyManagerError.keyNotFound
       }
       return privateKey
     case errSecItemNotFound:
-      throw TrustedDeviceKeyManagerError.keyNotFound
+      throw BiometricCredentialKeyManagerError.keyNotFound
     default:
       throw Self.privateKeyLookupError(for: status)
     }
@@ -174,7 +174,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     "tdlk_" + UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
   }
 
-  package static func accessControlFlags(for policy: TrustedDevicePolicy) -> SecAccessControlCreateFlags {
+  package static func accessControlFlags(for policy: BiometricCredentialPolicy) -> SecAccessControlCreateFlags {
     switch policy {
     case .biometryCurrentSet:
       [.privateKeyUsage, .biometryCurrentSet]
@@ -185,7 +185,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     }
   }
 
-  package static func makeAccessControl(policy: TrustedDevicePolicy = .biometryCurrentSet) throws -> SecAccessControl {
+  package static func makeAccessControl(policy: BiometricCredentialPolicy = .biometryCurrentSet) throws -> SecAccessControl {
     var error: Unmanaged<CFError>?
     guard let accessControl = SecAccessControlCreateWithFlags(
       kCFAllocatorDefault,
@@ -193,7 +193,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       accessControlFlags(for: policy),
       &error
     ) else {
-      throw TrustedDeviceKeyManagerError.keyGenerationFailed(errorMessage(from: error))
+      throw BiometricCredentialKeyManagerError.keyGenerationFailed(errorMessage(from: error))
     }
 
     return accessControl
@@ -239,11 +239,11 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   package static func privateKeyLookupError(for status: OSStatus) -> Error {
     switch status {
     case errSecUserCanceled:
-      TrustedDeviceKeyManagerError.biometricAuthenticationCanceled
+      BiometricCredentialKeyManagerError.biometricAuthenticationCanceled
     case errSecAuthFailed:
-      TrustedDeviceKeyManagerError.biometricAuthenticationFailed
+      BiometricCredentialKeyManagerError.biometricAuthenticationFailed
     case errSecInteractionNotAllowed:
-      TrustedDeviceKeyManagerError.biometricAuthenticationUnavailable
+      BiometricCredentialKeyManagerError.biometricAuthenticationUnavailable
     default:
       KeychainError.unexpectedStatus(status)
     }
@@ -251,7 +251,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
   package static func publicKeyJWK(fromX963Representation representation: Data) throws -> String {
     guard representation.count == 65, representation.first == 0x04 else {
-      throw TrustedDeviceKeyManagerError.invalidPublicKey
+      throw BiometricCredentialKeyManagerError.invalidPublicKey
     }
 
     let xCoordinate = representation[1 ..< 33]
@@ -264,12 +264,12 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
   @MainActor
   package static func completeKeyCreation(
     localKeyId: String,
-    policy: TrustedDevicePolicy,
+    policy: BiometricCredentialPolicy,
     exportPublicKeyJWK: () throws -> String,
     deleteKey: (String) throws -> Void
-  ) throws -> TrustedDeviceLocalKey {
+  ) throws -> BiometricCredentialLocalKey {
     do {
-      return try TrustedDeviceLocalKey(
+      return try BiometricCredentialLocalKey(
         localKeyId: localKeyId,
         publicKeyJWK: exportPublicKeyJWK(),
         policy: policy
@@ -281,7 +281,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
       } catch {
         ClerkLogger.logError(
           error,
-          message: "Failed to delete trusted-device key after public-key export failed."
+          message: "Failed to delete biometric-credential key after public-key export failed."
         )
       }
       throw exportError
@@ -322,19 +322,19 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 
   private static func publicKeyJWK(for privateKey: SecKey) throws -> String {
     guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
-      throw TrustedDeviceKeyManagerError.publicKeyExportFailed("Unable to copy public key.")
+      throw BiometricCredentialKeyManagerError.publicKeyExportFailed("Unable to copy public key.")
     }
 
     var error: Unmanaged<CFError>?
     guard let representation = SecKeyCopyExternalRepresentation(publicKey, &error) as Data? else {
-      throw TrustedDeviceKeyManagerError.publicKeyExportFailed(errorMessage(from: error))
+      throw BiometricCredentialKeyManagerError.publicKeyExportFailed(errorMessage(from: error))
     }
 
     return try publicKeyJWK(fromX963Representation: representation)
   }
 
   #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
-  package static func localAuthenticationPolicy(for policy: TrustedDevicePolicy) -> LAPolicy {
+  package static func localAuthenticationPolicy(for policy: BiometricCredentialPolicy) -> LAPolicy {
     switch policy {
     case .biometryCurrentSet, .biometryAny:
       .deviceOwnerAuthenticationWithBiometrics
@@ -343,7 +343,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     }
   }
 
-  package static func localAuthenticationPolicyForKeyCreation(for policy: TrustedDevicePolicy) -> LAPolicy {
+  package static func localAuthenticationPolicyForKeyCreation(for policy: BiometricCredentialPolicy) -> LAPolicy {
     switch policy {
     case .biometryCurrentSet, .biometryAny, .biometryOrDevicePasscode:
       .deviceOwnerAuthenticationWithBiometrics
@@ -416,7 +416,7 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
     return padded
   }
 
-  private static func invalidES256SignatureError() -> TrustedDeviceKeyManagerError {
+  private static func invalidES256SignatureError() -> BiometricCredentialKeyManagerError {
     .signingFailed("Security returned an invalid ES256 signature.")
   }
 
@@ -429,17 +429,17 @@ final class TrustedDeviceKeyManager: TrustedDeviceKeyManagerProtocol {
 }
 
 /// A locally generated private key and its backend-facing public key material.
-package struct TrustedDeviceLocalKey: Equatable {
+package struct BiometricCredentialLocalKey: Equatable {
   package let localKeyId: String
   package let publicKeyJWK: String
-  package let algorithm: TrustedDevice.Algorithm
-  package let policy: TrustedDevicePolicy
+  package let algorithm: BiometricCredential.Algorithm
+  package let policy: BiometricCredentialPolicy
 
   package init(
     localKeyId: String,
     publicKeyJWK: String,
-    algorithm: TrustedDevice.Algorithm = .es256,
-    policy: TrustedDevicePolicy = .biometryCurrentSet
+    algorithm: BiometricCredential.Algorithm = .es256,
+    policy: BiometricCredentialPolicy = .biometryCurrentSet
   ) {
     self.localKeyId = localKeyId
     self.publicKeyJWK = publicKeyJWK
@@ -448,16 +448,16 @@ package struct TrustedDeviceLocalKey: Equatable {
   }
 }
 
-/// A signed trusted-device challenge payload ready to send to Clerk.
-package struct TrustedDeviceKeySignature: Equatable {
+/// A signed biometric-credential challenge payload ready to send to Clerk.
+package struct BiometricCredentialKeySignature: Equatable {
   package let clientData: String
   package let signature: String
-  package let algorithm: TrustedDevice.Algorithm
+  package let algorithm: BiometricCredential.Algorithm
 
   package init(
     clientData: String,
     signature: String,
-    algorithm: TrustedDevice.Algorithm = .es256
+    algorithm: BiometricCredential.Algorithm = .es256
   ) {
     self.clientData = clientData
     self.signature = signature
@@ -465,8 +465,8 @@ package struct TrustedDeviceKeySignature: Equatable {
   }
 }
 
-/// Errors produced by local trusted-device key management.
-public enum TrustedDeviceKeyManagerError: Error, Equatable, LocalizedError, Sendable {
+/// Errors produced by local biometric-credential key management.
+public enum BiometricCredentialKeyManagerError: Error, Equatable, LocalizedError, Sendable {
   case unsupportedPlatform
   case biometricAuthenticationUnavailable
   case biometricAuthenticationCanceled
@@ -482,7 +482,7 @@ public enum TrustedDeviceKeyManagerError: Error, Equatable, LocalizedError, Send
   public var errorDescription: String? {
     switch self {
     case .unsupportedPlatform:
-      "Trusted-device biometric sign-in is only available on supported Apple devices."
+      "Biometric sign-in is only available on supported Apple devices."
     case .biometricAuthenticationUnavailable:
       "Biometric authentication is not available or not enrolled on this device."
     case .biometricAuthenticationCanceled:
@@ -490,31 +490,31 @@ public enum TrustedDeviceKeyManagerError: Error, Equatable, LocalizedError, Send
     case .biometricAuthenticationFailed:
       "Biometric authentication failed."
     case let .keyGenerationFailed(message):
-      "Unable to create the trusted-device private key. \(message)"
+      "Unable to create the biometric-credential private key. \(message)"
     case .keyNotFound:
-      "The trusted-device private key was not found."
+      "The biometric-credential private key was not found."
     case .invalidPublicKey:
-      "The trusted-device public key is invalid."
+      "The biometric-credential public key is invalid."
     case let .publicKeyExportFailed(message):
-      "Unable to export the trusted-device public key. \(message)"
+      "Unable to export the biometric-credential public key. \(message)"
     case .unsupportedAlgorithm:
-      "The trusted-device signing algorithm is not supported."
+      "The biometric-credential signing algorithm is not supported."
     case let .signingFailed(message):
-      "Unable to sign the trusted-device challenge. \(message)"
+      "Unable to sign the biometric-credential challenge. \(message)"
     case let .deletionFailed(status):
-      "Unable to delete the trusted-device private key. Security returned status \(status)."
+      "Unable to delete the biometric-credential private key. Security returned status \(status)."
     }
   }
 }
 
-package protocol TrustedDeviceKeyManagerProtocol: Sendable {
-  @MainActor func isSupported(policy: TrustedDevicePolicy) -> Bool
-  @MainActor func createKey(policy: TrustedDevicePolicy) throws -> TrustedDeviceLocalKey
+package protocol BiometricCredentialKeyManagerProtocol: Sendable {
+  @MainActor func isSupported(policy: BiometricCredentialPolicy) -> Bool
+  @MainActor func createKey(policy: BiometricCredentialPolicy) throws -> BiometricCredentialLocalKey
   @MainActor func sign(
     clientData: String,
     localKeyId: String,
     localizedReason: String?
-  ) throws -> TrustedDeviceKeySignature
+  ) throws -> BiometricCredentialKeySignature
   @MainActor func hasKey(localKeyId: String) throws -> Bool
   @MainActor func deleteKey(localKeyId: String) throws
 }

@@ -20,7 +20,7 @@ public struct Auth {
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
-  private let trustedDevices: TrustedDevices
+  private let biometricCredentials: BiometricCredentials
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
 
@@ -31,7 +31,7 @@ public struct Auth {
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
-    trustedDevices: TrustedDevices,
+    biometricCredentials: BiometricCredentials,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
@@ -41,7 +41,7 @@ public struct Auth {
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService
-    self.trustedDevices = trustedDevices
+    self.biometricCredentials = biometricCredentials
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
   }
@@ -286,24 +286,24 @@ public struct Auth {
   }
   #endif
 
-  /// Signs in with a locally enrolled trusted-device credential.
+  /// Signs in with a locally enrolled biometric credential.
   ///
-  /// The trusted-device domain owns local credential selection, key access, challenge signing,
+  /// The biometric-credential domain owns local credential selection, key access, challenge signing,
   /// and stale local credential cleanup.
   ///
   /// - Parameters:
-  ///   - id: The trusted-device credential ID to use. When omitted, the available local credential is used.
+  ///   - id: The biometric credential ID to use. When omitted, the available local credential is used.
   ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
   ///   - reason: The reason shown in the system biometric prompt.
-  /// - Returns: A `SignIn` object representing the trusted-device sign-in attempt.
-  /// - Throws: An error if trusted-device sign-in fails.
+  /// - Returns: A `SignIn` object representing the biometric sign-in attempt.
+  /// - Throws: An error if biometric sign-in fails.
   @discardableResult
-  public func signInWithTrustedDevice(
+  public func signInWithBiometrics(
     id: String? = nil,
     identifierHint: String? = nil,
     reason: String? = nil
   ) async throws -> SignIn {
-    try await trustedDevices.signIn(id: id, identifierHint: identifierHint, reason: reason)
+    try await biometricCredentials.signIn(id: id, identifierHint: identifierHint, reason: reason)
   }
 
   #if !os(tvOS) && !os(watchOS)

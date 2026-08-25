@@ -14,8 +14,20 @@ extension SignIn {
     let redirectUrl: String?
     let ticket: String?
     let token: String?
-    let trustedDeviceId: String?
+    let biometricCredentialId: String?
     let transfer: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+      case locale
+      case identifier
+      case password
+      case strategy
+      case redirectUrl
+      case ticket
+      case token
+      case biometricCredentialId = "trustedDeviceId"
+      case transfer
+    }
 
     init(
       identifier: String? = nil,
@@ -23,7 +35,7 @@ extension SignIn {
       strategy: FactorStrategy? = nil,
       ticket: String? = nil,
       token: String? = nil,
-      trustedDeviceId: String? = nil,
+      biometricCredentialId: String? = nil,
       redirectUrl: String? = nil,
       transfer: Bool? = nil
     ) {
@@ -34,7 +46,7 @@ extension SignIn {
       self.redirectUrl = redirectUrl
       self.ticket = ticket
       self.token = token
-      self.trustedDeviceId = trustedDeviceId
+      self.biometricCredentialId = biometricCredentialId
       self.transfer = transfer
     }
   }
@@ -73,10 +85,22 @@ extension SignIn {
     let password: String?
     let publicKeyCredential: String?
     let token: String?
-    let trustedDeviceId: String?
+    let biometricCredentialId: String?
     let clientData: String?
     let signature: String?
-    let algorithm: TrustedDevice.Algorithm?
+    let algorithm: BiometricCredential.Algorithm?
+
+    private enum CodingKeys: String, CodingKey {
+      case strategy
+      case code
+      case password
+      case publicKeyCredential
+      case token
+      case biometricCredentialId = "trustedDeviceId"
+      case clientData
+      case signature
+      case algorithm
+    }
 
     init(
       strategy: FactorStrategy,
@@ -84,17 +108,17 @@ extension SignIn {
       password: String? = nil,
       publicKeyCredential: String? = nil,
       token: String? = nil,
-      trustedDeviceId: String? = nil,
+      biometricCredentialId: String? = nil,
       clientData: String? = nil,
       signature: String? = nil,
-      algorithm: TrustedDevice.Algorithm? = nil
+      algorithm: BiometricCredential.Algorithm? = nil
     ) {
       self.strategy = strategy
       self.code = code
       self.password = password
       self.publicKeyCredential = publicKeyCredential
       self.token = token
-      self.trustedDeviceId = trustedDeviceId
+      self.biometricCredentialId = biometricCredentialId
       self.clientData = clientData
       self.signature = signature
       self.algorithm = algorithm

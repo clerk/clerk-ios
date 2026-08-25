@@ -7,7 +7,7 @@ struct AuthConfigDecodingTests {
   private let encoder = JSONEncoder.clerkEncoder
 
   @Test
-  func nativeSettingsDecodeTrustedDeviceSignInEnabled() throws {
+  func nativeSettingsDecodeBiometricSignInEnabled() throws {
     let data = Data(
       """
       {
@@ -26,9 +26,9 @@ struct AuthConfigDecodingTests {
 
     #expect(authConfig.singleSessionMode == false)
     #expect(authConfig.nativeSettings.apiEnabled == true)
-    #expect(authConfig.nativeSettings.trustedDeviceSignInEnabled == true)
-    #expect(authConfig.nativeSettings.trustedDevicePromptAfterSignInEnabled == true)
-    #expect(authConfig.nativeSettings.trustedDevicePromptAfterSignUpEnabled == true)
+    #expect(authConfig.nativeSettings.biometricSignInEnabled == true)
+    #expect(authConfig.nativeSettings.biometricCredentialPromptAfterSignInEnabled == true)
+    #expect(authConfig.nativeSettings.biometricCredentialPromptAfterSignUpEnabled == true)
   }
 
   @Test
@@ -53,9 +53,9 @@ struct AuthConfigDecodingTests {
       singleSessionMode: false,
       nativeSettings: .init(
         apiEnabled: true,
-        trustedDeviceSignInEnabled: true,
-        trustedDevicePromptAfterSignInEnabled: true,
-        trustedDevicePromptAfterSignUpEnabled: true
+        biometricSignInEnabled: true,
+        biometricCredentialPromptAfterSignInEnabled: true,
+        biometricCredentialPromptAfterSignUpEnabled: true
       )
     )
 

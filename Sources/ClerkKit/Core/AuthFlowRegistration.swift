@@ -75,7 +75,7 @@ package final class AuthFlowRegistration: Sendable {
 
   package enum PostAuthPresentation: Hashable {
     case sessionTasks
-    case trustedDeviceEnrollment
+    case biometricCredentialEnrollment
   }
 
   package let id: UUID

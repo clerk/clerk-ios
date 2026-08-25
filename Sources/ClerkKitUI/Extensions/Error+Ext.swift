@@ -18,8 +18,8 @@ extension Error {
       return nsError.code == ASAuthorizationError.Code.canceled.rawValue
     }
 
-    if let trustedDeviceError = self as? TrustedDeviceKeyManagerError,
-       trustedDeviceError == .biometricAuthenticationCanceled
+    if let biometricCredentialError = self as? BiometricCredentialKeyManagerError,
+       biometricCredentialError == .biometricAuthenticationCanceled
     {
       return true
     }

@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceEnrollmentView.swift
+//  BiometricCredentialEnrollmentView.swift
 //  Clerk
 //
 
@@ -8,11 +8,11 @@
 import ClerkKit
 import SwiftUI
 
-struct TrustedDeviceEnrollmentView: View {
+struct BiometricCredentialEnrollmentView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  private let biometryDisplayName: TrustedDeviceBiometryDisplayName
+  private let biometryDisplayName: BiometryDisplayName
   private let token: AuthFlowPresentationToken
 
   @State private var error: Error?
@@ -22,14 +22,14 @@ struct TrustedDeviceEnrollmentView: View {
   }
 
   private var subtitle: LocalizedStringKey {
-    TrustedDeviceEnrollmentStrings.subtitle(
-      applicationName: TrustedDeviceEnrollmentStrings.applicationName(for: clerk),
+    BiometricCredentialEnrollmentStrings.subtitle(
+      applicationName: BiometricCredentialEnrollmentStrings.applicationName(for: clerk),
       biometryDisplayName: biometryDisplayName
     )
   }
 
   init(
-    biometryDisplayName: TrustedDeviceBiometryDisplayName,
+    biometryDisplayName: BiometryDisplayName,
     token: AuthFlowPresentationToken
   ) {
     self.biometryDisplayName = biometryDisplayName
@@ -57,7 +57,7 @@ struct TrustedDeviceEnrollmentView: View {
   }
 }
 
-extension TrustedDeviceEnrollmentView {
+extension BiometricCredentialEnrollmentView {
   private var headerSection: some View {
     VStack(spacing: 8) {
       HeaderView(style: .title, text: title)
@@ -87,7 +87,7 @@ extension TrustedDeviceEnrollmentView {
 
   private var allowButton: some View {
     AsyncButton {
-      await enrollTrustedDevice()
+      await enrollBiometricCredential()
     } label: { isRunning in
       Text("Allow", bundle: .module)
         .frame(maxWidth: .infinity)
@@ -107,13 +107,13 @@ extension TrustedDeviceEnrollmentView {
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
   }
 
-  private func enrollTrustedDevice() async {
+  private func enrollBiometricCredential() async {
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
     error = nil
 
     do {
-      try await clerk.trustedDevices.enroll(
-        identifierHint: clerk.user?.trustedDeviceIdentifierHint,
+      try await clerk.biometricCredentials.enroll(
+        identifierHint: clerk.user?.biometricCredentialIdentifierHint,
         reason: enrollmentReason,
         policy: .biometryCurrentSet
       )
@@ -129,8 +129,8 @@ extension TrustedDeviceEnrollmentView {
   }
 
   private var enrollmentReason: String {
-    TrustedDeviceEnrollmentStrings.enrollmentReason(
-      applicationName: TrustedDeviceEnrollmentStrings.applicationName(for: clerk),
+    BiometricCredentialEnrollmentStrings.enrollmentReason(
+      applicationName: BiometricCredentialEnrollmentStrings.applicationName(for: clerk),
       biometryDisplayName: biometryDisplayName
     )
   }

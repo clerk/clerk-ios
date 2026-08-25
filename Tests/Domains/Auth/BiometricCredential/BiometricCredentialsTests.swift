@@ -5,60 +5,60 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct TrustedDevicesTests {
+struct BiometricCredentialsTests {
   init() {
     configureClerkForTesting()
   }
 
   @Test
-  func listUsesTrustedDeviceService() async throws {
+  func listUsesBiometricCredentialService() async throws {
     let called = LockIsolated(false)
-    let service = MockTrustedDeviceService(list: {
+    let service = MockBiometricCredentialService(list: {
       called.setValue(true)
       return [.mock]
     })
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      trustedDeviceService: service
+      biometricCredentialService: service
     )
 
-    let trustedDevices = try await Clerk.shared.trustedDevices.list()
+    let biometricCredentials = try await Clerk.shared.biometricCredentials.list()
 
     #expect(called.value == true)
-    #expect(trustedDevices == [.mock])
+    #expect(biometricCredentials == [.mock])
   }
 
   @Test
-  func revokeUsesTrustedDeviceService() async throws {
+  func revokeUsesBiometricCredentialService() async throws {
     Clerk.shared.client = .mock
-    let capturedTrustedDeviceId = LockIsolated<String?>(nil)
+    let capturedBiometricCredentialId = LockIsolated<String?>(nil)
     let capturedSessionId = LockIsolated<String?>(nil)
-    let service = MockTrustedDeviceService(revoke: { trustedDeviceId, sessionId in
-      capturedTrustedDeviceId.setValue(trustedDeviceId)
+    let service = MockBiometricCredentialService(revoke: { biometricCredentialId, sessionId in
+      capturedBiometricCredentialId.setValue(biometricCredentialId)
       capturedSessionId.setValue(sessionId)
       return .mock
     })
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      trustedDeviceService: service
+      biometricCredentialService: service
     )
 
-    let trustedDevice = try await Clerk.shared.trustedDevices.revoke(id: "tdc_123")
+    let biometricCredential = try await Clerk.shared.biometricCredentials.revoke(id: "tdc_123")
 
-    #expect(capturedTrustedDeviceId.value == "tdc_123")
+    #expect(capturedBiometricCredentialId.value == "tdc_123")
     #expect(capturedSessionId.value == Session.mock.id)
-    #expect(trustedDevice == .mock)
+    #expect(biometricCredential == .mock)
   }
 
   @Test
   func availabilityReturnsAvailableLocalCredentialWithoutActiveSession() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = try makeTrustedDevicesWithLocalCredential()
+    let setup = try makeBiometricCredentialsWithLocalCredential()
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == true)
     #expect(availability.unavailableReason == nil)
@@ -66,9 +66,9 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityReturnsAvailableWithMultipleLocalCredentials() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = makeTrustedDevices()
+    let setup = makeBiometricCredentials()
     try setup.credentialStore.save(localCredential(
       id: "tdc_old",
       localKeyId: "tdlk_old",
@@ -80,36 +80,36 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == true)
   }
 
   @Test
   func availabilityReconcilesServerCredentialWhenSessionIsActive() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(list: { [.mock] })
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(list: { [.mock] })
     )
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == true)
   }
 
   @Test
   func localAvailabilityDoesNotReconcileServerCredentialWhenSessionIsActive() throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(list: {
-        Issue.record("Local availability should not fetch trusted devices.")
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(list: {
+        Issue.record("Local availability should not fetch biometric credentials.")
         return []
       })
     )
 
-    let availability = try setup.trustedDevices.localAvailability()
+    let availability = try setup.biometricCredentials.localAvailability()
 
     #expect(availability.isAvailable == true)
     #expect(availability.unavailableReason == nil)
@@ -118,38 +118,38 @@ struct TrustedDevicesTests {
 
   @Test
   func validateLocalCredentialIfPossibleReturnsValidForServerCredential() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedTrustedDeviceId = LockIsolated<String?>(nil)
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { trustedDeviceId in
-        capturedTrustedDeviceId.setValue(trustedDeviceId)
+    let capturedBiometricCredentialId = LockIsolated<String?>(nil)
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { biometricCredentialId in
+        capturedBiometricCredentialId.setValue(biometricCredentialId)
         return .init(valid: true)
       })
     )
 
-    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+    let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
     #expect(result == .valid)
-    #expect(capturedTrustedDeviceId.value == "tdc_123")
+    #expect(capturedBiometricCredentialId.value == "tdc_123")
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
   }
 
   @Test
   func validateLocalCredentialIfPossibleDeletesMissingServerCredential() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { _ in
-        throw missingTrustedDeviceCredentialError()
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
+        throw missingBiometricCredentialError()
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
-    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+    let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
     #expect(result == .invalid(.serverCredentialMissing))
     #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -158,19 +158,19 @@ struct TrustedDevicesTests {
 
   @Test
   func validateLocalCredentialIfPossibleSkipsMissingNewestCredential() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let validatedTrustedDeviceIds = LockIsolated<[String]>([])
+    let validatedBiometricCredentialIds = LockIsolated<[String]>([])
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { trustedDeviceId in
-        validatedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
-        if trustedDeviceId == "tdc_new" {
-          throw missingTrustedDeviceCredentialError()
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { biometricCredentialId in
+        validatedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+        if biometricCredentialId == "tdc_new" {
+          throw missingBiometricCredentialError()
         }
         return .init(valid: true)
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -185,10 +185,10 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+    let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
     #expect(result == .valid)
-    #expect(validatedTrustedDeviceIds.value == ["tdc_new", "tdc_old"])
+    #expect(validatedBiometricCredentialIds.value == ["tdc_new", "tdc_old"])
     #expect(deletedLocalKeyIds.value == ["tdlk_new"])
     #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
     #expect(try setup.credentialStore.credential(id: "tdc_old") != nil)
@@ -196,19 +196,19 @@ struct TrustedDevicesTests {
 
   @Test
   func validateLocalCredentialIfPossibleKeepsCredentialForTransientError() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { _ in
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
         throw URLError(.timedOut)
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
-    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+    let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
     #expect(result == .inconclusive)
     #expect(deletedLocalKeyIds.value.isEmpty)
@@ -217,16 +217,16 @@ struct TrustedDevicesTests {
 
   @Test
   func validateLocalCredentialIfPossibleIsInconclusiveWithoutCachedClient() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = nil
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(validateSignInCredential: { _ in
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
         Issue.record("Validation should not run without a cached client.")
         return .init(valid: true)
       })
     )
 
-    let result = await setup.trustedDevices.validateLocalCredentialIfPossible()
+    let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
     #expect(result == .inconclusive)
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
@@ -234,14 +234,14 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilitySkipsStaleNewerCredentialWhenSignedIn() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
-        [trustedDevice(id: "tdc_old", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
+        [biometricCredential(id: "tdc_old", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -256,7 +256,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == true)
     #expect(deletedLocalKeyIds.value == ["tdlk_new"])
@@ -265,21 +265,21 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityDoesNotReconcileServerCredentialWhenSessionIsExpired() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = Client(
       id: "client_expired",
       sessions: [.mockExpired],
       lastActiveSessionId: Session.mockExpired.id,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(list: {
-        Issue.record("Expired sessions should not trigger authenticated trusted-device list.")
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(list: {
+        Issue.record("Expired sessions should not trigger authenticated biometric-credential list.")
         return []
       })
     )
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == true)
   }
@@ -288,9 +288,9 @@ struct TrustedDevicesTests {
   func availabilityReturnsFeatureDisabledWhenNativeSettingIsOff() async throws {
     Clerk.shared.environment = .mock
     Clerk.shared.client = .mockSignedOut
-    let setup = try makeTrustedDevicesWithLocalCredential()
+    let setup = try makeBiometricCredentialsWithLocalCredential()
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .nativeAPIDisabled)
@@ -298,13 +298,13 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityDeletesMetadataWhenLocalKeyIsMissing() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      keyManager: MockTrustedDeviceKeyManager(hasKey: { _ in false })
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      keyManager: MockBiometricCredentialKeyManager(hasKey: { _ in false })
     )
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .localKeyMissing)
@@ -313,17 +313,17 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityDeletesMetadataWhenServerCredentialIsMissing() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(list: { [] }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(list: { [] }),
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .serverCredentialMissing)
@@ -333,10 +333,10 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityIgnoresCredentialFromDifferentAppIdentifierBeforeCheckingKeys() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let checkedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(keyManager: MockTrustedDeviceKeyManager(hasKey: { localKeyId in
+    let setup = makeBiometricCredentials(keyManager: MockBiometricCredentialKeyManager(hasKey: { localKeyId in
       checkedLocalKeyIds.withValue { $0.append(localKeyId) }
       return false
     }))
@@ -347,7 +347,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .noLocalCredential)
@@ -357,15 +357,15 @@ struct TrustedDevicesTests {
 
   @Test
   func signInUsesCurrentAppCredentialWhenSharedKeychainContainsNewerCredential() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeTrustedDevices(signInService: MockSignInService(
+    let setup = makeBiometricCredentials(signInService: MockSignInService(
       create: { params in
         capturedCreateParams.setValue(params)
-        return .mockTrustedDeviceChallenge
+        return .mockBiometricCredentialChallenge
       },
-      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
     ))
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_app",
@@ -379,24 +379,24 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    _ = try await setup.trustedDevices.signIn()
+    _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_current_app")
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_current_app")
     #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
   }
 
   @Test
   func availabilityIgnoresCredentialOwnedByDifferentUserWhenSignedIn() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
         listWasCalled.setValue(true)
         return []
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -408,7 +408,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let availability = try await setup.trustedDevices.availability(identifierHint: "sam@example.com")
+    let availability = try await setup.biometricCredentials.availability(identifierHint: "sam@example.com")
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .noLocalCredential)
@@ -419,16 +419,16 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilitySkipsNewestCredentialOwnedByDifferentUserWhenIdentifierHintIsNil() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
         listWasCalled.setValue(true)
-        return [trustedDevice(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+        return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -445,7 +445,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable)
     #expect(listWasCalled.value)
@@ -456,11 +456,11 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityUsesUserIDWhenIdentifierHintChanged() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
-        [trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
+        [biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       })
     )
     try setup.credentialStore.save(localCredential(
@@ -471,7 +471,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let availability = try await setup.trustedDevices.currentUserAvailability()
+    let availability = try await setup.biometricCredentials.currentUserAvailability()
 
     #expect(availability.isAvailable)
     #expect(try setup.credentialStore.credential(id: "tdc_current_user") != nil)
@@ -479,9 +479,9 @@ struct TrustedDevicesTests {
 
   @Test
   func localAvailabilityUsesUserIDWhenIdentifierHintChanged() throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = makeTrustedDevices()
+    let setup = makeBiometricCredentials()
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_user",
       localKeyId: "tdlk_current_user",
@@ -490,18 +490,18 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let availability = try setup.trustedDevices.currentUserLocalAvailability()
+    let availability = try setup.biometricCredentials.currentUserLocalAvailability()
 
     #expect(availability.isAvailable)
   }
 
   @Test
   func enrollCreatesKeyPreparesChallengeAttemptsAndPersistsMetadata() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let preparedParams = LockIsolated<TrustedDevice.PrepareEnrollmentParams?>(nil)
-    let attemptedParams = LockIsolated<TrustedDevice.AttemptEnrollmentParams?>(nil)
-    let trustedDeviceService = MockTrustedDeviceService(
+    let preparedParams = LockIsolated<BiometricCredential.PrepareEnrollmentParams?>(nil)
+    let attemptedParams = LockIsolated<BiometricCredential.AttemptEnrollmentParams?>(nil)
+    let biometricCredentialService = MockBiometricCredentialService(
       prepareEnrollment: { _, params in
         preparedParams.setValue(params)
         return .mock
@@ -511,41 +511,41 @@ struct TrustedDevicesTests {
         return .mock
       }
     )
-    let keyManager = MockTrustedDeviceKeyManager(
+    let keyManager = MockBiometricCredentialKeyManager(
       createKeyWithPolicy: { policy in
         #expect(policy == .biometryOrDevicePasscode)
         return .init(
-          localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
-          publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+          localKeyId: BiometricCredentialLocalKey.mock.localKeyId,
+          publicKeyJWK: BiometricCredentialLocalKey.mock.publicKeyJWK,
           policy: policy
         )
       },
       sign: { clientData, localKeyId, localizedReason in
-        #expect(clientData == TrustedDeviceChallenge.mock.clientData)
-        #expect(localKeyId == TrustedDeviceLocalKey.mock.localKeyId)
+        #expect(clientData == BiometricCredentialChallenge.mock.clientData)
+        #expect(localKeyId == BiometricCredentialLocalKey.mock.localKeyId)
         #expect(localizedReason == "Set up Face ID for future sign-ins.")
         return .init(clientData: clientData, signature: "enrollment_signature")
       }
     )
-    let setup = makeTrustedDevices(
-      trustedDeviceService: trustedDeviceService,
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: biometricCredentialService,
       keyManager: keyManager
     )
 
-    let trustedDevice = try await setup.trustedDevices.enroll(
-      deviceName: "Sean's iPhone",
+    let biometricCredential = try await setup.biometricCredentials.enroll(
+      name: "Sean's iPhone",
       identifierHint: "  Sean@Example.COM  ",
       reason: "Set up Face ID for future sign-ins.",
       policy: .biometryOrDevicePasscode
     )
     let localCredential = try #require(try setup.credentialStore.credential(id: "tdc_123"))
 
-    #expect(trustedDevice == .mock)
+    #expect(biometricCredential == .mock)
     #expect(preparedParams.value?.appIdentifier == "com.clerk.example")
     #expect(preparedParams.value?.name == "Sean's iPhone")
-    #expect(preparedParams.value?.publicKeyJWK == TrustedDeviceLocalKey.mock.publicKeyJWK)
+    #expect(preparedParams.value?.publicKeyJWK == BiometricCredentialLocalKey.mock.publicKeyJWK)
     #expect(attemptedParams.value?.signature == "enrollment_signature")
-    #expect(localCredential.localKeyId == TrustedDeviceLocalKey.mock.localKeyId)
+    #expect(localCredential.localKeyId == BiometricCredentialLocalKey.mock.localKeyId)
     #expect(localCredential.userID == User.mock.id)
     #expect(localCredential.identifierHint == "sean@example.com")
     #expect(localCredential.policy == .biometryOrDevicePasscode)
@@ -553,11 +553,11 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollPinsInitiatingSessionAcrossCurrentSessionChange() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let requestedSessionIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(
         prepareEnrollment: { sessionId, _ in
           requestedSessionIds.withValue { $0.append(sessionId) }
           await MainActor.run {
@@ -574,8 +574,8 @@ struct TrustedDevicesTests {
       )
     )
 
-    _ = try await setup.trustedDevices.enroll()
-    let localCredential = try #require(try setup.credentialStore.credential(id: TrustedDevice.mock.id))
+    _ = try await setup.biometricCredentials.enroll()
+    let localCredential = try #require(try setup.credentialStore.credential(id: BiometricCredential.mock.id))
 
     #expect(requestedSessionIds.value == [Session.mock.id, Session.mock.id])
     #expect(Clerk.shared.session?.id == Session.mock2.id)
@@ -584,12 +584,12 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollUsesInitiatingSessionForRollbackAfterLocalSaveFailure() async {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
     let revokedSessionIds = LockIsolated<[String?]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(
         attemptEnrollment: { _, _ in
           await MainActor.run {
             var client = Client.mock
@@ -598,8 +598,8 @@ struct TrustedDevicesTests {
           }
           return .mock
         },
-        revoke: { trustedDeviceId, sessionId in
-          revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+        revoke: { biometricCredentialId, sessionId in
+          revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
           revokedSessionIds.withValue { $0.append(sessionId) }
           return .mock
         }
@@ -608,26 +608,26 @@ struct TrustedDevicesTests {
     )
 
     await #expect(throws: SetFailingKeychain.Failure.self) {
-      try await setup.trustedDevices.enroll()
+      try await setup.biometricCredentials.enroll()
     }
 
-    #expect(revokedTrustedDeviceIds.value == [TrustedDevice.mock.id])
+    #expect(revokedBiometricCredentialIds.value == [BiometricCredential.mock.id])
     #expect(revokedSessionIds.value == [Session.mock.id])
     #expect(Clerk.shared.session?.id == Session.mock2.id)
   }
 
   @Test
   func enrollReplacesOtherCurrentAppCredentialsAcrossUsersAfterSuccessfulEnrollment() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId, _ in
-        revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
-        return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { biometricCredentialId, _ in
+        revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+        return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -650,9 +650,9 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 30)
     ))
 
-    _ = try await setup.trustedDevices.enroll()
+    _ = try await setup.biometricCredentials.enroll()
 
-    #expect(revokedTrustedDeviceIds.value.isEmpty)
+    #expect(revokedBiometricCredentialIds.value.isEmpty)
     #expect(deletedLocalKeyIds.value == ["tdlk_current_user", "tdlk_other_user"])
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
     #expect(try setup.credentialStore.credential(id: "tdc_current_user") == nil)
@@ -662,15 +662,15 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollKeepsExistingCredentialsWhenEnrollmentFails() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(
         prepareEnrollment: { _, _ in .mock },
         attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
       ),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -681,7 +681,7 @@ struct TrustedDevicesTests {
     ))
 
     do {
-      _ = try await setup.trustedDevices.enroll()
+      _ = try await setup.biometricCredentials.enroll()
       Issue.record("Expected enrollment to fail.")
     } catch {
       #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -691,14 +691,14 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollDoesNotCallBackendRevokeForReplacedLocalCredentials() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in
         throw ClerkClientError(message: "Revoke failed")
       }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -708,7 +708,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    _ = try await setup.trustedDevices.enroll()
+    _ = try await setup.biometricCredentials.enroll()
 
     #expect(deletedLocalKeyIds.value == ["tdlk_existing"])
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
@@ -717,7 +717,7 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollAllowsPendingSession() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     var pendingSession = Session.mock
     pendingSession.id = "sess_pending_tasks"
     pendingSession.status = .pending
@@ -729,8 +729,8 @@ struct TrustedDevicesTests {
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
     let prepareWasCalled = LockIsolated(false)
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(
         prepareEnrollment: { _, _ in
           prepareWasCalled.setValue(true)
           return .mock
@@ -738,31 +738,31 @@ struct TrustedDevicesTests {
       )
     )
 
-    _ = try await setup.trustedDevices.enroll()
+    _ = try await setup.biometricCredentials.enroll()
 
     #expect(prepareWasCalled.value)
   }
 
   @Test
   func enrollDefaultsToBiometryCurrentSetPolicy() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let createdKeyPolicies = LockIsolated<[TrustedDevicePolicy]>([])
-    let setup = makeTrustedDevices(
-      keyManager: MockTrustedDeviceKeyManager(
+    let createdKeyPolicies = LockIsolated<[BiometricCredentialPolicy]>([])
+    let setup = makeBiometricCredentials(
+      keyManager: MockBiometricCredentialKeyManager(
         createKeyWithPolicy: { policy in
           createdKeyPolicies.withValue { $0.append(policy) }
           return .init(
-            localKeyId: TrustedDeviceLocalKey.mock.localKeyId,
-            publicKeyJWK: TrustedDeviceLocalKey.mock.publicKeyJWK,
+            localKeyId: BiometricCredentialLocalKey.mock.localKeyId,
+            publicKeyJWK: BiometricCredentialLocalKey.mock.publicKeyJWK,
             policy: policy
           )
         }
       )
     )
 
-    _ = try await setup.trustedDevices.enroll()
-    let localCredential = try #require(try setup.credentialStore.credential(id: TrustedDevice.mock.id))
+    _ = try await setup.biometricCredentials.enroll()
+    let localCredential = try #require(try setup.credentialStore.credential(id: BiometricCredential.mock.id))
 
     #expect(createdKeyPolicies.value == [.biometryCurrentSet])
     #expect(localCredential.policy == .biometryCurrentSet)
@@ -770,23 +770,23 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollDeletesGeneratedKeyWhenAttemptFails() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let trustedDeviceService = MockTrustedDeviceService(
+    let biometricCredentialService = MockBiometricCredentialService(
       prepareEnrollment: { _, _ in .mock },
       attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
     )
-    let keyManager = MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+    let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
     })
-    let setup = makeTrustedDevices(
-      trustedDeviceService: trustedDeviceService,
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: biometricCredentialService,
       keyManager: keyManager
     )
 
     do {
-      _ = try await setup.trustedDevices.enroll()
+      _ = try await setup.biometricCredentials.enroll()
       Issue.record("Expected enrollment to fail.")
     } catch {
       #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -796,12 +796,12 @@ struct TrustedDevicesTests {
 
   @Test
   func enrollRequiresActiveOrPendingSession() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = makeTrustedDevices()
+    let setup = makeBiometricCredentials()
 
     do {
-      _ = try await setup.trustedDevices.enroll()
+      _ = try await setup.biometricCredentials.enroll()
       Issue.record("Expected enrollment to require an active or pending session.")
     } catch let error as ClerkClientError {
       #expect(error.message?.contains("active or pending Clerk session") == true)
@@ -813,16 +813,16 @@ struct TrustedDevicesTests {
   @Test
   func revokeDeletesLocalCredentialAfterServerRevoke() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in .mock }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in .mock }),
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
-    let trustedDevice = try await setup.trustedDevices.revoke(id: "tdc_123")
+    let biometricCredential = try await setup.biometricCredentials.revoke(id: "tdc_123")
 
-    #expect(trustedDevice == .mock)
+    #expect(biometricCredential == .mock)
     #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
     #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
   }
@@ -830,37 +830,37 @@ struct TrustedDevicesTests {
   @Test
   func revokeReturnsServerCredentialWhenLocalCleanupFails() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in .mock }),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in .mock }),
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
         throw TestKeyDeletionError.failed
       })
     )
 
-    let trustedDevice = try await setup.trustedDevices.revoke(id: "tdc_123")
+    let biometricCredential = try await setup.biometricCredentials.revoke(id: "tdc_123")
 
-    #expect(trustedDevice == .mock)
+    #expect(biometricCredential == .mock)
     #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
   }
 
   @Test
   func revokeCurrentDeviceCredentialUsesUserIDWhenIdentifierHintChanged() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(
         list: {
           [
-            trustedDevice(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10)),
-            trustedDevice(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
+            biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10)),
+            biometricCredential(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
           ]
         },
-        revoke: { trustedDeviceId, _ in
-          revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
-          return trustedDevice(id: trustedDeviceId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+        revoke: { biometricCredentialId, _ in
+          revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+          return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
         }
       )
     )
@@ -879,35 +879,35 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    let revokedTrustedDevice = try await setup.trustedDevices.revokeCurrentDeviceCredential()
+    let revokedBiometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
 
-    #expect(revokedTrustedDevice?.id == "tdc_current_user")
-    #expect(revokedTrustedDeviceIds.value == ["tdc_current_user"])
+    #expect(revokedBiometricCredential?.id == "tdc_current_user")
+    #expect(revokedBiometricCredentialIds.value == ["tdc_current_user"])
     #expect(try setup.credentialStore.credential(id: "tdc_current_user") == nil)
     #expect(try setup.credentialStore.credential(id: "tdc_other_user") != nil)
   }
 
   @Test
   func revokeCurrentDeviceCredentialReturnsNilWhenNoLocalCredentialIsAvailable() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let revokeWasCalled = LockIsolated(false)
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { _, _ in
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in
         revokeWasCalled.setValue(true)
         return .mock
       })
     )
 
-    let trustedDevice = try await setup.trustedDevices.revokeCurrentDeviceCredential()
+    let biometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
 
-    #expect(trustedDevice == nil)
+    #expect(biometricCredential == nil)
     #expect(revokeWasCalled.value == false)
   }
 
   @Test
   func revokeCurrentDeviceCredentialAllowsPendingSession() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     var pendingSession = Session.mock
     pendingSession.id = "sess_pending_tasks"
     pendingSession.status = .pending
@@ -918,27 +918,27 @@ struct TrustedDevicesTests {
       lastActiveSessionId: pendingSession.id,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
-    let revokedTrustedDeviceIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
-      trustedDeviceService: MockTrustedDeviceService(revoke: { trustedDeviceId, _ in
-        revokedTrustedDeviceIds.withValue { $0.append(trustedDeviceId) }
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      biometricCredentialService: MockBiometricCredentialService(revoke: { biometricCredentialId, _ in
+        revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
         return .mock
       })
     )
 
-    _ = try await setup.trustedDevices.revokeCurrentDeviceCredential()
+    _ = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
 
-    #expect(revokedTrustedDeviceIds.value == ["tdc_123"])
+    #expect(revokedBiometricCredentialIds.value == ["tdc_123"])
   }
 
   @Test
   func revokeCurrentDeviceCredentialRequiresActiveOrPendingSession() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = try makeTrustedDevicesWithLocalCredential()
+    let setup = try makeBiometricCredentialsWithLocalCredential()
 
     do {
-      _ = try await setup.trustedDevices.revokeCurrentDeviceCredential()
+      _ = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
       Issue.record("Expected revoking a current-device credential to require an active or pending session.")
     } catch let error as ClerkClientError {
       #expect(error.message?.contains("active or pending Clerk session") == true)
@@ -949,10 +949,10 @@ struct TrustedDevicesTests {
 
   @Test
   func forgetLocalCredentialsDeletesDeletedUserIDAfterCurrentUserIsCleared() throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+    let setup = makeBiometricCredentials(keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
     }))
     try setup.credentialStore.save(localCredential(
@@ -971,7 +971,7 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let deletedCount = try setup.trustedDevices.forgetLocalCredentials(deletedUserID: User.mock.id)
+    let deletedCount = try setup.biometricCredentials.forgetLocalCredentials(deletedUserID: User.mock.id)
 
     #expect(deletedCount == 1)
     #expect(deletedLocalKeyIds.value == ["tdlk_deleted"])
@@ -981,16 +981,16 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityUsesStoredCredentialPolicy() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let checkedPolicies = LockIsolated<[TrustedDevicePolicy]>([])
-    let keyManager = MockTrustedDeviceKeyManager(
+    let checkedPolicies = LockIsolated<[BiometricCredentialPolicy]>([])
+    let keyManager = MockBiometricCredentialKeyManager(
       isSupportedForPolicy: { policy in
         checkedPolicies.withValue { $0.append(policy) }
         return policy == .biometryOrDevicePasscode
       }
     )
-    let localCredential = TrustedDeviceLocalCredential(
+    let localCredential = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       userID: User.mock.id,
@@ -999,12 +999,12 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890),
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
-    let setup = try makeTrustedDevicesWithLocalCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(
       keyManager: keyManager,
       localCredential: localCredential
     )
 
-    let availability = try await setup.trustedDevices.availability()
+    let availability = try await setup.biometricCredentials.availability()
 
     #expect(availability.isAvailable)
     #expect(checkedPolicies.value == [.biometryOrDevicePasscode])
@@ -1012,16 +1012,16 @@ struct TrustedDevicesTests {
 
   @Test
   func availabilityReturnsNoLocalCredentialWhenIdentifierHintDoesNotMatch() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let setup = try makeTrustedDevicesWithLocalCredential(localCredential: localCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(localCredential: localCredential(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       identifierHint: "sean@example.com",
       createdAt: Date(timeIntervalSinceReferenceDate: 10)
     ))
 
-    let availability = try await setup.trustedDevices.availability(identifierHint: "sam@example.com")
+    let availability = try await setup.biometricCredentials.availability(identifierHint: "sam@example.com")
 
     #expect(availability.isAvailable == false)
     #expect(availability.unavailableReason == .noLocalCredential)
@@ -1029,55 +1029,55 @@ struct TrustedDevicesTests {
 
   @Test
   func signInUsesCreateChallengeAndAttemptsFirstFactor() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
     let capturedAttempt = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
     let signInService = MockSignInService(
       create: { params in
         capturedCreateParams.setValue(params)
-        return .mockTrustedDeviceChallenge
+        return .mockBiometricCredentialChallenge
       },
       attemptFirstFactor: { signInId, params in
         capturedAttempt.setValue((signInId, params))
-        return .mockTrustedDeviceComplete
+        return .mockBiometricCredentialComplete
       }
     )
-    let keyManager = MockTrustedDeviceKeyManager(sign: { clientData, localKeyId, localizedReason in
-      #expect(clientData == trustedDeviceChallengeClientData)
+    let keyManager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
+      #expect(clientData == biometricCredentialChallengeClientData)
       #expect(localKeyId == "tdlk_mock")
       #expect(localizedReason == "Sign in with Face ID.")
       return .init(clientData: clientData, signature: "sign_in_signature")
     })
-    let setup = try makeTrustedDevicesWithLocalCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(
       signInService: signInService,
       keyManager: keyManager
     )
 
-    let signIn = try await setup.trustedDevices.signIn(reason: "Sign in with Face ID.")
+    let signIn = try await setup.biometricCredentials.signIn(reason: "Sign in with Face ID.")
 
-    #expect(signIn == .mockTrustedDeviceComplete)
-    #expect(capturedCreateParams.value?.strategy == .trustedDevice)
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_123")
+    #expect(signIn == .mockBiometricCredentialComplete)
+    #expect(capturedCreateParams.value?.strategy == .biometricCredential)
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
     #expect(capturedAttempt.value?.0 == "si_trusted_device")
-    #expect(capturedAttempt.value?.1.strategy == .trustedDevice)
-    #expect(capturedAttempt.value?.1.trustedDeviceId == "tdc_123")
-    #expect(capturedAttempt.value?.1.clientData == trustedDeviceChallengeClientData)
+    #expect(capturedAttempt.value?.1.strategy == .biometricCredential)
+    #expect(capturedAttempt.value?.1.biometricCredentialId == "tdc_123")
+    #expect(capturedAttempt.value?.1.clientData == biometricCredentialChallengeClientData)
     #expect(capturedAttempt.value?.1.signature == "sign_in_signature")
     #expect(capturedAttempt.value?.1.algorithm == .es256)
   }
 
   @Test
   func signInUsesNewestLocalCredentialWhenNoIdIsProvided() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeTrustedDevices(signInService: MockSignInService(
+    let setup = makeBiometricCredentials(signInService: MockSignInService(
       create: { params in
         capturedCreateParams.setValue(params)
-        return .mockTrustedDeviceChallenge
+        return .mockBiometricCredentialChallenge
       },
-      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
     ))
     try setup.credentialStore.save(localCredential(
       id: "tdc_old",
@@ -1090,28 +1090,28 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    _ = try await setup.trustedDevices.signIn()
+    _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_new")
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_new")
   }
 
   @Test
   func signInSkipsCredentialOwnedByDifferentUserWhenSessionIsActive() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
         listWasCalled.setValue(true)
-        return [trustedDevice(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+        return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
       signInService: MockSignInService(
         create: { params in
           capturedCreateParams.setValue(params)
-          return .mockTrustedDeviceChallenge
+          return .mockBiometricCredentialChallenge
         },
-        attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
       )
     )
     try setup.credentialStore.save(localCredential(
@@ -1127,23 +1127,23 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    _ = try await setup.trustedDevices.signIn()
+    _ = try await setup.biometricCredentials.signIn()
 
     #expect(listWasCalled.value)
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_active_user")
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_active_user")
   }
 
   @Test
   func signInUsesIdentifierHintToSelectMatchingLocalCredential() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeTrustedDevices(signInService: MockSignInService(
+    let setup = makeBiometricCredentials(signInService: MockSignInService(
       create: { params in
         capturedCreateParams.setValue(params)
-        return .mockTrustedDeviceChallenge
+        return .mockBiometricCredentialChallenge
       },
-      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
     ))
     try setup.credentialStore.save(localCredential(
       id: "tdc_sean",
@@ -1158,33 +1158,33 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    _ = try await setup.trustedDevices.signIn(identifierHint: "  SEAN@example.com  ")
+    _ = try await setup.biometricCredentials.signIn(identifierHint: "  SEAN@example.com  ")
 
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_sean")
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_sean")
   }
 
   @Test
-  func signInDeletesLocalCredentialWhenCreateReportsTrustedDeviceMissing() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+  func signInDeletesLocalCredentialWhenCreateReportsBiometricCredentialMissing() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let attemptWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(
       signInService: MockSignInService(
-        create: { _ in throw missingTrustedDeviceCredentialError(code: "trusted_device_not_registered") },
+        create: { _ in throw missingBiometricCredentialError(code: "trusted_device_not_registered") },
         attemptFirstFactor: { _, _ in
           attemptWasCalled.setValue(true)
-          return .mockTrustedDeviceComplete
+          return .mockBiometricCredentialComplete
         }
       ),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
     do {
-      _ = try await setup.trustedDevices.signIn()
-      Issue.record("Expected trusted-device sign-in to fail.")
+      _ = try await setup.biometricCredentials.signIn()
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkClientError {
       #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
       #expect(attemptWasCalled.value == false)
@@ -1196,23 +1196,23 @@ struct TrustedDevicesTests {
   }
 
   @Test
-  func signInDeletesLocalCredentialWhenAttemptReportsTrustedDeviceMissing() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+  func signInDeletesLocalCredentialWhenAttemptReportsBiometricCredentialMissing() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(
       signInService: MockSignInService(
-        create: { _ in .mockTrustedDeviceChallenge },
-        attemptFirstFactor: { _, _ in throw missingTrustedDeviceCredentialError() }
+        create: { _ in .mockBiometricCredentialChallenge },
+        attemptFirstFactor: { _, _ in throw missingBiometricCredentialError() }
       ),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
     do {
-      _ = try await setup.trustedDevices.signIn()
-      Issue.record("Expected trusted-device sign-in to fail.")
+      _ = try await setup.biometricCredentials.signIn()
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkClientError {
       #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
       #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -1224,21 +1224,21 @@ struct TrustedDevicesTests {
 
   @Test
   func signInKeepsLocalCredentialWhenCreateFailsForUnrelatedAPIError() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = try makeTrustedDevicesWithLocalCredential(
+    let setup = try makeBiometricCredentialsWithLocalCredential(
       signInService: MockSignInService(
-        create: { _ in throw missingTrustedDeviceCredentialError(paramName: "identifier") }
+        create: { _ in throw missingBiometricCredentialError(paramName: "identifier") }
       ),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
 
     do {
-      _ = try await setup.trustedDevices.signIn()
-      Issue.record("Expected trusted-device sign-in to fail.")
+      _ = try await setup.biometricCredentials.signIn()
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkAPIError {
       #expect(error.code == "form_resource_not_found")
       #expect(deletedLocalKeyIds.value.isEmpty)
@@ -1250,22 +1250,22 @@ struct TrustedDevicesTests {
 
   @Test
   func signInSkipsStaleNewerCredentialWhenSignedIn() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let setup = makeTrustedDevices(
-      trustedDeviceService: MockTrustedDeviceService(list: {
-        [trustedDevice(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    let setup = makeBiometricCredentials(
+      biometricCredentialService: MockBiometricCredentialService(list: {
+        [biometricCredential(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
       signInService: MockSignInService(
         create: { params in
           capturedCreateParams.setValue(params)
-          return .mockTrustedDeviceChallenge
+          return .mockBiometricCredentialChallenge
         },
-        attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
       ),
-      keyManager: MockTrustedDeviceKeyManager(deleteKey: { localKeyId in
+      keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
     )
@@ -1280,33 +1280,33 @@ struct TrustedDevicesTests {
       createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
 
-    _ = try await setup.trustedDevices.signIn()
+    _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.trustedDeviceId == "tdc_123")
+    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
     #expect(deletedLocalKeyIds.value == ["tdlk_new"])
     #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
   }
 
   @Test
-  func signInRequiresCreateToReturnTrustedDeviceChallenge() async throws {
-    Clerk.shared.environment = enabledTrustedDeviceEnvironment()
+  func signInRequiresCreateToReturnBiometricCredentialChallenge() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let prepareWasCalled = LockIsolated(false)
     let signInService = MockSignInService(
       create: { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) },
       prepareFirstFactor: { _, _ in
         prepareWasCalled.setValue(true)
-        return .mockTrustedDeviceChallenge
+        return .mockBiometricCredentialChallenge
       },
-      attemptFirstFactor: { _, _ in .mockTrustedDeviceComplete }
+      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
     )
-    let setup = try makeTrustedDevicesWithLocalCredential(signInService: signInService)
+    let setup = try makeBiometricCredentialsWithLocalCredential(signInService: signInService)
 
     do {
-      _ = try await setup.trustedDevices.signIn(id: "tdc_123")
-      Issue.record("Expected sign-in to fail when create does not return a trusted-device challenge.")
+      _ = try await setup.biometricCredentials.signIn(id: "tdc_123")
+      Issue.record("Expected sign-in to fail when create does not return a biometric-credential challenge.")
     } catch let error as ClerkClientError {
-      #expect(error.message == "Trusted-device sign-in did not return a challenge.")
+      #expect(error.message == "Biometric sign-in did not return a challenge.")
       #expect(prepareWasCalled.value == false)
     } catch {
       Issue.record("Wrong error type: \(error)")
@@ -1314,21 +1314,21 @@ struct TrustedDevicesTests {
   }
 }
 
-private let trustedDeviceChallengeClientData = "{\"challenge_id\":\"tdch_123\"}"
-private let trustedDeviceChallenge = TrustedDeviceChallenge(
+private let biometricCredentialChallengeClientData = "{\"challenge_id\":\"tdch_123\"}"
+private let biometricCredentialChallenge = BiometricCredentialChallenge(
   challenge: "challenge",
   challengeId: "tdch_123",
-  trustedDeviceId: "tdc_123",
-  clientData: trustedDeviceChallengeClientData,
+  biometricCredentialId: "tdc_123",
+  clientData: biometricCredentialChallengeClientData,
   expiresAt: Date(timeIntervalSince1970: 1_710_000_000),
   algorithm: .es256
 )
 
-private func enabledTrustedDeviceEnvironment() -> Clerk.Environment {
+private func enabledBiometricCredentialEnvironment() -> Clerk.Environment {
   var environment = Clerk.Environment.mock
   environment.authConfig.nativeSettings = .init(
     apiEnabled: true,
-    trustedDeviceSignInEnabled: true
+    biometricSignInEnabled: true
   )
   return environment
 }
@@ -1340,8 +1340,8 @@ private func localCredential(
   appIdentifier: String = "com.clerk.example",
   identifierHint: String? = nil,
   createdAt: Date
-) -> TrustedDeviceLocalCredential {
-  TrustedDeviceLocalCredential(
+) -> BiometricCredentialLocalRecord {
+  BiometricCredentialLocalRecord(
     id: id,
     localKeyId: localKeyId,
     userID: userID,
@@ -1352,11 +1352,11 @@ private func localCredential(
   )
 }
 
-private func trustedDevice(
+private func biometricCredential(
   id: String,
   createdAt: Date
-) -> TrustedDevice {
-  TrustedDevice(
+) -> BiometricCredential {
+  BiometricCredential(
     id: id,
     platform: .iOS,
     appIdentifier: "com.clerk.example",
@@ -1368,7 +1368,7 @@ private func trustedDevice(
   )
 }
 
-private func missingTrustedDeviceCredentialError(
+private func missingBiometricCredentialError(
   code: String = "form_resource_not_found",
   paramName: String = "trusted_device_id"
 ) -> ClerkAPIError {
@@ -1386,17 +1386,17 @@ private enum TestKeyDeletionError: Error {
 }
 
 @MainActor
-private func makeTrustedDevicesWithLocalCredential(
-  trustedDeviceService: TrustedDeviceServiceProtocol = MockTrustedDeviceService(),
+private func makeBiometricCredentialsWithLocalCredential(
+  biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
   signInService: SignInServiceProtocol = MockSignInService(),
-  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager(),
-  localCredential: TrustedDeviceLocalCredential = .mock
+  keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
+  localCredential: BiometricCredentialLocalRecord = .mock
 ) throws -> (
-  trustedDevices: TrustedDevices,
-  credentialStore: TrustedDeviceLocalCredentialStore
+  biometricCredentials: BiometricCredentials,
+  credentialStore: BiometricCredentialLocalStore
 ) {
-  let setup = makeTrustedDevices(
-    trustedDeviceService: trustedDeviceService,
+  let setup = makeBiometricCredentials(
+    biometricCredentialService: biometricCredentialService,
     signInService: signInService,
     keyManager: keyManager
   )
@@ -1405,40 +1405,40 @@ private func makeTrustedDevicesWithLocalCredential(
 }
 
 @MainActor
-private func makeTrustedDevices(
-  trustedDeviceService: TrustedDeviceServiceProtocol = MockTrustedDeviceService(),
+private func makeBiometricCredentials(
+  biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
   signInService: SignInServiceProtocol = MockSignInService(),
-  keyManager: MockTrustedDeviceKeyManager = MockTrustedDeviceKeyManager(),
+  keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
   credentialStoreKeychain: any KeychainStorage = InMemoryKeychain()
 ) -> (
-  trustedDevices: TrustedDevices,
-  credentialStore: TrustedDeviceLocalCredentialStore
+  biometricCredentials: BiometricCredentials,
+  credentialStore: BiometricCredentialLocalStore
 ) {
-  let credentialStore = TrustedDeviceLocalCredentialStore(keychain: credentialStoreKeychain)
-  let trustedDevices = TrustedDevices(
-    trustedDeviceService: trustedDeviceService,
+  let credentialStore = BiometricCredentialLocalStore(keychain: credentialStoreKeychain)
+  let biometricCredentials = BiometricCredentials(
+    biometricCredentialService: biometricCredentialService,
     signInService: signInService,
     keyManager: keyManager,
     credentialStore: credentialStore,
     appIdentifierProvider: { "com.clerk.example" }
   )
-  return (trustedDevices, credentialStore)
+  return (biometricCredentials, credentialStore)
 }
 
 extension SignIn {
-  static var mockTrustedDeviceChallenge: SignIn {
+  static var mockBiometricCredentialChallenge: SignIn {
     SignIn(
       id: "si_trusted_device",
       status: .needsIdentifier,
       firstFactorVerification: .init(
         status: .unverified,
-        strategy: .trustedDevice,
-        trustedDeviceChallenge: trustedDeviceChallenge
+        strategy: .biometricCredential,
+        biometricCredentialChallenge: biometricCredentialChallenge
       )
     )
   }
 
-  static var mockTrustedDeviceComplete: SignIn {
+  static var mockBiometricCredentialComplete: SignIn {
     SignIn(
       id: "si_trusted_device",
       status: .complete,

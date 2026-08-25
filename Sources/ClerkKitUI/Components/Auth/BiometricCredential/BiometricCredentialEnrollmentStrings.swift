@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceEnrollmentStrings.swift
+//  BiometricCredentialEnrollmentStrings.swift
 //  Clerk
 //
 
@@ -9,7 +9,7 @@ import ClerkKit
 import Foundation
 import SwiftUI
 
-enum TrustedDeviceEnrollmentStrings {
+enum BiometricCredentialEnrollmentStrings {
   @MainActor
   static func applicationName(for clerk: Clerk) -> String? {
     guard let applicationName = clerk.environment?.displayConfig.applicationName,
@@ -22,7 +22,7 @@ enum TrustedDeviceEnrollmentStrings {
 
   static func subtitle(
     applicationName: String?,
-    biometryDisplayName: TrustedDeviceBiometryDisplayName
+    biometryDisplayName: BiometryDisplayName
   ) -> LocalizedStringKey {
     if let applicationName {
       return "Enable \(biometryDisplayName.value) for faster access to \(applicationName)"
@@ -33,7 +33,7 @@ enum TrustedDeviceEnrollmentStrings {
 
   static func enrollmentReason(
     applicationName: String?,
-    biometryDisplayName: TrustedDeviceBiometryDisplayName
+    biometryDisplayName: BiometryDisplayName
   ) -> String {
     if let applicationName {
       return String(

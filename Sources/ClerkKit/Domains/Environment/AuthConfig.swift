@@ -33,45 +33,45 @@ extension Clerk.Environment {
 extension Clerk.Environment.AuthConfig {
   public struct NativeSettings: Codable, Sendable, Equatable {
     public var apiEnabled: Bool
-    public var trustedDeviceSignInEnabled: Bool
-    public var trustedDevicePromptAfterSignInEnabled: Bool
-    public var trustedDevicePromptAfterSignUpEnabled: Bool
+    public var biometricSignInEnabled: Bool
+    public var biometricCredentialPromptAfterSignInEnabled: Bool
+    public var biometricCredentialPromptAfterSignUpEnabled: Bool
 
     public static let `default` = NativeSettings(
       apiEnabled: false,
-      trustedDeviceSignInEnabled: false,
-      trustedDevicePromptAfterSignInEnabled: false,
-      trustedDevicePromptAfterSignUpEnabled: false
+      biometricSignInEnabled: false,
+      biometricCredentialPromptAfterSignInEnabled: false,
+      biometricCredentialPromptAfterSignUpEnabled: false
     )
 
     public init(
       apiEnabled: Bool,
-      trustedDeviceSignInEnabled: Bool,
-      trustedDevicePromptAfterSignInEnabled: Bool = false,
-      trustedDevicePromptAfterSignUpEnabled: Bool = false
+      biometricSignInEnabled: Bool,
+      biometricCredentialPromptAfterSignInEnabled: Bool = false,
+      biometricCredentialPromptAfterSignUpEnabled: Bool = false
     ) {
       self.apiEnabled = apiEnabled
-      self.trustedDeviceSignInEnabled = trustedDeviceSignInEnabled
-      self.trustedDevicePromptAfterSignInEnabled = trustedDevicePromptAfterSignInEnabled
-      self.trustedDevicePromptAfterSignUpEnabled = trustedDevicePromptAfterSignUpEnabled
+      self.biometricSignInEnabled = biometricSignInEnabled
+      self.biometricCredentialPromptAfterSignInEnabled = biometricCredentialPromptAfterSignInEnabled
+      self.biometricCredentialPromptAfterSignUpEnabled = biometricCredentialPromptAfterSignUpEnabled
     }
 
     enum CodingKeys: String, CodingKey {
       case apiEnabled
-      case trustedDeviceSignInEnabled
-      case trustedDevicePromptAfterSignInEnabled = "trustedDeviceEnrollmentPromptAfterSignInEnabled"
-      case trustedDevicePromptAfterSignUpEnabled = "trustedDeviceEnrollmentPromptAfterSignUpEnabled"
+      case biometricSignInEnabled = "trustedDeviceSignInEnabled"
+      case biometricCredentialPromptAfterSignInEnabled = "trustedDeviceEnrollmentPromptAfterSignInEnabled"
+      case biometricCredentialPromptAfterSignUpEnabled = "trustedDeviceEnrollmentPromptAfterSignUpEnabled"
     }
 
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       apiEnabled = try container.decodeIfPresent(Bool.self, forKey: .apiEnabled) ?? false
-      trustedDeviceSignInEnabled =
-        try container.decodeIfPresent(Bool.self, forKey: .trustedDeviceSignInEnabled) ?? false
-      trustedDevicePromptAfterSignInEnabled =
-        try container.decodeIfPresent(Bool.self, forKey: .trustedDevicePromptAfterSignInEnabled) ?? false
-      trustedDevicePromptAfterSignUpEnabled =
-        try container.decodeIfPresent(Bool.self, forKey: .trustedDevicePromptAfterSignUpEnabled) ?? false
+      biometricSignInEnabled =
+        try container.decodeIfPresent(Bool.self, forKey: .biometricSignInEnabled) ?? false
+      biometricCredentialPromptAfterSignInEnabled =
+        try container.decodeIfPresent(Bool.self, forKey: .biometricCredentialPromptAfterSignInEnabled) ?? false
+      biometricCredentialPromptAfterSignUpEnabled =
+        try container.decodeIfPresent(Bool.self, forKey: .biometricCredentialPromptAfterSignUpEnabled) ?? false
     }
   }
 }

@@ -1,5 +1,5 @@
 //
-//  TrustedDeviceEnrollmentPrompt.swift
+//  BiometricCredentialEnrollmentPrompt.swift
 //  Clerk
 //
 
@@ -9,22 +9,22 @@ import ClerkKit
 import Foundation
 
 extension TransferFlowResult {
-  func shouldOfferTrustedDeviceEnrollmentPrompt(
+  func shouldOfferBiometricCredentialEnrollmentPrompt(
     userID: String,
     nativeSettings: Clerk.Environment.AuthConfig.NativeSettings,
-    promptStore: TrustedDeviceEnrollmentPromptStore
+    promptStore: BiometricCredentialEnrollmentPromptStore
   ) -> Bool {
     switch self {
     case .signIn:
-      nativeSettings.trustedDevicePromptAfterSignInEnabled &&
+      nativeSettings.biometricCredentialPromptAfterSignInEnabled &&
         !promptStore.hasSeenPrompt(userID: userID)
     case .signUp:
-      nativeSettings.trustedDevicePromptAfterSignUpEnabled
+      nativeSettings.biometricCredentialPromptAfterSignUpEnabled
     }
   }
 }
 
-struct TrustedDeviceEnrollmentPromptStore {
+struct BiometricCredentialEnrollmentPromptStore {
   private let userDefaults: UserDefaults
 
   init(userDefaults: UserDefaults = .standard) {
