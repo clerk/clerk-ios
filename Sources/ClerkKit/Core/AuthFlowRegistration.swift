@@ -5,6 +5,12 @@
 
 import Foundation
 
+enum AuthFlowCompletionDisposition: Equatable {
+  case absent
+  case accepted
+  case superseded
+}
+
 struct AuthFlowIdentityUpdate {
   enum Completion {
     case accepted(TransferFlowResult, ownerId: UUID)
@@ -48,11 +54,10 @@ struct AuthFlowIdentityUpdate {
     authoritativeClient: Client?,
     authoritativeIdentityChanged: Bool = false
   ) -> AuthFlowIdentityUpdate {
-    if let createdSessionId = completion.createdSessionId,
-       let currentSession = authoritativeClient?.currentSession,
-       currentSession.id == createdSessionId,
-       currentSession.isViableForPostAuth
-    {
+    if completionDisposition(
+      for: completion,
+      authoritativeClient: authoritativeClient
+    ) == .accepted {
       return .completionAccepted(
         completion,
         ownerId: ownerId,
@@ -64,6 +69,20 @@ struct AuthFlowIdentityUpdate {
       authoritativeIdentityChanged: authoritativeIdentityChanged,
       completion: .superseded(flowId: completion.flowId, ownerId: ownerId)
     )
+  }
+
+  static func completionDisposition(
+    for completion: TransferFlowResult,
+    authoritativeClient: Client?
+  ) -> AuthFlowCompletionDisposition {
+    guard let createdSessionId = completion.createdSessionId,
+          let currentSession = authoritativeClient?.currentSession,
+          currentSession.id == createdSessionId,
+          currentSession.isViableForPostAuth
+    else {
+      return .superseded
+    }
+    return .accepted
   }
 }
 

@@ -13,7 +13,7 @@ struct ClerkAuthEventEmitterResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
-    guard let event = ClerkAuthResponseDecoder.decodeEvent(from: data) else {
+    guard let event = ClerkAuthResponseDecoder.decodeIndependentEvent(from: data) else {
       return
     }
 

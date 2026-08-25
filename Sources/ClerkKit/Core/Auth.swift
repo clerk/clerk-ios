@@ -642,6 +642,9 @@ extension Auth {
   ///
   /// Subscribe to this stream to receive notifications about callback-recovered sign-in/sign-up
   /// continuation, sign-in/sign-up completion, sign-out, session changes, and token refreshes.
+  /// Completion events reflect authentication results accepted for Clerk's current state. They are
+  /// not scoped to a particular UI presentation and do not indicate that post-authentication UI has
+  /// finished.
   ///
   /// ### Example:
   /// ```swift

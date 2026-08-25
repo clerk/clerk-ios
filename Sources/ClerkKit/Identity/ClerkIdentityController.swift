@@ -869,47 +869,81 @@ extension ClerkIdentityController {
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
+    let completionDisposition: AuthFlowCompletionDisposition
     switch persistenceMode(for: clerk) {
     case .shared(let coordinator):
-      guard context.baseGeneration != nil else {
-        rejectAuthFlowCompletionIfNeeded(
-          context.completedAuthFlow,
-          ownerId: context.authFlowRegistrationId,
-          clerk: clerk
-        )
-        return
-      }
-      switch try await coordinator.handleNetworkResponse(context) {
-      case .applied, .completionHandled:
-        break
-      case .ignored:
-        rejectAuthFlowCompletionIfNeeded(
-          context.completedAuthFlow,
-          ownerId: context.authFlowRegistrationId,
-          clerk: clerk
-        )
-      }
+      completionDisposition = try await applySharedNetworkResponse(
+        context,
+        coordinator: coordinator,
+        clerk: clerk
+      )
     case .atomicLocal(let localIdentityIO):
       let didApply = try await applyAtomicLocalResponse(
         context,
         localIdentityIO: localIdentityIO,
         clerk: clerk
       )
-      if !didApply {
-        rejectAuthFlowCompletionIfNeeded(
+      completionDisposition = if didApply {
+        context.completedAuthFlow == nil ? .absent : .accepted
+      } else {
+        resolveSupersededAuthFlowCompletionIfNeeded(
           context.completedAuthFlow,
           ownerId: context.authFlowRegistrationId,
           clerk: clerk
         )
       }
     case .legacy:
-      if try !applyLegacyResponse(context, clerk: clerk) {
-        rejectAuthFlowCompletionIfNeeded(
+      let didApply = try applyLegacyResponse(context, clerk: clerk)
+      completionDisposition = if didApply {
+        context.completedAuthFlow == nil ? .absent : .accepted
+      } else {
+        resolveSupersededAuthFlowCompletionIfNeeded(
           context.completedAuthFlow,
           ownerId: context.authFlowRegistrationId,
           clerk: clerk
         )
       }
+    }
+
+    if completionDisposition == .accepted {
+      emitAcceptedAuthCompletion(context.completedAuthFlow, clerk: clerk)
+    }
+  }
+
+  private func applySharedNetworkResponse(
+    _ context: ClientSyncResponseContext,
+    coordinator: SharedSessionSyncCoordinator,
+    clerk: Clerk
+  ) async throws -> AuthFlowCompletionDisposition {
+    guard context.baseGeneration != nil else {
+      return resolveSupersededAuthFlowCompletionIfNeeded(
+        context.completedAuthFlow,
+        ownerId: context.authFlowRegistrationId,
+        clerk: clerk
+      )
+    }
+    let outcome = try await coordinator.handleNetworkResponse(context)
+    if outcome.responseIdentity == .ignored {
+      _ = resolveSupersededAuthFlowCompletionIfNeeded(
+        context.completedAuthFlow,
+        ownerId: context.authFlowRegistrationId,
+        clerk: clerk
+      )
+    }
+    return outcome.completion
+  }
+
+  private func emitAcceptedAuthCompletion(
+    _ completedAuthFlow: TransferFlowResult?,
+    clerk: Clerk
+  ) {
+    switch completedAuthFlow {
+    case .signIn(let signIn):
+      clerk.auth.send(.signInCompleted(signIn: signIn))
+    case .signUp(let signUp):
+      clerk.auth.send(.signUpCompleted(signUp: signUp))
+    case nil:
+      break
     }
   }
 
@@ -931,7 +965,7 @@ extension ClerkIdentityController {
             clerk: clerk
           )
     else {
-      rejectAuthFlowCompletionIfNeeded(
+      resolveSupersededAuthFlowCompletionIfNeeded(
         completedAuthFlow,
         ownerId: completedAuthFlowOwnerId,
         clerk: clerk
@@ -1052,16 +1086,24 @@ extension ClerkIdentityController {
     return true
   }
 
-  private func rejectAuthFlowCompletionIfNeeded(
+  @discardableResult
+  private func resolveSupersededAuthFlowCompletionIfNeeded(
     _ completedAuthFlow: TransferFlowResult?,
     ownerId: UUID?,
     clerk: Clerk
-  ) {
-    guard let completedAuthFlow, let ownerId else { return }
-    clerk.resolveSupersededAuthFlowCompletion(
-      completedAuthFlow,
-      ownerId: ownerId
+  ) -> AuthFlowCompletionDisposition {
+    guard let completedAuthFlow else { return .absent }
+    let disposition = AuthFlowIdentityUpdate.completionDisposition(
+      for: completedAuthFlow,
+      authoritativeClient: clerk.authoritativeClient
     )
+    if let ownerId {
+      clerk.resolveSupersededAuthFlowCompletion(
+        completedAuthFlow,
+        ownerId: ownerId
+      )
+    }
+    return disposition
   }
 
   private func responseCanBeAccepted(

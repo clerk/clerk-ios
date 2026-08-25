@@ -21,10 +21,15 @@ enum SharedSessionSyncCoordinatorError: Error, Equatable {
 
 @MainActor
 final class SharedSessionSyncCoordinator: ClerkInternalStateChangeObserver {
-  enum NetworkResponseOutcome: Equatable {
-    case applied
-    case completionHandled
-    case ignored
+  struct NetworkResponseOutcome: Equatable {
+    enum ResponseIdentityDisposition: Equatable {
+      case applied
+      case superseded
+      case ignored
+    }
+
+    let responseIdentity: ResponseIdentityDisposition
+    let completion: AuthFlowCompletionDisposition
   }
 
   enum PublicationCheckpoint {
@@ -457,12 +462,31 @@ extension SharedSessionSyncCoordinator {
           sequence: context.responseSequence,
           serverDate: context.serverDate
         )
-        return .applied
       }
-      if didResolvePublication, context.completedAuthFlow != nil {
-        return .completionHandled
+
+      let responseIdentity: NetworkResponseOutcome.ResponseIdentityDisposition = if didApply {
+        .applied
+      } else if didResolvePublication {
+        .superseded
+      } else {
+        .ignored
       }
-      return .ignored
+      let completion: AuthFlowCompletionDisposition = if let completedAuthFlow = context.completedAuthFlow {
+        if didApply {
+          .accepted
+        } else {
+          AuthFlowIdentityUpdate.completionDisposition(
+            for: completedAuthFlow,
+            authoritativeClient: clerk?.authoritativeClient
+          )
+        }
+      } else {
+        .absent
+      }
+      return NetworkResponseOutcome(
+        responseIdentity: responseIdentity,
+        completion: completion
+      )
     }
     return try await withTaskCancellationHandler {
       try await task.value
