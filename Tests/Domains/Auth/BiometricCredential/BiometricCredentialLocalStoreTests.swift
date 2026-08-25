@@ -5,10 +5,10 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct BiometricCredentialLocalCredentialStoreTests {
+struct BiometricCredentialLocalStoreTests {
   @Test
   func saveAndLoadCredentialMetadata() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
 
     try store.save(.mock)
 
@@ -18,8 +18,8 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func saveReplacesExistingCredentialMetadata() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
-    let updated = BiometricCredentialLocalCredential(
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
+    let updated = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_new",
       userID: User.mock.id,
@@ -36,9 +36,9 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func saveDeletesReplacedLocalKeyAfterOverwritingMetadata() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let updated = BiometricCredentialLocalCredential(
+    let updated = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_new",
       userID: User.mock.id,
@@ -58,9 +58,9 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func saveKeepsUpdatedMetadataWhenReplacedKeyDeletionFails() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let updated = BiometricCredentialLocalCredential(
+    let updated = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_new",
       userID: User.mock.id,
@@ -83,9 +83,9 @@ struct BiometricCredentialLocalCredentialStoreTests {
   @Test
   func saveKeepsExistingMetadataAndKeyWhenReplacementPersistenceFails() throws {
     let keychain = WriteFailingKeychain(failStartingAtSet: 1)
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let updated = BiometricCredentialLocalCredential(
+    let updated = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_new",
       userID: User.mock.id,
@@ -108,7 +108,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func deleteCredentialMetadata() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
 
     try store.save(.mock)
     try store.delete(id: "tdc_123")
@@ -124,7 +124,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       publicKeyJWK: BiometricCredentialLocalKey.mock.publicKeyJWK,
       policy: .biometryOrDevicePasscode
     )
-    let credential = BiometricCredentialLocalCredential(
+    let credential = BiometricCredentialLocalRecord(
       biometricCredential: .mock,
       localKey: localKey,
       userID: User.mock.id,
@@ -141,7 +141,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func emptyIdentifierHintIsNotPersisted() {
-    let credential = BiometricCredentialLocalCredential(
+    let credential = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       userID: User.mock.id,
@@ -174,7 +174,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
 
     #expect(throws: DecodingError.self) {
       _ = try store.credential(id: "tdc_123")
@@ -199,7 +199,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
 
     #expect(throws: DecodingError.self) {
       _ = try store.credential(id: "tdc_123")
@@ -208,8 +208,8 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func deleteAllLocalCredentialsDeletesKeysAndMetadata() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
-    let other = BiometricCredentialLocalCredential(
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
+    let other = BiometricCredentialLocalRecord(
       id: "tdc_456",
       localKeyId: "tdlk_other",
       userID: User.mock.id,
@@ -232,8 +232,8 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func deleteAllLocalCredentialsPreservesMetadataForFailedKeyDeletions() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
-    let failedCredential = BiometricCredentialLocalCredential(
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
+    let failedCredential = BiometricCredentialLocalRecord(
       id: "tdc_failed",
       localKeyId: "tdlk_failed",
       userID: User.mock.id,
@@ -263,8 +263,8 @@ struct BiometricCredentialLocalCredentialStoreTests {
   @Test
   func deleteAllLocalCredentialsStopsAfterMetadataPersistenceFails() throws {
     let keychain = WriteFailingKeychain(failStartingAtSet: 2)
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
-    let other = BiometricCredentialLocalCredential(
+    let store = BiometricCredentialLocalStore(keychain: keychain)
+    let other = BiometricCredentialLocalRecord(
       id: "tdc_456",
       localKeyId: "tdlk_other",
       userID: User.mock.id,
@@ -290,8 +290,8 @@ struct BiometricCredentialLocalCredentialStoreTests {
 
   @Test
   func deleteLocalCredentialsDeletesOnlyMatchingAppIdentifier() throws {
-    let store = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
-    let otherAppCredential = BiometricCredentialLocalCredential(
+    let store = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
+    let otherAppCredential = BiometricCredentialLocalRecord(
       id: "tdc_other_app",
       localKeyId: "tdlk_other_app",
       userID: User.mock.id,
@@ -332,12 +332,12 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
 
     try store.save(.mock)
 
     #expect(try store.all(appIdentifier: "com.clerk.example") == [.mock])
-    #expect(try store.credential(id: BiometricCredentialLocalCredential.mock.id) == .mock)
+    #expect(try store.credential(id: BiometricCredentialLocalRecord.mock.id) == .mock)
     #expect(throws: DecodingError.self) {
       _ = try store.all()
     }
@@ -372,12 +372,12 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
 
     let credentials = try store.all(appIdentifier: "com.clerk.example")
 
     #expect(credentials == [
-      BiometricCredentialLocalCredential(
+      BiometricCredentialLocalRecord(
         id: "tdc_valid",
         localKeyId: "tdlk_valid",
         userID: "user_valid",
@@ -409,7 +409,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -453,7 +453,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -480,7 +480,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
     )
     let keychain = InMemoryKeychain()
     try keychain.set(metadata, forKey: ClerkKeychainKey.biometricCredentials.rawValue)
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -521,7 +521,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
       ),
       forKey: ClerkKeychainKey.biometricCredentials.rawValue
     )
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -548,7 +548,7 @@ struct BiometricCredentialLocalCredentialStoreTests {
   func corruptCredentialMetadataThrows() throws {
     let keychain = InMemoryKeychain()
     try keychain.set(Data("not-json".utf8), forKey: ClerkKeychainKey.biometricCredentials.rawValue)
-    let store = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let store = BiometricCredentialLocalStore(keychain: keychain)
 
     do {
       _ = try store.all()

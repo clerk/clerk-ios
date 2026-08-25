@@ -340,7 +340,7 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithBiometricsDelegatesToBiometricCredentialsSignIn() async throws {
+  func signInWithBiometricsDelegatesToBiometricCredentials() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
 
@@ -381,14 +381,14 @@ struct AuthTests {
       signedReasons.withValue { $0.append(localizedReason) }
       return .init(clientData: clientData, signature: "biometric-credential-signature")
     })
-    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: InMemoryKeychain())
+    let credentialStore = BiometricCredentialLocalStore(keychain: InMemoryKeychain())
     try credentialStore.save(.init(
-      id: BiometricCredentialLocalCredential.mock.id,
-      localKeyId: BiometricCredentialLocalCredential.mock.localKeyId,
-      userID: BiometricCredentialLocalCredential.mock.userID,
+      id: BiometricCredentialLocalRecord.mock.id,
+      localKeyId: BiometricCredentialLocalRecord.mock.localKeyId,
+      userID: BiometricCredentialLocalRecord.mock.userID,
       appIdentifier: "com.clerk.example",
-      createdAt: BiometricCredentialLocalCredential.mock.createdAt,
-      updatedAt: BiometricCredentialLocalCredential.mock.updatedAt
+      createdAt: BiometricCredentialLocalRecord.mock.createdAt,
+      updatedAt: BiometricCredentialLocalRecord.mock.updatedAt
     ))
 
     let apiClient = createMockAPIClient(baseURL: mockBaseUrl)
@@ -414,14 +414,14 @@ struct AuthTests {
 
     #expect(signIn == completedSignIn)
     #expect(createParams.value?.strategy == .biometricCredential)
-    #expect(createParams.value?.biometricCredentialId == BiometricCredentialLocalCredential.mock.id)
+    #expect(createParams.value?.biometricCredentialId == BiometricCredentialLocalRecord.mock.id)
     #expect(attemptedSignInId.value == challengeSignIn.id)
     #expect(attemptParams.value?.strategy == .biometricCredential)
-    #expect(attemptParams.value?.biometricCredentialId == BiometricCredentialLocalCredential.mock.id)
+    #expect(attemptParams.value?.biometricCredentialId == BiometricCredentialLocalRecord.mock.id)
     #expect(attemptParams.value?.clientData == BiometricCredentialChallenge.mock.clientData)
     #expect(attemptParams.value?.signature == "biometric-credential-signature")
     #expect(attemptParams.value?.algorithm == .es256)
-    #expect(signedLocalKeyIds.value == [BiometricCredentialLocalCredential.mock.localKeyId])
+    #expect(signedLocalKeyIds.value == [BiometricCredentialLocalRecord.mock.localKeyId])
     #expect(signedReasons.value == ["Use Face ID to sign in."])
   }
 

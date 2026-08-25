@@ -162,7 +162,7 @@ extension UserProfileSecurityView {
       biometricCredentialAvailability = try clerk.biometricCredentials.currentUserLocalAvailability()
     } catch {
       biometricCredentialAvailability = nil
-      ClerkLogger.error("Failed to refresh local biometric-credential availability", error: error)
+      ClerkLogger.error("Failed to refresh local biometric sign-in availability", error: error)
     }
   }
 
@@ -183,7 +183,7 @@ extension UserProfileSecurityView {
         return nil
       } else {
         biometricCredentialAvailability = nil
-        ClerkLogger.error("Failed to refresh biometric-credential availability", error: error)
+        ClerkLogger.error("Failed to refresh biometric sign-in availability", error: error)
       }
       return nil
     }

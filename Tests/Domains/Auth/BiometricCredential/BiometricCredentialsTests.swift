@@ -990,7 +990,7 @@ struct BiometricCredentialsTests {
         return policy == .biometryOrDevicePasscode
       }
     )
-    let localCredential = BiometricCredentialLocalCredential(
+    let localCredential = BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       userID: User.mock.id,
@@ -1184,7 +1184,7 @@ struct BiometricCredentialsTests {
 
     do {
       _ = try await setup.biometricCredentials.signIn()
-      Issue.record("Expected biometric-credential sign-in to fail.")
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkClientError {
       #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
       #expect(attemptWasCalled.value == false)
@@ -1212,7 +1212,7 @@ struct BiometricCredentialsTests {
 
     do {
       _ = try await setup.biometricCredentials.signIn()
-      Issue.record("Expected biometric-credential sign-in to fail.")
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkClientError {
       #expect(error.message == "This device is no longer trusted. Sign in another way to enroll it again.")
       #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -1238,7 +1238,7 @@ struct BiometricCredentialsTests {
 
     do {
       _ = try await setup.biometricCredentials.signIn()
-      Issue.record("Expected biometric-credential sign-in to fail.")
+      Issue.record("Expected biometric sign-in to fail.")
     } catch let error as ClerkAPIError {
       #expect(error.code == "form_resource_not_found")
       #expect(deletedLocalKeyIds.value.isEmpty)
@@ -1306,7 +1306,7 @@ struct BiometricCredentialsTests {
       _ = try await setup.biometricCredentials.signIn(id: "tdc_123")
       Issue.record("Expected sign-in to fail when create does not return a biometric-credential challenge.")
     } catch let error as ClerkClientError {
-      #expect(error.message == "Biometric-credential sign-in did not return a challenge.")
+      #expect(error.message == "Biometric sign-in did not return a challenge.")
       #expect(prepareWasCalled.value == false)
     } catch {
       Issue.record("Wrong error type: \(error)")
@@ -1340,8 +1340,8 @@ private func localCredential(
   appIdentifier: String = "com.clerk.example",
   identifierHint: String? = nil,
   createdAt: Date
-) -> BiometricCredentialLocalCredential {
-  BiometricCredentialLocalCredential(
+) -> BiometricCredentialLocalRecord {
+  BiometricCredentialLocalRecord(
     id: id,
     localKeyId: localKeyId,
     userID: userID,
@@ -1390,10 +1390,10 @@ private func makeBiometricCredentialsWithLocalCredential(
   biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
   signInService: SignInServiceProtocol = MockSignInService(),
   keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
-  localCredential: BiometricCredentialLocalCredential = .mock
+  localCredential: BiometricCredentialLocalRecord = .mock
 ) throws -> (
   biometricCredentials: BiometricCredentials,
-  credentialStore: BiometricCredentialLocalCredentialStore
+  credentialStore: BiometricCredentialLocalStore
 ) {
   let setup = makeBiometricCredentials(
     biometricCredentialService: biometricCredentialService,
@@ -1412,9 +1412,9 @@ private func makeBiometricCredentials(
   credentialStoreKeychain: any KeychainStorage = InMemoryKeychain()
 ) -> (
   biometricCredentials: BiometricCredentials,
-  credentialStore: BiometricCredentialLocalCredentialStore
+  credentialStore: BiometricCredentialLocalStore
 ) {
-  let credentialStore = BiometricCredentialLocalCredentialStore(keychain: credentialStoreKeychain)
+  let credentialStore = BiometricCredentialLocalStore(keychain: credentialStoreKeychain)
   let biometricCredentials = BiometricCredentials(
     biometricCredentialService: biometricCredentialService,
     signInService: signInService,

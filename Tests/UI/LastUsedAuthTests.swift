@@ -8,7 +8,7 @@ import Testing
 @Suite(.serialized)
 struct LastUsedAuthTests {
   @Test
-  func biometricCredentialStrategyShowsBiometricCredentialBadgeWhenAnotherMethodIsVisible() {
+  func biometricCredentialStrategyShowsBadgeWhenAnotherMethodIsVisible() {
     configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock
@@ -27,7 +27,7 @@ struct LastUsedAuthTests {
   }
 
   @Test
-  func biometricCredentialStrategyDoesNotShowBadgeWhenOnlyBiometricCredentialIsVisible() {
+  func biometricCredentialStrategyDoesNotShowBadgeWhenItIsTheOnlyVisibleMethod() {
     configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock

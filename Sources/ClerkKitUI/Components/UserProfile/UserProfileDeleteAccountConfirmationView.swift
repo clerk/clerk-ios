@@ -106,7 +106,7 @@ extension UserProfileDeleteAccountConfirmationView {
     do {
       let deletedUserID = user.id
       try await user.delete()
-      forgetBiometricCredentialLocalCredentials(deletedUserID: deletedUserID)
+      forgetBiometricLocalCredentials(deletedUserID: deletedUserID)
       let shouldPresentAccountSwitcher = clerk.auth.sessions.count > 1
       let shouldDismissUserProfile = clerk.user == nil && !shouldPresentAccountSwitcher
       dismiss()
@@ -120,12 +120,12 @@ extension UserProfileDeleteAccountConfirmationView {
     }
   }
 
-  private func forgetBiometricCredentialLocalCredentials(deletedUserID: String) {
+  private func forgetBiometricLocalCredentials(deletedUserID: String) {
     do {
       try clerk.biometricCredentials.forgetLocalCredentials(deletedUserID: deletedUserID)
     } catch {
       ClerkLogger.error(
-        "Failed to delete biometric-credential local credentials after account deletion. This is non-critical.",
+        "Failed to delete biometric local credentials after account deletion. This is non-critical.",
         error: error
       )
     }

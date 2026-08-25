@@ -1156,8 +1156,8 @@ struct ClerkTests {
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
-    let otherAppCredential = BiometricCredentialLocalCredential(
+    let credentialStore = BiometricCredentialLocalStore(keychain: keychain)
+    let otherAppCredential = BiometricCredentialLocalRecord(
       id: "tdc_other_app",
       localKeyId: "tdlk_other_app",
       userID: User.mock.id,
@@ -1200,7 +1200,7 @@ struct ClerkTests {
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
+    let credentialStore = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
@@ -1246,8 +1246,8 @@ struct ClerkTests {
     }
 
     let keychain = InMemoryKeychain()
-    let credentialStore = BiometricCredentialLocalCredentialStore(keychain: keychain)
-    let otherAppCredential = BiometricCredentialLocalCredential(
+    let credentialStore = BiometricCredentialLocalStore(keychain: keychain)
+    let otherAppCredential = BiometricCredentialLocalRecord(
       id: "tdc_other_app",
       localKeyId: "tdlk_other_app",
       userID: User.mock.id,

@@ -33,7 +33,7 @@ final class DependencyContainer: Dependencies {
   let shouldHydrateProvisionalLegacyClient: Bool
   private let persistentAdoptionEnabled: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
-  let biometricCredentialStore: any BiometricCredentialLocalCredentialStoreProtocol
+  let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -148,7 +148,7 @@ final class DependencyContainer: Dependencies {
       SharedSessionLocalIdentityIO(store: $0)
     }
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
-    biometricCredentialStore = BiometricCredentialLocalCredentialStore(keychain: appLocalKeychain)
+    biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
     magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 

@@ -5,12 +5,12 @@
 
 import Foundation
 
-/// Local availability state for biometric biometric-credential sign-in.
+/// Local availability state for biometric sign-in.
 public enum BiometricCredentialAvailability: Equatable, Sendable {
   case available
   case unavailable(UnavailableReason)
 
-  /// Whether the SDK has a local credential and key that can be used for biometric-credential sign-in.
+  /// Whether the SDK has a local credential and key that can be used for biometric sign-in.
   public var isAvailable: Bool {
     switch self {
     case .available:
@@ -20,7 +20,7 @@ public enum BiometricCredentialAvailability: Equatable, Sendable {
     }
   }
 
-  /// The reason biometric-credential sign-in is unavailable, if any.
+  /// The reason biometric sign-in is unavailable, if any.
   public var unavailableReason: UnavailableReason? {
     switch self {
     case .available:

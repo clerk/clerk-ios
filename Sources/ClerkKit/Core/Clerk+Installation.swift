@@ -39,7 +39,7 @@ extension Clerk {
     } catch {
       ClerkLogger.logError(
         error,
-        message: "Failed to clear biometric-credential local credentials for a new app installation."
+        message: "Failed to clear biometric local credentials for a new app installation."
       )
     }
   }

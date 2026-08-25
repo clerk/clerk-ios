@@ -48,7 +48,7 @@ protocol Dependencies: AnyObject {
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
 
   /// Store for local biometric credential metadata.
-  var biometricCredentialStore: any BiometricCredentialLocalCredentialStoreProtocol { get }
+  var biometricCredentialStore: any BiometricCredentialLocalStoreProtocol { get }
 
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }

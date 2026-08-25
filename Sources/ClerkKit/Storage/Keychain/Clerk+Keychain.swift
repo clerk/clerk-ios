@@ -505,13 +505,13 @@ extension Clerk {
     var biometricCredentialDeletionFailed = false
 
     do {
-      try BiometricCredentialLocalCredentialStore(keychain: keychain)
+      try BiometricCredentialLocalStore(keychain: keychain)
         .deleteAllLocalCredentials(keyManager: BiometricCredentialKeyManager())
     } catch {
       biometricCredentialDeletionFailed = true
       ClerkLogger.logError(
         error,
-        message: "Failed to delete biometric-credential local credentials. This is non-critical.",
+        message: "Failed to delete biometric local credentials. This is non-critical.",
         configuration: configuration
       )
     }
@@ -587,14 +587,14 @@ extension Clerk {
     var biometricCredentialDeletionFailed = false
 
     do {
-      try BiometricCredentialLocalCredentialStore(keychain: keychain)
+      try BiometricCredentialLocalStore(keychain: keychain)
         .deleteAllLocalCredentials(keyManager: BiometricCredentialKeyManager())
     } catch {
       biometricCredentialDeletionFailed = true
       failures.append(ClerkKeychainKey.biometricCredentials.rawValue)
       ClerkLogger.logError(
         error,
-        message: "Failed to delete biometric-credential local credentials during Clerk reconfiguration.",
+        message: "Failed to delete biometric local credentials during Clerk reconfiguration.",
         configuration: configuration
       )
     }

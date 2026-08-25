@@ -24,7 +24,7 @@ final class MockDependencyContainer: Dependencies {
   let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
   let shouldHydrateProvisionalLegacyClient: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
-  let biometricCredentialStore: any BiometricCredentialLocalCredentialStoreProtocol
+  let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
@@ -80,7 +80,7 @@ final class MockDependencyContainer: Dependencies {
     sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? = nil,
     shouldHydrateProvisionalLegacyClient: Bool = false,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
-    biometricCredentialStore: (any BiometricCredentialLocalCredentialStoreProtocol)? = nil,
+    biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     clientService: (any ClientServiceProtocol)? = nil,
     hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
@@ -113,7 +113,7 @@ final class MockDependencyContainer: Dependencies {
     self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =
-      biometricCredentialStore ?? BiometricCredentialLocalCredentialStore(keychain: resolvedAppLocalKeychain)
+      biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()

@@ -27,7 +27,7 @@ public struct Verification: Codable, Equatable, Hashable, Sendable {
   /// The nonce pertaining to the verification.
   public var nonce: String?
 
-  /// The challenge payload for biometric-credential sign-in verifications.
+  /// The challenge payload for biometric sign-in verifications.
   public var biometricCredentialChallenge: BiometricCredentialChallenge?
 
   public init(

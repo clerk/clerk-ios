@@ -11,14 +11,14 @@ public struct BiometricCredentials {
   private let biometricCredentialService: BiometricCredentialServiceProtocol
   private let signInService: SignInServiceProtocol
   private let keyManager: any BiometricCredentialKeyManagerProtocol
-  private let credentialStore: any BiometricCredentialLocalCredentialStoreProtocol
+  private let credentialStore: any BiometricCredentialLocalStoreProtocol
   private let appIdentifierProvider: @MainActor @Sendable () -> String?
 
   init(
     biometricCredentialService: BiometricCredentialServiceProtocol,
     signInService: SignInServiceProtocol,
     keyManager: any BiometricCredentialKeyManagerProtocol,
-    credentialStore: any BiometricCredentialLocalCredentialStoreProtocol,
+    credentialStore: any BiometricCredentialLocalStoreProtocol,
     appIdentifierProvider: @escaping @MainActor @Sendable () -> String? = {
       Bundle.main.bundleIdentifier
     }
@@ -35,11 +35,11 @@ public struct BiometricCredentials {
     try await biometricCredentialService.list()
   }
 
-  /// Returns local biometric-credential sign-in availability.
+  /// Returns local biometric sign-in availability.
   ///
   /// When a Clerk session is active, this also reconciles the local credential with the server.
   /// Without an active session, this reports whether the local biometric-gated credential can
-  /// be used to start biometric-credential sign-in.
+  /// be used to start biometric sign-in.
   public func availability(
     id: String? = nil,
     identifierHint: String? = nil
@@ -65,7 +65,7 @@ public struct BiometricCredentials {
     }
   }
 
-  /// Returns local biometric-credential sign-in availability without reconciling with the server.
+  /// Returns local biometric sign-in availability without reconciling with the server.
   package func localAvailability(
     id: String? = nil,
     identifierHint: String? = nil
@@ -91,7 +91,7 @@ public struct BiometricCredentials {
     }
   }
 
-  /// Enrolls the current app installation as a biometric biometric credential.
+  /// Enrolls the current app installation as a biometric credential.
   ///
   /// This requires an active or pending Clerk session. The generated private key stays on the device.
   /// - Parameters:
@@ -239,13 +239,13 @@ public struct BiometricCredentials {
     identifierHint: String? = nil,
     reason: String? = nil
   ) async throws -> SignIn {
-    let localCredential: BiometricCredentialLocalCredential
+    let localCredential: BiometricCredentialLocalRecord
     switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
     case let .available(credential):
       localCredential = credential
     case .unavailable:
       throw ClerkClientError(
-        message: "Biometric-credential sign-in is unavailable."
+        message: "Biometric sign-in is unavailable."
       )
     }
     let biometricCredentialId = localCredential.id
@@ -293,7 +293,7 @@ extension BiometricCredentials {
       return .inconclusive
     }
 
-    let localCredentials: [BiometricCredentialLocalCredential]
+    let localCredentials: [BiometricCredentialLocalRecord]
     do {
       switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
       case let .available(credentials):
@@ -356,13 +356,13 @@ extension BiometricCredentials {
 
     switch reason {
     case .environmentUnavailable:
-      throw ClerkClientError(message: "Unable to use biometric-credential sign-in before the Clerk environment is loaded.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in before the Clerk environment is loaded.")
     case .nativeAPIDisabled:
-      throw ClerkClientError(message: "Unable to use biometric-credential sign-in because Native API is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because Native API is disabled.")
     case .featureDisabled:
-      throw ClerkClientError(message: "Unable to use biometric-credential sign-in because it is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because it is disabled.")
     default:
-      throw ClerkClientError(message: "Biometric-credential sign-in is unavailable.")
+      throw ClerkClientError(message: "Biometric sign-in is unavailable.")
     }
   }
 
@@ -375,7 +375,7 @@ extension BiometricCredentials {
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) async throws -> LocalCredentialResult<BiometricCredentialLocalCredential> {
+  ) async throws -> LocalCredentialResult<BiometricCredentialLocalRecord> {
     switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID) {
     case let .available(supportedCredentials):
       guard Clerk.shared.session?.status == .active else {
@@ -428,7 +428,7 @@ extension BiometricCredentials {
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) throws -> LocalCredentialResult<[BiometricCredentialLocalCredential]> {
+  ) throws -> LocalCredentialResult<[BiometricCredentialLocalRecord]> {
     if let unavailableReason = biometricCredentialFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
@@ -455,7 +455,7 @@ extension BiometricCredentials {
     id: String?,
     identifierHint: String?,
     userID: String?
-  ) throws -> [BiometricCredentialLocalCredential] {
+  ) throws -> [BiometricCredentialLocalRecord] {
     var credentials = try storedLocalCredentialsForCurrentApp()
     if let id {
       credentials = credentials.filter { $0.id == id }
@@ -476,7 +476,7 @@ extension BiometricCredentials {
     }
   }
 
-  private func storedLocalCredentialsForCurrentApp() throws -> [BiometricCredentialLocalCredential] {
+  private func storedLocalCredentialsForCurrentApp() throws -> [BiometricCredentialLocalRecord] {
     guard let appIdentifier = appIdentifierProvider() else {
       return []
     }
@@ -485,9 +485,9 @@ extension BiometricCredentials {
   }
 
   private func localCredentialsWithExistingKeys(
-    from credentials: [BiometricCredentialLocalCredential]
-  ) throws -> [BiometricCredentialLocalCredential] {
-    var credentialsWithKeys: [BiometricCredentialLocalCredential] = []
+    from credentials: [BiometricCredentialLocalRecord]
+  ) throws -> [BiometricCredentialLocalRecord] {
+    var credentialsWithKeys: [BiometricCredentialLocalRecord] = []
 
     for credential in credentials {
       if try localKeyExists(for: credential) {
@@ -500,7 +500,7 @@ extension BiometricCredentials {
     return credentialsWithKeys
   }
 
-  private func localKeyExists(for credential: BiometricCredentialLocalCredential) throws -> Bool {
+  private func localKeyExists(for credential: BiometricCredentialLocalRecord) throws -> Bool {
     do {
       return try keyManager.hasKey(localKeyId: credential.localKeyId)
     } catch let error as BiometricCredentialKeyManagerError where error == .keyNotFound {
@@ -508,7 +508,7 @@ extension BiometricCredentials {
     }
   }
 
-  private func deleteLocalCredential(_ credential: BiometricCredentialLocalCredential) throws {
+  private func deleteLocalCredential(_ credential: BiometricCredentialLocalRecord) throws {
     try keyManager.deleteKey(localKeyId: credential.localKeyId)
     try credentialStore.delete(id: credential.id)
   }
@@ -542,7 +542,7 @@ extension BiometricCredentials {
   }
 
   private func removeOtherLocalCredentialsForCurrentApp(keeping biometricCredential: BiometricCredential) {
-    let credentialsToReplace: [BiometricCredentialLocalCredential]
+    let credentialsToReplace: [BiometricCredentialLocalRecord]
     do {
       // The backend replaces active credentials by installation and app identifier, even across users.
       credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != biometricCredential.id }
@@ -566,14 +566,14 @@ extension BiometricCredentials {
 
   private func biometricCredentialChallenge(from signIn: SignIn) throws -> BiometricCredentialChallenge {
     guard let biometricCredentialChallenge = signIn.firstFactorVerification?.biometricCredentialChallenge else {
-      throw ClerkClientError(message: "Biometric-credential sign-in did not return a challenge.")
+      throw ClerkClientError(message: "Biometric sign-in did not return a challenge.")
     }
     return biometricCredentialChallenge
   }
 
   private func handleBiometricSignInError(
     _ error: Error,
-    localCredential: BiometricCredentialLocalCredential
+    localCredential: BiometricCredentialLocalRecord
   ) -> Error {
     guard error.isMissingBiometricCredential else {
       return error

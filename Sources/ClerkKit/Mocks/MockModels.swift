@@ -475,11 +475,11 @@ extension BiometricCredentialLocalKey {
   }
 }
 
-// MARK: BiometricCredentialLocalCredential
+// MARK: BiometricCredentialLocalRecord
 
-extension BiometricCredentialLocalCredential {
-  package static var mock: BiometricCredentialLocalCredential {
-    BiometricCredentialLocalCredential(
+extension BiometricCredentialLocalRecord {
+  package static var mock: BiometricCredentialLocalRecord {
+    BiometricCredentialLocalRecord(
       id: "tdc_123",
       localKeyId: "tdlk_mock",
       userID: User.mock.id,

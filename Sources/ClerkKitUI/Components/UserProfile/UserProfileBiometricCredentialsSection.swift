@@ -127,7 +127,7 @@ extension UserProfileBiometricCredentialsSection {
       }
 
       self.error = error
-      ClerkLogger.error("Failed to update biometric-credential sign-in", error: error)
+      ClerkLogger.error("Failed to update biometric sign-in", error: error)
     }
   }
 }

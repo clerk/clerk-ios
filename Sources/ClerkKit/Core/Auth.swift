@@ -295,8 +295,8 @@ public struct Auth {
   ///   - id: The biometric credential ID to use. When omitted, the available local credential is used.
   ///   - identifierHint: A local-only user identifier hint used to choose a matching credential.
   ///   - reason: The reason shown in the system biometric prompt.
-  /// - Returns: A `SignIn` object representing the biometric-credential sign-in attempt.
-  /// - Throws: An error if biometric-credential sign-in fails.
+  /// - Returns: A `SignIn` object representing the biometric sign-in attempt.
+  /// - Throws: An error if biometric sign-in fails.
   @discardableResult
   public func signInWithBiometrics(
     id: String? = nil,

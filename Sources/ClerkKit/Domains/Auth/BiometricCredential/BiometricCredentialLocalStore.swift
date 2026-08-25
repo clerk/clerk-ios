@@ -1,12 +1,12 @@
 //
-//  BiometricCredentialLocalCredentialStore.swift
+//  BiometricCredentialLocalStore.swift
 //  Clerk
 //
 
 import Foundation
 
 /// Local metadata that links a Clerk biometric credential to its on-device private key.
-package struct BiometricCredentialLocalCredential: Codable, Equatable, Identifiable {
+package struct BiometricCredentialLocalRecord: Codable, Equatable, Identifiable {
   package let id: String
   package let localKeyId: String
   package let userID: String
@@ -93,12 +93,12 @@ package struct BiometricCredentialLocalCredential: Codable, Equatable, Identifia
   }
 }
 
-package protocol BiometricCredentialLocalCredentialStoreProtocol: Sendable {
-  @MainActor func all() throws -> [BiometricCredentialLocalCredential]
-  @MainActor func all(appIdentifier: String) throws -> [BiometricCredentialLocalCredential]
-  @MainActor func credential(id: String) throws -> BiometricCredentialLocalCredential?
+package protocol BiometricCredentialLocalStoreProtocol: Sendable {
+  @MainActor func all() throws -> [BiometricCredentialLocalRecord]
+  @MainActor func all(appIdentifier: String) throws -> [BiometricCredentialLocalRecord]
+  @MainActor func credential(id: String) throws -> BiometricCredentialLocalRecord?
   @MainActor func save(
-    _ credential: BiometricCredentialLocalCredential,
+    _ credential: BiometricCredentialLocalRecord,
     deleteReplacedLocalKey: (String) throws -> Void
   ) throws
   @MainActor func delete(id: String) throws
@@ -110,14 +110,14 @@ package protocol BiometricCredentialLocalCredentialStoreProtocol: Sendable {
   @MainActor func deleteAllLocalCredentials(keyManager: any BiometricCredentialKeyManagerProtocol) throws
 }
 
-extension BiometricCredentialLocalCredentialStoreProtocol {
+extension BiometricCredentialLocalStoreProtocol {
   @MainActor
-  func save(_ credential: BiometricCredentialLocalCredential) throws {
+  func save(_ credential: BiometricCredentialLocalRecord) throws {
     try save(credential, deleteReplacedLocalKey: { _ in })
   }
 }
 
-final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCredentialStoreProtocol {
+final class BiometricCredentialLocalStore: BiometricCredentialLocalStoreProtocol {
   private let keychain: any KeychainStorage
   private let keychainKey = ClerkKeychainKey.biometricCredentials.rawValue
 
@@ -126,18 +126,18 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   }
 
   @MainActor
-  func all() throws -> [BiometricCredentialLocalCredential] {
+  func all() throws -> [BiometricCredentialLocalRecord] {
     guard let data = try keychain.data(forKey: keychainKey) else {
       return []
     }
-    return try Self.metadataDecoder().decode([BiometricCredentialLocalCredential].self, from: data)
+    return try Self.metadataDecoder().decode([BiometricCredentialLocalRecord].self, from: data)
   }
 
   @MainActor
-  func all(appIdentifier: String) throws -> [BiometricCredentialLocalCredential] {
-    var credentials: [BiometricCredentialLocalCredential] = []
+  func all(appIdentifier: String) throws -> [BiometricCredentialLocalRecord] {
+    var credentials: [BiometricCredentialLocalRecord] = []
     for record in try rawCredentialRecords() {
-      guard record[BiometricCredentialLocalCredentialMetadataKey.appIdentifier] as? String == appIdentifier else {
+      guard record[BiometricCredentialLocalMetadataKey.appIdentifier] as? String == appIdentifier else {
         continue
       }
       guard let credential = try? Self.decodeCredentialRecord(record) else {
@@ -149,9 +149,9 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   }
 
   @MainActor
-  func credential(id: String) throws -> BiometricCredentialLocalCredential? {
+  func credential(id: String) throws -> BiometricCredentialLocalRecord? {
     for record in try rawCredentialRecords() {
-      guard record[BiometricCredentialLocalCredentialMetadataKey.id] as? String == id else {
+      guard record[BiometricCredentialLocalMetadataKey.id] as? String == id else {
         continue
       }
       return try Self.decodeCredentialRecord(record)
@@ -162,7 +162,7 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
 
   @MainActor
   func save(
-    _ credential: BiometricCredentialLocalCredential,
+    _ credential: BiometricCredentialLocalRecord,
     deleteReplacedLocalKey: (String) throws -> Void
   ) throws {
     let credentialRecord = try Self.rawCredentialRecord(for: credential)
@@ -170,15 +170,15 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
     var replacedLocalKeyIds: [String] = []
 
     for record in try rawCredentialRecords() {
-      if record[BiometricCredentialLocalCredentialMetadataKey.id] as? String == credential.id {
-        if let localKeyId = record[BiometricCredentialLocalCredentialMetadataKey.localKeyId] as? String,
+      if record[BiometricCredentialLocalMetadataKey.id] as? String == credential.id {
+        if let localKeyId = record[BiometricCredentialLocalMetadataKey.localKeyId] as? String,
            localKeyId != credential.localKeyId
         {
           replacedLocalKeyIds.append(localKeyId)
         }
         continue
       }
-      guard record[BiometricCredentialLocalCredentialMetadataKey.appIdentifier] as? String == credential.appIdentifier else {
+      guard record[BiometricCredentialLocalMetadataKey.appIdentifier] as? String == credential.appIdentifier else {
         records.append(record)
         continue
       }
@@ -198,7 +198,7 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   @MainActor
   func delete(id: String) throws {
     try persistRawRecords(rawCredentialRecords().filter {
-      $0[BiometricCredentialLocalCredentialMetadataKey.id] as? String != id
+      $0[BiometricCredentialLocalMetadataKey.id] as? String != id
     })
   }
 
@@ -231,10 +231,10 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   @MainActor
   private func deleteLocalCredentials(
     keyManager: any BiometricCredentialKeyManagerProtocol,
-    shouldDelete: (BiometricCredentialLocalCredential) -> Bool,
+    shouldDelete: (BiometricCredentialLocalRecord) -> Bool,
     deleteMalformedLocalCredentials: (() throws -> Void)? = nil
   ) throws {
-    let credentials: [BiometricCredentialLocalCredential]
+    let credentials: [BiometricCredentialLocalRecord]
     do {
       credentials = try all()
     } catch _ as DecodingError {
@@ -283,11 +283,11 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
     var keyDeletionError: Error?
 
     for (index, record) in records.enumerated() {
-      guard record[BiometricCredentialLocalCredentialMetadataKey.appIdentifier] as? String == appIdentifier else {
+      guard record[BiometricCredentialLocalMetadataKey.appIdentifier] as? String == appIdentifier else {
         continue
       }
 
-      guard let localKeyId = record[BiometricCredentialLocalCredentialMetadataKey.localKeyId] as? String else {
+      guard let localKeyId = record[BiometricCredentialLocalMetadataKey.localKeyId] as? String else {
         deletedRecordIndexes.insert(index)
         try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
         continue
@@ -326,7 +326,7 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
     var deletedRecordIndexes = Set<Int>()
     var keyDeletionError: Error?
     for (index, record) in records.enumerated() {
-      guard let localKeyId = record[BiometricCredentialLocalCredentialMetadataKey.localKeyId] as? String else {
+      guard let localKeyId = record[BiometricCredentialLocalMetadataKey.localKeyId] as? String else {
         deletedRecordIndexes.insert(index)
         try persistRawRecords(records, excludingIndexes: deletedRecordIndexes)
         continue
@@ -351,7 +351,7 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   }
 
   @MainActor
-  private func persist(_ credentials: [BiometricCredentialLocalCredential]) throws {
+  private func persist(_ credentials: [BiometricCredentialLocalRecord]) throws {
     if credentials.isEmpty {
       try deleteAll()
       return
@@ -393,25 +393,25 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
     guard let records = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
       throw DecodingError.dataCorrupted(.init(
         codingPath: [],
-        debugDescription: "Biometric-credential credential metadata is not an array."
+        debugDescription: "Biometric credential metadata is not an array."
       ))
     }
     return records
   }
 
-  private static func decodeCredentialRecord(_ record: [String: Any]) throws -> BiometricCredentialLocalCredential {
+  private static func decodeCredentialRecord(_ record: [String: Any]) throws -> BiometricCredentialLocalRecord {
     try metadataDecoder().decode(
-      BiometricCredentialLocalCredential.self,
+      BiometricCredentialLocalRecord.self,
       from: JSONSerialization.data(withJSONObject: record)
     )
   }
 
-  private static func rawCredentialRecord(for credential: BiometricCredentialLocalCredential) throws -> [String: Any] {
+  private static func rawCredentialRecord(for credential: BiometricCredentialLocalRecord) throws -> [String: Any] {
     let data = try metadataEncoder().encode(credential)
     guard let record = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
       throw EncodingError.invalidValue(credential, .init(
         codingPath: [],
-        debugDescription: "Biometric-credential credential metadata is not an object."
+        debugDescription: "Biometric credential metadata is not an object."
       ))
     }
     return record
@@ -430,7 +430,7 @@ final class BiometricCredentialLocalCredentialStore: BiometricCredentialLocalCre
   }
 }
 
-private enum BiometricCredentialLocalCredentialMetadataKey {
+private enum BiometricCredentialLocalMetadataKey {
   static let id = "id"
   static let localKeyId = "localKeyId"
   static let appIdentifier = "appIdentifier"
