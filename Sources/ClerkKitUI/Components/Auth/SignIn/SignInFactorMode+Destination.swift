@@ -26,7 +26,7 @@ extension SignInFactorMode {
     case .secondFactor:
       .signInFactorTwoUseAnotherMethod(currentFactor: currentFactor)
     case .clientTrust:
-      .signInClientTrustUseAnotherMethod(currentFactor: currentFactor)
+      .signInFactorTwoUseAnotherMethod(currentFactor: currentFactor)
     }
   }
 }

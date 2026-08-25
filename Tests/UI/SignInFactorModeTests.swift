@@ -13,12 +13,12 @@ struct SignInFactorModeTests {
   }
 
   @Test
-  func clientTrustModeSurvivesAlternativeMethodNavigation() {
+  func clientTrustModeUsesClientTrustForCurrentFactorAndSecondFactorForAlternatives() {
     let factor = Factor(strategy: .passkey)
 
     #expect(
       SignInFactorMode.clientTrust.alternativeMethodsDestination(currentFactor: factor)
-        == .signInClientTrustUseAnotherMethod(currentFactor: factor)
+        == .signInFactorTwoUseAnotherMethod(currentFactor: factor)
     )
     #expect(
       SignInFactorMode.clientTrust.destination(for: factor)
