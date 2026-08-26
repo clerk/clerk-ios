@@ -10,7 +10,7 @@ import Foundation
 enum ClerkInitializationError: Error, LocalizedError, ClerkError {
   case missingPublishableKey
 
-  case invalidPublishableKeyFormat(key: String)
+  case invalidPublishableKeyFormat
 
   case invalidProxyUrl
 
@@ -39,8 +39,6 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
 
   var context: [String: String]? {
     switch self {
-    case let .invalidPublishableKeyFormat(key):
-      ["key": key]
     case let .apiClientInitializationFailed(reason):
       ["reason": reason]
     default:
@@ -51,26 +49,25 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
   var errorDescription: String? {
     switch self {
     case .missingPublishableKey:
-      return "Clerk publishable key is missing. Please call Clerk.configure(publishableKey:options:) with a valid publishable key before calling load()."
+      "Clerk publishable key is missing. Run `npx clerk@latest init` from your Xcode project directory to configure Clerk, or pass a valid publishable key to `Clerk.configure(publishableKey:options:)`."
 
-    case let .invalidPublishableKeyFormat(key):
-      let maskedKey = key.isEmpty ? "empty" : (key.count > 10 ? String(key.prefix(10)) + "..." : key)
-      return "Invalid publishable key format: '\(maskedKey)'. Publishable keys must start with 'pk_test_' or 'pk_live_'."
+    case .invalidPublishableKeyFormat:
+      "Clerk publishable key is invalid. Verify that the value passed to `Clerk.configure(publishableKey:options:)` is a valid `pk_test_...` or `pk_live_...` key, or run `npx clerk@latest init` from your Xcode project directory to configure Clerk again."
 
     case .invalidProxyUrl:
-      return "Invalid proxy URL. The proxy URL must be a full http or https URL, such as https://proxy.example.com/__clerk."
+      "Invalid proxy URL. The proxy URL must be a full http or https URL, such as https://proxy.example.com/__clerk."
 
     case let .clientLoadFailed(underlyingError):
-      return "Failed to load client data: \(underlyingError.localizedDescription)"
+      "Failed to load client data: \(underlyingError.localizedDescription)"
 
     case let .environmentLoadFailed(underlyingError):
-      return "Failed to load environment configuration: \(underlyingError.localizedDescription)"
+      "Failed to load environment configuration: \(underlyingError.localizedDescription)"
 
     case let .apiClientInitializationFailed(reason):
-      return "Failed to initialize API client: \(reason)"
+      "Failed to initialize API client: \(reason)"
 
     case let .initializationFailed(underlyingError):
-      return "Failed to initialize Clerk: \(underlyingError.localizedDescription)"
+      "Failed to initialize Clerk: \(underlyingError.localizedDescription)"
     }
   }
 
@@ -79,8 +76,8 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
     case .missingPublishableKey:
       "No publishable key was provided to Clerk.configure()."
 
-    case let .invalidPublishableKeyFormat(key):
-      "The provided key '\(key)' does not match the expected format (pk_test_... or pk_live_...)."
+    case .invalidPublishableKeyFormat:
+      "The provided publishable key does not match the expected format (pk_test_... or pk_live_...)."
 
     case .invalidProxyUrl:
       "Clerk.Options.proxyUrl has no http or https scheme or no host, so requests can't be sent through it."
