@@ -176,6 +176,7 @@ public struct OrganizationSwitcher<Route: Hashable, LabelContent: View, Destinat
     }
     .sheet(item: $presentedSheet) { sheet in
       view(for: sheet)
+        .environment(clerk)
     }
     .onChange(of: user?.id) { _, userId in
       if userId == nil {

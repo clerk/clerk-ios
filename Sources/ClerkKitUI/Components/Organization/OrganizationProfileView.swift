@@ -217,11 +217,19 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
         }
         .sheet(isPresented: $updateProfileIsPresented) {
           OrganizationProfileUpdateProfileView(organization: organization)
+            .environment(clerk)
         }
         .sheet(item: $presentedConfirmation) { confirmation in
           OrganizationProfileActionConfirmationView(
             action: confirmation,
             organization: organization
+          )
+          .environment(clerk)
+          .environment(
+            OrganizationProfileBuiltInRouter(
+              push: navigateToBuiltIn,
+              dismissAction: dismissAction
+            )
           )
         }
         .task {

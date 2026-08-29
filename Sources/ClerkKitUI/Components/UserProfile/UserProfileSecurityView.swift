@@ -12,6 +12,7 @@ struct UserProfileSecurityView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
+  @Environment(CodeLimiter.self) private var codeLimiter
   @State private var error: Error?
 
   @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
@@ -143,6 +144,9 @@ struct UserProfileSecurityView: View {
     }
     .sheet(item: $navigation.presentedAddMfaType) {
       $0.view
+        .environment(clerk)
+        .environment(navigation)
+        .environment(codeLimiter)
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
@@ -196,6 +200,12 @@ extension UserProfileSecurityView {
   }
   .clerkPreview()
   .environment(UserProfileSheetNavigation())
+  .environment(
+    UserProfileBuiltInRouter(
+      push: { _ in },
+      dismissAction: { _ in }
+    )
+  )
   .environment(\.clerkTheme, .clerk)
 }
 

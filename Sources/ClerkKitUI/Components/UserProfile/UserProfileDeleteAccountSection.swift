@@ -40,6 +40,12 @@ struct UserProfileDeleteAccountSection: View {
 
 #Preview {
   UserProfileDeleteAccountSection()
+    .environment(
+      UserProfileBuiltInRouter(
+        push: { _ in },
+        dismissAction: { _ in }
+      )
+    )
     .clerkPreview()
 }
 

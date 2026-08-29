@@ -201,8 +201,12 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         #if os(iOS)
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
+          .environment(clerk)
+          .environment(sheetNavigation)
         #elseif os(macOS)
         UserButtonAccountSwitcher()
+          .environment(clerk)
+          .environment(sheetNavigation)
         #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
@@ -214,6 +218,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         // rather than showing the host's back button.
         AuthView()
           .environment(\.clerkHostBackAction, nil)
+          .environment(clerk)
       }
       .task(id: user) {
         await getSessionsOnAllDevices()
