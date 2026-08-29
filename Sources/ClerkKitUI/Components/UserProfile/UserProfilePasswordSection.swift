@@ -49,6 +49,7 @@ struct UserProfilePasswordSection: View {
     }
     .sheet(item: $passwordAction) { action in
       UserProfileChangePasswordView(isAddingPassword: action == .add)
+        .environment(clerk)
     }
   }
 

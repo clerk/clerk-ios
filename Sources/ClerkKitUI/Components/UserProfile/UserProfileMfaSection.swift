@@ -12,6 +12,7 @@ struct UserProfileMfaSection: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var addMfaHeight: CGFloat = 400
 
@@ -80,6 +81,9 @@ struct UserProfileMfaSection: View {
       #if os(iOS)
       .presentationDetents([.height(addMfaHeight)])
       #endif
+      .environment(clerk)
+      .environment(navigation)
+      .environment(codeLimiter)
     }
   }
 }

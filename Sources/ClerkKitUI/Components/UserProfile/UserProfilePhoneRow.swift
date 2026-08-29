@@ -12,6 +12,7 @@ struct UserProfilePhoneRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.locale) private var locale
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
   @State private var isLoading = false
@@ -115,6 +116,8 @@ struct UserProfilePhoneRow: View {
     }
     .sheet(item: $addPhoneNumberDestination) {
       UserProfileAddPhoneView(desintation: $0)
+        .environment(clerk)
+        .environment(codeLimiter)
     }
     .confirmationDialog(
       removeResource?.messageLine1(locale: locale) ?? "",
