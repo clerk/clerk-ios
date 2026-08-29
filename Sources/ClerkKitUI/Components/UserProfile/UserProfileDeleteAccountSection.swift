@@ -9,7 +9,10 @@ import ClerkKit
 import SwiftUI
 
 struct UserProfileDeleteAccountSection: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
+  @Environment(UserProfileSheetNavigation.self) private var navigation
+  @Environment(UserProfileBuiltInRouter.self) private var builtInRouter
 
   @State private var confirmationIsPresented = false
 
@@ -28,12 +31,21 @@ struct UserProfileDeleteAccountSection: View {
     }
     .sheet(isPresented: $confirmationIsPresented) {
       UserProfileDeleteAccountConfirmationView()
+        .environment(clerk)
+        .environment(navigation)
+        .environment(builtInRouter)
     }
   }
 }
 
 #Preview {
   UserProfileDeleteAccountSection()
+    .environment(
+      UserProfileBuiltInRouter(
+        push: { _ in },
+        dismissAction: { _ in }
+      )
+    )
     .clerkPreview()
 }
 

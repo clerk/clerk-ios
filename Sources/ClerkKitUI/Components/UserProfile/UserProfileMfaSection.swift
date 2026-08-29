@@ -80,6 +80,8 @@ struct UserProfileMfaSection: View {
       #if os(iOS)
       .presentationDetents([.height(addMfaHeight)])
       #endif
+      .environment(clerk)
+      .environment(navigation)
     }
   }
 }

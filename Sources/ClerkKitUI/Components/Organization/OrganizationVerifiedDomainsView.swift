@@ -110,6 +110,7 @@ struct OrganizationVerifiedDomainsView: View {
     .clerkErrorPresenting($error)
     .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
       view(for: presentedDomainFlow)
+        .environment(clerk)
     }
     .task(id: organization?.id) {
       await loadDomains(page: 1)

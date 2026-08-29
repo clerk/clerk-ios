@@ -166,14 +166,17 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
         #if os(iOS)
         .presentationDragIndicator(.visible)
         #endif
+        .environment(clerk)
       case .sessionTaskAuth:
         AuthView()
           #if os(iOS)
           .presentationDragIndicator(.visible)
           #endif
+          .environment(clerk)
       case .signOut:
         UserButtonSignOutView()
           .contentSizingDetent()
+          .environment(clerk)
       }
     }
     .onChange(of: clerk.user) { _, newValue in

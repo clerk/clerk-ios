@@ -84,6 +84,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       }
       .presentationBackground(theme.colors.background)
       .tint(theme.colors.primary)
+      .environment(clerk)
     }
   }
 

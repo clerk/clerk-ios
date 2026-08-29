@@ -47,6 +47,7 @@ struct ContentView: View {
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView()
+        .environment(clerk)
     }
   }
 }

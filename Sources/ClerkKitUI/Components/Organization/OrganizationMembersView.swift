@@ -112,6 +112,7 @@ struct OrganizationMembersView: View {
           inviteMembersIsPresented = false
         }
       }
+      .environment(clerk)
     }
     .clerkErrorPresenting($dataSource.error)
     .task(id: organization?.id) {
