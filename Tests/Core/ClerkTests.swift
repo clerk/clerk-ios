@@ -1686,7 +1686,7 @@ struct ClerkTests {
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
       work: awaiting.work,
-      presentation: .trustedDeviceEnrollment
+      presentation: .biometricCredentialEnrollment
     ))
     #expect(clerk.finishAuthFlowPresentation(token))
     let resolved = try #require(awaitingAuthFlow(in: clerk, for: registration))
