@@ -314,7 +314,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
-  func validateDoesNotHoldRegisteredAuthFlowForRefreshedActiveClient() async throws {
+  func validateHoldsRefreshedActiveClientUntilAuthViewCompletes() async throws {
     configureClerkForTesting()
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
@@ -333,13 +333,15 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await middleware.validate(response, data: data, for: request)
 
     #expect(clerk.session?.status == .active)
-    #expect(clerk.isAuthFlowComplete)
     let snapshot = try #require(clerk.authFlowSnapshot(for: registration))
-    guard case .awaiting(_, let completion) = snapshot.phase else {
+    guard case .awaiting(let work, let completion) = snapshot.phase else {
       Issue.record("Expected the externally refreshed session to be observed")
       return
     }
     #expect(completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(work))
+    #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
 

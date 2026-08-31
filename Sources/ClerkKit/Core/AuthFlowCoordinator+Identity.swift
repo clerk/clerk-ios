@@ -162,6 +162,19 @@ extension AuthFlowCoordinator {
       return true
     }
 
+    if case .awaiting(var target) = phase,
+       target.sessionId == sessionId
+    {
+      if target.completion == nil {
+        target.origin = .completed(result, activationId: nil)
+        phase = .awaiting(target)
+        return true
+      }
+      if target.flowId == result.flowId {
+        return false
+      }
+    }
+
     phase = .awaiting(Target(
       id: UUID(),
       sessionId: sessionId,
@@ -286,6 +299,9 @@ extension AuthFlowCoordinator {
       if case .observing = phase { return false }
       phase = .observing
       return true
+    }
+    if currentTarget?.sessionId == currentSession.id {
+      return false
     }
     phase = .awaiting(externalTarget(for: currentSession))
     return true

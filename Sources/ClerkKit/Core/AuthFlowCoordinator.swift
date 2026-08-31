@@ -71,11 +71,6 @@ struct AuthFlowCoordinator {
       return result
     }
 
-    var holdsRoot: Bool {
-      if case .external = self { return false }
-      return true
-    }
-
     var hasScopedActivation: Bool {
       switch self {
       case .external:
@@ -132,10 +127,6 @@ struct AuthFlowCoordinator {
       hasResolvedEnrollmentStep ? nil : completion
     }
 
-    var holdsRoot: Bool {
-      origin.holdsRoot
-    }
-
     var flowId: String? {
       completion?.flowId
     }
@@ -180,9 +171,7 @@ struct AuthFlowCoordinator {
     switch phase {
     case .observing:
       return false
-    case .awaiting(let target):
-      return target.holdsRoot
-    case .presenting:
+    case .awaiting, .presenting:
       return true
     }
   }
@@ -332,7 +321,11 @@ struct AuthFlowCoordinator {
 
 extension AuthFlowCoordinator.Target {
   fileprivate func work(ownerId: UUID) -> AuthFlowWork {
-    AuthFlowWork(ownerId: ownerId, id: id, sessionId: sessionId)
+    AuthFlowWork(
+      ownerId: ownerId,
+      id: id,
+      sessionId: sessionId
+    )
   }
 }
 
