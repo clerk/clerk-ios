@@ -994,6 +994,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == signIn.createdSessionId)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(work))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1048,6 +1050,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == signIn.createdSessionId)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(work))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(originalRegistration) {}
     withExtendedLifetime(replacementRegistration) {}
@@ -1111,6 +1115,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == signIn.createdSessionId)
     #expect(completion == nil)
+    #expect(restarted.clerk.isAuthFlowComplete == false)
+    #expect(restarted.clerk.completeAuthFlow(work))
     #expect(restarted.clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
     withExtendedLifetime(restartedRegistration) {}
@@ -1202,6 +1208,8 @@ struct SharedSessionSyncTests {
     }
     #expect(supersedingWork.sessionId == sessionB.id)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(supersedingWork))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1350,6 +1358,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == sessionB.id)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(work))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(originalRegistration) {}
     withExtendedLifetime(replacementRegistration) {}
@@ -1500,6 +1510,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == sessionB.id)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(work))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1740,6 +1752,8 @@ struct SharedSessionSyncTests {
     }
     #expect(work.sessionId == sessionB.id)
     #expect(completion == nil)
+    #expect(node.clerk.isAuthFlowComplete == false)
+    #expect(node.clerk.completeAuthFlow(work))
     #expect(node.clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }

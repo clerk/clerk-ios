@@ -1507,7 +1507,7 @@ struct AuthTests {
   }
 
   @Test
-  func recoveredSessionActivationCompletesAuthFlowSelection() async throws {
+  func recoveredSessionActivationWaitsForAuthViewCompletion() async throws {
     struct ActivationError: Error {}
 
     let sessionService = MockSessionService(setActive: { _, _ in
@@ -1528,6 +1528,13 @@ struct AuthTests {
       authFlowActivation: activation
     )
 
+    let snapshot = try #require(Clerk.shared.authFlowSnapshot(for: registration))
+    guard case .awaiting(let work, _) = snapshot.phase else {
+      Issue.record("Expected the recovered session to await AuthView completion")
+      return
+    }
+    #expect(Clerk.shared.isAuthFlowComplete == false)
+    #expect(Clerk.shared.completeAuthFlow(work))
     #expect(Clerk.shared.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }

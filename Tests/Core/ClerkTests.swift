@@ -1480,7 +1480,7 @@ struct ClerkTests {
   }
 
   @Test
-  func dismissibleAuthFlowOwnsCompletionWithoutGatingSignedInContent() throws {
+  func dismissibleAuthFlowCompletionDoesNotGateSignedInContent() throws {
     let clerk = Clerk.mock
     let registration = try #require(
       clerk.registerAuthFlow(role: .dismissible)
@@ -1497,7 +1497,7 @@ struct ClerkTests {
   }
 
   @Test
-  func externalActiveSessionDoesNotHoldRootAuthFlow() throws {
+  func externalActiveSessionHoldsRootUntilAuthViewCompletes() throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
@@ -1506,12 +1506,14 @@ struct ClerkTests {
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(awaiting.sessionId == clerk.session?.id)
     #expect(awaiting.completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(awaiting.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
 
   @Test
-  func ownedHostedActivationHoldsRootUntilSessionSelectionCompletes() throws {
+  func ownedHostedActivationHoldsRootUntilAuthViewCompletes() throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     let sessionId = try #require(Client.mock.currentSession?.id)
@@ -1529,6 +1531,39 @@ struct ClerkTests {
 
     clerk.authSessionActivationDidFinish(activation: activation)
 
+    let resolved = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(resolved.work == awaiting.work)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(resolved.work))
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func supersededCompletionPreservesCurrentSessionWork() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let sessionId = try #require(Client.mock.currentSession?.id)
+    let activation = try #require(clerk.beginAuthSessionActivation(
+      sessionId: sessionId,
+      ownerId: registration.id
+    ))
+    clerk.setClientFromIdentityController(.mock)
+    clerk.authSessionActivationDidFinish(activation: activation)
+    let initial = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    var supersededSignIn = SignIn.mock
+    supersededSignIn.status = .complete
+    supersededSignIn.createdSessionId = "superseded-session"
+
+    clerk.resolveSupersededAuthFlowCompletion(
+      .signIn(supersededSignIn),
+      ownerId: registration.id
+    )
+
+    let preserved = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(preserved.work == initial.work)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(preserved.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1637,6 +1672,32 @@ struct ClerkTests {
 
     #expect(clerk.completeAuthFlow(reconciled.work))
     #expect(observesAuthFlow(in: clerk, for: registration))
+    #expect(clerk.isAuthFlowComplete)
+    withExtendedLifetime(registration) {}
+  }
+
+  @Test
+  func replayedCompletionPreservesResolvedPostAuthWork() throws {
+    let clerk = Clerk.mockSignedOut
+    let registration = try #require(clerk.registerAuthFlow())
+    let completion = completedAuthFlow()
+    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    let token = try #require(clerk.startAuthFlowPresentation(
+      for: registration,
+      work: awaiting.work,
+      presentation: .biometricCredentialEnrollment
+    ))
+    #expect(clerk.finishAuthFlowPresentation(token))
+    let resolved = try #require(awaitingAuthFlow(in: clerk, for: registration))
+
+    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+
+    let replayed = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(replayed.work == resolved.work)
+    #expect(replayed.completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(replayed.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1886,6 +1947,8 @@ struct ClerkTests {
     #expect(external.workId != accepted.workId)
     #expect(external.sessionId == sessionB.id)
     #expect(external.completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(external.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -1966,6 +2029,8 @@ struct ClerkTests {
     let external = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(external.sessionId == sessionB.id)
     #expect(external.completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(external.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -2297,6 +2362,9 @@ struct ClerkTests {
 
     clerk.authSessionActivationDidFinish(activation: activation)
 
+    let completed = try #require(awaitingAuthFlow(in: clerk, for: registration))
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(completed.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
@@ -2453,6 +2521,8 @@ struct ClerkTests {
 
     let external = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(external.completion == nil)
+    #expect(clerk.isAuthFlowComplete == false)
+    #expect(clerk.completeAuthFlow(external.work))
     #expect(clerk.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
