@@ -5,10 +5,45 @@
 
 import Foundation
 
-public enum BillingPaymentMethodStatus: String, Codable, Equatable, Sendable {
+public enum BillingPaymentMethodStatus: Codable, Equatable, Sendable {
   case active
   case expired
   case disconnected
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .active:
+      "active"
+    case .expired:
+      "expired"
+    case .disconnected:
+      "disconnected"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "active":
+      self = .active
+    case "expired":
+      self = .expired
+    case "disconnected":
+      self = .disconnected
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
 public struct BillingPaymentMethod: Codable, Equatable, Sendable, Identifiable {

@@ -5,33 +5,204 @@
 
 import Foundation
 
-public enum BillingSubscriptionStatus: String, Codable, Equatable, Sendable {
+public enum BillingSubscriptionStatus: Codable, Equatable, Sendable {
   case active
   case ended
   case upcoming
-  case pastDue = "past_due"
+  case pastDue
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .active:
+      "active"
+    case .ended:
+      "ended"
+    case .upcoming:
+      "upcoming"
+    case .pastDue:
+      "past_due"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "active":
+      self = .active
+    case "ended":
+      self = .ended
+    case "upcoming":
+      self = .upcoming
+    case "past_due":
+      self = .pastDue
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
-public enum BillingSubscriptionPlanPeriod: String, Codable, Equatable, Sendable {
+public enum BillingSubscriptionPlanPeriod: Codable, Equatable, Sendable {
   case month
   case annual
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .month:
+      "month"
+    case .annual:
+      "annual"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "month":
+      self = .month
+    case "annual":
+      self = .annual
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
-public enum BillingDiscountEffect: String, Codable, Equatable, Sendable {
+public enum BillingDiscountEffect: Codable, Equatable, Sendable {
   case percentage
-  case fixedAmount = "fixed_amount"
+  case fixedAmount
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .percentage:
+      "percentage"
+    case .fixedAmount:
+      "fixed_amount"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "percentage":
+      self = .percentage
+    case "fixed_amount":
+      self = .fixedAmount
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
-public enum BillingDiscountSource: String, Codable, Equatable, Sendable {
+public enum BillingDiscountSource: Codable, Equatable, Sendable {
   case promotion
   case manual
-  case promoCode = "promo_code"
+  case promoCode
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .promotion:
+      "promotion"
+    case .manual:
+      "manual"
+    case .promoCode:
+      "promo_code"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "promotion":
+      self = .promotion
+    case "manual":
+      self = .manual
+    case "promo_code":
+      self = .promoCode
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
-public enum BillingDiscountRedemptionStatus: String, Codable, Equatable, Sendable {
+public enum BillingDiscountRedemptionStatus: Codable, Equatable, Sendable {
   case active
   case exhausted
   case removed
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .active:
+      "active"
+    case .exhausted:
+      "exhausted"
+    case .removed:
+      "removed"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "active":
+      self = .active
+    case "exhausted":
+      self = .exhausted
+    case "removed":
+      self = .removed
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
 public struct BillingProrationCreditDetail: Codable, Equatable, Sendable {

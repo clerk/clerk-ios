@@ -5,9 +5,40 @@
 
 import Foundation
 
-public enum BillingPayerResourceType: String, Codable, Equatable, Sendable {
+public enum BillingPayerResourceType: Codable, Equatable, Sendable {
   case org
   case user
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .org:
+      "org"
+    case .user:
+      "user"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "org":
+      self = .org
+    case "user":
+      self = .user
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
 public struct BillingPlanUnitPriceTier: Codable, Equatable, Sendable, Identifiable {

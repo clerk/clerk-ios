@@ -5,9 +5,40 @@
 
 import Foundation
 
-public enum BillingStatementStatus: String, Codable, Equatable, Sendable {
+public enum BillingStatementStatus: Codable, Equatable, Sendable {
   case open
   case closed
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .open:
+      "open"
+    case .closed:
+      "closed"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "open":
+      self = .open
+    case "closed":
+      self = .closed
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
 public struct BillingStatementTotals: Codable, Equatable, Sendable {

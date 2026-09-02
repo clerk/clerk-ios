@@ -296,6 +296,22 @@ struct BillingTests {
   }
 
   @Test
+  func decodesUnknownBillingEnumValuesWithoutFailingTheResource() throws {
+    #expect(BillingSubscriptionStatus(rawValue: "canceled") == .unknown("canceled"))
+    #expect(BillingSubscriptionStatus(rawValue: "canceled").rawValue == "canceled")
+    #expect(BillingPaymentChargeType(rawValue: "price_transition") == .priceTransition)
+    #expect(BillingPaymentChargeType(rawValue: "future_charge").rawValue == "future_charge")
+
+    let unknownPaymentJSON = paymentJSON
+      .replacingOccurrences(of: "\"charge_type\": \"recurring\"", with: "\"charge_type\": \"price_transition\"")
+      .replacingOccurrences(of: "\"status\": \"paid\"", with: "\"status\": \"settled\"")
+    let payment = try decoder.decode(BillingPayment.self, from: Data(unknownPaymentJSON.utf8))
+    #expect(payment.chargeType == .priceTransition)
+    #expect(payment.status == .unknown("settled"))
+    #expect(payment.id == "pay_1")
+  }
+
+  @Test
   func decodesBillingPaymentMethod() throws {
     let method = try decoder.decode(BillingPaymentMethod.self, from: Data(paymentMethodJSON.utf8))
     #expect(method.id == "pm_1")

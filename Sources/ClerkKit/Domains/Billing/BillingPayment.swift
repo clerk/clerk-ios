@@ -5,15 +5,86 @@
 
 import Foundation
 
-public enum BillingPaymentChargeType: String, Codable, Equatable, Sendable {
+public enum BillingPaymentChargeType: Codable, Equatable, Sendable {
   case checkout
   case recurring
+  case priceTransition
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .checkout:
+      "checkout"
+    case .recurring:
+      "recurring"
+    case .priceTransition:
+      "price_transition"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "checkout":
+      self = .checkout
+    case "recurring":
+      self = .recurring
+    case "price_transition":
+      self = .priceTransition
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
-public enum BillingPaymentStatus: String, Codable, Equatable, Sendable {
+public enum BillingPaymentStatus: Codable, Equatable, Sendable {
   case pending
   case paid
   case failed
+  case unknown(String)
+
+  public var rawValue: String {
+    switch self {
+    case .pending:
+      "pending"
+    case .paid:
+      "paid"
+    case .failed:
+      "failed"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "pending":
+      self = .pending
+    case "paid":
+      self = .paid
+    case "failed":
+      self = .failed
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    try BillingUnknownString.encode(rawValue, to: encoder)
+  }
 }
 
 public struct BillingPaymentTotals: Codable, Equatable, Sendable {
