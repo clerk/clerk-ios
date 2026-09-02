@@ -90,19 +90,22 @@ struct AppVersionSupportStatusResolverTests {
   }
 
   @Test
-  func unsupportedMetaMapsOnlyMatchingIOSApp() {
+  func unsupportedMetaMapsOnlyMatchingIOSRequest() {
     let matching = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       [
         "platform": "ios",
         "app_identifier": "Com.Example.App",
+        "current_version": "1.0.0",
         "minimum_version": "3.0.0",
         "update_url": "https://apps.apple.com/app/id123",
       ],
-      bundleID: "com.example.app"
+      requestBundleID: " com.example.app ",
+      requestVersion: "1.0.0"
     )
     let android = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       ["platform": "android", "app_identifier": "com.example.app"],
-      bundleID: "com.example.app"
+      requestBundleID: "com.example.app",
+      requestVersion: "1.0.0"
     )
 
     #expect(matching?.isSupported == false)
@@ -117,10 +120,135 @@ struct AppVersionSupportStatusResolverTests {
       [
         "platform": "ios",
         "app_identifier": "com.example.app",
+        "current_version": "1.0.0",
         "minimum_version": "3.0.0",
         "update_url": updateURLJSON,
       ],
-      bundleID: "com.example.app"
+      requestBundleID: "com.example.app",
+      requestVersion: "1.0.0"
+    )
+
+    #expect(status == nil)
+  }
+
+  @Test(arguments: [
+    UnsupportedMetaCase(
+      name: "missing platform",
+      meta: [
+        "app_identifier": "com.example.app",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "missing app identifier",
+      meta: [
+        "platform": "ios",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "blank app identifier",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "  ",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "mismatched app identifier",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.other.app",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "missing request bundle identifier",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ],
+      requestBundleID: nil
+    ),
+    UnsupportedMetaCase(
+      name: "missing current version",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "missing request version",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ],
+      requestVersion: nil
+    ),
+    UnsupportedMetaCase(
+      name: "mismatched current version",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "1.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "invalid current version",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "1.0-beta",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ],
+      requestVersion: "1.0-beta"
+    ),
+    UnsupportedMetaCase(
+      name: "invalid minimum version",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "1.0.0",
+        "minimum_version": "2.0.0-beta",
+        "update_url": "https://apps.apple.com/app/id123",
+      ]
+    ),
+    UnsupportedMetaCase(
+      name: "current version is not below minimum",
+      meta: [
+        "platform": "ios",
+        "app_identifier": "com.example.app",
+        "current_version": "2.0.0",
+        "minimum_version": "2.0.0",
+        "update_url": "https://apps.apple.com/app/id123",
+      ],
+      requestVersion: "2.0.0"
+    ),
+  ])
+  func inconsistentUnsupportedMetaIsIgnored(testCase: UnsupportedMetaCase) {
+    let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
+      testCase.meta,
+      requestBundleID: testCase.requestBundleID,
+      requestVersion: testCase.requestVersion
     )
 
     #expect(status == nil)
@@ -146,5 +274,16 @@ struct AppVersionSupportStatusResolverTests {
       )
     )
     return environment
+  }
+}
+
+struct UnsupportedMetaCase: CustomTestStringConvertible {
+  let name: String
+  let meta: JSON
+  var requestBundleID: String? = "com.example.app"
+  var requestVersion: String? = "1.0.0"
+
+  var testDescription: String {
+    name
   }
 }

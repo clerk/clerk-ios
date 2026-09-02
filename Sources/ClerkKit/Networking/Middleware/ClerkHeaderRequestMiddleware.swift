@@ -8,6 +8,8 @@ import Foundation
 struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
   static let skipClientIdHeader = "X-Clerk-SDK-Skip-Client-Id"
   static let canonicalClientRequestHeader = "X-Clerk-SDK-Canonical-Client-Request"
+  static let appVersionHeader = "x-app-version"
+  static let bundleIDHeader = "x-bundle-id"
 
   private let runtimeScope: ClerkRuntimeScope
 
@@ -55,8 +57,8 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     request.setValue(DeviceHelper.deviceType, forHTTPHeaderField: "x-device-type")
     request.setValue(DeviceHelper.deviceModel, forHTTPHeaderField: "x-device-model")
     request.setValue(DeviceHelper.osVersion, forHTTPHeaderField: "x-os-version")
-    request.setValue(DeviceHelper.appVersion, forHTTPHeaderField: "x-app-version")
-    request.setValue(DeviceHelper.bundleID, forHTTPHeaderField: "x-bundle-id")
+    request.setValue(DeviceHelper.appVersion, forHTTPHeaderField: Self.appVersionHeader)
+    request.setValue(DeviceHelper.bundleID, forHTTPHeaderField: Self.bundleIDHeader)
     request.setValue(DeviceHelper.isSandbox, forHTTPHeaderField: "x-is-sandbox")
   }
 }

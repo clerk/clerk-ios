@@ -41,6 +41,64 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigureResetsAppVersionVerdicts() async throws {
+    let appBundleID = "com.example.reconfigure-force-update"
+    let clerk = try Clerk.configureForTesting(
+      publishableKey: testPublishableKey,
+      keychainStorage: InMemoryKeychain(),
+      appBundleID: appBundleID,
+      appVersion: "1.0.0"
+    )
+    clerk.cleanupManagers()
+    let publishableKey = clerk.publishableKey
+    let options = clerk.options
+    let environmentService = MockEnvironmentService(get: {
+      var environment = Clerk.Environment.mock
+      environment.nativeAppSettings = .init(
+        minimumSupportedVersion: .init(
+          ios: [
+            .init(
+              bundleId: appBundleID,
+              minimumVersion: "999.0.0",
+              updateUrl: "https://apps.apple.com/app/id123"
+            ),
+          ]
+        )
+      )
+      return environment
+    })
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      telemetryCollector: clerk.dependencies.telemetryCollector,
+      environmentService: environmentService
+    )
+    _ = try await clerk.refreshEnvironment()
+    #expect(!clerk.appVersionSupportStatus.isSupported)
+
+    clerk.applyUnsupportedAppVersionMeta(
+      .object([
+        "platform": .string("ios"),
+        "app_identifier": .string(appBundleID),
+        "current_version": .string("1.0.0"),
+        "minimum_version": .string("2.0.0"),
+        "update_url": .string("https://apps.apple.com/app/id123"),
+      ]),
+      requestBundleID: appBundleID,
+      requestVersion: "1.0.0",
+      requestSequence: 100
+    )
+    #expect(!clerk.appVersionSupportStatus.isSupported)
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey,
+      options: options
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    #expect(reconfigured.appVersionSupportStatus.isSupported)
+  }
+
+  @Test
   func reconfigureWaitsForActiveKeychainClear() async throws {
     let clerk = Clerk.shared
     let gate = ReconfigurationClearGate()

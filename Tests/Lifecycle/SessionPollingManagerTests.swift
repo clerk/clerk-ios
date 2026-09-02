@@ -3,6 +3,7 @@
 //
 
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -259,17 +260,22 @@ struct SessionPollingManagerTests {
 
   @Test
   func refreshNowIfNeededDoesNotPollWhenAppVersionIsUnsupported() async {
+    let tokenRequestCount = LockIsolated(0)
     let provider = MockSessionProvider(session: createSession(id: "session1", status: .active))
     provider.appVersionSupportStatusToReturn = .init(
       isSupported: false,
       minimumVersion: "2.0.0",
       updateURL: URL(string: "https://apps.apple.com/app/id123")
     )
-    let manager = SessionPollingManager(sessionProvider: provider)
+    let manager = SessionPollingManager(
+      sessionProvider: provider,
+      requestToken: { _ in tokenRequestCount.withValue { $0 += 1 } }
+    )
 
     manager.updateBackoffState(success: false)
     await manager.refreshNowIfNeeded()
 
+    #expect(tokenRequestCount.value == 0)
     #expect(manager.consecutiveFailures == 0)
   }
 }

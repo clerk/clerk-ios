@@ -171,19 +171,31 @@ public final class Clerk {
         cacheManager?.saveEnvironment(environment)
         emitInternalStateChange(.environmentDidChange)
       }
-
-      refreshAppVersionSupportStatus()
     }
   }
 
   /// The app-version policy currently resolved for this build.
   public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supportedDefault
 
-  /// A server-enforced unsupported status takes precedence over cacheable environment policy.
-  private var serverEnforcedAppVersionSupportStatus: AppVersionSupportStatus?
+  private enum ServerAppVersionSupportVerdict {
+    case supported
+    case unsupported(AppVersionSupportStatus)
+  }
+
+  /// An explicit server verdict takes precedence over fresh environment policy.
+  private var serverAppVersionSupportVerdict: ServerAppVersionSupportVerdict?
+
+  /// A provisional policy result from an environment fetched during this configuration.
+  /// Persisted or externally synchronized environments are not authoritative for blocking.
+  private var freshEnvironmentSupportStatus: AppVersionSupportStatus?
 
   /// Orders enforcement results from concurrently running protected requests.
   private var lastAppVersionEnforcementRequestSequence: Int?
+
+  private let appVersionRevalidationManager: AppVersionRevalidationManager
+
+  private let appBundleID: String
+  private let appVersion: String
 
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
@@ -218,7 +230,7 @@ public final class Clerk {
   var cacheManager: CacheManager?
 
   /// Manages periodic polling of session tokens to keep them refreshed.
-  private var sessionPollingManager: SessionPollingManager?
+  var sessionPollingManager: SessionPollingManager?
 
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
@@ -298,7 +310,23 @@ public final class Clerk {
     dependencies.configurationManager.proxyConfiguration
   }
 
-  package init() {
+  package init(
+    appBundleID: String = DeviceHelper.bundleID,
+    appVersion: String = DeviceHelper.appVersion,
+    appVersionRevalidationInitialDelay: Duration = .seconds(60),
+    appVersionRevalidationMaximumDelay: Duration = .seconds(300),
+    appVersionRevalidationSleep: @escaping @MainActor @Sendable (Duration) async throws -> Void = { delay in
+      try await Task.sleep(for: delay, tolerance: .seconds(5))
+    }
+  ) {
+    self.appBundleID = appBundleID
+    self.appVersion = appVersion
+    appVersionRevalidationManager = AppVersionRevalidationManager(
+      initialDelay: appVersionRevalidationInitialDelay,
+      maximumDelay: appVersionRevalidationMaximumDelay,
+      sleep: appVersionRevalidationSleep
+    )
+
     // Create temporary container - will be replaced during configure with proper values
     do {
       dependencies = try DependencyContainer(
@@ -319,6 +347,8 @@ public final class Clerk {
         fatalError("Failed to create temporary dependency container")
       }
     }
+
+    appVersionRevalidationManager.delegate = self
   }
 }
 
@@ -348,6 +378,7 @@ extension Clerk {
   @MainActor
   private func installConfiguration(dependencies: any Dependencies) {
     cancelStartupClientRefresh()
+    appVersionRevalidationManager.stop()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
@@ -372,6 +403,7 @@ extension Clerk {
     lifecycleManager = LifecycleManager(handler: self)
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
+    appVersionRevalidationManager.appVersionSupportStatusDidChange()
 
     // Set up cache manager and load cached data synchronously
     let cacheManager = CacheManager(
@@ -594,7 +626,9 @@ extension Clerk {
   static func configureForTesting(
     publishableKey: String,
     options: Clerk.Options = .init(),
-    keychainStorage: any KeychainStorage
+    keychainStorage: any KeychainStorage,
+    appBundleID: String = DeviceHelper.bundleID,
+    appVersion: String = DeviceHelper.appVersion
   ) throws -> Clerk {
     guard EnvironmentDetection.isRunningInTests else {
       throw ClerkClientError(message: "Isolated Clerk configuration is only available while running tests.", localizationBundle: .module)
@@ -605,7 +639,7 @@ extension Clerk {
       _shared = nil
     }
 
-    let clerk = Clerk()
+    let clerk = Clerk(appBundleID: appBundleID, appVersion: appVersion)
     let dependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options,
@@ -792,6 +826,12 @@ extension Clerk {
       try Task.checkCancellation()
       try runtime.validateStableRuntime()
       self.environment = environment
+      self.freshEnvironmentSupportStatus = AppVersionSupportStatusResolver.resolve(
+        environment: environment,
+        bundleID: self.appBundleID,
+        currentVersion: self.appVersion
+      )
+      self.refreshAppVersionSupportStatus()
       self.environmentRefreshRevision += 1
       return environment
     }
@@ -817,32 +857,59 @@ extension Clerk {
   )
 
   func refreshAppVersionSupportStatus() {
-    let environmentStatus = AppVersionSupportStatusResolver.resolve(
-      environment: environment,
-      bundleID: DeviceHelper.bundleID,
-      currentVersion: DeviceHelper.appVersion
+    appVersionSupportStatus = resolvedAppVersionSupportStatus(
+      environmentStatus: freshEnvironmentSupportStatus ?? .supportedDefault
     )
-    appVersionSupportStatus = serverEnforcedAppVersionSupportStatus ?? environmentStatus
+    appVersionRevalidationManager.appVersionSupportStatusDidChange()
   }
 
-  func applyUnsupportedAppVersionMeta(_ meta: JSON?, requestSequence: Int? = nil) {
+  func resolvedAppVersionSupportStatus(environmentStatus: AppVersionSupportStatus) -> AppVersionSupportStatus {
+    switch serverAppVersionSupportVerdict {
+    case .supported:
+      .supportedDefault
+    case .unsupported(let status):
+      status
+    case nil:
+      environmentStatus
+    }
+  }
+
+  func applyUnsupportedAppVersionMeta(
+    _ meta: JSON?,
+    requestBundleID: String?,
+    requestVersion: String?,
+    requestSequence: Int? = nil
+  ) {
     guard let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
       meta,
-      bundleID: DeviceHelper.bundleID
-    ), shouldApplyAppVersionEnforcementResult(requestSequence: requestSequence) else {
+      requestBundleID: requestBundleID,
+      requestVersion: requestVersion
+    )
+    else {
       return
     }
 
-    serverEnforcedAppVersionSupportStatus = status
-    refreshAppVersionSupportStatus()
+    applyUnsupportedAppVersionStatus(status, requestSequence: requestSequence)
   }
 
-  func applySuccessfulProtectedResponse(requestSequence: Int?) {
+  func applyUnsupportedAppVersionStatus(
+    _ status: AppVersionSupportStatus,
+    requestSequence: Int?
+  ) {
     guard shouldApplyAppVersionEnforcementResult(requestSequence: requestSequence) else {
       return
     }
 
-    serverEnforcedAppVersionSupportStatus = nil
+    serverAppVersionSupportVerdict = .unsupported(status)
+    refreshAppVersionSupportStatus()
+  }
+
+  func applySupportedAppVersionResponse(requestSequence: Int?) {
+    guard shouldApplyAppVersionEnforcementResult(requestSequence: requestSequence) else {
+      return
+    }
+
+    serverAppVersionSupportVerdict = .supported
     refreshAppVersionSupportStatus()
   }
 
@@ -851,7 +918,9 @@ extension Clerk {
       return true
     }
 
-    guard lastAppVersionEnforcementRequestSequence.map({ requestSequence > $0 }) ?? true else {
+    // Retry attempts share their logical request sequence and are processed
+    // serially, so an equal sequence is a newer verdict for the same request.
+    guard lastAppVersionEnforcementRequestSequence.map({ requestSequence >= $0 }) ?? true else {
       return false
     }
 
@@ -886,8 +955,10 @@ extension Clerk {
     await SessionTokensCache.shared.clear()
 
     resetAuthFlowForReconfiguration()
-    serverEnforcedAppVersionSupportStatus = nil
+    serverAppVersionSupportVerdict = nil
+    freshEnvironmentSupportStatus = nil
     lastAppVersionEnforcementRequestSequence = nil
+    refreshAppVersionSupportStatus()
     identityController.resetRuntimeIdentity()
     environment = nil
     sessionsByUserId = [:]
@@ -926,10 +997,25 @@ extension Clerk: CacheCoordinator {
 
 extension Clerk: SessionProviding {}
 
+extension Clerk: AppVersionRevalidationManagerDelegate {
+  var shouldRevalidateAppVersionSupport: Bool {
+    sessionPollingManager != nil && !appVersionSupportStatus.isSupported
+  }
+
+  func revalidateAppVersionSupport() async throws {
+    try await refreshClient()
+  }
+
+  func resumeSessionPollingAfterAppVersionRecovery() async {
+    await sessionPollingManager?.refreshNowIfNeeded()
+  }
+}
+
 extension Clerk: LifecycleEventHandling {
   /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
+    appVersionRevalidationManager.applicationWillEnterForeground()
 
     emitInternalStateChange(.applicationDidEnterForeground)
 
@@ -965,6 +1051,7 @@ extension Clerk: LifecycleEventHandling {
 
   /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
+    appVersionRevalidationManager.applicationDidEnterBackground()
     sessionPollingManager?.stopPolling()
 
     taskCoordinator?.task(priority: .utility) { [weak self] in
@@ -1129,6 +1216,7 @@ extension Clerk {
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     identityController.invalidateLocalOperations()
     cancelStartupClientRefresh()
+    appVersionRevalidationManager.stop()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
@@ -1150,6 +1238,7 @@ extension Clerk {
       through: dependencies.atomicIdentityIO
     )
     cancelStartupClientRefresh()
+    await appVersionRevalidationManager.stopAndWait()
     invalidAuthRefreshTask?.cancel()
     await invalidAuthRefreshTask?.value
     invalidAuthRefreshTask = nil
@@ -1206,6 +1295,7 @@ extension Clerk {
   }
 
   private func teardownNonCacheManagers() {
+    appVersionRevalidationManager.stop()
     sessionPollingManager?.stopPolling()
     sessionPollingManager = nil
     lifecycleManager?.stopObserving()

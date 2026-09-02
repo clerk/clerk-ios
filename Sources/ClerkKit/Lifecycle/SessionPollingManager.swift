@@ -51,6 +51,9 @@ final class SessionPollingManager {
   /// Provider for auth event streams used to reset backoff when tokens refresh.
   private let authEventsProvider: (() -> AsyncStream<AuthEvent>)?
 
+  /// Requests a token for the active session.
+  private let requestToken: @MainActor @Sendable (Session) async throws -> Void
+
   /// The interval between polling attempts.
   private let pollInterval: TimeInterval
 
@@ -77,12 +80,16 @@ final class SessionPollingManager {
   init(
     sessionProvider: any SessionProviding,
     authEventsProvider: (() -> AsyncStream<AuthEvent>)? = nil,
+    requestToken: @escaping @MainActor @Sendable (Session) async throws -> Void = { session in
+      _ = try await session.getToken()
+    },
     pollInterval: TimeInterval = defaultPollInterval,
     pollTolerance: TimeInterval = defaultPollTolerance,
     maxPollInterval: TimeInterval = defaultMaxPollInterval
   ) {
     self.sessionProvider = sessionProvider
     self.authEventsProvider = authEventsProvider
+    self.requestToken = requestToken
     self.pollInterval = pollInterval
     self.pollTolerance = pollTolerance
     self.maxPollInterval = maxPollInterval
@@ -221,7 +228,7 @@ final class SessionPollingManager {
     }
 
     do {
-      _ = try await session.getToken()
+      try await requestToken(session)
       return true
     } catch {
       return false

@@ -42,27 +42,21 @@ enum AppVersionSupportStatusResolver {
 
   static func resolveFromUnsupportedAppVersionMeta(
     _ meta: JSON?,
-    bundleID: String
+    requestBundleID: String?,
+    requestVersion: String?
   ) -> Clerk.AppVersionSupportStatus? {
-    guard let meta else { return nil }
-
-    if let platform = meta["platform"]?.stringValue?.lowercased(),
-       platform != "ios"
-    {
-      return nil
-    }
-
-    let normalizedBundleID = normalizeIdentifier(bundleID)
-    if let appIdentifier = meta["app_identifier"]?.stringValue,
-       let normalizedAppIdentifier = normalizeIdentifier(appIdentifier),
-       normalizedBundleID != nil,
-       normalizedAppIdentifier != normalizedBundleID
-    {
-      return nil
-    }
-
-    guard let minimumVersion = meta["minimum_version"]?.stringValue.nilIfEmpty,
+    guard let meta,
+          meta["platform"]?.stringValue.nilIfEmpty?.lowercased() == "ios",
+          let normalizedBundleID = requestBundleID.flatMap(normalizeIdentifier),
+          let appIdentifier = meta["app_identifier"]?.stringValue,
+          normalizeIdentifier(appIdentifier) == normalizedBundleID,
+          let requestVersion,
+          let returnedCurrentVersion = meta["current_version"]?.stringValue,
+          returnedCurrentVersion == requestVersion,
+          AppVersionComparator.isValid(requestVersion),
+          let minimumVersion = meta["minimum_version"]?.stringValue.nilIfEmpty,
           AppVersionComparator.isValid(minimumVersion),
+          AppVersionComparator.compare(requestVersion, minimumVersion) == -1,
           let updateURLValue = meta["update_url"]?.stringValue.nilIfEmpty,
           let updateURL = validHTTPURL(updateURLValue)
     else {

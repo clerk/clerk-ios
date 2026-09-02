@@ -6,6 +6,14 @@
 import Foundation
 
 struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
+  static let appVersionStatusHeader = "X-Clerk-App-Version-Status"
+  static let supportedAppVersionStatus = "supported"
+
+  private enum AppVersionResponseVerdict {
+    case supported
+    case unsupported(Clerk.AppVersionSupportStatus)
+  }
+
   private let runtimeScope: ClerkRuntimeScope
   private let logNetworkError: @Sendable (any Error, String, Int?) -> Void
 
@@ -20,27 +28,30 @@ struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    guard response.isError else {
-      if response.isSuccess, !isEnvironmentRequest(request) {
-        try await runtimeScope.withCurrentClerk {
-          $0.applySuccessfulProtectedResponse(requestSequence: request.clerkRequestSequence)
-        }
-      }
-      return
-    }
-
-    if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
-       var clerkAPIError = clerkErrorResponse.errors.first
-    {
-      clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
-      if clerkAPIError.isUnsupportedAppVersion {
-        try await runtimeScope.withCurrentClerk {
-          $0.applyUnsupportedAppVersionMeta(
-            clerkAPIError.meta,
+    let clerkAPIError = response.isError ? decodeClerkAPIError(from: data) : nil
+    if let verdict = appVersionResponseVerdict(
+      response: response,
+      request: request,
+      clerkAPIError: clerkAPIError
+    ) {
+      try await runtimeScope.withCurrentClerk { clerk in
+        switch verdict {
+        case .supported:
+          clerk.applySupportedAppVersionResponse(requestSequence: request.clerkRequestSequence)
+        case .unsupported(let status):
+          clerk.applyUnsupportedAppVersionStatus(
+            status,
             requestSequence: request.clerkRequestSequence
           )
         }
       }
+    }
+
+    guard response.isError else {
+      return
+    }
+
+    if let clerkAPIError {
       logNetworkError(
         clerkAPIError,
         response.url?.absoluteString ?? "unknown",
@@ -56,6 +67,51 @@ struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
       response.statusCode
     )
     throw error
+  }
+
+  private func decodeClerkAPIError(from data: Data) -> ClerkAPIError? {
+    guard let response = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
+          var error = response.errors.first
+    else {
+      return nil
+    }
+
+    error.clerkTraceId = response.clerkTraceId
+    return error
+  }
+
+  private func appVersionResponseVerdict(
+    response: HTTPURLResponse,
+    request: URLRequest,
+    clerkAPIError: ClerkAPIError?
+  ) -> AppVersionResponseVerdict? {
+    guard !isEnvironmentRequest(request) else {
+      return nil
+    }
+
+    if response.statusCode == 403,
+       let clerkAPIError,
+       clerkAPIError.isUnsupportedAppVersion,
+       let status = AppVersionSupportStatusResolver.resolveFromUnsupportedAppVersionMeta(
+         clerkAPIError.meta,
+         requestBundleID: request.value(
+           forHTTPHeaderField: ClerkHeaderRequestMiddleware.bundleIDHeader
+         ),
+         requestVersion: request.value(
+           forHTTPHeaderField: ClerkHeaderRequestMiddleware.appVersionHeader
+         )
+       )
+    {
+      return .unsupported(status)
+    }
+
+    if response.value(forHTTPHeaderField: Self.appVersionStatusHeader)?.lowercased()
+      == Self.supportedAppVersionStatus
+    {
+      return .supported
+    }
+
+    return nil
   }
 
   private func isEnvironmentRequest(_ request: URLRequest) -> Bool {
