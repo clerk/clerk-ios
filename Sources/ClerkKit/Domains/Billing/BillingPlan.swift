@@ -41,14 +41,14 @@ public enum BillingPayerResourceType: Codable, Equatable, Sendable {
   }
 }
 
-public struct BillingPlanUnitPriceTier: Codable, Equatable, Sendable, Identifiable {
-  public var id: String
+public struct BillingPlanUnitPriceTier: Codable, Equatable, Sendable {
+  public var id: String?
   public var startsAtBlock: Int
   public var endsAfterBlock: Int?
   public var feePerBlock: BillingMoneyAmount
 
   public init(
-    id: String,
+    id: String? = nil,
     startsAtBlock: Int,
     endsAfterBlock: Int? = nil,
     feePerBlock: BillingMoneyAmount

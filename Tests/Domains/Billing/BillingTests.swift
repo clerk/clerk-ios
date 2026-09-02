@@ -233,6 +233,14 @@ struct BillingTests {
   }
 
   @Test
+  func decodesBillingPlanUnitPriceTierWhenIdIsMissing() throws {
+    let stripped = planJSON.replacingOccurrences(of: "\"id\": \"tier_1\",", with: "")
+    let plan = try decoder.decode(BillingPlan.self, from: Data(stripped.utf8))
+    #expect(plan.unitPrices?.first?.tiers.first?.id == nil)
+    #expect(plan.unitPrices?.first?.tiers.first?.startsAtBlock == 1)
+  }
+
+  @Test
   func decodesBillingPlanDefaultsMissingFeaturesAndTrial() throws {
     let json = Data(
       """
