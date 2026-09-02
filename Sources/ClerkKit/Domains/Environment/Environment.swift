@@ -10,17 +10,20 @@ extension Clerk {
     public var userSettings: UserSettings
     public var displayConfig: DisplayConfig
     public var organizationSettings: OrganizationSettings
+    public var commerceSettings: CommerceSettings
 
     public init(
       authConfig: AuthConfig,
       userSettings: UserSettings,
       displayConfig: DisplayConfig,
-      organizationSettings: OrganizationSettings = .default
+      organizationSettings: OrganizationSettings = .default,
+      commerceSettings: CommerceSettings = .default
     ) {
       self.authConfig = authConfig
       self.userSettings = userSettings
       self.displayConfig = displayConfig
       self.organizationSettings = organizationSettings
+      self.commerceSettings = commerceSettings
     }
 
     public init(from decoder: Decoder) throws {
@@ -29,6 +32,7 @@ extension Clerk {
       userSettings = try container.decode(UserSettings.self, forKey: .userSettings)
       displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
       organizationSettings = try container.decodeIfPresent(OrganizationSettings.self, forKey: .organizationSettings) ?? .default
+      commerceSettings = try container.decodeIfPresent(CommerceSettings.self, forKey: .commerceSettings) ?? .default
     }
   }
 }

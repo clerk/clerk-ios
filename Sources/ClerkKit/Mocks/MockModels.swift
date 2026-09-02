@@ -904,8 +904,17 @@ extension Clerk.Environment {
       authConfig: .mock,
       userSettings: .mock,
       displayConfig: .mock,
-      organizationSettings: .mock
+      organizationSettings: .mock,
+      commerceSettings: .mock
     )
+  }
+}
+
+// MARK: CommerceSettings
+
+extension Clerk.Environment.CommerceSettings {
+  public static var mock: Self {
+    .default
   }
 }
 
