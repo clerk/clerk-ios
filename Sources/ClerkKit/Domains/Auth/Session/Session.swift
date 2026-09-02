@@ -64,6 +64,11 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The last active token for the session.
   public var lastActiveToken: TokenResource?
 
+  /// Minutes since the last first- and second-factor verification: `[firstFactorAge, secondFactorAge]`.
+  ///
+  /// `-1` means that factor group is not enrolled. `nil` means the instance has not opted into factor verification age.
+  public var factorVerificationAge: [Int]?
+
   public init(
     id: String,
     status: SessionStatus,
@@ -78,7 +83,8 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     createdAt: Date,
     updatedAt: Date,
     tasks: [Task]? = nil,
-    lastActiveToken: TokenResource? = nil
+    lastActiveToken: TokenResource? = nil,
+    factorVerificationAge: [Int]? = nil
   ) {
     self.id = id
     self.status = status
@@ -94,6 +100,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     self.updatedAt = updatedAt
     self.tasks = tasks
     self.lastActiveToken = lastActiveToken
+    self.factorVerificationAge = factorVerificationAge
   }
 
   /// Represents the status of a session.

@@ -28,4 +28,14 @@ extension TokenResource {
       return nil
     }
   }
+
+  /// Session token `fea` claim used by ``Session/has(_:)`` and ``Session/checkAuthorization(_:)``.
+  var featuresClaim: String {
+    decodedJWT?.claim(name: "fea").string ?? ""
+  }
+
+  /// Session token `pla` claim used by ``Session/has(_:)`` and ``Session/checkAuthorization(_:)``.
+  var plansClaim: String {
+    decodedJWT?.claim(name: "pla").string ?? ""
+  }
 }
