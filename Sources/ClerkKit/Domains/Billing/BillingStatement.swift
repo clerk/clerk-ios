@@ -57,13 +57,13 @@ public struct BillingStatementTotals: Codable, Equatable, Sendable {
   }
 }
 
-public struct BillingStatementGroup: Codable, Equatable, Sendable, Identifiable {
-  public var id: String
+public struct BillingStatementGroup: Codable, Equatable, Sendable {
+  public var id: String?
   public var timestamp: Date
   public var items: [BillingPayment]
 
   public init(
-    id: String,
+    id: String? = nil,
     timestamp: Date,
     items: [BillingPayment]
   ) {

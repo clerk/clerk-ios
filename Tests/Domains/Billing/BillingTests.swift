@@ -282,6 +282,45 @@ struct BillingTests {
     #expect(statement.totals.grandTotal.amountFormatted == "10.00")
     #expect(statement.totals.taxTotal.currency == "USD")
     #expect(statement.groups.first?.items.first?.id == "pay_1")
+    #expect(statement.groups.first?.id == "grp_1")
+  }
+
+  @Test
+  func decodesBillingStatementGroupWhenIdIsMissing() throws {
+    let json = """
+    {
+      "object": "commerce_statement",
+      "id": "stmt_1",
+      "status": "open",
+      "timestamp": 1700000000000,
+      "totals": {
+        "subtotal": \(moneyJSON),
+        "grand_total": \(moneyJSON),
+        "tax_total": \(moneyJSON)
+      },
+      "groups": [
+        {
+          "timestamp": 1700000000000,
+          "items": [\(paymentJSON)]
+        }
+      ]
+    }
+    """
+    let statement = try decoder.decode(BillingStatement.self, from: Data(json.utf8))
+    #expect(statement.groups.count == 1)
+    #expect(statement.groups.first?.id == nil)
+    #expect(statement.groups.first?.items.first?.id == "pay_1")
+  }
+
+  @Test
+  func decodesBillingPaymentWhenNestedSubscriptionItemOmitsCreatedAt() throws {
+    let stripped = paymentJSON
+      .replacingOccurrences(of: "\"created_at\": 1700000000000,", with: "")
+      .replacingOccurrences(of: "\"period_start\": 1700000000000,", with: "")
+    let payment = try decoder.decode(BillingPayment.self, from: Data(stripped.utf8))
+    #expect(payment.id == "pay_1")
+    #expect(payment.subscriptionItem.id == "si_1")
+    #expect(payment.status == .paid)
   }
 
   @Test

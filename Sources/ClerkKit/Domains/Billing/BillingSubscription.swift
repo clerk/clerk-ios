@@ -565,9 +565,9 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     planPeriod = try container.decode(BillingSubscriptionPlanPeriod.self, forKey: .planPeriod)
     priceId = try container.decode(String.self, forKey: .priceId)
     status = try container.decode(BillingSubscriptionStatus.self, forKey: .status)
-    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date(timeIntervalSince1970: 0)
     pastDueAt = try container.decodeIfPresent(Date.self, forKey: .pastDueAt)
-    periodStart = try container.decode(Date.self, forKey: .periodStart)
+    periodStart = try container.decodeIfPresent(Date.self, forKey: .periodStart) ?? createdAt
     periodEnd = try container.decodeIfPresent(Date.self, forKey: .periodEnd)
     canceledAt = try container.decodeIfPresent(Date.self, forKey: .canceledAt)
     amount = try container.decodeIfPresent(BillingMoneyAmount.self, forKey: .amount)
