@@ -63,6 +63,10 @@ package final class MockServicesBuilder {
   /// You can modify handler properties directly or replace the entire service.
   package var organizationService: MockOrganizationService = .init()
 
+  /// Mock billing service for customizing billing behavior.
+  /// You can modify handler properties directly or replace the entire service.
+  package var billingService: MockBillingService = .init()
+
   /// Mock environment service for customizing `clerk.refreshEnvironment()` behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var environmentService: MockEnvironmentService = .init()

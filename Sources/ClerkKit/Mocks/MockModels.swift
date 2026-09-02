@@ -1142,3 +1142,201 @@ extension ClerkAPIError {
     )
   }
 }
+
+// MARK: Billing
+
+extension BillingMoneyAmount {
+  public static var mock: Self {
+    .init(amount: 1000, amountFormatted: "10.00", currency: "USD", currencySymbol: "$")
+  }
+}
+
+extension Feature {
+  public static var mock: Self {
+    .init(id: "feat_1", name: "SSO", description: "Single sign-on", slug: "sso", avatarUrl: nil)
+  }
+}
+
+extension BillingPlan {
+  public static var mock: Self {
+    .init(
+      id: "plan_1",
+      name: "Pro",
+      fee: .mock,
+      annualFee: .mock,
+      annualMonthlyFee: .mock,
+      description: "Pro plan",
+      isDefault: false,
+      isRecurring: true,
+      hasBaseFee: true,
+      forPayerType: .org,
+      publiclyVisible: true,
+      slug: "pro",
+      avatarUrl: nil,
+      features: [.mock],
+      unitPrices: [
+        .init(
+          name: "seats",
+          blockSize: 1,
+          tiers: [
+            .init(id: "tier_1", startsAtBlock: 1, endsAfterBlock: nil, feePerBlock: .mock),
+          ]
+        ),
+      ],
+      availablePrices: [
+        .init(id: "price_1", fee: .mock, annualMonthlyFee: .mock, isDefault: true, unitPrices: nil),
+      ],
+      freeTrialDays: 14,
+      freeTrialEnabled: true
+    )
+  }
+}
+
+extension BillingPaymentMethod {
+  public static var mock: Self {
+    .init(
+      id: "pm_1",
+      last4: "4242",
+      paymentType: "card",
+      cardType: "visa",
+      isDefault: true,
+      isRemovable: true,
+      status: .active,
+      walletType: nil,
+      expiryYear: 2030,
+      expiryMonth: 12,
+      createdAt: Date.distantPast,
+      updatedAt: Date.distantPast
+    )
+  }
+}
+
+extension BillingSubscriptionItem {
+  public static var mock: Self {
+    .init(
+      id: "si_1",
+      plan: .mock,
+      planPeriod: .month,
+      priceId: "price_1",
+      status: .active,
+      createdAt: Date.distantPast,
+      pastDueAt: nil,
+      periodStart: Date.distantPast,
+      periodEnd: Date.distantFuture,
+      canceledAt: nil,
+      amount: .mock,
+      nextPayment: .init(amount: .mock, date: Date.distantFuture),
+      credit: .init(amount: .mock),
+      credits: .init(
+        proration: .init(amount: .mock, cycleDaysRemaining: 10, cycleDaysTotal: 30, cycleRemainingPercent: 0.33),
+        payer: .init(remainingBalance: .mock, appliedAmount: .mock),
+        total: .mock
+      ),
+      appliedDiscount: .init(
+        id: "red_1",
+        subscriptionItemId: "si_1",
+        discountId: "disc_1",
+        name: "Launch",
+        source: .promoCode,
+        promoCode: "LAUNCH",
+        effect: .percentage,
+        percentOff: 20,
+        amount: .mock,
+        cyclesRemaining: 2,
+        cyclesApplied: 1,
+        status: .active,
+        redeemedAt: Date.distantPast,
+        redeemedBy: "user_1"
+      ),
+      seats: .init(
+        quantity: 5,
+        tiers: [.init(quantity: 5, feePerBlock: .mock, total: .mock)]
+      ),
+      isFreeTrial: false
+    )
+  }
+}
+
+extension BillingSubscription {
+  public static var mock: Self {
+    .init(
+      id: "sub_1",
+      activeAt: Date.distantPast,
+      createdAt: Date.distantPast,
+      nextPayment: .init(amount: .mock, date: Date.distantFuture, totals: .init(subtotal: .mock, taxTotal: .mock, grandTotal: .mock)),
+      pastDueAt: nil,
+      status: .active,
+      subscriptionItems: [.mock],
+      updatedAt: Date.distantPast,
+      eligibleForFreeTrial: false
+    )
+  }
+}
+
+extension BillingPayment {
+  public static var mock: Self {
+    .init(
+      id: "pay_1",
+      amount: .mock,
+      paidAt: Date.distantPast,
+      failedAt: nil,
+      updatedAt: Date.distantPast,
+      paymentMethod: .mock,
+      subscriptionItem: .mock,
+      chargeType: .recurring,
+      status: .paid,
+      totals: .init(
+        subtotal: .mock,
+        grandTotal: .mock,
+        taxTotal: .mock,
+        baseFee: .mock,
+        perUnitTotals: [.init(name: "seats", blockSize: 1, tiers: [.init(quantity: 5, feePerBlock: .mock, total: .mock)])],
+        discounts: .init(
+          proration: .init(amount: .mock, cycleDaysPassed: 10, cycleDaysTotal: 30, cyclePassedPercent: 0.33),
+          discount: .init(
+            amount: .mock,
+            discountId: "disc_1",
+            name: "Launch",
+            effect: .percentage,
+            percentOff: 20,
+            promoCode: "LAUNCH",
+            cyclesRemaining: 2
+          ),
+          total: .mock
+        )
+      )
+    )
+  }
+}
+
+extension BillingStatement {
+  public static var mock: Self {
+    .init(
+      id: "stmt_1",
+      totals: .init(subtotal: .mock, grandTotal: .mock, taxTotal: .mock),
+      status: .open,
+      timestamp: Date.distantPast,
+      groups: [
+        .init(id: "grp_1", timestamp: Date.distantPast, items: [.mock]),
+      ]
+    )
+  }
+}
+
+extension BillingCreditBalance {
+  public static var mock: Self {
+    .init(balance: .mock)
+  }
+}
+
+extension BillingCreditLedger {
+  public static var mock: Self {
+    .init(
+      id: "led_1",
+      amount: .mock,
+      sourceType: "payment",
+      sourceId: "pay_1",
+      createdAt: Date.distantPast
+    )
+  }
+}
