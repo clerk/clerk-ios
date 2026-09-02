@@ -311,6 +311,30 @@ struct SessionAuthorizationTests {
     #expect(!session.has(.init(feature: "missing")))
     #expect(!session.has(.init(plan: "free")))
   }
+
+  @Test
+  func hasOnCachedTokenStaysUnderOneMillisecond() {
+    let session = makeSession(
+      orgId: "org_123",
+      orgRole: "org:admin",
+      orgPermissions: ["org:sys_memberships:read"],
+      features: "o:reservations,u:dashboard",
+      plans: "u:plus"
+    )
+    let params = CheckAuthorizationParams(plan: "plus")
+    _ = session.has(params)
+
+    var samples: [Double] = []
+    samples.reserveCapacity(1000)
+    for _ in 0 ..< 1000 {
+      let start = CFAbsoluteTimeGetCurrent()
+      _ = session.has(params)
+      samples.append((CFAbsoluteTimeGetCurrent() - start) * 1000)
+    }
+    samples.sort()
+    let p95 = samples[949]
+    #expect(p95 < 1.0)
+  }
 }
 
 private func makeSession(
