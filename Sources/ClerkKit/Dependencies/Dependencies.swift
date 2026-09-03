@@ -83,6 +83,9 @@ protocol Dependencies: AnyObject {
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }
 
+  /// Service for billing-related operations.
+  var billingService: BillingServiceProtocol { get }
+
   /// Service for environment-related operations.
   var environmentService: EnvironmentServiceProtocol { get }
 

@@ -174,6 +174,7 @@ extension Clerk {
       sessionService: services.sessionService,
       passkeyService: services.passkeyService,
       organizationService: services.organizationService,
+      billingService: services.billingService,
       environmentService: services.environmentService,
       emailAddressService: services.emailAddressService,
       phoneNumberService: services.phoneNumberService,

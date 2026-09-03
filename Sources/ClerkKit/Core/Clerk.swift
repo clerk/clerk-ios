@@ -272,6 +272,15 @@ public final class Clerk {
     Organizations(organizationService: dependencies.organizationService)
   }
 
+  /// The main entry point for Billing GET APIs.
+  ///
+  /// Use this to read plans, subscriptions, statements, payments, and credits.
+  /// Payment methods live on ``User/getPaymentMethods(params:)`` and
+  /// ``Organization/getPaymentMethods(params:)``.
+  public var billing: Billing {
+    Billing(billingService: dependencies.billingService)
+  }
+
   /// The main entry point for biometric credential operations.
   public var biometricCredentials: BiometricCredentials {
     BiometricCredentials(

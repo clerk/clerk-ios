@@ -39,6 +39,7 @@ final class MockDependencyContainer: Dependencies {
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
+  let billingService: BillingServiceProtocol
   let environmentService: EnvironmentServiceProtocol
   let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
@@ -65,6 +66,7 @@ final class MockDependencyContainer: Dependencies {
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
+  ///   - billingService: Optional custom billing service (defaults to MockBillingService).
   ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
   ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
   ///   - phoneNumberService: Optional custom phone number service (defaults to MockPhoneNumberService).
@@ -92,6 +94,7 @@ final class MockDependencyContainer: Dependencies {
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
+    billingService: (any BillingServiceProtocol)? = nil,
     environmentService: (any EnvironmentServiceProtocol)? = nil,
     emailAddressService: (any EmailAddressServiceProtocol)? = nil,
     phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
@@ -131,6 +134,7 @@ final class MockDependencyContainer: Dependencies {
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
+    self.billingService = billingService ?? MockBillingService()
     self.environmentService = environmentService ?? MockEnvironmentService()
     self.emailAddressService = emailAddressService ?? MockEmailAddressService()
     self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
