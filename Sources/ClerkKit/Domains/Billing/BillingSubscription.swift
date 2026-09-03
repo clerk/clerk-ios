@@ -609,7 +609,7 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
 
 public struct BillingSubscription: Codable, Equatable, Sendable, Identifiable {
   public var id: String
-  public var activeAt: Date
+  public var activeAt: Date?
   public var createdAt: Date
   public var nextPayment: BillingSubscriptionNextPayment?
   public var pastDueAt: Date?
@@ -620,7 +620,7 @@ public struct BillingSubscription: Codable, Equatable, Sendable, Identifiable {
 
   public init(
     id: String,
-    activeAt: Date,
+    activeAt: Date? = nil,
     createdAt: Date,
     nextPayment: BillingSubscriptionNextPayment? = nil,
     pastDueAt: Date? = nil,
@@ -643,7 +643,7 @@ public struct BillingSubscription: Codable, Equatable, Sendable, Identifiable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(String.self, forKey: .id)
-    activeAt = try container.decode(Date.self, forKey: .activeAt)
+    activeAt = try container.decodeIfPresent(Date.self, forKey: .activeAt)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     nextPayment = try container.decodeIfPresent(BillingSubscriptionNextPayment.self, forKey: .nextPayment)
     pastDueAt = try container.decodeIfPresent(Date.self, forKey: .pastDueAt)

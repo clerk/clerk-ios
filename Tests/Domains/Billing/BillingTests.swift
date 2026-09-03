@@ -283,6 +283,14 @@ struct BillingTests {
   }
 
   @Test
+  func decodesBillingSubscriptionWhenActiveAtIsNull() throws {
+    let json = subscriptionJSON.replacingOccurrences(of: "\"active_at\": 1700000000000", with: "\"active_at\": null")
+    let subscription = try decoder.decode(BillingSubscription.self, from: Data(json.utf8))
+    #expect(subscription.activeAt == nil)
+    #expect(subscription.status == .active)
+  }
+
+  @Test
   func decodesBillingStatementWithTotals() throws {
     let statement = try decoder.decode(BillingStatement.self, from: Data(statementJSON.utf8))
     #expect(statement.status == .open)
