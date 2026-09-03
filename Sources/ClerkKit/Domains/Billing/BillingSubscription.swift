@@ -507,9 +507,9 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
   public var planPeriod: BillingSubscriptionPlanPeriod
   public var priceId: String
   public var status: BillingSubscriptionStatus
-  public var createdAt: Date
+  public var createdAt: Date?
   public var pastDueAt: Date?
-  public var periodStart: Date
+  public var periodStart: Date?
   public var periodEnd: Date?
   public var canceledAt: Date?
   public var amount: BillingMoneyAmount?
@@ -526,9 +526,9 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     planPeriod: BillingSubscriptionPlanPeriod,
     priceId: String,
     status: BillingSubscriptionStatus,
-    createdAt: Date,
+    createdAt: Date? = nil,
     pastDueAt: Date? = nil,
-    periodStart: Date,
+    periodStart: Date? = nil,
     periodEnd: Date? = nil,
     canceledAt: Date? = nil,
     amount: BillingMoneyAmount? = nil,
@@ -565,9 +565,9 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     planPeriod = try container.decode(BillingSubscriptionPlanPeriod.self, forKey: .planPeriod)
     priceId = try container.decode(String.self, forKey: .priceId)
     status = try container.decode(BillingSubscriptionStatus.self, forKey: .status)
-    createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date(timeIntervalSince1970: 0)
+    createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
     pastDueAt = try container.decodeIfPresent(Date.self, forKey: .pastDueAt)
-    periodStart = try container.decodeIfPresent(Date.self, forKey: .periodStart) ?? createdAt
+    periodStart = try container.decodeIfPresent(Date.self, forKey: .periodStart)
     periodEnd = try container.decodeIfPresent(Date.self, forKey: .periodEnd)
     canceledAt = try container.decodeIfPresent(Date.self, forKey: .canceledAt)
     amount = try container.decodeIfPresent(BillingMoneyAmount.self, forKey: .amount)

@@ -328,6 +328,8 @@ struct BillingTests {
     let payment = try decoder.decode(BillingPayment.self, from: Data(stripped.utf8))
     #expect(payment.id == "pay_1")
     #expect(payment.subscriptionItem.id == "si_1")
+    #expect(payment.subscriptionItem.createdAt == nil)
+    #expect(payment.subscriptionItem.periodStart == nil)
     #expect(payment.status == .paid)
   }
 
