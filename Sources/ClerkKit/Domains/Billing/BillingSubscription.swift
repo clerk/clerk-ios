@@ -505,7 +505,7 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
   public var id: String
   public var plan: BillingPlan
   public var planPeriod: BillingSubscriptionPlanPeriod
-  public var priceId: String
+  public var priceId: String?
   public var status: BillingSubscriptionStatus
   public var createdAt: Date?
   public var pastDueAt: Date?
@@ -524,7 +524,7 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     id: String,
     plan: BillingPlan,
     planPeriod: BillingSubscriptionPlanPeriod,
-    priceId: String,
+    priceId: String? = nil,
     status: BillingSubscriptionStatus,
     createdAt: Date? = nil,
     pastDueAt: Date? = nil,
@@ -563,11 +563,11 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     id = try container.decode(String.self, forKey: .id)
     plan = try container.decode(BillingPlan.self, forKey: .plan)
     planPeriod = try container.decode(BillingSubscriptionPlanPeriod.self, forKey: .planPeriod)
-    priceId = try container.decode(String.self, forKey: .priceId)
+    priceId = try container.decodeIfPresent(String.self, forKey: .priceId)
     status = try container.decode(BillingSubscriptionStatus.self, forKey: .status)
-    createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+    createdAt = try Self.nonEpochDate(container.decodeIfPresent(Date.self, forKey: .createdAt))
     pastDueAt = try container.decodeIfPresent(Date.self, forKey: .pastDueAt)
-    periodStart = try container.decodeIfPresent(Date.self, forKey: .periodStart)
+    periodStart = try Self.nonEpochDate(container.decodeIfPresent(Date.self, forKey: .periodStart))
     periodEnd = try container.decodeIfPresent(Date.self, forKey: .periodEnd)
     canceledAt = try container.decodeIfPresent(Date.self, forKey: .canceledAt)
     amount = try container.decodeIfPresent(BillingMoneyAmount.self, forKey: .amount)
@@ -577,6 +577,13 @@ public struct BillingSubscriptionItem: Codable, Equatable, Sendable, Identifiabl
     appliedDiscount = try container.decodeIfPresent(BillingDiscountRedemption.self, forKey: .appliedDiscount)
     seats = try container.decodeIfPresent(BillingSubscriptionItemSeats.self, forKey: .seats)
     isFreeTrial = try container.decodeIfPresent(Bool.self, forKey: .isFreeTrial) ?? false
+  }
+
+  private static func nonEpochDate(_ date: Date?) -> Date? {
+    guard let date, date.timeIntervalSince1970 != 0 else {
+      return nil
+    }
+    return date
   }
 
   private enum CodingKeys: String, CodingKey {

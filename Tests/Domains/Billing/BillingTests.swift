@@ -323,14 +323,26 @@ struct BillingTests {
   @Test
   func decodesBillingPaymentWhenNestedSubscriptionItemOmitsCreatedAt() throws {
     let stripped = paymentJSON
+      .replacingOccurrences(of: "\"price_id\": \"price_1\",", with: "")
       .replacingOccurrences(of: "\"created_at\": 1700000000000,", with: "")
       .replacingOccurrences(of: "\"period_start\": 1700000000000,", with: "")
     let payment = try decoder.decode(BillingPayment.self, from: Data(stripped.utf8))
     #expect(payment.id == "pay_1")
     #expect(payment.subscriptionItem.id == "si_1")
+    #expect(payment.subscriptionItem.priceId == nil)
     #expect(payment.subscriptionItem.createdAt == nil)
     #expect(payment.subscriptionItem.periodStart == nil)
     #expect(payment.status == .paid)
+  }
+
+  @Test
+  func decodesBillingPaymentWhenNestedSubscriptionItemSendsEpochTimestamps() throws {
+    let epoch = paymentJSON
+      .replacingOccurrences(of: "\"created_at\": 1700000000000,", with: "\"created_at\": 0,")
+      .replacingOccurrences(of: "\"period_start\": 1700000000000,", with: "\"period_start\": 0,")
+    let payment = try decoder.decode(BillingPayment.self, from: Data(epoch.utf8))
+    #expect(payment.subscriptionItem.createdAt == nil)
+    #expect(payment.subscriptionItem.periodStart == nil)
   }
 
   @Test
