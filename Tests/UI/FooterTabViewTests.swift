@@ -2,6 +2,7 @@
 
 @testable import ClerkKit
 @testable import ClerkKitUI
+import SnapshotTesting
 import SwiftUI
 import Testing
 import UIKit
@@ -11,16 +12,15 @@ import UIKit
 struct FooterTabViewTests {
   @Test(arguments: [true, false])
   func developmentLabelStaysAboveTheTabBar(isAuth: Bool) async throws {
-    configureClerkForTesting()
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: Clerk.shared.dependencies.apiClient)
-    let clerk = isAuth ? Clerk.mockSignedOut : Clerk.mock
+    let clerk = Clerk.mockSignedOut
     clerk.environment?.displayConfig.showDevmodeWarning = true
+    let bottomInset: CGFloat = 34
     let content = TabView {
       Group {
         if isAuth {
-          AuthView(isDismissible: false)
+          Color.white.authFooter()
         } else {
-          UserProfileView(isDismissible: false)
+          Color.white.securedByClerkFooter()
         }
       }
         .environment(clerk)
@@ -28,9 +28,14 @@ struct FooterTabViewTests {
       Text("My View")
         .tabItem { Label("Settings", systemImage: "gear") }
     }
+    .environment(\.colorScheme, .light)
+    .environment(\.dynamicTypeSize, .large)
+    .environment(\.locale, Locale(identifier: "en_US"))
+    .environment(\.clerkFooterHostBottomInset, bottomInset)
     let host = UIHostingController(rootView: content)
-    let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+    let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 220))
     window.rootViewController = host
+    window.overrideUserInterfaceStyle = .light
     window.isHidden = false
     defer {
       window.isHidden = true
@@ -44,26 +49,26 @@ struct FooterTabViewTests {
       }
     }
     let tabBar = try #require(descendants(of: window).compactMap { $0 as? UITabBar }.first)
-    let tabFrame = tabBar.convert(tabBar.bounds, to: window)
-    let elements = accessibilityDescendants(of: host.view)
-    let label = try #require(elements.first { $0.accessibilityLabel == "Development mode" })
-    #expect(label.accessibilityFrame.height > 0)
-    #expect(label.accessibilityFrame.maxY <= tabFrame.minY)
+    #expect(tabBar.bounds.height > bottomInset)
+    // Layer snapshots cannot render the glass material; mark the real tab bar's bounds instead.
+    tabBar.backgroundColor = .lightGray
+    assertSnapshot(
+      of: host,
+      as: .image(
+        on: ViewImageConfig(
+          safeArea: UIEdgeInsets(top: 0, left: 0, bottom: bottomInset, right: 0),
+          size: window.bounds.size
+        ),
+        precision: 0.99,
+        perceptualPrecision: 0.98,
+        traits: UITraitCollection(displayScale: 3)
+      ),
+      named: isAuth ? "auth" : "profile"
+    )
   }
 
   private func descendants(of view: UIView) -> [UIView] {
     [view] + view.subviews.flatMap { descendants(of: $0) }
-  }
-
-  private func accessibilityDescendants(of object: NSObject) -> [NSObject] {
-    let children: [NSObject] = if let elements = object.accessibilityElements as? [NSObject], !elements.isEmpty {
-      elements
-    } else if object.accessibilityElementCount() > 0, object.accessibilityElementCount() != NSNotFound {
-      (0 ..< object.accessibilityElementCount()).compactMap { object.accessibilityElement(at: $0) as? NSObject }
-    } else {
-      (object as? UIView)?.subviews ?? []
-    }
-    return [object] + children.flatMap { accessibilityDescendants(of: $0) }
   }
 }
 
