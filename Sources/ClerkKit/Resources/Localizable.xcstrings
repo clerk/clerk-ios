@@ -1,106 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "A Watch identity metadata transition is still pending." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يزال انتقال بيانات تعريف هوية Watch معلقًا."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eine Metadatenübertragung der Watch-Identität steht noch aus."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Μια μετάβαση μεταδεδομένων ταυτότητας Watch παραμένει σε εκκρεμότητα."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Todavía hay una transición de metadatos de identidad de Watch pendiente."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Une transition des métadonnées d’identité de la Watch est toujours en attente."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch पहचान मेटाडेटा का एक ट्रांज़िशन अभी भी लंबित है।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Una transizione dei metadati dell’identità di Watch è ancora in sospeso."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WatchのIDメタデータの移行がまだ保留中です。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch ID 메타데이터 전환이 아직 보류 중입니다."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Przejście metadanych tożsamości Watch nadal oczekuje."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uma transição de metadados de identidade do Watch ainda está pendente."
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O tranziție a metadatelor de identitate Watch este încă în așteptare."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Переход метаданных идентификации Watch всё ещё ожидает выполнения."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bir Watch kimlik meta verisi geçişi hâlâ beklemede."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Перехід метаданих ідентифікації Watch все ще очікує завершення."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch 身份元数据转换仍处于待处理状态。"
-          }
-        }
-      }
-    },
     "A hosted authentication session is already in progress." : {
       "localizations" : {
         "ar" : {
@@ -201,6 +101,106 @@
         }
       }
     },
+    "A Watch identity metadata transition is still pending." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يزال انتقال بيانات تعريف هوية Watch معلقًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Metadatenübertragung der Watch-Identität steht noch aus."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Μια μετάβαση μεταδεδομένων ταυτότητας Watch παραμένει σε εκκρεμότητα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavía hay una transición de metadatos de identidad de Watch pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une transition des métadonnées d’identité de la Watch est toujours en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch पहचान मेटाडेटा का एक ट्रांज़िशन अभी भी लंबित है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una transizione dei metadati dell’identità di Watch è ancora in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WatchのIDメタデータの移行がまだ保留中です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch ID 메타데이터 전환이 아직 보류 중입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przejście metadanych tożsamości Watch nadal oczekuje."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma transição de metadados de identidade do Watch ainda está pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O tranziție a metadatelor de identitate Watch este încă în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переход метаданных идентификации Watch всё ещё ожидает выполнения."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir Watch kimlik meta verisi geçişi hâlâ beklemede."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перехід метаданих ідентифікації Watch все ще очікує завершення."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch 身份元数据转换仍处于待处理状态。"
+          }
+        }
+      }
+    },
     "A web authentication session is already in progress." : {
       "localizations" : {
         "ar" : {
@@ -297,6 +297,312 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已有网页身份验证会话正在进行。"
+          }
+        }
+      }
+    },
+    "An unknown error occurred." : {
+      "comment" : "A generic error message.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدث خطأ غير معروف."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein unbekannter Fehler ist aufgetreten."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Παρουσιάστηκε άγνωστο σφάλμα."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se produjo un error desconocido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une erreur inconnue s’est produite."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "एक अज्ञात त्रुटि हुई।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si è verificato un errore sconosciuto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不明なエラーが発生しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알 수 없는 오류가 발생했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wystąpił nieznany błąd."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocorreu um erro desconhecido."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A apărut o eroare necunoscută."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Произошла неизвестная ошибка."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilinmeyen bir hata oluştu."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сталася невідома помилка."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发生未知错误。"
+          }
+        }
+      }
+    },
+    "Biometric sign-in did not return a challenge." : {
+      "comment" : "Error message when a biometric sign-in does not return a challenge.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تُرجع عملية تسجيل الدخول البيومتري تحديًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die biometrische Anmeldung hat keine Challenge zurückgegeben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η βιομετρική σύνδεση δεν επέστρεψε πρόκληση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El inicio de sesión biométrico no devolvió un desafío."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion biométrique n’a renvoyé aucun défi."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बायोमेट्रिक साइन-इन ने कोई चुनौती नहीं लौटाई।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’accesso biometrico non ha restituito una richiesta di verifica."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生体認証サインインでチャレンジが返されませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생체 인증 로그인에서 챌린지가 반환되지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logowanie biometryczne nie zwróciło wyzwania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O login biométrico não retornou um desafio."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectarea biometrică nu a returnat o provocare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При биометрическом входе не был получен запрос проверки."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biyometrik giriş bir sınama döndürmedi."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Під час біометричного входу не було отримано виклик."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物识别登录未返回质询。"
+          }
+        }
+      }
+    },
+    "Biometric sign-in is unavailable." : {
+      "comment" : "Error message when a local biometric credential is unavailable.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تسجيل الدخول البيومتري غير متاح."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die biometrische Anmeldung ist nicht verfügbar."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η βιομετρική σύνδεση δεν είναι διαθέσιμη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El inicio de sesión biométrico no está disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion biométrique n’est pas disponible."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बायोमेट्रिक साइन-इन उपलब्ध नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’accesso biometrico non è disponibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生体認証サインインは利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생체 인증 로그인을 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logowanie biometryczne jest niedostępne."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O login biométrico não está disponível."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectarea biometrică nu este disponibilă."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Биометрический вход недоступен."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biyometrik giriş kullanılamıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Біометричний вхід недоступний."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物识别登录不可用。"
           }
         }
       }
@@ -1101,106 +1407,6 @@
         }
       }
     },
-    "Hosted auth callback URL did not match the initiated redirect URL." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لم يتطابق عنوان URL لرد اتصال المصادقة المستضافة مع عنوان URL لإعادة التوجيه الذي بدأ العملية."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Callback-URL der gehosteten Authentifizierung stimmte nicht mit der gestarteten Weiterleitungs-URL überein."
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Η διεύθυνση URL επανάκλησης του φιλοξενούμενου ελέγχου ταυτότητας δεν αντιστοιχούσε στη διεύθυνση URL ανακατεύθυνσης που ξεκίνησε τη διαδικασία."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La URL de devolución de llamada de la autenticación alojada no coincidió con la URL de redirección iniciada."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’URL de rappel de l’authentification hébergée ne correspondait pas à l’URL de redirection initiale."
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "होस्टेड प्रमाणीकरण कॉलबैक URL शुरू किए गए रीडायरेक्ट URL से मेल नहीं खाता।"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’URL di callback dell’autenticazione ospitata non corrispondeva all’URL di reindirizzamento iniziale."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ホスト型認証のコールバックURLが、開始時のリダイレクトURLと一致しませんでした。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "호스팅 인증 콜백 URL이 시작된 리디렉션 URL과 일치하지 않습니다."
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adres URL wywołania zwrotnego hostowanego uwierzytelniania nie odpowiadał początkowemu adresowi URL przekierowania."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A URL de retorno da autenticação hospedada não correspondeu à URL de redirecionamento iniciada."
-          }
-        },
-        "ro" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL-ul de revenire al autentificării găzduite nu a corespuns URL-ului de redirecționare inițial."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL-адрес обратного вызова размещенной аутентификации не совпал с исходным URL-адресом перенаправления."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barındırılan kimlik doğrulama geri çağırma URL'si başlatılan yönlendirme URL'siyle eşleşmedi."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL зворотного виклику хостованої автентифікації не збігається з URL перенаправлення, з якого її було розпочато."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "托管身份验证回调 URL 与启动时的重定向 URL 不匹配。"
-          }
-        }
-      }
-    },
     "Hosted auth callback did not include a rotating token nonce." : {
       "localizations" : {
         "ar" : {
@@ -1497,6 +1703,106 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "托管身份验证回调状态缺失或与启动时的状态不匹配。"
+          }
+        }
+      }
+    },
+    "Hosted auth callback URL did not match the initiated redirect URL." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتطابق عنوان URL لرد اتصال المصادقة المستضافة مع عنوان URL لإعادة التوجيه الذي بدأ العملية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Callback-URL der gehosteten Authentifizierung stimmte nicht mit der gestarteten Weiterleitungs-URL überein."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η διεύθυνση URL επανάκλησης του φιλοξενούμενου ελέγχου ταυτότητας δεν αντιστοιχούσε στη διεύθυνση URL ανακατεύθυνσης που ξεκίνησε τη διαδικασία."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La URL de devolución de llamada de la autenticación alojada no coincidió con la URL de redirección iniciada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URL de rappel de l’authentification hébergée ne correspondait pas à l’URL de redirection initiale."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "होस्टेड प्रमाणीकरण कॉलबैक URL शुरू किए गए रीडायरेक्ट URL से मेल नहीं खाता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’URL di callback dell’autenticazione ospitata non corrispondeva all’URL di reindirizzamento iniziale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト型認証のコールバックURLが、開始時のリダイレクトURLと一致しませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "호스팅 인증 콜백 URL이 시작된 리디렉션 URL과 일치하지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adres URL wywołania zwrotnego hostowanego uwierzytelniania nie odpowiadał początkowemu adresowi URL przekierowania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A URL de retorno da autenticação hospedada não correspondeu à URL de redirecionamento iniciada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-ul de revenire al autentificării găzduite nu a corespuns URL-ului de redirecționare inițial."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL-адрес обратного вызова размещенной аутентификации не совпал с исходным URL-адресом перенаправления."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barındırılan kimlik doğrulama geri çağırma URL'si başlatılan yönlendirme URL'siyle eşleşmedi."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL зворотного виклику хостованої автентифікації не збігається з URL перенаправлення, з якого її було розпочато."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "托管身份验证回调 URL 与启动时的重定向 URL 不匹配。"
           }
         }
       }
@@ -3401,102 +3707,104 @@
         }
       }
     },
-    "Shared session sync requires a nonempty Keychain access group." : {
+    "Session activation response was missing identity synchronization metadata." : {
+      "comment" : "Error message when the session activation response is missing identity synchronization metadata.",
+      "isCommentAutoGenerated" : true,
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تتطلب مزامنة الجلسة المشتركة مجموعة وصول غير فارغة في Keychain."
+            "value" : "كان رد تفعيل الجلسة يفتقد بيانات تعريف مزامنة الهوية."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für die Synchronisierung gemeinsam genutzter Sitzungen ist eine nicht leere Keychain-Zugriffsgruppe erforderlich."
+            "value" : "In der Antwort zur Sitzungsaktivierung fehlten Metadaten zur Identitätssynchronisierung."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ο συγχρονισμός κοινόχρηστης περιόδου λειτουργίας απαιτεί μη κενή ομάδα πρόσβασης Keychain."
+            "value" : "Από την απόκριση ενεργοποίησης της περιόδου λειτουργίας έλειπαν μεταδεδομένα συγχρονισμού ταυτότητας."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La sincronización de sesiones compartidas requiere un grupo de acceso de Keychain que no esté vacío."
+            "value" : "A la respuesta de activación de la sesión le faltaban los metadatos de sincronización de identidad."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La synchronisation de session partagée nécessite un groupe d’accès Keychain non vide."
+            "value" : "La réponse d’activation de la session ne contenait pas les métadonnées de synchronisation d’identité."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "साझा सत्र सिंक के लिए एक गैर-रिक्त Keychain एक्सेस समूह आवश्यक है।"
+            "value" : "सत्र सक्रियण प्रतिक्रिया में पहचान सिंक्रोनाइज़ेशन मेटाडेटा मौजूद नहीं था।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La sincronizzazione della sessione condivisa richiede un gruppo di accesso Keychain non vuoto."
+            "value" : "Nella risposta di attivazione della sessione mancavano i metadati di sincronizzazione dell’identità."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "共有セッションの同期には、空でないKeychainアクセスグループが必要です。"
+            "value" : "セッションのアクティブ化レスポンスにID同期メタデータが含まれていませんでした。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "공유 세션 동기화에는 비어 있지 않은 Keychain 접근 그룹이 필요합니다."
+            "value" : "세션 활성화 응답에 ID 동기화 메타데이터가 없습니다."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchronizacja sesji współdzielonej wymaga niepustej grupy dostępu Keychain."
+            "value" : "W odpowiedzi na aktywację sesji brakowało metadanych synchronizacji tożsamości."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A sincronização de sessão compartilhada requer um grupo de acesso Keychain não vazio."
+            "value" : "A resposta de ativação da sessão não continha os metadados de sincronização de identidade."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sincronizarea sesiunii partajate necesită un grup de acces Keychain nevid."
+            "value" : "Răspunsul de activare a sesiunii nu conținea metadatele de sincronizare a identității."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Для синхронизации общего сеанса требуется непустая группа доступа Keychain."
+            "value" : "В ответе активации сеанса отсутствовали метаданные синхронизации идентификации."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paylaşılan oturum eşitlemesi boş olmayan bir Keychain erişim grubu gerektirir."
+            "value" : "Oturum etkinleştirme yanıtında kimlik eşitleme meta verileri eksikti."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Для синхронізації спільного сеансу потрібна непорожня група доступу Keychain."
+            "value" : "У відповіді про активацію сеансу відсутні метадані синхронізації ідентифікації."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "共享会话同步需要非空的 Keychain 访问组。"
+            "value" : "会话激活响应缺少身份同步元数据。"
           }
         }
       }
@@ -3601,6 +3909,106 @@
         }
       }
     },
+    "Shared session sync requires a nonempty Keychain access group." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتطلب مزامنة الجلسة المشتركة مجموعة وصول غير فارغة في Keychain."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für die Synchronisierung gemeinsam genutzter Sitzungen ist eine nicht leere Keychain-Zugriffsgruppe erforderlich."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο συγχρονισμός κοινόχρηστης περιόδου λειτουργίας απαιτεί μη κενή ομάδα πρόσβασης Keychain."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronización de sesiones compartidas requiere un grupo de acceso de Keychain que no esté vacío."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La synchronisation de session partagée nécessite un groupe d’accès Keychain non vide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साझा सत्र सिंक के लिए एक गैर-रिक्त Keychain एक्सेस समूह आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sincronizzazione della sessione condivisa richiede un gruppo di accesso Keychain non vuoto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有セッションの同期には、空でないKeychainアクセスグループが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유 세션 동기화에는 비어 있지 않은 Keychain 접근 그룹이 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizacja sesji współdzielonej wymaga niepustej grupy dostępu Keychain."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sincronização de sessão compartilhada requer um grupo de acesso Keychain não vazio."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizarea sesiunii partajate necesită un grup de acces Keychain nevid."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для синхронизации общего сеанса требуется непустая группа доступа Keychain."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paylaşılan oturum eşitlemesi boş olmayan bir Keychain erişim grubu gerektirir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для синхронізації спільного сеансу потрібна непорожня група доступу Keychain."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共享会话同步需要非空的 Keychain 访问组。"
+          }
+        }
+      }
+    },
     "Something went wrong. Please try again." : {
       "localizations" : {
         "ar" : {
@@ -3697,6 +4105,107 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "出现问题。请重试。"
+          }
+        }
+      }
+    },
+    "This device is no longer trusted. Sign in another way to enroll it again." : {
+      "comment" : "Error shown when a previously enrolled device credential is no longer trusted. The user must sign in another way before enrolling the device again.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يعد هذا الجهاز موثوقًا به. سجّل الدخول بطريقة أخرى لتسجيله مجددًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät ist nicht mehr vertrauenswürdig. Melde dich auf andere Weise an, um es erneut zu registrieren."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αυτή η συσκευή δεν είναι πλέον αξιόπιστη. Συνδεθείτε με άλλον τρόπο για να την καταχωρίσετε ξανά."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo ya no es de confianza. Inicia sesión de otra forma para volver a registrarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cet appareil n’est plus reconnu comme fiable. Connectez-vous d’une autre manière pour l’enregistrer à nouveau."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह डिवाइस अब विश्वसनीय नहीं है। इसे फिर से पंजीकृत करने के लिए किसी दूसरे तरीके से साइन इन करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo dispositivo non è più attendibile. Accedi in un altro modo per registrarlo di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスは信頼されなくなりました。再登録するには、別の方法でサインインしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기기는 더 이상 신뢰할 수 없습니다. 다시 등록하려면 다른 방법으로 로그인하세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To urządzenie nie jest już zaufane. Zaloguj się w inny sposób, aby zarejestrować je ponownie."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo não é mais confiável. Faça login de outra forma para registrá-lo novamente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acest dispozitiv nu mai este de încredere. Conectează-te în alt mod pentru a-l înregistra din nou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это устройство больше не является доверенным. Войдите другим способом, чтобы зарегистрировать его снова."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihaz artık güvenilir değil. Yeniden kaydetmek için başka bir yöntemle giriş yapın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цей пристрій більше не є довіреним. Увійдіть іншим способом, щоб зареєструвати його знову."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备不再受信任。请使用其他方式登录，以重新注册此设备。"
           }
         }
       }
@@ -3897,6 +4406,312 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法删除成员资格：缺少 userId"
+          }
+        }
+      }
+    },
+    "Unable to enroll a biometric credential without a bundle identifier." : {
+      "comment" : "Error message when trying to enroll a biometric credential without a bundle identifier.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر تسجيل بيانات اعتماد بيومترية دون معرّف حزمة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometrische Anmeldedaten können ohne Bundle-ID nicht registriert werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η καταχώριση βιομετρικού διαπιστευτηρίου χωρίς αναγνωριστικό πακέτου."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede registrar una credencial biométrica sin un identificador de paquete."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’enregistrer un identifiant biométrique sans identifiant de bundle."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बंडल पहचानकर्ता के बिना बायोमेट्रिक क्रेडेंशियल पंजीकृत नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile registrare una credenziale biometrica senza un identificatore del bundle."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バンドル識別子がないため、生体認証資格情報を登録できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "번들 식별자가 없으면 생체 인증 자격 증명을 등록할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zarejestrować poświadczenia biometrycznego bez identyfikatora pakietu."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível registrar uma credencial biométrica sem um identificador de pacote."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate înregistra o credențială biometrică fără un identificator de pachet."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно зарегистрировать биометрические учетные данные без идентификатора пакета."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paket tanımlayıcısı olmadan biyometrik kimlik bilgisi kaydedilemiyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо зареєструвати біометричні облікові дані без ідентифікатора пакета."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "缺少软件包标识符，无法注册生物识别凭据。"
+          }
+        }
+      }
+    },
+    "Unable to enroll a biometric credential without a user for the current session." : {
+      "comment" : "Error message when trying to enroll a biometric credential without a user for the current session.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر تسجيل بيانات اعتماد بيومترية دون مستخدم للجلسة الحالية."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometrische Anmeldedaten können ohne einen Benutzer für die aktuelle Sitzung nicht registriert werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η καταχώριση βιομετρικού διαπιστευτηρίου χωρίς χρήστη για την τρέχουσα περίοδο λειτουργίας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede registrar una credencial biométrica sin un usuario para la sesión actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’enregistrer un identifiant biométrique sans utilisateur pour la session actuelle."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "वर्तमान सत्र के लिए उपयोगकर्ता के बिना बायोमेट्रिक क्रेडेंशियल पंजीकृत नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile registrare una credenziale biometrica senza un utente per la sessione corrente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在のセッションにユーザーがいないため、生体認証資格情報を登録できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 세션의 사용자가 없으면 생체 인증 자격 증명을 등록할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zarejestrować poświadczenia biometrycznego bez użytkownika dla bieżącej sesji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível registrar uma credencial biométrica sem um usuário para a sessão atual."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate înregistra o credențială biometrică fără un utilizator pentru sesiunea curentă."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно зарегистрировать биометрические учетные данные без пользователя для текущего сеанса."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçerli oturum için bir kullanıcı olmadan biyometrik kimlik bilgisi kaydedilemiyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо зареєструвати біометричні облікові дані без користувача для поточного сеансу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前会话没有用户，无法注册生物识别凭据。"
+          }
+        }
+      }
+    },
+    "Unable to enroll a biometric credential without an active or pending Clerk session." : {
+      "comment" : "Error message when trying to enroll a biometric credential without an active or pending Clerk session.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر تسجيل بيانات اعتماد بيومترية دون جلسة Clerk نشطة أو معلّقة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometrische Anmeldedaten können ohne eine aktive oder ausstehende Clerk-Sitzung nicht registriert werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η καταχώριση βιομετρικού διαπιστευτηρίου χωρίς ενεργή ή εκκρεμή περίοδο λειτουργίας Clerk."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede registrar una credencial biométrica sin una sesión de Clerk activa o pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’enregistrer un identifiant biométrique sans session Clerk active ou en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सक्रिय या लंबित Clerk सत्र के बिना बायोमेट्रिक क्रेडेंशियल पंजीकृत नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile registrare una credenziale biometrica senza una sessione Clerk attiva o in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクティブまたは保留中のClerkセッションがないため、生体認証資格情報を登録できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성 또는 대기 중인 Clerk 세션이 없으면 생체 인증 자격 증명을 등록할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zarejestrować poświadczenia biometrycznego bez aktywnej lub oczekującej sesji Clerk."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível registrar uma credencial biométrica sem uma sessão Clerk ativa ou pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate înregistra o credențială biometrică fără o sesiune Clerk activă sau în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно зарегистрировать биометрические учетные данные без активного или ожидающего сеанса Clerk."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin veya bekleyen bir Clerk oturumu olmadan biyometrik kimlik bilgisi kaydedilemiyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо зареєструвати біометричні облікові дані без активного сеансу Clerk або сеансу в стані очікування."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有活跃或待处理的 Clerk 会话，无法注册生物识别凭据。"
           }
         }
       }
@@ -4501,6 +5316,108 @@
         }
       }
     },
+    "Unable to revoke a biometric credential without an active or pending Clerk session." : {
+      "comment" : "Error message when trying to revoke a biometric credential without an active or pending Clerk session.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر إلغاء بيانات اعتماد بيومترية دون جلسة Clerk نشطة أو معلّقة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biometrische Anmeldedaten können ohne eine aktive oder ausstehende Clerk-Sitzung nicht widerrufen werden."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η ανάκληση βιομετρικού διαπιστευτηρίου χωρίς ενεργή ή εκκρεμή περίοδο λειτουργίας Clerk."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede revocar una credencial biométrica sin una sesión de Clerk activa o pendiente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de révoquer un identifiant biométrique sans session Clerk active ou en attente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सक्रिय या लंबित Clerk सत्र के बिना बायोमेट्रिक क्रेडेंशियल निरस्त नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile revocare una credenziale biometrica senza una sessione Clerk attiva o in sospeso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクティブまたは保留中のClerkセッションがないため、生体認証資格情報を失効させることができません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성 또는 대기 중인 Clerk 세션이 없으면 생체 인증 자격 증명을 취소할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można unieważnić poświadczenia biometrycznego bez aktywnej lub oczekującej sesji Clerk."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível revogar uma credencial biométrica sem uma sessão Clerk ativa ou pendente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate revoca o credențială biometrică fără o sesiune Clerk activă sau în așteptare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно отозвать биометрические учетные данные без активного или ожидающего сеанса Clerk."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etkin veya bekleyen bir Clerk oturumu olmadan biyometrik kimlik bilgisi iptal edilemiyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо відкликати біометричні облікові дані без активного сеансу Clerk або сеансу в стані очікування."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有活跃或待处理的 Clerk 会话，无法撤销生物识别凭据。"
+          }
+        }
+      }
+    },
     "Unable to start web authentication session." : {
       "localizations" : {
         "ar" : {
@@ -4697,6 +5614,312 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法更新成员资格：缺少 userId"
+          }
+        }
+      }
+    },
+    "Unable to use biometric sign-in because it is disabled." : {
+      "comment" : "Error message when biometric sign-in is disabled.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر استخدام تسجيل الدخول البيومتري لأنه معطّل."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die biometrische Anmeldung kann nicht verwendet werden, da sie deaktiviert ist."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η χρήση της βιομετρικής σύνδεσης επειδή είναι απενεργοποιημένη."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede usar el inicio de sesión biométrico porque está deshabilitado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’utiliser la connexion biométrique, car elle est désactivée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बायोमेट्रिक साइन-इन का उपयोग नहीं किया जा सकता क्योंकि यह अक्षम है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile usare l’accesso biometrico perché è disabilitato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生体認証サインインが無効になっているため、利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생체 인증 로그인이 비활성화되어 있어 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można użyć logowania biometrycznego, ponieważ jest wyłączone."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível usar o login biométrico porque ele está desativado."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate utiliza conectarea biometrică deoarece este dezactivată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно использовать биометрический вход, поскольку он отключен."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biyometrik giriş devre dışı olduğu için kullanılamıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо скористатися біометричним входом, оскільки його вимкнено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生物识别登录已禁用，无法使用。"
+          }
+        }
+      }
+    },
+    "Unable to use biometric sign-in because Native API is disabled." : {
+      "comment" : "Error message when biometric sign-in is unavailable because the Native API is disabled.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر استخدام تسجيل الدخول البيومتري لأن Native API معطّلة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die biometrische Anmeldung kann nicht verwendet werden, da die Native API deaktiviert ist."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η χρήση της βιομετρικής σύνδεσης επειδή το Native API είναι απενεργοποιημένο."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede usar el inicio de sesión biométrico porque Native API está deshabilitada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’utiliser la connexion biométrique, car la Native API est désactivée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बायोमेट्रिक साइन-इन का उपयोग नहीं किया जा सकता क्योंकि Native API अक्षम है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile usare l’accesso biometrico perché la Native API è disabilitata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native APIが無効になっているため、生体認証サインインを利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native API가 비활성화되어 있어 생체 인증 로그인을 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można użyć logowania biometrycznego, ponieważ Native API jest wyłączone."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível usar o login biométrico porque a Native API está desativada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate utiliza conectarea biometrică deoarece Native API este dezactivată."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно использовать биометрический вход, поскольку Native API отключен."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native API devre dışı olduğu için biyometrik giriş kullanılamıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо скористатися біометричним входом, оскільки Native API вимкнено."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Native API 已禁用，无法使用生物识别登录。"
+          }
+        }
+      }
+    },
+    "Unable to use biometric sign-in before the Clerk environment is loaded." : {
+      "comment" : "Error message when biometric sign-in is unavailable because the Clerk environment is not loaded.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذر استخدام تسجيل الدخول البيومتري قبل تحميل بيئة Clerk."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die biometrische Anmeldung kann erst verwendet werden, wenn die Clerk-Umgebung geladen wurde."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν είναι δυνατή η χρήση της βιομετρικής σύνδεσης πριν από τη φόρτωση του περιβάλλοντος Clerk."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede usar el inicio de sesión biométrico antes de que se cargue el entorno de Clerk."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’utiliser la connexion biométrique avant le chargement de l’environnement Clerk."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk वातावरण लोड होने से पहले बायोमेट्रिक साइन-इन का उपयोग नहीं किया जा सकता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile usare l’accesso biometrico prima del caricamento dell’ambiente Clerk."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk環境が読み込まれるまで、生体認証サインインを利用できません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk 환경이 로드되기 전에는 생체 인증 로그인을 사용할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można użyć logowania biometrycznego przed załadowaniem środowiska Clerk."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não é possível usar o login biométrico antes que o ambiente do Clerk seja carregado."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu se poate utiliza conectarea biometrică înainte de încărcarea mediului Clerk."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Невозможно использовать биометрический вход до загрузки среды Clerk."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk ortamı yüklenmeden biyometrik giriş kullanılamıyor."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неможливо скористатися біометричним входом до завантаження середовища Clerk."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clerk 环境加载前无法使用生物识别登录。"
           }
         }
       }
