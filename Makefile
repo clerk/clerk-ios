@@ -199,15 +199,7 @@ test-ui:
 	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
 		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
 	fi
-	@developer_dir="$${DEVELOPER_DIR:-}"; \
-	if [ -z "$$developer_dir" ] && [ -d /Applications/Xcode_26.5.app/Contents/Developer ]; then \
-		developer_dir=/Applications/Xcode_26.5.app/Contents/Developer; \
-	fi; \
-	if [ -n "$$developer_dir" ]; then \
-		export DEVELOPER_DIR="$$developer_dir"; \
-	fi; \
-	xcodebuild -version; \
-	destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
 	if [ -z "$$destination" ]; then \
 		available_devices="$$(xcrun simctl list devices available)"; \
 		simulator_id="$$(printf '%s\n' "$$available_devices" | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$$/\2/p' | head -n1)"; \

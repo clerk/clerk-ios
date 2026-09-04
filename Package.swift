@@ -78,9 +78,6 @@ let package = Package(
         "ClerkKitUI",
       ],
       path: "Tests/UI",
-      resources: [
-        .copy("Snapshots"),
-      ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]
