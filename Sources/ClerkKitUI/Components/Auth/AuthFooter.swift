@@ -35,14 +35,18 @@ private struct AuthFooterModifier: ViewModifier {
       }
     #else
     content
-      .bottomTrackedFooter(isPresented: clerk.shouldShowDevelopmentModeWarning) {
+      .bottomTrackedFooter(
+        isPresented: clerk.shouldShowDevelopmentModeWarning,
+        tracksHostSafeArea: clerk.shouldShowDevelopmentModeWarning
+      ) { safeArea in
         DevelopmentModeView()
-          .offset(y: 8)
+          .offset(y: safeArea.developmentModeOffset)
           .padding(.top, 16)
+          .padding(.bottom, safeArea.additionalPadding)
           .frame(maxWidth: .infinity)
           .background {
             DevelopmentModeBackgroundView()
-              .ignoresSafeArea(.container, edges: .bottom)
+              .ignoresSafeArea(.container, edges: safeArea.backgroundSafeAreaEdges)
           }
       }
     #endif

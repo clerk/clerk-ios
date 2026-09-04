@@ -32,13 +32,16 @@ struct SecuredByClerkFooter: View {
   @Environment(\.clerkTheme) private var theme
 
   private let showBackground: Bool
+  private let safeArea: FooterSafeArea
   private let macOSDismissAction: (() -> Void)?
 
   init(
     showBackground: Bool = true,
+    safeArea: FooterSafeArea = FooterSafeArea(containerInset: 0, hostInset: 0),
     macOSDismissAction: (() -> Void)? = nil
   ) {
     self.showBackground = showBackground
+    self.safeArea = safeArea
     self.macOSDismissAction = macOSDismissAction
   }
 
@@ -53,9 +56,12 @@ struct SecuredByClerkFooter: View {
           }
         }
       }
+      #if os(iOS)
+      .offset(y: showBackground && clerk.shouldShowDevelopmentModeWarning ? safeArea.developmentModeOffset : 0)
+      #endif
       .padding(.horizontal, 16)
       .padding(.top, 16)
-      .padding(.bottom, bottomPadding)
+      .padding(.bottom, bottomPadding + safeArea.additionalPadding)
       .frame(maxWidth: .infinity)
       .background {
         if showBackground {
@@ -71,7 +77,7 @@ struct SecuredByClerkFooter: View {
               }
             #endif
           }
-          .ignoresSafeArea(.container, edges: .bottom)
+          .ignoresSafeArea(.container, edges: safeArea.backgroundSafeAreaEdges)
         }
       }
       .overlay(alignment: .top) {
@@ -137,8 +143,11 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
         }
     } else {
       content
-        .bottomTrackedFooter(isPresented: clerk.shouldShowSecuredByClerkFooter) {
-          SecuredByClerkFooter()
+        .bottomTrackedFooter(
+          isPresented: clerk.shouldShowSecuredByClerkFooter,
+          tracksHostSafeArea: clerk.shouldShowDevelopmentModeWarning
+        ) { safeArea in
+          SecuredByClerkFooter(safeArea: safeArea)
         }
     }
   }

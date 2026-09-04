@@ -23,6 +23,7 @@ let package = Package(
     .package(url: "https://github.com/PhoneNumberKit/PhoneNumberKit", .upToNextMajor(from: "5.0.0")),
     .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
     .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0"),
+    .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.4"),
   ],
   targets: [
     .target(
@@ -76,6 +77,7 @@ let package = Package(
       dependencies: [
         "ClerkKit",
         "ClerkKitUI",
+        .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
       ],
       path: "Tests/UI",
       swiftSettings: [
