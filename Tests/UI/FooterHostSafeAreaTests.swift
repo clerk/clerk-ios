@@ -110,6 +110,19 @@ struct FooterHostSafeAreaTests {
   }
 
   @Test
+  func visibleFooterWithoutHostTrackingDoesNotInstallAnObserver() async throws {
+    let fixture = FooterHostingFixture(consumesSafeArea: true, tracksHostSafeArea: false)
+    defer { fixture.close() }
+    await fixture.layout()
+
+    let superview = try #require(fixture.parent.view.superview)
+    #expect(!superview.subviews.contains { $0 is FooterContainerSafeAreaView })
+    let safeArea = try #require(fixture.recorder.safeArea)
+    #expect(safeArea.containerInset == 0)
+    #expect(safeArea.hostInset == 0)
+  }
+
+  @Test
   func separatePresentationDoesNotInheritItsPresentersInsets() async throws {
     let fixture = FooterHostingFixture(consumesSafeArea: true, additionalInset: 50)
     defer { fixture.close() }
@@ -145,8 +158,16 @@ private final class FooterHostingFixture {
   let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
   let host: UIViewController
 
-  init(consumesSafeArea: Bool, additionalInset: CGFloat = 0, hasTabBar: Bool = false) {
-    host = UIHostingController(rootView: FooterInsetProbe(recorder: recorder))
+  init(
+    consumesSafeArea: Bool,
+    additionalInset: CGFloat = 0,
+    hasTabBar: Bool = false,
+    tracksHostSafeArea: Bool = true
+  ) {
+    host = UIHostingController(rootView: FooterInsetProbe(
+      recorder: recorder,
+      tracksHostSafeArea: tracksHostSafeArea
+    ))
     parent.additionalSafeAreaInsets.bottom = additionalInset
     parent.addChild(host)
     parent.view.addSubview(host.view)
@@ -196,9 +217,13 @@ private final class FooterInsetRecorder {
 
 private struct FooterInsetProbe: View {
   let recorder: FooterInsetRecorder
+  var tracksHostSafeArea = true
 
   var body: some View {
-    Color.clear.bottomTrackedFooter(isPresented: true) { safeArea in
+    Color.clear.bottomTrackedFooter(
+      isPresented: true,
+      tracksHostSafeArea: tracksHostSafeArea
+    ) { safeArea in
       Color.clear.frame(height: 16)
         .onChange(of: [safeArea.containerInset, safeArea.hostInset], initial: true) {
           recorder.safeArea = safeArea

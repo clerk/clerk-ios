@@ -143,7 +143,10 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
         }
     } else {
       content
-        .bottomTrackedFooter(isPresented: clerk.shouldShowSecuredByClerkFooter) { safeArea in
+        .bottomTrackedFooter(
+          isPresented: clerk.shouldShowSecuredByClerkFooter,
+          tracksHostSafeArea: clerk.shouldShowDevelopmentModeWarning
+        ) { safeArea in
           SecuredByClerkFooter(safeArea: safeArea)
         }
     }

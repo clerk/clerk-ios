@@ -35,7 +35,10 @@ private struct AuthFooterModifier: ViewModifier {
       }
     #else
     content
-      .bottomTrackedFooter(isPresented: clerk.shouldShowDevelopmentModeWarning) { safeArea in
+      .bottomTrackedFooter(
+        isPresented: clerk.shouldShowDevelopmentModeWarning,
+        tracksHostSafeArea: clerk.shouldShowDevelopmentModeWarning
+      ) { safeArea in
         DevelopmentModeView()
           .offset(y: safeArea.developmentModeOffset)
           .padding(.top, 16)

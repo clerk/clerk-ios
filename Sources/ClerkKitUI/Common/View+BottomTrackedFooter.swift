@@ -10,9 +10,14 @@ import SwiftUI
 extension View {
   func bottomTrackedFooter(
     isPresented: Bool,
+    tracksHostSafeArea: Bool,
     @ViewBuilder footer: @escaping (FooterSafeArea) -> some View
   ) -> some View {
-    modifier(BottomTrackedFooterModifier(isPresented: isPresented, footer: footer))
+    modifier(BottomTrackedFooterModifier(
+      isPresented: isPresented,
+      tracksHostSafeArea: tracksHostSafeArea,
+      footer: footer
+    ))
   }
 }
 
@@ -20,6 +25,7 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
   @Environment(\.clerkFooterHostBottomInset) private var inheritedHostInset
 
   let isPresented: Bool
+  let tracksHostSafeArea: Bool
   let footer: (FooterSafeArea) -> Footer
 
   @State private var footerHeight: CGFloat = 0
@@ -28,9 +34,11 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
 
   init(
     isPresented: Bool,
+    tracksHostSafeArea: Bool,
     @ViewBuilder footer: @escaping (FooterSafeArea) -> Footer
   ) {
     self.isPresented = isPresented
+    self.tracksHostSafeArea = tracksHostSafeArea
     self.footer = footer
   }
 
@@ -48,10 +56,7 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
           VStack(spacing: 0) {
             Spacer(minLength: 0)
 
-            footer(FooterSafeArea(
-              containerInset: bottomSafeAreaInset,
-              hostInset: inheritedHostInset ?? hostBottomSafeAreaInset
-            ))
+            footer(safeArea)
               .onGeometryChange(for: CGFloat.self) { geometry in
                 geometry.size.height
               } action: { newValue in
@@ -72,7 +77,7 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
       }
       #if os(iOS)
       .background {
-        if isPresented, inheritedHostInset == nil {
+        if isPresented, tracksHostSafeArea, inheritedHostInset == nil {
           FooterHostSafeAreaReader { newValue in
             hostBottomSafeAreaInset = newValue
           }
@@ -80,6 +85,16 @@ private struct BottomTrackedFooterModifier<Footer: View>: ViewModifier {
         }
       }
       #endif
+  }
+
+  private var safeArea: FooterSafeArea {
+    guard tracksHostSafeArea else {
+      return FooterSafeArea(containerInset: 0, hostInset: 0)
+    }
+    return FooterSafeArea(
+      containerInset: bottomSafeAreaInset,
+      hostInset: inheritedHostInset ?? hostBottomSafeAreaInset
+    )
   }
 }
 
