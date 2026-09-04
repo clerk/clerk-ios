@@ -230,6 +230,8 @@ jobs:
           restore-keys: swiftpm-ios-
 
       - name: Run ClerkKitUI tests
+        env:
+          IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
         run: make test-ui
 
   test-e2e:
