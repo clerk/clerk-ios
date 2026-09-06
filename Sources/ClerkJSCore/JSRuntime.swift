@@ -30,6 +30,10 @@ final class JSRuntime: @unchecked Sendable {
     currentCall?.id
   }
 
+  var lastClientJSON: Data? {
+    queue.sync { host.lastClientJSON }
+  }
+
   func evaluateJSON(_ js: String) async throws -> String {
     try await perform { [self] call in
       try ensureBundleEvaluated()

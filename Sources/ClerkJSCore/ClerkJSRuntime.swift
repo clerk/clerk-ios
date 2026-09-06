@@ -22,6 +22,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     tokenCache _: ClerkJSTokenCache = ClerkJSTokenCache()
   ) {}
 
+  public var lastFAPIClientJSON: Data? {
+    nil
+  }
+
   public func load(publishableKey _: String) async throws {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -43,6 +47,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   ) {
     self.sdkVersion = sdkVersion
     runtime = JSRuntime(tokenCache: tokenCache)
+  }
+
+  public var lastFAPIClientJSON: Data? {
+    runtime.lastClientJSON
   }
 
   public func load(publishableKey: String) async throws {

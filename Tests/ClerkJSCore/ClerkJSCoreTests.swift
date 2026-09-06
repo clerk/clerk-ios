@@ -123,37 +123,21 @@ struct ClerkJSCoreTests {
     }
     #expect(snapshotCodingPath.hasSuffix("status") || snapshotCodingPath.contains("identifier"))
 
-    let payload = try await runtime.evaluateJSON(
-      """
-      (function(){
-        var c = globalThis.__clerkInstance.client;
-        function millis(value) {
-          if (value == null) return null;
-          if (typeof value.getTime === 'function') return value.getTime();
-          return value;
-        }
-        if ((c.sessions && c.sessions.length) || (c.signIn && c.signIn.id) || (c.signUp && c.signUp.id)) {
-          throw new Error('load ClientJSON mapper covers a fresh client only');
-        }
-        return {
-          object: 'client',
-          id: c.id,
-          sessions: [],
-          sign_in: null,
-          sign_up: null,
-          last_active_session_id: c.lastActiveSessionId,
-          captcha_bypass: c.captchaBypass,
-          cookie_expires_at: millis(c.cookieExpiresAt),
-          last_authentication_strategy: c.lastAuthenticationStrategy,
-          created_at: millis(c.createdAt),
-          updated_at: millis(c.updatedAt)
-        };
-      })()
-      """
-    )
-    let client = try JSONDecoder().decode(Client.self, from: Data(payload.utf8))
-    #expect(client.id.hasPrefix("client_"))
-    #expect(client.object == "client")
+    let payload = try #require(runtime.lastFAPIClientJSON)
+    let object = try #require(JSONSerialization.jsonObject(with: payload) as? [String: Any])
+    let signIn = wireField(object, "sign_in")
+    let signUp = wireField(object, "sign_up")
+    do {
+      let client = try JSONDecoder().decode(Client.self, from: payload)
+      #expect(client.id.hasPrefix("client_"), "FAPI sign_in=\(signIn) sign_up=\(signUp)")
+      #expect(client.object == "client")
+    } catch let error as DecodingError {
+      let path = decodingPath(error)
+      #expect(
+        path.hasSuffix("status") || path.contains("identifier"),
+        "FAPI ClientJSON failed at \(path); sign_in=\(signIn) sign_up=\(signUp)"
+      )
+    }
   }
 }
 
@@ -168,6 +152,20 @@ private func decodeJSONString(_ json: String) throws -> String {
 
 private func decodeJSONBool(_ json: String) throws -> Bool {
   try JSONDecoder().decode(Bool.self, from: Data(json.utf8))
+}
+
+private func wireField(_ object: [String: Any], _ key: String) -> String {
+  guard object.keys.contains(key) else {
+    return "missing"
+  }
+  switch object[key] {
+  case nil, is NSNull:
+    return "null"
+  case is [String: Any]:
+    return "object"
+  default:
+    return "other"
+  }
 }
 
 private func decodingPath(_ error: DecodingError) -> String {

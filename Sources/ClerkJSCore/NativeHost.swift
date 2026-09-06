@@ -13,6 +13,7 @@ final class NativeHost: @unchecked Sendable {
   private var timers: [UInt64: DispatchWorkItem] = [:]
   private var fetches: [UInt64: InFlightFetch] = [:]
   private var callbacks: [UInt64: JSValue] = [:]
+  private(set) var lastClientJSON: Data?
 
   init(tokenCache: ClerkJSTokenCache) {
     self.tokenCache = tokenCache
@@ -186,6 +187,9 @@ final class NativeHost: @unchecked Sendable {
       inflight.callback.call(withArguments: ["Expected an HTTP response", NSNull()])
       return
     }
+    if let data, let clientJSON = Self.clientJSON(fromFAPIBody: data) {
+      lastClientJSON = clientJSON
+    }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
       headers[String(describing: key)] = String(describing: value)
@@ -209,6 +213,24 @@ final class NativeHost: @unchecked Sendable {
     guard let inflight = fetches.removeValue(forKey: id) else { return }
     inflight.task.cancel()
     inflight.callback.call(withArguments: ["The operation was aborted.", NSNull()])
+  }
+
+  private static func clientJSON(fromFAPIBody data: Data) -> Data? {
+    guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return nil
+    }
+    let inner = asClientJSON(object["client"]) ?? asClientJSON(object["response"]) ?? asClientJSON(object)
+    guard let inner else {
+      return nil
+    }
+    return try? JSONSerialization.data(withJSONObject: inner)
+  }
+
+  private static func asClientJSON(_ value: Any?) -> [String: Any]? {
+    guard let object = value as? [String: Any], object["object"] as? String == "client" else {
+      return nil
+    }
+    return object
   }
 
   private static func parseURL(_ href: String, base: String?) -> [String: String]? {
