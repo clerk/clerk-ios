@@ -29,6 +29,7 @@ public final class Clerk: @unchecked Sendable {
   package let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
   private var fapiEnvironment: Environment?
+  private var fapiNativeSettings = NativeSettings.default
 
   public init(
     publishableKey: String,
@@ -67,6 +68,10 @@ public final class Clerk: @unchecked Sendable {
 
   public var client: Client {
     Client(clerk: self)
+  }
+
+  public var nativeSettings: NativeSettings {
+    fapiNativeSettings
   }
 
   public var watchCompanion: WatchCompanion {
@@ -266,5 +271,6 @@ public final class Clerk: @unchecked Sendable {
       return
     }
     fapiEnvironment = try? JSONDecoder().decode(Environment.self, from: data)
+    fapiNativeSettings = (try? FAPIJSON.decodeNativeSettings(fromEnvironmentJSON: data)) ?? .default
   }
 }

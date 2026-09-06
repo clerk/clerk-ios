@@ -175,4 +175,32 @@ struct FAPIJSONTests {
     #expect(client.sessions.isEmpty)
     #expect(client.lastActiveSessionId == nil)
   }
+
+  @Test
+  func decodeNativeSettingsDefaultsWhenMissingFromEnvironmentSnapshot() throws {
+    let url = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
+    let settings = try FAPIJSON.decodeNativeSettings(fromEnvironmentJSON: Data(contentsOf: url))
+    #expect(settings == .default)
+  }
+
+  @Test
+  func decodeNativeSettingsReadsTrustedDeviceKeys() throws {
+    let payload: [String: Any] = [
+      "auth_config": [
+        "native_settings": [
+          "api_enabled": true,
+          "trusted_device_sign_in_enabled": true,
+          "trusted_device_enrollment_prompt_after_sign_in_enabled": true,
+          "trusted_device_enrollment_prompt_after_sign_up_enabled": true,
+        ],
+      ],
+    ]
+    let settings = try FAPIJSON.decodeNativeSettings(
+      fromEnvironmentJSON: JSONSerialization.data(withJSONObject: payload)
+    )
+    #expect(settings.apiEnabled)
+    #expect(settings.biometricSignInEnabled)
+    #expect(settings.biometricCredentialPromptAfterSignInEnabled)
+    #expect(settings.biometricCredentialPromptAfterSignUpEnabled)
+  }
 }

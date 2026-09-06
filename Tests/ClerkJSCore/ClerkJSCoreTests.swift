@@ -426,6 +426,54 @@ struct ClerkJSCoreTests {
     try replica.apply(clerk.watchCompanion.encode())
     #expect(replica.client?.id == "client_fixture")
     #expect(replica.environment?.id == "env_fixture")
+    #expect(clerk.nativeSettings == .default)
+  }
+
+  @Test
+  func loadPublishesNativeSettingsFromCachedEnvironment() async throws {
+    let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
+    let environmentURL = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
+    let clientData = try Data(contentsOf: clientURL)
+    var environment = try #require(
+      JSONSerialization.jsonObject(with: Data(contentsOf: environmentURL)) as? [String: Any]
+    )
+    var authConfig = try #require(environment["auth_config"] as? [String: Any])
+    authConfig["native_settings"] = [
+      "api_enabled": true,
+      "trusted_device_sign_in_enabled": true,
+      "trusted_device_enrollment_prompt_after_sign_in_enabled": true,
+      "trusted_device_enrollment_prompt_after_sign_up_enabled": true,
+    ]
+    environment["auth_config"] = authConfig
+    let environmentData = try JSONSerialization.data(withJSONObject: environment)
+
+    let cache = ClerkJSResourceCache.memory()
+    await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
+
+    let clerk = Clerk(
+      publishableKey: mockPublishableKey,
+      tokenCache: .memory(),
+      resourceCache: cache
+    )
+    let stubbed = try await decodeJSONBool(
+      clerk.runtime.evaluateJSON(
+        """
+        (function() {
+          globalThis.fetch = function() {
+            return Promise.reject(new Error('Failed to fetch'));
+          };
+          return true;
+        })()
+        """
+      )
+    )
+    #expect(stubbed)
+
+    try await clerk.load()
+    #expect(clerk.nativeSettings.apiEnabled)
+    #expect(clerk.nativeSettings.biometricSignInEnabled)
+    #expect(clerk.nativeSettings.biometricCredentialPromptAfterSignInEnabled)
+    #expect(clerk.nativeSettings.biometricCredentialPromptAfterSignUpEnabled)
   }
 
   @Test
