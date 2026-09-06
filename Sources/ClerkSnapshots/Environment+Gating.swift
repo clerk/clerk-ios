@@ -70,4 +70,74 @@ extension Environment {
   public var usernameIsImmutable: Bool {
     userSettings.attributes.username.immutable == true
   }
+
+  public var enabledFirstFactorAttributes: [String] {
+    userSettings.attributes.namedFields.compactMap { key, attribute in
+      guard attribute.enabled, attribute.usedForFirstFactor else {
+        return nil
+      }
+      return key.rawValue
+    }
+  }
+
+  public var authenticatableSocialProviders: [OAuthProviderSettings] {
+    userSettings.social.namedSettings.filter { $0.enabled && $0.authenticatable }
+  }
+
+  public var allSocialProviders: [OAuthProviderSettings] {
+    userSettings.social.namedSettings.filter(\.enabled)
+  }
+}
+
+extension Attributes {
+  fileprivate var namedFields: [(key: CodingKeys, attribute: AttributeData)] {
+    [
+      (.emailAddress, emailAddress),
+      (.phoneNumber, phoneNumber),
+      (.web3Wallet, web3Wallet),
+      (.passkey, passkey),
+      (.username, username),
+      (.password, password),
+      (.backupCode, backupCode),
+      (.firstName, firstName),
+      (.lastName, lastName),
+      (.authenticatorApp, authenticatorApp),
+    ]
+  }
+}
+
+extension OAuthProviders {
+  fileprivate var namedSettings: [OAuthProviderSettings] {
+    [
+      oauthFacebook,
+      oauthGoogle,
+      oauthHubspot,
+      oauthGithub,
+      oauthTiktok,
+      oauthGitlab,
+      oauthDiscord,
+      oauthTwitter,
+      oauthTwitch,
+      oauthLinkedin,
+      oauthLinkedinOidc,
+      oauthDropbox,
+      oauthAtlassian,
+      oauthBitbucket,
+      oauthMicrosoft,
+      oauthNotion,
+      oauthApple,
+      oauthLine,
+      oauthInstagram,
+      oauthCoinbase,
+      oauthSpotify,
+      oauthXero,
+      oauthBox,
+      oauthSlack,
+      oauthLinear,
+      oauthX,
+      oauthEnstall,
+      oauthHuggingface,
+      oauthVercel,
+    ]
+  }
 }

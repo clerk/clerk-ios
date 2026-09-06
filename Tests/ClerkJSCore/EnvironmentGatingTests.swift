@@ -74,6 +74,7 @@ struct EnvironmentGatingTests {
     #expect(environment.passkeyIsEnabled)
     #expect(environment.passkeyFirstFactorIsEnabled)
     #expect(environment.phoneNumberIsEnabled)
+    #expect(!environment.enabledFirstFactorAttributes.contains("phone_number"))
     #expect(environment.mfaPhoneCodeIsEnabled)
     #expect(environment.mfaAuthenticatorAppIsEnabled)
     #expect(environment.mfaBackupCodeIsEnabled)
@@ -100,6 +101,76 @@ struct EnvironmentGatingTests {
     let environment = try decodeEnvironment(object)
     #expect(environment.passkeyIsEnabled)
     #expect(!environment.passkeyFirstFactorIsEnabled)
+  }
+
+  @Test
+  func snapshotListsEmailFirstFactorAndNoSocial() throws {
+    let environment = try decodeSnapshotEnvironment()
+    #expect(environment.enabledFirstFactorAttributes.contains("email_address"))
+    #expect(environment.enabledFirstFactorAttributes.contains("password"))
+    #expect(!environment.enabledFirstFactorAttributes.contains("phone_number"))
+    #expect(!environment.enabledFirstFactorAttributes.contains("username"))
+    #expect(!environment.enabledFirstFactorAttributes.contains("passkey"))
+    #expect(environment.authenticatableSocialProviders.isEmpty)
+    #expect(environment.allSocialProviders.isEmpty)
+  }
+
+  @Test
+  func mutatedPhoneAndOAuthAppearInLists() throws {
+    var object = try snapshotObject()
+    var userSettings = try #require(object["user_settings"] as? [String: Any])
+    var attributes = try #require(userSettings["attributes"] as? [String: Any])
+    attributes["phone_number"] = try mutatedAttribute(
+      attributes["phone_number"],
+      enabled: true,
+      usedForFirstFactor: true
+    )
+    userSettings["attributes"] = attributes
+
+    var social = try #require(userSettings["social"] as? [String: Any])
+    social["oauth_google"] = try mutatedSocial(
+      social["oauth_google"],
+      enabled: true,
+      authenticatable: true
+    )
+    userSettings["social"] = social
+    object["user_settings"] = userSettings
+
+    let environment = try decodeEnvironment(object)
+    #expect(environment.enabledFirstFactorAttributes.contains("email_address"))
+    #expect(environment.enabledFirstFactorAttributes.contains("phone_number"))
+    #expect(environment.authenticatableSocialProviders.map(\.strategy).contains("oauth_google"))
+    #expect(environment.allSocialProviders.map(\.strategy).contains("oauth_google"))
+  }
+
+  @Test
+  func socialStrategyAppearsOnlyWhenEnabledAndAuthenticatable() throws {
+    var object = try snapshotObject()
+    var userSettings = try #require(object["user_settings"] as? [String: Any])
+    var social = try #require(userSettings["social"] as? [String: Any])
+    social["oauth_google"] = try mutatedSocial(
+      social["oauth_google"],
+      enabled: true,
+      authenticatable: false
+    )
+    userSettings["social"] = social
+    object["user_settings"] = userSettings
+
+    let enabledOnly = try decodeEnvironment(object)
+    #expect(enabledOnly.allSocialProviders.map(\.strategy).contains("oauth_google"))
+    #expect(!enabledOnly.authenticatableSocialProviders.map(\.strategy).contains("oauth_google"))
+
+    social["oauth_google"] = try mutatedSocial(
+      social["oauth_google"],
+      enabled: true,
+      authenticatable: true
+    )
+    userSettings["social"] = social
+    object["user_settings"] = userSettings
+
+    let authenticatable = try decodeEnvironment(object)
+    #expect(authenticatable.authenticatableSocialProviders.map(\.strategy).contains("oauth_google"))
+    #expect(authenticatable.allSocialProviders.map(\.strategy).contains("oauth_google"))
   }
 }
 
@@ -140,4 +211,19 @@ private func mutatedAttribute(
     attribute["immutable"] = immutable
   }
   return attribute
+}
+
+private func mutatedSocial(
+  _ value: Any?,
+  enabled: Bool? = nil,
+  authenticatable: Bool? = nil
+) throws -> [String: Any] {
+  var provider = try #require(value as? [String: Any])
+  if let enabled {
+    provider["enabled"] = enabled
+  }
+  if let authenticatable {
+    provider["authenticatable"] = authenticatable
+  }
+  return provider
 }
