@@ -39,7 +39,7 @@ let package = Package(
     ),
     .target(
       name: "ClerkJSCore",
-      dependencies: ["ClerkSnapshots"],
+      dependencies: ["ClerkSnapshots", "ClerkWatchCompanion"],
       path: "Sources/ClerkJSCore",
       resources: [
         .process("Resources"),
@@ -127,6 +127,7 @@ let package = Package(
       name: "ClerkJSCoreTests",
       dependencies: [
         "ClerkJSCore",
+        "ClerkWatchCompanion",
       ],
       path: "Tests/ClerkJSCore",
       resources: [

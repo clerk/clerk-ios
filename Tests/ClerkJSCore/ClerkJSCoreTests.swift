@@ -1,5 +1,6 @@
 #if !os(watchOS)
 @testable import ClerkJSCore
+import ClerkWatchCompanion
 import Foundation
 import Testing
 
@@ -380,6 +381,41 @@ struct ClerkJSCoreTests {
     try await clerk.load()
     #expect(clerk.client.id == "client_fixture")
     #expect(clerk.client.sessions.isEmpty)
+  }
+
+  @Test
+  func loadPublishesWatchCompanionFromCachedClientOnNetworkError() async throws {
+    let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
+    let environmentURL = try #require(Bundle.module.url(forResource: "environment", withExtension: "json"))
+    let clientData = try Data(contentsOf: clientURL)
+    let environmentData = try Data(contentsOf: environmentURL)
+
+    let cache = ClerkJSResourceCache.memory()
+    await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
+
+    let clerk = Clerk(
+      publishableKey: mockPublishableKey,
+      tokenCache: .memory(),
+      resourceCache: cache
+    )
+    let stubbed = try await decodeJSONBool(
+      clerk.runtime.evaluateJSON(
+        """
+        (function() {
+          globalThis.fetch = function() {
+            return Promise.reject(new Error('Failed to fetch'));
+          };
+          return true;
+        })()
+        """
+      )
+    )
+    #expect(stubbed)
+
+    try await clerk.load()
+    var replica = WatchCompanion()
+    try replica.apply(clerk.watchCompanion.encode())
+    #expect(replica.client?.id == "client_fixture")
   }
 
   @Test

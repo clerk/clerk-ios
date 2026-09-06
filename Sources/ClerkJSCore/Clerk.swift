@@ -1,4 +1,5 @@
 @_exported import ClerkSnapshots
+import ClerkWatchCompanion
 import CryptoKit
 import Foundation
 
@@ -65,6 +66,10 @@ public final class Clerk: @unchecked Sendable {
 
   public var client: Client {
     Client(clerk: self)
+  }
+
+  public var watchCompanion: WatchCompanion {
+    WatchCompanion(client: fapiClient)
   }
 
   public var session: ActiveSession {
