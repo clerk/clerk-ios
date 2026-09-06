@@ -269,7 +269,12 @@ final class NativeHost: @unchecked Sendable {
   }
 
   private static func atob(_ encoded: String) -> String {
-    guard let data = Data(base64Encoded: encoded) else { return "" }
+    var base64 = encoded
+    let pad = base64.count % 4
+    if pad != 0 {
+      base64.append(String(repeating: "=", count: 4 - pad))
+    }
+    guard let data = Data(base64Encoded: base64) else { return "" }
     return String(data: data, encoding: .isoLatin1) ?? ""
   }
 

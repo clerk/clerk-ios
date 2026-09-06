@@ -63,6 +63,12 @@ struct ClerkJSCoreTests {
       runtime.evaluateJSON("new Headers(new Headers({a: '1'})).get('a')")
     )
     #expect(copiedHeader == "1")
+    let unpaddedAtob = try await decodeJSONString(runtime.evaluateJSON("atob('YQ')"))
+    #expect(unpaddedAtob == "a")
+    let unpaddedJSON = try await decodeJSONBool(
+      runtime.evaluateJSON("JSON.parse(atob('eyJ4IjoxfQ')).x === 1")
+    )
+    #expect(unpaddedJSON)
   }
 
   @Test
