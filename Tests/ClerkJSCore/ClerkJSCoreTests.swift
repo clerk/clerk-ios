@@ -101,6 +101,60 @@ struct ClerkJSCoreTests {
     )
     try snapshot.write(to: destination, atomically: true, encoding: .utf8)
   }
+
+  @Test
+  func generatedClientDecodesLiveClientJSON() async throws {
+    guard let publishableKey = publishableKeyFromKeysFile(named: "amusing-barnacle-26") else {
+      Issue.record("Missing amusing-barnacle-26 publishable key in .keys.json")
+      return
+    }
+
+    let runtime = ClerkJSRuntime()
+    try await runtime.load(publishableKey: publishableKey)
+
+    let snapshot = try await runtime.evaluateJSON(
+      "globalThis.__clerkInstance.client.__internal_toSnapshot()"
+    )
+    var snapshotCodingPath = ""
+    do {
+      _ = try JSONDecoder().decode(Client.self, from: Data(snapshot.utf8))
+    } catch let error as DecodingError {
+      snapshotCodingPath = decodingPath(error)
+    }
+    #expect(snapshotCodingPath.hasSuffix("status") || snapshotCodingPath.contains("identifier"))
+
+    let payload = try await runtime.evaluateJSON(
+      """
+      (function(){
+        var c = globalThis.__clerkInstance.client;
+        function millis(value) {
+          if (value == null) return null;
+          if (typeof value.getTime === 'function') return value.getTime();
+          return value;
+        }
+        if ((c.sessions && c.sessions.length) || (c.signIn && c.signIn.id) || (c.signUp && c.signUp.id)) {
+          throw new Error('load ClientJSON mapper covers a fresh client only');
+        }
+        return {
+          object: 'client',
+          id: c.id,
+          sessions: [],
+          sign_in: null,
+          sign_up: null,
+          last_active_session_id: c.lastActiveSessionId,
+          captcha_bypass: c.captchaBypass,
+          cookie_expires_at: millis(c.cookieExpiresAt),
+          last_authentication_strategy: c.lastAuthenticationStrategy,
+          created_at: millis(c.createdAt),
+          updated_at: millis(c.updatedAt)
+        };
+      })()
+      """
+    )
+    let client = try JSONDecoder().decode(Client.self, from: Data(payload.utf8))
+    #expect(client.id.hasPrefix("client_"))
+    #expect(client.object == "client")
+  }
 }
 
 private struct ClerkLoadProof: Decodable {
@@ -114,6 +168,23 @@ private func decodeJSONString(_ json: String) throws -> String {
 
 private func decodeJSONBool(_ json: String) throws -> Bool {
   try JSONDecoder().decode(Bool.self, from: Data(json.utf8))
+}
+
+private func decodingPath(_ error: DecodingError) -> String {
+  let context: DecodingError.Context
+  switch error {
+  case .typeMismatch(_, let ctx):
+    context = ctx
+  case .valueNotFound(_, let ctx):
+    context = ctx
+  case .keyNotFound(_, let ctx):
+    context = ctx
+  case .dataCorrupted(let ctx):
+    context = ctx
+  @unknown default:
+    return String(describing: error)
+  }
+  return context.codingPath.map(\.stringValue).joined(separator: ".")
 }
 
 private func packageRootURL() -> URL {
