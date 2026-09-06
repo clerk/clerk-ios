@@ -47,4 +47,38 @@ struct AuthViewCompletionTests {
     #expect(authView.authState.mode == .signIn)
     #expect(authView.isDismissible == false)
   }
+
+  @Test
+  func finishesOnlyWhenDismissibleAndJSSessionIsActive() {
+    let active = AuthView.JSSessionSnapshot(id: "sess_1", status: .active)
+
+    #expect(
+      !AuthView.shouldFinishForJSSession(isDismissible: false, session: active)
+    )
+    #expect(
+      !AuthView.shouldFinishForJSSession(
+        isDismissible: true,
+        session: AuthView.JSSessionSnapshot(id: nil, status: .active)
+      )
+    )
+    #expect(
+      !AuthView.shouldFinishForJSSession(
+        isDismissible: true,
+        session: AuthView.JSSessionSnapshot(id: "sess_1", status: nil)
+      )
+    )
+    #expect(
+      !AuthView.shouldFinishForJSSession(
+        isDismissible: true,
+        session: AuthView.JSSessionSnapshot(id: "sess_1", status: .pending)
+      )
+    )
+    #expect(
+      !AuthView.shouldFinishForJSSession(
+        isDismissible: true,
+        session: AuthView.JSSessionSnapshot(id: "sess_1", status: .expired)
+      )
+    )
+    #expect(AuthView.shouldFinishForJSSession(isDismissible: true, session: active))
+  }
 }
