@@ -19,6 +19,7 @@ let package = Package(
     .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
     .library(name: "ClerkJSCore", targets: ["ClerkJSCore"]),
     .library(name: "ClerkSnapshots", targets: ["ClerkSnapshots"]),
+    .library(name: "ClerkWatchCompanion", targets: ["ClerkWatchCompanion"]),
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "13.0.6")),
@@ -51,6 +52,14 @@ let package = Package(
           "JavaScriptCore",
           .when(platforms: [.iOS, .macCatalyst, .macOS, .tvOS, .visionOS])
         ),
+      ]
+    ),
+    .target(
+      name: "ClerkWatchCompanion",
+      dependencies: ["ClerkSnapshots"],
+      path: "Sources/ClerkWatchCompanion",
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
       ]
     ),
     .target(
@@ -93,6 +102,7 @@ let package = Package(
         "UI",
         "ClerkJSCore",
         "ClerkJSCoreIntegration",
+        "ClerkWatchCompanion",
       ],
       resources: [
         .process("Resources"),
@@ -132,6 +142,19 @@ let package = Package(
         "ClerkJSCore",
       ],
       path: "Tests/ClerkJSCoreIntegration",
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+      ]
+    ),
+    .testTarget(
+      name: "ClerkWatchCompanionTests",
+      dependencies: [
+        "ClerkWatchCompanion",
+      ],
+      path: "Tests/ClerkWatchCompanion",
+      resources: [
+        .process("Fixtures"),
+      ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]
