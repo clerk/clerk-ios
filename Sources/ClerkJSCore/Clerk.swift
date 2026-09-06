@@ -286,6 +286,46 @@ public final class Clerk {
       model?.status
     }
 
+    public var emailAddress: String? {
+      model?.emailAddress
+    }
+
+    public var phoneNumber: String? {
+      model?.phoneNumber
+    }
+
+    public var username: String? {
+      model?.username
+    }
+
+    public var firstName: String? {
+      model?.firstName
+    }
+
+    public var lastName: String? {
+      model?.lastName
+    }
+
+    public var hasPassword: Bool {
+      model?.hasPassword ?? false
+    }
+
+    public var missingFields: [String] {
+      model?.missingFields ?? []
+    }
+
+    public var unverifiedFields: [String] {
+      model?.unverifiedFields ?? []
+    }
+
+    public var requiredFields: [String] {
+      model?.requiredFields ?? []
+    }
+
+    public var optionalFields: [String] {
+      model?.optionalFields ?? []
+    }
+
     @discardableResult
     public func create(_ params: CreateParams) async throws -> SignUp {
       try await clerk.callAndPublish(ClerkJSPath.signUp(.create), params)

@@ -7,18 +7,20 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct AuthStartView: View {
   // MARK: - Environment
 
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
-  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
-  @Environment(\.dismissKeyboard) private var dismissKeyboard
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
+  @SwiftUI.Environment(\.dismissKeyboard) private var dismissKeyboard
 
   // MARK: - State
 
@@ -90,7 +92,7 @@ struct AuthStartView: View {
     passkeySignInIsAvailable(environment: clerk.environment)
   }
 
-  func passkeySignInIsAvailable(environment: Clerk.Environment?) -> Bool {
+  func passkeySignInIsAvailable(environment: ClerkKit.Clerk.Environment?) -> Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
       environment?.passkeyFirstFactorIsEnabled == true &&
@@ -104,7 +106,7 @@ struct AuthStartView: View {
     authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
   }
 
-  func passkeyAutomaticModalIsEnabled(environment: Clerk.Environment) -> Bool {
+  func passkeyAutomaticModalIsEnabled(environment: ClerkKit.Clerk.Environment) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
     return passkeySignInIsAvailable(environment: environment) &&
@@ -134,7 +136,7 @@ struct AuthStartView: View {
     passkeyAutoFillFallbackIsEnabled(environment: clerk.environment)
   }
 
-  func passkeyAutoFillFallbackIsEnabled(environment: Clerk.Environment?) -> Bool {
+  func passkeyAutoFillFallbackIsEnabled(environment: ClerkKit.Clerk.Environment?) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     let enabledAttributes = environment?.enabledFirstFactorAttributes ?? []
     return passkeySignInIsAvailable(environment: environment) &&
@@ -555,10 +557,10 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
-      let signIn = try await clerk.auth.signIn(activeIdentifier)
+      let created = try await jsClerk.client.signIn.create(.init(identifier: activeIdentifier))
+      let signIn = JSCoreAuthMapping.signIn(from: created)
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
         let result = try await signIn.authenticateWithEnterpriseSSO(
@@ -572,7 +574,7 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return signInStatusStaysOnStart(signIn.status)
     } catch {
-      if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
+      if withSignUp, JSCoreAuthMapping.isIdentifierNotFound(error) {
         return await signUp()
       } else {
         fieldError = error
@@ -581,7 +583,7 @@ extension AuthStartView {
     }
   }
 
-  private func createPasskeySignIn() async -> SignIn? {
+  private func createPasskeySignIn() async -> ClerkKit.SignIn? {
     do {
       return try await clerk.auth.createPasskeySignIn()
     } catch {
@@ -612,7 +614,7 @@ extension AuthStartView {
 
   @discardableResult
   private func authenticateWithPasskey(
-    signIn: SignIn,
+    signIn: ClerkKit.SignIn,
     autofill: Bool,
     preferImmediatelyAvailableCredentials: Bool
   ) async -> PasskeySignInResult {
@@ -696,23 +698,21 @@ extension AuthStartView {
     }
   }
 
-  private func signUpParams() async throws -> SignUp {
-    if phoneNumberInputIsActive {
-      try await clerk.auth.signUp(
-        phoneNumber: authState.authStartPhoneNumber,
-        unsafeMetadata: authState.unsafeMetadata
+  private func signUpParams() async throws -> ClerkKit.SignUp {
+    let created: ClerkJSCore.Clerk.SignUp = if phoneNumberInputIsActive {
+      try await jsClerk.client.signUp.create(
+        .init(phoneNumber: authState.authStartPhoneNumber)
       )
     } else if authState.authStartIdentifier.isEmailAddress {
-      try await clerk.auth.signUp(
-        emailAddress: authState.authStartIdentifier,
-        unsafeMetadata: authState.unsafeMetadata
+      try await jsClerk.client.signUp.create(
+        .init(emailAddress: authState.authStartIdentifier)
       )
     } else {
-      try await clerk.auth.signUp(
-        username: authState.authStartIdentifier,
-        unsafeMetadata: authState.unsafeMetadata
+      try await jsClerk.client.signUp.create(
+        .init(username: authState.authStartIdentifier)
       )
     }
+    return JSCoreAuthMapping.signUp(from: created)
   }
 
   private func handleTransferFlowResult(_ result: TransferFlowResult) {
@@ -734,7 +734,7 @@ extension AuthStartView {
     }
   }
 
-  private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
+  private func signInStatusStaysOnStart(_ status: ClerkKit.SignIn.Status) -> Bool {
     switch status {
     case .needsIdentifier, .unknown:
       true
@@ -743,7 +743,7 @@ extension AuthStartView {
     }
   }
 
-  private func signUpStatusStaysOnStart(_ status: SignUp.Status) -> Bool {
+  private func signUpStatusStaysOnStart(_ status: ClerkKit.SignUp.Status) -> Bool {
     switch status {
     case .abandoned, .unknown:
       true

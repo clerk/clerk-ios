@@ -116,6 +116,10 @@ struct ClerkAPITests {
     try clerk.publishClient(Data(contentsOf: url))
     #expect(clerk.client.signUp.id == nil)
     #expect(clerk.client.signUp.status == nil)
+    #expect(clerk.client.signUp.emailAddress == nil)
+    #expect(clerk.client.signUp.missingFields.isEmpty)
+    #expect(clerk.client.signUp.unverifiedFields.isEmpty)
+    #expect(clerk.client.signUp.hasPassword == false)
     #expect(clerk.session.id == nil)
     #expect(clerk.session.status != .active)
   }
