@@ -18,6 +18,7 @@ let package = Package(
     .library(name: "ClerkKit", targets: ["ClerkKit"]),
     .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
     .library(name: "ClerkJSCore", targets: ["ClerkJSCore"]),
+    .library(name: "ClerkSnapshots", targets: ["ClerkSnapshots"]),
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "13.0.6")),
@@ -28,8 +29,16 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "ClerkJSCore",
+      name: "ClerkSnapshots",
       dependencies: [],
+      path: "Sources/ClerkSnapshots",
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+      ]
+    ),
+    .target(
+      name: "ClerkJSCore",
+      dependencies: ["ClerkSnapshots"],
       path: "Sources/ClerkJSCore",
       resources: [
         .process("Resources"),

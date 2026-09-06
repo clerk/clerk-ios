@@ -7,3 +7,4 @@
 --disable hoistPatternLet
 --ifdef preserve
 --exclude Sources/ClerkJSCore/Generated
+--exclude Sources/ClerkSnapshots/Generated

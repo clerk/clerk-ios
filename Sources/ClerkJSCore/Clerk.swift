@@ -1,3 +1,4 @@
+@_exported import ClerkSnapshots
 import CryptoKit
 import Foundation
 
