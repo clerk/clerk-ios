@@ -10,6 +10,10 @@ public enum FAPIJSON {
     try JSONDecoder().decode(Client.self, from: normalizeClientJSON(data))
   }
 
+  public static func encodeClient(_ client: Client) throws -> Data {
+    try JSONEncoder().encode(client)
+  }
+
   private static let emptyArrayKeys: Set<String> = [
     "supported_first_factors",
     "supported_second_factors",

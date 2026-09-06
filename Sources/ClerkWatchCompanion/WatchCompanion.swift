@@ -38,4 +38,15 @@ public struct WatchCompanion: Equatable, Sendable {
       environment = try JSONDecoder().decode(Environment.self, from: data)
     }
   }
+
+  public func encode() throws -> [String: Any] {
+    var payload: [String: Any] = [:]
+    if let client {
+      payload[Self.clientKey] = try FAPIJSON.encodeClient(client)
+    }
+    if let environment {
+      payload[Self.environmentKey] = try JSONEncoder().encode(environment)
+    }
+    return payload
+  }
 }
