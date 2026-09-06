@@ -78,6 +78,15 @@ public final class Clerk {
     fapiEnvironment
   }
 
+  public var shouldShowDevelopmentModeWarning: Bool {
+    guard let displayConfig = environment?.displayConfig else { return false }
+    return displayConfig.showDevmodeWarning && displayConfig.instanceEnvironmentType != "production"
+  }
+
+  public var shouldShowSecuredByClerkFooter: Bool {
+    shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
+  }
+
   package func publishEnvironment(_ environment: Environment) {
     fapiEnvironment = environment
   }

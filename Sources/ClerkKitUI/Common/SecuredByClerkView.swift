@@ -6,7 +6,6 @@
 #if os(iOS) || os(macOS)
 
 import ClerkJSCore
-import ClerkKit
 import SwiftUI
 
 struct SecuredByClerkView: View {
@@ -29,7 +28,7 @@ struct SecuredByClerkView: View {
 }
 
 struct SecuredByClerkFooter: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
 
   private let showBackground: Bool
@@ -128,7 +127,7 @@ extension View {
 }
 
 private struct SecuredByClerkFooterModifier: ViewModifier {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
 
   private let macOSDismissAction: (() -> Void)?
 
@@ -159,12 +158,6 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
     #else
     false
     #endif
-  }
-}
-
-extension ClerkKit.Clerk {
-  fileprivate var shouldShowSecuredByClerkFooter: Bool {
-    shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
   }
 }
 
