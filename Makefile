@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-jscore test-jscore-integration test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-jscore test-jscore-integration test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint vendor-swift-models
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -37,6 +37,7 @@ help:
 	@echo "  make install-xcode-template-macros - Sync Xcode file header templates for workspace and package views"
 	@echo "  make create-example-local-secrets-plists - Create LocalSecrets.plist files for examples from templates"
 	@echo "  make set-example-pk pk_test_... - Set CLERK_PUBLISHABLE_KEY for all example LocalSecrets.plist files"
+	@echo "  make vendor-swift-models - Copy clerk-js generated Swift into the iOS dest dirs"
 
 # Main setup command - installs tools and hooks
 setup: install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists
@@ -229,6 +230,14 @@ test-e2e:
 # OSS contributors: Integration tests will run automatically in CI
 test-integration:
 	@./scripts/run-integration-tests.sh
+
+# Override the source with JS_SWIFT_GENERATED=/path/to/generated/swift
+vendor-swift-models:
+	@if [ -n "$(JS_SWIFT_GENERATED)" ]; then \
+		./scripts/vendor-swift-models.sh "$(JS_SWIFT_GENERATED)"; \
+	else \
+		./scripts/vendor-swift-models.sh; \
+	fi
 
 # ClerkJSCore unit tests. No FAPI. No .keys.json.
 test-jscore:
