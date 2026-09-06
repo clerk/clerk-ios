@@ -67,6 +67,50 @@ struct JSCoreAuthMappingTests {
   }
 
   @Test
+  func mapsSecondFactorStrategyAndIdentifiers() {
+    let totp = JSCoreAuthMapping.factor(from: secondFactor(strategy: .totp))
+    #expect(totp.strategy == .totp)
+
+    let phone = JSCoreAuthMapping.factor(from: secondFactor(
+      strategy: .phoneCode,
+      safeIdentifier: "+1••••••00",
+      primary: true,
+      phoneNumberId: "idn_phone",
+      default: true
+    ))
+    #expect(phone.strategy == .phoneCode)
+    #expect(phone.phoneNumberId == "idn_phone")
+    #expect(phone.safeIdentifier == "+1••••••00")
+    #expect(phone.primary == true)
+    #expect(phone.default == true)
+
+    #expect(JSCoreAuthMapping.factor(from: secondFactor(strategy: .emailCode)).strategy == .emailCode)
+    #expect(JSCoreAuthMapping.factor(from: secondFactor(strategy: .backupCode)).strategy == .backupCode)
+    #expect(JSCoreAuthMapping.factor(from: secondFactor(strategy: .unknown("future_mfa"))).strategy == .unknown("future_mfa"))
+  }
+
+  @Test
+  func mappedNeedsSecondFactorCarriesSecondFactors() {
+    let signIn = JSCoreAuthMapping.signIn(
+      id: "sia_1",
+      status: .needsSecondFactor,
+      identifier: "user@example.com",
+      firstFactors: [],
+      secondFactors: [
+        secondFactor(strategy: .totp),
+        secondFactor(strategy: .phoneCode, phoneNumberId: "idn_phone"),
+      ]
+    )
+
+    #expect(signIn.status == .needsSecondFactor)
+    #expect(signIn.supportedSecondFactors?.count == 2)
+    #expect(signIn.supportedSecondFactors?[0].strategy == .totp)
+    #expect(signIn.supportedSecondFactors?[1].strategy == .phoneCode)
+    #expect(signIn.supportedSecondFactors?[1].phoneNumberId == "idn_phone")
+    #expect(signIn.startingSecondFactor?.strategy == .totp)
+  }
+
+  @Test
   func mappedSignInCarriesCreatedSessionId() {
     let signIn = JSCoreAuthMapping.signIn(
       id: "sia_1",
@@ -124,6 +168,25 @@ struct JSCoreAuthMappingTests {
     )
     #expect(!JSCoreAuthMapping.isIdentifierNotFound(ClerkJSCoreError.cancelled))
   }
+}
+
+private func secondFactor(
+  strategy: SignInSecondFactorStrategy,
+  emailAddressId: String? = nil,
+  safeIdentifier: String? = nil,
+  primary: Bool? = nil,
+  phoneNumberId: String? = nil,
+  default: Bool? = nil
+) -> SignInSecondFactor {
+  SignInSecondFactor(
+    strategy: strategy,
+    emailAddressId: emailAddressId,
+    safeIdentifier: safeIdentifier,
+    primary: primary,
+    phoneNumberId: phoneNumberId,
+    default: `default`,
+    channel: nil
+  )
 }
 
 private func firstFactor(

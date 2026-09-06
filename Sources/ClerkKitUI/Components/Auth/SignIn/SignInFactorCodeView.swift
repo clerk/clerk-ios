@@ -206,12 +206,19 @@ extension SignInFactorCodeView {
 // MARK: - Helpers
 
 extension SignInFactorCodeView {
-  private var usesJSFirstFactorCode: Bool {
-    !mode.usesSecondFactorAPI && (factor.strategy == .emailCode || factor.strategy == .phoneCode)
+  private var usesJSFactorCode: Bool {
+    switch factor.strategy {
+    case .emailCode, .phoneCode:
+      true
+    case .totp:
+      mode.usesSecondFactorAPI
+    default:
+      false
+    }
   }
 
   private var hasSignInForCurrentFactor: Bool {
-    if usesJSFirstFactorCode {
+    if usesJSFactorCode {
       signIn.id != nil
     } else {
       clerk.auth.currentSignIn != nil
@@ -219,7 +226,7 @@ extension SignInFactorCodeView {
   }
 
   private var codeLimiterIdentifier: String {
-    let signInId: String = if usesJSFirstFactorCode {
+    let signInId: String = if usesJSFactorCode {
       signIn.id ?? ""
     } else {
       clerk.auth.currentSignIn?.id ?? ""
@@ -242,12 +249,12 @@ extension SignInFactorCodeView {
     verificationState = .default
 
     do {
-      if usesJSFirstFactorCode {
+      if usesJSFactorCode {
         guard signIn.id != nil else {
           navigation.path = []
           return
         }
-        try await prepareJSFirstFactor()
+        try await prepareJSFactor()
       } else {
         guard let kitSignIn = clerk.auth.currentSignIn else {
           navigation.path = []
@@ -270,12 +277,12 @@ extension SignInFactorCodeView {
 
     do {
       let kitSignIn: ClerkKit.SignIn
-      if usesJSFirstFactorCode {
+      if usesJSFactorCode {
         guard signIn.id != nil else {
           navigation.path = []
           return .stop
         }
-        let jsSignIn = try await attemptJSFirstFactor(code: code)
+        let jsSignIn = try await attemptJSFactor(code: code)
         kitSignIn = JSCoreAuthMapping.signIn(from: jsSignIn)
         try await JSCoreAuthMapping.activateIfComplete(kitSignIn, using: jsClerk)
       } else {
@@ -305,6 +312,14 @@ extension SignInFactorCodeView {
     }
   }
 
+  private func prepareJSFactor() async throws {
+    if mode.usesSecondFactorAPI {
+      try await prepareJSSecondFactor()
+    } else {
+      try await prepareJSFirstFactor()
+    }
+  }
+
   private func prepareJSFirstFactor() async throws {
     switch factor.strategy {
     case .emailCode:
@@ -320,6 +335,31 @@ extension SignInFactorCodeView {
     }
   }
 
+  private func prepareJSSecondFactor() async throws {
+    switch factor.strategy {
+    case .emailCode:
+      _ = try await signIn.prepareSecondFactor(
+        .init(strategy: .emailCode, emailAddressId: factor.emailAddressId)
+      )
+    case .phoneCode:
+      _ = try await signIn.prepareSecondFactor(
+        .init(strategy: .phoneCode, phoneNumberId: factor.phoneNumberId)
+      )
+    case .totp:
+      break
+    default:
+      break
+    }
+  }
+
+  private func attemptJSFactor(code: String) async throws -> ClerkJSCore.Clerk.SignIn {
+    if mode.usesSecondFactorAPI {
+      try await attemptJSSecondFactor(code: code)
+    } else {
+      try await attemptJSFirstFactor(code: code)
+    }
+  }
+
   private func attemptJSFirstFactor(code: String) async throws -> ClerkJSCore.Clerk.SignIn {
     switch factor.strategy {
     case .emailCode:
@@ -331,12 +371,21 @@ extension SignInFactorCodeView {
     }
   }
 
-  private func prepareClerkKitFactor(signIn: ClerkKit.SignIn) async throws {
+  private func attemptJSSecondFactor(code: String) async throws -> ClerkJSCore.Clerk.SignIn {
     switch factor.strategy {
     case .emailCode:
-      _ = try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
+      try await signIn.attemptSecondFactor(.init(strategy: .emailCode, code: code))
     case .phoneCode:
-      _ = try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
+      try await signIn.attemptSecondFactor(.init(strategy: .phoneCode, code: code))
+    case .totp:
+      try await signIn.attemptSecondFactor(.init(strategy: .totp, code: code))
+    default:
+      throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
+    }
+  }
+
+  private func prepareClerkKitFactor(signIn: ClerkKit.SignIn) async throws {
+    switch factor.strategy {
     case .resetPasswordEmailCode:
       _ = try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
     case .resetPasswordPhoneCode:
@@ -348,14 +397,8 @@ extension SignInFactorCodeView {
 
   private func attemptClerkKitFactor(signIn: ClerkKit.SignIn, code: String) async throws -> ClerkKit.SignIn {
     switch factor.strategy {
-    case .emailCode:
-      try await signIn.verifyMfaCode(code, type: .emailCode)
-    case .phoneCode:
-      try await signIn.verifyMfaCode(code, type: .phoneCode)
     case .resetPasswordEmailCode, .resetPasswordPhoneCode:
       try await signIn.verifyCode(code)
-    case .totp:
-      try await signIn.verifyMfaCode(code, type: .totp)
     default:
       throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
     }

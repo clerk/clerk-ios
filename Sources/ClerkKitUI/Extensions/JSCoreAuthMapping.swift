@@ -24,6 +24,34 @@ enum JSCoreAuthMapping {
     )
   }
 
+  static func factor(from factor: SignInSecondFactor) -> Factor {
+    Factor(
+      strategy: factorStrategy(from: factor.strategy),
+      emailAddressId: factor.emailAddressId,
+      phoneNumberId: factor.phoneNumberId,
+      safeIdentifier: factor.safeIdentifier,
+      primary: factor.primary,
+      default: factor.default
+    )
+  }
+
+  static func factorStrategy(from strategy: SignInSecondFactorStrategy) -> FactorStrategy {
+    switch strategy {
+    case .emailCode:
+      FactorStrategy(rawValue: "email_code")
+    case .emailLink:
+      FactorStrategy(rawValue: "email_link")
+    case .phoneCode:
+      FactorStrategy(rawValue: "phone_code")
+    case .totp:
+      FactorStrategy(rawValue: "totp")
+    case .backupCode:
+      FactorStrategy(rawValue: "backup_code")
+    case .unknown(let value):
+      FactorStrategy(rawValue: value)
+    }
+  }
+
   static func signInStatus(from status: SignInStatus) -> ClerkKit.SignIn.Status {
     switch status {
     case .needsIdentifier:
@@ -65,6 +93,7 @@ enum JSCoreAuthMapping {
       status: handle.status ?? .unknown(""),
       identifier: handle.identifier,
       firstFactors: handle.supportedFirstFactors,
+      secondFactors: handle.supportedSecondFactors,
       createdSessionId: handle.createdSessionId
     )
   }
@@ -74,6 +103,7 @@ enum JSCoreAuthMapping {
     status: SignInStatus,
     identifier: String?,
     firstFactors: [SignInFirstFactor],
+    secondFactors: [SignInSecondFactor] = [],
     createdSessionId: String? = nil
   ) -> ClerkKit.SignIn {
     ClerkKit.SignIn(
@@ -81,6 +111,7 @@ enum JSCoreAuthMapping {
       status: signInStatus(from: status),
       identifier: identifier,
       supportedFirstFactors: firstFactors.map(factor(from:)),
+      supportedSecondFactors: secondFactors.map(factor(from:)),
       createdSessionId: createdSessionId
     )
   }

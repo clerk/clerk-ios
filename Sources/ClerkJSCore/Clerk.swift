@@ -219,6 +219,10 @@ public final class Clerk {
       model?.supportedFirstFactors ?? []
     }
 
+    public var supportedSecondFactors: [SignInSecondFactor] {
+      model?.supportedSecondFactors ?? []
+    }
+
     @discardableResult
     public func create(_ params: CreateParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.create), params)
@@ -234,6 +238,18 @@ public final class Clerk {
     @discardableResult
     public func attemptFirstFactor(_ params: AttemptFirstFactorParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.attemptFirstFactor), params)
+      return clerk.client.signIn
+    }
+
+    @discardableResult
+    public func prepareSecondFactor(_ params: PrepareSecondFactorParams) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.prepareSecondFactor), params)
+      return clerk.client.signIn
+    }
+
+    @discardableResult
+    public func attemptSecondFactor(_ params: AttemptSecondFactorParams) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.attemptSecondFactor), params)
       return clerk.client.signIn
     }
 
@@ -303,6 +319,63 @@ public final class Clerk {
       case emailCode = "email_code"
       case phoneCode = "phone_code"
       case password
+    }
+
+    public enum SecondFactorStrategy: String, Encodable, Sendable {
+      case emailCode = "email_code"
+      case phoneCode = "phone_code"
+      case totp
+      case backupCode = "backup_code"
+    }
+
+    public struct PrepareSecondFactorParams: Encodable, Sendable {
+      public var strategy: SecondFactorStrategy
+      public var emailAddressId: String?
+      public var phoneNumberId: String?
+
+      public init(
+        strategy: SecondFactorStrategy,
+        emailAddressId: String? = nil,
+        phoneNumberId: String? = nil
+      ) {
+        self.strategy = strategy
+        self.emailAddressId = emailAddressId
+        self.phoneNumberId = phoneNumberId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
+        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case emailAddressId
+        case phoneNumberId
+      }
+    }
+
+    public struct AttemptSecondFactorParams: Encodable, Sendable {
+      public var strategy: SecondFactorStrategy
+      public var code: String
+
+      public init(strategy: SecondFactorStrategy, code: String) {
+        self.strategy = strategy
+        self.code = code
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encode(code, forKey: .code)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case code
+      }
     }
 
     private var model: FAPISignIn? {
