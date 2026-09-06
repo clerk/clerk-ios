@@ -5,24 +5,27 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorOneForgotPasswordView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   @State private var error: Error?
 
-  var signIn: SignIn? {
+  var signIn: ClerkKit.SignIn? {
     clerk.auth.currentSignIn
   }
 
   var alternativeFactors: [Factor] {
-    let factors = signIn?.alternativeFirstFactors(currentFactor: nil) ?? []
-    return factors.filter { $0.strategy != .password }
+    guard jsClerk.client.signIn.id != nil else { return [] }
+    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
+    return signIn.alternativeFirstFactors(currentFactor: nil).filter { $0.strategy != .password }
   }
 
   var socialProviders: [OAuthProvider] {
@@ -149,7 +152,13 @@ struct SignInFactorOneForgotPasswordView: View {
 
 extension SignInFactorOneForgotPasswordView {
   func resetPassword() async {
-    guard let signIn, let resetFactor = signIn.resetPasswordFactor else {
+    guard jsClerk.client.signIn.id != nil else {
+      navigation.path = []
+      return
+    }
+
+    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
+    guard let resetFactor = signIn.resetPasswordFactor else {
       navigation.path = []
       return
     }
