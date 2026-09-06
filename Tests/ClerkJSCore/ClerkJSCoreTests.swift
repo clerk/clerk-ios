@@ -35,7 +35,77 @@ struct ClerkJSCoreTests {
     #expect(online)
     let windowType = try await decodeJSONString(runtime.evaluateJSON("typeof window"))
     #expect(windowType == "undefined")
+    let searchEntries = try await decodeJSONBool(
+      runtime.evaluateJSON("typeof new URLSearchParams('a=1').entries === 'function'")
+    )
+    #expect(searchEntries)
+    let headerEntries = try await decodeJSONBool(
+      runtime.evaluateJSON("typeof new Headers({a: '1'}).entries === 'function'")
+    )
+    #expect(headerEntries)
+    let assignedPath = try await decodeJSONString(
+      runtime.evaluateJSON(
+        """
+        (function(){
+          var url = new URL('https://amusing-barnacle-26.clerk.accounts.dev');
+          Object.assign(url, { pathname: 'v1/client' });
+          return url.href;
+        })()
+        """
+      )
+    )
+    #expect(assignedPath == "https://amusing-barnacle-26.clerk.accounts.dev/v1/client")
+    let copiedSearch = try await decodeJSONString(
+      runtime.evaluateJSON("new URLSearchParams(new URLSearchParams('a=1')).get('a')")
+    )
+    #expect(copiedSearch == "1")
+    let copiedHeader = try await decodeJSONString(
+      runtime.evaluateJSON("new Headers(new Headers({a: '1'})).get('a')")
+    )
+    #expect(copiedHeader == "1")
   }
+
+  @Test
+  func loadReturnsClientIdOverJSON() async throws {
+    guard let publishableKey = publishableKeyFromKeysFile(named: "amusing-barnacle-26") else {
+      Issue.record("Missing amusing-barnacle-26 publishable key in .keys.json")
+      return
+    }
+
+    let runtime = ClerkJSRuntime()
+    try await runtime.load(publishableKey: publishableKey)
+
+    let proof = try await JSONDecoder().decode(
+      ClerkLoadProof.self,
+      from: Data(
+        runtime.evaluateJSON(
+          """
+          ({
+            loaded: globalThis.__clerkInstance.loaded,
+            clientId: globalThis.__clerkInstance.client.id
+          })
+          """
+        ).utf8
+      )
+    )
+    #expect(proof.loaded)
+    #expect(proof.clientId.hasPrefix("client_"))
+
+    let snapshot = try await runtime.evaluateJSON(
+      "globalThis.__clerkInstance.client.__internal_toSnapshot()"
+    )
+    let destination = packageRootURL().appendingPathComponent(".verification/client-after-load.json")
+    try FileManager.default.createDirectory(
+      at: destination.deletingLastPathComponent(),
+      withIntermediateDirectories: true
+    )
+    try snapshot.write(to: destination, atomically: true, encoding: .utf8)
+  }
+}
+
+private struct ClerkLoadProof: Decodable {
+  let loaded: Bool
+  let clientId: String
 }
 
 private func decodeJSONString(_ json: String) throws -> String {
@@ -44,5 +114,25 @@ private func decodeJSONString(_ json: String) throws -> String {
 
 private func decodeJSONBool(_ json: String) throws -> Bool {
   try JSONDecoder().decode(Bool.self, from: Data(json.utf8))
+}
+
+private func packageRootURL() -> URL {
+  URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+}
+
+private func publishableKeyFromKeysFile(named name: String) -> String? {
+  let url = packageRootURL().appendingPathComponent(".keys.json")
+  guard let data = try? Data(contentsOf: url),
+        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let entry = json[name] as? [String: Any],
+        let pk = entry["pk"] as? String,
+        !pk.isEmpty
+  else {
+    return nil
+  }
+  return pk
 }
 #endif

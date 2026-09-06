@@ -318,9 +318,13 @@ final class NativeHost: @unchecked Sendable {
         key = String(key);
         this._pairs = this._pairs.filter(function(pair) { return pair[0] !== key; });
       };
-      URLSearchParams.prototype.forEach = function(cb) {
-        for (var i = 0; i < this._pairs.length; i++) cb(this._pairs[i][1], this._pairs[i][0], this);
+      URLSearchParams.prototype.forEach = function(cb, thisArg) {
+        for (var i = 0; i < this._pairs.length; i++) cb.call(thisArg, this._pairs[i][1], this._pairs[i][0], this);
       };
+      URLSearchParams.prototype.entries = function() { return this._pairs.slice(); };
+      URLSearchParams.prototype.keys = function() { return this._pairs.map(function(pair) { return pair[0]; }); };
+      URLSearchParams.prototype.values = function() { return this._pairs.map(function(pair) { return pair[1]; }); };
+      URLSearchParams.prototype[Symbol.iterator] = function() { return this.entries()[Symbol.iterator](); };
       URLSearchParams.prototype.toString = function() {
         return this._pairs.map(function(pair) {
           return encodeURIComponent(pair[0]) + '=' + encodeURIComponent(pair[1]);
@@ -334,11 +338,18 @@ final class NativeHost: @unchecked Sendable {
         this.protocol = parsed.protocol;
         this.hostname = parsed.hostname;
         this.port = parsed.port;
-        this.pathname = parsed.pathname;
         this.hash = parsed.hash;
         this.origin = parsed.origin;
         this.searchParams = new URLSearchParams(parsed.search);
+        this.pathname = parsed.pathname;
       }
+      Object.defineProperty(URL.prototype, 'pathname', {
+        get: function() { return this._pathname; },
+        set: function(value) {
+          value = String(value);
+          this._pathname = value.charAt(0) === '/' ? value : '/' + value;
+        }
+      });
       Object.defineProperty(URL.prototype, 'host', {
         get: function() { return this.port ? this.hostname + ':' + this.port : this.hostname; }
       });
@@ -382,9 +393,25 @@ final class NativeHost: @unchecked Sendable {
       Headers.prototype.has = function(key) {
         return Object.prototype.hasOwnProperty.call(this._map, String(key).toLowerCase());
       };
-      Headers.prototype.forEach = function(cb) {
-        for (var key in this._map) cb(this._map[key], key, this);
+      Headers.prototype.forEach = function(cb, thisArg) {
+        for (var key in this._map) cb.call(thisArg, this._map[key], key, this);
       };
+      Headers.prototype.entries = function() {
+        var out = [];
+        for (var key in this._map) out.push([key, this._map[key]]);
+        return out;
+      };
+      Headers.prototype.keys = function() {
+        var out = [];
+        for (var key in this._map) out.push(key);
+        return out;
+      };
+      Headers.prototype.values = function() {
+        var out = [];
+        for (var key in this._map) out.push(this._map[key]);
+        return out;
+      };
+      Headers.prototype[Symbol.iterator] = function() { return this.entries()[Symbol.iterator](); };
       globalThis.Headers = Headers;
 
       function FormData() { this._pairs = []; }
