@@ -70,6 +70,10 @@ public final class Clerk: @unchecked Sendable {
     Client(clerk: self)
   }
 
+  public var environment: Environment? {
+    fapiEnvironment
+  }
+
   public var nativeSettings: NativeSettings {
     fapiNativeSettings
   }
