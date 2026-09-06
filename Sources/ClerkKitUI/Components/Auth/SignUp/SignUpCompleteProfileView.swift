@@ -5,14 +5,15 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignUpCompleteProfileView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   @State private var error: Error?
   @State private var safariSheetItem: SafariSheetItem?
@@ -23,8 +24,8 @@ struct SignUpCompleteProfileView: View {
     case lastName
   }
 
-  var signUp: SignUp? {
-    clerk.auth.currentSignUp
+  var signUp: ClerkJSCore.Clerk.SignUp {
+    jsClerk.client.signUp
   }
 
   var firstOrLastNameIsMissing: Bool {
@@ -32,15 +33,15 @@ struct SignUpCompleteProfileView: View {
   }
 
   var legalConsentMissing: Bool {
-    signUp?.missingFields.contains(.legalAccepted) ?? false
+    signUp.missingFields.contains("legal_accepted")
   }
 
   var termsUrl: URL? {
-    clerk.environment?.displayConfig.termsUrl.flatMap { URL(string: $0) }
+    URL(string: jsClerk.environment?.displayConfig.termsUrl ?? "")
   }
 
   var privacyPolicyUrl: URL? {
-    clerk.environment?.displayConfig.privacyPolicyUrl.flatMap { URL(string: $0) }
+    URL(string: jsClerk.environment?.displayConfig.privacyPolicyUrl ?? "")
   }
 
   var continueIsDisabled: Bool {
@@ -153,12 +154,11 @@ struct SignUpCompleteProfileView: View {
 
 extension SignUpCompleteProfileView {
   func fieldIsMissing(_ field: Field) -> Bool {
-    guard let signUp else { return false }
     switch field {
     case .firstName:
-      return signUp.missingFields.contains(.firstName)
+      signUp.missingFields.contains("first_name")
     case .lastName:
-      return signUp.missingFields.contains(.lastName)
+      signUp.missingFields.contains("last_name")
     }
   }
 
@@ -232,15 +232,21 @@ extension SignUpCompleteProfileView {
 
 extension SignUpCompleteProfileView {
   func updateSignUp() async {
-    guard var signUp else { return }
+    guard signUp.id != nil else {
+      navigation.path = []
+      return
+    }
 
     do {
-      signUp = try await signUp.update(
+      let params = ClerkJSCore.Clerk.SignUp.CreateParams(
         firstName: fieldIsMissing(.firstName) ? authState.signUpFirstName : nil,
         lastName: fieldIsMissing(.lastName) ? authState.signUpLastName : nil,
         legalAccepted: legalConsentMissing ? authState.signUpLegalAccepted : nil
       )
-      navigation.setToStepForStatus(signUp: signUp)
+      let jsSignUp = try await signUp.update(params)
+      let kitSignUp = JSCoreAuthMapping.signUp(from: jsSignUp)
+      try await JSCoreAuthMapping.activateIfComplete(kitSignUp, using: jsClerk)
+      navigation.setToStepForStatus(signUp: kitSignUp)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to update sign up with profile data", error: error)
@@ -251,9 +257,9 @@ extension SignUpCompleteProfileView {
 #Preview {
   SignUpCompleteProfileView()
     .clerkPreview()
-    .environment(Clerk.preview { preview in
-      var client = Client.mock
-      var signUp = SignUp.mock
+    .environment(ClerkKit.Clerk.preview { preview in
+      var client = ClerkKit.Client.mock
+      var signUp = ClerkKit.SignUp.mock
       signUp.missingFields.append(contentsOf: [
         .firstName,
         .lastName,

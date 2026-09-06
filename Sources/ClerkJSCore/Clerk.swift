@@ -468,17 +468,26 @@ public final class Clerk {
       public var phoneNumber: String?
       public var username: String?
       public var password: String?
+      public var firstName: String?
+      public var lastName: String?
+      public var legalAccepted: Bool?
 
       public init(
         emailAddress: String? = nil,
         phoneNumber: String? = nil,
         username: String? = nil,
-        password: String? = nil
+        password: String? = nil,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        legalAccepted: Bool? = nil
       ) {
         self.emailAddress = emailAddress
         self.phoneNumber = phoneNumber
         self.username = username
         self.password = password
+        self.firstName = firstName
+        self.lastName = lastName
+        self.legalAccepted = legalAccepted
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -487,6 +496,9 @@ public final class Clerk {
         try container.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
         try container.encodeIfPresent(username, forKey: .username)
         try container.encodeIfPresent(password, forKey: .password)
+        try container.encodeIfPresent(firstName, forKey: .firstName)
+        try container.encodeIfPresent(lastName, forKey: .lastName)
+        try container.encodeIfPresent(legalAccepted, forKey: .legalAccepted)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -494,6 +506,9 @@ public final class Clerk {
         case phoneNumber
         case username
         case password
+        case firstName
+        case lastName
+        case legalAccepted
       }
     }
 

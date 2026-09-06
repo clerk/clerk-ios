@@ -62,6 +62,22 @@ struct ClerkAPITests {
   }
 
   @Test
+  func signUpUpdateParamsEncodeNamesOnly() throws {
+    let json = try encodeJSON(Clerk.SignUp.CreateParams(firstName: "Ada", lastName: "Lovelace"))
+    #expect(json["firstName"] as? String == "Ada")
+    #expect(json["lastName"] as? String == "Lovelace")
+    #expect(json["password"] == nil)
+    #expect(json.count == 2)
+  }
+
+  @Test
+  func signUpUpdateParamsEncodeLegalAcceptedOnly() throws {
+    let json = try encodeJSON(Clerk.SignUp.CreateParams(legalAccepted: true))
+    #expect(json["legalAccepted"] as? Bool == true)
+    #expect(json.count == 1)
+  }
+
+  @Test
   func prepareVerificationParamsEncodeStrategyOnly() throws {
     let email = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailCode))
     #expect(email["strategy"] as? String == "email_code")
