@@ -230,6 +230,24 @@ struct ClerkAPITests {
   }
 
   @Test
+  func resetPasswordParamsEncodePasswordOnlyWhenBoolOmitted() throws {
+    let json = try encodeJSON(Clerk.SignIn.ResetPasswordParams(password: "hunter2"))
+    #expect(json["password"] as? String == "hunter2")
+    #expect(json["signOutOfOtherSessions"] == nil)
+    #expect(json.count == 1)
+  }
+
+  @Test
+  func resetPasswordParamsEncodeSignOutWhenSet() throws {
+    let json = try encodeJSON(
+      Clerk.SignIn.ResetPasswordParams(password: "hunter2", signOutOfOtherSessions: true)
+    )
+    #expect(json["password"] as? String == "hunter2")
+    #expect(json["signOutOfOtherSessions"] as? Bool == true)
+    #expect(json.count == 2)
+  }
+
+  @Test
   func storageNamespaceIsStablePerKey() {
     #expect(Clerk.storageNamespace(for: "pk_test_a") == Clerk.storageNamespace(for: "pk_test_a"))
     #expect(Clerk.storageNamespace(for: "pk_test_a") != Clerk.storageNamespace(for: "pk_test_b"))
@@ -249,6 +267,7 @@ struct ClerkAPITests {
     #expect(SignInJSMethod.attemptFirstFactor.rawValue == "attemptFirstFactor")
     #expect(SignInJSMethod.prepareSecondFactor.rawValue == "prepareSecondFactor")
     #expect(SignInJSMethod.attemptSecondFactor.rawValue == "attemptSecondFactor")
+    #expect(SignInJSMethod.resetPassword.rawValue == "resetPassword")
     #expect(SignUpJSMethod.create.rawValue == "create")
     #expect(SignUpJSMethod.update.rawValue == "update")
     #expect(SignUpJSMethod.prepareVerification.rawValue == "prepareVerification")
@@ -264,6 +283,7 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signIn(.attemptFirstFactor) == "__clerkInstance.client.signIn.attemptFirstFactor")
     #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
     #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
+    #expect(ClerkJSPath.signIn(.resetPassword) == "__clerkInstance.client.signIn.resetPassword")
     #expect(ClerkJSPath.signUp(.create) == "__clerkInstance.client.signUp.create")
     #expect(ClerkJSPath.signUp(.update) == "__clerkInstance.client.signUp.update")
     #expect(ClerkJSPath.signUp(.prepareVerification) == "__clerkInstance.client.signUp.prepareVerification")

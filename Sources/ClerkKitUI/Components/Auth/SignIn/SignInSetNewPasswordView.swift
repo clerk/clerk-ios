@@ -5,6 +5,7 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
@@ -12,19 +13,16 @@ struct SignInSetNewPasswordView: View {
   let mode: Mode
   let token: AuthFlowPresentationToken?
 
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   @State private var identifier = ""
   @State private var signOutOfOtherDevices = false
   @State private var fieldError: Error?
   @FocusState private var focusedField: Field?
-
-  var signIn: SignIn? {
-    clerk.auth.currentSignIn
-  }
 
   var resetButtonIsDisabled: Bool {
     authState.signInNewPassword.isEmptyTrimmed || authState.signInConfirmNewPassword.isEmptyTrimmed || authState.signInNewPassword != authState.signInConfirmNewPassword
@@ -151,7 +149,7 @@ extension SignInSetNewPasswordView {
   var initialIdentifier: String {
     switch mode {
     case .signIn:
-      signIn?.identifier ?? ""
+      jsClerk.client.signIn.identifier ?? ""
     case .sessionTask:
       clerk.user?.usernameForPasswordKeeper ?? ""
     }
@@ -178,15 +176,19 @@ extension SignInSetNewPasswordView {
   }
 
   private func resetPasswordFromSignIn() async throws {
-    guard var signIn else {
+    guard jsClerk.client.signIn.id != nil else {
       navigation.path = []
       return
     }
 
-    signIn = try await signIn.resetPassword(
-      newPassword: authState.signInNewPassword,
-      signOutOfOtherSessions: signOutOfOtherDevices
+    let jsSignIn = try await jsClerk.client.signIn.resetPassword(
+      .init(
+        password: authState.signInNewPassword,
+        signOutOfOtherSessions: signOutOfOtherDevices
+      )
     )
+    let signIn = JSCoreAuthMapping.signIn(from: jsSignIn)
+    try await JSCoreAuthMapping.activateIfComplete(signIn, using: jsClerk)
 
     navigation.setToStepForStatus(signIn: signIn)
   }
@@ -214,7 +216,7 @@ extension SignInSetNewPasswordView {
 
 #Preview {
   SignInSetNewPasswordView()
-    .environment(\.clerkTheme, .clerk)
+    .clerkPreview()
 }
 
 #endif

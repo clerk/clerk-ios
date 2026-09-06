@@ -253,6 +253,12 @@ public final class Clerk {
       return clerk.client.signIn
     }
 
+    @discardableResult
+    public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.resetPassword), params)
+      return clerk.client.signIn
+    }
+
     public struct CreateParams: Encodable, Sendable {
       public var identifier: String
 
@@ -377,6 +383,27 @@ public final class Clerk {
       private enum CodingKeys: String, CodingKey {
         case strategy
         case code
+      }
+    }
+
+    public struct ResetPasswordParams: Encodable, Sendable {
+      public var password: String
+      public var signOutOfOtherSessions: Bool?
+
+      public init(password: String, signOutOfOtherSessions: Bool? = nil) {
+        self.password = password
+        self.signOutOfOtherSessions = signOutOfOtherSessions
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(password, forKey: .password)
+        try container.encodeIfPresent(signOutOfOtherSessions, forKey: .signOutOfOtherSessions)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case password
+        case signOutOfOtherSessions
       }
     }
 
