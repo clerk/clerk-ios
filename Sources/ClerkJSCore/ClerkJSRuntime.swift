@@ -39,7 +39,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   #if os(watchOS)
   public init(
     sdkVersion _: String = ClerkJSRuntime.sdkVersion,
-    tokenCache _: ClerkJSTokenCache = .memory()
+    tokenCache _: ClerkJSTokenCache = .memory(),
+    resourceCache _: ClerkJSResourceCache? = nil
   ) {}
 
   public var lastFAPIClientJSON: Data? {
@@ -60,13 +61,17 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   #else
   private let runtime: JSRuntime
   private let sdkVersion: String
+  private let resourceCache: ClerkJSResourceCache?
 
   public init(
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
-    tokenCache: ClerkJSTokenCache = .memory()
+    tokenCache: ClerkJSTokenCache = .memory(),
+    resourceCache: ClerkJSResourceCache? = nil
   ) {
     self.sdkVersion = sdkVersion
+    self.resourceCache = resourceCache
     runtime = JSRuntime(tokenCache: tokenCache)
+    runtime.host.resourceCache = resourceCache
   }
 
   public var lastFAPIClientJSON: Data? {
@@ -100,6 +105,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             await __clerkNativeSaveToken(auth);
           }
         });
+        \(resourceCache == nil ? "" : Self.resourceCacheInstallSource)
         await clerk.load({
           standardBrowser: false,
           experimental: {
@@ -153,6 +159,28 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       """
     return try await runtime.evaluateJSON(script)
   }
+
+  static let resourceCacheInstallSource = """
+    clerk.__internal_getCachedResources = async function() {
+      var cached = await __clerkNativeGetCachedResources();
+      return cached || { client: null, environment: null };
+    };
+    clerk.addListener(function() {
+      var client = null;
+      var environment = null;
+      try {
+        if (clerk.client && typeof clerk.client.__internal_toSnapshot === 'function') {
+          client = clerk.client.__internal_toSnapshot();
+        }
+      } catch (e) {}
+      try {
+        if (clerk.__internal_environment && typeof clerk.__internal_environment.__internal_toSnapshot === 'function') {
+          environment = clerk.__internal_environment.__internal_toSnapshot();
+        }
+      } catch (e) {}
+      __clerkNativeSaveCachedResources(JSON.stringify({ client: client, environment: environment }));
+    });
+    """
 
   private static func jsonString(_ value: String) throws -> String {
     let data = try JSONEncoder().encode(value)

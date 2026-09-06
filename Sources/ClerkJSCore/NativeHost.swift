@@ -6,6 +6,7 @@ import Security
 final class NativeHost: @unchecked Sendable {
   weak var runtime: JSRuntime?
   private let tokenCache: ClerkJSTokenCache
+  var resourceCache: ClerkJSResourceCache?
   private let session: URLSession
   private var nextTimerID: UInt64 = 1
   private var nextFetchID: UInt64 = 1
@@ -133,6 +134,32 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(saveToken, forKeyedSubscript: "__clerkNativeSaveTokenImpl" as NSString)
+
+    let getCachedResources: @convention(block) (JSValue) -> Void = { [weak self] callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let cached = await self.resourceCache?.load() ?? ClerkJSCachedResources()
+        let json = Self.encodedCachedResources(cached)
+        runtime.queue.async {
+          self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
+        }
+      }
+    }
+    context.setObject(getCachedResources, forKeyedSubscript: "__clerkNativeGetCachedResourcesImpl" as NSString)
+
+    let saveCachedResources: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      let parsed = Self.parsedCachedResources(payload)
+      Task {
+        await self.resourceCache?.save(parsed)
+        runtime.queue.async {
+          self.takeCallback(callbackID)?.call(withArguments: [NSNull()])
+        }
+      }
+    }
+    context.setObject(saveCachedResources, forKeyedSubscript: "__clerkNativeSaveCachedResourcesImpl" as NSString)
   }
 
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
@@ -280,6 +307,38 @@ final class NativeHost: @unchecked Sendable {
 
   private static func btoa(_ raw: String) -> String {
     (raw.data(using: .isoLatin1) ?? Data(raw.utf8)).base64EncodedString()
+  }
+
+  private static func encodedCachedResources(_ resources: ClerkJSCachedResources) -> String {
+    "{\"client\":\(jsonFragment(resources.client)),\"environment\":\(jsonFragment(resources.environment))}"
+  }
+
+  private static func parsedCachedResources(_ payload: String) -> ClerkJSCachedResources {
+    guard let data = payload.data(using: .utf8),
+          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else {
+      return ClerkJSCachedResources()
+    }
+    return ClerkJSCachedResources(
+      client: snapshotData(object["client"]),
+      environment: snapshotData(object["environment"])
+    )
+  }
+
+  private static func jsonFragment(_ data: Data?) -> String {
+    guard let data, (try? JSONSerialization.jsonObject(with: data)) != nil,
+          let text = String(data: data, encoding: .utf8)
+    else {
+      return "null"
+    }
+    return text
+  }
+
+  private static func snapshotData(_ value: Any?) -> Data? {
+    guard let value, !(value is NSNull) else {
+      return nil
+    }
+    return try? JSONSerialization.data(withJSONObject: value)
   }
 
   private static func randomBytes(_ count: Int) -> [UInt8] {
@@ -550,6 +609,22 @@ final class NativeHost: @unchecked Sendable {
       globalThis.__clerkNativeSaveToken = function(token) {
         return new Promise(function(resolve, reject) {
           __clerkNativeSaveTokenImpl(String(token), function(err) {
+            if (err) reject(new Error(String(err)));
+            else resolve();
+          });
+        });
+      };
+      globalThis.__clerkNativeGetCachedResources = function() {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeGetCachedResourcesImpl(function(err, json) {
+            if (err) reject(new Error(String(err)));
+            else resolve(json ? JSON.parse(json) : { client: null, environment: null });
+          });
+        });
+      };
+      globalThis.__clerkNativeSaveCachedResources = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeSaveCachedResourcesImpl(String(payload), function(err) {
             if (err) reject(new Error(String(err)));
             else resolve();
           });
