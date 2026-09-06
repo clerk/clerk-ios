@@ -186,7 +186,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     guard let data = lastFAPIClientJSON else {
       return false
     }
-    return try await applyFAPIClientJSON((try? FAPIJSON.normalizeClientJSON(data)) ?? data)
+    return try await applyFAPIClientJSON(data)
   }
 
   func applyFAPIClientJSON(_ data: Data) async throws -> Bool {

@@ -216,7 +216,7 @@ final class NativeHost: @unchecked Sendable {
     }
     if let data, let clientJSON = Self.clientJSON(fromFAPIBody: data) {
       lastClientJSON = clientJSON
-      applyClientJSONToJSInstance((try? FAPIJSON.normalizeClientJSON(clientJSON)) ?? clientJSON)
+      applyClientJSONToJSInstance(clientJSON)
     }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {

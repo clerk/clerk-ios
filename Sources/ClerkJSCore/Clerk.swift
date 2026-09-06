@@ -55,9 +55,7 @@ public final class Clerk: @unchecked Sendable {
 
   public func setActive(_ params: SetActiveParams) async throws {
     _ = try await runtime.call(methodPath: "__clerkInstance.setActive", args: params)
-    do {
-      try publishLastClient()
-    } catch is DecodingError {}
+    try publishLastClient()
   }
 
   public struct SetActiveParams: Encodable, Sendable {
@@ -80,7 +78,7 @@ public final class Clerk: @unchecked Sendable {
     }
 
     public var lastActiveSessionId: String? {
-      clerk.fapiClient?.lastActiveSessionId ?? clerk.wireClient()?["last_active_session_id"] as? String
+      clerk.fapiClient?.lastActiveSessionId
     }
 
     public var signUp: SignUp? {
@@ -96,7 +94,7 @@ public final class Clerk: @unchecked Sendable {
     unowned let clerk: Clerk
 
     public var id: String? {
-      model?.id ?? clerk.wireSignIn()?["id"] as? String
+      model?.id
     }
 
     public var status: SignInStatus? {
@@ -104,18 +102,15 @@ public final class Clerk: @unchecked Sendable {
     }
 
     public var identifier: String? {
-      model?.identifier ?? clerk.wireSignIn()?["identifier"] as? String
+      model?.identifier
     }
 
     public var createdSessionId: String? {
-      model?.createdSessionId ?? clerk.wireSignIn()?["created_session_id"] as? String
+      model?.createdSessionId
     }
 
     public var supportedFirstFactors: [SignInFirstFactor] {
-      if let factors = model?.supportedFirstFactors, !factors.isEmpty {
-        return factors
-      }
-      return clerk.wireFirstFactors()
+      model?.supportedFirstFactors ?? []
     }
 
     @discardableResult
@@ -203,9 +198,7 @@ public final class Clerk: @unchecked Sendable {
       try? publishLastClient()
       throw error
     }
-    do {
-      try publishLastClient()
-    } catch is DecodingError {}
+    try publishLastClient()
   }
 
   private func publishLastClient() throws {
@@ -213,28 +206,5 @@ public final class Clerk: @unchecked Sendable {
       throw ClerkJSCoreError.invalidArgument("lastFAPIClientJSON")
     }
     fapiClient = try FAPIJSON.decodeClient(data)
-  }
-
-  private func wireClient() -> [String: Any]? {
-    guard let data = runtime.lastFAPIClientJSON,
-          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-    else {
-      return nil
-    }
-    return object
-  }
-
-  private func wireSignIn() -> [String: Any]? {
-    wireClient()?["sign_in"] as? [String: Any]
-  }
-
-  private func wireFirstFactors() -> [SignInFirstFactor] {
-    guard let raw = wireSignIn()?["supported_first_factors"],
-          let data = try? JSONSerialization.data(withJSONObject: raw),
-          let factors = try? JSONDecoder().decode([SignInFirstFactor].self, from: data)
-    else {
-      return []
-    }
-    return factors
   }
 }

@@ -139,4 +139,40 @@ struct FAPIJSONTests {
     #expect(client.signIn == nil)
     #expect(client.sessions.isEmpty)
   }
+
+  @Test
+  func decodeClientReadsSignedInSessionFromFAPIGaps() throws {
+    let url = try #require(Bundle.module.url(forResource: "signed-in-client", withExtension: "json"))
+    let data = try Data(contentsOf: url)
+
+    #expect(throws: DecodingError.self) {
+      try JSONDecoder().decode(Client.self, from: data)
+    }
+
+    let client = try FAPIJSON.decodeClient(data)
+    #expect(client.id == "client_fixture")
+    #expect(client.lastActiveSessionId == "sess_fixture")
+    #expect(client.sessions.count == 1)
+    let session = try #require(client.sessions.first)
+    #expect(session.id == "sess_fixture")
+    #expect(session.user.id == "user_fixture")
+    #expect(session.user.profileImageId == "")
+    #expect(session.user.organizationMemberships.isEmpty)
+    #expect(session.user.emailAddresses.map(\.id) == ["idn_email"])
+    #expect(session.lastActiveToken.jwt == "header.payload.sig")
+    #expect(session.lastActiveToken.id == "")
+    let signIn = try #require(client.signIn)
+    #expect(signIn.id == "sia_fixture")
+    #expect(signIn.identifier == "user@example.com")
+    #expect(signIn.createdSessionId == "sess_fixture")
+    #expect(signIn.supportedFirstFactors.isEmpty)
+  }
+
+  @Test
+  func normalizeDoesNotInventSessions() throws {
+    let url = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
+    let client = try FAPIJSON.decodeClient(Data(contentsOf: url))
+    #expect(client.sessions.isEmpty)
+    #expect(client.lastActiveSessionId == nil)
+  }
 }
