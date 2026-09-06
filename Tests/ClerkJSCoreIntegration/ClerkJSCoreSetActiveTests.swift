@@ -38,9 +38,9 @@ struct ClerkJSCoreSetActiveTests {
     try? keychain.delete(account: "client-snapshot")
     try? keychain.delete(account: "environment-snapshot")
 
-    let clerk = Clerk.persistent(publishableKey: publishableKey)
+    let clerk = await Clerk.persistent(publishableKey: publishableKey)
     try await clerk.load()
-    try await deferCleanup(clerk, email: email) {
+    try await deferCleanup(clerk.runtime, email: email) {
     let created: Clerk.SignIn
     do {
       created = try await clerk.client.signIn.create(.init(identifier: email))
@@ -48,21 +48,22 @@ struct ClerkJSCoreSetActiveTests {
       Issue.record("FAPI \(sanitizedJSError(error))")
       return
     }
-    if created.id == nil {
+    if await created.id == nil {
       Issue.record("FAPI sign_in_create")
       return
     }
-    if let code = emailCodeUnsupported(created.supportedFirstFactors) {
+    let factors = await created.supportedFirstFactors
+    if let code = emailCodeUnsupported(factors) {
       Issue.record("FAPI \(code)")
       return
     }
 
-    let emailAddressId = created.supportedFirstFactors.first { $0.strategy == "email_code" }?.emailAddressId
+    let emailAddressId = factors.first { $0.strategy == "email_code" }?.emailAddressId
     do {
       try await created.prepareFirstFactor(.init(strategy: .emailCode, emailAddressId: emailAddressId))
     } catch {
       Issue.record(
-        "FAPI \(sanitizedJSError(error)) factors=\(created.supportedFirstFactors.count) emailId=\(emailAddressId != nil)"
+        "FAPI \(sanitizedJSError(error)) factors=\(factors.count) emailId=\(emailAddressId != nil)"
       )
       return
     }
@@ -71,14 +72,16 @@ struct ClerkJSCoreSetActiveTests {
     do {
       attempted = try await created.attemptFirstFactor(.init(strategy: .emailCode, code: "424242"))
     } catch {
-      if clerk.client.signIn.createdSessionId == nil, clerk.client.lastActiveSessionId == nil {
+      if await clerk.client.signIn.createdSessionId == nil, await clerk.client.lastActiveSessionId == nil {
         Issue.record("FAPI \(sanitizedJSError(error))")
         return
       }
       throw error
     }
 
-    let sessionId = try #require(attempted.createdSessionId ?? clerk.client.lastActiveSessionId)
+    let createdSessionId = await attempted.createdSessionId
+    let lastActiveSessionId = await clerk.client.lastActiveSessionId
+    let sessionId = try #require(createdSessionId ?? lastActiveSessionId)
     #expect(sessionId.hasPrefix("sess_"))
 
     do {

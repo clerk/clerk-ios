@@ -4,6 +4,7 @@ import Testing
 
 struct ClerkAPITests {
   @Test
+  @MainActor
   func constructsWithoutLoading() {
     let clerk = Clerk(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",

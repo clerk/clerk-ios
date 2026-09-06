@@ -359,6 +359,7 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  @MainActor
   func loadPublishesCachedClientOnNetworkError() async throws {
     let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let environmentURL = try #require(Bundle.module.url(forResource: "environment", withExtension: "json"))
@@ -393,6 +394,7 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  @MainActor
   func loadPublishesWatchCompanionFromCachedClientOnNetworkError() async throws {
     let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let environmentURL = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
@@ -430,6 +432,7 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  @MainActor
   func loadPublishesNativeSettingsFromCachedEnvironment() async throws {
     let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let environmentURL = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
@@ -477,6 +480,7 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  @MainActor
   func loadPublishesEnvironmentFromCachedSnapshot() async throws {
     let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let environmentURL = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
@@ -506,8 +510,9 @@ struct ClerkJSCoreTests {
     #expect(stubbed)
 
     try await clerk.load()
+    #expect(clerk.environment?.id == "env_fixture")
+    #expect(clerk.client.id == "client_fixture")
     let environment = try #require(clerk.environment)
-    #expect(environment.id == "env_fixture")
     #expect(environment.emailIsEnabled)
     #expect(!environment.phoneNumberIsEnabled)
   }

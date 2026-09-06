@@ -24,9 +24,13 @@ package enum ClerkJSPath {
   }
 }
 
-public final class Clerk: @unchecked Sendable {
+@MainActor
+@Observable
+public final class Clerk {
+  @ObservationIgnored
   private let publishableKey: String
-  package let runtime: ClerkJSRuntime
+  @ObservationIgnored
+  package nonisolated let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
   private var fapiEnvironment: Environment?
   private var fapiNativeSettings = NativeSettings.default
@@ -59,7 +63,7 @@ public final class Clerk: @unchecked Sendable {
     )
   }
 
-  static func storageNamespace(for publishableKey: String) -> String {
+  nonisolated static func storageNamespace(for publishableKey: String) -> String {
     SHA256.hash(data: Data(publishableKey.utf8))
       .prefix(8)
       .map { String(format: "%02x", $0) }
@@ -126,7 +130,8 @@ public final class Clerk: @unchecked Sendable {
     }
   }
 
-  public struct Client: @unchecked Sendable {
+  @MainActor
+  public struct Client {
     unowned let clerk: Clerk
 
     public var id: String {
@@ -150,7 +155,8 @@ public final class Clerk: @unchecked Sendable {
     }
   }
 
-  public struct SignIn: @unchecked Sendable {
+  @MainActor
+  public struct SignIn {
     unowned let clerk: Clerk
 
     public var id: String? {
@@ -239,7 +245,8 @@ public final class Clerk: @unchecked Sendable {
     }
   }
 
-  public struct ActiveSession: @unchecked Sendable {
+  @MainActor
+  public struct ActiveSession {
     unowned let clerk: Clerk
 
     public func getToken() async throws -> String {
@@ -251,7 +258,7 @@ public final class Clerk: @unchecked Sendable {
     }
   }
 
-  private func callAndPublish(_ methodPath: String, _ args: some Encodable) async throws {
+  private func callAndPublish(_ methodPath: String, _ args: some Encodable & Sendable) async throws {
     do {
       _ = try await runtime.call(methodPath: methodPath, args: args)
     } catch {

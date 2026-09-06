@@ -357,6 +357,7 @@ struct ClerkJSAppAttestTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeReturnsAttestation() async throws {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.attestPerformer = { _ in
@@ -368,6 +369,7 @@ struct ClerkJSAppAttestTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeReturnsAssertion() async throws {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.assertPerformer = { _ in
@@ -379,6 +381,7 @@ struct ClerkJSAppAttestTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeMapsCancel() async {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.attestPerformer = { _ in
@@ -393,6 +396,7 @@ struct ClerkJSAppAttestTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeMapsUnavailable() async {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.assertPerformer = { _ in

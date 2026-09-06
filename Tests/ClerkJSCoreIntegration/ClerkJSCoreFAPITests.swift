@@ -694,14 +694,6 @@ actor FAPITestGate {
 }
 
 func deferCleanup<T>(
-  _ clerk: Clerk,
-  email: String,
-  _ body: () async throws -> T
-) async throws -> T {
-  try await deferCleanup(clerk.runtime, email: email, body)
-}
-
-func deferCleanup<T>(
   _ runtime: ClerkJSRuntime,
   email: String,
   _ body: () async throws -> T

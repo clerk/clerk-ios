@@ -263,6 +263,7 @@ struct ClerkJSAppleTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeReturnsIdentity() async throws {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appleCeremony.performer = { _ in
@@ -275,6 +276,7 @@ struct ClerkJSAppleTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeMapsCancel() async {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.appleCeremony.performer = { _ in

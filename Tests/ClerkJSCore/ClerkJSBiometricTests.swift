@@ -263,6 +263,7 @@ struct ClerkJSBiometricTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeReturnsPresence() async throws {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.biometricCeremony.presenceReader = { _ in
@@ -274,6 +275,7 @@ struct ClerkJSBiometricTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeMapsCancel() async {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.biometricCeremony.performer = { _ in
@@ -288,6 +290,7 @@ struct ClerkJSBiometricTests {
   }
 
   @Test
+  @MainActor
   func clerkFacadeMapsUnavailable() async {
     let clerk = Clerk(publishableKey: mockPublishableKey)
     clerk.runtime.biometricCeremony.performer = { _ in
