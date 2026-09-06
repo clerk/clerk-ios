@@ -83,6 +83,7 @@ let package = Package(
       exclude: [
         "UI",
         "ClerkJSCore",
+        "ClerkJSCoreIntegration",
       ],
       resources: [
         .process("Resources"),
@@ -109,6 +110,19 @@ let package = Package(
         "ClerkJSCore",
       ],
       path: "Tests/ClerkJSCore",
+      resources: [
+        .process("Fixtures"),
+      ],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+      ]
+    ),
+    .testTarget(
+      name: "ClerkJSCoreIntegrationTests",
+      dependencies: [
+        "ClerkJSCore",
+      ],
+      path: "Tests/ClerkJSCoreIntegration",
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]

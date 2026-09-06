@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-jscore test-jscore-integration test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -23,6 +23,8 @@ help:
 	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
 	@echo "  make test          - Run ClerkKitTests on macOS"
+	@echo "  make test-jscore   - Run ClerkJSCore unit tests on iOS Simulator (no network)"
+	@echo "  make test-jscore-integration - Run ClerkJSCore FAPI tests on iOS Simulator"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
 	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e"
@@ -227,3 +229,19 @@ test-e2e:
 # OSS contributors: Integration tests will run automatically in CI
 test-integration:
 	@./scripts/run-integration-tests.sh
+
+# ClerkJSCore unit tests. No FAPI. No .keys.json.
+test-jscore:
+	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -z "$$destination" ]; then \
+		destination="platform=iOS Simulator,id=9A1571DF-CC3D-465F-A2E1-C89EC2388B31"; \
+	fi; \
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkJSCoreTests
+
+# ClerkJSCore live FAPI tests. Creates and deletes clerk_test users.
+test-jscore-integration:
+	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
+	if [ -z "$$destination" ]; then \
+		destination="platform=iOS Simulator,id=9A1571DF-CC3D-465F-A2E1-C89EC2388B31"; \
+	fi; \
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkJSCoreIntegrationTests
