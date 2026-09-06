@@ -8,7 +8,7 @@ private struct EmptyArgs: Encodable {}
 
 public final class Clerk: @unchecked Sendable {
   private let publishableKey: String
-  private let runtime: ClerkJSRuntime
+  package let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
 
   public init(
@@ -55,7 +55,9 @@ public final class Clerk: @unchecked Sendable {
 
   public func setActive(_ params: SetActiveParams) async throws {
     _ = try await runtime.call(methodPath: "__clerkInstance.setActive", args: params)
-    try publishLastClient()
+    do {
+      try publishLastClient()
+    } catch is DecodingError {}
   }
 
   public struct SetActiveParams: Encodable, Sendable {
@@ -78,7 +80,7 @@ public final class Clerk: @unchecked Sendable {
     }
 
     public var lastActiveSessionId: String? {
-      clerk.fapiClient?.lastActiveSessionId
+      clerk.fapiClient?.lastActiveSessionId ?? clerk.wireClient()?["last_active_session_id"] as? String
     }
 
     public var signUp: SignUp? {
@@ -94,7 +96,7 @@ public final class Clerk: @unchecked Sendable {
     unowned let clerk: Clerk
 
     public var id: String? {
-      model?.id
+      model?.id ?? clerk.wireSignIn()?["id"] as? String
     }
 
     public var status: SignInStatus? {
@@ -102,15 +104,18 @@ public final class Clerk: @unchecked Sendable {
     }
 
     public var identifier: String? {
-      model?.identifier
+      model?.identifier ?? clerk.wireSignIn()?["identifier"] as? String
     }
 
     public var createdSessionId: String? {
-      model?.createdSessionId
+      model?.createdSessionId ?? clerk.wireSignIn()?["created_session_id"] as? String
     }
 
     public var supportedFirstFactors: [SignInFirstFactor] {
-      model?.supportedFirstFactors ?? []
+      if let factors = model?.supportedFirstFactors, !factors.isEmpty {
+        return factors
+      }
+      return clerk.wireFirstFactors()
     }
 
     @discardableResult
@@ -192,8 +197,15 @@ public final class Clerk: @unchecked Sendable {
   }
 
   private func callAndPublish(_ methodPath: String, _ args: some Encodable) async throws {
-    _ = try await runtime.call(methodPath: methodPath, args: args)
-    try publishLastClient()
+    do {
+      _ = try await runtime.call(methodPath: methodPath, args: args)
+    } catch {
+      try? publishLastClient()
+      throw error
+    }
+    do {
+      try publishLastClient()
+    } catch is DecodingError {}
   }
 
   private func publishLastClient() throws {
@@ -201,5 +213,28 @@ public final class Clerk: @unchecked Sendable {
       throw ClerkJSCoreError.invalidArgument("lastFAPIClientJSON")
     }
     fapiClient = try FAPIJSON.decodeClient(data)
+  }
+
+  private func wireClient() -> [String: Any]? {
+    guard let data = runtime.lastFAPIClientJSON,
+          let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else {
+      return nil
+    }
+    return object
+  }
+
+  private func wireSignIn() -> [String: Any]? {
+    wireClient()?["sign_in"] as? [String: Any]
+  }
+
+  private func wireFirstFactors() -> [SignInFirstFactor] {
+    guard let raw = wireSignIn()?["supported_first_factors"],
+          let data = try? JSONSerialization.data(withJSONObject: raw),
+          let factors = try? JSONDecoder().decode([SignInFirstFactor].self, from: data)
+    else {
+      return []
+    }
+    return factors
   }
 }

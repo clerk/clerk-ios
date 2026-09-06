@@ -63,6 +63,75 @@ struct FAPIJSONTests {
   }
 
   @Test
+  func normalizeReplacesNullSignInFactorArrays() throws {
+    let payload: [String: Any] = [
+      "object": "client",
+      "id": "client_fixture",
+      "sessions": [Any](),
+      "sign_in": [
+        "object": "sign_in",
+        "id": "sia_fixture",
+        "status": "needs_first_factor",
+        "supported_identifiers": NSNull(),
+        "identifier": "user@example.com",
+        "user_data": NSNull(),
+        "supported_first_factors": NSNull(),
+        "supported_second_factors": NSNull(),
+        "first_factor_verification": NSNull(),
+        "second_factor_verification": NSNull(),
+        "created_session_id": NSNull(),
+        "created_at": 1_700_000_000_000,
+        "updated_at": 1_700_000_000_000,
+      ],
+      "sign_up": NSNull(),
+      "last_active_session_id": NSNull(),
+      "created_at": 1_700_000_000_000,
+      "updated_at": 1_700_000_000_000,
+    ]
+    let client = try FAPIJSON.decodeClient(JSONSerialization.data(withJSONObject: payload))
+    let signIn = try #require(client.signIn)
+    #expect(signIn.supportedIdentifiers.isEmpty)
+    #expect(signIn.supportedFirstFactors.isEmpty)
+    #expect(signIn.supportedSecondFactors.isEmpty)
+  }
+
+  @Test
+  func normalizeDefaultsMissingVerificationFields() throws {
+    let payload: [String: Any] = [
+      "object": "client",
+      "id": "client_fixture",
+      "sessions": [Any](),
+      "sign_in": [
+        "object": "sign_in",
+        "id": "sia_fixture",
+        "status": "needs_first_factor",
+        "supported_identifiers": ["email_address"],
+        "identifier": "user@example.com",
+        "user_data": NSNull(),
+        "supported_first_factors": [Any](),
+        "supported_second_factors": [Any](),
+        "first_factor_verification": [
+          "status": "unverified",
+          "strategy": "email_code",
+        ],
+        "second_factor_verification": NSNull(),
+        "created_session_id": NSNull(),
+        "created_at": 1_700_000_000_000,
+        "updated_at": 1_700_000_000_000,
+      ],
+      "sign_up": NSNull(),
+      "last_active_session_id": NSNull(),
+      "created_at": 1_700_000_000_000,
+      "updated_at": 1_700_000_000_000,
+    ]
+    let client = try FAPIJSON.decodeClient(JSONSerialization.data(withJSONObject: payload))
+    let verification = try #require(client.signIn?.firstFactorVerification)
+    #expect(verification.verifiedAtClient == "")
+    #expect(verification.error.code == "")
+    #expect(verification.object == "verification")
+  }
+
+  @Test
   func normalizePassesUnsignedClientThrough() throws {
     let url = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let client = try FAPIJSON.decodeClient(Data(contentsOf: url))

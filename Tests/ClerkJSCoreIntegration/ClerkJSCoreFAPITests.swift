@@ -234,7 +234,7 @@ private func decodingPath(_ error: DecodingError) -> String {
   return context.codingPath.map(\.stringValue).joined(separator: ".")
 }
 
-private func packageRootURL() -> URL {
+func packageRootURL() -> URL {
   URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()
@@ -511,7 +511,7 @@ func ensureSignedUpUser(_ runtime: ClerkJSRuntime, email: String) async -> Strin
       return last
     }
     if attempt < 2 {
-      try? await Task.sleep(for: .seconds(30))
+      try? await Task.sleep(for: .seconds(120))
     }
   }
   return last
@@ -672,10 +672,33 @@ private func fillSignUpRequirements(_ runtime: ClerkJSRuntime) async throws -> S
 
 actor FAPITestGate {
   static let shared = FAPITestGate()
+  private var lastFinished: ContinuousClock.Instant?
 
   func run<T>(_ body: () async throws -> T) async throws -> T {
-    try await body()
+    if let lastFinished {
+      let elapsed = lastFinished.duration(to: .now)
+      let gap = Duration.seconds(180)
+      if elapsed < gap {
+        try await Task.sleep(for: gap - elapsed)
+      }
+    }
+    do {
+      let result = try await body()
+      lastFinished = .now
+      return result
+    } catch {
+      lastFinished = .now
+      throw error
+    }
   }
+}
+
+func deferCleanup<T>(
+  _ clerk: Clerk,
+  email: String,
+  _ body: () async throws -> T
+) async throws -> T {
+  try await deferCleanup(clerk.runtime, email: email, body)
 }
 
 func deferCleanup<T>(

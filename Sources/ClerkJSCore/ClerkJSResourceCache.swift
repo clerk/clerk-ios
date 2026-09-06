@@ -70,14 +70,22 @@ private actor KeychainResourceBox {
     self.environmentAccount = environmentAccount
   }
 
+  var memory = ClerkJSCachedResources()
+
   func load() -> ClerkJSCachedResources {
-    ClerkJSCachedResources(
+    let stored = ClerkJSCachedResources(
       client: snapshot(account: clientAccount),
       environment: snapshot(account: environmentAccount)
     )
+    if stored.client != nil || stored.environment != nil {
+      memory = stored
+      return stored
+    }
+    return memory
   }
 
   func save(_ resources: ClerkJSCachedResources) {
+    memory = resources
     write(resources.client, account: clientAccount)
     write(resources.environment, account: environmentAccount)
   }

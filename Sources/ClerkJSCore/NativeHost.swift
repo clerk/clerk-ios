@@ -216,6 +216,7 @@ final class NativeHost: @unchecked Sendable {
     }
     if let data, let clientJSON = Self.clientJSON(fromFAPIBody: data) {
       lastClientJSON = clientJSON
+      applyClientJSONToJSInstance((try? FAPIJSON.normalizeClientJSON(clientJSON)) ?? clientJSON)
     }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
@@ -237,6 +238,37 @@ final class NativeHost: @unchecked Sendable {
       return
     }
     inflight.callback.call(withArguments: [NSNull(), text])
+  }
+
+  func applyClientJSONToJSInstance(_ data: Data) {
+    guard let runtime, let script = Self.applyClientJSONScript(data) else {
+      return
+    }
+    runtime.context.exception = nil
+    runtime.context.evaluateScript(script)
+  }
+
+  static func applyClientJSONScript(_ data: Data) -> String? {
+    guard let text = String(data: data, encoding: .utf8),
+          let encodedData = try? JSONEncoder().encode(text),
+          let encoded = String(data: encodedData, encoding: .utf8)
+    else {
+      return nil
+    }
+    return """
+      (function() {
+        var clerk = globalThis.__clerkInstance;
+        if (!clerk || !clerk.client || typeof clerk.client.fromJSON !== 'function') {
+          return false;
+        }
+        try {
+          clerk.client.fromJSON(JSON.parse(\(encoded)));
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })()
+      """
   }
 
   private func abortFetch(_ id: UInt64) {

@@ -87,6 +87,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           throw new Error('Clerk constructor missing');
         }
         var clerk = new Clerk(\(pk));
+        globalThis.__clerkInstance = clerk;
         clerk.__internal_onBeforeRequest(async function(requestInit) {
           requestInit.credentials = 'omit';
           if (requestInit.url && requestInit.url.searchParams) {
@@ -113,7 +114,6 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             rethrowOfflineNetworkErrors: true
           }
         });
-        globalThis.__clerkInstance = clerk;
         return true;
       })()
       """
@@ -142,6 +142,19 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         if (typeof fn !== 'function') {
           throw new Error('Not a function: ' + \(path));
         }
+        function rejectReason(error) {
+          var first = error && Array.isArray(error.errors) ? error.errors[0] : null;
+          var code = first && first.code ? String(first.code) : '';
+          var message = first && (first.long_message || first.message)
+            ? String(first.long_message || first.message)
+            : (error && error.message ? String(error.message) : '');
+          var name = error && error.name ? String(error.name) : 'js_error';
+          var text = code || message || name;
+          if (code && message && message.indexOf(code) === -1) {
+            text = code + ': ' + message;
+          }
+          return new Error(text);
+        }
         var result = fn.call(receiver, \(argsJSON));
         if (result && typeof result.then === 'function') {
           return result.then(function(value) {
@@ -149,6 +162,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
               return value === undefined ? true : value;
             }
             return true;
+          }, function(error) {
+            throw rejectReason(error);
           });
         }
         if (result === undefined || result === null || typeof result !== 'object') {
@@ -157,7 +172,28 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         return true;
       })()
       """
-    return try await runtime.evaluateJSON(script)
+    do {
+      let result = try await runtime.evaluateJSON(script)
+      _ = try? await applyLastFAPIClientJSON()
+      return result
+    } catch {
+      _ = try? await applyLastFAPIClientJSON()
+      throw error
+    }
+  }
+
+  func applyLastFAPIClientJSON() async throws -> Bool {
+    guard let data = lastFAPIClientJSON else {
+      return false
+    }
+    return try await applyFAPIClientJSON((try? FAPIJSON.normalizeClientJSON(data)) ?? data)
+  }
+
+  func applyFAPIClientJSON(_ data: Data) async throws -> Bool {
+    guard let script = NativeHost.applyClientJSONScript(data) else {
+      throw ClerkJSCoreError.invalidArgument("clientJSON")
+    }
+    return try await JSONDecoder().decode(Bool.self, from: Data(evaluateJSON(script).utf8))
   }
 
   static let resourceCacheInstallSource = """

@@ -84,6 +84,7 @@ extension ClerkJSTokenCache {
 private actor KeychainTokenBox {
   let keychain: ClerkJSKeychain
   let account: String
+  var memory = ""
 
   init(keychain: ClerkJSKeychain, account: String) {
     self.keychain = keychain
@@ -91,13 +92,18 @@ private actor KeychainTokenBox {
   }
 
   func get() -> String {
-    guard let data = try? keychain.data(account: account) else {
-      return ""
+    if let data = try? keychain.data(account: account),
+       let stored = String(data: data, encoding: .utf8),
+       !stored.isEmpty
+    {
+      memory = stored
+      return stored
     }
-    return String(data: data, encoding: .utf8) ?? ""
+    return memory
   }
 
   func save(_ token: String) {
+    memory = token
     if token.isEmpty {
       try? keychain.delete(account: account)
     } else {
