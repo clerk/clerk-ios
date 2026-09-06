@@ -5,13 +5,13 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkKit
+import ClerkJSCore
 import SwiftUI
 
 struct GetHelpView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(\.openURL) private var openURL
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(\.openURL) private var openURL
 
   let context: Context
 
