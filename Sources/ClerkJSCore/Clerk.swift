@@ -5,6 +5,7 @@ import Foundation
 
 private typealias FAPIClient = Client
 private typealias FAPISignIn = SignIn
+private typealias FAPISignUp = SignUp
 
 private struct EmptyArgs: Encodable {}
 
@@ -17,6 +18,10 @@ package enum ClerkJSPath {
 
   static func signIn(_ method: SignInJSMethod) -> String {
     "\(instance).client.signIn.\(method.rawValue)"
+  }
+
+  static func signUp(_ method: SignUpJSMethod) -> String {
+    "\(instance).client.signUp.\(method.rawValue)"
   }
 
   static func session(_ method: SessionJSMethod) -> String {
@@ -89,6 +94,10 @@ public final class Clerk {
 
   package func publishEnvironment(_ environment: Environment) {
     fapiEnvironment = environment
+  }
+
+  package func publishClient(_ data: Data) throws {
+    fapiClient = try FAPIJSON.decodeClient(data)
   }
 
   package static func snapshotEnvironment() throws -> Environment {
@@ -166,8 +175,8 @@ public final class Clerk {
       clerk.fapiClient?.lastActiveSessionId
     }
 
-    public var signUp: SignUp? {
-      clerk.fapiClient?.signUp
+    public var signUp: SignUp {
+      SignUp(clerk: clerk)
     }
 
     public var signIn: SignIn {
@@ -266,8 +275,74 @@ public final class Clerk {
   }
 
   @MainActor
+  public struct SignUp {
+    unowned let clerk: Clerk
+
+    public var id: String? {
+      model?.id
+    }
+
+    public var status: SignUpStatus? {
+      model?.status
+    }
+
+    @discardableResult
+    public func create(_ params: CreateParams) async throws -> SignUp {
+      try await clerk.callAndPublish(ClerkJSPath.signUp(.create), params)
+      return clerk.client.signUp
+    }
+
+    public struct CreateParams: Encodable, Sendable {
+      public var emailAddress: String?
+      public var phoneNumber: String?
+      public var username: String?
+
+      public init(
+        emailAddress: String? = nil,
+        phoneNumber: String? = nil,
+        username: String? = nil
+      ) {
+        self.emailAddress = emailAddress
+        self.phoneNumber = phoneNumber
+        self.username = username
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(emailAddress, forKey: .emailAddress)
+        try container.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
+        try container.encodeIfPresent(username, forKey: .username)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case emailAddress
+        case phoneNumber
+        case username
+      }
+    }
+
+    private var model: FAPISignUp? {
+      clerk.fapiClient?.signUp
+    }
+  }
+
+  @MainActor
   public struct ActiveSession {
     unowned let clerk: Clerk
+
+    public var id: String? {
+      lastActiveSession?.id
+    }
+
+    public var status: SessionStatus? {
+      lastActiveSession?.status
+    }
+
+    private var lastActiveSession: Session? {
+      guard let client = clerk.fapiClient else { return nil }
+      guard let sessionId = client.lastActiveSessionId else { return nil }
+      return client.sessions.first { $0.id == sessionId }
+    }
 
     public func getToken() async throws -> String {
       let json = try await clerk.runtime.call(
