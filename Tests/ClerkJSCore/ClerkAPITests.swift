@@ -48,6 +48,20 @@ struct ClerkAPITests {
   }
 
   @Test
+  func authenticateWithRedirectParamsEncodeStrategyAndRedirectUrl() throws {
+    let json = try encodeJSON(
+      Clerk.SignIn.AuthenticateWithRedirectParams(
+        strategy: "oauth_google",
+        redirectUrl: "clerk://sso-callback"
+      )
+    )
+    #expect(json["strategy"] as? String == "oauth_google")
+    #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
+    #expect(json["redirectUrlComplete"] == nil)
+    #expect(json.count == 2)
+  }
+
+  @Test
   func signUpCreateParamsEncodePresentKeysOnly() throws {
     let email = try encodeJSON(Clerk.SignUp.CreateParams(emailAddress: "user@example.com"))
     #expect(email["emailAddress"] as? String == "user@example.com")
@@ -300,6 +314,10 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
     #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
     #expect(ClerkJSPath.signIn(.resetPassword) == "__clerkInstance.client.signIn.resetPassword")
+    #expect(
+      ClerkJSPath.signInNamed("authenticateWithRedirect")
+        == "__clerkInstance.client.signIn.authenticateWithRedirect"
+    )
     #expect(ClerkJSPath.signUp(.create) == "__clerkInstance.client.signUp.create")
     #expect(ClerkJSPath.signUp(.update) == "__clerkInstance.client.signUp.update")
     #expect(ClerkJSPath.signUp(.prepareVerification) == "__clerkInstance.client.signUp.prepareVerification")

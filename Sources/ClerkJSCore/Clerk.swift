@@ -20,6 +20,10 @@ package enum ClerkJSPath {
     "\(instance).client.signIn.\(method.rawValue)"
   }
 
+  static func signInNamed(_ method: String) -> String {
+    "\(instance).client.signIn.\(method)"
+  }
+
   static func signUp(_ method: SignUpJSMethod) -> String {
     "\(instance).client.signUp.\(method.rawValue)"
   }
@@ -259,6 +263,13 @@ public final class Clerk {
       return clerk.client.signIn
     }
 
+    public func authenticateWithRedirect(_ params: AuthenticateWithRedirectParams) async throws {
+      try await clerk.callAndPublish(
+        ClerkJSPath.signInNamed("authenticateWithRedirect"),
+        params
+      )
+    }
+
     public struct CreateParams: Encodable, Sendable {
       public var identifier: String?
       public var strategy: String?
@@ -283,6 +294,27 @@ public final class Clerk {
 
       private enum CodingKeys: String, CodingKey {
         case identifier
+        case strategy
+        case redirectUrl
+      }
+    }
+
+    public struct AuthenticateWithRedirectParams: Encodable, Sendable {
+      public var strategy: String
+      public var redirectUrl: String
+
+      public init(strategy: String, redirectUrl: String) {
+        self.strategy = strategy
+        self.redirectUrl = redirectUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encode(redirectUrl, forKey: .redirectUrl)
+      }
+
+      private enum CodingKeys: String, CodingKey {
         case strategy
         case redirectUrl
       }

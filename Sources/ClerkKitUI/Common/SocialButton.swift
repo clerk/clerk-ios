@@ -161,13 +161,13 @@ extension SocialButton {
       return
     }
 
-    let jsSignIn = try await jsClerk.client.signIn.create(
+    try await jsClerk.client.signIn.authenticateWithRedirect(
       .init(
         strategy: provider.strategy,
         redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
       )
     )
-    let mapped = JSCoreAuthMapping.signIn(from: jsSignIn)
+    let mapped = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
     try await JSCoreAuthMapping.activateIfComplete(mapped, using: jsClerk)
     onSuccess?(.signIn(mapped))
   }
