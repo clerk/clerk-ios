@@ -36,11 +36,17 @@ private actor MemoryTokenBox {
 public final class ClerkJSRuntime: @unchecked Sendable {
   public static let sdkVersion = "1.5.3"
 
+  public static var defaultOAuthRedirectURL: URL {
+    let scheme = Bundle.main.bundleIdentifier ?? "clerk"
+    return URL(string: "\(scheme)://sso-callback")!
+  }
+
   #if os(watchOS)
   public init(
     sdkVersion _: String = ClerkJSRuntime.sdkVersion,
     tokenCache _: ClerkJSTokenCache = .memory(),
-    resourceCache _: ClerkJSResourceCache? = nil
+    resourceCache _: ClerkJSResourceCache? = nil,
+    oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL
   ) {}
 
   public var lastFAPIClientJSON: Data? {
@@ -62,16 +68,24 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   private let runtime: JSRuntime
   private let sdkVersion: String
   private let resourceCache: ClerkJSResourceCache?
+  private let oauthRedirectURL: URL
 
   public init(
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
     tokenCache: ClerkJSTokenCache = .memory(),
-    resourceCache: ClerkJSResourceCache? = nil
+    resourceCache: ClerkJSResourceCache? = nil,
+    oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL
   ) {
     self.sdkVersion = sdkVersion
     self.resourceCache = resourceCache
+    self.oauthRedirectURL = oauthRedirectURL
     runtime = JSRuntime(tokenCache: tokenCache)
     runtime.host.resourceCache = resourceCache
+    runtime.host.oauth.redirectURL = oauthRedirectURL
+  }
+
+  var oauthSession: ClerkJSOAuthSession {
+    runtime.host.oauth
   }
 
   public var lastFAPIClientJSON: Data? {
@@ -81,6 +95,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   public func load(publishableKey: String) async throws {
     let pk = try Self.jsonString(publishableKey)
     let version = try Self.jsonString(sdkVersion)
+    let allowedProtocol = try Self.jsonString(Self.oauthAllowedRedirectProtocol(from: oauthRedirectURL))
+    let oauthTransport = Self.oauthTransportInstallSource(redirectURL: oauthRedirectURL)
     let script = """
       (async function() {
         if (typeof Clerk !== 'function') {
@@ -113,7 +129,9 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           experimental: {
             runtimeEnvironment: 'headless',
             rethrowOfflineNetworkErrors: true
-          }
+          },
+          allowedRedirectProtocols: [\(allowedProtocol)],
+          __internal_oauthTransport: \(oauthTransport)
         });
         return true;
       })()
@@ -329,6 +347,31 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       };
     })();
     """
+
+  static func oauthAllowedRedirectProtocol(from url: URL) -> String {
+    let scheme = url.scheme ?? "clerk"
+    return scheme.hasSuffix(":") ? scheme : "\(scheme):"
+  }
+
+  static func oauthTransportInstallSource(redirectURL: URL) -> String {
+    let encoded: String = if let data = try? JSONEncoder().encode(redirectURL.absoluteString),
+       let text = String(data: data, encoding: .utf8)
+    {
+      text
+    } else {
+      "\"\""
+    }
+    return """
+      {
+        getRedirectUrl: function() { return \(encoded); },
+        open: async function(url) {
+          var href = (url && typeof url.href === 'string') ? url.href : String(url);
+          var callbackUrl = await __clerkNativeOAuthOpen(href);
+          return { callbackUrl: callbackUrl };
+        }
+      }
+      """
+  }
 
   private static func jsonString(_ value: String) throws -> String {
     let data = try JSONEncoder().encode(value)

@@ -8,6 +8,7 @@ final class NativeHost: @unchecked Sendable {
   private let tokenCache: ClerkJSTokenCache
   var resourceCache: ClerkJSResourceCache?
   private let passkeys = ClerkJSPasskeyCeremony()
+  let oauth = ClerkJSOAuthSession()
   private let session: URLSession
   private var nextTimerID: UInt64 = 1
   private var nextFetchID: UInt64 = 1
@@ -47,6 +48,7 @@ final class NativeHost: @unchecked Sendable {
       abortFetch(id)
     }
     passkeys.cancel()
+    oauth.cancel()
     session.invalidateAndCancel()
   }
 
@@ -196,6 +198,23 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(getPublicCredentials, forKeyedSubscript: "__clerkNativeGetPublicCredentialsImpl" as NSString)
+
+    let openOAuth: @convention(block) (String, JSValue) -> Void = { [weak self] href, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.oauth.open(href: href)
+        runtime.queue.async {
+          switch result {
+          case .success(let callbackURL):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), callbackURL])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(openOAuth, forKeyedSubscript: "__clerkNativeOAuthOpenImpl" as NSString)
   }
 
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
@@ -721,6 +740,24 @@ final class NativeHost: @unchecked Sendable {
           __clerkNativeGetPublicCredentialsImpl(String(payload), function(err, json) {
             if (err) clerkNativePasskeyReject(err, 'passkey_retrieval_failed', reject);
             else resolve(typeof json === 'string' ? JSON.parse(json) : json);
+          });
+        });
+      };
+      function clerkNativeOAuthReject(err, reject) {
+        var parsed = err;
+        if (typeof err === 'string') {
+          try { parsed = JSON.parse(err); } catch (e) { parsed = { message: String(err) }; }
+        }
+        var error = new Error((parsed && parsed.message) ? String(parsed.message) : String(err));
+        error.name = 'ClerkOAuthError';
+        error.code = (parsed && parsed.code) ? String(parsed.code) : 'oauth_session_failed';
+        reject(error);
+      }
+      globalThis.__clerkNativeOAuthOpen = function(href) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeOAuthOpenImpl(String(href), function(err, callbackUrl) {
+            if (err) clerkNativeOAuthReject(err, reject);
+            else resolve(String(callbackUrl));
           });
         });
       };
