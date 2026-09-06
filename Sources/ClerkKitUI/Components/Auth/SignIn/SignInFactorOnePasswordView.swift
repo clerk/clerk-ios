@@ -10,7 +10,6 @@ import ClerkKit
 import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
   @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
   @SwiftUI.Environment(AuthNavigation.self) private var navigation
@@ -18,10 +17,6 @@ struct SignInFactorOnePasswordView: View {
 
   @FocusState private var isFocused: Bool
   @State private var fieldError: Error?
-
-  var signIn: ClerkKit.SignIn? {
-    clerk.auth.currentSignIn
-  }
 
   let factor: Factor
 
@@ -102,7 +97,8 @@ struct SignInFactorOnePasswordView: View {
             .frame(width: 1, height: 16)
 
           Button {
-            if signIn?.resetPasswordFactor != nil {
+            let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
+            if signIn.resetPasswordFactor != nil {
               navigation.path.append(
                 AuthView.Destination.signInForgotPassword
               )

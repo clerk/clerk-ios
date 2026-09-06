@@ -64,6 +64,27 @@ struct JSCoreAuthMappingTests {
     #expect(signIn.supportedFirstFactors?.count == 1)
     #expect(signIn.supportedFirstFactors?.first?.strategy == .emailCode)
     #expect(signIn.createdSessionId == nil)
+    #expect(signIn.resetPasswordFactor == nil)
+  }
+
+  @Test
+  func mappedSignInExposesResetPasswordFactor() {
+    let signIn = JSCoreAuthMapping.signIn(
+      id: "sia_1",
+      status: .needsFirstFactor,
+      identifier: "user@example.com",
+      firstFactors: [
+        firstFactor(strategy: "password"),
+        firstFactor(
+          strategy: "reset_password_email_code",
+          emailAddressId: "idn_1",
+          safeIdentifier: "user@example.com"
+        ),
+      ]
+    )
+
+    #expect(signIn.resetPasswordFactor?.strategy == .resetPasswordEmailCode)
+    #expect(signIn.resetPasswordFactor?.emailAddressId == "idn_1")
   }
 
   @Test
