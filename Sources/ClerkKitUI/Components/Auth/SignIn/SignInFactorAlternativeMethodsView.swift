@@ -5,30 +5,33 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorAlternativeMethodsView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   let currentFactor: Factor
   let mode: SignInFactorMode
 
   @State private var error: Error?
 
-  var signIn: SignIn? {
+  var signIn: ClerkKit.SignIn? {
     clerk.auth.currentSignIn
   }
 
   var alternativeFactors: [Factor] {
+    guard jsClerk.client.signIn.id != nil else { return [] }
+    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
     if mode.usesSecondFactorAPI {
-      signIn?.alternativeSecondFactors(currentFactor: currentFactor) ?? []
-    } else {
-      signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
+      return signIn.alternativeSecondFactors(currentFactor: currentFactor)
     }
+    return signIn.alternativeFirstFactors(currentFactor: currentFactor)
   }
 
   var socialProviders: [OAuthProvider] {
