@@ -1,0 +1,25 @@
+{
+  "object": "client",
+  "id": "client_fixture",
+  "sessions": [],
+  "sign_in": {
+    "object": "sign_in",
+    "id": "sia_fixture",
+    "status": "needs_first_factor",
+    "supported_identifiers": ["email_address"],
+    "identifier": "user@example.com",
+    "user_data": null,
+    "supported_first_factors": [],
+    "supported_second_factors": [],
+    "first_factor_verification": null,
+    "second_factor_verification": null,
+    "created_session_id": null
+  },
+  "sign_up": null,
+  "last_active_session_id": null,
+  "captcha_bypass": false,
+  "cookie_expires_at": null,
+  "last_authentication_strategy": null,
+  "created_at": 1700000000000,
+  "updated_at": 1700000000000
+}
