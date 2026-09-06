@@ -10,9 +10,12 @@ public final class Clerk: @unchecked Sendable {
   private let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
 
-  public init(publishableKey: String) {
+  public init(
+    publishableKey: String,
+    tokenCache: ClerkJSTokenCache = .memory()
+  ) {
     self.publishableKey = publishableKey
-    runtime = ClerkJSRuntime()
+    runtime = ClerkJSRuntime(tokenCache: tokenCache)
   }
 
   public var client: Client {

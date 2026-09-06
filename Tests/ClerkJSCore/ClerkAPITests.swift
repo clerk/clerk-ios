@@ -5,7 +5,10 @@ import Testing
 struct ClerkAPITests {
   @Test
   func constructsWithoutLoading() {
-    let clerk = Clerk(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
+    let clerk = Clerk(
+      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
+      tokenCache: .memory()
+    )
     #expect(clerk.client.id == "")
     #expect(clerk.client.sessions.isEmpty)
     #expect(clerk.client.signIn.createdSessionId == nil)
