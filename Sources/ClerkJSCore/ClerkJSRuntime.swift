@@ -54,6 +54,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     nil
   }
 
+  public var lastFAPIEnvironmentJSON: Data? {
+    nil
+  }
+
   public func load(publishableKey _: String) async throws {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -125,6 +129,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   public var lastFAPIClientJSON: Data? {
     runtime.lastClientJSON
+  }
+
+  public var lastFAPIEnvironmentJSON: Data? {
+    runtime.lastEnvironmentJSON
   }
 
   public func load(publishableKey: String) async throws {

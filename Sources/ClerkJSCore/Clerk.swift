@@ -28,6 +28,7 @@ public final class Clerk: @unchecked Sendable {
   private let publishableKey: String
   package let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
+  private var fapiEnvironment: Environment?
 
   public init(
     publishableKey: String,
@@ -69,7 +70,7 @@ public final class Clerk: @unchecked Sendable {
   }
 
   public var watchCompanion: WatchCompanion {
-    WatchCompanion(client: fapiClient)
+    WatchCompanion(client: fapiClient, environment: fapiEnvironment)
   }
 
   public var session: ActiveSession {
@@ -79,11 +80,13 @@ public final class Clerk: @unchecked Sendable {
   public func load() async throws {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()
+    publishLastEnvironment()
   }
 
   public func setActive(_ params: SetActiveParams) async throws {
     _ = try await runtime.call(methodPath: ClerkJSPath.clerk(.setActive), args: params)
     try publishLastClient()
+    publishLastEnvironment()
   }
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
@@ -244,9 +247,11 @@ public final class Clerk: @unchecked Sendable {
       _ = try await runtime.call(methodPath: methodPath, args: args)
     } catch {
       try? publishLastClient()
+      publishLastEnvironment()
       throw error
     }
     try publishLastClient()
+    publishLastEnvironment()
   }
 
   private func publishLastClient() throws {
@@ -254,5 +259,12 @@ public final class Clerk: @unchecked Sendable {
       throw ClerkJSCoreError.invalidArgument("lastFAPIClientJSON")
     }
     fapiClient = try FAPIJSON.decodeClient(data)
+  }
+
+  private func publishLastEnvironment() {
+    guard let data = runtime.lastFAPIEnvironmentJSON else {
+      return
+    }
+    fapiEnvironment = try? JSONDecoder().decode(Environment.self, from: data)
   }
 }

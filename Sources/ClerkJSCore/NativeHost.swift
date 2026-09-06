@@ -20,6 +20,7 @@ final class NativeHost: @unchecked Sendable {
   private var fetches: [UInt64: InFlightFetch] = [:]
   private var callbacks: [UInt64: JSValue] = [:]
   private(set) var lastClientJSON: Data?
+  private(set) var lastEnvironmentJSON: Data?
 
   init(tokenCache: ClerkJSTokenCache) {
     self.tokenCache = tokenCache
@@ -154,6 +155,9 @@ final class NativeHost: @unchecked Sendable {
         runtime.queue.async {
           if let client = cached.client, let captured = Self.clientJSON(fromFAPIBody: client) {
             self.lastClientJSON = captured
+          }
+          if let environment = cached.environment, let captured = Self.environmentJSON(fromFAPIBody: environment) {
+            self.lastEnvironmentJSON = captured
           }
           self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
         }
@@ -367,6 +371,9 @@ final class NativeHost: @unchecked Sendable {
       lastClientJSON = clientJSON
       applyClientJSONToJSInstance(clientJSON)
     }
+    if let data, let environmentJSON = Self.environmentJSON(fromFAPIBody: data) {
+      lastEnvironmentJSON = environmentJSON
+    }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
       headers[String(describing: key).lowercased()] = String(describing: value)
@@ -439,6 +446,24 @@ final class NativeHost: @unchecked Sendable {
 
   private static func asClientJSON(_ value: Any?) -> [String: Any]? {
     guard let object = value as? [String: Any], object["object"] as? String == "client" else {
+      return nil
+    }
+    return object
+  }
+
+  private static func environmentJSON(fromFAPIBody data: Data) -> Data? {
+    guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return nil
+    }
+    let inner = asEnvironmentJSON(object["environment"]) ?? asEnvironmentJSON(object["response"]) ?? asEnvironmentJSON(object)
+    guard let inner else {
+      return nil
+    }
+    return try? JSONSerialization.data(withJSONObject: inner)
+  }
+
+  private static func asEnvironmentJSON(_ value: Any?) -> [String: Any]? {
+    guard let object = value as? [String: Any], object["object"] as? String == "environment" else {
       return nil
     }
     return object

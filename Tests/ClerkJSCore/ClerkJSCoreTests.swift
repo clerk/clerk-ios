@@ -73,6 +73,15 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func generatedEnvironmentDecodesSnapshotFixture() throws {
+    let url = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
+    let data = try Data(contentsOf: url)
+    let environment = try JSONDecoder().decode(Environment.self, from: data)
+    #expect(environment.id == "env_fixture")
+    #expect(environment.object == "environment")
+  }
+
+  @Test
   func generatedClientDecodesUnsignedFixture() throws {
     let url = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
     let data = try Data(contentsOf: url)
@@ -386,7 +395,7 @@ struct ClerkJSCoreTests {
   @Test
   func loadPublishesWatchCompanionFromCachedClientOnNetworkError() async throws {
     let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
-    let environmentURL = try #require(Bundle.module.url(forResource: "environment", withExtension: "json"))
+    let environmentURL = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
     let clientData = try Data(contentsOf: clientURL)
     let environmentData = try Data(contentsOf: environmentURL)
 
@@ -416,6 +425,7 @@ struct ClerkJSCoreTests {
     var replica = WatchCompanion()
     try replica.apply(clerk.watchCompanion.encode())
     #expect(replica.client?.id == "client_fixture")
+    #expect(replica.environment?.id == "env_fixture")
   }
 
   @Test

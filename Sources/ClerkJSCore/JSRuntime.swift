@@ -34,6 +34,10 @@ final class JSRuntime: @unchecked Sendable {
     queue.sync { host.lastClientJSON }
   }
 
+  var lastEnvironmentJSON: Data? {
+    queue.sync { host.lastEnvironmentJSON }
+  }
+
   func evaluateJSON(_ js: String) async throws -> String {
     try await perform { [self] call in
       try ensureBundleEvaluated()
