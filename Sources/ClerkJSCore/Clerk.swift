@@ -78,6 +78,17 @@ public final class Clerk {
     fapiEnvironment
   }
 
+  package func publishEnvironment(_ environment: Environment) {
+    fapiEnvironment = environment
+  }
+
+  package static func snapshotEnvironment() throws -> Environment {
+    guard let url = Bundle.module.url(forResource: "environment-snapshot", withExtension: "json") else {
+      throw ClerkJSCoreError.missingBundle
+    }
+    return try JSONDecoder().decode(Environment.self, from: Data(contentsOf: url))
+  }
+
   public var nativeSettings: NativeSettings {
     fapiNativeSettings
   }

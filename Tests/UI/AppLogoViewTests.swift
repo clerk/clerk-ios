@@ -1,3 +1,4 @@
+import ClerkJSCore
 @testable import ClerkKit
 @testable import ClerkKitUI
 import SwiftUI
@@ -9,7 +10,8 @@ struct AppLogoViewTests {
   func customAppIconViewOwnsItsLayout() {
     let renderer = ImageRenderer(
       content: AppLogoView()
-        .environment(Clerk.mock)
+        .environment(ClerkKit.Clerk.mock)
+        .environment(ClerkJSCore.Clerk(publishableKey: "pk_test_preview"))
         .clerkAppIcon(Image(systemName: "app.badge"))
         .clerkAppIcon(maxHeight: 20)
         .clerkAppIconView {

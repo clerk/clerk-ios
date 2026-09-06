@@ -7,6 +7,7 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
@@ -14,7 +15,8 @@ extension View {
   /// Injects mock environment values for previews.
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
-  /// - `Clerk.mock` for `@Environment(Clerk.self)`
+  /// - `ClerkKit.Clerk.preview` for `@Environment(Clerk.self)`
+  /// - `ClerkJSCore.Clerk` with a snapshot Environment for `@Environment(ClerkJSCore.Clerk.self)`
   /// - `AuthState()` for `@Environment(AuthState.self)`
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
@@ -37,12 +39,14 @@ extension View {
   package func clerkPreview(isSignedIn: Bool = true) -> some View {
     if EnvironmentDetection.isRunningInPreviews {
       // Configure Clerk.shared so views that access it directly don't fail
-      let clerk = Clerk.preview { builder in
+      let clerk = ClerkKit.Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
       }
+      let jsClerk = jsCorePreviewClerk()
 
       return AnyView(
         environment(clerk)
+          .environment(jsClerk)
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
           .environment(AuthState())
@@ -51,6 +55,15 @@ extension View {
     }
     return AnyView(self)
   }
+}
+
+@MainActor
+private func jsCorePreviewClerk() -> ClerkJSCore.Clerk {
+  let clerk = ClerkJSCore.Clerk(publishableKey: "pk_test_preview")
+  if let environment = try? ClerkJSCore.Clerk.snapshotEnvironment() {
+    clerk.publishEnvironment(environment)
+  }
+  return clerk
 }
 
 #endif

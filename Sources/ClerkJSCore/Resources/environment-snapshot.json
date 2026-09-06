@@ -1,0 +1,461 @@
+{
+  "object": "environment",
+  "id": "env_fixture",
+  "auth_config": {
+    "object": "auth_config",
+    "id": "",
+    "single_session_mode": true,
+    "claimed_at": null,
+    "reverification": true
+  },
+  "display_config": {
+    "object": "display_config",
+    "id": "display_config_fixture",
+    "after_sign_in_url": "/",
+    "after_sign_out_all_url": "/",
+    "after_sign_out_one_url": "/",
+    "after_sign_up_url": "/",
+    "after_switch_session_url": "/",
+    "application_name": "JSCore Cache",
+    "branded": true,
+    "captcha_provider": "turnstile",
+    "home_url": "/",
+    "instance_environment_type": "development",
+    "logo_image_url": "",
+    "favicon_image_url": "",
+    "preferred_sign_in_strategy": "password",
+    "sign_in_url": "/sign-in",
+    "sign_up_url": "/sign-up",
+    "support_email": "support@example.com",
+    "theme": {
+      "general": {
+        "color": "#000000",
+        "background_color": "#ffffff",
+        "font_family": "sans-serif",
+        "font_color": "#000000",
+        "label_font_weight": "400",
+        "padding": "0",
+        "border_radius": "0",
+        "box_shadow": "none"
+      },
+      "buttons": {
+        "font_color": "#000000",
+        "font_family": "sans-serif",
+        "font_weight": "400"
+      },
+      "accounts": {
+        "background_color": "#ffffff"
+      }
+    },
+    "user_profile_url": "/user",
+    "organization_profile_url": "/organization",
+    "create_organization_url": "/create-organization",
+    "after_leave_organization_url": "/",
+    "after_create_organization_url": "/",
+    "show_devmode_warning": true,
+    "terms_url": "",
+    "privacy_policy_url": "",
+    "waitlist_url": "/waitlist",
+    "after_join_waitlist_url": "/"
+  },
+  "commerce_settings": {
+    "id": "commerce_settings_fixture",
+    "object": "commerce_settings",
+    "billing": {
+      "stripe_publishable_key": null,
+      "organization": {
+        "enabled": false,
+        "has_paid_plans": false
+      },
+      "user": {
+        "enabled": false,
+        "has_paid_plans": false
+      }
+    }
+  },
+  "user_settings": {
+    "attributes": {
+      "email_address": {
+        "enabled": true,
+        "required": false,
+        "verifications": [
+          "email_code"
+        ],
+        "used_for_first_factor": true,
+        "first_factors": [
+          "email_code"
+        ],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": true
+      },
+      "phone_number": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "web3_wallet": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "passkey": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "username": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "password": {
+        "enabled": true,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": true,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "backup_code": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "first_name": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "last_name": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      },
+      "authenticator_app": {
+        "enabled": false,
+        "required": false,
+        "verifications": [],
+        "used_for_first_factor": false,
+        "first_factors": [],
+        "used_for_second_factor": false,
+        "second_factors": [],
+        "verify_at_sign_up": false
+      }
+    },
+    "actions": {
+      "delete_self": true,
+      "create_organization": true
+    },
+    "social": {
+      "oauth_facebook": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_facebook",
+        "name": "Facebook"
+      },
+      "oauth_google": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_google",
+        "name": "Google"
+      },
+      "oauth_hubspot": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_hubspot",
+        "name": "HubSpot"
+      },
+      "oauth_github": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_github",
+        "name": "GitHub"
+      },
+      "oauth_tiktok": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_tiktok",
+        "name": "TikTok"
+      },
+      "oauth_gitlab": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_gitlab",
+        "name": "GitLab"
+      },
+      "oauth_discord": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_discord",
+        "name": "Discord"
+      },
+      "oauth_twitter": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_twitter",
+        "name": "Twitter"
+      },
+      "oauth_twitch": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_twitch",
+        "name": "Twitch"
+      },
+      "oauth_linkedin": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_linkedin",
+        "name": "LinkedIn"
+      },
+      "oauth_linkedin_oidc": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_linkedin_oidc",
+        "name": "LinkedIn"
+      },
+      "oauth_dropbox": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_dropbox",
+        "name": "Dropbox"
+      },
+      "oauth_atlassian": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_atlassian",
+        "name": "Atlassian"
+      },
+      "oauth_bitbucket": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_bitbucket",
+        "name": "Bitbucket"
+      },
+      "oauth_microsoft": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_microsoft",
+        "name": "Microsoft"
+      },
+      "oauth_notion": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_notion",
+        "name": "Notion"
+      },
+      "oauth_apple": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_apple",
+        "name": "Apple"
+      },
+      "oauth_line": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_line",
+        "name": "LINE"
+      },
+      "oauth_instagram": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_instagram",
+        "name": "Instagram"
+      },
+      "oauth_coinbase": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_coinbase",
+        "name": "Coinbase"
+      },
+      "oauth_spotify": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_spotify",
+        "name": "Spotify"
+      },
+      "oauth_xero": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_xero",
+        "name": "Xero"
+      },
+      "oauth_box": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_box",
+        "name": "Box"
+      },
+      "oauth_slack": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_slack",
+        "name": "Slack"
+      },
+      "oauth_linear": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_linear",
+        "name": "Linear"
+      },
+      "oauth_x": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_x",
+        "name": "X"
+      },
+      "oauth_enstall": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_enstall",
+        "name": "Enstall"
+      },
+      "oauth_huggingface": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_huggingface",
+        "name": "Hugging Face"
+      },
+      "oauth_vercel": {
+        "enabled": false,
+        "required": false,
+        "authenticatable": false,
+        "strategy": "oauth_vercel",
+        "name": "Vercel"
+      }
+    },
+    "enterprise_sso": {
+      "enabled": false,
+      "self_serve_sso": false
+    },
+    "sign_in": {
+      "second_factor": {
+        "required": false,
+        "enabled": false
+      }
+    },
+    "sign_up": {
+      "allowlist_only": false,
+      "progressive": true,
+      "captcha_enabled": false,
+      "mode": "public",
+      "legal_consent_enabled": false
+    },
+    "password_settings": {
+      "allowed_special_characters": "!@#$%^&*",
+      "disable_hibp": false,
+      "min_length": 8,
+      "max_length": 72,
+      "require_special_char": false,
+      "require_numbers": false,
+      "require_uppercase": false,
+      "require_lowercase": false,
+      "show_zxcvbn": false,
+      "min_zxcvbn_strength": 0
+    },
+    "passkey_settings": {
+      "allow_autofill": false,
+      "show_sign_in_button": false
+    },
+    "username_settings": {
+      "min_length": 4,
+      "max_length": 64
+    }
+  },
+  "organization_settings": {
+    "enabled": false,
+    "max_allowed_memberships": 0,
+    "force_organization_selection": false,
+    "actions": {
+      "admin_delete": true
+    },
+    "domains": {
+      "enabled": false,
+      "enrollment_modes": []
+    },
+    "slug": {
+      "disabled": false
+    },
+    "organization_creation_defaults": {
+      "enabled": false
+    }
+  },
+  "api_keys_settings": {
+    "id": "api_keys_settings_fixture",
+    "object": "api_keys_settings",
+    "user_api_keys_enabled": false,
+    "orgs_api_keys_enabled": false
+  },
+  "protect_config": {
+    "object": "protect_config",
+    "id": "protect_config_fixture"
+  },
+  "maintenance_mode": false,
+  "client_debug_mode": false,
+  "partitioned_cookies": false
+}

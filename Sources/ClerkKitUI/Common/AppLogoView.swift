@@ -5,15 +5,16 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import NukeUI
 import SwiftUI
 
 struct AppLogoView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkAppIcon) private var appIconOverride
-  @Environment(\.clerkAppIconMaxHeight) private var appIconMaxHeight
-  @Environment(\.clerkAppIconView) private var appIconViewOverride
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
+  @SwiftUI.Environment(\.clerkAppIcon) private var appIconOverride
+  @SwiftUI.Environment(\.clerkAppIconMaxHeight) private var appIconMaxHeight
+  @SwiftUI.Environment(\.clerkAppIconView) private var appIconViewOverride
 
   var body: some View {
     Group {

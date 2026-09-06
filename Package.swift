@@ -77,6 +77,7 @@ let package = Package(
       name: "ClerkKitUI",
       dependencies: [
         "ClerkKit",
+        "ClerkJSCore",
         .product(name: "Nuke", package: "Nuke"),
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),
@@ -116,6 +117,7 @@ let package = Package(
       dependencies: [
         "ClerkKit",
         "ClerkKitUI",
+        "ClerkJSCore",
         .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
       ],
       path: "Tests/UI",
