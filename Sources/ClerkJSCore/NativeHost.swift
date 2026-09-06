@@ -192,7 +192,10 @@ final class NativeHost: @unchecked Sendable {
     }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
-      headers[String(describing: key)] = String(describing: value)
+      headers[String(describing: key).lowercased()] = String(describing: value)
+    }
+    if let authorization = http.value(forHTTPHeaderField: "Authorization"), !authorization.isEmpty {
+      headers["authorization"] = authorization
     }
     let payload: [String: Any] = [
       "status": http.statusCode,

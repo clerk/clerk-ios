@@ -5,11 +5,31 @@ public struct ClerkJSTokenCache: Sendable {
   public var saveToken: @Sendable (String) async -> Void
 
   public init(
-    getToken: @escaping @Sendable () async -> String = { "" },
-    saveToken: @escaping @Sendable (String) async -> Void = { _ in }
+    getToken: @escaping @Sendable () async -> String,
+    saveToken: @escaping @Sendable (String) async -> Void
   ) {
     self.getToken = getToken
     self.saveToken = saveToken
+  }
+
+  public static func memory() -> ClerkJSTokenCache {
+    let box = MemoryTokenBox()
+    return ClerkJSTokenCache(
+      getToken: { await box.get() },
+      saveToken: { await box.save($0) }
+    )
+  }
+}
+
+private actor MemoryTokenBox {
+  var token = ""
+
+  func get() -> String {
+    token
+  }
+
+  func save(_ token: String) {
+    self.token = token
   }
 }
 
@@ -19,7 +39,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   #if os(watchOS)
   public init(
     sdkVersion _: String = ClerkJSRuntime.sdkVersion,
-    tokenCache _: ClerkJSTokenCache = ClerkJSTokenCache()
+    tokenCache _: ClerkJSTokenCache = .memory()
   ) {}
 
   public var lastFAPIClientJSON: Data? {
@@ -43,7 +63,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   public init(
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
-    tokenCache: ClerkJSTokenCache = ClerkJSTokenCache()
+    tokenCache: ClerkJSTokenCache = .memory()
   ) {
     self.sdkVersion = sdkVersion
     runtime = JSRuntime(tokenCache: tokenCache)
@@ -68,7 +88,9 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             requestInit.url.searchParams.append('_is_native', '1');
           }
           var jwt = await __clerkNativeGetToken();
-          requestInit.headers.set('authorization', jwt || '');
+          if (jwt) {
+            requestInit.headers.set('authorization', jwt);
+          }
           requestInit.headers.set('x-mobile', '1');
           requestInit.headers.set('x-ios-sdk-version', \(version));
         });
@@ -114,7 +136,19 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         if (typeof fn !== 'function') {
           throw new Error('Not a function: ' + \(path));
         }
-        return fn.apply(receiver, \(argsJSON));
+        var result = fn.call(receiver, \(argsJSON));
+        if (result && typeof result.then === 'function') {
+          return result.then(function(value) {
+            if (value === undefined || value === null || typeof value !== 'object') {
+              return value === undefined ? true : value;
+            }
+            return true;
+          });
+        }
+        if (result === undefined || result === null || typeof result !== 'object') {
+          return result === undefined ? true : result;
+        }
+        return true;
       })()
       """
     return try await runtime.evaluateJSON(script)
