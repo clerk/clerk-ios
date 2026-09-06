@@ -307,6 +307,48 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func loadHydratesClientFromResourceCacheOnNetworkError() async throws {
+    let clientURL = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
+    let environmentURL = try #require(Bundle.module.url(forResource: "environment", withExtension: "json"))
+    let clientData = try Data(contentsOf: clientURL)
+    let environmentData = try Data(contentsOf: environmentURL)
+    let decoded = try FAPIJSON.decodeClient(clientData)
+    #expect(decoded.id == "client_fixture")
+
+    let cache = ClerkJSResourceCache.memory()
+    await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
+
+    let runtime = ClerkJSRuntime(resourceCache: cache)
+    let stubbed = try await decodeJSONBool(
+      runtime.evaluateJSON(
+        """
+        (function() {
+          globalThis.__clerkFetchCalls = 0;
+          globalThis.fetch = function() {
+            globalThis.__clerkFetchCalls += 1;
+            return Promise.reject(new Error('Failed to fetch'));
+          };
+          return true;
+        })()
+        """
+      )
+    )
+    #expect(stubbed)
+
+    try await runtime.load(publishableKey: mockPublishableKey)
+
+    let clientId = try await decodeJSONString(
+      runtime.evaluateJSON("globalThis.__clerkInstance.client.id")
+    )
+    #expect(clientId == "client_fixture")
+    let fetchCalls = try await JSONDecoder().decode(
+      Int.self,
+      from: Data((runtime.evaluateJSON("globalThis.__clerkFetchCalls")).utf8)
+    )
+    #expect(fetchCalls > 0)
+  }
+
+  @Test
   func resourceCacheHostPersistsSnapshots() async throws {
     let cache = ClerkJSResourceCache.memory()
     let runtime = ClerkJSRuntime(resourceCache: cache)

@@ -1,0 +1,36 @@
+{
+  "object": "environment",
+  "id": "env_fixture",
+  "auth_config": {
+    "object": "auth_config",
+    "id": "",
+    "single_session_mode": true,
+    "claimed_at": null,
+    "reverification": true
+  },
+  "display_config": {
+    "object": "display_config",
+    "id": "display_config_fixture",
+    "instance_environment_type": "development",
+    "application_name": "JSCore Cache",
+    "preferred_sign_in_strategy": "password",
+    "branded": true,
+    "show_devmode_warning": true
+  },
+  "commerce_settings": {
+    "billing": {
+      "stripe_publishable_key": null,
+      "organization": {
+        "enabled": false,
+        "has_paid_plans": false
+      },
+      "user": {
+        "enabled": false,
+        "has_paid_plans": false
+      }
+    }
+  },
+  "maintenance_mode": false,
+  "client_debug_mode": false,
+  "partitioned_cookies": false
+}
