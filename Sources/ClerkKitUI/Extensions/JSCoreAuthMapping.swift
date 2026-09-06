@@ -64,7 +64,8 @@ enum JSCoreAuthMapping {
       id: handle.id ?? "",
       status: handle.status ?? .unknown(""),
       identifier: handle.identifier,
-      firstFactors: handle.supportedFirstFactors
+      firstFactors: handle.supportedFirstFactors,
+      createdSessionId: handle.createdSessionId
     )
   }
 
@@ -72,13 +73,15 @@ enum JSCoreAuthMapping {
     id: String,
     status: SignInStatus,
     identifier: String?,
-    firstFactors: [SignInFirstFactor]
+    firstFactors: [SignInFirstFactor],
+    createdSessionId: String? = nil
   ) -> ClerkKit.SignIn {
     ClerkKit.SignIn(
       id: id,
       status: signInStatus(from: status),
       identifier: identifier,
-      supportedFirstFactors: firstFactors.map(factor(from:))
+      supportedFirstFactors: firstFactors.map(factor(from:)),
+      createdSessionId: createdSessionId
     )
   }
 

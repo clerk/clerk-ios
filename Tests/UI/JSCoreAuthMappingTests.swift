@@ -63,6 +63,22 @@ struct JSCoreAuthMappingTests {
     #expect(signIn.identifier == "user@example.com")
     #expect(signIn.supportedFirstFactors?.count == 1)
     #expect(signIn.supportedFirstFactors?.first?.strategy == .emailCode)
+    #expect(signIn.createdSessionId == nil)
+  }
+
+  @Test
+  func mappedSignInCarriesCreatedSessionId() {
+    let signIn = JSCoreAuthMapping.signIn(
+      id: "sia_1",
+      status: .complete,
+      identifier: "user@example.com",
+      firstFactors: [],
+      createdSessionId: "sess_1"
+    )
+
+    #expect(signIn.id == "sia_1")
+    #expect(signIn.status == .complete)
+    #expect(signIn.createdSessionId == "sess_1")
   }
 
   @Test
