@@ -152,6 +152,9 @@ final class NativeHost: @unchecked Sendable {
         let cached = await self.resourceCache?.load() ?? ClerkJSCachedResources()
         let json = Self.encodedCachedResources(cached)
         runtime.queue.async {
+          if let client = cached.client, let captured = Self.clientJSON(fromFAPIBody: client) {
+            self.lastClientJSON = captured
+          }
           self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
         }
       }
