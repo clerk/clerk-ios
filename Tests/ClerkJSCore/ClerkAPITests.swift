@@ -59,7 +59,16 @@ struct ClerkAPITests {
     let strategyOnly = try encodeJSON(Clerk.SignIn.PrepareFirstFactorParams(strategy: .emailCode))
     #expect(strategyOnly["strategy"] as? String == "email_code")
     #expect(strategyOnly["emailAddressId"] == nil)
+    #expect(strategyOnly["phoneNumberId"] == nil)
     #expect(strategyOnly.count == 1)
+
+    let withPhone = try encodeJSON(
+      Clerk.SignIn.PrepareFirstFactorParams(strategy: .phoneCode, phoneNumberId: "idn_phone")
+    )
+    #expect(withPhone["strategy"] as? String == "phone_code")
+    #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
+    #expect(withPhone["emailAddressId"] == nil)
+    #expect(withPhone.count == 2)
   }
 
   @Test
@@ -70,6 +79,13 @@ struct ClerkAPITests {
     #expect(json["strategy"] as? String == "email_code")
     #expect(json["code"] as? String == "424242")
     #expect(json.count == 2)
+
+    let phone = try encodeJSON(
+      Clerk.SignIn.AttemptFirstFactorParams(strategy: .phoneCode, code: "424242")
+    )
+    #expect(phone["strategy"] as? String == "phone_code")
+    #expect(phone["code"] as? String == "424242")
+    #expect(phone.count == 2)
   }
 
   @Test

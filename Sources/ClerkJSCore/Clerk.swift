@@ -237,21 +237,29 @@ public final class Clerk {
     public struct PrepareFirstFactorParams: Encodable, Sendable {
       public var strategy: Strategy
       public var emailAddressId: String?
+      public var phoneNumberId: String?
 
-      public init(strategy: Strategy, emailAddressId: String? = nil) {
+      public init(
+        strategy: Strategy,
+        emailAddressId: String? = nil,
+        phoneNumberId: String? = nil
+      ) {
         self.strategy = strategy
         self.emailAddressId = emailAddressId
+        self.phoneNumberId = phoneNumberId
       }
 
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(strategy, forKey: .strategy)
         try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
+        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
       }
 
       private enum CodingKeys: String, CodingKey {
         case strategy
         case emailAddressId
+        case phoneNumberId
       }
     }
 
@@ -267,6 +275,7 @@ public final class Clerk {
 
     public enum Strategy: String, Encodable, Sendable {
       case emailCode = "email_code"
+      case phoneCode = "phone_code"
     }
 
     private var model: FAPISignIn? {
