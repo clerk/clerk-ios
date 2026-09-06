@@ -5,7 +5,6 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkKit
 import SwiftUI
 
 struct SocialButtonLayout<Content: View>: View {
@@ -64,7 +63,7 @@ struct SocialButtonLayout<Content: View>: View {
     .frame(maxWidth: .infinity)
     .padding()
   }
-  .environment(Clerk.preview())
+  .clerkPreview()
 }
 
 #endif

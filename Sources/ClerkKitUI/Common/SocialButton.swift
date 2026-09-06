@@ -5,14 +5,16 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import NukeUI
 import SwiftUI
 
 struct SocialButton: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.colorScheme) private var colorScheme
-  @Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.colorScheme) private var colorScheme
+  @SwiftUI.Environment(\.clerkTheme) private var theme
 
   let provider: OAuthProvider
   let transferable: Bool
@@ -150,19 +152,24 @@ struct SocialButton: View {
 
 extension SocialButton {
   func defaultAction() async throws {
-    let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple(
+    if provider == .apple {
+      let result = try await clerk.auth.signInWithApple(
         transferable: transferable,
         unsafeMetadata: unsafeMetadata
       )
-    } else {
-      try await clerk.auth.signInWithOAuth(
-        provider: provider,
-        transferable: transferable,
-        unsafeMetadata: unsafeMetadata
-      )
+      onSuccess?(result)
+      return
     }
-    onSuccess?(result)
+
+    let jsSignIn = try await jsClerk.client.signIn.create(
+      .init(
+        strategy: provider.strategy,
+        redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
+      )
+    )
+    let mapped = JSCoreAuthMapping.signIn(from: jsSignIn)
+    try await JSCoreAuthMapping.activateIfComplete(mapped, using: jsClerk)
+    onSuccess?(.signIn(mapped))
   }
 }
 
@@ -177,7 +184,7 @@ extension SocialButton {
     }
   }
   .padding()
-  .environment(Clerk.preview())
+  .clerkPreview()
 }
 
 #endif

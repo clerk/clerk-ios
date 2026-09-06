@@ -28,7 +28,23 @@ struct ClerkAPITests {
   func createParamsEncodeIdentifier() throws {
     let json = try encodeJSON(Clerk.SignIn.CreateParams(identifier: "user@example.com"))
     #expect(json["identifier"] as? String == "user@example.com")
+    #expect(json["strategy"] == nil)
+    #expect(json["redirectUrl"] == nil)
     #expect(json.count == 1)
+  }
+
+  @Test
+  func createParamsEncodeOAuthStrategyAndRedirectUrl() throws {
+    let json = try encodeJSON(
+      Clerk.SignIn.CreateParams(
+        strategy: "oauth_google",
+        redirectUrl: "clerk://sso-callback"
+      )
+    )
+    #expect(json["strategy"] as? String == "oauth_google")
+    #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
+    #expect(json["identifier"] == nil)
+    #expect(json.count == 2)
   }
 
   @Test

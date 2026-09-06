@@ -260,10 +260,31 @@ public final class Clerk {
     }
 
     public struct CreateParams: Encodable, Sendable {
-      public var identifier: String
+      public var identifier: String?
+      public var strategy: String?
+      public var redirectUrl: String?
 
-      public init(identifier: String) {
+      public init(
+        identifier: String? = nil,
+        strategy: String? = nil,
+        redirectUrl: String? = nil
+      ) {
         self.identifier = identifier
+        self.strategy = strategy
+        self.redirectUrl = redirectUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(identifier, forKey: .identifier)
+        try container.encodeIfPresent(strategy, forKey: .strategy)
+        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case identifier
+        case strategy
+        case redirectUrl
       }
     }
 
