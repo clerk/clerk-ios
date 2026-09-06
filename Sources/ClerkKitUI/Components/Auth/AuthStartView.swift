@@ -164,7 +164,9 @@ struct AuthStartView: View {
   }
 
   private var socialProviders: [OAuthProvider] {
-    clerk.environment?.authenticatableSocialProviders ?? []
+    JSCoreAuthMapping.oauthProviders(
+      from: jsClerk.environment?.authenticatableSocialProviders ?? []
+    )
   }
 
   private var lastUsedAuth: LastUsedAuth? {
@@ -176,7 +178,7 @@ struct AuthStartView: View {
   }
 
   private var hasSocialProviders: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
+    !socialProviders.isEmpty
   }
 
   private var hasAlternativeAuthMethods: Bool {

@@ -269,6 +269,21 @@ struct JSCoreAuthMappingTests {
     )
     #expect(!JSCoreAuthMapping.isIdentifierNotFound(ClerkJSCoreError.cancelled))
   }
+
+  @Test
+  func mapsAuthenticatableSocialProvidersAndSorts() {
+    let settings = [
+      socialSettings(strategy: "oauth_google", name: "Google"),
+      socialSettings(strategy: "oauth_github", name: "GitHub"),
+      socialSettings(strategy: "oauth_custom_acme", name: "Acme"),
+    ]
+
+    let providers = JSCoreAuthMapping.oauthProviders(from: settings)
+
+    #expect(providers.contains(.google))
+    #expect(providers == [.github, .google, .custom("oauth_custom_acme")])
+    #expect(providers.count == settings.count)
+  }
 }
 
 private func secondFactor(
@@ -313,6 +328,17 @@ private func mappedSignUp(
     username: nil,
     missingFields: missingFields,
     createdSessionId: createdSessionId
+  )
+}
+
+private func socialSettings(strategy: String, name: String) -> OAuthProviderSettings {
+  OAuthProviderSettings(
+    enabled: true,
+    required: false,
+    authenticatable: true,
+    strategy: strategy,
+    name: name,
+    logoUrl: nil
   )
 }
 

@@ -10,7 +10,6 @@ import ClerkKit
 import SwiftUI
 
 struct SignInFactorAlternativeMethodsView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
   @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
   @SwiftUI.Environment(AuthNavigation.self) private var navigation
@@ -34,7 +33,9 @@ struct SignInFactorAlternativeMethodsView: View {
     if mode.usesSecondFactorAPI {
       []
     } else {
-      clerk.environment?.authenticatableSocialProviders ?? []
+      JSCoreAuthMapping.oauthProviders(
+        from: jsClerk.environment?.authenticatableSocialProviders ?? []
+      )
     }
   }
 

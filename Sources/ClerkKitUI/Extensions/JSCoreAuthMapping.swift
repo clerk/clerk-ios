@@ -241,6 +241,10 @@ enum JSCoreAuthMapping {
     try await jsClerk.setActive(.init(session: sessionId))
   }
 
+  static func oauthProviders(from settings: [OAuthProviderSettings]) -> [OAuthProvider] {
+    settings.map { OAuthProvider(strategy: $0.strategy) }.sorted()
+  }
+
   static func isIdentifierNotFound(_ error: Error) -> Bool {
     if let apiError = error as? ClerkKit.ClerkAPIError {
       return identifierNotFoundCodes.contains(apiError.code)

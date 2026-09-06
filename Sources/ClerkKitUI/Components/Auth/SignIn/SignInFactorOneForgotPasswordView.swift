@@ -10,7 +10,6 @@ import ClerkKit
 import SwiftUI
 
 struct SignInFactorOneForgotPasswordView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
   @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
   @SwiftUI.Environment(AuthNavigation.self) private var navigation
@@ -25,7 +24,9 @@ struct SignInFactorOneForgotPasswordView: View {
   }
 
   var socialProviders: [OAuthProvider] {
-    clerk.environment?.authenticatableSocialProviders ?? []
+    JSCoreAuthMapping.oauthProviders(
+      from: jsClerk.environment?.authenticatableSocialProviders ?? []
+    )
   }
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
