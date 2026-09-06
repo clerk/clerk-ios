@@ -59,6 +59,24 @@ struct ClerkAPITests {
     #expect(json["session"] as? String == "sess_1")
     #expect(json.count == 1)
   }
+
+  @Test
+  func generatedJSMethodRawValuesAreJSNames() {
+    #expect(SignInJSMethod.create.rawValue == "create")
+    #expect(SignInJSMethod.prepareFirstFactor.rawValue == "prepareFirstFactor")
+    #expect(SignInJSMethod.attemptFirstFactor.rawValue == "attemptFirstFactor")
+    #expect(ClerkJSMethod.setActive.rawValue == "setActive")
+    #expect(SessionJSMethod.getToken.rawValue == "getToken")
+  }
+
+  @Test
+  func jsMethodPathsJoinReceiverAndName() {
+    #expect(ClerkJSPath.signIn(.create) == "__clerkInstance.client.signIn.create")
+    #expect(ClerkJSPath.signIn(.prepareFirstFactor) == "__clerkInstance.client.signIn.prepareFirstFactor")
+    #expect(ClerkJSPath.signIn(.attemptFirstFactor) == "__clerkInstance.client.signIn.attemptFirstFactor")
+    #expect(ClerkJSPath.clerk(.setActive) == "__clerkInstance.setActive")
+    #expect(ClerkJSPath.session(.getToken) == "__clerkInstance.session.getToken")
+  }
 }
 
 private func encodeJSON(_ value: some Encodable) throws -> [String: Any] {

@@ -6,6 +6,22 @@ private typealias FAPISignIn = SignIn
 
 private struct EmptyArgs: Encodable {}
 
+package enum ClerkJSPath {
+  private static let instance = "__clerkInstance"
+
+  static func clerk(_ method: ClerkJSMethod) -> String {
+    "\(instance).\(method.rawValue)"
+  }
+
+  static func signIn(_ method: SignInJSMethod) -> String {
+    "\(instance).client.signIn.\(method.rawValue)"
+  }
+
+  static func session(_ method: SessionJSMethod) -> String {
+    "\(instance).session.\(method.rawValue)"
+  }
+}
+
 public final class Clerk: @unchecked Sendable {
   private let publishableKey: String
   package let runtime: ClerkJSRuntime
@@ -60,7 +76,7 @@ public final class Clerk: @unchecked Sendable {
   }
 
   public func setActive(_ params: SetActiveParams) async throws {
-    _ = try await runtime.call(methodPath: "__clerkInstance.setActive", args: params)
+    _ = try await runtime.call(methodPath: ClerkJSPath.clerk(.setActive), args: params)
     try publishLastClient()
   }
 
@@ -141,19 +157,19 @@ public final class Clerk: @unchecked Sendable {
 
     @discardableResult
     public func create(_ params: CreateParams) async throws -> SignIn {
-      try await clerk.callAndPublish("__clerkInstance.client.signIn.create", params)
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.create), params)
       return clerk.client.signIn
     }
 
     @discardableResult
     public func prepareFirstFactor(_ params: PrepareFirstFactorParams) async throws -> SignIn {
-      try await clerk.callAndPublish("__clerkInstance.client.signIn.prepareFirstFactor", params)
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.prepareFirstFactor), params)
       return clerk.client.signIn
     }
 
     @discardableResult
     public func attemptFirstFactor(_ params: AttemptFirstFactorParams) async throws -> SignIn {
-      try await clerk.callAndPublish("__clerkInstance.client.signIn.attemptFirstFactor", params)
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.attemptFirstFactor), params)
       return clerk.client.signIn
     }
 
@@ -210,7 +226,7 @@ public final class Clerk: @unchecked Sendable {
 
     public func getToken() async throws -> String {
       let json = try await clerk.runtime.call(
-        methodPath: "__clerkInstance.session.getToken",
+        methodPath: ClerkJSPath.session(.getToken),
         args: EmptyArgs()
       )
       return try JSONDecoder().decode(String.self, from: Data(json.utf8))
