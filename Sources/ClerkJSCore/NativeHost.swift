@@ -7,6 +7,7 @@ final class NativeHost: @unchecked Sendable {
   weak var runtime: JSRuntime?
   private let tokenCache: ClerkJSTokenCache
   var resourceCache: ClerkJSResourceCache?
+  private let passkeys = ClerkJSPasskeyCeremony()
   private let session: URLSession
   private var nextTimerID: UInt64 = 1
   private var nextFetchID: UInt64 = 1
@@ -45,6 +46,7 @@ final class NativeHost: @unchecked Sendable {
     for id in Array(fetches.keys) {
       abortFetch(id)
     }
+    passkeys.cancel()
     session.invalidateAndCancel()
   }
 
@@ -160,6 +162,40 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(saveCachedResources, forKeyedSubscript: "__clerkNativeSaveCachedResourcesImpl" as NSString)
+
+    let createPublicCredentials: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.passkeys.create(payload: payload)
+        runtime.queue.async {
+          switch result {
+          case .success(let json):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(createPublicCredentials, forKeyedSubscript: "__clerkNativeCreatePublicCredentialsImpl" as NSString)
+
+    let getPublicCredentials: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.passkeys.get(payload: payload)
+        runtime.queue.async {
+          switch result {
+          case .success(let json):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(getPublicCredentials, forKeyedSubscript: "__clerkNativeGetPublicCredentialsImpl" as NSString)
   }
 
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
@@ -659,6 +695,32 @@ final class NativeHost: @unchecked Sendable {
           __clerkNativeSaveCachedResourcesImpl(String(payload), function(err) {
             if (err) reject(new Error(String(err)));
             else resolve();
+          });
+        });
+      };
+      function clerkNativePasskeyReject(err, fallbackCode, reject) {
+        var parsed = err;
+        if (typeof err === 'string') {
+          try { parsed = JSON.parse(err); } catch (e) { parsed = { message: String(err) }; }
+        }
+        var error = new Error((parsed && parsed.message) ? String(parsed.message) : String(err));
+        error.name = 'ClerkWebAuthnError';
+        error.code = (parsed && parsed.code) ? String(parsed.code) : fallbackCode;
+        reject(error);
+      }
+      globalThis.__clerkNativeCreatePublicCredentials = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeCreatePublicCredentialsImpl(String(payload), function(err, json) {
+            if (err) clerkNativePasskeyReject(err, 'passkey_registration_failed', reject);
+            else resolve(typeof json === 'string' ? JSON.parse(json) : json);
+          });
+        });
+      };
+      globalThis.__clerkNativeGetPublicCredentials = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeGetPublicCredentialsImpl(String(payload), function(err, json) {
+            if (err) clerkNativePasskeyReject(err, 'passkey_retrieval_failed', reject);
+            else resolve(typeof json === 'string' ? JSON.parse(json) : json);
           });
         });
       };

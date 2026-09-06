@@ -107,6 +107,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           }
         });
         \(resourceCache == nil ? "" : Self.resourceCacheInstallSource)
+        \(Self.passkeyHookInstallSource)
         await clerk.load({
           standardBrowser: false,
           experimental: {
@@ -216,6 +217,117 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       } catch (e) {}
       __clerkNativeSaveCachedResources(JSON.stringify({ client: client, environment: environment }));
     });
+    """
+
+  static let passkeyHookInstallSource = """
+    (function() {
+      function bytesToBase64Url(value) {
+        if (value == null) return '';
+        if (typeof value === 'string') return value;
+        var bytes;
+        if (value instanceof ArrayBuffer) bytes = new Uint8Array(value);
+        else if (value.buffer instanceof ArrayBuffer) {
+          bytes = new Uint8Array(value.buffer, value.byteOffset || 0, value.byteLength || value.length);
+        } else if (typeof value.length === 'number') bytes = new Uint8Array(value);
+        else return '';
+        var bin = '';
+        for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
+      }
+      function base64UrlToBytes(value) {
+        var base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+        var pad = base64.length % 4;
+        if (pad) base64 += '===='.slice(0, 4 - pad);
+        var bin = atob(base64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes.buffer;
+      }
+      function passkeyError(error, fallbackCode) {
+        var err = new Error(error && error.message ? String(error.message) : String(error));
+        err.name = (error && error.name) || 'ClerkWebAuthnError';
+        err.code = error && error.code ? String(error.code) : fallbackCode;
+        return err;
+      }
+      clerk.__internal_isWebAuthnSupported = function() { return true; };
+      clerk.__internal_isWebAuthnAutofillSupported = function() { return Promise.resolve(false); };
+      clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = function() {
+        return Promise.resolve(true);
+      };
+      clerk.__internal_createPublicCredentials = async function(publicKey) {
+        if (!publicKey || !publicKey.rp || !publicKey.rp.id) {
+          throw new Error('Invalid public key or RpID');
+        }
+        var payload = {
+          challenge: bytesToBase64Url(publicKey.challenge),
+          rpId: String(publicKey.rp.id),
+          userId: bytesToBase64Url(publicKey.user && publicKey.user.id),
+          displayName: String((publicKey.user && (publicKey.user.displayName || publicKey.user.name)) || ''),
+          excludeCredentials: (publicKey.excludeCredentials || []).map(function(credential) {
+            return bytesToBase64Url(credential.id);
+          })
+        };
+        try {
+          var credential = await __clerkNativeCreatePublicCredentials(JSON.stringify(payload));
+          return {
+            publicKeyCredential: {
+              id: credential.id,
+              rawId: base64UrlToBytes(credential.rawId),
+              type: credential.type || 'public-key',
+              authenticatorAttachment: credential.authenticatorAttachment || 'platform',
+              response: {
+                clientDataJSON: base64UrlToBytes(credential.response.clientDataJSON),
+                attestationObject: base64UrlToBytes(credential.response.attestationObject),
+                getTransports: function() {
+                  return credential.response.transports || ['internal'];
+                }
+              }
+            },
+            error: null
+          };
+        } catch (error) {
+          return { publicKeyCredential: null, error: passkeyError(error, 'passkey_registration_failed') };
+        }
+      };
+      clerk.__internal_getPublicCredentials = async function(params) {
+        var publicKeyOptions = params && params.publicKeyOptions;
+        if (!publicKeyOptions) {
+          throw new Error('publicKeyCredential has not been provided');
+        }
+        var payload = {
+          challenge: bytesToBase64Url(publicKeyOptions.challenge),
+          rpId: String(publicKeyOptions.rpId || ''),
+          allowCredentials: (publicKeyOptions.allowCredentials || []).map(function(credential) {
+            return bytesToBase64Url(credential.id);
+          })
+        };
+        if (!payload.rpId) {
+          throw new Error('Invalid public key or RpID');
+        }
+        try {
+          var credential = await __clerkNativeGetPublicCredentials(JSON.stringify(payload));
+          return {
+            publicKeyCredential: {
+              id: credential.id,
+              rawId: base64UrlToBytes(credential.rawId),
+              type: credential.type || 'public-key',
+              authenticatorAttachment: credential.authenticatorAttachment || 'platform',
+              response: {
+                clientDataJSON: base64UrlToBytes(credential.response.clientDataJSON),
+                authenticatorData: base64UrlToBytes(credential.response.authenticatorData),
+                signature: base64UrlToBytes(credential.response.signature),
+                userHandle: credential.response.userHandle
+                  ? base64UrlToBytes(credential.response.userHandle)
+                  : null
+              }
+            },
+            error: null
+          };
+        } catch (error) {
+          return { publicKeyCredential: null, error: passkeyError(error, 'passkey_retrieval_failed') };
+        }
+      };
+    })();
     """
 
   private static func jsonString(_ value: String) throws -> String {

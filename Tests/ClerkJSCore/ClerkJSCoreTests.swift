@@ -200,6 +200,113 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func passkeyHooksAreInstalledOnClerkInstance() async throws {
+    let runtime = ClerkJSRuntime()
+    let payload = try await decodePasskeyHookProbe(
+      runtime.evaluateJSON(
+        """
+        (async function() {
+          var clerk = new Clerk('\(mockPublishableKey)');
+          \(ClerkJSRuntime.passkeyHookInstallSource)
+          return {
+            create: typeof clerk.__internal_createPublicCredentials,
+            get: typeof clerk.__internal_getPublicCredentials,
+            supportedType: typeof clerk.__internal_isWebAuthnSupported,
+            supported: clerk.__internal_isWebAuthnSupported(),
+            autofillType: typeof clerk.__internal_isWebAuthnAutofillSupported,
+            autofill: await clerk.__internal_isWebAuthnAutofillSupported(),
+            platformType: typeof clerk.__internal_isWebAuthnPlatformAuthenticatorSupported,
+            platform: await clerk.__internal_isWebAuthnPlatformAuthenticatorSupported()
+          };
+        })()
+        """
+      )
+    )
+    #expect(payload.create == "function")
+    #expect(payload.get == "function")
+    #expect(payload.supportedType == "function")
+    #expect(payload.supported)
+    #expect(payload.autofillType == "function")
+    #expect(!payload.autofill)
+    #expect(payload.platformType == "function")
+    #expect(payload.platform)
+  }
+
+  @Test
+  func passkeyCreateRejectsMissingRpIdWithoutCeremony() async throws {
+    let runtime = ClerkJSRuntime()
+    let payload = try await decodePasskeyThrown(
+      runtime.evaluateJSON(
+        """
+        (async function() {
+          var clerk = new Clerk('\(mockPublishableKey)');
+          \(ClerkJSRuntime.passkeyHookInstallSource)
+          try {
+            await clerk.__internal_createPublicCredentials({});
+            return { threw: false, message: '' };
+          } catch (error) {
+            return { threw: true, message: String(error.message || error) };
+          }
+        })()
+        """
+      )
+    )
+    #expect(payload.threw)
+    #expect(payload.message == "Invalid public key or RpID")
+  }
+
+  @Test
+  func passkeyGetRejectsMissingOptionsWithoutCeremony() async throws {
+    let runtime = ClerkJSRuntime()
+    let payload = try await decodePasskeyThrown(
+      runtime.evaluateJSON(
+        """
+        (async function() {
+          var clerk = new Clerk('\(mockPublishableKey)');
+          \(ClerkJSRuntime.passkeyHookInstallSource)
+          try {
+            await clerk.__internal_getPublicCredentials({});
+            return { threw: false, message: '' };
+          } catch (error) {
+            return { threw: true, message: String(error.message || error) };
+          }
+        })()
+        """
+      )
+    )
+    #expect(payload.threw)
+    #expect(payload.message == "publicKeyCredential has not been provided")
+  }
+
+  @Test
+  func passkeyNativeBridgeRejectsInvalidCreatePayload() async throws {
+    let runtime = ClerkJSRuntime()
+    let payload = try await decodePasskeyCredentialReturn(
+      runtime.evaluateJSON(
+        """
+        (async function() {
+          var clerk = new Clerk('\(mockPublishableKey)');
+          \(ClerkJSRuntime.passkeyHookInstallSource)
+          var result = await clerk.__internal_createPublicCredentials({
+            rp: { id: 'example.com' },
+            user: { id: '', displayName: 'Ada' },
+            challenge: new Uint8Array([1, 2, 3]).buffer
+          });
+          return {
+            hasCredential: result.publicKeyCredential != null,
+            errorCode: result.error && result.error.code,
+            errorName: result.error && result.error.name
+          };
+        })()
+        """
+      )
+    )
+    #expect(!payload.hasCredential)
+    #expect(payload.errorCode == "passkey_registration_failed")
+    #expect(payload.errorName == "ClerkWebAuthnError")
+  }
+
+  @Test
   func resourceCacheHostPersistsSnapshots() async throws {
     let cache = ClerkJSResourceCache.memory()
     let runtime = ClerkJSRuntime(resourceCache: cache)
@@ -244,6 +351,40 @@ private struct CachedResourcesJSON: Decodable {
 
 private func decodeCachedResources(_ json: String) throws -> CachedResourcesJSON {
   try JSONDecoder().decode(CachedResourcesJSON.self, from: Data(json.utf8))
+}
+
+private struct PasskeyHookProbe: Decodable {
+  var create: String
+  var get: String
+  var supportedType: String
+  var supported: Bool
+  var autofillType: String
+  var autofill: Bool
+  var platformType: String
+  var platform: Bool
+}
+
+private struct PasskeyThrown: Decodable {
+  var threw: Bool
+  var message: String
+}
+
+private struct PasskeyCredentialReturn: Decodable {
+  var hasCredential: Bool
+  var errorCode: String?
+  var errorName: String?
+}
+
+private func decodePasskeyHookProbe(_ json: String) throws -> PasskeyHookProbe {
+  try JSONDecoder().decode(PasskeyHookProbe.self, from: Data(json.utf8))
+}
+
+private func decodePasskeyThrown(_ json: String) throws -> PasskeyThrown {
+  try JSONDecoder().decode(PasskeyThrown.self, from: Data(json.utf8))
+}
+
+private func decodePasskeyCredentialReturn(_ json: String) throws -> PasskeyCredentialReturn {
+  try JSONDecoder().decode(PasskeyCredentialReturn.self, from: Data(json.utf8))
 }
 
 private func applyScriptPayload(_ script: String) throws -> [String: Any] {
