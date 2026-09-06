@@ -125,19 +125,13 @@ struct ClerkJSCoreTests {
 
     let payload = try #require(runtime.lastFAPIClientJSON)
     let object = try #require(JSONSerialization.jsonObject(with: payload) as? [String: Any])
-    let signIn = wireField(object, "sign_in")
-    let signUp = wireField(object, "sign_up")
-    do {
-      let client = try JSONDecoder().decode(Client.self, from: payload)
-      #expect(client.id.hasPrefix("client_"), "FAPI sign_in=\(signIn) sign_up=\(signUp)")
-      #expect(client.object == "client")
-    } catch let error as DecodingError {
-      let path = decodingPath(error)
-      #expect(
-        path.hasSuffix("status") || path.contains("identifier"),
-        "FAPI ClientJSON failed at \(path); sign_in=\(signIn) sign_up=\(signUp)"
-      )
-    }
+    #expect(wireField(object, "sign_in") == "null")
+    #expect(wireField(object, "sign_up") == "null")
+    let client = try JSONDecoder().decode(Client.self, from: payload)
+    #expect(client.id.hasPrefix("client_"))
+    #expect(client.object == "client")
+    #expect(client.signIn == nil)
+    #expect(client.signUp == nil)
   }
 }
 
