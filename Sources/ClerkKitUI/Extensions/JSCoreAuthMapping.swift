@@ -135,6 +135,21 @@ enum JSCoreAuthMapping {
     )
   }
 
+  @MainActor
+  static func activateIfComplete(
+    _ signIn: ClerkKit.SignIn,
+    using jsClerk: ClerkJSCore.Clerk
+  ) async throws {
+    guard signIn.status == .complete else { return }
+    guard let sessionId = signIn.createdSessionId else {
+      throw ClerkClientError(
+        message: "Sign-in completed without a session.",
+        localizationBundle: .module
+      )
+    }
+    try await jsClerk.setActive(.init(session: sessionId))
+  }
+
   static func isIdentifierNotFound(_ error: Error) -> Bool {
     if let apiError = error as? ClerkKit.ClerkAPIError {
       return identifierNotFoundCodes.contains(apiError.code)

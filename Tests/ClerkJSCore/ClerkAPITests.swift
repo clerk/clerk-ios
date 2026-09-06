@@ -88,6 +88,14 @@ struct ClerkAPITests {
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone["code"] as? String == "424242")
     #expect(phone.count == 2)
+
+    let password = try encodeJSON(
+      Clerk.SignIn.AttemptFirstFactorParams(strategy: .password, password: "hunter2")
+    )
+    #expect(password["strategy"] as? String == "password")
+    #expect(password["password"] as? String == "hunter2")
+    #expect(password["code"] == nil)
+    #expect(password.count == 2)
   }
 
   @Test

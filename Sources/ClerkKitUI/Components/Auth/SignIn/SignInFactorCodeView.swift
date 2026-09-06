@@ -277,15 +277,7 @@ extension SignInFactorCodeView {
         }
         let jsSignIn = try await attemptJSFirstFactor(code: code)
         kitSignIn = JSCoreAuthMapping.signIn(from: jsSignIn)
-        if kitSignIn.status == .complete {
-          guard let sessionId = kitSignIn.createdSessionId else {
-            throw ClerkClientError(
-              message: "Sign-in completed without a session.",
-              localizationBundle: .module
-            )
-          }
-          try await jsClerk.setActive(.init(session: sessionId))
-        }
+        try await JSCoreAuthMapping.activateIfComplete(kitSignIn, using: jsClerk)
       } else {
         guard let current = clerk.auth.currentSignIn else {
           navigation.path = []

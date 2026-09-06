@@ -276,17 +276,33 @@ public final class Clerk {
 
     public struct AttemptFirstFactorParams: Encodable, Sendable {
       public var strategy: Strategy
-      public var code: String
+      public var code: String?
+      public var password: String?
 
-      public init(strategy: Strategy, code: String) {
+      public init(strategy: Strategy, code: String? = nil, password: String? = nil) {
         self.strategy = strategy
         self.code = code
+        self.password = password
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(code, forKey: .code)
+        try container.encodeIfPresent(password, forKey: .password)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case code
+        case password
       }
     }
 
     public enum Strategy: String, Encodable, Sendable {
       case emailCode = "email_code"
       case phoneCode = "phone_code"
+      case password
     }
 
     private var model: FAPISignIn? {
