@@ -119,6 +119,10 @@ public final class Clerk {
     ActiveSession(clerk: self)
   }
 
+  public var user: User? {
+    session.user
+  }
+
   public func load() async throws {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()
@@ -385,6 +389,10 @@ public final class Clerk {
 
     public var status: SessionStatus? {
       lastActiveSession?.status
+    }
+
+    public var user: User? {
+      lastActiveSession?.user
     }
 
     private var lastActiveSession: Session? {
