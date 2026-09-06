@@ -9,6 +9,7 @@ final class NativeHost: @unchecked Sendable {
   var resourceCache: ClerkJSResourceCache?
   private let passkeys = ClerkJSPasskeyCeremony()
   let oauth = ClerkJSOAuthSession()
+  let apple = ClerkJSAppleCeremony()
   private let session: URLSession
   private var nextTimerID: UInt64 = 1
   private var nextFetchID: UInt64 = 1
@@ -49,6 +50,7 @@ final class NativeHost: @unchecked Sendable {
     }
     passkeys.cancel()
     oauth.cancel()
+    apple.cancel()
     session.invalidateAndCancel()
   }
 
@@ -215,6 +217,23 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(openOAuth, forKeyedSubscript: "__clerkNativeOAuthOpenImpl" as NSString)
+
+    let startApple: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.apple.start(payload: payload)
+        runtime.queue.async {
+          switch result {
+          case .success(let identity):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), identity.json])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(startApple, forKeyedSubscript: "__clerkNativeAppleSignInImpl" as NSString)
   }
 
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
@@ -758,6 +777,24 @@ final class NativeHost: @unchecked Sendable {
           __clerkNativeOAuthOpenImpl(String(href), function(err, callbackUrl) {
             if (err) clerkNativeOAuthReject(err, reject);
             else resolve(String(callbackUrl));
+          });
+        });
+      };
+      function clerkNativeAppleReject(err, reject) {
+        var parsed = err;
+        if (typeof err === 'string') {
+          try { parsed = JSON.parse(err); } catch (e) { parsed = { message: String(err) }; }
+        }
+        var error = new Error((parsed && parsed.message) ? String(parsed.message) : String(err));
+        error.name = 'ClerkAppleError';
+        error.code = (parsed && parsed.code) ? String(parsed.code) : 'apple_failed';
+        reject(error);
+      }
+      globalThis.__clerkNativeAppleSignIn = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeAppleSignInImpl(String(payload || '{}'), function(err, json) {
+            if (err) clerkNativeAppleReject(err, reject);
+            else resolve(typeof json === 'string' ? JSON.parse(json) : json);
           });
         });
       };

@@ -64,6 +64,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   public func call(methodPath _: String, args _: some Encodable) async throws -> String {
     throw ClerkJSCoreError.unsupportedPlatform
   }
+
+  public func startAppleAuthentication() async throws -> AppleIdentityToken {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
   #else
   private let runtime: JSRuntime
   private let sdkVersion: String
@@ -86,6 +90,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   var oauthSession: ClerkJSOAuthSession {
     runtime.host.oauth
+  }
+
+  var appleCeremony: ClerkJSAppleCeremony {
+    runtime.host.apple
   }
 
   public var lastFAPIClientJSON: Data? {
@@ -124,6 +132,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         });
         \(resourceCache == nil ? "" : Self.resourceCacheInstallSource)
         \(Self.passkeyHookInstallSource)
+        \(Self.appleHookInstallSource)
         await clerk.load({
           standardBrowser: false,
           experimental: {
@@ -347,6 +356,31 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       };
     })();
     """
+
+  static let appleHookInstallSource = """
+    clerk.__internal_startAppleAuthentication = async function(params) {
+      var payload = '{}';
+      if (params && typeof params === 'object') {
+        payload = JSON.stringify(params);
+      }
+      return await __clerkNativeAppleSignIn(payload);
+    };
+    """
+
+  public func startAppleAuthentication() async throws -> AppleIdentityToken {
+    switch await appleCeremony.start(payload: "{}") {
+    case .success(let identity):
+      return identity
+    case .failure(let error):
+      if error.code == ClerkJSAppleError.cancelled.code {
+        throw ClerkJSCoreError.cancelled
+      }
+      if error.code == ClerkJSAppleError.invalidPayload.code {
+        throw ClerkJSCoreError.invalidArgument("appleIdentity")
+      }
+      throw ClerkJSCoreError.javascript(error.message)
+    }
+  }
 
   static func oauthAllowedRedirectProtocol(from url: URL) -> String {
     let scheme = url.scheme ?? "clerk"

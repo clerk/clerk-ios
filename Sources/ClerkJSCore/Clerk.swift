@@ -58,6 +58,10 @@ public final class Clerk: @unchecked Sendable {
     try publishLastClient()
   }
 
+  public func startAppleAuthentication() async throws -> AppleIdentityToken {
+    try await runtime.startAppleAuthentication()
+  }
+
   public struct SetActiveParams: Encodable, Sendable {
     public var session: String?
 
