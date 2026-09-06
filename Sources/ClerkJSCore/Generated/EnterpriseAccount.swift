@@ -25,7 +25,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable, Identifiable {
     enterpriseConnection: EnterpriseAccountConnection?,
     firstName: String?,
     lastName: String?,
-    protocol: EnterpriseAccountProtocol,
+    `protocol`: EnterpriseAccountProtocol,
     provider: String,
     providerUserId: String?,
     publicMetadata: JSONValue,
@@ -40,7 +40,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable, Identifiable {
     self.enterpriseConnection = enterpriseConnection
     self.firstName = firstName
     self.lastName = lastName
-    self.protocol = `protocol`
+    self.`protocol` = `protocol`
     self.provider = provider
     self.providerUserId = providerUserId
     self.publicMetadata = publicMetadata
@@ -69,20 +69,20 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable, Identifiable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    object = try container.decode(String.self, forKey: .object)
-    active = try container.decode(Bool.self, forKey: .active)
-    emailAddress = try container.decode(String.self, forKey: .emailAddress)
-    enterpriseConnection = try container.decodeIfPresent(EnterpriseAccountConnection.self, forKey: .enterpriseConnection)
-    firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
-    lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
-    self.protocol = try container.decode(EnterpriseAccountProtocol.self, forKey: .protocol)
-    provider = try container.decode(String.self, forKey: .provider)
-    providerUserId = try container.decodeIfPresent(String.self, forKey: .providerUserId)
-    publicMetadata = try container.decode(JSONValue.self, forKey: .publicMetadata)
-    verification = try container.decodeIfPresent(Verification.self, forKey: .verification)
-    lastAuthenticatedAt = try container.decodeIfPresentMillisecondsDate(forKey: .lastAuthenticatedAt)
-    enterpriseConnectionId = try container.decodeIfPresent(String.self, forKey: .enterpriseConnectionId)
-    id = try container.decode(String.self, forKey: .id)
+    self.object = try container.decode(String.self, forKey: .object)
+    self.active = try container.decode(Bool.self, forKey: .active)
+    self.emailAddress = try container.decode(String.self, forKey: .emailAddress)
+    self.enterpriseConnection = try container.decodeIfPresent(EnterpriseAccountConnection.self, forKey: .enterpriseConnection)
+    self.firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+    self.lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
+    self.`protocol` = try container.decode(EnterpriseAccountProtocol.self, forKey: .`protocol`)
+    self.provider = try container.decode(String.self, forKey: .provider)
+    self.providerUserId = try container.decodeIfPresent(String.self, forKey: .providerUserId)
+    self.publicMetadata = try container.decode(JSONValue.self, forKey: .publicMetadata)
+    self.verification = try container.decodeIfPresent(Verification.self, forKey: .verification)
+    self.lastAuthenticatedAt = try container.decodeIfPresentMillisecondsDate(forKey: .lastAuthenticatedAt)
+    self.enterpriseConnectionId = try container.decodeIfPresent(String.self, forKey: .enterpriseConnectionId)
+    self.id = try container.decode(String.self, forKey: .id)
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -93,7 +93,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable, Identifiable {
     try container.encodeIfPresent(enterpriseConnection, forKey: .enterpriseConnection)
     try container.encodeIfPresent(firstName, forKey: .firstName)
     try container.encodeIfPresent(lastName, forKey: .lastName)
-    try container.encode(`protocol`, forKey: .protocol)
+    try container.encode(`protocol`, forKey: .`protocol`)
     try container.encode(provider, forKey: .provider)
     try container.encodeIfPresent(providerUserId, forKey: .providerUserId)
     try container.encode(publicMetadata, forKey: .publicMetadata)

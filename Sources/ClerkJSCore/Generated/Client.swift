@@ -57,17 +57,17 @@ public struct Client: Codable, Equatable, Sendable, Identifiable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    object = try container.decode(String.self, forKey: .object)
-    id = try container.decode(String.self, forKey: .id)
-    sessions = try container.decode([Session].self, forKey: .sessions)
-    signUp = try container.decodeIfPresent(SignUp.self, forKey: .signUp)
-    signIn = try container.decodeIfPresent(SignIn.self, forKey: .signIn)
-    captchaBypass = try container.decodeIfPresent(Bool.self, forKey: .captchaBypass)
-    lastActiveSessionId = try container.decodeIfPresent(String.self, forKey: .lastActiveSessionId)
-    lastAuthenticationStrategy = try container.decodeIfPresent(String.self, forKey: .lastAuthenticationStrategy)
-    cookieExpiresAt = try container.decodeIfPresentMillisecondsDate(forKey: .cookieExpiresAt)
-    createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
-    updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
+    self.object = try container.decode(String.self, forKey: .object)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.sessions = try container.decode([Session].self, forKey: .sessions)
+    self.signUp = try container.decodeIfPresent(SignUp.self, forKey: .signUp)
+    self.signIn = try container.decodeIfPresent(SignIn.self, forKey: .signIn)
+    self.captchaBypass = try container.decodeIfPresent(Bool.self, forKey: .captchaBypass)
+    self.lastActiveSessionId = try container.decodeIfPresent(String.self, forKey: .lastActiveSessionId)
+    self.lastAuthenticationStrategy = try container.decodeIfPresent(String.self, forKey: .lastAuthenticationStrategy)
+    self.cookieExpiresAt = try container.decodeIfPresentMillisecondsDate(forKey: .cookieExpiresAt)
+    self.createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
+    self.updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
   }
 
   public func encode(to encoder: Encoder) throws {

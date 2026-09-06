@@ -41,13 +41,13 @@ public struct Passkey: Codable, Equatable, Sendable, Identifiable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    object = try container.decode(String.self, forKey: .object)
-    id = try container.decode(String.self, forKey: .id)
-    name = try container.decodeIfPresent(String.self, forKey: .name)
-    verification = try container.decodeIfPresent(Verification.self, forKey: .verification)
-    lastUsedAt = try container.decodeIfPresentMillisecondsDate(forKey: .lastUsedAt)
-    updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
-    createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
+    self.object = try container.decode(String.self, forKey: .object)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.name = try container.decodeIfPresent(String.self, forKey: .name)
+    self.verification = try container.decodeIfPresent(Verification.self, forKey: .verification)
+    self.lastUsedAt = try container.decodeIfPresentMillisecondsDate(forKey: .lastUsedAt)
+    self.updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
+    self.createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
   }
 
   public func encode(to encoder: Encoder) throws {

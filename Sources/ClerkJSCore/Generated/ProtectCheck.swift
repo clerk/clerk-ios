@@ -33,11 +33,11 @@ public struct ProtectCheck: Codable, Equatable, Sendable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    status = try container.decode(String.self, forKey: .status)
-    token = try container.decode(String.self, forKey: .token)
-    sdkUrl = try container.decode(String.self, forKey: .sdkUrl)
-    expiresAt = try container.decodeIfPresentMillisecondsDate(forKey: .expiresAt)
-    uiHints = try container.decodeIfPresent([String: String].self, forKey: .uiHints)
+    self.status = try container.decode(String.self, forKey: .status)
+    self.token = try container.decode(String.self, forKey: .token)
+    self.sdkUrl = try container.decode(String.self, forKey: .sdkUrl)
+    self.expiresAt = try container.decodeIfPresentMillisecondsDate(forKey: .expiresAt)
+    self.uiHints = try container.decodeIfPresent([String: String].self, forKey: .uiHints)
   }
 
   public func encode(to encoder: Encoder) throws {

@@ -6,3 +6,4 @@
 --disable preferKeyPath
 --disable hoistPatternLet
 --ifdef preserve
+--exclude Sources/ClerkJSCore/Generated

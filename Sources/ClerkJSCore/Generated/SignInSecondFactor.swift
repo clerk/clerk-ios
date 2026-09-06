@@ -17,7 +17,7 @@ public struct SignInSecondFactor: Codable, Equatable, Sendable {
     safeIdentifier: String?,
     primary: Bool?,
     phoneNumberId: String?,
-    default: Bool?,
+    `default`: Bool?,
     channel: SignInFirstFactorChannel?
   ) {
     self.strategy = strategy
@@ -25,7 +25,7 @@ public struct SignInSecondFactor: Codable, Equatable, Sendable {
     self.safeIdentifier = safeIdentifier
     self.primary = primary
     self.phoneNumberId = phoneNumberId
-    self.default = `default`
+    self.`default` = `default`
     self.channel = channel
   }
 

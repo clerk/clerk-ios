@@ -53,16 +53,16 @@ public struct OrganizationMembership: Codable, Equatable, Sendable, Identifiable
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    object = try container.decode(String.self, forKey: .object)
-    id = try container.decode(String.self, forKey: .id)
-    organization = try container.decode(Organization.self, forKey: .organization)
-    permissions = try container.decode([JSONValue].self, forKey: .permissions)
-    publicMetadata = try container.decode(JSONValue.self, forKey: .publicMetadata)
-    publicUserData = try container.decodeIfPresent(PublicUserData.self, forKey: .publicUserData)
-    role = try container.decode(String.self, forKey: .role)
-    roleName = try container.decode(String.self, forKey: .roleName)
-    createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
-    updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
+    self.object = try container.decode(String.self, forKey: .object)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.organization = try container.decode(Organization.self, forKey: .organization)
+    self.permissions = try container.decode([JSONValue].self, forKey: .permissions)
+    self.publicMetadata = try container.decode(JSONValue.self, forKey: .publicMetadata)
+    self.publicUserData = try container.decodeIfPresent(PublicUserData.self, forKey: .publicUserData)
+    self.role = try container.decode(String.self, forKey: .role)
+    self.roleName = try container.decode(String.self, forKey: .roleName)
+    self.createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
+    self.updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
   }
 
   public func encode(to encoder: Encoder) throws {

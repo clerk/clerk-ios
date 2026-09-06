@@ -41,13 +41,13 @@ public struct AuthConfig: Codable, Equatable, Sendable, Identifiable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    singleSessionMode = try container.decode(Bool.self, forKey: .singleSessionMode)
-    claimedAt = try container.decodeIfPresentMillisecondsDate(forKey: .claimedAt)
-    reverification = try container.decode(Bool.self, forKey: .reverification)
-    preferredChannels = try container.decodeIfPresent([String: PhoneCodeChannel].self, forKey: .preferredChannels)
-    sessionMinter = try container.decodeIfPresent(Bool.self, forKey: .sessionMinter)
-    id = try container.decode(String.self, forKey: .id)
-    object = try container.decode(String.self, forKey: .object)
+    self.singleSessionMode = try container.decode(Bool.self, forKey: .singleSessionMode)
+    self.claimedAt = try container.decodeIfPresentMillisecondsDate(forKey: .claimedAt)
+    self.reverification = try container.decode(Bool.self, forKey: .reverification)
+    self.preferredChannels = try container.decodeIfPresent([String: PhoneCodeChannel].self, forKey: .preferredChannels)
+    self.sessionMinter = try container.decodeIfPresent(Bool.self, forKey: .sessionMinter)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.object = try container.decode(String.self, forKey: .object)
   }
 
   public func encode(to encoder: Encoder) throws {

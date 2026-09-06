@@ -61,18 +61,18 @@ public struct Verification: Codable, Equatable, Sendable, Identifiable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    status = try container.decode(VerificationStatus.self, forKey: .status)
-    verifiedAtClient = try container.decode(String.self, forKey: .verifiedAtClient)
-    strategy = try container.decode(String.self, forKey: .strategy)
-    nonce = try container.decodeIfPresent(String.self, forKey: .nonce)
-    message = try container.decodeIfPresent(String.self, forKey: .message)
-    externalVerificationRedirectUrl = try container.decodeIfPresent(String.self, forKey: .externalVerificationRedirectUrl)
-    attempts = try container.decode(Int.self, forKey: .attempts)
-    expireAt = try container.decodeMillisecondsDate(forKey: .expireAt)
-    channel = try container.decodeIfPresent(SignInFirstFactorChannel.self, forKey: .channel)
-    error = try container.decode(ClerkAPIError.self, forKey: .error)
-    id = try container.decode(String.self, forKey: .id)
-    object = try container.decode(String.self, forKey: .object)
+    self.status = try container.decode(VerificationStatus.self, forKey: .status)
+    self.verifiedAtClient = try container.decode(String.self, forKey: .verifiedAtClient)
+    self.strategy = try container.decode(String.self, forKey: .strategy)
+    self.nonce = try container.decodeIfPresent(String.self, forKey: .nonce)
+    self.message = try container.decodeIfPresent(String.self, forKey: .message)
+    self.externalVerificationRedirectUrl = try container.decodeIfPresent(String.self, forKey: .externalVerificationRedirectUrl)
+    self.attempts = try container.decode(Int.self, forKey: .attempts)
+    self.expireAt = try container.decodeMillisecondsDate(forKey: .expireAt)
+    self.channel = try container.decodeIfPresent(SignInFirstFactorChannel.self, forKey: .channel)
+    self.error = try container.decode(ClerkAPIError.self, forKey: .error)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.object = try container.decode(String.self, forKey: .object)
   }
 
   public func encode(to encoder: Encoder) throws {

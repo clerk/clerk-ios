@@ -13,7 +13,7 @@ public enum SignUpDataMode: Codable, Equatable, Sendable {
     let value = try container.decode(String.self)
     switch value {
     case "public":
-      self = .public
+      self = .`public`
     case "restricted":
       self = .restricted
     case "waitlist":
@@ -26,7 +26,7 @@ public enum SignUpDataMode: Codable, Equatable, Sendable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
-    case .public:
+    case .`public`:
       try container.encode("public")
     case .restricted:
       try container.encode("restricted")

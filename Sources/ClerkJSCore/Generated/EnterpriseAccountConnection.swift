@@ -28,7 +28,7 @@ public struct EnterpriseAccountConnection: Codable, Equatable, Sendable, Identif
     domain: String,
     logoPublicUrl: String?,
     name: String,
-    protocol: EnterpriseAccountProtocol,
+    `protocol`: EnterpriseAccountProtocol,
     provider: String,
     syncUserAttributes: Bool,
     allowOrganizationAccountLinking: Bool,
@@ -45,7 +45,7 @@ public struct EnterpriseAccountConnection: Codable, Equatable, Sendable, Identif
     self.domain = domain
     self.logoPublicUrl = logoPublicUrl
     self.name = name
-    self.protocol = `protocol`
+    self.`protocol` = `protocol`
     self.provider = provider
     self.syncUserAttributes = syncUserAttributes
     self.allowOrganizationAccountLinking = allowOrganizationAccountLinking
@@ -77,22 +77,22 @@ public struct EnterpriseAccountConnection: Codable, Equatable, Sendable, Identif
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    active = try container.decode(Bool.self, forKey: .active)
-    allowIdpInitiated = try container.decode(Bool.self, forKey: .allowIdpInitiated)
-    allowSubdomains = try container.decode(Bool.self, forKey: .allowSubdomains)
-    disableAdditionalIdentifications = try container.decode(Bool.self, forKey: .disableAdditionalIdentifications)
-    domain = try container.decode(String.self, forKey: .domain)
-    logoPublicUrl = try container.decodeIfPresent(String.self, forKey: .logoPublicUrl)
-    name = try container.decode(String.self, forKey: .name)
-    self.protocol = try container.decode(EnterpriseAccountProtocol.self, forKey: .protocol)
-    provider = try container.decode(String.self, forKey: .provider)
-    syncUserAttributes = try container.decode(Bool.self, forKey: .syncUserAttributes)
-    allowOrganizationAccountLinking = try container.decode(Bool.self, forKey: .allowOrganizationAccountLinking)
-    createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
-    updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
-    enterpriseConnectionId = try container.decodeIfPresent(String.self, forKey: .enterpriseConnectionId)
-    id = try container.decode(String.self, forKey: .id)
-    object = try container.decode(String.self, forKey: .object)
+    self.active = try container.decode(Bool.self, forKey: .active)
+    self.allowIdpInitiated = try container.decode(Bool.self, forKey: .allowIdpInitiated)
+    self.allowSubdomains = try container.decode(Bool.self, forKey: .allowSubdomains)
+    self.disableAdditionalIdentifications = try container.decode(Bool.self, forKey: .disableAdditionalIdentifications)
+    self.domain = try container.decode(String.self, forKey: .domain)
+    self.logoPublicUrl = try container.decodeIfPresent(String.self, forKey: .logoPublicUrl)
+    self.name = try container.decode(String.self, forKey: .name)
+    self.`protocol` = try container.decode(EnterpriseAccountProtocol.self, forKey: .`protocol`)
+    self.provider = try container.decode(String.self, forKey: .provider)
+    self.syncUserAttributes = try container.decode(Bool.self, forKey: .syncUserAttributes)
+    self.allowOrganizationAccountLinking = try container.decode(Bool.self, forKey: .allowOrganizationAccountLinking)
+    self.createdAt = try container.decodeMillisecondsDate(forKey: .createdAt)
+    self.updatedAt = try container.decodeMillisecondsDate(forKey: .updatedAt)
+    self.enterpriseConnectionId = try container.decodeIfPresent(String.self, forKey: .enterpriseConnectionId)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.object = try container.decode(String.self, forKey: .object)
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -104,7 +104,7 @@ public struct EnterpriseAccountConnection: Codable, Equatable, Sendable, Identif
     try container.encode(domain, forKey: .domain)
     try container.encodeIfPresent(logoPublicUrl, forKey: .logoPublicUrl)
     try container.encode(name, forKey: .name)
-    try container.encode(`protocol`, forKey: .protocol)
+    try container.encode(`protocol`, forKey: .`protocol`)
     try container.encode(provider, forKey: .provider)
     try container.encode(syncUserAttributes, forKey: .syncUserAttributes)
     try container.encode(allowOrganizationAccountLinking, forKey: .allowOrganizationAccountLinking)

@@ -21,7 +21,7 @@ public struct SignInFirstFactor: Codable, Equatable, Sendable {
     safeIdentifier: String?,
     primary: Bool?,
     phoneNumberId: String?,
-    default: Bool?,
+    `default`: Bool?,
     channel: SignInFirstFactorChannel?,
     web3WalletId: String?,
     walletName: String?,
@@ -33,7 +33,7 @@ public struct SignInFirstFactor: Codable, Equatable, Sendable {
     self.safeIdentifier = safeIdentifier
     self.primary = primary
     self.phoneNumberId = phoneNumberId
-    self.default = `default`
+    self.`default` = `default`
     self.channel = channel
     self.web3WalletId = web3WalletId
     self.walletName = walletName
