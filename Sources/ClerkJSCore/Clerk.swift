@@ -14,10 +14,15 @@ public final class Clerk: @unchecked Sendable {
   public init(
     publishableKey: String,
     tokenCache: ClerkJSTokenCache = .memory(),
-    resourceCache: ClerkJSResourceCache? = nil
+    resourceCache: ClerkJSResourceCache? = nil,
+    appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory()
   ) {
     self.publishableKey = publishableKey
-    runtime = ClerkJSRuntime(tokenCache: tokenCache, resourceCache: resourceCache)
+    runtime = ClerkJSRuntime(
+      tokenCache: tokenCache,
+      resourceCache: resourceCache,
+      appAttestKeyIdStore: appAttestKeyIdStore
+    )
   }
 
   public static func persistent(publishableKey: String) -> Clerk {
@@ -29,7 +34,8 @@ public final class Clerk: @unchecked Sendable {
         service: service,
         clientAccount: "client-snapshot",
         environmentAccount: "environment-snapshot"
-      )
+      ),
+      appAttestKeyIdStore: .keychain(service: service)
     )
   }
 
@@ -68,6 +74,14 @@ public final class Clerk: @unchecked Sendable {
 
   public func promptBiometrics(_ params: BiometricPromptParams = .init()) async throws -> BiometricAuthentication {
     try await runtime.promptBiometrics(params)
+  }
+
+  public func prepareDeviceAttestation(_ params: DeviceAttestParams) async throws -> DeviceAttestationProof {
+    try await runtime.prepareDeviceAttestation(params)
+  }
+
+  public func prepareDeviceAssertion(_ params: DeviceAttestParams) async throws -> DeviceAssertionProof {
+    try await runtime.prepareDeviceAssertion(params)
   }
 
   public struct SetActiveParams: Encodable, Sendable {

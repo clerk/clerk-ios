@@ -46,7 +46,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     sdkVersion _: String = ClerkJSRuntime.sdkVersion,
     tokenCache _: ClerkJSTokenCache = .memory(),
     resourceCache _: ClerkJSResourceCache? = nil,
-    oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL
+    oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
+    appAttestKeyIdStore _: ClerkJSAppAttestKeyIdStore = .memory()
   ) {}
 
   public var lastFAPIClientJSON: Data? {
@@ -76,6 +77,14 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   public func promptBiometrics(_: BiometricPromptParams = .init()) async throws -> BiometricAuthentication {
     throw ClerkJSCoreError.unsupportedPlatform
   }
+
+  public func prepareDeviceAttestation(_: DeviceAttestParams) async throws -> DeviceAttestationProof {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
+  public func prepareDeviceAssertion(_: DeviceAttestParams) async throws -> DeviceAssertionProof {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
   #else
   private let runtime: JSRuntime
   private let sdkVersion: String
@@ -86,7 +95,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
-    oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL
+    oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
+    appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory()
   ) {
     self.sdkVersion = sdkVersion
     self.resourceCache = resourceCache
@@ -94,6 +104,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime = JSRuntime(tokenCache: tokenCache)
     runtime.host.resourceCache = resourceCache
     runtime.host.oauth.redirectURL = oauthRedirectURL
+    runtime.host.appAttest.keyIdStore = appAttestKeyIdStore
   }
 
   var oauthSession: ClerkJSOAuthSession {
@@ -106,6 +117,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   var biometricCeremony: ClerkJSBiometricCeremony {
     runtime.host.biometrics
+  }
+
+  var appAttestCeremony: ClerkJSAppAttestCeremony {
+    runtime.host.appAttest
   }
 
   public var lastFAPIClientJSON: Data? {
@@ -146,6 +161,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         \(Self.passkeyHookInstallSource)
         \(Self.appleHookInstallSource)
         \(Self.biometricHookInstallSource)
+        \(Self.appAttestHookInstallSource)
         await clerk.load({
           standardBrowser: false,
           experimental: {
@@ -397,6 +413,23 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     };
     """
 
+  static let appAttestHookInstallSource = """
+    clerk.__internal_prepareDeviceAttestation = async function(params) {
+      var payload = '{}';
+      if (params && typeof params === 'object') {
+        payload = JSON.stringify(params);
+      }
+      return await __clerkNativePrepareDeviceAttestation(payload);
+    };
+    clerk.__internal_prepareDeviceAssertion = async function(params) {
+      var payload = '{}';
+      if (params && typeof params === 'object') {
+        payload = JSON.stringify(params);
+      }
+      return await __clerkNativePrepareDeviceAssertion(payload);
+    };
+    """
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     switch await appleCeremony.start(payload: "{}") {
     case .success(let identity):
@@ -434,6 +467,29 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       }
       if error.code == ClerkJSBiometricError.invalidPayload.code {
         throw ClerkJSCoreError.invalidArgument("biometrics")
+      }
+      throw ClerkJSCoreError.javascript(error.message)
+    }
+  }
+
+  public func prepareDeviceAttestation(_ params: DeviceAttestParams) async throws -> DeviceAttestationProof {
+    try await mapAppAttest(appAttestCeremony.attest(payload: params.json))
+  }
+
+  public func prepareDeviceAssertion(_ params: DeviceAttestParams) async throws -> DeviceAssertionProof {
+    try await mapAppAttest(appAttestCeremony.assert(payload: params.json))
+  }
+
+  private func mapAppAttest<Value>(_ result: Result<Value, ClerkJSAppAttestError>) throws -> Value {
+    switch result {
+    case .success(let value):
+      return value
+    case .failure(let error):
+      if error.code == ClerkJSAppAttestError.cancelled.code {
+        throw ClerkJSCoreError.cancelled
+      }
+      if error.code == ClerkJSAppAttestError.invalidPayload.code {
+        throw ClerkJSCoreError.invalidArgument("appAttest")
       }
       throw ClerkJSCoreError.javascript(error.message)
     }

@@ -11,6 +11,7 @@ final class NativeHost: @unchecked Sendable {
   let oauth = ClerkJSOAuthSession()
   let apple = ClerkJSAppleCeremony()
   let biometrics = ClerkJSBiometricCeremony()
+  let appAttest = ClerkJSAppAttestCeremony()
   private let session: URLSession
   private var nextTimerID: UInt64 = 1
   private var nextFetchID: UInt64 = 1
@@ -53,6 +54,7 @@ final class NativeHost: @unchecked Sendable {
     oauth.cancel()
     apple.cancel()
     biometrics.cancel()
+    appAttest.cancel()
     session.invalidateAndCancel()
   }
 
@@ -270,6 +272,40 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(promptBiometrics, forKeyedSubscript: "__clerkNativePromptBiometricsImpl" as NSString)
+
+    let prepareAttestation: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.appAttest.attest(payload: payload)
+        runtime.queue.async {
+          switch result {
+          case .success(let proof):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), proof.json])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(prepareAttestation, forKeyedSubscript: "__clerkNativePrepareDeviceAttestationImpl" as NSString)
+
+    let prepareAssertion: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        let result = await self.appAttest.assert(payload: payload)
+        runtime.queue.async {
+          switch result {
+          case .success(let proof):
+            self.takeCallback(callbackID)?.call(withArguments: [NSNull(), proof.json])
+          case .failure(let error):
+            self.takeCallback(callbackID)?.call(withArguments: [error.json, NSNull()])
+          }
+        }
+      }
+    }
+    context.setObject(prepareAssertion, forKeyedSubscript: "__clerkNativePrepareDeviceAssertionImpl" as NSString)
   }
 
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
@@ -856,6 +892,32 @@ final class NativeHost: @unchecked Sendable {
         return new Promise(function(resolve, reject) {
           __clerkNativePromptBiometricsImpl(String(payload || '{}'), function(err, json) {
             if (err) clerkNativeBiometricReject(err, reject);
+            else resolve(typeof json === 'string' ? JSON.parse(json) : json);
+          });
+        });
+      };
+      function clerkNativeAppAttestReject(err, reject) {
+        var parsed = err;
+        if (typeof err === 'string') {
+          try { parsed = JSON.parse(err); } catch (e) { parsed = { message: String(err) }; }
+        }
+        var error = new Error((parsed && parsed.message) ? String(parsed.message) : String(err));
+        error.name = 'ClerkAppAttestError';
+        error.code = (parsed && parsed.code) ? String(parsed.code) : 'device_attest_failed';
+        reject(error);
+      }
+      globalThis.__clerkNativePrepareDeviceAttestation = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativePrepareDeviceAttestationImpl(String(payload || '{}'), function(err, json) {
+            if (err) clerkNativeAppAttestReject(err, reject);
+            else resolve(typeof json === 'string' ? JSON.parse(json) : json);
+          });
+        });
+      };
+      globalThis.__clerkNativePrepareDeviceAssertion = function(payload) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativePrepareDeviceAssertionImpl(String(payload || '{}'), function(err, json) {
+            if (err) clerkNativeAppAttestReject(err, reject);
             else resolve(typeof json === 'string' ? JSON.parse(json) : json);
           });
         });
