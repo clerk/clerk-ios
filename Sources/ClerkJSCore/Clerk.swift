@@ -435,9 +435,25 @@ public final class Clerk {
       model?.optionalFields ?? []
     }
 
+    public var createdSessionId: String? {
+      model?.createdSessionId
+    }
+
     @discardableResult
     public func create(_ params: CreateParams) async throws -> SignUp {
       try await clerk.callAndPublish(ClerkJSPath.signUp(.create), params)
+      return clerk.client.signUp
+    }
+
+    @discardableResult
+    public func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
+      try await clerk.callAndPublish(ClerkJSPath.signUp(.prepareVerification), params)
+      return clerk.client.signUp
+    }
+
+    @discardableResult
+    public func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
+      try await clerk.callAndPublish(ClerkJSPath.signUp(.attemptVerification), params)
       return clerk.client.signUp
     }
 
@@ -467,6 +483,49 @@ public final class Clerk {
         case emailAddress
         case phoneNumber
         case username
+      }
+    }
+
+    public enum Strategy: String, Encodable, Sendable {
+      case emailCode = "email_code"
+      case phoneCode = "phone_code"
+    }
+
+    public struct PrepareVerificationParams: Encodable, Sendable {
+      public var strategy: Strategy
+
+      public init(strategy: Strategy) {
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+      }
+    }
+
+    public struct AttemptVerificationParams: Encodable, Sendable {
+      public var strategy: Strategy
+      public var code: String
+
+      public init(strategy: Strategy, code: String) {
+        self.strategy = strategy
+        self.code = code
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encode(code, forKey: .code)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case code
       }
     }
 

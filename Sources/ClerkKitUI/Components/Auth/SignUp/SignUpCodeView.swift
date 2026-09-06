@@ -5,15 +5,16 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignUpCodeView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
-  @Environment(CodeLimiter.self) private var codeLimiter
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var code = ""
   @State private var verificationState = CodeVerificationState.default
@@ -23,12 +24,12 @@ struct SignUpCodeView: View {
   @FocusState private var otpFieldIsFocused: Bool
 
   private var remainingSeconds: Int {
-    guard let signUp else { return 0 }
-    return codeLimiter.remainingCooldown(for: codeLimiterIdentifier(signUp))
+    guard signUp.id != nil else { return 0 }
+    return codeLimiter.remainingCooldown(for: codeLimiterIdentifier)
   }
 
-  var signUp: SignUp? {
-    clerk.auth.currentSignUp
+  var signUp: ClerkJSCore.Clerk.SignUp {
+    jsClerk.client.signUp
   }
 
   enum Field: Hashable {
@@ -61,6 +62,15 @@ struct SignUpCodeView: View {
         .phoneNumber
       }
     }
+
+    var strategy: ClerkJSCore.Clerk.SignUp.Strategy {
+      switch self {
+      case .email:
+        .emailCode
+      case .phone:
+        .phoneCode
+      }
+    }
   }
 
   var resendString: LocalizedStringKey {
@@ -75,8 +85,8 @@ struct SignUpCodeView: View {
     verificationState.showResend
   }
 
-  private func codeLimiterIdentifier(_ signUp: SignUp) -> String {
-    signUp.id + field.identityPreviewString
+  private var codeLimiterIdentifier: String {
+    (signUp.id ?? "") + field.identityPreviewString
   }
 
   let field: Field
@@ -164,16 +174,16 @@ struct SignUpCodeView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
+        if let clerkApiError = error as? ClerkKit.ClerkAPIError, clerkApiError.code == "verification_already_verified", signUp.id != nil {
           return .init(text: "Continue") {
-            navigation.setToStepForStatus(signUp: signUp)
+            navigation.setToStepForStatus(signUp: JSCoreAuthMapping.signUp(from: signUp))
           }
         }
         return nil
       }
     )
     .taskOnce {
-      if let signUp, codeLimiter.isFirstRequest(for: codeLimiterIdentifier(signUp)) {
+      if signUp.id != nil, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
         await prepare()
       }
     }
@@ -186,20 +196,14 @@ extension SignUpCodeView {
     otpFieldState = .default
     verificationState = .default
 
-    guard var signUp else {
+    guard signUp.id != nil else {
       navigation.path = []
       return
     }
 
     do {
-      switch field {
-      case .email:
-        signUp = try await signUp.sendEmailCode()
-      case .phone:
-        signUp = try await signUp.sendPhoneCode()
-      }
-
-      codeLimiter.recordCodeSent(for: codeLimiterIdentifier(signUp))
+      _ = try await signUp.prepareVerification(.init(strategy: field.strategy))
+      codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       otpFieldIsFocused = false
       self.error = error
@@ -208,7 +212,7 @@ extension SignUpCodeView {
   }
 
   func attempt(code: String) async -> OTPSubmissionDisposition {
-    guard var signUp else {
+    guard signUp.id != nil else {
       navigation.path = []
       return .stop
     }
@@ -217,12 +221,9 @@ extension SignUpCodeView {
     verificationState = .verifying
 
     do {
-      switch field {
-      case .email:
-        signUp = try await signUp.verifyEmailCode(code)
-      case .phone:
-        signUp = try await signUp.verifyPhoneCode(code)
-      }
+      let jsSignUp = try await signUp.attemptVerification(.init(strategy: field.strategy, code: code))
+      let kitSignUp = JSCoreAuthMapping.signUp(from: jsSignUp)
+      try await JSCoreAuthMapping.activateIfComplete(kitSignUp, using: jsClerk)
 
       guard !Task.isCancelled else {
         otpFieldState = .default
@@ -231,7 +232,7 @@ extension SignUpCodeView {
       }
       otpFieldIsFocused = false
       verificationState = .success
-      navigation.setToStepForStatus(signUp: signUp)
+      navigation.setToStepForStatus(signUp: kitSignUp)
       return .stop
     } catch {
       guard !Task.isCancelled, !error.isCancellationError else {
@@ -242,7 +243,7 @@ extension SignUpCodeView {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"] == nil {
+      if let clerkApiError = error as? ClerkKit.ClerkAPIError, clerkApiError.meta?["param_name"] == nil {
         self.error = clerkApiError
         otpFieldIsFocused = false
       }
@@ -257,6 +258,7 @@ extension SignUpCodeView {
     SignUpCodeView(field: .email(EmailAddress.mock.emailAddress))
   }
   .environment(\.clerkTheme, .clerk)
+  .clerkPreview()
 }
 
 #Preview("Phone") {
@@ -264,6 +266,7 @@ extension SignUpCodeView {
     SignUpCodeView(field: .phone(PhoneNumber.mock.phoneNumber))
   }
   .environment(\.clerkTheme, .clerk)
+  .clerkPreview()
 }
 
 #endif

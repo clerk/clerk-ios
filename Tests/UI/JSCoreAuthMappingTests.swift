@@ -142,6 +142,23 @@ struct JSCoreAuthMappingTests {
     #expect(signUp.emailAddress == "user@example.com")
     #expect(signUp.missingFields == [.password])
     #expect(signUp.unverifiedFields == [.emailAddress])
+    #expect(signUp.createdSessionId == nil)
+  }
+
+  @Test
+  func mappedSignUpCarriesCreatedSessionId() {
+    let signUp = JSCoreAuthMapping.signUp(
+      id: "sua_1",
+      status: .complete,
+      emailAddress: "user@example.com",
+      phoneNumber: nil,
+      username: nil,
+      createdSessionId: "sess_1"
+    )
+
+    #expect(signUp.id == "sua_1")
+    #expect(signUp.status == .complete)
+    #expect(signUp.createdSessionId == "sess_1")
   }
 
   @Test

@@ -17,6 +17,7 @@ struct ClerkAPITests {
     #expect(clerk.client.signIn.id == nil)
     #expect(clerk.client.signUp.id == nil)
     #expect(clerk.client.signUp.status == nil)
+    #expect(clerk.client.signUp.createdSessionId == nil)
     #expect(clerk.session.id == nil)
     #expect(clerk.session.status != .active)
     #expect(clerk.session.user == nil)
@@ -48,6 +49,34 @@ struct ClerkAPITests {
 
     let empty = try encodeJSON(Clerk.SignUp.CreateParams())
     #expect(empty.isEmpty)
+  }
+
+  @Test
+  func prepareVerificationParamsEncodeStrategyOnly() throws {
+    let email = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailCode))
+    #expect(email["strategy"] as? String == "email_code")
+    #expect(email.count == 1)
+
+    let phone = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .phoneCode))
+    #expect(phone["strategy"] as? String == "phone_code")
+    #expect(phone.count == 1)
+  }
+
+  @Test
+  func attemptVerificationParamsEncodeStrategyAndCode() throws {
+    let email = try encodeJSON(
+      Clerk.SignUp.AttemptVerificationParams(strategy: .emailCode, code: "424242")
+    )
+    #expect(email["strategy"] as? String == "email_code")
+    #expect(email["code"] as? String == "424242")
+    #expect(email.count == 2)
+
+    let phone = try encodeJSON(
+      Clerk.SignUp.AttemptVerificationParams(strategy: .phoneCode, code: "424242")
+    )
+    #expect(phone["strategy"] as? String == "phone_code")
+    #expect(phone["code"] as? String == "424242")
+    #expect(phone.count == 2)
   }
 
   @Test
@@ -176,6 +205,8 @@ struct ClerkAPITests {
     #expect(SignInJSMethod.prepareSecondFactor.rawValue == "prepareSecondFactor")
     #expect(SignInJSMethod.attemptSecondFactor.rawValue == "attemptSecondFactor")
     #expect(SignUpJSMethod.create.rawValue == "create")
+    #expect(SignUpJSMethod.prepareVerification.rawValue == "prepareVerification")
+    #expect(SignUpJSMethod.attemptVerification.rawValue == "attemptVerification")
     #expect(ClerkJSMethod.setActive.rawValue == "setActive")
     #expect(SessionJSMethod.getToken.rawValue == "getToken")
   }
@@ -188,6 +219,8 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
     #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
     #expect(ClerkJSPath.signUp(.create) == "__clerkInstance.client.signUp.create")
+    #expect(ClerkJSPath.signUp(.prepareVerification) == "__clerkInstance.client.signUp.prepareVerification")
+    #expect(ClerkJSPath.signUp(.attemptVerification) == "__clerkInstance.client.signUp.attemptVerification")
     #expect(ClerkJSPath.clerk(.setActive) == "__clerkInstance.setActive")
     #expect(ClerkJSPath.session(.getToken) == "__clerkInstance.session.getToken")
   }
@@ -207,6 +240,7 @@ struct ClerkAPITests {
     #expect(clerk.client.signUp.missingFields.isEmpty)
     #expect(clerk.client.signUp.unverifiedFields.isEmpty)
     #expect(clerk.client.signUp.hasPassword == false)
+    #expect(clerk.client.signUp.createdSessionId == nil)
     #expect(clerk.session.id == nil)
     #expect(clerk.session.status != .active)
     #expect(clerk.session.user == nil)
@@ -279,6 +313,41 @@ struct ClerkAPITests {
     #expect(clerk.client.signIn.supportedSecondFactors[1].safeIdentifier == "+1••••••00")
     #expect(clerk.client.signIn.supportedSecondFactors[1].primary == true)
     #expect(clerk.client.signIn.supportedSecondFactors[1].default == true)
+  }
+
+  @Test
+  @MainActor
+  func publishedSignUpExposesCreatedSessionId() throws {
+    let payload: [String: Any] = [
+      "object": "client",
+      "id": "client_fixture",
+      "sessions": [Any](),
+      "sign_in": NSNull(),
+      "sign_up": [
+        "object": "sign_up",
+        "id": "sua_1",
+        "status": "complete",
+        "required_fields": [Any](),
+        "optional_fields": [Any](),
+        "missing_fields": [Any](),
+        "unverified_fields": [Any](),
+        "external_account": [String: Any](),
+        "has_password": false,
+        "unsafe_metadata": [String: Any](),
+        "created_session_id": "sess_1",
+      ],
+      "last_active_session_id": NSNull(),
+      "created_at": 1_700_000_000_000,
+      "updated_at": 1_700_000_000_000,
+    ]
+    let clerk = Clerk(
+      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
+      tokenCache: .memory()
+    )
+    try clerk.publishClient(JSONSerialization.data(withJSONObject: payload))
+    #expect(clerk.client.signUp.id == "sua_1")
+    #expect(clerk.client.signUp.status == .complete)
+    #expect(clerk.client.signUp.createdSessionId == "sess_1")
   }
 }
 

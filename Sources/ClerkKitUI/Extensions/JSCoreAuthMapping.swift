@@ -130,7 +130,8 @@ enum JSCoreAuthMapping {
       missingFields: handle.missingFields,
       unverifiedFields: handle.unverifiedFields,
       requiredFields: handle.requiredFields,
-      optionalFields: handle.optionalFields
+      optionalFields: handle.optionalFields,
+      createdSessionId: handle.createdSessionId
     )
   }
 
@@ -146,7 +147,8 @@ enum JSCoreAuthMapping {
     missingFields: [String] = [],
     unverifiedFields: [String] = [],
     requiredFields: [String] = [],
-    optionalFields: [String] = []
+    optionalFields: [String] = [],
+    createdSessionId: String? = nil
   ) -> ClerkKit.SignUp {
     ClerkKit.SignUp(
       id: id,
@@ -162,6 +164,7 @@ enum JSCoreAuthMapping {
       passwordEnabled: passwordEnabled,
       firstName: firstName,
       lastName: lastName,
+      createdSessionId: createdSessionId,
       abandonAt: Date()
     )
   }
@@ -171,10 +174,38 @@ enum JSCoreAuthMapping {
     _ signIn: ClerkKit.SignIn,
     using jsClerk: ClerkJSCore.Clerk
   ) async throws {
-    guard signIn.status == .complete else { return }
-    guard let sessionId = signIn.createdSessionId else {
+    try await activateIfComplete(
+      isComplete: signIn.status == .complete,
+      sessionId: signIn.createdSessionId,
+      missingSessionMessage: "Sign-in completed without a session.",
+      using: jsClerk
+    )
+  }
+
+  @MainActor
+  static func activateIfComplete(
+    _ signUp: ClerkKit.SignUp,
+    using jsClerk: ClerkJSCore.Clerk
+  ) async throws {
+    try await activateIfComplete(
+      isComplete: signUp.status == .complete,
+      sessionId: signUp.createdSessionId,
+      missingSessionMessage: "Sign-up completed without a session.",
+      using: jsClerk
+    )
+  }
+
+  @MainActor
+  private static func activateIfComplete(
+    isComplete: Bool,
+    sessionId: String?,
+    missingSessionMessage: String.LocalizationValue,
+    using jsClerk: ClerkJSCore.Clerk
+  ) async throws {
+    guard isComplete else { return }
+    guard let sessionId else {
       throw ClerkClientError(
-        message: "Sign-in completed without a session.",
+        message: missingSessionMessage,
         localizationBundle: .module
       )
     }
