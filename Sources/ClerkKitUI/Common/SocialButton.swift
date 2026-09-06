@@ -167,9 +167,8 @@ extension SocialButton {
         redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
       )
     )
-    let mapped = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
-    try await JSCoreAuthMapping.activateIfComplete(mapped, using: jsClerk)
-    onSuccess?(.signIn(mapped))
+    let result = try await JSCoreAuthMapping.transferFlowResult(from: jsClerk)
+    onSuccess?(result)
   }
 }
 

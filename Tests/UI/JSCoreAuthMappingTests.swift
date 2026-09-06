@@ -162,6 +162,69 @@ struct JSCoreAuthMappingTests {
   }
 
   @Test
+  func oauthPickReportsCompleteSignUp() {
+    let result = JSCoreAuthMapping.transferFlowResult(
+      signUpStatus: .complete,
+      signIn: mappedSignIn(),
+      signUp: mappedSignUp(status: .complete, createdSessionId: "sess_1")
+    )
+
+    guard case .signUp(let signUp) = result else {
+      Issue.record("Expected a sign-up result")
+      return
+    }
+    #expect(signUp.status == .complete)
+    #expect(signUp.createdSessionId == "sess_1")
+  }
+
+  @Test
+  func oauthPickReportsMissingRequirementsSignUp() {
+    let result = JSCoreAuthMapping.transferFlowResult(
+      signUpStatus: .missingRequirements,
+      signIn: mappedSignIn(),
+      signUp: mappedSignUp(status: .missingRequirements, missingFields: ["password"])
+    )
+
+    guard case .signUp(let signUp) = result else {
+      Issue.record("Expected a sign-up result")
+      return
+    }
+    #expect(signUp.status == .missingRequirements)
+    #expect(signUp.missingFields == [.password])
+  }
+
+  @Test
+  func oauthPickIgnoresAbandonedSignUp() {
+    let result = JSCoreAuthMapping.transferFlowResult(
+      signUpStatus: .abandoned,
+      signIn: mappedSignIn(),
+      signUp: mappedSignUp(status: .abandoned)
+    )
+
+    guard case .signIn(let signIn) = result else {
+      Issue.record("Expected a sign-in result")
+      return
+    }
+    #expect(signIn.id == "sia_1")
+    #expect(signIn.status == .complete)
+  }
+
+  @Test
+  func oauthPickReportsSignInWhenSignUpIsAbsent() {
+    let result = JSCoreAuthMapping.transferFlowResult(
+      signUpStatus: nil,
+      signIn: mappedSignIn(),
+      signUp: mappedSignUp(status: .abandoned)
+    )
+
+    guard case .signIn(let signIn) = result else {
+      Issue.record("Expected a sign-in result")
+      return
+    }
+    #expect(signIn.id == "sia_1")
+  }
+
+  @Test
   func parsesIdentifierNotFoundFromJSAndAPIErrors() {
     #expect(
       JSCoreAuthMapping.isIdentifierNotFound(
@@ -203,6 +266,32 @@ private func secondFactor(
     phoneNumberId: phoneNumberId,
     default: `default`,
     channel: nil
+  )
+}
+
+private func mappedSignIn() -> ClerkKit.SignIn {
+  JSCoreAuthMapping.signIn(
+    id: "sia_1",
+    status: .complete,
+    identifier: "user@example.com",
+    firstFactors: [],
+    createdSessionId: "sess_signin"
+  )
+}
+
+private func mappedSignUp(
+  status: SignUpStatus,
+  missingFields: [String] = [],
+  createdSessionId: String? = nil
+) -> ClerkKit.SignUp {
+  JSCoreAuthMapping.signUp(
+    id: "sua_1",
+    status: status,
+    emailAddress: "user@example.com",
+    phoneNumber: nil,
+    username: nil,
+    missingFields: missingFields,
+    createdSessionId: createdSessionId
   )
 }
 

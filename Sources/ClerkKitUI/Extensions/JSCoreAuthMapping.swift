@@ -169,6 +169,35 @@ enum JSCoreAuthMapping {
     )
   }
 
+  static func transferFlowResult(
+    signUpStatus: SignUpStatus?,
+    signIn: ClerkKit.SignIn,
+    signUp: ClerkKit.SignUp
+  ) -> TransferFlowResult {
+    switch signUpStatus {
+    case .complete, .missingRequirements:
+      .signUp(signUp)
+    case .abandoned, .unknown, nil:
+      .signIn(signIn)
+    }
+  }
+
+  @MainActor
+  static func transferFlowResult(from jsClerk: ClerkJSCore.Clerk) async throws -> TransferFlowResult {
+    let result = transferFlowResult(
+      signUpStatus: jsClerk.client.signUp.status,
+      signIn: signIn(from: jsClerk.client.signIn),
+      signUp: signUp(from: jsClerk.client.signUp)
+    )
+    switch result {
+    case .signIn(let mapped):
+      try await activateIfComplete(mapped, using: jsClerk)
+    case .signUp(let mapped):
+      try await activateIfComplete(mapped, using: jsClerk)
+    }
+    return result
+  }
+
   @MainActor
   static func activateIfComplete(
     _ signIn: ClerkKit.SignIn,
