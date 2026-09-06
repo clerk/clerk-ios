@@ -1,4 +1,4 @@
-import ClerkJSCore
+@testable import ClerkJSCore
 import Foundation
 import Testing
 
@@ -45,6 +45,12 @@ struct ClerkAPITests {
     #expect(json["strategy"] as? String == "email_code")
     #expect(json["code"] as? String == "424242")
     #expect(json.count == 2)
+  }
+
+  @Test
+  func storageNamespaceIsStablePerKey() {
+    #expect(Clerk.storageNamespace(for: "pk_test_a") == Clerk.storageNamespace(for: "pk_test_a"))
+    #expect(Clerk.storageNamespace(for: "pk_test_a") != Clerk.storageNamespace(for: "pk_test_b"))
   }
 
   @Test

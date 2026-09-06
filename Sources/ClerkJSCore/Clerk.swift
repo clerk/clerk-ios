@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 private typealias FAPIClient = Client
@@ -12,10 +13,31 @@ public final class Clerk: @unchecked Sendable {
 
   public init(
     publishableKey: String,
-    tokenCache: ClerkJSTokenCache = .memory()
+    tokenCache: ClerkJSTokenCache = .memory(),
+    resourceCache: ClerkJSResourceCache? = nil
   ) {
     self.publishableKey = publishableKey
-    runtime = ClerkJSRuntime(tokenCache: tokenCache)
+    runtime = ClerkJSRuntime(tokenCache: tokenCache, resourceCache: resourceCache)
+  }
+
+  public static func persistent(publishableKey: String) -> Clerk {
+    let service = "com.clerk.jscore.\(storageNamespace(for: publishableKey))"
+    return Clerk(
+      publishableKey: publishableKey,
+      tokenCache: .keychain(service: service, account: "client-jwt"),
+      resourceCache: .keychain(
+        service: service,
+        clientAccount: "client-snapshot",
+        environmentAccount: "environment-snapshot"
+      )
+    )
+  }
+
+  static func storageNamespace(for publishableKey: String) -> String {
+    SHA256.hash(data: Data(publishableKey.utf8))
+      .prefix(8)
+      .map { String(format: "%02x", $0) }
+      .joined()
   }
 
   public var client: Client {
