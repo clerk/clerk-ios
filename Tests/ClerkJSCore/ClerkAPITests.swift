@@ -52,6 +52,16 @@ struct ClerkAPITests {
   }
 
   @Test
+  func signUpUpdateParamsEncodePasswordOnly() throws {
+    let json = try encodeJSON(Clerk.SignUp.CreateParams(password: "hunter2"))
+    #expect(json["password"] as? String == "hunter2")
+    #expect(json["emailAddress"] == nil)
+    #expect(json["phoneNumber"] == nil)
+    #expect(json["username"] == nil)
+    #expect(json.count == 1)
+  }
+
+  @Test
   func prepareVerificationParamsEncodeStrategyOnly() throws {
     let email = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailCode))
     #expect(email["strategy"] as? String == "email_code")
@@ -205,6 +215,7 @@ struct ClerkAPITests {
     #expect(SignInJSMethod.prepareSecondFactor.rawValue == "prepareSecondFactor")
     #expect(SignInJSMethod.attemptSecondFactor.rawValue == "attemptSecondFactor")
     #expect(SignUpJSMethod.create.rawValue == "create")
+    #expect(SignUpJSMethod.update.rawValue == "update")
     #expect(SignUpJSMethod.prepareVerification.rawValue == "prepareVerification")
     #expect(SignUpJSMethod.attemptVerification.rawValue == "attemptVerification")
     #expect(ClerkJSMethod.setActive.rawValue == "setActive")
@@ -219,6 +230,7 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
     #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
     #expect(ClerkJSPath.signUp(.create) == "__clerkInstance.client.signUp.create")
+    #expect(ClerkJSPath.signUp(.update) == "__clerkInstance.client.signUp.update")
     #expect(ClerkJSPath.signUp(.prepareVerification) == "__clerkInstance.client.signUp.prepareVerification")
     #expect(ClerkJSPath.signUp(.attemptVerification) == "__clerkInstance.client.signUp.attemptVerification")
     #expect(ClerkJSPath.clerk(.setActive) == "__clerkInstance.setActive")

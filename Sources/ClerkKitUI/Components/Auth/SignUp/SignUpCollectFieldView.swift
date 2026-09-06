@@ -5,22 +5,23 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignUpCollectFieldView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   @State private var error: Error?
   @State private var usernameForPasswordKeeper = ""
 
   @FocusState private var isFocused: Bool
 
-  var signUp: SignUp? {
-    clerk.auth.currentSignUp
+  var signUp: ClerkJSCore.Clerk.SignUp {
+    jsClerk.client.signUp
   }
 
   let field: Field
@@ -91,7 +92,7 @@ struct SignUpCollectFieldView: View {
         textContentType: .username
       )
       .onAppear {
-        usernameForPasswordKeeper = signUp?.username ?? signUp?.emailAddress ?? signUp?.phoneNumber ?? ""
+        usernameForPasswordKeeper = signUp.username ?? signUp.emailAddress ?? signUp.phoneNumber ?? ""
       }
     case .username:
       ClerkTextField(
@@ -170,21 +171,27 @@ struct SignUpCollectFieldView: View {
 
 extension SignUpCollectFieldView {
   func updateSignUp() async {
-    guard var signUp else { return }
+    guard signUp.id != nil else {
+      navigation.path = []
+      return
+    }
 
     do {
-      switch field {
+      let params: ClerkJSCore.Clerk.SignUp.CreateParams = switch field {
       case .emailAddress:
-        signUp = try await signUp.update(emailAddress: authState.signUpEmailAddress)
+        .init(emailAddress: authState.signUpEmailAddress)
       case .phoneNumber:
-        signUp = try await signUp.update(phoneNumber: authState.signUpPhoneNumber)
+        .init(phoneNumber: authState.signUpPhoneNumber)
       case .password:
-        signUp = try await signUp.update(password: authState.signUpPassword)
+        .init(password: authState.signUpPassword)
       case .username:
-        signUp = try await signUp.update(username: authState.signUpUsername)
+        .init(username: authState.signUpUsername)
       }
 
-      navigation.setToStepForStatus(signUp: signUp)
+      let jsSignUp = try await signUp.update(params)
+      let kitSignUp = JSCoreAuthMapping.signUp(from: jsSignUp)
+      try await JSCoreAuthMapping.activateIfComplete(kitSignUp, using: jsClerk)
+      navigation.setToStepForStatus(signUp: kitSignUp)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to update sign up with field data", error: error)
@@ -195,6 +202,7 @@ extension SignUpCollectFieldView {
 #Preview {
   SignUpCollectFieldView(field: .password)
     .environment(\.clerkTheme, .clerk)
+    .clerkPreview()
 }
 
 #endif

@@ -446,6 +446,12 @@ public final class Clerk {
     }
 
     @discardableResult
+    public func update(_ params: CreateParams) async throws -> SignUp {
+      try await clerk.callAndPublish(ClerkJSPath.signUp(.update), params)
+      return clerk.client.signUp
+    }
+
+    @discardableResult
     public func prepareVerification(_ params: PrepareVerificationParams) async throws -> SignUp {
       try await clerk.callAndPublish(ClerkJSPath.signUp(.prepareVerification), params)
       return clerk.client.signUp
@@ -461,15 +467,18 @@ public final class Clerk {
       public var emailAddress: String?
       public var phoneNumber: String?
       public var username: String?
+      public var password: String?
 
       public init(
         emailAddress: String? = nil,
         phoneNumber: String? = nil,
-        username: String? = nil
+        username: String? = nil,
+        password: String? = nil
       ) {
         self.emailAddress = emailAddress
         self.phoneNumber = phoneNumber
         self.username = username
+        self.password = password
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -477,12 +486,14 @@ public final class Clerk {
         try container.encodeIfPresent(emailAddress, forKey: .emailAddress)
         try container.encodeIfPresent(phoneNumber, forKey: .phoneNumber)
         try container.encodeIfPresent(username, forKey: .username)
+        try container.encodeIfPresent(password, forKey: .password)
       }
 
       private enum CodingKeys: String, CodingKey {
         case emailAddress
         case phoneNumber
         case username
+        case password
       }
     }
 
