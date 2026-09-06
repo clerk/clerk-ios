@@ -21,10 +21,6 @@ struct SignInFactorAlternativeMethodsView: View {
 
   @State private var error: Error?
 
-  var signIn: ClerkKit.SignIn? {
-    clerk.auth.currentSignIn
-  }
-
   var alternativeFactors: [Factor] {
     guard jsClerk.client.signIn.id != nil else { return [] }
     let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
@@ -117,10 +113,20 @@ struct SignInFactorAlternativeMethodsView: View {
             SocialButton(
               provider: provider,
               transferable: authState.transferable,
-              showsTitle: showsTitle
-            ) {
-              await signInWithProvider(provider)
-            }
+              unsafeMetadata: authState.unsafeMetadata,
+              showsTitle: showsTitle,
+              onSuccess: { result in
+                switch result {
+                case .signIn(let signIn):
+                  navigation.setToStepForStatus(signIn: signIn)
+                case .signUp(let signUp):
+                  navigation.setToStepForStatus(signUp: signUp)
+                }
+              },
+              onError: { error in
+                self.error = error
+              }
+            )
             .simultaneousGesture(TapGesture())
           }
 
@@ -160,43 +166,6 @@ struct SignInFactorAlternativeMethodsView: View {
     }
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
-  }
-}
-
-extension SignInFactorAlternativeMethodsView {
-  func signInWithProvider(_ provider: OAuthProvider) async {
-    do {
-      guard let signIn else {
-        navigation.path = []
-        return
-      }
-
-      let result: TransferFlowResult =
-        if provider == .apple {
-          try await signIn.authenticateWithApple(
-            transferable: authState.transferable,
-            unsafeMetadata: authState.unsafeMetadata
-          )
-        } else {
-          try await signIn.authenticateWithOAuth(
-            provider: provider,
-            transferable: authState.transferable,
-            unsafeMetadata: authState.unsafeMetadata
-          )
-        }
-
-      switch result {
-      case .signIn(let signIn):
-        navigation.setToStepForStatus(signIn: signIn)
-      case .signUp(let signUp):
-        navigation.setToStepForStatus(signUp: signUp)
-      }
-
-    } catch {
-      if error.isUserCancelledError { return }
-      self.error = error
-      ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
-    }
   }
 }
 
