@@ -107,6 +107,13 @@ public final class Clerk {
     return try JSONDecoder().decode(Environment.self, from: Data(contentsOf: url))
   }
 
+  package static func snapshotSignedInClient() throws -> Data {
+    guard let url = Bundle.module.url(forResource: "signed-in-client", withExtension: "json") else {
+      throw ClerkJSCoreError.missingBundle
+    }
+    return try Data(contentsOf: url)
+  }
+
   public var nativeSettings: NativeSettings {
     fapiNativeSettings
   }

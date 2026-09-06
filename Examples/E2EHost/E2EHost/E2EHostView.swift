@@ -3,12 +3,13 @@
 //  E2EHost
 //
 
+import ClerkJSCore
 import ClerkKit
 import ClerkKitUI
 import SwiftUI
 
 struct E2EHostView: View {
-  @Environment(Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
 
   let configuration: E2EConfiguration
 
@@ -115,12 +116,14 @@ struct E2EHostView: View {
 
 #Preview("Signed Out") {
   E2EHostView(configuration: .mock)
-    .environment(Clerk.preview { preview in
+    .environment(ClerkKit.Clerk.preview { preview in
       preview.isSignedIn = false
     })
+    .environment(ClerkJSCore.Clerk(publishableKey: "pk_test_preview"))
 }
 
 #Preview("Signed In") {
   E2EHostView(configuration: .mock)
-    .environment(Clerk.preview())
+    .environment(ClerkKit.Clerk.preview())
+    .environment(ClerkJSCore.Clerk(publishableKey: "pk_test_preview"))
 }

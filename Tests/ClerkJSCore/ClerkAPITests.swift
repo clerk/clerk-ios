@@ -147,12 +147,11 @@ struct ClerkAPITests {
   @Test
   @MainActor
   func signedInClientPublishExposesSessionIdAndStatus() throws {
-    let url = try #require(Bundle.module.url(forResource: "signed-in-client", withExtension: "json"))
     let clerk = Clerk(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
-    try clerk.publishClient(Data(contentsOf: url))
+    try clerk.publishClient(Clerk.snapshotSignedInClient())
     #expect(clerk.session.id == "sess_fixture")
     #expect(clerk.session.status == .active)
     #expect(clerk.session.user?.id == "user_fixture")

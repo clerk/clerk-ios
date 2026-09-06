@@ -42,7 +42,7 @@ extension View {
       let clerk = ClerkKit.Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
       }
-      let jsClerk = jsCorePreviewClerk()
+      let jsClerk = jsCorePreviewClerk(isSignedIn: isSignedIn)
 
       return AnyView(
         environment(clerk)
@@ -58,10 +58,13 @@ extension View {
 }
 
 @MainActor
-private func jsCorePreviewClerk() -> ClerkJSCore.Clerk {
+private func jsCorePreviewClerk(isSignedIn: Bool) -> ClerkJSCore.Clerk {
   let clerk = ClerkJSCore.Clerk(publishableKey: "pk_test_preview")
   if let environment = try? ClerkJSCore.Clerk.snapshotEnvironment() {
     clerk.publishEnvironment(environment)
+  }
+  if isSignedIn, let data = try? ClerkJSCore.Clerk.snapshotSignedInClient() {
+    try? clerk.publishClient(data)
   }
   return clerk
 }

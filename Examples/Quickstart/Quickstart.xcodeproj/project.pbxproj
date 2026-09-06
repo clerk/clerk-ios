@@ -10,8 +10,10 @@
 		8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
 		8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
 		8FATLANTIS001E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS002E3A648E00831B13 /* Atlantis */; };
+		8FJSCORE2E3D008D00E6E7E1 /* ClerkJSCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8FJSCORE2E3D008D00E6E7E3 /* ClerkJSCore */; };
 		8FE2E2F12E90000000000011 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F692CBF2E3D008D00E6E7ED /* ClerkKit */; };
 		8FE2E2F22E90000000000012 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F9023512E3A648E00831B13 /* ClerkKitUI */; };
+		8FJSCORE2E3D008D00E6E7E2 /* ClerkJSCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8FJSCORE2E3D008D00E6E7E3 /* ClerkJSCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +55,7 @@
 			files = (
 				8F692CC02E3D008D00E6E7ED /* ClerkKit in Frameworks */,
 				8F9023522E3A648E00831B13 /* ClerkKitUI in Frameworks */,
+				8FJSCORE2E3D008D00E6E7E1 /* ClerkJSCore in Frameworks */,
 				8FATLANTIS001E3A648E00831B13 /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -63,6 +66,7 @@
 			files = (
 				8FE2E2F12E90000000000011 /* ClerkKit in Frameworks */,
 				8FE2E2F22E90000000000012 /* ClerkKitUI in Frameworks */,
+				8FJSCORE2E3D008D00E6E7E2 /* ClerkJSCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,6 +113,7 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* ClerkKitUI */,
 				8F692CBF2E3D008D00E6E7ED /* ClerkKit */,
+				8FJSCORE2E3D008D00E6E7E3 /* ClerkJSCore */,
 				8FATLANTIS002E3A648E00831B13 /* Atlantis */,
 			);
 			productName = Quickstart;
@@ -134,6 +139,7 @@
 			packageProductDependencies = (
 				8F9023512E3A648E00831B13 /* ClerkKitUI */,
 				8F692CBF2E3D008D00E6E7ED /* ClerkKit */,
+				8FJSCORE2E3D008D00E6E7E3 /* ClerkJSCore */,
 			);
 			productName = E2EHost;
 			productReference = 8FE2E2F02E90000000000010 /* E2EHost.app */;
@@ -536,6 +542,10 @@
 		8F9023512E3A648E00831B13 /* ClerkKitUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkKitUI;
+		};
+		8FJSCORE2E3D008D00E6E7E3 /* ClerkJSCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ClerkJSCore;
 		};
 		8FATLANTIS002E3A648E00831B13 /* Atlantis */ = {
 			isa = XCSwiftPackageProductDependency;

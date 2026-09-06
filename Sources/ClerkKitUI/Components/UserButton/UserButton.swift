@@ -5,6 +5,7 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import NukeUI
 import SwiftUI
@@ -52,8 +53,9 @@ import SwiftUI
 /// }
 /// ```
 public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: View>: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
 
   @State private var presentedSheet: PresentedSheet?
   private let presentationContext: UserButtonPresentationContext
@@ -125,7 +127,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
 
   public var body: some View {
     ZStack {
-      if let user = clerk.user {
+      if let user = jsClerk.user {
         Button {
           handleTap()
         } label: {
@@ -179,7 +181,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           .environment(clerk)
       }
     }
-    .onChange(of: clerk.user) { _, newValue in
+    .onChange(of: jsClerk.user) { _, newValue in
       guard newValue == nil else { return }
       guard presentedSheet != .sessionTaskAuth else { return }
       presentedSheet = nil
