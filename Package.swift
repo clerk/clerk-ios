@@ -17,6 +17,7 @@ let package = Package(
   products: [
     .library(name: "ClerkKit", targets: ["ClerkKit"]),
     .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
+    .library(name: "ClerkJSCore", targets: ["ClerkJSCore"]),
   ],
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "13.0.6")),
@@ -26,6 +27,23 @@ let package = Package(
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.4"),
   ],
   targets: [
+    .target(
+      name: "ClerkJSCore",
+      dependencies: [],
+      path: "Sources/ClerkJSCore",
+      resources: [
+        .process("Resources"),
+      ],
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+      ],
+      linkerSettings: [
+        .linkedFramework(
+          "JavaScriptCore",
+          .when(platforms: [.iOS, .macCatalyst, .macOS, .tvOS, .visionOS])
+        ),
+      ]
+    ),
     .target(
       name: "ClerkKit",
       dependencies: [],
@@ -64,6 +82,7 @@ let package = Package(
       path: "Tests",
       exclude: [
         "UI",
+        "ClerkJSCore",
       ],
       resources: [
         .process("Resources"),
@@ -80,6 +99,16 @@ let package = Package(
         .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
       ],
       path: "Tests/UI",
+      swiftSettings: [
+        .enableUpcomingFeature("StrictConcurrency"),
+      ]
+    ),
+    .testTarget(
+      name: "ClerkJSCoreTests",
+      dependencies: [
+        "ClerkJSCore",
+      ],
+      path: "Tests/ClerkJSCore",
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]
