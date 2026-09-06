@@ -68,6 +68,14 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     throw ClerkJSCoreError.unsupportedPlatform
   }
+
+  public func biometricPresence(_: BiometricPromptParams = .init()) async throws -> BiometricPresence {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
+  public func promptBiometrics(_: BiometricPromptParams = .init()) async throws -> BiometricAuthentication {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
   #else
   private let runtime: JSRuntime
   private let sdkVersion: String
@@ -94,6 +102,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   var appleCeremony: ClerkJSAppleCeremony {
     runtime.host.apple
+  }
+
+  var biometricCeremony: ClerkJSBiometricCeremony {
+    runtime.host.biometrics
   }
 
   public var lastFAPIClientJSON: Data? {
@@ -133,6 +145,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         \(resourceCache == nil ? "" : Self.resourceCacheInstallSource)
         \(Self.passkeyHookInstallSource)
         \(Self.appleHookInstallSource)
+        \(Self.biometricHookInstallSource)
         await clerk.load({
           standardBrowser: false,
           experimental: {
@@ -367,6 +380,23 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     };
     """
 
+  static let biometricHookInstallSource = """
+    clerk.__internal_biometricPresence = async function(params) {
+      var payload = '{}';
+      if (params && typeof params === 'object') {
+        payload = JSON.stringify(params);
+      }
+      return await __clerkNativeBiometricPresence(payload);
+    };
+    clerk.__internal_promptBiometrics = async function(params) {
+      var payload = '{}';
+      if (params && typeof params === 'object') {
+        payload = JSON.stringify(params);
+      }
+      return await __clerkNativePromptBiometrics(payload);
+    };
+    """
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     switch await appleCeremony.start(payload: "{}") {
     case .success(let identity):
@@ -377,6 +407,33 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       }
       if error.code == ClerkJSAppleError.invalidPayload.code {
         throw ClerkJSCoreError.invalidArgument("appleIdentity")
+      }
+      throw ClerkJSCoreError.javascript(error.message)
+    }
+  }
+
+  public func biometricPresence(_ params: BiometricPromptParams = .init()) async throws -> BiometricPresence {
+    switch await biometricCeremony.presence(payload: params.json) {
+    case .success(let presence):
+      return presence
+    case .failure(let error):
+      if error.code == ClerkJSBiometricError.invalidPayload.code {
+        throw ClerkJSCoreError.invalidArgument("biometrics")
+      }
+      throw ClerkJSCoreError.javascript(error.message)
+    }
+  }
+
+  public func promptBiometrics(_ params: BiometricPromptParams = .init()) async throws -> BiometricAuthentication {
+    switch await biometricCeremony.prompt(payload: params.json) {
+    case .success(let authentication):
+      return authentication
+    case .failure(let error):
+      if error.code == ClerkJSBiometricError.cancelled.code {
+        throw ClerkJSCoreError.cancelled
+      }
+      if error.code == ClerkJSBiometricError.invalidPayload.code {
+        throw ClerkJSCoreError.invalidArgument("biometrics")
       }
       throw ClerkJSCoreError.javascript(error.message)
     }

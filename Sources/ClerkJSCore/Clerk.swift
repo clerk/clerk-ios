@@ -62,6 +62,14 @@ public final class Clerk: @unchecked Sendable {
     try await runtime.startAppleAuthentication()
   }
 
+  public func biometricPresence(_ params: BiometricPromptParams = .init()) async throws -> BiometricPresence {
+    try await runtime.biometricPresence(params)
+  }
+
+  public func promptBiometrics(_ params: BiometricPromptParams = .init()) async throws -> BiometricAuthentication {
+    try await runtime.promptBiometrics(params)
+  }
+
   public struct SetActiveParams: Encodable, Sendable {
     public var session: String?
 
