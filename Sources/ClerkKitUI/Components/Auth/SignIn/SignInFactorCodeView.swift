@@ -208,7 +208,7 @@ extension SignInFactorCodeView {
 extension SignInFactorCodeView {
   private var usesJSFactorCode: Bool {
     switch factor.strategy {
-    case .emailCode, .phoneCode:
+    case .emailCode, .phoneCode, .resetPasswordEmailCode, .resetPasswordPhoneCode:
       true
     case .totp:
       mode.usesSecondFactorAPI
@@ -256,11 +256,10 @@ extension SignInFactorCodeView {
         }
         try await prepareJSFactor()
       } else {
-        guard let kitSignIn = clerk.auth.currentSignIn else {
+        guard clerk.auth.currentSignIn != nil else {
           navigation.path = []
           return
         }
-        try await prepareClerkKitFactor(signIn: kitSignIn)
       }
 
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
@@ -286,11 +285,11 @@ extension SignInFactorCodeView {
         kitSignIn = JSCoreAuthMapping.signIn(from: jsSignIn)
         try await JSCoreAuthMapping.activateIfComplete(kitSignIn, using: jsClerk)
       } else {
-        guard let current = clerk.auth.currentSignIn else {
+        guard clerk.auth.currentSignIn != nil else {
           navigation.path = []
           return .stop
         }
-        kitSignIn = try await attemptClerkKitFactor(signIn: current, code: code)
+        throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
       }
       guard !Task.isCancelled else {
         otpFieldState = .default
@@ -330,6 +329,14 @@ extension SignInFactorCodeView {
       _ = try await signIn.prepareFirstFactor(
         .init(strategy: .phoneCode, phoneNumberId: factor.phoneNumberId)
       )
+    case .resetPasswordEmailCode:
+      _ = try await signIn.prepareFirstFactor(
+        .init(strategy: .resetPasswordEmailCode, emailAddressId: factor.emailAddressId)
+      )
+    case .resetPasswordPhoneCode:
+      _ = try await signIn.prepareFirstFactor(
+        .init(strategy: .resetPasswordPhoneCode, phoneNumberId: factor.phoneNumberId)
+      )
     default:
       break
     }
@@ -366,6 +373,10 @@ extension SignInFactorCodeView {
       try await signIn.attemptFirstFactor(.init(strategy: .emailCode, code: code))
     case .phoneCode:
       try await signIn.attemptFirstFactor(.init(strategy: .phoneCode, code: code))
+    case .resetPasswordEmailCode:
+      try await signIn.attemptFirstFactor(.init(strategy: .resetPasswordEmailCode, code: code))
+    case .resetPasswordPhoneCode:
+      try await signIn.attemptFirstFactor(.init(strategy: .resetPasswordPhoneCode, code: code))
     default:
       throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
     }
@@ -379,26 +390,6 @@ extension SignInFactorCodeView {
       try await signIn.attemptSecondFactor(.init(strategy: .phoneCode, code: code))
     case .totp:
       try await signIn.attemptSecondFactor(.init(strategy: .totp, code: code))
-    default:
-      throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
-    }
-  }
-
-  private func prepareClerkKitFactor(signIn: ClerkKit.SignIn) async throws {
-    switch factor.strategy {
-    case .resetPasswordEmailCode:
-      _ = try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
-    case .resetPasswordPhoneCode:
-      _ = try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
-    default:
-      break
-    }
-  }
-
-  private func attemptClerkKitFactor(signIn: ClerkKit.SignIn, code: String) async throws -> ClerkKit.SignIn {
-    switch factor.strategy {
-    case .resetPasswordEmailCode, .resetPasswordPhoneCode:
-      try await signIn.verifyCode(code)
     default:
       throw ClerkClientError(message: "Unknown code verification method. Please use another method.", localizationBundle: .module)
     }

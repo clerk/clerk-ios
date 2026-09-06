@@ -127,6 +127,17 @@ struct ClerkAPITests {
     #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
     #expect(withPhone["emailAddressId"] == nil)
     #expect(withPhone.count == 2)
+
+    let resetEmail = try encodeJSON(
+      Clerk.SignIn.PrepareFirstFactorParams(
+        strategy: .resetPasswordEmailCode,
+        emailAddressId: "idn_1"
+      )
+    )
+    #expect(resetEmail["strategy"] as? String == "reset_password_email_code")
+    #expect(resetEmail["emailAddressId"] as? String == "idn_1")
+    #expect(resetEmail["password"] == nil)
+    #expect(resetEmail.count == 2)
   }
 
   @Test
@@ -152,6 +163,14 @@ struct ClerkAPITests {
     #expect(password["password"] as? String == "hunter2")
     #expect(password["code"] == nil)
     #expect(password.count == 2)
+
+    let reset = try encodeJSON(
+      Clerk.SignIn.AttemptFirstFactorParams(strategy: .resetPasswordEmailCode, code: "424242")
+    )
+    #expect(reset["strategy"] as? String == "reset_password_email_code")
+    #expect(reset["code"] as? String == "424242")
+    #expect(reset["password"] == nil)
+    #expect(reset.count == 2)
   }
 
   @Test

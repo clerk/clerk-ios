@@ -319,6 +319,8 @@ public final class Clerk {
       case emailCode = "email_code"
       case phoneCode = "phone_code"
       case password
+      case resetPasswordEmailCode = "reset_password_email_code"
+      case resetPasswordPhoneCode = "reset_password_phone_code"
     }
 
     public enum SecondFactorStrategy: String, Encodable, Sendable {
