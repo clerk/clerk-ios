@@ -532,20 +532,9 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return data
   }
 
-  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
+  func callInstance(root: String, method: String, args: Data) async throws -> Data {
     await loadIfNeeded()
-    let data: Data = switch receiver {
-    case .organization(let id):
-      try await engine.organization(id).callSteps(steps)
-    case .user:
-      try await engine.callUserSteps(steps)
-    case .signIn:
-      try await engine.callSignInSteps(steps)
-    case .signUp:
-      try await engine.callSignUpSteps(steps)
-    case .billing:
-      try await engine.callBillingSteps(steps)
-    }
+    let data = try await engine.callInstanceMethod(root: root, method: method, args: args)
     publish()
     return data
   }

@@ -585,11 +585,7 @@ extension User {
 
   @discardableResult @MainActor
   public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await Clerk.callResourceSteps(
-      .user,
-      [["method": "getPaymentMethods", "args": paymentMethodArgs(params)]],
-      as: ClerkPaginatedResponse<BillingPaymentMethod>.self
-    )
+    try await Clerk.getUserPaymentMethods(initialPage: params?.initialPage, pageSize: params?.pageSize)
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.

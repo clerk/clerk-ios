@@ -20,12 +20,91 @@ private struct EnrollmentModeArgs: Encodable {
   var deletePending: Bool?
 }
 
-package enum ClerkResourceReceiver: Equatable {
-  case organization(String)
-  case user
+private struct OptionalPageArgs: Encodable {
+  var initialPage: Int?
+  var pageSize: Int?
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encodeIfPresent(initialPage, forKey: .initialPage)
+    try container.encodeIfPresent(pageSize, forKey: .pageSize)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case initialPage
+    case pageSize
+  }
+}
+
+private struct BillingQueryArgs: Encodable {
+  var id: String?
+  var orgId: String?
+  var initialPage: Int?
+  var pageSize: Int?
+  var minSeats: Int?
+  var `for`: String?
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encodeIfPresent(id, forKey: .id)
+    try container.encodeIfPresent(orgId, forKey: .orgId)
+    try container.encodeIfPresent(initialPage, forKey: .initialPage)
+    try container.encodeIfPresent(pageSize, forKey: .pageSize)
+    try container.encodeIfPresent(minSeats, forKey: .minSeats)
+    try container.encodeIfPresent(`for`, forKey: .for)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case orgId
+    case initialPage
+    case pageSize
+    case minSeats
+    case `for`
+  }
+}
+
+private struct PasskeyFactorArgs: Encodable {
+  var strategy: String
+  var redirectUrl: String?
+  var publicKeyCredential: String?
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(strategy, forKey: .strategy)
+    try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+    try container.encodeIfPresent(publicKeyCredential, forKey: .publicKeyCredential)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case strategy
+    case redirectUrl
+    case publicKeyCredential
+  }
+}
+
+private struct ReloadArgs: Encodable {
+  var rotatingTokenNonce: String?
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encodeIfPresent(rotatingTokenNonce, forKey: .rotatingTokenNonce)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case rotatingTokenNonce
+  }
+}
+
+private enum SessionListedJSMethod: String {
+  case revoke
+}
+
+package enum ClerkInstanceRoot: String {
+  case billing
   case signIn
   case signUp
-  case billing
+  case user
 }
 
 @MainActor
@@ -124,7 +203,7 @@ package protocol ClerkEngineClient: AnyObject {
     method: String,
     args: Data
   ) async throws -> Data
-  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data
+  func callInstance(root: String, method: String, args: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
   func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data
@@ -447,29 +526,228 @@ extension Clerk {
   }
 
   @MainActor
-  package static func callResourceSteps(
-    _ receiver: ClerkResourceReceiver,
-    _ steps: [[String: Any]]
+  package static func callInstance(
+    _ root: ClerkInstanceRoot,
+    _ method: some RawRepresentable<String>,
+    _ args: some Encodable = EmptyEngineArgs()
   ) async throws {
     let engine = try await requireEngineClient()
-    _ = try await engine.callResourceSteps(
-      receiver: receiver,
-      steps: JSONSerialization.data(withJSONObject: steps)
+    _ = try await engine.callInstance(
+      root: root.rawValue,
+      method: method.rawValue,
+      args: JSONEncoder().encode(args)
     )
   }
 
   @MainActor
-  package static func callResourceSteps<T: Decodable>(
-    _ receiver: ClerkResourceReceiver,
-    _ steps: [[String: Any]],
+  package static func callInstance<T: Decodable>(
+    _ root: ClerkInstanceRoot,
+    _ method: some RawRepresentable<String>,
+    _ args: some Encodable = EmptyEngineArgs(),
     as _: T.Type
   ) async throws -> T {
     let engine = try await requireEngineClient()
-    let data = try await engine.callResourceSteps(
-      receiver: receiver,
-      steps: JSONSerialization.data(withJSONObject: steps)
+    let data = try await engine.callInstance(
+      root: root.rawValue,
+      method: method.rawValue,
+      args: JSONEncoder().encode(args)
     )
     return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
+  }
+
+  @MainActor
+  package static func getBillingPlans(_ params: GetPlansParams?) async throws -> ClerkPaginatedResponse<BillingPlan> {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getPlans,
+      BillingQueryArgs(
+        id: nil,
+        orgId: params?.orgId,
+        initialPage: params?.initialPage,
+        pageSize: params?.pageSize,
+        minSeats: params?.minSeats,
+        for: params?.for?.rawValue
+      ),
+      as: ClerkPaginatedResponse<BillingPlan>.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingPlan(id: String) async throws -> BillingPlan {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getPlan,
+      BillingQueryArgs(id: id),
+      as: BillingPlan.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingSubscription(orgId: String?) async throws -> BillingSubscription {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getSubscription,
+      BillingQueryArgs(orgId: orgId),
+      as: BillingSubscription.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingStatements(
+    orgId: String?,
+    initialPage: Int?,
+    pageSize: Int?
+  ) async throws -> ClerkPaginatedResponse<BillingStatement> {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getStatements,
+      BillingQueryArgs(orgId: orgId, initialPage: initialPage, pageSize: pageSize),
+      as: ClerkPaginatedResponse<BillingStatement>.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingStatement(
+    id: String,
+    orgId: String?,
+    initialPage: Int?,
+    pageSize: Int?
+  ) async throws -> BillingStatement {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getStatement,
+      BillingQueryArgs(id: id, orgId: orgId, initialPage: initialPage, pageSize: pageSize),
+      as: BillingStatement.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingPaymentAttempts(
+    orgId: String?,
+    initialPage: Int?,
+    pageSize: Int?
+  ) async throws -> ClerkPaginatedResponse<BillingPayment> {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getPaymentAttempts,
+      BillingQueryArgs(orgId: orgId, initialPage: initialPage, pageSize: pageSize),
+      as: ClerkPaginatedResponse<BillingPayment>.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingPaymentAttempt(
+    id: String,
+    orgId: String?,
+    initialPage: Int?,
+    pageSize: Int?
+  ) async throws -> BillingPayment {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getPaymentAttempt,
+      BillingQueryArgs(id: id, orgId: orgId, initialPage: initialPage, pageSize: pageSize),
+      as: BillingPayment.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingCreditBalance(orgId: String?) async throws -> BillingCreditBalance {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getCreditBalance,
+      BillingQueryArgs(orgId: orgId),
+      as: BillingCreditBalance.self
+    )
+  }
+
+  @MainActor
+  package static func getBillingCreditHistory(orgId: String?) async throws -> ClerkPaginatedResponse<BillingCreditLedger> {
+    try await callInstance(
+      .billing,
+      BillingJSMethod.getCreditHistory,
+      BillingQueryArgs(orgId: orgId),
+      as: ClerkPaginatedResponse<BillingCreditLedger>.self
+    )
+  }
+
+  @MainActor
+  package static func getUserPaymentMethods(
+    initialPage: Int?,
+    pageSize: Int?
+  ) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+    try await callInstance(
+      .user,
+      UserJSMethod.getPaymentMethods,
+      OptionalPageArgs(initialPage: initialPage, pageSize: pageSize),
+      as: ClerkPaginatedResponse<BillingPaymentMethod>.self
+    )
+  }
+
+  @MainActor
+  package static func prepareSignInPasskeyFirstFactor() async throws {
+    try await callInstance(
+      .signIn,
+      SignInJSMethod.prepareFirstFactor,
+      PasskeyFactorArgs(
+        strategy: "passkey",
+        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+      )
+    )
+  }
+
+  @MainActor
+  package static func prepareSignInPasskeySecondFactor() async throws {
+    try await callInstance(
+      .signIn,
+      SignInJSMethod.prepareSecondFactor,
+      PasskeyFactorArgs(strategy: "passkey")
+    )
+  }
+
+  @MainActor
+  package static func attemptSignInPasskeyFirstFactor(credential: String) async throws {
+    try await callInstance(
+      .signIn,
+      SignInJSMethod.attemptFirstFactor,
+      PasskeyFactorArgs(strategy: "passkey", publicKeyCredential: credential)
+    )
+  }
+
+  @MainActor
+  package static func attemptSignInPasskeySecondFactor(credential: String) async throws {
+    try await callInstance(
+      .signIn,
+      SignInJSMethod.attemptSecondFactor,
+      PasskeyFactorArgs(strategy: "passkey", publicKeyCredential: credential)
+    )
+  }
+
+  @MainActor
+  package static func reloadSignIn(rotatingTokenNonce: String?) async throws {
+    try await callInstance(
+      .signIn,
+      SignInJSMethod.reload,
+      ReloadArgs(rotatingTokenNonce: rotatingTokenNonce)
+    )
+  }
+
+  @MainActor
+  package static func reloadSignUp(rotatingTokenNonce: String?) async throws {
+    try await callInstance(
+      .signUp,
+      SignUpJSMethod.reload,
+      ReloadArgs(rotatingTokenNonce: rotatingTokenNonce)
+    )
+  }
+
+  @MainActor
+  package static func revokeSession(id: String) async throws -> Session {
+    try await callListedChild(
+      locate: "getSessions",
+      findId: id,
+      method: SessionListedJSMethod.revoke,
+      as: Session.self
+    )
   }
 
   @MainActor

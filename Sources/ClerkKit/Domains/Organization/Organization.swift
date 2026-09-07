@@ -346,15 +346,31 @@ extension Organization {
 
   @MainActor
   public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await Clerk.callResourceSteps(
-      .organization(id),
-      [["method": "getPaymentMethods", "args": paymentMethodArgs(params)]],
+    try await call(
+      OrganizationJSMethod.getPaymentMethods.rawValue,
+      PaymentMethodsArgs(initialPage: params?.initialPage, pageSize: params?.pageSize),
       as: ClerkPaginatedResponse<BillingPaymentMethod>.self
     )
   }
 }
 
 extension Organization {
+  private struct PaymentMethodsArgs: Encodable {
+    var initialPage: Int?
+    var pageSize: Int?
+
+    func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encodeIfPresent(initialPage, forKey: .initialPage)
+      try container.encodeIfPresent(pageSize, forKey: .pageSize)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+      case initialPage
+      case pageSize
+    }
+  }
+
   private struct EmptyArgs: Encodable {}
 
   private struct UpdateArgs: Encodable {

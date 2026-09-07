@@ -551,11 +551,13 @@ struct ClerkEngineClientTests {
     installFailingSessionService(kitCalls)
 
     let revoked = try await Session.mock.revoke()
-    #expect(stepMethods(engine.resourceSteps) == ["getSessions", "revoke"])
+    #expect(engine.listedLocate == "getSessions")
+    #expect(engine.listedMethod == "revoke")
     #expect(revoked.id == Session.mock.id)
 
     _ = try await Clerk.shared.auth.revokeSession(.mock)
-    #expect(stepMethods(engine.resourceSteps) == ["getSessions", "revoke"])
+    #expect(engine.listedLocate == "getSessions")
+    #expect(engine.listedMethod == "revoke")
     #expect(kitCalls.sessionRevokeCount == 0)
   }
 
@@ -571,15 +573,16 @@ struct ClerkEngineClientTests {
     signedIn.firstFactorVerification = Verification(status: .verified)
     engine.signInOnReload = signedIn
     let reloadedSignIn = try await SignIn.mock.reload(rotatingTokenNonce: "test_nonce")
-    #expect(engine.resourceReceiver == .signIn)
-    #expect(stepMethods(engine.resourceSteps) == ["reload"])
+    #expect(engine.instanceRoot == "signIn")
+    #expect(engine.instanceMethod == "reload")
     #expect(engine.reloadedNonce == "test_nonce")
     #expect(reloadedSignIn.firstFactorVerification?.status == .verified)
     #expect(kitCalls.signInGetCount == 0)
 
     engine.signUpOnReload = .mock
     let reloadedSignUp = try await SignUp.mock.reload()
-    #expect(engine.resourceReceiver == .signUp)
+    #expect(engine.instanceRoot == "signUp")
+    #expect(engine.instanceMethod == "reload")
     #expect(engine.reloadedNonce == nil)
     #expect(reloadedSignUp.id == SignUp.mock.id)
     #expect(kitCalls.signUpGetCount == 0)
@@ -595,12 +598,12 @@ struct ClerkEngineClientTests {
     let plans = try await Clerk.shared.billing.getPlans(
       params: .init(for: .organization, orgId: "org_123", minSeats: 5, initialPage: 3, pageSize: 10)
     )
-    #expect(engine.resourceReceiver == .billing)
-    #expect(stepMethods(engine.resourceSteps) == ["getPlans"])
-    #expect(stepArgs(engine.resourceSteps)["for"] as? String == "organization")
-    #expect(stepArgs(engine.resourceSteps)["orgId"] as? String == "org_123")
-    #expect(stepArgs(engine.resourceSteps)["minSeats"] as? Int == 5)
-    #expect(stepArgs(engine.resourceSteps)["initialPage"] as? Int == 3)
+    #expect(engine.instanceRoot == "billing")
+    #expect(engine.instanceMethod == "getPlans")
+    #expect(engine.instanceArgsObject["for"] as? String == "organization")
+    #expect(engine.instanceArgsObject["orgId"] as? String == "org_123")
+    #expect(engine.instanceArgsObject["minSeats"] as? Int == 5)
+    #expect(engine.instanceArgsObject["initialPage"] as? Int == 3)
     #expect(plans.data.first?.id == BillingPlan.mock.id)
 
     _ = try await Clerk.shared.billing.getPlan(params: .init(id: "plan_1"))
@@ -612,10 +615,11 @@ struct ClerkEngineClientTests {
     _ = try await Clerk.shared.billing.getCreditBalance(params: .init())
     _ = try await Clerk.shared.billing.getCreditHistory(params: .init())
     _ = try await User.mock.getPaymentMethods()
-    #expect(engine.resourceReceiver == .user)
-    #expect(stepMethods(engine.resourceSteps) == ["getPaymentMethods"])
+    #expect(engine.instanceRoot == "user")
+    #expect(engine.instanceMethod == "getPaymentMethods")
     _ = try await Organization.mock.getPaymentMethods()
-    #expect(engine.resourceReceiver == .organization(Organization.mock.id))
+    #expect(engine.organizationMethodId == Organization.mock.id)
+    #expect(engine.organizationMethodName == "getPaymentMethods")
     #expect(kitCalls.billingServiceCount == 0)
   }
 
@@ -1473,18 +1477,28 @@ final class RecordingEngineClient: ClerkEngineClient {
       return try JSONEncoder.clerkEncoder.encode(
         ClerkPaginatedResponse(data: [OrganizationMembershipRequest.mock], totalCount: 1)
       )
+    case "getPaymentMethods":
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [BillingPaymentMethod.mock], totalCount: 1)
+      )
     default:
       throw ClerkClientError(message: "Unexpected organization method \(method)")
     }
   }
 
-  var resourceReceiver: ClerkResourceReceiver?
-  var resourceSteps: Data?
-  var allResourceMethods: [String] = []
-  var resourceStepErrors: [String: any Error] = [:]
+  var instanceRoot: String?
+  var instanceMethod: String?
+  var instanceArgs: Data?
+  var allInstanceMethods: [String] = []
+  var instanceMethodErrors: [String: any Error] = [:]
   var reloadedNonce: String?
   var signInOnReload = SignIn.mock
   var signUpOnReload = SignUp.mock
+
+  var instanceArgsObject: [String: Any] {
+    jsonObject(instanceArgs)
+  }
+
   var userChildPick: String?
   var userChildId: String?
   var userChildMethod: String?
@@ -1539,63 +1553,47 @@ final class RecordingEngineClient: ClerkEngineClient {
       return try JSONEncoder.clerkEncoder.encode(OrganizationSuggestion.mock)
     case "getMembershipRequests":
       return try JSONEncoder.clerkEncoder.encode(OrganizationMembershipRequest.mock)
+    case "getSessions":
+      return try JSONEncoder.clerkEncoder.encode(Session.mock)
     default:
       throw ClerkClientError(message: "Unexpected listed child \(locate)")
     }
   }
 
-  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
-    resourceReceiver = receiver
-    resourceSteps = steps
-    let methods = stepMethods(steps)
-    let picks = stepPicks(steps)
-    allResourceMethods.append(contentsOf: methods)
-    if let method = methods.first, let error = resourceStepErrors[method] {
+  func callInstance(root: String, method: String, args: Data) async throws -> Data {
+    instanceRoot = root
+    instanceMethod = method
+    instanceArgs = args
+    allInstanceMethods.append(method)
+    if let error = instanceMethodErrors[method] {
       throw error
     }
-    if methods.contains("prepareFirstFactor")
-      || methods.contains("prepareSecondFactor")
-      || methods.contains("attemptFirstFactor")
-      || methods.contains("attemptSecondFactor")
+    if method == "prepareFirstFactor"
+      || method == "prepareSecondFactor"
+      || method == "attemptFirstFactor"
+      || method == "attemptSecondFactor"
     {
       publish(signInOnReload)
       return try JSONEncoder.clerkEncoder.encode(signInOnReload)
     }
-    if methods.contains("reload") {
-      reloadedNonce = stepArgs(steps)["rotatingTokenNonce"] as? String
-      switch receiver {
-      case .signIn:
+    if method == "reload" {
+      reloadedNonce = jsonObject(args)["rotatingTokenNonce"] as? String
+      if root == "signIn" {
         publish(signInOnReload)
         return try JSONEncoder.clerkEncoder.encode(signInOnReload)
-      case .signUp:
+      }
+      if root == "signUp" {
         publish(signUpOnReload)
         return try JSONEncoder.clerkEncoder.encode(signUpOnReload)
-      case .organization, .user, .billing:
-        break
       }
     }
-    if methods.contains("destroy") || (methods.contains("delete") && picks.contains("passkeys")) {
-      return Data(#"{"id":"1","deleted":true}"#.utf8)
-    }
-    if picks.contains("emailAddresses") {
-      return try JSONEncoder.clerkEncoder.encode(EmailAddress.mock)
-    }
-    if picks.contains("phoneNumbers") {
-      return try JSONEncoder.clerkEncoder.encode(PhoneNumber.mock)
-    }
-    if picks.contains("passkeys") {
-      return try JSONEncoder.clerkEncoder.encode(Passkey.mock)
-    }
-    if picks.contains("externalAccounts") {
-      return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
-    }
-    if methods.contains("getPaymentMethods") {
+    if method == "getPaymentMethods" {
       return try JSONEncoder.clerkEncoder.encode(
         ClerkPaginatedResponse(data: [BillingPaymentMethod.mock], totalCount: 1)
       )
     }
-    if receiver == .billing {
-      switch methods.first {
+    if root == "billing" {
+      switch method {
       case "getPlans":
         return try JSONEncoder.clerkEncoder.encode(
           ClerkPaginatedResponse(data: [BillingPlan.mock], totalCount: 1)
@@ -1623,52 +1621,10 @@ final class RecordingEngineClient: ClerkEngineClient {
           ClerkPaginatedResponse(data: [BillingCreditLedger.mock], totalCount: 1)
         )
       default:
-        throw ClerkClientError(message: "Unexpected billing method \(methods)")
+        throw ClerkClientError(message: "Unexpected billing method \(method)")
       }
     }
-    if methods.contains("getSessions") {
-      return try JSONEncoder.clerkEncoder.encode(Session.mock)
-    }
-    if methods.contains("revoke") {
-      return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
-    }
-    if methods.contains("delete") {
-      return Data(#"{"id":"1","deleted":true}"#.utf8)
-    }
-    if methods.contains("getDomain") {
-      return try JSONEncoder.clerkEncoder.encode(OrganizationDomain.mock)
-    }
-    if methods.contains("getOrganizationInvitations") {
-      return try JSONEncoder.clerkEncoder.encode(UserOrganizationInvitation.mock)
-    }
-    if methods.contains("getOrganizationSuggestions") {
-      return try JSONEncoder.clerkEncoder.encode(OrganizationSuggestion.mock)
-    }
-    if methods.contains("getMembershipRequests") {
-      return try JSONEncoder.clerkEncoder.encode(OrganizationMembershipRequest.mock)
-    }
-    throw ClerkClientError(message: "Unexpected resource steps \(methods)")
-  }
-
-  private func stepMethods(_ data: Data) -> [String] {
-    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-      return []
-    }
-    return steps.compactMap { $0["method"] as? String }
-  }
-
-  private func stepPicks(_ data: Data) -> [String] {
-    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-      return []
-    }
-    return steps.compactMap { $0["pick"] as? String }
-  }
-
-  private func stepArgs(_ data: Data) -> [String: Any] {
-    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-      return [:]
-    }
-    return steps.compactMap { $0["args"] as? [String: Any] }.first ?? [:]
+    throw ClerkClientError(message: "Unexpected instance method \(root).\(method)")
   }
 
   var fetchedInvitationPage: Int?
@@ -2117,33 +2073,6 @@ private func installFailingBillingService(_ counts: KitCallCounter) {
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager
     .configure(publishableKey: testPublishableKey, options: .init())
-}
-
-private func stepArgs(_ data: Data?) -> [String: Any] {
-  guard let data,
-        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-  else {
-    return [:]
-  }
-  return steps.compactMap { $0["args"] as? [String: Any] }.first ?? [:]
-}
-
-private func stepPicks(_ data: Data?) -> [String] {
-  guard let data,
-        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-  else {
-    return []
-  }
-  return steps.compactMap { $0["pick"] as? String }
-}
-
-private func stepMethods(_ data: Data?) -> [String] {
-  guard let data,
-        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-  else {
-    return []
-  }
-  return steps.compactMap { $0["method"] as? String }
 }
 
 private func jsonObject(_ data: Data?) -> [String: Any] {

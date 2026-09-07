@@ -511,21 +511,9 @@ extension SignIn {
     let signIn: SignIn
     do {
       if usesSecondFactor {
-        try await Clerk.callResourceSteps(
-          .signIn,
-          [["method": "prepareSecondFactor", "args": ["strategy": "passkey"]]]
-        )
+        try await Clerk.prepareSignInPasskeySecondFactor()
       } else {
-        try await Clerk.callResourceSteps(
-          .signIn,
-          [[
-            "method": "prepareFirstFactor",
-            "args": [
-              "strategy": "passkey",
-              "redirectUrl": Clerk.shared.options.redirectConfig.redirectUrl,
-            ],
-          ]]
-        )
+        try await Clerk.prepareSignInPasskeyFirstFactor()
       }
       signIn = try Clerk.requireEngineSignIn()
     } catch {
@@ -547,27 +535,9 @@ extension SignIn {
 
     do {
       if usesSecondFactor {
-        try await Clerk.callResourceSteps(
-          .signIn,
-          [[
-            "method": "attemptSecondFactor",
-            "args": [
-              "strategy": "passkey",
-              "publicKeyCredential": credential,
-            ],
-          ]]
-        )
+        try await Clerk.attemptSignInPasskeySecondFactor(credential: credential)
       } else {
-        try await Clerk.callResourceSteps(
-          .signIn,
-          [[
-            "method": "attemptFirstFactor",
-            "args": [
-              "strategy": "passkey",
-              "publicKeyCredential": credential,
-            ],
-          ]]
-        )
+        try await Clerk.attemptSignInPasskeyFirstFactor(credential: credential)
       }
       return try Clerk.requireEngineSignIn()
     } catch {
@@ -591,14 +561,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    var args: [String: Any] = [:]
-    if let rotatingTokenNonce {
-      args["rotatingTokenNonce"] = rotatingTokenNonce
-    }
-    try await Clerk.callResourceSteps(
-      .signIn,
-      [["method": "reload", "args": args]]
-    )
+    try await Clerk.reloadSignIn(rotatingTokenNonce: rotatingTokenNonce)
     return try Clerk.requireEngineSignIn()
   }
 

@@ -64,10 +64,10 @@ struct SignInTests {
     let engine = RecordingEngineClient()
     engine.signInOnReload = .mock
     if expectedStage == .preparingFirstFactor {
-      engine.resourceStepErrors["prepareFirstFactor"] = PasskeyTestError.preparationFailed
+      engine.instanceMethodErrors["prepareFirstFactor"] = PasskeyTestError.preparationFailed
     }
     if expectedStage == .attemptingFirstFactor {
-      engine.resourceStepErrors["attemptFirstFactor"] = PasskeyTestError.attemptFailed
+      engine.instanceMethodErrors["attemptFirstFactor"] = PasskeyTestError.attemptFailed
     }
     Clerk.engineClient = engine
 
@@ -125,13 +125,10 @@ struct SignInTests {
 
     _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
 
-    #expect(engine.allResourceMethods == ["prepareSecondFactor", "attemptSecondFactor"])
-    #expect(engine.resourceReceiver == .signIn)
-    let steps = try #require(engine.resourceSteps)
-    let list = try #require(JSONSerialization.jsonObject(with: steps) as? [[String: Any]])
-    let args = try #require(list.last?["args"] as? [String: Any])
-    #expect(args["strategy"] as? String == "passkey")
-    #expect(args["publicKeyCredential"] as? String == "credential")
+    #expect(engine.allInstanceMethods == ["prepareSecondFactor", "attemptSecondFactor"])
+    #expect(engine.instanceRoot == "signIn")
+    #expect(engine.instanceArgsObject["strategy"] as? String == "passkey")
+    #expect(engine.instanceArgsObject["publicKeyCredential"] as? String == "credential")
   }
 
   @Test(arguments: [
@@ -149,10 +146,10 @@ struct SignInTests {
     let engine = RecordingEngineClient()
     engine.signInOnReload = signIn
     if expectedStage == .preparingSecondFactor {
-      engine.resourceStepErrors["prepareSecondFactor"] = PasskeyTestError.secondFactorPreparationFailed
+      engine.instanceMethodErrors["prepareSecondFactor"] = PasskeyTestError.secondFactorPreparationFailed
     }
     if expectedStage == .attemptingSecondFactor {
-      engine.resourceStepErrors["attemptSecondFactor"] = PasskeyTestError.secondFactorAttemptFailed
+      engine.instanceMethodErrors["attemptSecondFactor"] = PasskeyTestError.secondFactorAttemptFailed
     }
     Clerk.engineClient = engine
 

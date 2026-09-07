@@ -368,8 +368,28 @@ public final class Clerk {
     )
   }
 
-  public func callUserSteps(_ steps: Data) async throws -> Data {
-    try await callSteps(receiverPath: ClerkJSPath.userRoot, receiverArg: nil, steps: steps)
+  public func callInstanceMethod(root: String, method: String, args: Data) async throws -> Data {
+    let receiverPath: String
+    switch root {
+    case "billing":
+      receiverPath = ClerkJSPath.billingRoot
+    case "signIn":
+      receiverPath = ClerkJSPath.signInRoot
+    case "signUp":
+      receiverPath = ClerkJSPath.signUpRoot
+    case "user":
+      receiverPath = ClerkJSPath.userRoot
+    default:
+      throw ClerkJSCoreError.invalidArgument("root")
+    }
+    let argsObject = (try? JSONSerialization.jsonObject(with: args)) ?? [String: Any]()
+    return try await callSteps(
+      receiverPath: receiverPath,
+      receiverArg: nil,
+      steps: JSONSerialization.data(withJSONObject: [
+        ["method": method, "args": argsObject],
+      ])
+    )
   }
 
   public func userChild(pick: String, id: String) -> UserChildHandle {
@@ -410,18 +430,6 @@ public final class Clerk {
         steps: JSONSerialization.data(withJSONObject: steps)
       )
     }
-  }
-
-  public func callSignInSteps(_ steps: Data) async throws -> Data {
-    try await callSteps(receiverPath: ClerkJSPath.signInRoot, receiverArg: nil, steps: steps)
-  }
-
-  public func callSignUpSteps(_ steps: Data) async throws -> Data {
-    try await callSteps(receiverPath: ClerkJSPath.signUpRoot, receiverArg: nil, steps: steps)
-  }
-
-  public func callBillingSteps(_ steps: Data) async throws -> Data {
-    try await callSteps(receiverPath: ClerkJSPath.billingRoot, receiverArg: nil, steps: steps)
   }
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
