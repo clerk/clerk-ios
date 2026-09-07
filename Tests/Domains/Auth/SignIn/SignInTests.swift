@@ -342,20 +342,14 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .verified)
 
-    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let service = MockSignInService(get: { id, params in
-      captured.setValue((id, params))
-      return reloadedSignIn
-    })
-
-    configureService(service)
+    let engine = RecordingEngineClient()
+    engine.signInOnReload = reloadedSignIn
+    Clerk.engineClient = engine
 
     let callbackURL = try #require(URL(string: "myapp://callback?rotating_token_nonce=test_nonce"))
     let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == "test_nonce")
+    #expect(engine.reloadedNonce == "test_nonce")
 
     switch result {
     case .signIn(let updatedSignIn):
@@ -373,20 +367,16 @@ struct SignInTests {
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
 
     let engine = RecordingEngineClient()
+    engine.signInOnReload = reloadedSignIn
     Clerk.engineClient = engine
 
-    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
     let createCount = LockIsolated(0)
-    let signInService = MockSignInService(get: { id, params in
-      getCaptured.setValue((id, params))
-      return reloadedSignIn
-    })
     let signUpService = MockSignUpService(create: { _ in
       createCount.setValue(createCount.value + 1)
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     })
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureServices(signUpService: signUpService)
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
@@ -394,9 +384,7 @@ struct SignInTests {
       unsafeMetadata: metadata
     )
 
-    let getParams = try #require(getCaptured.value)
-    #expect(getParams.0 == signIn.id)
-    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(engine.reloadedNonce == nil)
     #expect(engine.transferredToSignUpMetadata == metadata)
     #expect(createCount.value == 0)
 
@@ -414,11 +402,9 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
 
-    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let signInService = MockSignInService(get: { id, params in
-      getCaptured.setValue((id, params))
-      return reloadedSignIn
-    })
+    let engine = RecordingEngineClient()
+    engine.signInOnReload = reloadedSignIn
+    Clerk.engineClient = engine
 
     let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
     let signUpService = MockSignUpService(create: { params in
@@ -426,7 +412,7 @@ struct SignInTests {
       return .mock
     })
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureServices(signUpService: signUpService)
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
@@ -434,9 +420,7 @@ struct SignInTests {
       transferable: false
     )
 
-    let getParams = try #require(getCaptured.value)
-    #expect(getParams.0 == signIn.id)
-    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(engine.reloadedNonce == nil)
     #expect(createCaptured.value == nil)
 
     switch result {
@@ -445,34 +429,5 @@ struct SignInTests {
     case .signUp:
       Issue.record("Expected sign-in result.")
     }
-  }
-
-  struct ReloadScenario: Codable, Equatable {
-    let rotatingTokenNonce: String?
-  }
-
-  @Test(
-    arguments: [
-      ReloadScenario(rotatingTokenNonce: nil),
-      ReloadScenario(rotatingTokenNonce: "test_nonce"),
-    ]
-  )
-  func reloadUsesSignInServiceGet(
-    scenario: ReloadScenario
-  ) async throws {
-    let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let service = MockSignInService(get: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signIn.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
   }
 }

@@ -502,6 +502,10 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       try await engine.organization(id).callSteps(steps)
     case .user:
       try await engine.callUserSteps(steps)
+    case .signIn:
+      try await engine.callSignInSteps(steps)
+    case .signUp:
+      try await engine.callSignUpSteps(steps)
     }
     publish()
     return data

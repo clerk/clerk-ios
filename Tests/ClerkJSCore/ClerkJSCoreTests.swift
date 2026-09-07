@@ -223,6 +223,35 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceStepsReloadsSignInWithNonce() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          client: {
+            signIn: {
+              reload: function(params) {
+                return Promise.resolve({ id: 'sia_1', nonce: params.rotatingTokenNonce || null });
+              }
+            }
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceSteps(
+      receiverPath: "__clerkInstance.client.signIn",
+      receiverArgJSON: "null",
+      stepsJSON: #"[{"method":"reload","args":{"rotatingTokenNonce":"test_nonce"}}]"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    #expect(payload?["id"] as? String == "sia_1")
+    #expect(payload?["nonce"] as? String == "test_nonce")
+  }
+
+  @Test
   func callOnResourceStepsFindsChildInReturnedArray() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(

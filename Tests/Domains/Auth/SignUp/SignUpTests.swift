@@ -10,17 +10,6 @@ struct SignUpTests {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockSignUpService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signUpService: service
-    )
-  }
-
-  struct ReloadScenario: Codable, Equatable {
-    let rotatingTokenNonce: String?
-  }
-
   @Test
   func sendEmailLinkSavesPendingFlowBeforePrepare() async throws {
     let keychain = InMemoryKeychain()
@@ -64,30 +53,5 @@ struct SignUpTests {
       try await signUp.sendEmailLink()
     }
     #expect(prepareWasCalled.value == false)
-  }
-
-  @Test(
-    arguments: [
-      ReloadScenario(rotatingTokenNonce: nil),
-      ReloadScenario(rotatingTokenNonce: "test_nonce"),
-    ]
-  )
-  func reloadUsesSignUpServiceGet(
-    scenario: ReloadScenario
-  ) async throws {
-    let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.GetParams)?>(nil)
-    let service = MockSignUpService(get: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await signUp.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
-
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
   }
 }

@@ -548,6 +548,32 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func signInAndSignUpReloadUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+    installFailingSignUpService(kitCalls)
+
+    var signedIn = SignIn.mock
+    signedIn.firstFactorVerification = Verification(status: .verified)
+    engine.signInOnReload = signedIn
+    let reloadedSignIn = try await SignIn.mock.reload(rotatingTokenNonce: "test_nonce")
+    #expect(engine.resourceReceiver == .signIn)
+    #expect(stepMethods(engine.resourceSteps) == ["reload"])
+    #expect(engine.reloadedNonce == "test_nonce")
+    #expect(reloadedSignIn.firstFactorVerification?.status == .verified)
+    #expect(kitCalls.signInGetCount == 0)
+
+    engine.signUpOnReload = .mock
+    let reloadedSignUp = try await SignUp.mock.reload()
+    #expect(engine.resourceReceiver == .signUp)
+    #expect(engine.reloadedNonce == nil)
+    #expect(reloadedSignUp.id == SignUp.mock.id)
+    #expect(kitCalls.signUpGetCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1408,12 +1434,28 @@ final class RecordingEngineClient: ClerkEngineClient {
 
   var resourceReceiver: ClerkResourceReceiver?
   var resourceSteps: Data?
+  var reloadedNonce: String?
+  var signInOnReload = SignIn.mock
+  var signUpOnReload = SignUp.mock
 
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
     resourceReceiver = receiver
     resourceSteps = steps
     let methods = stepMethods(steps)
     let picks = stepPicks(steps)
+    if methods.contains("reload") {
+      reloadedNonce = stepArgs(steps)["rotatingTokenNonce"] as? String
+      switch receiver {
+      case .signIn:
+        publish(signInOnReload)
+        return try JSONEncoder.clerkEncoder.encode(signInOnReload)
+      case .signUp:
+        publish(signUpOnReload)
+        return try JSONEncoder.clerkEncoder.encode(signUpOnReload)
+      case .organization, .user:
+        break
+      }
+    }
     if methods.contains("destroy") || (methods.contains("delete") && picks.contains("passkeys")) {
       return Data(#"{"id":"1","deleted":true}"#.utf8)
     }
@@ -1465,6 +1507,13 @@ final class RecordingEngineClient: ClerkEngineClient {
       return []
     }
     return steps.compactMap { $0["pick"] as? String }
+  }
+
+  private func stepArgs(_ data: Data) -> [String: Any] {
+    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+      return [:]
+    }
+    return steps.compactMap { $0["args"] as? [String: Any] }.first ?? [:]
   }
 
   var fetchedInvitationPage: Int?
@@ -1667,6 +1716,8 @@ private final class KitCallCounter {
   var identifierServiceCount = 0
   var sessionVerificationCount = 0
   var sessionRevokeCount = 0
+  var signInGetCount = 0
+  var signUpGetCount = 0
 }
 
 @MainActor
@@ -1694,6 +1745,10 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
     },
     resetPassword: { _, _ in
       counts.resetPasswordCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    get: { _, _ in
+      counts.signInGetCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     }
   )
@@ -1754,6 +1809,10 @@ private func installFailingSignUpService(_ counts: KitCallCounter) {
     },
     update: { _, _ in
       counts.signUpUpdateCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    get: { _, _ in
+      counts.signUpGetCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     }
   )

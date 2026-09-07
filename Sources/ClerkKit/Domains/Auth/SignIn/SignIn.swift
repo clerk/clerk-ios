@@ -576,7 +576,15 @@ extension SignIn {
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    var args: [String: Any] = [:]
+    if let rotatingTokenNonce {
+      args["rotatingTokenNonce"] = rotatingTokenNonce
+    }
+    try await Clerk.callResourceSteps(
+      .signIn,
+      [["method": "reload", "args": args]]
+    )
+    return try Clerk.requireEngineSignIn()
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)

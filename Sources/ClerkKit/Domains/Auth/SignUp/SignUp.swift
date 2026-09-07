@@ -289,6 +289,14 @@ extension SignUp {
   /// Returns the current sign up.
   @discardableResult @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await signUpService.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    var args: [String: Any] = [:]
+    if let rotatingTokenNonce {
+      args["rotatingTokenNonce"] = rotatingTokenNonce
+    }
+    try await Clerk.callResourceSteps(
+      .signUp,
+      [["method": "reload", "args": args]]
+    )
+    return try Clerk.requireEngineSignUp()
   }
 }

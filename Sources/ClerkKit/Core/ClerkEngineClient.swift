@@ -3,6 +3,8 @@ import Foundation
 package enum ClerkResourceReceiver: Equatable {
   case organization(String)
   case user
+  case signIn
+  case signUp
 }
 
 @MainActor
@@ -142,6 +144,18 @@ extension Clerk {
     let created = await makeEngineClient(shared)
     engineClient = created
     return created
+  }
+
+  @MainActor
+  package static func callResourceSteps(
+    _ receiver: ClerkResourceReceiver,
+    _ steps: [[String: Any]]
+  ) async throws {
+    let engine = try await requireEngineClient()
+    _ = try await engine.callResourceSteps(
+      receiver: receiver,
+      steps: JSONSerialization.data(withJSONObject: steps)
+    )
   }
 
   @MainActor
