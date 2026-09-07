@@ -25,9 +25,10 @@ enum ClerkRuntimeStore {
     }
   }
 
-  static func loadIfNeeded(_ clerk: ClerkJSCore.Clerk, key: String) async {
+  static func loadIfNeeded(_ clerk: ClerkJSCore.Clerk, key: String, onto kit: ClerkKit.Clerk) async {
     if let existing = loadTasks[key] {
       try? await existing.value
+      publish(clerk, onto: kit)
       return
     }
     let task = Task {
@@ -36,9 +37,16 @@ enum ClerkRuntimeStore {
     loadTasks[key] = task
     do {
       try await task.value
+      publish(clerk, onto: kit)
     } catch {
       loadTasks[key] = nil
     }
+  }
+
+  static func publish(_ engine: ClerkJSCore.Clerk, onto kit: ClerkKit.Clerk) {
+    guard let data = engine.lastClientJSON else { return }
+    let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
+    try? kit.applyEngineClientJSON(payload)
   }
 }
 
@@ -58,7 +66,13 @@ struct ClerkRuntimeContainer<Content: View>: View {
       .task(id: clerk.publishableKey) {
         let created = ClerkRuntimeStore.shared(for: clerk.publishableKey)
         engine = created
-        await ClerkRuntimeStore.loadIfNeeded(created, key: clerk.publishableKey)
+        await ClerkRuntimeStore.loadIfNeeded(created, key: clerk.publishableKey, onto: clerk)
+      }
+      .onChange(of: resolved.user?.id) { _, _ in
+        ClerkRuntimeStore.publish(resolved, onto: clerk)
+      }
+      .onChange(of: resolved.session.id) { _, _ in
+        ClerkRuntimeStore.publish(resolved, onto: clerk)
       }
   }
 }

@@ -134,6 +134,10 @@ public final class Clerk {
     session.user
   }
 
+  package var lastClientJSON: Data? {
+    runtime.lastFAPIClientJSON
+  }
+
   public func load() async throws {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()

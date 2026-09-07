@@ -44,6 +44,7 @@ extension View {
       }
       let runtime = jsCorePreviewClerk(isSignedIn: isSignedIn)
       ClerkRuntimeStore.register(runtime, for: clerk.publishableKey, alreadyLoaded: true)
+      ClerkRuntimeStore.publish(runtime, onto: clerk)
 
       return AnyView(
         environment(clerk)

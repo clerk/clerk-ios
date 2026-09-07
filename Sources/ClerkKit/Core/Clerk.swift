@@ -915,6 +915,15 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  package func applyEngineClientJSON(_ data: Data) throws {
+    if let client = ClerkClientSyncResponseMiddleware.decodeClient(from: data) {
+      setClientFromIdentityController(client)
+      return
+    }
+    let client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
+    setClientFromIdentityController(client)
+  }
+
   /// Applies a client value after the identity controller has established its mutation boundary.
   func setClientFromIdentityController(
     _ client: Client?,

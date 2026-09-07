@@ -168,6 +168,9 @@ public enum FAPIJSON {
     if missing(email, "matches_sso_connection") {
       email["matches_sso_connection"] = false
     }
+    if missing(email, "created_at") {
+      email["created_at"] = 0
+    }
     return email
   }
 
