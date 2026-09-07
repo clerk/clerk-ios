@@ -5,21 +5,18 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorTwoBackupCodeView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
 
   @FocusState private var isFocused: Bool
   @State private var fieldError: Error?
-
-  var signIn: SignIn? {
-    clerk.auth.currentSignIn
-  }
 
   let factor: Factor
 
@@ -104,12 +101,16 @@ extension SignInFactorTwoBackupCodeView {
     isFocused = false
 
     do {
-      guard var signIn else {
+      guard jsClerk.client.signIn.id != nil else {
         navigation.path = []
         return
       }
 
-      signIn = try await signIn.verifyMfaCode(authState.signInBackupCode, type: .backupCode)
+      let jsSignIn = try await jsClerk.client.signIn.attemptSecondFactor(
+        .init(strategy: .backupCode, code: authState.signInBackupCode)
+      )
+      let signIn = JSCoreAuthMapping.signIn(from: jsSignIn)
+      try await JSCoreAuthMapping.activateIfComplete(signIn, using: jsClerk)
 
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)
@@ -121,7 +122,7 @@ extension SignInFactorTwoBackupCodeView {
 
 #Preview {
   SignInFactorTwoBackupCodeView(factor: .mockBackupCode)
-    .environment(\.clerkTheme, .clerk)
+    .clerkPreview()
 }
 
 #endif
