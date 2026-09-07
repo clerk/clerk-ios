@@ -312,37 +312,6 @@ struct SignInTests {
   }
 
   @Test
-  func handleTransferFlowCreatesSignUpWhenTransferable() async throws {
-    let metadata: JSON = ["plan": "pro"]
-    var signIn = SignIn.mock
-    signIn.firstFactorVerification = Verification(status: .transferable)
-
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
-      captured.setValue(params)
-      return .mock
-    })
-
-    configureServices(signUpService: signUpService)
-
-    let result = try await signIn.handleTransferFlow(
-      transferable: true,
-      unsafeMetadata: metadata
-    )
-
-    switch result {
-    case .signUp:
-      break
-    case .signIn:
-      #expect(Bool(false))
-    }
-
-    let params = try #require(captured.value)
-    #expect(params.transfer == true)
-    #expect(params.unsafeMetadata == metadata)
-  }
-
-  @Test
   func handleTransferFlowSkipsSignUpWhenNotTransferable() async throws {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
@@ -403,16 +372,18 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
 
+    let engine = RecordingEngineClient()
+    Clerk.engineClient = engine
+
     let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
+    let createCount = LockIsolated(0)
     let signInService = MockSignInService(get: { id, params in
       getCaptured.setValue((id, params))
       return reloadedSignIn
     })
-
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
-      createCaptured.setValue(params)
-      return .mock
+    let signUpService = MockSignUpService(create: { _ in
+      createCount.setValue(createCount.value + 1)
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     })
 
     configureServices(signInService: signInService, signUpService: signUpService)
@@ -426,10 +397,8 @@ struct SignInTests {
     let getParams = try #require(getCaptured.value)
     #expect(getParams.0 == signIn.id)
     #expect(getParams.1.rotatingTokenNonce == nil)
-
-    let createParams = try #require(createCaptured.value)
-    #expect(createParams.transfer == true)
-    #expect(createParams.unsafeMetadata == metadata)
+    #expect(engine.transferredToSignUpMetadata == metadata)
+    #expect(createCount.value == 0)
 
     switch result {
     case .signUp(let signUp):

@@ -62,6 +62,14 @@ struct ClerkAPITests {
   }
 
   @Test
+  func createParamsEncodeTransfer() throws {
+    let json = try encodeJSON(Clerk.SignIn.CreateParams(transfer: true))
+    #expect(json["transfer"] as? Bool == true)
+    #expect(json["identifier"] == nil)
+    #expect(json.count == 1)
+  }
+
+  @Test
   func authenticateWithRedirectParamsEncodeStrategyAndRedirectUrl() throws {
     let json = try encodeJSON(
       Clerk.SignIn.AuthenticateWithRedirectParams(
@@ -135,6 +143,20 @@ struct ClerkAPITests {
     let json = try encodeJSON(Clerk.SignUp.CreateParams(legalAccepted: true))
     #expect(json["legalAccepted"] as? Bool == true)
     #expect(json.count == 1)
+  }
+
+  @Test
+  func signUpCreateParamsEncodeTransferAndUnsafeMetadata() throws {
+    let json = try encodeJSON(
+      Clerk.SignUp.CreateParams(
+        transfer: true,
+        unsafeMetadata: .object(["plan": .string("pro")])
+      )
+    )
+    #expect(json["transfer"] as? Bool == true)
+    let metadata = try #require(json["unsafeMetadata"] as? [String: Any])
+    #expect(metadata["plan"] as? String == "pro")
+    #expect(json.count == 2)
   }
 
   @Test

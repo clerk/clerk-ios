@@ -704,12 +704,8 @@ extension SignIn {
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
-      let signUpService: any SignUpServiceProtocol = Clerk.shared.dependencies.signUpService
-      let signUp = try await signUpService.create(params: .init(
-        unsafeMetadata: unsafeMetadata,
-        transfer: true
-      ))
-      return .signUp(signUp)
+      try await Clerk.requireEngineClient().transferToSignUp(unsafeMetadata: unsafeMetadata)
+      return try .signUp(Clerk.requireEngineSignUp())
     } else {
       return .signIn(self)
     }

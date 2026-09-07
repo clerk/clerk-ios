@@ -349,6 +349,43 @@ struct ClerkEngineClientTests {
   #endif
 
   @Test
+  func transferUsesEngineAndSkipsKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+    installFailingSignUpService(kitCalls)
+
+    let metadata: JSON = ["plan": "pro"]
+    var signIn = SignIn.mock
+    signIn.firstFactorVerification = Verification(status: .transferable)
+    let toSignUp = try await signIn.handleTransferFlow(
+      transferable: true,
+      unsafeMetadata: metadata
+    )
+    #expect(engine.transferredToSignUpMetadata == metadata)
+    if case .signUp(let signUp) = toSignUp {
+      #expect(signUp.id == SignUp.mock.id)
+    } else {
+      Issue.record("Expected a sign-up transfer result")
+    }
+    #expect(kitCalls.createCount == 0)
+    #expect(kitCalls.signUpCreateCount == 0)
+
+    var signUp = SignUp.mock
+    signUp.verifications = ["external_account": Verification(status: .transferable)]
+    let toSignIn = try await signUp.handleTransferFlow()
+    #expect(engine.transferredToSignIn)
+    if case .signIn(let transferred) = toSignIn {
+      #expect(transferred.id == "sia_engine")
+    } else {
+      Issue.record("Expected a sign-in transfer result")
+    }
+    #expect(kitCalls.createCount == 0)
+    #expect(kitCalls.signUpCreateCount == 0)
+  }
+
+  @Test
   func signInWithEmailCodeThrowsWhenEngineIsUnavailable() async {
     #expect(Clerk.engineClient == nil)
     #expect(Clerk.makeEngineClient == nil)
@@ -381,7 +418,7 @@ struct ClerkEngineClientTests {
 }
 
 @MainActor
-private final class RecordingEngineClient: ClerkEngineClient {
+final class RecordingEngineClient: ClerkEngineClient {
   var signedInIdentifier: String?
   var signedInEmail: String?
   var signedInPhone: String?
@@ -901,6 +938,25 @@ private final class RecordingEngineClient: ClerkEngineClient {
   func deleteUser() async throws -> Data {
     deletedUser = true
     return Data(#"{"object":"user","id":"1","deleted":true}"#.utf8)
+  }
+
+  var transferredToSignUpMetadata: JSON?
+  var transferredToSignIn = false
+
+  func transferToSignUp(unsafeMetadata: JSON?) async throws {
+    transferredToSignUpMetadata = unsafeMetadata
+    publish(SignUp.mock)
+  }
+
+  func transferToSignIn() async throws {
+    transferredToSignIn = true
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: "user@example.com"
+      )
+    )
   }
 
   private var currentUser: User {

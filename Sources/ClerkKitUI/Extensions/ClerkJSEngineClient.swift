@@ -409,6 +409,23 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return data
   }
 
+  func transferToSignUp(unsafeMetadata: JSON?) async throws {
+    await loadIfNeeded()
+    let converted = try unsafeMetadata.map {
+      try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode($0))
+    }
+    let signUp = try await engine.client.signUp.create(
+      .init(transfer: true, unsafeMetadata: converted)
+    )
+    try await activateIfComplete(signUp)
+  }
+
+  func transferToSignIn() async throws {
+    await loadIfNeeded()
+    let signIn = try await engine.client.signIn.create(.init(transfer: true))
+    try await activateIfComplete(signIn)
+  }
+
   private func loadIfNeeded() async {
     await ClerkRuntimeStore.loadIfNeeded(engine, key: kit.publishableKey, onto: kit)
   }

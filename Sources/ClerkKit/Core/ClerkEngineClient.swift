@@ -72,6 +72,8 @@ package protocol ClerkEngineClient: AnyObject {
   func createTOTP() async throws -> Data
   func verifyTOTP(code: String) async throws -> Data
   func deleteUser() async throws -> Data
+  func transferToSignUp(unsafeMetadata: JSON?) async throws
+  func transferToSignIn() async throws
 }
 
 extension Clerk {

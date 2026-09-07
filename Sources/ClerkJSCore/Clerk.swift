@@ -360,6 +360,7 @@ public final class Clerk {
       public var password: String?
       public var ticket: String?
       public var token: String?
+      public var transfer: Bool?
 
       public init(
         identifier: String? = nil,
@@ -367,7 +368,8 @@ public final class Clerk {
         redirectUrl: String? = nil,
         password: String? = nil,
         ticket: String? = nil,
-        token: String? = nil
+        token: String? = nil,
+        transfer: Bool? = nil
       ) {
         self.identifier = identifier
         self.strategy = strategy
@@ -375,6 +377,7 @@ public final class Clerk {
         self.password = password
         self.ticket = ticket
         self.token = token
+        self.transfer = transfer
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -385,6 +388,7 @@ public final class Clerk {
         try container.encodeIfPresent(password, forKey: .password)
         try container.encodeIfPresent(ticket, forKey: .ticket)
         try container.encodeIfPresent(token, forKey: .token)
+        try container.encodeIfPresent(transfer, forKey: .transfer)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -394,6 +398,7 @@ public final class Clerk {
         case password
         case ticket
         case token
+        case transfer
       }
     }
 
@@ -718,6 +723,7 @@ public final class Clerk {
       public var ticket: String?
       public var token: String?
       public var strategy: String?
+      public var unsafeMetadata: JSONValue?
 
       public init(
         emailAddress: String? = nil,
@@ -730,7 +736,8 @@ public final class Clerk {
         transfer: Bool? = nil,
         ticket: String? = nil,
         token: String? = nil,
-        strategy: String? = nil
+        strategy: String? = nil,
+        unsafeMetadata: JSONValue? = nil
       ) {
         self.emailAddress = emailAddress
         self.phoneNumber = phoneNumber
@@ -743,6 +750,7 @@ public final class Clerk {
         self.ticket = ticket
         self.token = token
         self.strategy = strategy
+        self.unsafeMetadata = unsafeMetadata
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -758,6 +766,7 @@ public final class Clerk {
         try container.encodeIfPresent(ticket, forKey: .ticket)
         try container.encodeIfPresent(token, forKey: .token)
         try container.encodeIfPresent(strategy, forKey: .strategy)
+        try container.encodeIfPresent(unsafeMetadata, forKey: .unsafeMetadata)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -772,6 +781,7 @@ public final class Clerk {
         case ticket
         case token
         case strategy
+        case unsafeMetadata
       }
     }
 
