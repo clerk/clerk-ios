@@ -1,50 +1,6 @@
-//
-//  Passkey.swift
-//  Clerk
-//
-
 import Foundation
 
-/// An object that represents a passkey associated with a user.
-public struct Passkey: Codable, Identifiable, Equatable, Sendable {
-  /// The unique identifier of the passkey.
-  public var id: String
-
-  /// The passkey's name.
-  public var name: String
-
-  /// The verification details for the passkey.
-  public var verification: Verification?
-
-  /// The date when the passkey was created.
-  public var createdAt: Date
-
-  /// The date when the passkey was last updated.
-  public var updatedAt: Date
-
-  /// The date when the passkey was last used.
-  public var lastUsedAt: Date?
-
-  public init(
-    id: String,
-    name: String,
-    verification: Verification? = nil,
-    createdAt: Date,
-    updatedAt: Date,
-    lastUsedAt: Date? = nil
-  ) {
-    self.id = id
-    self.name = name
-    self.verification = verification
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
-    self.lastUsedAt = lastUsedAt
-  }
-}
-
 extension Passkey {
-  // MARK: - Private Properties
-
   var nonceJSON: JSON? {
     verification?.nonce?.toJSON()
   }

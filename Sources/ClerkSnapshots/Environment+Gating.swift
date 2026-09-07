@@ -1,4 +1,4 @@
-extension Environment {
+extension ClerkEnvironment {
   public var multiSessionModeIsEnabled: Bool {
     authConfig.singleSessionMode == false
   }
@@ -107,7 +107,7 @@ extension Attributes {
 }
 
 extension OAuthProviders {
-  fileprivate var namedSettings: [OAuthProviderSettings] {
+  public var namedSettings: [OAuthProviderSettings] {
     [
       oauthFacebook,
       oauthGoogle,

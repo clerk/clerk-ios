@@ -1,17 +1,9 @@
-//
-//  BillingCreditLedger.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-public struct BillingCreditLedger: Codable, Equatable, Sendable, Identifiable {
-  public var id: String
-  public var amount: BillingMoneyAmount
-  public var sourceType: String
-  public var sourceId: String
-  public var createdAt: Date
+public typealias BillingCreditLedger = ClerkSnapshots.BillingCreditLedger
 
+extension BillingCreditLedger {
   public init(
     id: String,
     amount: BillingMoneyAmount,
@@ -19,10 +11,13 @@ public struct BillingCreditLedger: Codable, Equatable, Sendable, Identifiable {
     sourceId: String,
     createdAt: Date
   ) {
-    self.id = id
-    self.amount = amount
-    self.sourceType = sourceType
-    self.sourceId = sourceId
-    self.createdAt = createdAt
+    self.init(
+      object: "commerce_credit_ledger",
+      id: id,
+      amount: amount,
+      sourceType: sourceType,
+      sourceId: sourceId,
+      createdAt: createdAt
+    )
   }
 }

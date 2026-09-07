@@ -1,64 +1,4 @@
-//
-//  OrganizationMembership.swift
-//  Clerk
-//
-
-import ClerkSnapshots
 import Foundation
-
-/// The `OrganizationMembership` object is the model around an organization membership entity
-/// and describes the relationship between users and organizations.
-public struct OrganizationMembership: Codable, Equatable, Sendable, Identifiable {
-  /// The unique identifier for this organization membership.
-  public var id: String
-
-  /// Metadata that can be read from the Frontend API and Backend API
-  /// and can be set only from the Backend API.
-  public var publicMetadata: JSON
-
-  /// The role of the current user in the organization.
-  public var role: String
-
-  /// The formatted role name associated with this organization membership.
-  public var roleName: String
-
-  /// The permissions associated with the role.
-  public var permissions: [String]?
-
-  /// Public information about the user that this membership belongs to.
-  public var publicUserData: PublicUserData?
-
-  /// The `Organization` object the membership belongs to.
-  public var organization: Organization
-
-  /// The date when the membership was created.
-  public var createdAt: Date
-
-  /// The date when the membership was last updated.
-  public var updatedAt: Date
-
-  public init(
-    id: String,
-    publicMetadata: JSON,
-    role: String,
-    roleName: String,
-    permissions: [String]?,
-    publicUserData: PublicUserData? = nil,
-    organization: Organization,
-    createdAt: Date,
-    updatedAt: Date
-  ) {
-    self.id = id
-    self.publicMetadata = publicMetadata
-    self.role = role
-    self.roleName = roleName
-    self.permissions = permissions
-    self.publicUserData = publicUserData
-    self.organization = organization
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
-  }
-}
 
 /// Clerk-provided organization system permission keys.
 public enum OrganizationSystemPermission: String, Codable, CaseIterable, Sendable {
@@ -82,7 +22,7 @@ extension OrganizationMembership {
 
   /// Returns whether the membership includes the provided organization permission key.
   public func hasPermission(_ permission: String) -> Bool {
-    permissions?.contains(permission) == true
+    permissionKeys.contains(permission)
   }
 
   public var canManageProfile: Bool {

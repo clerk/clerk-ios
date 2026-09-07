@@ -1370,7 +1370,7 @@ private func missingBiometricCredentialError(
     code: code,
     message: "is missing",
     longMessage: "The resource associated with the supplied trusted_device_id was not found.",
-    meta: ["param_name": .string(paramName)],
+    meta: ClerkAPIErrorMeta(paramName: paramName),
     clerkTraceId: "trace_123"
   )
 }

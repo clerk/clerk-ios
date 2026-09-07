@@ -5,6 +5,7 @@
 #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
 import AuthenticationServices
 #endif
+import ClerkSnapshots
 import Foundation
 
 extension Session {

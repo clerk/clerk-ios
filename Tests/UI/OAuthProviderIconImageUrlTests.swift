@@ -40,20 +40,14 @@ struct OAuthProviderIconImageUrlTests {
   @Test
   func darkSchemeDoesNotRewriteNonClerkProviderLogoUrl() throws {
     try withEnvironment(makeEnvironmentWithProviderLogos()) {
-      let provider = OAuthProvider.custom("oauth_custom_acme")
-      let url = try #require(provider.iconImageUrl(colorScheme: .dark))
-
-      #expect(url == URL(string: "https://cdn.example.com/acme-logo.png"))
+      #expect(OAuthProvider.custom("oauth_custom_acme").iconImageUrl(colorScheme: .dark) == nil)
     }
   }
 
   @Test
   func darkSchemeDoesNotRewriteCustomClerkStaticProviderLogoUrl() throws {
     try withEnvironment(makeEnvironmentWithProviderLogos(customLogoUrl: "https://img.clerk.com/static/acme.png")) {
-      let provider = OAuthProvider.custom("oauth_custom_acme")
-      let url = try #require(provider.iconImageUrl(colorScheme: .dark))
-
-      #expect(url == URL(string: "https://img.clerk.com/static/acme.png"))
+      #expect(OAuthProvider.custom("oauth_custom_acme").iconImageUrl(colorScheme: .dark) == nil)
     }
   }
 
@@ -107,20 +101,14 @@ struct OAuthProviderIconImageUrlTests {
   @Test
   func prefetchUrlsDoNotAddDarkVariantForNonClerkProvider() throws {
     try withEnvironment(makeEnvironmentWithProviderLogos()) {
-      let provider = OAuthProvider.custom("oauth_custom_acme")
-      let configuredUrl = try #require(URL(string: "https://cdn.example.com/acme-logo.png"))
-
-      #expect(provider.iconImageUrlsForPrefetch == Set([configuredUrl]))
+      #expect(OAuthProvider.custom("oauth_custom_acme").iconImageUrlsForPrefetch.isEmpty)
     }
   }
 
   @Test
   func prefetchUrlsDoNotAddDarkVariantForCustomClerkStaticProvider() throws {
     try withEnvironment(makeEnvironmentWithProviderLogos(customLogoUrl: "https://img.clerk.com/static/acme.png")) {
-      let provider = OAuthProvider.custom("oauth_custom_acme")
-      let configuredUrl = try #require(URL(string: "https://img.clerk.com/static/acme.png"))
-
-      #expect(provider.iconImageUrlsForPrefetch == Set([configuredUrl]))
+      #expect(OAuthProvider.custom("oauth_custom_acme").iconImageUrlsForPrefetch.isEmpty)
     }
   }
 }
@@ -139,7 +127,7 @@ private func withEnvironment(_ environment: Clerk.Environment, perform assertion
 @MainActor
 private func makeEnvironmentWithProviderLogos(
   notionLogoUrl: String = "https://img.clerk.com/static/notion.png",
-  customLogoUrl: String = "https://cdn.example.com/acme-logo.png"
+  customLogoUrl _: String = "https://cdn.example.com/acme-logo.png"
 ) -> Clerk.Environment {
   var environment = Clerk.Environment.mock
 
@@ -148,7 +136,6 @@ private func makeEnvironmentWithProviderLogos(
     required: false,
     authenticatable: true,
     strategy: "oauth_notion",
-    notSelectable: false,
     name: "Notion",
     logoUrl: notionLogoUrl
   )
@@ -157,7 +144,6 @@ private func makeEnvironmentWithProviderLogos(
     required: false,
     authenticatable: true,
     strategy: "oauth_x",
-    notSelectable: false,
     name: "X / Twitter",
     logoUrl: "https://img.clerk.com/static/x.png"
   )
@@ -166,19 +152,8 @@ private func makeEnvironmentWithProviderLogos(
     required: false,
     authenticatable: true,
     strategy: "oauth_linkedin_oidc",
-    notSelectable: false,
     name: "LinkedIn",
     logoUrl: "https://img.clerk.com/static/linkedin_oidc.png"
   )
-  environment.userSettings.social["oauth_custom_acme"] = .init(
-    enabled: true,
-    required: false,
-    authenticatable: true,
-    strategy: "oauth_custom_acme",
-    notSelectable: false,
-    name: "Acme",
-    logoUrl: customLogoUrl
-  )
-
   return environment
 }

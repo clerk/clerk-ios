@@ -117,7 +117,8 @@ public struct BiometricCredentials {
     guard let appIdentifier = appIdentifierProvider() else {
       throw ClerkClientError(message: "Unable to enroll a biometric credential without a bundle identifier.")
     }
-    guard let userID = session.user?.id else {
+    let userID = session.user.id
+    guard !userID.isEmpty else {
       throw ClerkClientError(message: "Unable to enroll a biometric credential without a user for the current session.")
     }
 
@@ -382,7 +383,7 @@ extension BiometricCredentials {
         return .available(supportedCredentials[0])
       }
 
-      guard let activeUserID = Clerk.shared.session?.user?.id else {
+      guard let activeUserID = Clerk.shared.session?.user.id, !activeUserID.isEmpty else {
         return .available(supportedCredentials[0])
       }
 
@@ -591,7 +592,7 @@ extension Error {
     }
 
     return BiometricCredentialAPIError.missingCredentialCodes.contains(error.code) &&
-      error.meta?["param_name"]?.stringValue == BiometricCredentialAPIError.biometricCredentialIDParamName
+      error.meta?.paramName == BiometricCredentialAPIError.biometricCredentialIDParamName
   }
 
   fileprivate var biometricCredentialValidationUnavailableReason: BiometricCredentialAvailability.UnavailableReason? {

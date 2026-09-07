@@ -26,7 +26,7 @@ struct SignInFactorOneForgotPasswordView: View {
   }
 
   var socialProviders: [OAuthProvider] {
-    clerk.environment?.authenticatableSocialProviders ?? []
+    clerk.environment?.authenticatableOAuthProviders ?? []
   }
 
   func actionText(factor: Factor) -> LocalizedStringKey? {

@@ -640,17 +640,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 #Preview("Dismissible") {
   UserProfileView()
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-      }
+      Clerk.preview()
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -684,17 +674,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
       }
     }
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-      }
+      Clerk.preview()
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -704,17 +684,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 #Preview("Not dismissible") {
   UserProfileView(isDismissible: false)
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-      }
+      Clerk.preview()
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -726,17 +696,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 
   UserProfileView(isDismissible: false, navigationPath: $navigationPath)
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-      }
+      Clerk.preview()
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())

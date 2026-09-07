@@ -491,10 +491,10 @@ extension BiometricCredentialLocalRecord {
   }
 }
 
-// MARK: TokenResource
+// MARK: Token
 
-extension TokenResource {
-  public static var mock: TokenResource {
+extension Token {
+  public static var mock: Token {
     .init(jwt: "jwt")
   }
 }
@@ -611,8 +611,7 @@ extension EmailAddress {
     EmailAddress(
       id: "1",
       emailAddress: "user@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
-      linkedTo: nil
+      verification: .mockEmailCodeVerifiedVerification
     )
   }
 
@@ -620,8 +619,7 @@ extension EmailAddress {
     EmailAddress(
       id: "12",
       emailAddress: "user2@email.com",
-      verification: .mockEmailCodeVerifiedVerification,
-      linkedTo: nil
+      verification: .mockEmailCodeVerifiedVerification
     )
   }
 }
@@ -636,7 +634,6 @@ extension PhoneNumber {
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
       verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
       backupCodes: nil
     )
   }
@@ -648,7 +645,6 @@ extension PhoneNumber {
       reservedForSecondFactor: false,
       defaultSecondFactor: false,
       verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
       backupCodes: nil
     )
   }
@@ -660,7 +656,6 @@ extension PhoneNumber {
       reservedForSecondFactor: true,
       defaultSecondFactor: true,
       verification: .mockPhoneCodeVerifiedVerification,
-      linkedTo: nil,
       backupCodes: nil
     )
   }
@@ -931,7 +926,7 @@ extension Clerk.Environment.OrganizationSettings {
       maxAllowedMemberships: 0,
       forceOrganizationSelection: false,
       actions: .init(adminDelete: true),
-      domains: .init(enabled: false, enrollmentModes: [], defaultRole: nil),
+      domains: .init(enabled: false, enrollmentModes: [OrganizationEnrollmentMode](), defaultRole: nil),
       slug: .init(disabled: false),
       organizationCreationDefaults: .init(enabled: false)
     )
@@ -952,9 +947,35 @@ extension Clerk.Environment.AuthConfig {
 
 extension Clerk.Environment.UserSettings {
   public static var mock: Self {
-    .init(
-      attributes: [
-        "email_address": .init(
+    var social = OAuthProviders.empty
+    social.oauthGoogle = OAuthProviderSettings(
+      enabled: true,
+      required: false,
+      authenticatable: true,
+      strategy: "oauth_google",
+      name: "Google",
+      logoUrl: ""
+    )
+    social.oauthApple = OAuthProviderSettings(
+      enabled: true,
+      required: false,
+      authenticatable: true,
+      strategy: "oauth_apple",
+      name: "Apple",
+      logoUrl: ""
+    )
+    social.oauthSlack = OAuthProviderSettings(
+      enabled: true,
+      required: false,
+      authenticatable: true,
+      strategy: "oauth_slack",
+      name: "Slack",
+      logoUrl: ""
+    )
+
+    return .init(
+      attributes: Attributes(
+        emailAddress: .init(
           enabled: true,
           required: false,
           usedForFirstFactor: true,
@@ -964,7 +985,7 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: true
         ),
-        "phone_number": .init(
+        phoneNumber: .init(
           enabled: true,
           required: false,
           usedForFirstFactor: true,
@@ -974,47 +995,7 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: true
         ),
-        "username": .init(
-          enabled: true,
-          required: false,
-          usedForFirstFactor: true,
-          firstFactors: nil,
-          usedForSecondFactor: false,
-          secondFactors: nil,
-          verifications: nil,
-          verifyAtSignUp: false
-        ),
-        "first_name": .init(
-          enabled: true,
-          required: false,
-          usedForFirstFactor: false,
-          firstFactors: nil,
-          usedForSecondFactor: false,
-          secondFactors: nil,
-          verifications: nil,
-          verifyAtSignUp: false
-        ),
-        "last_name": .init(
-          enabled: true,
-          required: false,
-          usedForFirstFactor: false,
-          firstFactors: nil,
-          usedForSecondFactor: false,
-          secondFactors: nil,
-          verifications: nil,
-          verifyAtSignUp: false
-        ),
-        "password": .init(
-          enabled: true,
-          required: false,
-          usedForFirstFactor: true,
-          firstFactors: nil,
-          usedForSecondFactor: false,
-          secondFactors: nil,
-          verifications: nil,
-          verifyAtSignUp: false
-        ),
-        "web3_wallet": .init(
+        web3Wallet: .init(
           enabled: false,
           required: false,
           usedForFirstFactor: false,
@@ -1024,7 +1005,28 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: false
         ),
-        "authenticator_app": .init(
+        passkey: .empty,
+        username: .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
+        password: .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: true,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
+        backupCode: .init(
           enabled: true,
           required: false,
           usedForFirstFactor: false,
@@ -1034,7 +1036,27 @@ extension Clerk.Environment.UserSettings {
           verifications: nil,
           verifyAtSignUp: false
         ),
-        "backup_code": .init(
+        firstName: .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
+        lastName: .init(
+          enabled: true,
+          required: false,
+          usedForFirstFactor: false,
+          firstFactors: nil,
+          usedForSecondFactor: false,
+          secondFactors: nil,
+          verifications: nil,
+          verifyAtSignUp: false
+        ),
+        authenticatorApp: .init(
           enabled: true,
           required: false,
           usedForFirstFactor: false,
@@ -1043,51 +1065,22 @@ extension Clerk.Environment.UserSettings {
           secondFactors: nil,
           verifications: nil,
           verifyAtSignUp: false
-        ),
-      ],
-      signUp: .init(
-        customActionRequired: false,
+        )
+      ),
+      actions: Actions(deleteSelf: true, createOrganization: true),
+      social: social,
+      enterpriseSso: .empty,
+      signIn: .empty,
+      signUp: SignUpData(
+        allowlistOnly: false,
         progressive: false,
-        mode: "",
+        captchaEnabled: false,
+        mode: .public,
         legalConsentEnabled: true
       ),
-      social: [
-        "oauth_google": .init(
-          enabled: true,
-          required: false,
-          authenticatable: true,
-          strategy: "oauth_google",
-          notSelectable: false,
-          name: "Google",
-          logoUrl: ""
-        ),
-        "oauth_apple": .init(
-          enabled: true,
-          required: false,
-          authenticatable: true,
-          strategy: "oauth_apple",
-          notSelectable: false,
-          name: "Apple",
-          logoUrl: ""
-        ),
-        "oauth_slack": .init(
-          enabled: true,
-          required: false,
-          authenticatable: true,
-          strategy: "oauth_slack",
-          notSelectable: false,
-          name: "Slack",
-          logoUrl: ""
-        ),
-      ],
-      actions: .init(
-        deleteSelf: true,
-        createOrganization: true
-      ),
-      passkeySettings: .init(
-        allowAutofill: true,
-        showSignInButton: true
-      )
+      passwordSettings: .empty,
+      passkeySettings: PasskeySettingsData(allowAutofill: true, showSignInButton: true),
+      usernameSettings: .empty
     )
   }
 }
@@ -1232,7 +1225,7 @@ extension BillingSubscriptionItem {
       nextPayment: .init(amount: .mock, date: Date.distantFuture),
       credit: .init(amount: .mock),
       credits: .init(
-        proration: .init(amount: .mock, cycleDaysRemaining: 10, cycleDaysTotal: 30, cycleRemainingPercent: 0.33),
+        proration: .init(amount: .mock, cycleDaysRemaining: 10, cycleDaysTotal: 30, cycleRemainingPercent: 33),
         payer: .init(remainingBalance: .mock, appliedAmount: .mock),
         total: .mock
       ),
@@ -1296,7 +1289,7 @@ extension BillingPayment {
         baseFee: .mock,
         perUnitTotals: [.init(name: "seats", blockSize: 1, tiers: [.init(quantity: 5, feePerBlock: .mock, total: .mock)])],
         discounts: .init(
-          proration: .init(amount: .mock, cycleDaysPassed: 10, cycleDaysTotal: 30, cyclePassedPercent: 0.33),
+          proration: .init(amount: .mock, cycleDaysPassed: 10, cycleDaysTotal: 30, cyclePassedPercent: 33),
           discount: .init(
             amount: .mock,
             discountId: "disc_1",

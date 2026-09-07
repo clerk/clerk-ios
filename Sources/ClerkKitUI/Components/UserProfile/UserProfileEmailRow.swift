@@ -54,7 +54,7 @@ struct UserProfileEmailRow: View {
             Badge(key: "Unverified", style: .warning)
           }
 
-          if emailAddress.linkedTo?.isEmpty == false {
+          if !emailAddress.linkedTo.isEmpty {
             Badge(key: "Linked", style: .secondary)
           }
         }

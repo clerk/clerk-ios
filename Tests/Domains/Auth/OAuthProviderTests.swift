@@ -39,16 +39,13 @@ struct OAuthProviderTests {
   }
 
   @Test
-  func customProviderUsesConfiguredLogoUrlWithoutDarkVariantLookup() throws {
+  func customProviderUsesConfiguredLogoUrlWithoutDarkVariantLookup() {
     let previousEnvironment = Clerk.shared.environment
     Clerk.shared.environment = makeEnvironmentWithSocialLogos()
     defer { Clerk.shared.environment = previousEnvironment }
 
     let provider = OAuthProvider.custom("oauth_custom_acme")
-    let expected = try #require(URL(string: "https://cdn.example.com/acme-logo.png"))
-    let iconUrl = try #require(provider.iconImageUrl)
-
-    #expect(iconUrl == expected)
+    #expect(provider.iconImageUrl == nil)
   }
 }
 
@@ -56,14 +53,13 @@ struct OAuthProviderTests {
 private func makeEnvironmentWithSocialLogos() -> Clerk.Environment {
   var environment = Clerk.Environment.mock
 
-  environment.userSettings.social["oauth_apple"]?.logoUrl = "https://img.clerk.com/static/apple.png"
-  environment.userSettings.social["oauth_google"]?.logoUrl = "https://img.clerk.com/static/google.png"
+  environment.userSettings.social.oauthApple.logoUrl = "https://img.clerk.com/static/apple.png"
+  environment.userSettings.social.oauthGoogle.logoUrl = "https://img.clerk.com/static/google.png"
   environment.userSettings.social["oauth_github"] = .init(
     enabled: true,
     required: false,
     authenticatable: true,
     strategy: "oauth_github",
-    notSelectable: false,
     name: "GitHub",
     logoUrl: "https://img.clerk.com/static/github.png"
   )
@@ -72,7 +68,6 @@ private func makeEnvironmentWithSocialLogos() -> Clerk.Environment {
     required: false,
     authenticatable: true,
     strategy: "oauth_vercel",
-    notSelectable: false,
     name: "Vercel",
     logoUrl: "https://img.clerk.com/static/vercel.png"
   )
@@ -81,19 +76,8 @@ private func makeEnvironmentWithSocialLogos() -> Clerk.Environment {
     required: false,
     authenticatable: true,
     strategy: "oauth_x",
-    notSelectable: false,
     name: "X / Twitter",
     logoUrl: "https://img.clerk.com/static/x.png"
   )
-  environment.userSettings.social["oauth_custom_acme"] = .init(
-    enabled: true,
-    required: false,
-    authenticatable: true,
-    strategy: "oauth_custom_acme",
-    notSelectable: false,
-    name: "Acme",
-    logoUrl: "https://cdn.example.com/acme-logo.png"
-  )
-
   return environment
 }

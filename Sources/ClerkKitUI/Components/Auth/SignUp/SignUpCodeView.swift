@@ -242,7 +242,7 @@ extension SignUpCodeView {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"] == nil {
+      if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?.paramName == nil {
         self.error = clerkApiError
         otpFieldIsFocused = false
       }

@@ -163,7 +163,7 @@ struct UserProfileChangePasswordView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"]?.stringValue == "current_password" {
+        if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?.paramName == "current_password" {
           return .init(text: "Go back") {
             path = NavigationPath()
           }

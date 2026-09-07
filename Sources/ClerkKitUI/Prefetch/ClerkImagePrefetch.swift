@@ -33,7 +33,7 @@ extension Clerk {
     }
 
     // OAuth provider logos (all enabled providers)
-    for provider in environment.allSocialProviders {
+    for provider in environment.enabledOAuthProviders {
       urls.formUnion(provider.iconImageUrlsForPrefetch)
     }
 

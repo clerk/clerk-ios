@@ -27,9 +27,9 @@ struct ContentView: View {
       AuthView()
     }
     .onAppear {
-      watchSyncLog.notice("clerk-watch-sync phone ui user=\(Clerk.shared.user?.id ?? "nil", privacy: .public)")
+      watchSyncLog.notice("clerk-watch-sync phone ui user=\(Clerk.shared.userId ?? "nil", privacy: .public)")
     }
-    .onChange(of: Clerk.shared.user?.id) { _, id in
+    .onChange(of: Clerk.shared.userId) { _, id in
       watchSyncLog.notice("clerk-watch-sync phone ui user=\(id ?? "nil", privacy: .public)")
     }
   }

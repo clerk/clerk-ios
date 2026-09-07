@@ -159,7 +159,7 @@ struct SessionAuthorizationTests {
     var session = Session.mock
     session.user = user(id: "user_123", orgId: "org_123", role: "org:admin", permissions: ["org:read"])
     session.lastActiveOrganizationId = "org_123"
-    session.lastActiveToken = nil
+    session.lastActiveToken = Token(jwt: "")
     #expect(!session.has(.init(feature: "reservations")))
     #expect(!session.has(.init(plan: "plus")))
   }
@@ -255,7 +255,7 @@ struct SessionAuthorizationTests {
   @Test
   func failsClosedWithoutUserId() {
     var session = makeSession(features: "u:dashboard", plans: "u:plus")
-    session.user = nil
+    session.user.id = ""
     #expect(!session.has(.init(feature: "dashboard")))
     #expect(!session.has(.init(plan: "plus")))
     #expect(!session.has(.init(reverification: .strict)))
@@ -351,7 +351,7 @@ private func makeSession(
   session.lastActiveOrganizationId = orgId
   session.factorVerificationAge = factorVerificationAge
   if features != nil || plans != nil {
-    session.lastActiveToken = TokenResource(jwt: jwtWithClaims(fea: features, pla: plans))
+    session.lastActiveToken = Token(jwt: jwtWithClaims(fea: features, pla: plans))
   }
   return session
 }
@@ -367,7 +367,7 @@ private func user(
   if let orgId {
     var membership = OrganizationMembership.mockWithUserData
     membership.role = role ?? "org:member"
-    membership.permissions = permissions
+    membership.permissionKeys = permissions ?? []
     var organization = membership.organization
     organization.id = orgId
     membership.organization = organization

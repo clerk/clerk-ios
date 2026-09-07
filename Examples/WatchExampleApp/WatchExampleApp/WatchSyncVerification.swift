@@ -17,12 +17,15 @@ enum WatchSyncVerification {
   @MainActor
   static func runIfNeeded() async {
     if ProcessInfo.processInfo.arguments.contains(deleteArgument) {
+      print("clerk-watch-sync phone delete start")
       await deleteSignedInUserIfNeeded()
       return
     }
+    print("clerk-watch-sync phone enabled=\(isEnabled)")
     guard isEnabled else { return }
     logSession()
     log.notice("clerk-watch-sync phone start")
+    print("clerk-watch-sync phone start")
     do {
       let email = uniqueClerkTestEmail()
       var signUp = try await Clerk.shared.auth.signUp(
@@ -33,27 +36,35 @@ enum WatchSyncVerification {
         legalAccepted: true
       )
       log.notice(
-        "clerk-watch-sync phone created status=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missingFields), privacy: .public) unverified=\(fieldList(signUp.unverifiedFields), privacy: .public)"
+        "clerk-watch-sync phone created status=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missing), privacy: .public) unverified=\(fieldList(signUp.unverified), privacy: .public)"
       )
       if signUp.status != .complete {
         signUp = try await signUp.sendEmailCode()
         signUp = try await signUp.verifyEmailCode("424242")
       }
-      if signUp.status != .complete, signUp.unverifiedFields.contains(.phoneNumber) || signUp.missingFields.contains(.phoneNumber) {
+      if signUp.status != .complete, signUp.unverified.contains(.phoneNumber) || signUp.missing.contains(.phoneNumber) {
         signUp = try await signUp.sendPhoneCode()
         signUp = try await signUp.verifyPhoneCode("424242")
       }
       log.notice(
-        "clerk-watch-sync phone user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public) signup=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missingFields), privacy: .public) unverified=\(fieldList(signUp.unverifiedFields), privacy: .public)"
+        "clerk-watch-sync phone user=\(Clerk.shared.userId ?? "nil", privacy: .public) session=\(Clerk.shared.sessionId ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public) signup=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missing), privacy: .public) unverified=\(fieldList(signUp.unverified), privacy: .public)"
+      )
+      print(
+        "clerk-watch-sync phone user=\(Clerk.shared.userId ?? "nil") session=\(Clerk.shared.sessionId ?? "nil") deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set") signup=\(signUp.status.rawValue)"
       )
       logSession()
     } catch {
       if Clerk.shared.user != nil || Clerk.shared.session != nil {
         log.notice(
-          "clerk-watch-sync phone existing user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public)"
+          "clerk-watch-sync phone existing user=\(Clerk.shared.userId ?? "nil", privacy: .public) session=\(Clerk.shared.sessionId ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public)"
+        )
+        let email = Clerk.shared.user?.primaryEmailAddress?.emailAddress ?? ""
+        print(
+          "clerk-watch-sync phone existing user=\(Clerk.shared.userId ?? "nil") session=\(Clerk.shared.sessionId ?? "nil") deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set") clerk_test=\(email.contains("clerk_test"))"
         )
       } else {
         log.error("clerk-watch-sync phone error=\(String(describing: error), privacy: .public)")
+        print("clerk-watch-sync phone error=\(String(describing: error))")
       }
     }
   }
@@ -63,14 +74,17 @@ enum WatchSyncVerification {
     let user = await waitForSignedInUser()
     guard let user else {
       log.notice("clerk-watch-sync delete user=nil")
+      print("clerk-watch-sync delete user=nil")
       return
     }
-    let id = user.id
+    let id = Clerk.shared.userId
     do {
       _ = try await user.delete()
-      log.notice("clerk-watch-sync deleted user=\(id, privacy: .public) remaining=\(Clerk.shared.user?.id ?? "nil", privacy: .public)")
+      log.notice("clerk-watch-sync deleted user=\(id ?? "nil", privacy: .public) remaining=\(Clerk.shared.userId ?? "nil", privacy: .public)")
+      print("clerk-watch-sync deleted user=\(id ?? "nil") remaining=\(Clerk.shared.userId ?? "nil")")
     } catch {
       log.error("clerk-watch-sync delete error=\(String(describing: error), privacy: .public)")
+      print("clerk-watch-sync delete error=\(String(describing: error))")
     }
   }
 
@@ -92,6 +106,9 @@ enum WatchSyncVerification {
     #if os(iOS)
     let session = WCSession.default
     log.notice(
+      "clerk-watch-sync phone wcsession supported=\(WCSession.isSupported()) paired=\(session.isPaired) installed=\(session.isWatchAppInstalled) reachable=\(session.isReachable) state=\(session.activationState.rawValue)"
+    )
+    print(
       "clerk-watch-sync phone wcsession supported=\(WCSession.isSupported()) paired=\(session.isPaired) installed=\(session.isWatchAppInstalled) reachable=\(session.isReachable) state=\(session.activationState.rawValue)"
     )
     #endif

@@ -572,7 +572,7 @@ private enum OrganizationProfileListRowID<Route: Hashable>: Hashable {
   OrganizationProfileView()
     .environment(Clerk.preview { preview in
       var membership = OrganizationMembership.mockWithUserData
-      membership.permissions = [
+      membership.permissionKeys = [
         OrganizationSystemPermission.manageProfile.rawValue,
         OrganizationSystemPermission.readMemberships.rawValue,
         OrganizationSystemPermission.readDomains.rawValue,

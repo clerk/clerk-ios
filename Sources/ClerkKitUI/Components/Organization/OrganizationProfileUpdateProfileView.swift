@@ -50,7 +50,7 @@ struct OrganizationProfileUpdateProfileView: View {
   OrganizationProfileUpdateProfileView(organization: .mock)
     .environment(Clerk.preview { preview in
       var membership = OrganizationMembership.mockWithUserData
-      membership.permissions = [
+      membership.permissionKeys = [
         OrganizationSystemPermission.manageProfile.rawValue,
       ]
 

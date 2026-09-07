@@ -86,6 +86,10 @@ public enum FAPIJSON {
       defaultToken(object)
     case "email_address":
       defaultEmailAddress(object)
+    case "phone_number":
+      defaultPhoneNumber(object)
+    case "external_account":
+      defaultExternalAccount(object)
     default:
       object
     }
@@ -102,6 +106,9 @@ public enum FAPIJSON {
     }
     if missing(session, "public_user_data") {
       session["public_user_data"] = defaultPublicUserData([:])
+    }
+    if missing(session, "user") {
+      session["user"] = defaultUser(["object": "user", "id": ""])
     }
     return session
   }
@@ -162,6 +169,9 @@ public enum FAPIJSON {
 
   private static func defaultEmailAddress(_ object: [String: Any]) -> [String: Any] {
     var email = object
+    if missing(email, "object") {
+      email["object"] = "email_address"
+    }
     if missing(email, "linked_to") {
       email["linked_to"] = [Any]()
     }
@@ -172,6 +182,43 @@ public enum FAPIJSON {
       email["created_at"] = 0
     }
     return email
+  }
+
+  private static func defaultPhoneNumber(_ object: [String: Any]) -> [String: Any] {
+    var phone = object
+    if missing(phone, "object") {
+      phone["object"] = "phone_number"
+    }
+    if missing(phone, "linked_to") {
+      phone["linked_to"] = [Any]()
+    }
+    if missing(phone, "reserved_for_second_factor") {
+      phone["reserved_for_second_factor"] = false
+    }
+    if missing(phone, "default_second_factor") {
+      phone["default_second_factor"] = false
+    }
+    if missing(phone, "created_at") {
+      phone["created_at"] = 0
+    }
+    return phone
+  }
+
+  private static func defaultExternalAccount(_ object: [String: Any]) -> [String: Any] {
+    var account = object
+    if missing(account, "object") {
+      account["object"] = "external_account"
+    }
+    for key in ["identification_id", "provider_user_id", "approved_scopes", "email_address", "first_name", "last_name", "image_url", "username", "phone_number", "label"] where missing(account, key) {
+      account[key] = ""
+    }
+    if missing(account, "public_metadata") {
+      account["public_metadata"] = [String: Any]()
+    }
+    if missing(account, "created_at") {
+      account["created_at"] = 0
+    }
+    return account
   }
 
   private static func defaultVerification(_ object: [String: Any]) -> [String: Any] {

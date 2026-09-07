@@ -135,7 +135,7 @@ public final class ClerkJSHost: ClerkJSBridge {
   @ObservationIgnored
   package nonisolated let runtime: ClerkJSRuntime
   private var fapiClient: FAPIClient?
-  private var fapiEnvironment: Environment?
+  private var fapiEnvironment: ClerkEnvironment?
   private var fapiNativeSettings = NativeSettings.default
 
   public init(
@@ -177,7 +177,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     Client(clerk: self)
   }
 
-  public var environment: Environment? {
+  public var environment: ClerkEnvironment? {
     fapiEnvironment
   }
 
@@ -190,7 +190,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
   }
 
-  package func publishEnvironment(_ environment: Environment) {
+  package func publishEnvironment(_ environment: ClerkEnvironment) {
     fapiEnvironment = environment
   }
 
@@ -205,8 +205,8 @@ public final class ClerkJSHost: ClerkJSBridge {
     return try Data(contentsOf: url)
   }
 
-  package static func snapshotEnvironment() throws -> Environment {
-    try JSONDecoder().decode(Environment.self, from: snapshotEnvironmentJSON())
+  package static func snapshotEnvironment() throws -> ClerkEnvironment {
+    try JSONDecoder().decode(ClerkEnvironment.self, from: snapshotEnvironmentJSON())
   }
 
   package static func snapshotSignedInClient() throws -> Data {
@@ -1402,7 +1402,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     guard let data = runtime.lastFAPIEnvironmentJSON else {
       return
     }
-    fapiEnvironment = try? JSONDecoder().decode(Environment.self, from: data)
+    fapiEnvironment = try? JSONDecoder().decode(ClerkEnvironment.self, from: data)
     fapiNativeSettings = (try? FAPIJSON.decodeNativeSettings(fromEnvironmentJSON: data)) ?? .default
   }
 }

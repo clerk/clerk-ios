@@ -52,7 +52,13 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   /// Sends Clerk's reduced watch-sync payload to the watch app.
   @MainActor
   func sync(_ payload: WatchSyncPayload) {
-    guard !isProcessingSync else { return }
+    guard !isProcessingSync else {
+      ClerkLogger.info(
+        "clerk-watch-sync diag context-drop busy session=\(payload.clientUpdate.client?.lastActiveSessionId ?? "nil")",
+        force: true
+      )
+      return
+    }
     pendingPayload = payload
     syncPendingPayloadIfPossible()
   }
@@ -79,8 +85,16 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     do {
       try session.updateApplicationContext(applicationContext)
       pendingPayload = nil
+      ClerkLogger.info(
+        "clerk-watch-sync diag context-sent session=\(payload.clientUpdate.client?.lastActiveSessionId ?? "nil")",
+        force: true
+      )
     } catch {
       let nsError = error as NSError
+      ClerkLogger.info(
+        "clerk-watch-sync diag context-error domain=\(nsError.domain) code=\(nsError.code)",
+        force: true
+      )
       if nsError.domain == "WCErrorDomain", nsError.code == 7006 || nsError.code == 7001 {
         return
       }

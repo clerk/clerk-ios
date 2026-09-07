@@ -24,7 +24,7 @@ struct SessionTests {
   @Test
   func taskKeyParsesUnknownTask() {
     let task = Session.Task(key: "another-task")
-    #expect(task == .unknown("another-task"))
+    #expect(task.key == .unknown("another-task"))
   }
 
   @Test

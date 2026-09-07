@@ -14,21 +14,12 @@ private let watchSyncLog = Logger(subsystem: "com.clerk.WatchExampleApp", catego
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
 
-  var fullName: String? {
-    let name = [clerk.user?.firstName, clerk.user?.lastName]
-      .compactMap(\.self)
-      .joined(separator: " ")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-
-    return name.isEmpty ? nil : name
-  }
-
   var body: some View {
     ScrollView {
       VStack(spacing: 16) {
         if let user = clerk.user {
           VStack(spacing: 8) {
-            AsyncImage(url: URL(string: user.imageUrl)) { phase in
+            AsyncImage(url: user.imageURL) { phase in
               switch phase {
               case .success(let image):
                 image
@@ -48,13 +39,13 @@ struct ContentView: View {
             .clipShape(.circle)
 
             VStack(spacing: 0) {
-              if let fullName {
+              if let fullName = user.fullName {
                 Text(fullName)
                   .font(.caption)
                   .lineLimit(1)
               }
 
-              if let username = user.username, !username.isEmpty {
+              if let username = user.usernameHandle {
                 Text(username)
                   .font(.caption2)
                   .foregroundColor(.secondary)
@@ -65,7 +56,7 @@ struct ContentView: View {
 
           Button {
             Task {
-              try? await clerk.auth.signOut(sessionId: clerk.session?.id)
+              try? await clerk.auth.signOut(sessionId: clerk.sessionId)
             }
           } label: {
             Text("Sign Out")
@@ -88,9 +79,9 @@ struct ContentView: View {
       }
     }
     .onAppear {
-      logWatchUser(clerk.user?.id)
+      logWatchUser(clerk.userId)
     }
-    .onChange(of: clerk.user?.id) { _, id in
+    .onChange(of: clerk.userId) { _, id in
       logWatchUser(id)
     }
   }

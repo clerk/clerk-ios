@@ -53,9 +53,6 @@ protocol Dependencies: AnyObject {
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  /// Service for client-related operations.
-  var clientService: ClientServiceProtocol { get }
-
   /// Service for hosted authentication operations.
   var hostedAuthService: HostedAuthServiceProtocol { get }
 
@@ -79,9 +76,6 @@ protocol Dependencies: AnyObject {
 
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }
-
-  /// Service for environment-related operations.
-  var environmentService: EnvironmentServiceProtocol { get }
 
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }

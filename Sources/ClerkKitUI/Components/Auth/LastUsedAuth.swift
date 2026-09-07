@@ -20,7 +20,7 @@ enum LastUsedAuth: Equatable {
     environment: Clerk.Environment?,
     biometricSignInIsVisible: Bool = false
   ) {
-    guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy else {
+    guard let lastAuth = Clerk.shared.client?.lastUsedStrategy else {
       return nil
     }
 
@@ -35,7 +35,7 @@ enum LastUsedAuth: Equatable {
       return
     }
 
-    let providers = environment?.authenticatableSocialProviders ?? []
+    let providers = environment?.authenticatableOAuthProviders ?? []
     if let provider = providers.first(where: {
       Self.shouldShowBadge(for: [.oauth($0)], lastAuth: lastAuth, environment: environment)
     }) {
@@ -158,15 +158,12 @@ extension LastUsedAuth {
   }
 
   fileprivate static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
-    let hasEmail = environment?.userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled && value.usedForFirstFactor
-    } ?? false
-    let hasPhone = environment?.userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForFirstFactor
-    } ?? false
-    let hasUsername = environment?.userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled && value.usedForFirstFactor
-    } ?? false
+    let hasEmail = environment?.userSettings.attributes.emailAddress.enabled == true
+      && environment?.userSettings.attributes.emailAddress.usedForFirstFactor == true
+    let hasPhone = environment?.userSettings.attributes.phoneNumber.enabled == true
+      && environment?.userSettings.attributes.phoneNumber.usedForFirstFactor == true
+    let hasUsername = environment?.userSettings.attributes.username.enabled == true
+      && environment?.userSettings.attributes.username.usedForFirstFactor == true
 
     if hasPhone, hasEmail || hasUsername {
       return false

@@ -25,19 +25,10 @@ import Foundation
 ///     ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil)
 ///   }
 ///
-///   // Or replace entire services
-///   builder.services.clientService = MockClientService {
-///     try? await Task.sleep(for: .seconds(1))
-///     return Client.mock
-///   }
 /// }
 /// ```
 @MainActor
 package final class MockServicesBuilder {
-  /// Mock client service for customizing `clerk.refreshClient()` behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var clientService: MockClientService = .init()
-
   /// Mock user service for customizing `User` service methods behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var userService: MockUserService = .init()
@@ -57,10 +48,6 @@ package final class MockServicesBuilder {
   /// Mock organization service for customizing organization behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var organizationService: MockOrganizationService = .init()
-
-  /// Mock environment service for customizing `clerk.refreshEnvironment()` behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var environmentService: MockEnvironmentService = .init()
 
   /// Creates a new mock services builder.
   ///

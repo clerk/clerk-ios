@@ -124,14 +124,6 @@ extension Clerk {
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Configure services to return builder values if no custom handler set
-    if previewBuilder.services.clientService.getHandler == nil {
-      previewBuilder.services.clientService.getHandler = { mockClient }
-    }
-    if previewBuilder.services.environmentService.getHandler == nil {
-      previewBuilder.services.environmentService.getHandler = { mockEnvironment }
-    }
-
     // Create mock dependency container using services from builder
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
@@ -167,13 +159,11 @@ extension Clerk {
     // individual service behaviors (like adding delays for loading states).
     MockDependencyContainer(
       apiClient: apiClient,
-      clientService: services.clientService,
       userService: services.userService,
       signInService: services.signInService,
       sessionService: services.sessionService,
       passkeyService: services.passkeyService,
-      organizationService: services.organizationService,
-      environmentService: services.environmentService
+      organizationService: services.organizationService
     )
   }
 }

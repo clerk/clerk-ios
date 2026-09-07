@@ -12,9 +12,11 @@ struct LastUsedAuthTests {
     configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock
-    environment.userSettings.social = [:]
+    environment.userSettings.social = .empty
     for key in environment.userSettings.attributes.keys where key != "email_address" {
-      environment.userSettings.attributes[key]?.usedForFirstFactor = false
+      var attribute = environment.userSettings.attributes[key]
+      attribute?.usedForFirstFactor = false
+      environment.userSettings.attributes[key] = attribute
     }
 
     let lastUsedAuth = LastUsedAuth(
@@ -31,9 +33,11 @@ struct LastUsedAuthTests {
     configureBiometricCredentialLastAuth()
     defer { Clerk.shared.client = .mock }
     var environment = Clerk.Environment.mock
-    environment.userSettings.social = [:]
+    environment.userSettings.social = .empty
     for key in environment.userSettings.attributes.keys {
-      environment.userSettings.attributes[key]?.usedForFirstFactor = false
+      var attribute = environment.userSettings.attributes[key]
+      attribute?.usedForFirstFactor = false
+      environment.userSettings.attributes[key] = attribute
     }
 
     let lastUsedAuth = LastUsedAuth(
@@ -47,7 +51,7 @@ struct LastUsedAuthTests {
   private func configureBiometricCredentialLastAuth() {
     Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
     var client = Client.mock
-    client.lastAuthenticationStrategy = .biometricCredential
+    client.lastUsedStrategy = .biometricCredential
     Clerk.shared.client = client
   }
 }

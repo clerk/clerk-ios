@@ -209,7 +209,7 @@ public struct Auth {
       try await Clerk.js(.signUp, SignUpJSCall.create(.init(transfer: true)))
     }
     let result = try Clerk.requireEngineTransferResult()
-    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.kitError {
       throw error
     }
     return result

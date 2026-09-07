@@ -103,11 +103,11 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
     switch self {
     case let .custom(strategy):
       if let environment = Clerk.shared.environment,
-         let socialConfig = environment.userSettings.social.first(where: { socialConfig in
-           socialConfig.value.strategy == strategy
+         let socialConfig = environment.userSettings.social.namedSettings.first(where: { socialConfig in
+           socialConfig.strategy == strategy
          })
       {
-        return socialConfig.value.name
+        return socialConfig.name
       }
 
       fallthrough
@@ -120,14 +120,14 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   @MainActor
   public var iconImageUrl: URL? {
     guard let environment = Clerk.shared.environment,
-          let socialConfig = environment.userSettings.social.first(where: { socialConfig in
-            socialConfig.value.strategy == strategy && socialConfig.value.logoUrl?.isEmptyTrimmed == false
+          let socialConfig = environment.userSettings.social.namedSettings.first(where: { socialConfig in
+            socialConfig.strategy == strategy && socialConfig.logoUrl?.isEmptyTrimmed == false
           })
     else {
       return nil
     }
 
-    return URL(string: socialConfig.value.logoUrl ?? "")
+    return URL(string: socialConfig.logoUrl ?? "")
   }
 
   /// Indicates whether this provider icon can be rendered as a tinted template mask.

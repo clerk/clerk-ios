@@ -8,9 +8,10 @@ struct FAPIJSONTests {
     let url = try #require(Bundle.module.url(forResource: "null-user-data-client", withExtension: "json"))
     let data = try Data(contentsOf: url)
 
-    #expect(throws: DecodingError.self) {
-      try JSONDecoder().decode(Client.self, from: data)
-    }
+    let raw = try JSONDecoder().decode(Client.self, from: data)
+    #expect(raw.signIn?.id == "sia_fixture")
+    #expect(raw.signIn?.userData.imageUrl == "")
+    #expect(raw.signIn?.userData.hasImage == false)
 
     let client = try FAPIJSON.decodeClient(data)
     #expect(client.id == "client_fixture")
@@ -145,9 +146,10 @@ struct FAPIJSONTests {
     let url = try #require(Bundle.module.url(forResource: "signed-in-client", withExtension: "json"))
     let data = try Data(contentsOf: url)
 
-    #expect(throws: DecodingError.self) {
-      try JSONDecoder().decode(Client.self, from: data)
-    }
+    let raw = try JSONDecoder().decode(Client.self, from: data)
+    #expect(raw.signIn?.id == "sia_fixture")
+    #expect(raw.sessions.first?.id == "sess_fixture")
+    #expect(raw.sessions.first?.user.id == "user_fixture")
 
     let client = try FAPIJSON.decodeClient(data)
     #expect(client.id == "client_fixture")

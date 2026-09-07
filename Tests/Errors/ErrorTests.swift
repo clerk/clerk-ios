@@ -23,6 +23,17 @@ struct ErrorTests {
   // MARK: - ClerkAPIError Tests
 
   @Test
+  func verificationOptionalCopyDoesNotCrash() {
+    let signIn = SignIn(
+      id: "sia_engine",
+      status: .needsFirstFactor,
+      identifier: "user@example.com",
+      firstFactorVerification: Verification(status: .unverified, strategy: .emailCode)
+    )
+    #expect(signIn.firstFactorVerification?.factorStrategy == .emailCode)
+  }
+
+  @Test
   func clerkAPIErrorBasic() {
     let error = ClerkAPIError(
       code: "test_error",
@@ -44,7 +55,7 @@ struct ErrorTests {
       code: "test_error",
       message: "Test message",
       longMessage: nil,
-      meta: JSON.object(["param_name": .string("email")]),
+      meta: ClerkAPIErrorMeta(paramName: "email"),
       clerkTraceId: "trace123"
     )
 
@@ -83,7 +94,7 @@ struct ErrorTests {
       code: "test_error",
       message: "Test message",
       longMessage: "Long message",
-      meta: JSON.object(["key": .string("value")]),
+      meta: ClerkAPIErrorMeta(paramName: "value"),
       clerkTraceId: "trace123"
     )
 

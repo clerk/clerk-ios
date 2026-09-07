@@ -297,10 +297,11 @@ extension AuthView {
           let session = clerk.session,
           session.id == sessionId,
           session.status.allowsBiometricCredentialEnrollment,
-          let userId = session.user?.id
+          !session.user.id.isEmpty
     else {
       return nil
     }
+    let userId = session.user.id
 
     let biometryDisplayName = BiometryDisplayName.current()
     guard biometryDisplayName.isSupported else { return nil }

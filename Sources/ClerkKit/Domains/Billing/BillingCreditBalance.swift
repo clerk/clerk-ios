@@ -1,14 +1,10 @@
-//
-//  BillingCreditBalance.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-public struct BillingCreditBalance: Codable, Equatable, Sendable {
-  public var balance: BillingMoneyAmount?
+public typealias BillingCreditBalance = ClerkSnapshots.BillingCreditBalance
 
+extension BillingCreditBalance {
   public init(balance: BillingMoneyAmount? = nil) {
-    self.balance = balance
+    self.init(object: "commerce_credit_balance", balance: balance)
   }
 }

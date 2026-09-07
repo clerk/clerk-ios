@@ -66,7 +66,7 @@ struct UserProfileDetailView: View {
 
   var sortedExternalAccounts: [ExternalAccount] {
     (user?.externalAccounts.filter {
-      $0.verification?.status == .verified || $0.verification?.error != nil
+      $0.verification?.status == .verified || $0.verification?.kitError != nil
     } ?? [])
       .sorted { lhs, rhs in
         lhs.createdAt < rhs.createdAt
@@ -117,7 +117,7 @@ struct UserProfileDetailView: View {
               }
             }
 
-            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+            if !(clerk.environment?.enabledOAuthProviders ?? []).isEmpty {
               Section {
                 Group {
                   ForEach(sortedExternalAccounts) { externalAccount in

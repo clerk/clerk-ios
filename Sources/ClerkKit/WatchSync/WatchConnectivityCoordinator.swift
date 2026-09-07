@@ -88,12 +88,20 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
     switch change {
     case let .clientDidChange(previousClient, client):
-      guard !isApplyingRemotePayload,
-            !clerk.identityController.isApplyingIdentityTransition,
-            shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
-      else {
+      let skipRemote = isApplyingRemotePayload
+      let skipTransition = clerk.identityController.isApplyingIdentityTransition
+      let shouldPublish = shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
+      guard !skipRemote, !skipTransition, shouldPublish else {
+        ClerkLogger.info(
+          "clerk-watch-sync diag publish-skip user=\(clerk.userId ?? "nil") remote=\(skipRemote) transition=\(skipTransition) shouldPublish=\(shouldPublish)",
+          force: true
+        )
         return
       }
+      ClerkLogger.info(
+        "clerk-watch-sync diag publish-client user=\(clerk.userId ?? "nil")",
+        force: true
+      )
 
       let metadata = try persistAuthState(
         client == nil ? .cleared : .set,
@@ -185,6 +193,10 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
     guard isAcceptingIdentityUpdates else { return }
+    ClerkLogger.info(
+      "clerk-watch-sync diag apply-from-\(source.rawValue) incoming=\(payload.clientUpdate.client?.lastActiveSessionId ?? "nil") local=\(clerk.userId ?? "nil")",
+      force: true
+    )
 
     if let environment = payload.environment {
       withApplyingRemotePayload {
@@ -222,6 +234,10 @@ extension WatchConnectivityCoordinator {
       source: source,
       clerk: clerk
     ) else {
+      ClerkLogger.info(
+        "clerk-watch-sync diag apply-reject source=\(source.rawValue) incoming=\(payload.clientUpdate.client?.lastActiveSessionId ?? "nil") local=\(clerk.userId ?? "nil") inAuth=\(payload.clientUpdate.version?.rawValue ?? -1) localAuth=\(metadata.effectiveAuthVersion) inToken=\(payload.deviceTokenUpdate.version?.rawValue ?? -1) localToken=\(metadata.effectiveDeviceTokenVersion)",
+        force: true
+      )
       return nil
     }
 
@@ -407,10 +423,20 @@ extension WatchConnectivityCoordinator {
     clerk: Clerk
   ) -> Bool {
     if source.incomingDeviceIsAuthoritative,
-       clerk.user == nil,
-       payload.clientUpdate.client?.lastActiveSessionId != nil
+       let incomingSessionId = payload.clientUpdate.client?.lastActiveSessionId
     {
-      return true
+      if clerk.user == nil {
+        return true
+      }
+      if incomingSessionId != clerk.sessionId,
+         incomingAuthoritativeClientIsNewerThanLocal(payload, clerk: clerk)
+      {
+        ClerkLogger.info(
+          "clerk-watch-sync diag apply-reset-newer-phone incoming=\(incomingSessionId) local=\(clerk.sessionId ?? "nil")",
+          force: true
+        )
+        return true
+      }
     }
     let incomingTokenFingerprint: String = switch payload.deviceTokenUpdate {
     case .notIncluded:
@@ -504,6 +530,16 @@ extension WatchConnectivityCoordinator {
       return false
     }
     return true
+  }
+
+  private func incomingAuthoritativeClientIsNewerThanLocal(
+    _ payload: WatchSyncPayload,
+    clerk: Clerk
+  ) -> Bool {
+    let incomingDate = payload.clientUpdate.serverFetchDate ?? payload.clientUpdate.client?.updatedAt
+    let localDate = clerk.lastClientServerFetchDate ?? clerk.client?.updatedAt
+    guard let incomingDate, let localDate else { return false }
+    return incomingDate > localDate
   }
 
   private func deviceTokenResetCandidate(

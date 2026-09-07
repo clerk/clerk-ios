@@ -1,21 +1,21 @@
-//
-//  BackupCodeResource.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// An interface that represents a backup code.
-public struct BackupCodeResource: Identifiable, Codable, Equatable, Sendable {
-  /// The unique identifier for the set of backup codes.
-  public var id: String
+public typealias BackupCodeResource = ClerkSnapshots.BackupCode
 
-  /// The generated set of backup codes.
-  public var codes: [String]
-
-  /// The date when the backup codes were created.
-  public var createdAt: Date
-
-  /// The date when the backup codes were last updated.
-  public var updatedAt: Date
+extension BackupCodeResource {
+  public init(
+    id: String,
+    codes: [String],
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    self.init(
+      object: "backup_code",
+      id: id,
+      codes: codes,
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
+  }
 }

@@ -71,7 +71,8 @@ struct UserButtonAccountSwitcher: View {
         ScrollView {
           VStack(spacing: 0) {
             ForEach(sessions) { session in
-              if let user = session.user {
+              if !session.user.id.isEmpty {
+                let user = session.user
                 AsyncButton {
                   await setActiveSession(session)
                 } label: { isRunning in

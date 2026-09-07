@@ -29,7 +29,6 @@ final class MockDependencyContainer: Dependencies {
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
-  let clientService: ClientServiceProtocol
   let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
@@ -38,7 +37,6 @@ final class MockDependencyContainer: Dependencies {
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
-  let environmentService: EnvironmentServiceProtocol
 
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
@@ -51,7 +49,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - biometricCredentialKeyManager: Optional biometric-credential key manager (defaults to MockBiometricCredentialKeyManager).
   ///   - biometricCredentialStore: Optional biometric credential store.
   ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
-  ///   - clientService: Optional custom client service (defaults to MockClientService with Client.mock).
   ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
   ///   - userService: Optional custom user service (defaults to MockUserService).
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
@@ -60,7 +57,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
-  ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
   init(
     apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
@@ -74,7 +70,6 @@ final class MockDependencyContainer: Dependencies {
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
-    clientService: (any ClientServiceProtocol)? = nil,
     hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
@@ -82,8 +77,7 @@ final class MockDependencyContainer: Dependencies {
     magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
-    organizationService: (any OrganizationServiceProtocol)? = nil,
-    environmentService: (any EnvironmentServiceProtocol)? = nil
+    organizationService: (any OrganizationServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
     let resolvedKeychain = keychain ?? InMemoryKeychain()
@@ -109,7 +103,6 @@ final class MockDependencyContainer: Dependencies {
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services
-    self.clientService = clientService ?? MockClientService()
     self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
@@ -118,6 +111,5 @@ final class MockDependencyContainer: Dependencies {
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
-    self.environmentService = environmentService ?? MockEnvironmentService()
   }
 }

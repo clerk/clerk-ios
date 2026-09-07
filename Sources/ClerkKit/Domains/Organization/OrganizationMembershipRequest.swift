@@ -1,30 +1,9 @@
-//
-//  OrganizationMembershipRequest.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// The model that describes the request of a user to join an organization.
-public struct OrganizationMembershipRequest: Codable, Sendable, Identifiable {
-  /// The unique identifier for this membership request.
-  public var id: String
+public typealias OrganizationMembershipRequest = ClerkSnapshots.OrganizationMembershipRequest
 
-  /// The organization ID of the organization this request is for.
-  public var organizationId: String
-
-  /// The status of the request.
-  public var status: String
-
-  /// Public information about the user that this request belongs to.
-  public var publicUserData: PublicUserData?
-
-  /// The date when the membership request was created.
-  public var createdAt: Date
-
-  /// The date when the membership request was last updated.
-  public var updatedAt: Date
-
+extension OrganizationMembershipRequest {
   public init(
     id: String,
     organizationId: String,
@@ -33,11 +12,14 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Identifiable {
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.organizationId = organizationId
-    self.status = status
-    self.publicUserData = publicUserData
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "organization_membership_request",
+      id: id,
+      organizationId: organizationId,
+      status: OrganizationInvitationStatus(rawValue: status),
+      publicUserData: publicUserData ?? PublicUserData(imageUrl: "", hasImage: false, identifier: ""),
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
   }
 }

@@ -34,7 +34,7 @@ struct ClerkEngineClientTests {
     let current = try #require(Clerk.shared.auth.currentSignIn)
     let prepared = try await current.sendEmailCode(emailAddressId: "idn_email")
     #expect(engine.sentEmailAddressId == "idn_email")
-    #expect(prepared.firstFactorVerification?.strategy == .emailCode)
+    #expect(prepared.firstFactorVerification?.factorStrategy == .emailCode)
 
     let verified = try await prepared.verifyCode("424242")
     #expect(engine.verifiedCode == "424242")
@@ -205,28 +205,15 @@ struct ClerkEngineClientTests {
   @Test
   func refreshSkipsKitFAPIWhenEngineIsRegistered() async throws {
     let engine = RecordingEngineClient()
-    let kitCalls = KitCallCounter()
     Clerk.engineClient = engine
     Clerk.shared.environment = .mock
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: MockClientService {
-        kitCalls.clientRefreshCount += 1
-        throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-      },
-      environmentService: MockEnvironmentService {
-        kitCalls.environmentRefreshCount += 1
-        throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-      }
-    )
 
     let environment = try await Clerk.shared.refreshEnvironment()
     let client = try await Clerk.shared.refreshClient()
 
     #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
     #expect(client == Clerk.shared.client)
-    #expect(kitCalls.environmentRefreshCount == 0)
-    #expect(kitCalls.clientRefreshCount == 0)
+    #expect(engine.lastJSMethod == "load")
   }
 
   @Test
@@ -649,7 +636,7 @@ struct ClerkEngineClientTests {
     #expect(engine.startedEnterpriseSSOEmail == "user@enterprise.com")
     #expect(engine.startedEnterpriseSSORedirectUrl == "myapp://callback")
     #expect(signIn.id == "sia_engine")
-    #expect(signIn.firstFactorVerification?.strategy == .enterpriseSSO)
+    #expect(signIn.firstFactorVerification?.factorStrategy == .enterpriseSSO)
     #expect(kitCalls.createCount == 0)
     #expect(kitCalls.prepareCount == 0)
   }
@@ -667,7 +654,7 @@ struct ClerkEngineClientTests {
     #expect(engine.sentEmailLinkAddressId == "idn_email")
     #expect(engine.sentEmailLinkChallengeMethod == PKCE.codeChallengeMethod)
     #expect(engine.sentEmailLinkChallenge?.isEmpty == false)
-    #expect(signIn.firstFactorVerification?.strategy == .emailLink)
+    #expect(signIn.firstFactorVerification?.factorStrategy == .emailLink)
     #expect(kitCalls.createCount == 0)
     #expect(kitCalls.prepareCount == 0)
 
@@ -731,7 +718,7 @@ struct ClerkEngineClientTests {
     #expect(kitCalls.signUpCreateCount == 0)
 
     var signUp = SignUp.mock
-    signUp.verifications = ["external_account": Verification(status: .transferable)]
+    signUp.verificationByAttribute = ["external_account": Verification(status: .transferable)]
     let toSignIn = try await signUp.handleTransferFlow()
     #expect(engine.transferredToSignIn)
     if case .signIn(let transferred) = toSignIn {
@@ -1351,7 +1338,7 @@ final class RecordingEngineClient: ClerkEngineClient {
     user.primaryEmailAddressId = primaryEmailAddressId ?? user.primaryEmailAddressId
     user.primaryPhoneNumberId = primaryPhoneNumberId ?? user.primaryPhoneNumberId
     if let unsafeMetadata {
-      user.unsafeMetadata = unsafeMetadata
+      user.unsafeMetadata = unsafeMetadata.jsonValue
     }
     publish(user)
   }
@@ -1385,12 +1372,12 @@ final class RecordingEngineClient: ClerkEngineClient {
   }
 
   func createTOTP() async throws -> Data {
-    Data(#"{"id":"totp_engine","verified":false,"created_at":0,"updated_at":0}"#.utf8)
+    Data(#"{"object":"totp","id":"totp_engine","verified":false,"created_at":0,"updated_at":0}"#.utf8)
   }
 
   func verifyTOTP(code: String) async throws -> Data {
     verifiedTotpCode = code
-    return Data(#"{"id":"totp_engine","verified":true,"created_at":0,"updated_at":0}"#.utf8)
+    return Data(#"{"object":"totp","id":"totp_engine","verified":true,"created_at":0,"updated_at":0}"#.utf8)
   }
 
   func deleteUser() async throws -> Data {
@@ -1420,13 +1407,13 @@ final class RecordingEngineClient: ClerkEngineClient {
   func updateUserMetadata(unsafeMetadata: JSON) async throws {
     updatedMetadata = unsafeMetadata
     var user = currentUser
-    user.unsafeMetadata = unsafeMetadata
+    user.unsafeMetadata = unsafeMetadata.jsonValue
     publish(user)
   }
 
   func createBackupCodes() async throws -> Data {
     createdBackupCodes = true
-    return Data(#"{"id":"1","codes":["abcd"],"created_at":0,"updated_at":0}"#.utf8)
+    return Data(#"{"object":"backup_code","id":"1","codes":["abcd"],"created_at":0,"updated_at":0}"#.utf8)
   }
 
   func disableTOTP() async throws -> Data {
@@ -1477,7 +1464,7 @@ final class RecordingEngineClient: ClerkEngineClient {
     case "update":
       return try JSONEncoder.clerkEncoder.encode(Organization.mock)
     case "destroy":
-      return Data(#"{"id":"1","deleted":true}"#.utf8)
+      return Data(#"{"object":"deleted","id":"1","deleted":true}"#.utf8)
     case "getRoles":
       return try JSONEncoder.clerkEncoder.encode(ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1))
     case "getMemberships":
@@ -1535,7 +1522,7 @@ final class RecordingEngineClient: ClerkEngineClient {
     userChildId = id
     userChildMethod = method
     if method == "destroy" || method == "delete" {
-      return Data(#"{"id":"1","deleted":true}"#.utf8)
+      return Data(#"{"object":"deleted","id":"1","deleted":true}"#.utf8)
     }
     switch pick {
     case "emailAddresses":
@@ -1567,7 +1554,7 @@ final class RecordingEngineClient: ClerkEngineClient {
     listedLocate = locate
     listedMethod = method
     if method == "delete" || method == "destroy" {
-      return Data(#"{"id":"1","deleted":true}"#.utf8)
+      return Data(#"{"object":"deleted","id":"1","deleted":true}"#.utf8)
     }
     switch locate {
     case "getInvitations":
@@ -1843,8 +1830,6 @@ private final class KitCallCounter {
   var attemptCount = 0
   var setActiveCount = 0
   var signOutCount = 0
-  var environmentRefreshCount = 0
-  var clientRefreshCount = 0
   var prepareSecondCount = 0
   var attemptSecondCount = 0
   var resetPasswordCount = 0

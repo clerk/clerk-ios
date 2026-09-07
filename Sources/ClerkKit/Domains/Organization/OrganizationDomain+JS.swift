@@ -77,6 +77,8 @@ extension OrganizationDomain {
 extension OrganizationDomain.EnrollmentMode {
   fileprivate var jsEnrollmentMode: GetDomainsParamsEnrollmentMode {
     switch self {
+    case .enterpriseSso:
+      .enterpriseSso
     case .manualInvitation:
       .manualInvitation
     case .automaticInvitation:

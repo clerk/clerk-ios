@@ -143,7 +143,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     await model.acceptInvitation(pendingInvitation)
 
     XCTAssertEqual(engine.acceptedInvitationId, "inv_1")
-    XCTAssertEqual(model.invitationsPager.items.first?.status, "accepted")
+    XCTAssertEqual(model.invitationsPager.items.first?.status, .accepted)
     XCTAssertEqual(model.invitationsPager.offset, 0)
     XCTAssertEqual(model.invitationsPager.totalCount, 0)
   }
@@ -159,7 +159,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     await model.acceptInvitation(pendingInvitation)
 
     let acceptedInvitation = try XCTUnwrap(model.invitationsPager.items.first)
-    XCTAssertEqual(acceptedInvitation.status, "accepted")
+    XCTAssertEqual(acceptedInvitation.status, .accepted)
     XCTAssertEqual(acceptedInvitation.publicOrganizationData.id, "org_invite")
   }
 
@@ -183,7 +183,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     await model.acceptInvitation(firstInvitation)
 
     XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending"])
+    XCTAssertEqual(model.invitationsPager.items.map(\.status), [.accepted, .pending])
     XCTAssertEqual(model.invitationsPager.offset, 1)
     XCTAssertEqual(model.invitationsPager.totalCount, 2)
     XCTAssertTrue(model.invitationsPager.hasNextPage)
@@ -194,7 +194,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertEqual(engine.invitationPageSize, 2)
     XCTAssertEqual(engine.invitationStatus, .pending)
     XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending", "pending"])
+    XCTAssertEqual(model.invitationsPager.items.map(\.status), [.accepted, .pending, .pending])
     XCTAssertEqual(model.invitationsPager.offset, 2)
     XCTAssertEqual(model.invitationsPager.totalCount, 2)
     XCTAssertFalse(model.invitationsPager.hasNextPage)
@@ -214,7 +214,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     await model.acceptSuggestion(model.suggestionsPager.items[0])
 
     XCTAssertEqual(engine.acceptedSuggestionId, "sug_1")
-    XCTAssertEqual(model.suggestionsPager.items.first?.status, "accepted")
+    XCTAssertEqual(model.suggestionsPager.items.first?.status, .accepted)
   }
 }
 

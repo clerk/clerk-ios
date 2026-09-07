@@ -1,33 +1,9 @@
-//
-//  PermissionResource.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// An experimental interface that includes information about a user's permission.
-public struct PermissionResource: Codable, Identifiable, Sendable {
-  /// The unique identifier of the permission.
-  public var id: String
+public typealias PermissionResource = ClerkSnapshots.Permission
 
-  /// The unique key of the permission.
-  public var key: String
-
-  /// The name of the permission.
-  public var name: String
-
-  /// The type of the permission.
-  public var type: String
-
-  /// A description of the permission.
-  public var description: String
-
-  /// The date when the permission was created.
-  public var createdAt: Date
-
-  /// The date when the permission was last updated.
-  public var updatedAt: Date
-
+extension PermissionResource {
   public init(
     id: String,
     key: String,
@@ -37,12 +13,39 @@ public struct PermissionResource: Codable, Identifiable, Sendable {
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.key = key
-    self.name = name
-    self.type = type
-    self.description = description
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "permission",
+      id: id,
+      key: key,
+      name: name,
+      description: description,
+      type: PermissionType(rawValue: type),
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
+  }
+}
+
+extension PermissionType {
+  public var rawValue: String {
+    switch self {
+    case .user:
+      "user"
+    case .system:
+      "system"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "user":
+      self = .user
+    case "system":
+      self = .system
+    default:
+      self = .unknown(rawValue)
+    }
   }
 }

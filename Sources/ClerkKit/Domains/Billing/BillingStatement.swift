@@ -1,15 +1,56 @@
-//
-//  BillingStatement.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-public enum BillingStatementStatus: Codable, Equatable, Sendable {
-  case open
-  case closed
-  case unknown(String)
+public typealias BillingStatement = ClerkSnapshots.BillingStatement
+public typealias BillingStatementTotals = ClerkSnapshots.BillingStatementTotals
+public typealias BillingStatementGroup = ClerkSnapshots.BillingStatementGroup
+public typealias BillingStatementStatus = ClerkSnapshots.BillingStatementStatus
 
+extension BillingStatementTotals {
+  public init(
+    subtotal: BillingMoneyAmount,
+    grandTotal: BillingMoneyAmount,
+    taxTotal: BillingMoneyAmount
+  ) {
+    self.init(grandTotal: grandTotal, subtotal: subtotal, taxTotal: taxTotal)
+  }
+}
+
+extension BillingStatement {
+  public init(
+    id: String,
+    totals: BillingStatementTotals,
+    status: BillingStatementStatus,
+    timestamp: Date,
+    groups: [BillingStatementGroup]
+  ) {
+    self.init(
+      object: "commerce_statement",
+      id: id,
+      status: status,
+      timestamp: Int(timestamp.timeIntervalSince1970 * 1000),
+      groups: groups,
+      totals: totals
+    )
+  }
+}
+
+extension BillingStatementGroup {
+  public init(
+    id: String? = nil,
+    timestamp: Date,
+    items: [BillingPayment]
+  ) {
+    self.init(
+      object: "commerce_statement_group",
+      timestamp: Int(timestamp.timeIntervalSince1970 * 1000),
+      items: items,
+      id: id ?? ""
+    )
+  }
+}
+
+extension BillingStatementStatus {
   public var rawValue: String {
     switch self {
     case .open:
@@ -30,67 +71,5 @@ public enum BillingStatementStatus: Codable, Equatable, Sendable {
     default:
       self = .unknown(rawValue)
     }
-  }
-
-  public init(from decoder: Decoder) throws {
-    try self.init(rawValue: BillingUnknownString.decode(from: decoder))
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    try BillingUnknownString.encode(rawValue, to: encoder)
-  }
-}
-
-public struct BillingStatementTotals: Codable, Equatable, Sendable {
-  public var subtotal: BillingMoneyAmount
-  public var grandTotal: BillingMoneyAmount
-  public var taxTotal: BillingMoneyAmount
-
-  public init(
-    subtotal: BillingMoneyAmount,
-    grandTotal: BillingMoneyAmount,
-    taxTotal: BillingMoneyAmount
-  ) {
-    self.subtotal = subtotal
-    self.grandTotal = grandTotal
-    self.taxTotal = taxTotal
-  }
-}
-
-public struct BillingStatementGroup: Codable, Equatable, Sendable {
-  public var id: String?
-  public var timestamp: Date
-  public var items: [BillingPayment]
-
-  public init(
-    id: String? = nil,
-    timestamp: Date,
-    items: [BillingPayment]
-  ) {
-    self.id = id
-    self.timestamp = timestamp
-    self.items = items
-  }
-}
-
-public struct BillingStatement: Codable, Equatable, Sendable, Identifiable {
-  public var id: String
-  public var totals: BillingStatementTotals
-  public var status: BillingStatementStatus
-  public var timestamp: Date
-  public var groups: [BillingStatementGroup]
-
-  public init(
-    id: String,
-    totals: BillingStatementTotals,
-    status: BillingStatementStatus,
-    timestamp: Date,
-    groups: [BillingStatementGroup]
-  ) {
-    self.id = id
-    self.totals = totals
-    self.status = status
-    self.timestamp = timestamp
-    self.groups = groups
   }
 }

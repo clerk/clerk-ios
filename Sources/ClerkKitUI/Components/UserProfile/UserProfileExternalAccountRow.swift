@@ -67,7 +67,7 @@ struct UserProfileExternalAccountRow: View {
             .frame(minHeight: 22)
         }
 
-        if let error = externalAccount.verification?.error {
+        if let error = externalAccount.verification?.kitError {
           ErrorText(text: verificationErrorText(for: error), alignment: .leading)
           #if os(iOS)
           .font(theme.fonts.footnote)
@@ -80,7 +80,7 @@ struct UserProfileExternalAccountRow: View {
       Spacer()
 
       Menu {
-        if externalAccount.verification?.error != nil || oauthConfig.shouldOfferReconnect(for: externalAccount) {
+        if externalAccount.verification?.kitError != nil || oauthConfig.shouldOfferReconnect(for: externalAccount) {
           AsyncButton {
             await reconnect()
           } label: { _ in
@@ -168,7 +168,7 @@ extension UserProfileExternalAccountRow {
       // account while upserting scopes. Only create a fresh external account
       // when there is a verification error and no scope reauthorization is required.
       let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
-                                        externalAccount.verification?.error != nil
+                                        externalAccount.verification?.kitError != nil
       {
         try await user.createExternalAccount(
           provider: provider,

@@ -72,17 +72,17 @@ enum SessionAuthorization {
   private static let allowedLevels: Set<String> = ["first_factor", "second_factor", "multi_factor"]
 
   static func evaluate(session: Session, params: CheckAuthorizationParams) -> Bool {
-    let membership = session.user?.organizationMemberships?.first {
+    let membership = session.user.organizationMemberships.first {
       $0.organization.id == session.lastActiveOrganizationId
     }
     return evaluate(
-      userId: session.user?.id,
+      userId: session.user.id,
       orgId: membership?.organization.id,
       orgRole: membership?.role,
-      orgPermissions: membership?.permissions,
+      orgPermissions: membership?.permissionKeys,
       factorVerificationAge: session.factorVerificationAge,
-      features: session.lastActiveToken?.featuresClaim ?? "",
-      plans: session.lastActiveToken?.plansClaim ?? "",
+      features: session.lastActiveToken.featuresClaim,
+      plans: session.lastActiveToken.plansClaim,
       params: params
     )
   }

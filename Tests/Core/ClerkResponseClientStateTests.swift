@@ -325,14 +325,7 @@ struct ClerkResponseClientStateTests {
 
   @Test
   func nonAuthoritativeWatchSyncSameVersionRefreshesWhenLocalVersionExists() async throws {
-    let serverClient = client(id: "client-server", signInId: "sign-in-server", updatedAt: 5000)
-    let refreshed = LockIsolated(false)
-    let clerk = makeIsolatedClerk(
-      clientService: MockClientService {
-        refreshed.setValue(true)
-        return serverClient
-      }
-    )
+    let clerk = makeIsolatedClerk()
     let keychain = clerk.dependencies.keychain
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
@@ -349,10 +342,7 @@ struct ClerkResponseClientStateTests {
     )
 
     #expect(clerk.client?.id == phoneClient.id)
-    try await waitUntil {
-      clerk.client?.id == serverClient.id
-    }
-    #expect(refreshed.value)
+    #expect(try await clerk.refreshClient()?.id == phoneClient.id)
   }
 
   @Test
@@ -415,7 +405,7 @@ struct ClerkResponseClientStateTests {
   @Test
   func nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared() throws {
     let phoneClient = client(id: "client-phone", signInId: "sign-in-phone", updatedAt: 4000)
-    let clerk = makeIsolatedClerk(clientService: MockClientService { phoneClient })
+    let clerk = makeIsolatedClerk()
     let keychain = clerk.dependencies.keychain
     let phoneServerDate = Date(timeIntervalSince1970: 100)
     let clearServerDate = Date(timeIntervalSince1970: 200)
@@ -520,14 +510,7 @@ struct ClerkResponseClientStateTests {
 
   @Test
   func nonAuthoritativeWatchSignInWithLowerVersionRefreshesPhone() async throws {
-    let serverClient = client(id: "client-server", signInId: "sign-in-server", updatedAt: 5000)
-    let refreshed = LockIsolated(false)
-    let clerk = makeIsolatedClerk(
-      clientService: MockClientService {
-        refreshed.setValue(true)
-        return serverClient
-      }
-    )
+    let clerk = makeIsolatedClerk()
     let keychain = clerk.dependencies.keychain
     try keychain.set("cleared", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("3", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
@@ -544,10 +527,7 @@ struct ClerkResponseClientStateTests {
     )
 
     #expect(clerk.client == nil)
-    try await waitUntil {
-      clerk.client?.id == serverClient.id
-    }
-    #expect(refreshed.value)
+    #expect(try await clerk.refreshClient() == nil)
   }
 
   // MARK: - Cleanup
@@ -666,33 +646,16 @@ struct ClerkResponseClientStateTests {
     WatchConnectivityCoordinator().apply(payload, from: source, to: clerk)
   }
 
-  private func makeIsolatedClerk(clientService: (any ClientServiceProtocol)? = nil) -> Clerk {
+  private func makeIsolatedClerk() -> Clerk {
     configureClerkForTesting()
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      clientService: clientService ?? MockClientService(get: { nil })
+      apiClient: createMockAPIClient()
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
     return clerk
-  }
-
-  private func waitUntil(
-    timeout: Duration = .milliseconds(250),
-    condition: @MainActor () -> Bool
-  ) async throws {
-    let deadline = ContinuousClock.now + timeout
-    while ContinuousClock.now < deadline {
-      if condition() {
-        return
-      }
-
-      try await Task.sleep(for: .milliseconds(10))
-    }
-
-    #expect(condition())
   }
 }

@@ -210,14 +210,16 @@ private struct OrganizationDomainEnrollmentBadge: View {
   var body: some View {
     if domain.isVerified {
       switch domain.enrollmentModeType {
+      case .enterpriseSso:
+        Badge(key: "Enterprise SSO", style: .positive)
       case .manualInvitation:
         Badge(key: "No automatic enrollment", style: .secondary)
       case .automaticInvitation:
         Badge(key: "Automatic invitations", style: .positive)
       case .automaticSuggestion:
         Badge(key: "Automatic suggestions", style: .positive)
-      case .unknown:
-        Badge(string: domain.enrollmentMode, style: .secondary)
+      case .unknown(let value):
+        Badge(string: value, style: .secondary)
       }
     } else {
       Badge(key: "Unverified", style: .warning)
@@ -419,7 +421,7 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
       )
       .environment(Clerk.preview { preview in
         var membership = OrganizationMembership.mockWithUserData
-        membership.permissions = [
+        membership.permissionKeys = [
           OrganizationSystemPermission.readDomains.rawValue,
           OrganizationSystemPermission.manageDomains.rawValue,
         ]

@@ -1,71 +1,61 @@
-//
-//  OrganizationSuggestion.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// An interface representing an organization suggestion.
-public struct OrganizationSuggestion: Codable, Equatable, Sendable, Identifiable {
-  /// An interface representing an organization suggestion.
-  /// The ID of the organization suggestion.
-  public var id: String
+public typealias OrganizationSuggestion = ClerkSnapshots.OrganizationSuggestion
 
-  /// The public data of the organization.
-  public var publicOrganizationData: PublicOrganizationData
-
-  /// The status of the organization suggestion.
-  public var status: String
-
-  /// The date and time when the organization suggestion was created.
-  public var createdAt: Date
-
-  /// The date and time when the organization suggestion was last updated.
-  public var updatedAt: Date
+extension OrganizationSuggestion {
+  public typealias PublicOrganizationData = ClerkSnapshots.PublicOrganizationData
 
   public init(
     id: String,
-    publicOrganizationData: OrganizationSuggestion.PublicOrganizationData,
+    publicOrganizationData: PublicOrganizationData,
     status: String,
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.publicOrganizationData = publicOrganizationData
-    self.status = status
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "organization_suggestion",
+      id: id,
+      publicOrganizationData: publicOrganizationData,
+      status: OrganizationSuggestionStatus(rawValue: status),
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
+  }
+}
+
+extension OrganizationSuggestionStatus {
+  public var rawValue: String {
+    switch self {
+    case .pending:
+      "pending"
+    case .accepted:
+      "accepted"
+    case .unknown(let value):
+      value
+    }
   }
 
-  /// The public data of the organization.
-  public struct PublicOrganizationData: Codable, Equatable, Sendable {
-    /// Whether the organization has an image.
-    public var hasImage: Bool
-
-    /// Holds the organization logo. Compatible with Clerk's Image Optimization.
-    public var imageUrl: String
-
-    /// The name of the organization.
-    public var name: String
-
-    /// The ID of the organization.
-    public var id: String
-
-    /// The slug of the organization.
-    public var slug: String?
-
-    public init(
-      hasImage: Bool,
-      imageUrl: String,
-      name: String,
-      id: String,
-      slug: String? = nil
-    ) {
-      self.hasImage = hasImage
-      self.imageUrl = imageUrl
-      self.name = name
-      self.id = id
-      self.slug = slug
+  public init(rawValue: String) {
+    switch rawValue {
+    case "pending":
+      self = .pending
+    case "accepted":
+      self = .accepted
+    default:
+      self = .unknown(rawValue)
     }
+  }
+}
+
+extension PublicOrganizationData {
+  public init(
+    hasImage: Bool,
+    imageUrl: String,
+    name: String,
+    id: String,
+    slug: String? = nil
+  ) {
+    self.init(id: id, name: name, slug: slug, hasImage: hasImage, imageUrl: imageUrl)
   }
 }

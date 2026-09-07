@@ -85,7 +85,7 @@ struct OrganizationTests {
   @Test
   func organizationMembershipPermissionHelpers() {
     var membership = OrganizationMembership.mockWithUserData
-    membership.permissions = [
+    membership.permissionKeys = [
       OrganizationSystemPermission.manageProfile.rawValue,
       OrganizationSystemPermission.deleteProfile.rawValue,
       OrganizationSystemPermission.readMemberships.rawValue,
@@ -107,7 +107,7 @@ struct OrganizationTests {
     #expect(membership.canReadAPIKeys == false)
     #expect(membership.canManageAPIKeys == false)
 
-    membership.permissions = nil
+    membership.permissionKeys = []
 
     #expect(membership.hasPermission(.manageProfile) == false)
   }
@@ -115,11 +115,11 @@ struct OrganizationTests {
   @Test
   func organizationDomainEnrollmentModeTypeUsesTypedMode() {
     var domain = OrganizationDomain.mock
-    domain.enrollmentMode = OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue
+    domain.enrollmentMode = .automaticInvitation
 
     #expect(domain.enrollmentModeType == .automaticInvitation)
 
-    domain.enrollmentMode = "future_mode"
+    domain.enrollmentMode = .unknown("future_mode")
 
     #expect(domain.enrollmentModeType == .unknown("future_mode"))
   }

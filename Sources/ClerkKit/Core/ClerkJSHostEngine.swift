@@ -76,7 +76,11 @@ package enum ClerkJSHostStore {
 
   static func publish(_ host: ClerkJSHost, onto kit: Clerk) {
     if let environment = host.lastEnvironmentJSON {
-      try? kit.applyEngineEnvironmentJSON(environment)
+      do {
+        try kit.applyEngineEnvironmentJSON(environment)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to apply JS environment")
+      }
     }
     guard let data = host.lastClientJSON else { return }
     let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
@@ -88,17 +92,14 @@ enum KitJSErrorMapping {
   static func kitError(_ error: ClerkJSError) -> any Error {
     switch error.kind {
     case .api:
-      let first = error.errors.first
-      let meta = first.flatMap(\.meta).flatMap { value in
-        (try? JSONEncoder().encode(value)).flatMap { try? JSONDecoder().decode(JSON.self, from: $0) }
-      }
-      return ClerkAPIError(
-        code: first?.code ?? error.code ?? "api_error",
-        message: first?.message ?? error.message,
-        longMessage: first?.longMessage,
-        meta: meta,
-        clerkTraceId: error.clerkTraceId
+      var first = error.errors.first ?? ClerkAPIError(
+        code: error.code ?? "api_error",
+        message: error.message
       )
+      if let trace = error.clerkTraceId, first.clerkTraceId.isEmpty {
+        first.clerkTraceId = trace
+      }
+      return first
     case .offline, .runtime, .resolution, .javascript:
       return ClerkClientError(message: String.LocalizationValue(stringLiteral: error.message))
     }

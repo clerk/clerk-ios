@@ -182,12 +182,12 @@ private func snapshotObject() throws -> [String: Any] {
   try #require(JSONSerialization.jsonObject(with: Data(contentsOf: snapshotURL())) as? [String: Any])
 }
 
-private func decodeSnapshotEnvironment() throws -> Environment {
-  try JSONDecoder().decode(Environment.self, from: Data(contentsOf: snapshotURL()))
+private func decodeSnapshotEnvironment() throws -> ClerkEnvironment {
+  try JSONDecoder().decode(ClerkEnvironment.self, from: Data(contentsOf: snapshotURL()))
 }
 
-private func decodeEnvironment(_ object: [String: Any]) throws -> Environment {
-  try JSONDecoder().decode(Environment.self, from: JSONSerialization.data(withJSONObject: object))
+private func decodeEnvironment(_ object: [String: Any]) throws -> ClerkEnvironment {
+  try JSONDecoder().decode(ClerkEnvironment.self, from: JSONSerialization.data(withJSONObject: object))
 }
 
 private func mutatedAttribute(

@@ -237,13 +237,13 @@ private struct OrganizationAccountSuggestionRow: View {
 
 extension UserOrganizationInvitation {
   fileprivate var isAccepted: Bool {
-    status == "accepted"
+    status == .accepted
   }
 }
 
 extension OrganizationSuggestion {
   fileprivate var isAccepted: Bool {
-    status == "accepted"
+    status == .accepted
   }
 }
 

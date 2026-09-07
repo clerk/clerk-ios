@@ -33,14 +33,14 @@ public struct NativeSettings: Codable, Equatable, Sendable {
   }
 
   public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    apiEnabled = try container.decodeIfPresent(Bool.self, forKey: .apiEnabled) ?? false
+    let container = try decoder.container(keyedBy: FAPIJSONKey.self)
+    apiEnabled = try container.decodeIfPresentFlexible(Bool.self, snake: "api_enabled", camel: "apiEnabled") ?? false
     biometricSignInEnabled =
-      try container.decodeIfPresent(Bool.self, forKey: .biometricSignInEnabled) ?? false
+      try container.decodeIfPresentFlexible(Bool.self, snake: "trusted_device_sign_in_enabled", camel: "trustedDeviceSignInEnabled") ?? false
     biometricCredentialPromptAfterSignInEnabled =
-      try container.decodeIfPresent(Bool.self, forKey: .biometricCredentialPromptAfterSignInEnabled) ?? false
+      try container.decodeIfPresentFlexible(Bool.self, snake: "trusted_device_enrollment_prompt_after_sign_in_enabled", camel: "trustedDeviceEnrollmentPromptAfterSignInEnabled") ?? false
     biometricCredentialPromptAfterSignUpEnabled =
-      try container.decodeIfPresent(Bool.self, forKey: .biometricCredentialPromptAfterSignUpEnabled) ?? false
+      try container.decodeIfPresentFlexible(Bool.self, snake: "trusted_device_enrollment_prompt_after_sign_up_enabled", camel: "trustedDeviceEnrollmentPromptAfterSignUpEnabled") ?? false
   }
 }
 

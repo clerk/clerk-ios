@@ -122,7 +122,7 @@ struct OrganizationSettingsDecodingTests {
     #expect(env.organizationSettings.forceOrganizationSelection == true)
     #expect(env.organizationSettings.actions.adminDelete == true)
     #expect(env.organizationSettings.domains.enabled == true)
-    #expect(env.organizationSettings.domains.enrollmentModes == ["automatic_invitation"])
+    #expect(env.organizationSettings.domains.enrollmentModes == [.automaticInvitation])
     #expect(env.organizationSettings.domains.defaultRole == "org:member")
     #expect(env.organizationSettings.slug.disabled == true)
     #expect(env.organizationSettings.organizationCreationDefaults.enabled == true)

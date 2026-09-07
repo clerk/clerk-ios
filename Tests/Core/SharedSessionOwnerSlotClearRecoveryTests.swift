@@ -24,8 +24,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       keychain: keychain,
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
-      sharedSessionOwnerSlotClearRecovery: recovery,
-      clientService: MockClientService(get: { nil })
+      sharedSessionOwnerSlotClearRecovery: recovery
     )
     clerk.sharedSessionSyncCoordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.owner",
@@ -72,8 +71,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       appLocalKeychain: localKeychain,
       identityKeychain: localKeychain,
       atomicIdentityStore: localStore,
-      sharedSessionOwnerSlotClearRecovery: recovery,
-      clientService: MockClientService(get: { nil })
+      sharedSessionOwnerSlotClearRecovery: recovery
     )
     try localStore.save(makeIdentity(token: "local-token"))
 
@@ -121,8 +119,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       keychain: identityKeychain,
       identityKeychain: identityKeychain,
       atomicIdentityStore: localStore,
-      sharedSessionOwnerSlotClearRecovery: recovery,
-      clientService: MockClientService(get: { nil })
+      sharedSessionOwnerSlotClearRecovery: recovery
     )
     clerk.dependencies = dependencies
     let identity = makeIdentity(token: "accepted-token")
@@ -189,8 +186,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     let clerk = Clerk()
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
-      atomicIdentityStore: localStore,
-      clientService: MockClientService(get: { nil })
+      atomicIdentityStore: localStore
     )
     clerk.dependencies = dependencies
     let coordinator = SharedSessionSyncCoordinator(
@@ -275,8 +271,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       atomicIdentityStore: localStore,
-      sharedSessionOwnerSlotClearRecovery: disabledContext,
-      clientService: MockClientService(get: { nil })
+      sharedSessionOwnerSlotClearRecovery: disabledContext
     )
 
     try clerk.performConfiguration(dependencies: dependencies)
@@ -319,8 +314,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: initialKeychain,
-      identityKeychain: initialKeychain,
-      clientService: MockClientService(get: { nil })
+      identityKeychain: initialKeychain
     )
     let journal = InMemoryKeychain()
     let cachedIdentityStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
@@ -338,8 +332,7 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     let dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       atomicIdentityStore: cachedIdentityStore,
-      sharedSessionOwnerSlotClearRecovery: context,
-      clientService: MockClientService(get: { nil })
+      sharedSessionOwnerSlotClearRecovery: context
     )
 
     #expect(throws: DeleteFailingRecoveryIdentityStore.Failure.delete) {

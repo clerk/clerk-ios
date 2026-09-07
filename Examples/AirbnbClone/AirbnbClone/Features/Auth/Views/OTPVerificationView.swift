@@ -45,7 +45,7 @@ struct OTPVerificationView: View {
       return signUp.emailAddress ?? signUp.phoneNumber ?? ""
     }
     if let signIn {
-      return signIn.identifier ?? ""
+      return signIn.identifier
     }
     return ""
   }

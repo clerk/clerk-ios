@@ -5,79 +5,8 @@
 // swiftlint:disable file_length
 
 import AuthenticationServices
+import ClerkSnapshots
 import Foundation
-
-/// The `SignIn` object holds the state of the current sign-in process and provides helper methods
-/// to manage verification and session creation.
-public struct SignIn: Codable, Sendable, Equatable {
-  /// Unique identifier for this sign in.
-  public var id: String
-
-  /// The status of the current sign-in.
-  ///
-  /// See ``SignIn/Status-swift.enum`` for supported values.
-  public var status: Status
-
-  /// Array of all the authentication identifiers that are supported for this sign in.
-  public var supportedIdentifiers: [Identifier]?
-
-  /// The authentication identifier value for the current sign-in.
-  public var identifier: String?
-
-  /// Array of the first factors that are supported in the current sign-in.
-  ///
-  ///  Each factor contains information about the verification strategy that can be used. See the `SignInFirstFactor` type reference for more information.
-  public var supportedFirstFactors: [Factor]?
-
-  /// Array of the second factors that are supported in the current sign-in.
-  ///
-  /// Each factor contains information about the verification strategy that can be used. This property is populated only when the first factor is verified. See the `SignInSecondFactor` type reference for more information.
-  public var supportedSecondFactors: [Factor]?
-
-  /// The state of the verification process for the selected first factor.
-  ///
-  /// Initially, this property contains an empty verification object, since there is no first factor selected. You need to call the `prepareFirstFactor` method in order to start the verification process.
-  public var firstFactorVerification: Verification?
-
-  /// The state of the verification process for the selected second factor.
-  ///
-  /// Initially, this property contains an empty verification object, since there is no second factor selected. For the `phone_code` strategy, you need to call the `prepareSecondFactor` method in order to start the verification process. For the `totp` strategy, you can directly attempt.
-  public var secondFactorVerification: Verification?
-
-  /// An object containing information about the user of the current sign-in.
-  ///
-  /// This property is populated only once an identifier is given to the SignIn object.
-  public var userData: UserData?
-
-  /// The identifier of the session that was created upon completion of the current sign-in.
-  ///
-  /// The value of this property is `nil` if the sign-in status is not `complete`.
-  public var createdSessionId: String?
-
-  public init(
-    id: String,
-    status: SignIn.Status,
-    supportedIdentifiers: [SignIn.Identifier]? = nil,
-    identifier: String? = nil,
-    supportedFirstFactors: [Factor]? = nil,
-    supportedSecondFactors: [Factor]? = nil,
-    firstFactorVerification: Verification? = nil,
-    secondFactorVerification: Verification? = nil,
-    userData: SignIn.UserData? = nil,
-    createdSessionId: String? = nil
-  ) {
-    self.id = id
-    self.status = status
-    self.supportedIdentifiers = supportedIdentifiers
-    self.identifier = identifier
-    self.supportedFirstFactors = supportedFirstFactors
-    self.supportedSecondFactors = supportedSecondFactors
-    self.firstFactorVerification = firstFactorVerification
-    self.secondFactorVerification = secondFactorVerification
-    self.userData = userData
-    self.createdSessionId = createdSessionId
-  }
-}
 
 extension SignIn {
   #if !os(tvOS) && !os(watchOS)
@@ -141,7 +70,7 @@ extension SignIn {
       transferable: transferable,
       unsafeMetadata: unsafeMetadata
     )
-    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.kitError {
       throw error
     }
     return result
@@ -396,7 +325,7 @@ extension SignIn {
   ) async throws -> TransferFlowResult {
     if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
       let updatedSignIn = try await reload(rotatingTokenNonce: nonce)
-      if let error = updatedSignIn.firstFactorVerification?.error {
+      if let error = updatedSignIn.firstFactorVerification?.kitError {
         throw error
       }
       return .signIn(updatedSignIn)
@@ -409,13 +338,11 @@ extension SignIn {
       )
       switch result {
       case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.error {
+        if let error = signIn.firstFactorVerification?.kitError {
           throw error
         }
       case .signUp(let signUp):
-        if let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-           let error = verification.error
-        {
+        if let error = signUp.verificationByAttribute["external_account"]??.kitError {
           throw error
         }
       }
@@ -430,20 +357,20 @@ extension SignIn {
 
   var usesPasskeyAsSecondFactor: Bool {
     let needsSecondFactor = status == .needsSecondFactor || status == .needsClientTrust
-    let supportsPasskey = supportedSecondFactors?.contains(where: { $0.strategy == .passkey }) == true
+    let supportsPasskey = secondFactors.contains(where: { $0.strategy == .passkey })
     return needsSecondFactor && supportsPasskey
   }
 
   /// The first factor matching the specified strategy string.
   package func identifyingFirstFactor(for strategy: String) -> Factor? {
-    supportedFirstFactors?.first(where: { factor in
+    firstFactors.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
 
   /// The first factor matching the specified strategy string and identifier.
   package func identifyingFirstFactor(for strategy: String, matching identifier: String) -> Factor? {
-    supportedFirstFactors?.first(where: { factor in
+    firstFactors.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }

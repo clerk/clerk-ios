@@ -210,7 +210,7 @@ private enum OrganizationMembersTab: Hashable, Identifiable {
         let organization = Organization.mock
         var membership = OrganizationMembership.mockWithUserData
         membership.organization = organization
-        membership.permissions = [
+        membership.permissionKeys = [
           OrganizationSystemPermission.readMemberships.rawValue,
           OrganizationSystemPermission.manageMemberships.rawValue,
         ]

@@ -32,15 +32,15 @@ struct SignUpCompleteProfileView: View {
   }
 
   var legalConsentMissing: Bool {
-    signUp?.missingFields.contains(.legalAccepted) ?? false
+    signUp?.missing.contains(.legalAccepted) ?? false
   }
 
   var termsUrl: URL? {
-    clerk.environment?.displayConfig.termsUrl.flatMap { URL(string: $0) }
+    URL(string: clerk.environment?.displayConfig.termsUrl ?? "")
   }
 
   var privacyPolicyUrl: URL? {
-    clerk.environment?.displayConfig.privacyPolicyUrl.flatMap { URL(string: $0) }
+    URL(string: clerk.environment?.displayConfig.privacyPolicyUrl ?? "")
   }
 
   var continueIsDisabled: Bool {
@@ -156,9 +156,9 @@ extension SignUpCompleteProfileView {
     guard let signUp else { return false }
     switch field {
     case .firstName:
-      return signUp.missingFields.contains(.firstName)
+      return signUp.missing.contains(.firstName)
     case .lastName:
-      return signUp.missingFields.contains(.lastName)
+      return signUp.missing.contains(.lastName)
     }
   }
 
@@ -254,7 +254,7 @@ extension SignUpCompleteProfileView {
     .environment(Clerk.preview { preview in
       var client = Client.mock
       var signUp = SignUp.mock
-      signUp.missingFields.append(contentsOf: [
+      signUp.missing.append(contentsOf: [
         .firstName,
         .lastName,
         .legalAccepted,

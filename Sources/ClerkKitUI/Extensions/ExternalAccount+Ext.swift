@@ -12,7 +12,7 @@ extension ExternalAccount {
   }
 
   var displayName: String {
-    if let username, !username.isEmptyTrimmed {
+    if !username.isEmptyTrimmed {
       username
     } else {
       emailAddress
@@ -21,7 +21,6 @@ extension ExternalAccount {
 
   var fullName: String? {
     let fullName = [firstName, lastName]
-      .compactMap(\.self)
       .joined(separator: " ")
       .trimmingCharacters(in: .whitespacesAndNewlines)
 

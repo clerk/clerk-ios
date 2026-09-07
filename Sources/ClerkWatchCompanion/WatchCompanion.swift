@@ -11,9 +11,9 @@ public struct WatchCompanion: Equatable, Sendable {
   public static let environmentKey = "clerkEnvironment"
 
   public var client: Client?
-  public var environment: Environment?
+  public var environment: ClerkEnvironment?
 
-  public init(client: Client? = nil, environment: Environment? = nil) {
+  public init(client: Client? = nil, environment: ClerkEnvironment? = nil) {
     self.client = client
     self.environment = environment
   }
@@ -35,7 +35,7 @@ public struct WatchCompanion: Equatable, Sendable {
       guard let data = value as? Data else {
         throw WatchCompanionError.invalidEnvironmentPayload
       }
-      environment = try JSONDecoder().decode(Environment.self, from: data)
+      environment = try JSONDecoder().decode(ClerkEnvironment.self, from: data)
     }
   }
 

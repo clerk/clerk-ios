@@ -89,7 +89,7 @@ struct SignInTests {
     let preparedSignIn = SignIn(
       id: signIn.id,
       status: .needsSecondFactor,
-      supportedSecondFactors: signIn.supportedSecondFactors,
+      supportedSecondFactors: signIn.secondFactors,
       secondFactorVerification: Verification(
         status: .unverified,
         strategy: .passkey,

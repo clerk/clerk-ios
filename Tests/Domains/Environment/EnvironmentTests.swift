@@ -1,5 +1,4 @@
 @testable import ClerkKit
-import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -8,108 +7,131 @@ import Testing
 struct EnvironmentTests {
   init() {
     configureClerkForTesting()
+    Clerk.engineClient = nil
+    Clerk.makeEngineClient = nil
   }
 
   @Test
-  func refreshEnvironmentUsesEnvironmentServiceGet() async throws {
-    let called = LockIsolated(false)
-    let expectedEnvironment = Clerk.Environment.mock
-    let service = MockEnvironmentService(get: {
-      called.setValue(true)
-      return expectedEnvironment
-    })
-    let clerk = makeClerk(environmentService: service)
+  func refreshEnvironmentReturnsCachedEnvironmentWithoutEngine() async throws {
+    let clerk = makeClerk()
+    clerk.environment = .mock
 
-    _ = try await clerk.refreshEnvironment()
+    let environment = try await clerk.refreshEnvironment()
 
-    #expect(called.value == true)
-    #expect(clerk.environment == expectedEnvironment)
+    #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environment?.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(Clerk.engineClient == nil)
+  }
+
+  @Test
+  func refreshEnvironmentThrowsWhenCachedEnvironmentIsMissing() async {
+    let clerk = makeClerk()
+    clerk.environment = nil
+
+    do {
+      _ = try await clerk.refreshEnvironment()
+      Issue.record("Expected refreshEnvironment to throw when environment is not loaded.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Environment is not loaded.")
+    } catch {
+      Issue.record("Expected ClerkClientError, got \(error)")
+    }
   }
 
   @Test
   func refreshEnvironmentCoalescesConcurrentRequests() async throws {
-    let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
-      callCount.withValue { $0 += 1 }
-      try await Task.sleep(for: .milliseconds(100))
-      return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
+    let clerk = makeClerk()
+    clerk.environment = .mock
 
     let firstRefresh = Task { @MainActor in
       try await clerk.refreshEnvironment()
     }
-    try await waitUntil { callCount.value == 1 }
-
     let secondRefresh = Task { @MainActor in
       try await clerk.refreshEnvironment()
     }
 
-    _ = try await firstRefresh.value
-    _ = try await secondRefresh.value
+    let first = try await firstRefresh.value
+    let second = try await secondRefresh.value
 
-    #expect(callCount.value == 1)
+    #expect(first.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(second.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environment?.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
   }
 
   @Test
-  func ensureEnvironmentRefreshedAfterSatisfiedCheckpointDoesNotRequestAgain() async throws {
-    let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
-      callCount.withValue { $0 += 1 }
-      return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
-
+  func ensureEnvironmentRefreshedAfterSatisfiedCheckpointReturnsCachedEnvironment() async throws {
+    let clerk = makeClerk()
+    clerk.environment = .mock
     let checkpoint = clerk.environmentRefreshCheckpoint
     _ = try await clerk.refreshEnvironment()
-    _ = try await clerk.ensureEnvironmentRefreshed(after: checkpoint)
+    let afterRefresh = clerk.environmentRefreshCheckpoint
+    let environment = try await clerk.ensureEnvironmentRefreshed(after: checkpoint)
 
-    #expect(callCount.value == 1)
+    #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environment?.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environmentRefreshCheckpoint == afterRefresh)
   }
 
   @Test
   func ensureEnvironmentRefreshedAfterUnsatisfiedCheckpointRequestsEnvironment() async throws {
-    let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
-      callCount.withValue { $0 += 1 }
-      return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
-
+    let clerk = makeClerk()
+    clerk.environment = .mock
     let checkpoint = clerk.environmentRefreshCheckpoint
-    _ = try await clerk.ensureEnvironmentRefreshed(after: checkpoint)
+    let environment = try await clerk.ensureEnvironmentRefreshed(after: checkpoint)
 
-    #expect(callCount.value == 1)
+    #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environment?.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(clerk.environmentRefreshCheckpoint != checkpoint)
   }
 
-  private func makeClerk(environmentService: MockEnvironmentService) -> Clerk {
+  private func makeClerk() -> Clerk {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      environmentService: environmentService
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
     )
     return clerk
   }
+}
 
-  private func waitUntil(
-    timeout: Duration = .milliseconds(500),
-    _ condition: () -> Bool
-  ) async throws {
-    enum TimeoutError: Error {
-      case timedOut
+struct LiveEnvironmentDecodingTests {
+  @Test
+  func signUpDataDefaultsAllowlistOnlyWhenOmitted() throws {
+    let data = Data("""
+    {
+      "captcha_enabled": true,
+      "legal_consent_enabled": false,
+      "mode": "public",
+      "progressive": true
     }
+    """.utf8)
+    let signUp = try JSONDecoder.clerkDecoder.decode(SignUpData.self, from: data)
+    #expect(signUp.allowlistOnly == false)
+    #expect(signUp.progressive == true)
+  }
 
-    let deadline = ContinuousClock.now + timeout
-    while ContinuousClock.now < deadline {
-      if condition() {
-        return
-      }
-      try await Task.sleep(for: .milliseconds(10))
+  @Test
+  func signUpDataDefaultsCaptchaEnabledWhenOmitted() throws {
+    let data = Data("""
+    {
+      "legal_consent_enabled": false,
+      "mode": "public",
+      "progressive": true
     }
+    """.utf8)
+    let signUp = try JSONDecoder.clerkDecoder.decode(SignUpData.self, from: data)
+    #expect(signUp.captchaEnabled == false)
+    #expect(signUp.mode == .public)
+  }
 
-    if !condition() {
-      throw TimeoutError.timedOut
-    }
+  @Test
+  func amusingBarnacleEnvironmentJSONPublishesFirstFactorAttributes() throws {
+    let url = try #require(Bundle.module.url(forResource: "amusing-barnacle-environment", withExtension: "json"))
+    let environment = try JSONDecoder.clerkDecoder.decode(
+      Clerk.Environment.self,
+      from: Data(contentsOf: url)
+    )
+    #expect(!environment.displayConfig.applicationName.isEmpty)
+    #expect(!environment.enabledFirstFactorAttributes.isEmpty)
   }
 }
 

@@ -17,6 +17,26 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func authFingerprintIsStableForTheSameClient() throws {
+    let value = client(id: "stable-client", updatedAt: 100, lastActiveSessionId: "session-1")
+    let serverDate = Date(timeIntervalSince1970: 50)
+    let first = try WatchConnectivityCoordinator.authFingerprint(client: value, serverDate: serverDate)
+    let second = try WatchConnectivityCoordinator.authFingerprint(client: value, serverDate: serverDate)
+    let equalClient = client(id: "stable-client", updatedAt: 100, lastActiveSessionId: "session-1")
+
+    #expect(first == second)
+    #expect(
+      try first == WatchConnectivityCoordinator.authFingerprint(client: equalClient, serverDate: serverDate)
+    )
+    #expect(
+      try first != WatchConnectivityCoordinator.authFingerprint(
+        client: client(id: "other-client", updatedAt: 100, lastActiveSessionId: "session-1"),
+        serverDate: serverDate
+      )
+    )
+  }
+
+  @Test
   func applicationContextRoundTripsPayloadValues() throws {
     let serverFetchDate = Date(timeIntervalSince1970: 123)
     let payload = WatchSyncPayload(
@@ -142,8 +162,7 @@ struct WatchSyncPayloadTests {
 
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: .current(clerkProvider: { clerk })),
-      keychain: keychain,
-      clientService: MockClientService(get: { nil })
+      keychain: keychain
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
@@ -310,8 +329,7 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      telemetryCollector: clerk.dependencies.telemetryCollector,
-      clientService: MockClientService { throw CancellationError() }
+      telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.client = phoneClient
     clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
@@ -727,8 +745,7 @@ struct WatchSyncPayloadTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
-      telemetryCollector: clerk.dependencies.telemetryCollector,
-      clientService: MockClientService(get: { throw CancellationError() })
+      telemetryCollector: clerk.dependencies.telemetryCollector
     )
     let payload = WatchSyncPayload(
       deviceTokenUpdate: .tokenSet(
@@ -756,8 +773,7 @@ struct WatchSyncPayloadTests {
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
-      telemetryCollector: clerk.dependencies.telemetryCollector,
-      clientService: MockClientService(get: { throw CancellationError() })
+      telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.identityController.localDeviceToken = "device-token"
     clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(
@@ -1479,8 +1495,7 @@ struct WatchSyncPayloadTests {
       apiClient: clerk.dependencies.apiClient,
       keychain: metadataKeychain,
       atomicIdentityStore: identityStore,
-      telemetryCollector: clerk.dependencies.telemetryCollector,
-      clientService: MockClientService(get: { throw CancellationError() })
+      telemetryCollector: clerk.dependencies.telemetryCollector
     )
     clerk.hydrateIdentityIfNeeded(initialIdentity)
     let payload = WatchSyncPayload(
@@ -1776,6 +1791,62 @@ struct WatchSyncPayloadTests {
     #expect(metadata.deviceTokenSource == .phone)
     #expect(metadata.authVersion == 4)
     #expect(metadata.authSource == .phone)
+  }
+
+  @Test
+  func phoneSignedInIdentityAfterKeychainResetReplacesWatchPhoneWatermark() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let acceptedDate = Date(timeIntervalSince1970: 400)
+    var acceptedClient = Client.mock
+    acceptedClient.id = "accepted-client"
+    acceptedClient.updatedAt = acceptedDate
+    clerk.applyResponseClient(
+      acceptedClient,
+      responseSequence: 1,
+      serverDate: acceptedDate
+    )
+    try keychain.set("accepted-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
+      deviceTokenState: .set,
+      deviceTokenVersion: 4,
+      deviceTokenFingerprint: WatchConnectivityCoordinator.deviceTokenFingerprint("accepted-token"),
+      deviceTokenSource: .phone,
+      authState: .set,
+      authVersion: 4,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: acceptedClient,
+        serverDate: acceptedDate
+      ),
+      authSource: .phone
+    ))
+    #expect(clerk.user != nil)
+    #expect(clerk.sessionId == Session.mock.id)
+    #expect(clerk.lastClientServerFetchDate == acceptedDate)
+
+    var phoneClient = Client.mock
+    phoneClient.id = "phone-client"
+    phoneClient.sessions = [.mock2]
+    phoneClient.lastActiveSessionId = Session.mock2.id
+    phoneClient.updatedAt = Date(timeIntervalSince1970: 1000)
+    let phoneReset = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "phone-token",
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      clientUpdate: .snapshot(
+        client: phoneClient,
+        serverFetchDate: Date(timeIntervalSince1970: 1000),
+        version: WatchSyncVersion(rawValue: 1)
+      ),
+      environment: nil
+    )
+
+    apply(phoneReset, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(clerk.client?.id == "phone-client")
+    #expect(clerk.session?.id == Session.mock2.id)
   }
 
   @Test

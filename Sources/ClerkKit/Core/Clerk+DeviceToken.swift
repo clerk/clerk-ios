@@ -57,6 +57,6 @@ extension Clerk {
     guard result != .rejected else {
       throw DeviceTokenError.updateRejected
     }
-    return try await refreshClient(skipClientId: true)
+    return try await refreshClient()
   }
 }

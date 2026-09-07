@@ -192,10 +192,10 @@ extension EmailLinkVerificationView {
   private func sendInitialLinkIfNeeded() async {
     let alreadySent: Bool = switch mode {
     case .signIn:
-      clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
+      clerk.auth.currentSignIn?.firstFactorVerification?.factorStrategy == .emailLink
         && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
     case .signUp:
-      clerk.auth.currentSignUp?.emailVerification?.strategy == .emailLink
+      clerk.auth.currentSignUp?.emailVerification?.factorStrategy == .emailLink
         && clerk.auth.currentSignUp?.emailVerification?.status == .unverified
     }
 

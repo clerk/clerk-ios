@@ -91,7 +91,7 @@ struct BiometricCredentialTests {
     let verification = try decoder.decode(Verification.self, from: data)
 
     #expect(verification.status == .unverified)
-    #expect(verification.strategy == .biometricCredential)
+    #expect(verification.factorStrategy == .biometricCredential)
     #expect(verification.biometricCredentialChallenge?.challengeId == "tdch_123")
     #expect(verification.biometricCredentialChallenge?.biometricCredentialId == "tdc_123")
   }

@@ -1,38 +1,9 @@
-//
-//  OrganizationInvitation.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// Represents an organization invitation and its associated details.
-public struct OrganizationInvitation: Codable, Sendable, Identifiable {
-  /// The unique identifier for this organization invitation.
-  public var id: String
+public typealias OrganizationInvitation = ClerkSnapshots.OrganizationInvitation
 
-  /// The email address the invitation has been sent to.
-  public var emailAddress: String
-
-  /// The organization ID of the organization this invitation is for.
-  public var organizationId: String
-
-  /// Metadata that can be read from the Frontend API and Backend API and can be set only from the Backend API.
-  public var publicMetadata: JSON
-
-  /// The role of the user in the organization.
-  ///
-  /// Clerk provides the default roles org:admin and org:member. However, you can create custom roles as well.
-  public var role: String
-
-  /// The status of the invitation.
-  public var status: String
-
-  /// The date when the invitation was created.
-  public var createdAt: Date
-
-  /// The date when the invitation was last updated.
-  public var updatedAt: Date
-
+extension OrganizationInvitation {
   public init(
     id: String,
     emailAddress: String,
@@ -43,13 +14,49 @@ public struct OrganizationInvitation: Codable, Sendable, Identifiable {
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.emailAddress = emailAddress
-    self.organizationId = organizationId
-    self.publicMetadata = publicMetadata
-    self.role = role
-    self.status = status
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "organization_invitation",
+      id: id,
+      emailAddress: emailAddress,
+      organizationId: organizationId,
+      publicMetadata: publicMetadata.jsonValue,
+      status: OrganizationInvitationStatus(rawValue: status),
+      role: role,
+      roleName: "",
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
+  }
+}
+
+extension OrganizationInvitationStatus {
+  public var rawValue: String {
+    switch self {
+    case .expired:
+      "expired"
+    case .revoked:
+      "revoked"
+    case .pending:
+      "pending"
+    case .accepted:
+      "accepted"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "expired":
+      self = .expired
+    case "revoked":
+      self = .revoked
+    case "pending":
+      self = .pending
+    case "accepted":
+      self = .accepted
+    default:
+      self = .unknown(rawValue)
+    }
   }
 }

@@ -424,8 +424,7 @@ extension WatchConnectivityCoordinator {
   ) {
     guard source.incomingDeviceIsAuthoritative,
           version.rawValue < record.effectiveDeviceTokenVersion,
-          record.effectiveDeviceTokenState != .cleared,
-          record.effectiveDeviceTokenSource != source
+          record.effectiveDeviceTokenState != .cleared
     else {
       return
     }
@@ -443,8 +442,7 @@ extension WatchConnectivityCoordinator {
   ) {
     guard source.incomingDeviceIsAuthoritative,
           version.rawValue < record.effectiveAuthVersion,
-          record.effectiveAuthState != .cleared,
-          record.effectiveAuthSource != source
+          record.effectiveAuthState != .cleared
     else {
       return
     }
@@ -548,19 +546,28 @@ extension WatchConnectivityCoordinator {
   }
 
   static func authFingerprint(client: Client?, serverDate: Date?) throws -> String {
-    let payload = ClerkIdentitySnapshot(
-      state: client == nil ? .cleared : .present,
-      deviceToken: client == nil ? nil : "paired",
-      client: client,
+    let payload = AuthIdentityFingerprint(
+      state: client == nil ? ClerkIdentityState.cleared.rawValue : ClerkIdentityState.present.rawValue,
+      clientId: client?.id ?? "",
+      updatedAt: client?.updatedAt,
+      lastActiveSessionId: client?.lastActiveSessionId,
       serverDate: serverDate
     )
-    if let data = try? JSONEncoder.clerkEncoder.encode(payload) {
-      return fingerprint(data)
-    }
-    return fingerprint(Data("unencoded\u{0}\(client?.id ?? "")\u{0}\(serverDate?.timeIntervalSince1970 ?? 0)".utf8))
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .millisecondsSince1970
+    encoder.outputFormatting = .sortedKeys
+    return try fingerprint(encoder.encode(payload))
   }
 
   private static func fingerprint(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
   }
+}
+
+private struct AuthIdentityFingerprint: Encodable {
+  let state: String
+  let clientId: String
+  let updatedAt: Date?
+  let lastActiveSessionId: String?
+  let serverDate: Date?
 }

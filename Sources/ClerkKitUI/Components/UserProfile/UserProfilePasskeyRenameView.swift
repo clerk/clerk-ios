@@ -20,7 +20,7 @@ struct UserProfilePasskeyRenameView: View {
 
   init(passkey: Passkey) {
     self.passkey = passkey
-    _passkeyName = State(initialValue: passkey.name)
+    _passkeyName = State(initialValue: passkey.name ?? "")
   }
 
   var body: some View {

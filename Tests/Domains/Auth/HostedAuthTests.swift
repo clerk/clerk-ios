@@ -329,8 +329,6 @@ struct HostedAuthFlowTests {
   func signedOutCreateRefreshesClientAndRetriesOnceWithSameParams() async throws {
     let createCalls = LockIsolated(0)
     let firstCreateParams = LockIsolated<HostedAuthCreateParams?>(nil)
-    let refreshCalls = LockIsolated(0)
-    let reconciledClient = Client.mockSignedOut
     let hostedAuthService = MockHostedAuthService(create: { params in
       let call = createCalls.withValue { calls in
         defer { calls += 1 }
@@ -346,20 +344,12 @@ struct HostedAuthFlowTests {
       #expect(params.codeChallenge == firstParams.codeChallenge)
       #expect(params.state == firstParams.state)
       #expect(params.mode == firstParams.mode)
-      // Assert ordering (reconcile before retry) via the refresh counter instead of
-      // Clerk.shared.client: parallel suites share the singleton and can rewrite it
-      // between the refresh and this closure.
-      #expect(refreshCalls.value == 1)
+      #expect(Clerk.shared.client?.id == Client.mock.id)
       return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-    })
-    let clientService = HostedAuthClientService(get: {
-      refreshCalls.withValue { $0 += 1 }
-      return reconciledClient
     })
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
       initialClient: .mock
     )
 
@@ -373,27 +363,20 @@ struct HostedAuthFlowTests {
     }
 
     #expect(createCalls.value == 2)
-    #expect(refreshCalls.value == 1)
-    #expect(clientService.skipClientIdValues.value == [true])
+    #expect(Clerk.shared.client?.id == Client.mock.id)
   }
 
   @Test
   func secondSignedOutCreateIsNotRetried() async throws {
     let createCalls = LockIsolated(0)
-    let refreshCalls = LockIsolated(0)
     let browserCalled = LockIsolated(false)
     let hostedAuthService = MockHostedAuthService(create: { _ in
       createCalls.withValue { $0 += 1 }
       throw hostedAuthAPIError(code: "signed_out")
     })
-    let clientService = MockClientService(get: {
-      refreshCalls.withValue { $0 += 1 }
-      return .mockSignedOut
-    })
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
       initialClient: .mock
     )
 
@@ -415,26 +398,20 @@ struct HostedAuthFlowTests {
     }
 
     #expect(createCalls.value == 2)
-    #expect(refreshCalls.value == 1)
     #expect(!browserCalled.value)
+    #expect(Clerk.shared.client?.id == Client.mock.id)
   }
 
   @Test
   func nonSignedOutCreateErrorIsNotRetried() async throws {
     let createCalls = LockIsolated(0)
-    let refreshCalls = LockIsolated(0)
     let hostedAuthService = MockHostedAuthService(create: { _ in
       createCalls.withValue { $0 += 1 }
       throw hostedAuthAPIError(code: "resource_not_found")
     })
-    let clientService = MockClientService(get: {
-      refreshCalls.withValue { $0 += 1 }
-      return .mockSignedOut
-    })
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
       initialClient: .mock
     )
 
@@ -453,14 +430,13 @@ struct HostedAuthFlowTests {
     }
 
     #expect(createCalls.value == 1)
-    #expect(refreshCalls.value == 0)
+    #expect(Clerk.shared.client?.id == Client.mock.id)
   }
 
   @Test
   func signedOutRedeemErrorIsNotRetriedOrReconciled() async throws {
     let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
     let redeemCalls = LockIsolated(0)
-    let refreshCalls = LockIsolated(0)
     let hostedAuthService = MockHostedAuthService(
       create: { params in
         createParams.setValue(params)
@@ -471,14 +447,9 @@ struct HostedAuthFlowTests {
         throw hostedAuthAPIError(code: "signed_out")
       }
     )
-    let clientService = MockClientService(get: {
-      refreshCalls.withValue { $0 += 1 }
-      return .mockSignedOut
-    })
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
       initialClient: .mockSignedOut
     )
 
@@ -504,7 +475,7 @@ struct HostedAuthFlowTests {
     }
 
     #expect(redeemCalls.value == 1)
-    #expect(refreshCalls.value == 0)
+    #expect(Clerk.shared.client == .mockSignedOut)
   }
 
   @Test
@@ -959,37 +930,16 @@ private func hostedAuthRedeemResponse(
   )
 }
 
-private final class HostedAuthClientService: ClientServiceProtocol {
-  let skipClientIdValues = LockIsolated<[Bool]>([])
-  let getHandler: @Sendable () async throws -> Client?
-
-  init(get: @escaping @Sendable () async throws -> Client?) {
-    getHandler = get
-  }
-
-  @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    skipClientIdValues.withValue { $0.append(skipClientId) }
-    return try await ClientServiceResponse(
-      client: getHandler(),
-      requestSequence: nil,
-      serverDate: nil
-    )
-  }
-}
-
 @MainActor
 private func configureHostedAuthForTesting(
   hostedAuthService: some HostedAuthServiceProtocol,
   sessionService: some SessionServiceProtocol,
-  clientService: (any ClientServiceProtocol)? = nil,
   initialClient: Client,
   options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: Clerk.shared.dependencies.apiClient,
-    clientService: clientService,
     hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )

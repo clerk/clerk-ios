@@ -22,8 +22,8 @@ extension Auth {
     }
 
     let attributes = environment?.userSettings.attributes
-    let firstNameEnabled = attributes?["first_name"]?.enabled ?? true
-    let lastNameEnabled = attributes?["last_name"]?.enabled ?? true
+    let firstNameEnabled = attributes?.firstName.enabled ?? true
+    let lastNameEnabled = attributes?.lastName.enabled ?? true
 
     return firstNameEnabled || lastNameEnabled
       ? requestedScopes
@@ -81,7 +81,7 @@ extension Auth {
         throw signUpError
       }
 
-      if let error = signIn.firstFactorVerification?.error {
+      if let error = signIn.firstFactorVerification?.kitError {
         throw error
       }
 
@@ -89,7 +89,7 @@ extension Auth {
     }
 
     if case .signIn(let signIn) = result,
-       let error = signIn.firstFactorVerification?.error
+       let error = signIn.firstFactorVerification?.kitError
     {
       throw error
     }

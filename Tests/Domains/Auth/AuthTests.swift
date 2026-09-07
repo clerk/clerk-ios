@@ -412,12 +412,12 @@ struct AuthTests {
     var pendingSignUp = SignUp.mock
     pendingSignUp.id = "sign_up_123"
     pendingSignUp.status = .missingRequirements
-    pendingSignUp.unverifiedFields = [.emailAddress]
+    pendingSignUp.unverified = [.emailAddress]
 
     var completedSignUp = pendingSignUp
     completedSignUp.status = .complete
-    completedSignUp.missingFields = []
-    completedSignUp.unverifiedFields = []
+    completedSignUp.missing = []
+    completedSignUp.unverified = []
     completedSignUp.createdSessionId = "sess_123"
     completedSignUp.createdUserId = "user_123"
 
@@ -891,8 +891,8 @@ struct AuthTests {
   @Test
   func normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled() {
     var environment = Clerk.Environment.mock
-    environment.userSettings.attributes["first_name"]?.enabled = false
-    environment.userSettings.attributes["last_name"]?.enabled = false
+    environment.userSettings.attributes.firstName.enabled = false
+    environment.userSettings.attributes.lastName.enabled = false
 
     let scopes = Auth.normalizedAppleScopes(
       [.email, .fullName],
@@ -905,8 +905,8 @@ struct AuthTests {
   @Test
   func normalizedAppleScopesKeepsFullNameWhenEitherNameFieldIsEnabled() {
     var environment = Clerk.Environment.mock
-    environment.userSettings.attributes["first_name"]?.enabled = true
-    environment.userSettings.attributes["last_name"]?.enabled = false
+    environment.userSettings.attributes.firstName.enabled = true
+    environment.userSettings.attributes.lastName.enabled = false
 
     let scopes = Auth.normalizedAppleScopes(
       [.email, .fullName],

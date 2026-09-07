@@ -13,7 +13,7 @@ struct AppLogoEnvironmentTests {
     displayConfig["logo_image_url"] = logoImageUrl
     object["display_config"] = displayConfig
     let environment = try JSONDecoder().decode(
-      Environment.self,
+      ClerkEnvironment.self,
       from: JSONSerialization.data(withJSONObject: object)
     )
 

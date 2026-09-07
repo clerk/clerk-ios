@@ -13,7 +13,7 @@ struct SessionTaskStartView: View {
 
   @ViewBuilder
   private var viewForTask: some View {
-    switch task {
+    switch task.key {
     case .setupMfa:
       SessionTaskMfaSetupView(token: token)
     case .resetPassword:

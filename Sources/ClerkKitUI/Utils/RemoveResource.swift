@@ -42,7 +42,7 @@ enum RemoveResource: Equatable {
     case let .externalAccount(externalAccount):
       String(localized: "\(externalAccount.oauthProvider.name) will be removed from this account. You will no longer be able to sign in using this connected account.", bundle: .module, locale: locale)
     case let .passkey(passkey):
-      String(localized: "\(passkey.name) will be removed from this account. You will no longer be able to sign in using this passkey.", bundle: .module, locale: locale)
+      String(localized: "\(passkey.name ?? "") will be removed from this account. You will no longer be able to sign in using this passkey.", bundle: .module, locale: locale)
     case .totp:
       String(localized: "Verification codes from this authenticator will no longer be required when signing in.", bundle: .module, locale: locale)
     case let .secondFactorPhoneNumber(phoneNumber):

@@ -9,15 +9,6 @@ import ClerkKit
 import Foundation
 
 extension User {
-  var fullName: String? {
-    let fullName = [firstName, lastName]
-      .compactMap(\.self)
-      .joined(separator: " ")
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-
-    return fullName.isEmptyTrimmed ? nil : fullName
-  }
-
   var identifier: String? {
     if let username, !username.isEmptyTrimmed {
       return username
@@ -55,19 +46,19 @@ extension User {
     guard let environment = Clerk.shared.environment else { return "" }
     let userSettings = environment.userSettings
 
-    if userSettings.attributes.contains(where: { $0 == "username" && $1.enabled && $1.usedForFirstFactor }),
+    if userSettings.attributes.username.enabled, userSettings.attributes.username.usedForFirstFactor,
        let username
     {
       return username
     }
 
-    if userSettings.attributes.contains(where: { $0 == "email_address" && $1.enabled && $1.usedForFirstFactor }),
+    if userSettings.attributes.emailAddress.enabled, userSettings.attributes.emailAddress.usedForFirstFactor,
        let email = primaryEmailAddress?.emailAddress
     {
       return email
     }
 
-    if userSettings.attributes.contains(where: { $0 == "phone_number" && $1.enabled && $1.usedForFirstFactor }),
+    if userSettings.attributes.phoneNumber.enabled, userSettings.attributes.phoneNumber.usedForFirstFactor,
        let phone = primaryPhoneNumber?.phoneNumber
     {
       return phone
@@ -79,7 +70,7 @@ extension User {
   @MainActor
   var unconnectedProviders: [OAuthProvider] {
     guard let environment = Clerk.shared.environment else { return [] }
-    let socialProviders = environment.allSocialProviders
+    let socialProviders = environment.enabledOAuthProviders
     let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
     return socialProviders.filter { !verifiedExternalProviders.contains($0) }
   }

@@ -155,6 +155,9 @@ extension RecordingEngineClient {
       }
       try await signOut(sessionId: sessionId)
       return .null
+    case "load":
+      lastJSMethod = invocation.method
+      return .null
     case "setActive":
       let params = try decodeInvocation(SetActiveParams.self, invocation)
       let sessionId: String = if case .string(let value) = params.session {

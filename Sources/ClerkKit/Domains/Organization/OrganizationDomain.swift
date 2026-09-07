@@ -1,178 +1,140 @@
-//
-//  OrganizationDomain.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// The model representing an organization domain.
-public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Sendable {
-  /// The enrollment mode for new users joining an organization.
-  public enum EnrollmentMode: Codable, Sendable, Equatable, Hashable, CaseIterable {
-    case manualInvitation
-    case automaticInvitation
-    case automaticSuggestion
-    case unknown(String)
+public typealias OrganizationDomain = ClerkSnapshots.OrganizationDomain
 
-    public static var allCases: [EnrollmentMode] {
-      [.manualInvitation, .automaticInvitation, .automaticSuggestion]
-    }
-
-    public var rawValue: String {
-      switch self {
-      case .manualInvitation:
-        "manual_invitation"
-      case .automaticInvitation:
-        "automatic_invitation"
-      case .automaticSuggestion:
-        "automatic_suggestion"
-      case .unknown(let value):
-        value
-      }
-    }
-
-    public init(rawValue: String) {
-      switch rawValue {
-      case "manual_invitation":
-        self = .manualInvitation
-      case "automatic_invitation":
-        self = .automaticInvitation
-      case "automatic_suggestion":
-        self = .automaticSuggestion
-      default:
-        self = .unknown(rawValue)
-      }
-    }
-
-    public init(from decoder: Decoder) throws {
-      let container = try decoder.singleValueContainer()
-      try self.init(rawValue: container.decode(String.self))
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var container = encoder.singleValueContainer()
-      try container.encode(rawValue)
-    }
+extension OrganizationDomain: Hashable {
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
   }
+}
 
-  /// The unique identifier for this organization domain.
-  public var id: String
+extension OrganizationDomain {
+  public typealias EnrollmentMode = OrganizationDomainEnrollmentMode
+  public typealias Verification = OrganizationDomainVerification
 
-  /// The name for this organization domain (e.g. example.com).
-  public var name: String
-
-  /// The organization ID of the organization this domain is for.
-  public var organizationId: String
-
-  /// The enrollment mode for new users joining the organization.
-  public var enrollmentMode: String
-
-  /// The typed enrollment mode value.
   public var enrollmentModeType: EnrollmentMode {
-    EnrollmentMode(rawValue: enrollmentMode)
+    enrollmentMode
   }
 
-  /// Whether this organization domain has completed verification.
   public var isVerified: Bool {
-    verification?.status == "verified"
+    verification?.status == .verified
   }
-
-  /// The object that describes the status of the verification process of the domain, or `nil` if verification has not been prepared.
-  public var verification: Verification?
-
-  /// The email address that was used to verify this organization domain, or `nil` if not available.
-  public var affiliationEmailAddress: String?
-
-  /// The number of total pending invitations sent to emails that match the domain name.
-  public var totalPendingInvitations: Int
-
-  /// The number of total pending suggestions sent to emails that match the domain name.
-  public var totalPendingSuggestions: Int
-
-  /// The date when the organization domain was created.
-  public var createdAt: Date
-
-  /// The date when the organization domain was last updated.
-  public var updatedAt: Date
 
   public init(
     id: String,
     name: String,
     organizationId: String,
     enrollmentMode: String,
-    verification: OrganizationDomain.Verification? = nil,
+    verification: OrganizationDomainVerification? = nil,
     affiliationEmailAddress: String? = nil,
     totalPendingInvitations: Int,
     totalPendingSuggestions: Int,
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.name = name
-    self.organizationId = organizationId
-    self.enrollmentMode = enrollmentMode
-    self.verification = verification
-    self.affiliationEmailAddress = affiliationEmailAddress
-    self.totalPendingInvitations = totalPendingInvitations
-    self.totalPendingSuggestions = totalPendingSuggestions
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "organization_domain",
+      id: id,
+      name: name,
+      organizationId: organizationId,
+      enrollmentMode: OrganizationDomainEnrollmentMode(rawValue: enrollmentMode),
+      verification: verification,
+      affiliationEmailAddress: affiliationEmailAddress,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      totalPendingInvitations: totalPendingInvitations,
+      totalPendingSuggestions: totalPendingSuggestions
+    )
   }
 
-  /// The model representing the verification details of an organization domain.
-  public struct Verification: Codable, Equatable, Hashable, Sendable {
-    /// The status of the verification process.
-    public var status: String
-
-    /// The strategy used for the verification process.
-    public var strategy: String
-
-    /// The number of attempts that have occurred to verify the domain.
-    ///
-    /// This value tracks how many verification attempts have been made for this domain.
-    public var attempts: Int
-
-    /// The expiration date and time of the verification.
-    ///
-    /// Once the expiration date has passed, the verification process may need to be restarted.
-    public var expireAt: Date?
-
-    public init(
-      status: String,
-      strategy: String,
-      attempts: Int,
-      expireAt: Date? = nil
-    ) {
-      self.status = status
-      self.strategy = strategy
-      self.attempts = attempts
-      self.expireAt = expireAt
-    }
-  }
-}
-
-extension OrganizationDomain {
-  /// Sends a verification code to the specified email address for domain affiliation verification.
-  ///
-  /// This is a convenience method that calls ``prepareAffiliationVerification(affiliationEmailAddress:)``.
-  ///
-  /// - Parameter affiliationEmailAddress: An email address affiliated with the domain name (e.g., `user@example.com`).
-  /// - Returns: The unverified ``OrganizationDomain`` object.
-  /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
   public func sendEmailCode(affiliationEmailAddress: String) async throws -> OrganizationDomain {
     try await prepareAffiliationVerification(affiliationEmailAddress: affiliationEmailAddress)
   }
 
-  /// Verifies the domain affiliation using the provided verification code.
-  ///
-  /// This is a convenience method that calls ``attemptAffiliationVerification(code:)``.
-  ///
-  /// - Parameter code: The one-time code sent to the user as part of this verification step.
-  /// - Returns: The verified ``OrganizationDomain`` object.
-  /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> OrganizationDomain {
     try await attemptAffiliationVerification(code: code)
+  }
+}
+
+extension OrganizationDomainVerification {
+  public init(
+    status: String,
+    strategy: String,
+    attempts: Int,
+    expireAt: Date? = nil
+  ) {
+    self.init(
+      status: OrganizationDomainVerificationStatus(rawValue: status),
+      strategy: strategy,
+      attempts: attempts,
+      expiresAt: expireAt ?? Date(timeIntervalSince1970: 0)
+    )
+  }
+}
+
+extension OrganizationDomainEnrollmentMode {
+  public var rawValue: String {
+    switch self {
+    case .enterpriseSso:
+      "enterprise_sso"
+    case .manualInvitation:
+      "manual_invitation"
+    case .automaticInvitation:
+      "automatic_invitation"
+    case .automaticSuggestion:
+      "automatic_suggestion"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "enterprise_sso":
+      self = .enterpriseSso
+    case "manual_invitation":
+      self = .manualInvitation
+    case "automatic_invitation":
+      self = .automaticInvitation
+    case "automatic_suggestion":
+      self = .automaticSuggestion
+    default:
+      self = .unknown(rawValue)
+    }
+  }
+}
+
+extension OrganizationDomainVerificationStatus {
+  public var rawValue: String {
+    switch self {
+    case .expired:
+      "expired"
+    case .unverified:
+      "unverified"
+    case .verified:
+      "verified"
+    case .failed:
+      "failed"
+    case .unknown(let value):
+      value
+    }
+  }
+
+  public init(rawValue: String) {
+    switch rawValue {
+    case "expired":
+      self = .expired
+    case "unverified":
+      self = .unverified
+    case "verified":
+      self = .verified
+    case "failed":
+      self = .failed
+    default:
+      self = .unknown(rawValue)
+    }
   }
 }

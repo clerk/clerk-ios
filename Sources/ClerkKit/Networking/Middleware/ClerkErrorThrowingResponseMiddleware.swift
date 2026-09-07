@@ -12,7 +12,7 @@ struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
     if let clerkErrorResponse = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data),
        var clerkAPIError = clerkErrorResponse.errors.first
     {
-      clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
+      clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId ?? ""
       ClerkLogger.logNetworkError(
         clerkAPIError,
         endpoint: response.url?.absoluteString ?? "unknown",

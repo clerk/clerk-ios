@@ -157,8 +157,7 @@ struct ClerkTests {
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
-      telemetryCollector: clerk.dependencies.telemetryCollector,
-      clientService: MockClientService(get: { nil })
+      telemetryCollector: clerk.dependencies.telemetryCollector
     )
     try clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
@@ -189,8 +188,7 @@ struct ClerkTests {
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      clientService: MockClientService(get: { nil })
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     Clerk.shared.client = Client.mock
     Clerk.shared.identityController.lastServerDate = Date(timeIntervalSince1970: 100)
@@ -226,8 +224,7 @@ struct ClerkTests {
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
       atomicIdentityStore: localStore,
-      shouldHydrateProvisionalLegacyClient: true,
-      clientService: MockClientService(get: { nil })
+      shouldHydrateProvisionalLegacyClient: true
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
@@ -251,8 +248,7 @@ struct ClerkTests {
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      atomicIdentityStore: localStore,
-      clientService: MockClientService(get: { nil })
+      atomicIdentityStore: localStore
     )
     clerk.dependencies = dependencies
     clerk.identityController.localDeviceToken = "device-token"
@@ -283,8 +279,7 @@ struct ClerkTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      atomicIdentityStore: localStore,
-      clientService: MockClientService(get: { nil })
+      atomicIdentityStore: localStore
     )
     clerk.identityController.localDeviceToken = "device-token"
     clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(.mock)
@@ -324,8 +319,7 @@ struct ClerkTests {
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
       atomicIdentityStore: localStore,
-      shouldHydrateProvisionalLegacyClient: false,
-      clientService: MockClientService(get: { nil })
+      shouldHydrateProvisionalLegacyClient: false
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
@@ -365,8 +359,7 @@ struct ClerkTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      atomicIdentityStore: localStore,
-      clientService: MockClientService(get: { nil })
+      atomicIdentityStore: localStore
     )
     let coordinator = SharedSessionSyncCoordinator(
       ownerIdentifier: "app.local",
@@ -415,8 +408,7 @@ struct ClerkTests {
       apiClient: createMockAPIClient(),
       keychain: keychain,
       identityKeychain: keychain,
-      atomicIdentityStore: localStore,
-      clientService: MockClientService(get: { nil })
+      atomicIdentityStore: localStore
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
@@ -1389,7 +1381,7 @@ struct ClerkTests {
   @Test
   func isAuthFlowCompleteReturnsFalseWhenActiveSessionHasNoUser() {
     var client = Client.mock
-    client.sessions[0].user = nil
+    client.sessions[0].user.id = ""
     let clerk = Clerk.mock
     clerk.client = client
 
@@ -2889,7 +2881,7 @@ struct ClerkTests {
   ) -> Clerk.Environment {
     var environment = Clerk.Environment.mock
     environment.displayConfig.showDevmodeWarning = showDevmodeWarning
-    environment.displayConfig.instanceEnvironmentType = type
+    environment.displayConfig.instanceEnvironmentType = type.rawValue
     return environment
   }
 

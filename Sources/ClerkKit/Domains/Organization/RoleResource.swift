@@ -1,33 +1,9 @@
-//
-//  RoleResource.swift
-//  Clerk
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// Represents a role with associated permissions and metadata about its creation and updates.
-public struct RoleResource: Codable, Sendable, Identifiable {
-  /// The unique identifier of the role.
-  public var id: String
+public typealias RoleResource = ClerkSnapshots.Role
 
-  /// The unique key of the role.
-  public var key: String
-
-  /// The name of the role.
-  public var name: String
-
-  /// The description of the role.
-  public var description: String
-
-  /// The permissions associated with the role.
-  public var permissions: [PermissionResource]
-
-  /// The date when the role was created.
-  public var createdAt: Date
-
-  /// The date when the role was last updated.
-  public var updatedAt: Date
-
+extension RoleResource {
   public init(
     id: String,
     key: String,
@@ -37,12 +13,15 @@ public struct RoleResource: Codable, Sendable, Identifiable {
     createdAt: Date,
     updatedAt: Date
   ) {
-    self.id = id
-    self.key = key
-    self.name = name
-    self.description = description
-    self.permissions = permissions
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
+    self.init(
+      object: "role",
+      id: id,
+      key: key,
+      name: name,
+      description: description,
+      permissions: permissions,
+      createdAt: createdAt,
+      updatedAt: updatedAt
+    )
   }
 }

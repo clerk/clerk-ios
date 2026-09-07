@@ -40,7 +40,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Services
 
-  let clientService: ClientServiceProtocol
   let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
@@ -49,7 +48,6 @@ final class DependencyContainer: Dependencies {
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
-  let environmentService: EnvironmentServiceProtocol
 
   // MARK: - Magic Link
 
@@ -169,7 +167,6 @@ final class DependencyContainer: Dependencies {
     )
 
     // Phase 4: Services (depend on apiClient and other dependencies)
-    clientService = ClientService(apiClient: apiClient)
     hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
@@ -178,7 +175,6 @@ final class DependencyContainer: Dependencies {
     passkeyService = PasskeyService(apiClient: apiClient)
     biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
-    environmentService = EnvironmentService(apiClient: apiClient)
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {

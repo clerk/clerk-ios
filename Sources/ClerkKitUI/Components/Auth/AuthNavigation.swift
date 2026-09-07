@@ -62,6 +62,8 @@ final class AuthNavigation {
         return
       }
       path.append(AuthView.Destination.signInClientTrust(factor: factor))
+    case .needsProtectCheck:
+      path.append(AuthView.Destination.getHelp(.signIn))
     case .unknown:
       return
     }
@@ -133,7 +135,7 @@ final class AuthNavigation {
         path.append(AuthView.Destination.signUpCompleteProfile)
       } else {
         let allSupportedFields = SignUp.individuallyCollectableFields.union(SignUp.completeProfileFields)
-        let unsupportedFields = signUp.missingFields.filter { !allSupportedFields.contains($0) }
+        let unsupportedFields = signUp.missing.filter { !allSupportedFields.contains($0) }
         let unsupportedFieldStrings = unsupportedFields.map { $0.rawValue }.joined(separator: ", ")
         ClerkLogger.info("Navigating to GetHelp: Sign-up has unsupported missing fields: \(unsupportedFieldStrings)", force: true)
         path.append(AuthView.Destination.getHelp(.signUp))

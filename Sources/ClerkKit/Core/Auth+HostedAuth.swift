@@ -80,7 +80,7 @@ extension Auth {
       hostedAuth = try await hostedAuthService.create(params: createParams)
     } catch let error as ClerkAPIError where error.code == "signed_out" {
       // Reconcile an abandoned handoff before retrying once with the same request inputs.
-      try await clerk.refreshClient(skipClientId: true)
+      try await clerk.refreshClient()
       hostedAuth = try await hostedAuthService.create(params: createParams)
     }
     let hostedAuthUrl = try hostedAuth.authenticationUrl()

@@ -15,7 +15,7 @@ struct SecuredByClerkEnvironmentTests {
       displayConfig["branded"] = branded
       object["display_config"] = displayConfig
       let environment = try JSONDecoder().decode(
-        Environment.self,
+        ClerkEnvironment.self,
         from: JSONSerialization.data(withJSONObject: object)
       )
 
@@ -78,7 +78,7 @@ struct SecuredByClerkEnvironmentTests {
     displayConfig["instance_environment_type"] = instanceEnvironmentType
     object["display_config"] = displayConfig
     let environment = try JSONDecoder().decode(
-      Environment.self,
+      ClerkEnvironment.self,
       from: JSONSerialization.data(withJSONObject: object)
     )
     let clerk = ClerkJSHost(publishableKey: "pk_test_preview")

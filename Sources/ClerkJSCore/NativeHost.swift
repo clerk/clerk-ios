@@ -463,7 +463,7 @@ final class NativeHost: @unchecked Sendable {
     return object
   }
 
-  private static func environmentJSON(fromFAPIBody data: Data) -> Data? {
+  static func environmentJSON(fromFAPIBody data: Data) -> Data? {
     guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
       return nil
     }
@@ -475,10 +475,19 @@ final class NativeHost: @unchecked Sendable {
   }
 
   private static func asEnvironmentJSON(_ value: Any?) -> [String: Any]? {
-    guard let object = value as? [String: Any], object["object"] as? String == "environment" else {
+    guard let object = value as? [String: Any] else {
       return nil
     }
-    return object
+    if object["object"] as? String == "environment" {
+      return object
+    }
+    if object["user_settings"] != nil || object["userSettings"] != nil {
+      return object
+    }
+    if object["display_config"] != nil || object["displayConfig"] != nil {
+      return object
+    }
+    return nil
   }
 
   private static func parseURL(_ href: String, base: String?) -> [String: String]? {

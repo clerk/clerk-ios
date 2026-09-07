@@ -52,7 +52,7 @@ extension SignIn {
     let emailId =
       emailAddressId
         ?? identifyingFirstFactor(for: FactorStrategy.emailLink.rawValue)?.emailAddressId
-        ?? supportedFirstFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
+        ?? firstFactors.first(where: { $0.strategy == .emailLink })?.emailAddressId
 
     guard let emailId else {
       throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
@@ -113,7 +113,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyCode(_ code: String) async throws -> SignIn {
-    guard let resolvedStrategy = firstFactorVerification?.strategy else {
+    guard let resolvedStrategy = firstFactorVerification?.factorStrategy else {
       throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.", localizationBundle: .module)
     }
 

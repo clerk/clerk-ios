@@ -1,158 +1,34 @@
-//
-//  Environment+Ext.swift
-//  Clerk
-//
-
 #if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
 
 extension Clerk.Environment {
-  var authenticatableSocialProviders: [OAuthProvider] {
-    let authenticatables = userSettings.social.filter { _, value in
-      value.authenticatable && value.enabled
-    }
-
-    return authenticatables.map {
-      OAuthProvider(strategy: $0.value.strategy)
-    }.sorted()
+  var authenticatableOAuthProviders: [OAuthProvider] {
+    authenticatableSocialProviders
+      .map { OAuthProvider(strategy: $0.strategy) }
+      .sorted()
   }
 
-  var allSocialProviders: [OAuthProvider] {
-    let enabledProviders = userSettings.social.filter { $0.value.enabled }
-
-    return enabledProviders.map {
-      OAuthProvider(strategy: $0.value.strategy)
-    }.sorted()
+  var enabledOAuthProviders: [OAuthProvider] {
+    allSocialProviders
+      .map { OAuthProvider(strategy: $0.strategy) }
+      .sorted()
   }
 
-  var enabledFirstFactorAttributes: [String] {
-    userSettings.attributes
-      .filter { _, value in
-        value.enabled && value.usedForFirstFactor
-      }
-      .map(\.key)
-  }
-
-  /// Total count of enabled authentication methods.
-  ///
-  /// This counts:
-  /// - First factor identifiers (email, phone, username) that are enabled
-  /// - Authenticatable OAuth providers
-  ///
-  /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
   var totalEnabledFirstFactorMethods: Int {
-    let identifierKeys: Set = ["email_address", "phone_number", "username"]
-
-    let firstFactorCount = userSettings.attributes
-      .filter { key, value in
-        identifierKeys.contains(key) &&
-          value.enabled &&
-          value.usedForFirstFactor
-      }
+    let identifierCount = [attributes.emailAddress, attributes.phoneNumber, attributes.username]
+      .filter { $0.enabled && $0.usedForFirstFactor }
       .count
-
-    let oauthCount = authenticatableSocialProviders.count
-
-    return firstFactorCount + oauthCount
+    return identifierCount + authenticatableOAuthProviders.count
   }
 
   var mutliSessionModeIsEnabled: Bool {
-    authConfig.singleSessionMode == false
+    multiSessionModeIsEnabled
   }
 
-  var passwordIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "password" && value.enabled
-    }
-  }
-
-  /// Whether the instance lets users register and manage passkeys.
-  var passkeyIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "passkey" && value.enabled
-    }
-  }
-
-  /// Whether the instance accepts a passkey as a first factor when signing in.
-  ///
-  /// An instance can enable passkeys for registration and verification while leaving them
-  /// out of the sign-in factors, so this is narrower than ``passkeyIsEnabled``.
-  var passkeyFirstFactorIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "passkey" && value.enabled && value.usedForFirstFactor
-    }
-  }
-
-  var mfaIsEnabled: Bool {
-    userSettings.attributes.contains { _, value in
-      value.enabled && value.usedForSecondFactor
-    }
-  }
-
-  var mfaAuthenticatorAppIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "authenticator_app" && value.enabled && value.usedForSecondFactor
-    }
-  }
-
-  var mfaPhoneCodeIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForSecondFactor
-    }
-  }
-
-  var mfaBackupCodeIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "backup_code" && value.enabled && value.usedForSecondFactor
-    }
-  }
-
-  var deleteSelfIsEnabled: Bool {
-    userSettings.actions.deleteSelf
-  }
-
-  var emailIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled
-    }
-  }
-
-  var phoneNumberIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled
-    }
-  }
-
-  var usernameIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled
-    }
-  }
-
-  var firstNameIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "first_name" && value.enabled
-    }
-  }
-
-  var lastNameIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "last_name" && value.enabled
-    }
-  }
-
-  var emailIsImmutable: Bool {
-    userSettings.attributes["email_address"]?.immutable == true
-  }
-
-  var phoneNumberIsImmutable: Bool {
-    userSettings.attributes["phone_number"]?.immutable == true
-  }
-
-  var usernameIsImmutable: Bool {
-    userSettings.attributes["username"]?.immutable == true
+  private var attributes: Attributes {
+    userSettings.attributes
   }
 }
 

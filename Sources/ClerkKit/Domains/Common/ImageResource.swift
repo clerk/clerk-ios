@@ -1,27 +1,19 @@
-//
-//  ImageResource.swift
-//
-
+import ClerkSnapshots
 import Foundation
 
-/// Represents information about an image.
-public struct ImageResource: Codable, Sendable {
-  /// The unique identifier of the image.
-  public let id: String
+public typealias ImageResource = ClerkSnapshots.ClerkImage
 
-  /// The name of the image.
-  public let name: String?
-
-  /// The publicly accessible URL for the image.
-  public let publicUrl: String?
-
+extension ImageResource {
   public init(
     id: String,
     name: String? = nil,
     publicUrl: String? = nil
   ) {
-    self.id = id
-    self.name = name
-    self.publicUrl = publicUrl
+    self.init(
+      object: "image",
+      id: id,
+      name: name ?? "",
+      publicUrl: publicUrl ?? ""
+    )
   }
 }

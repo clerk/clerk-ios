@@ -36,20 +36,20 @@ struct BillingTests {
     #expect(plan.id == "plan_1")
     #expect(plan.fee?.amount == 1000)
     #expect(plan.annualFee?.amountFormatted == "10.00")
-    #expect(plan.features.map(\.slug) == ["sso"])
+    #expect(plan.features?.map(\.slug) == ["sso"])
     #expect(plan.unitPrices?.first?.name == "seats")
     #expect(plan.unitPrices?.first?.tiers.first?.startsAtBlock == 1)
     #expect(plan.availablePrices?.first?.id == "price_1")
     #expect(plan.freeTrialDays == 14)
-    #expect(plan.freeTrialEnabled)
+    #expect(plan.freeTrialEnabled == true)
   }
 
   @Test
-  func decodesBillingPlanUnitPriceTierWhenIdIsMissing() throws {
+  func billingPlanUnitPriceTierRequiresId() {
     let stripped = planJSON.replacingOccurrences(of: "\"id\": \"tier_1\",", with: "")
-    let plan = try decoder.decode(BillingPlan.self, from: Data(stripped.utf8))
-    #expect(plan.unitPrices?.first?.tiers.first?.id == nil)
-    #expect(plan.unitPrices?.first?.tiers.first?.startsAtBlock == 1)
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(BillingPlan.self, from: Data(stripped.utf8))
+    }
   }
 
   @Test
@@ -57,6 +57,7 @@ struct BillingTests {
     let json = Data(
       """
       {
+        "object": "commerce_plan",
         "id": "plan_free",
         "name": "Free",
         "fee": null,
@@ -75,15 +76,15 @@ struct BillingTests {
     )
 
     let plan = try decoder.decode(BillingPlan.self, from: json)
-    #expect(plan.features.isEmpty)
+    #expect(plan.features == nil)
     #expect(plan.freeTrialDays == nil)
-    #expect(!plan.freeTrialEnabled)
+    #expect(plan.freeTrialEnabled == nil)
   }
 
   @Test
   func decodesBillingSubscriptionWithSeatsCreditsAndDiscounts() throws {
     let subscription = try decoder.decode(BillingSubscription.self, from: Data(subscriptionJSON.utf8))
-    let item = try #require(subscription.subscriptionItems.first)
+    let item = try #require(subscription.subscriptionItems?.first)
     #expect(subscription.status == .active)
     #expect(item.seats?.quantity == 5)
     #expect(item.seats?.tiers?.first?.total.amount == 1000)
@@ -95,11 +96,11 @@ struct BillingTests {
   }
 
   @Test
-  func decodesBillingSubscriptionWhenActiveAtIsNull() throws {
+  func billingSubscriptionRequiresActiveAt() {
     let json = subscriptionJSON.replacingOccurrences(of: "\"active_at\": 1700000000000", with: "\"active_at\": null")
-    let subscription = try decoder.decode(BillingSubscription.self, from: Data(json.utf8))
-    #expect(subscription.activeAt == nil)
-    #expect(subscription.status == .active)
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(BillingSubscription.self, from: Data(json.utf8))
+    }
   }
 
   @Test
@@ -114,7 +115,7 @@ struct BillingTests {
   }
 
   @Test
-  func decodesBillingStatementGroupWhenIdIsMissing() throws {
+  func billingStatementGroupRequiresId() {
     let json = """
     {
       "object": "commerce_statement",
@@ -134,25 +135,20 @@ struct BillingTests {
       ]
     }
     """
-    let statement = try decoder.decode(BillingStatement.self, from: Data(json.utf8))
-    #expect(statement.groups.count == 1)
-    #expect(statement.groups.first?.id == nil)
-    #expect(statement.groups.first?.items.first?.id == "pay_1")
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(BillingStatement.self, from: Data(json.utf8))
+    }
   }
 
   @Test
-  func decodesBillingPaymentWhenNestedSubscriptionItemOmitsCreatedAt() throws {
+  func billingPaymentRequiresNestedSubscriptionItemTimestamps() {
     let stripped = paymentJSON
       .replacingOccurrences(of: "\"price_id\": \"price_1\",", with: "")
       .replacingOccurrences(of: "\"created_at\": 1700000000000,", with: "")
       .replacingOccurrences(of: "\"period_start\": 1700000000000,", with: "")
-    let payment = try decoder.decode(BillingPayment.self, from: Data(stripped.utf8))
-    #expect(payment.id == "pay_1")
-    #expect(payment.subscriptionItem.id == "si_1")
-    #expect(payment.subscriptionItem.priceId == nil)
-    #expect(payment.subscriptionItem.createdAt == nil)
-    #expect(payment.subscriptionItem.periodStart == nil)
-    #expect(payment.status == .paid)
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(BillingPayment.self, from: Data(stripped.utf8))
+    }
   }
 
   @Test
@@ -161,8 +157,8 @@ struct BillingTests {
       .replacingOccurrences(of: "\"created_at\": 1700000000000,", with: "\"created_at\": 0,")
       .replacingOccurrences(of: "\"period_start\": 1700000000000,", with: "\"period_start\": 0,")
     let payment = try decoder.decode(BillingPayment.self, from: Data(epoch.utf8))
-    #expect(payment.subscriptionItem.createdAt == nil)
-    #expect(payment.subscriptionItem.periodStart == nil)
+    #expect(payment.subscriptionItem.createdAt == Date(timeIntervalSince1970: 0))
+    #expect(payment.subscriptionItem.periodStart == 0)
   }
 
   @Test
@@ -180,14 +176,14 @@ struct BillingTests {
   func decodesUnknownBillingEnumValuesWithoutFailingTheResource() throws {
     #expect(BillingSubscriptionStatus(rawValue: "canceled") == .unknown("canceled"))
     #expect(BillingSubscriptionStatus(rawValue: "canceled").rawValue == "canceled")
-    #expect(BillingPaymentChargeType(rawValue: "price_transition") == .priceTransition)
+    #expect(BillingPaymentChargeType(rawValue: "price_transition") == .unknown("price_transition"))
     #expect(BillingPaymentChargeType(rawValue: "future_charge").rawValue == "future_charge")
 
     let unknownPaymentJSON = paymentJSON
       .replacingOccurrences(of: "\"charge_type\": \"recurring\"", with: "\"charge_type\": \"price_transition\"")
       .replacingOccurrences(of: "\"status\": \"paid\"", with: "\"status\": \"settled\"")
     let payment = try decoder.decode(BillingPayment.self, from: Data(unknownPaymentJSON.utf8))
-    #expect(payment.chargeType == .priceTransition)
+    #expect(payment.chargeType == .unknown("price_transition"))
     #expect(payment.status == .unknown("settled"))
     #expect(payment.id == "pay_1")
   }
@@ -283,6 +279,7 @@ private let planJSON = """
       "block_size": 1,
       "tiers": [
         {
+          "object": "commerce_plan_unit_price_tier",
           "id": "tier_1",
           "starts_at_block": 1,
           "ends_after_block": null,
@@ -293,6 +290,7 @@ private let planJSON = """
   ],
   "available_prices": [
     {
+      "object": "commerce_price",
       "id": "price_1",
       "fee": \(moneyJSON),
       "annual_monthly_fee": \(moneyJSON),
@@ -342,7 +340,7 @@ private let subscriptionItemJSON = """
       "amount": \(moneyJSON),
       "cycle_days_remaining": 10,
       "cycle_days_total": 30,
-      "cycle_remaining_percent": 0.33
+      "cycle_remaining_percent": 33
     },
     "payer": {
       "remaining_balance": \(moneyJSON),
@@ -351,6 +349,7 @@ private let subscriptionItemJSON = """
     "total": \(moneyJSON)
   },
   "applied_discount": {
+    "object": "commerce_discount_redemption",
     "id": "red_1",
     "subscription_item_id": "si_1",
     "discount_id": "disc_1",
@@ -432,7 +431,7 @@ private let paymentJSON = """
         "amount": \(moneyJSON),
         "cycle_days_passed": 10,
         "cycle_days_total": 30,
-        "cycle_passed_percent": 0.33
+        "cycle_passed_percent": 33
       },
       "discount": {
         "amount": \(moneyJSON),
@@ -462,6 +461,7 @@ private let statementJSON = """
   },
   "groups": [
     {
+      "object": "commerce_statement_group",
       "id": "grp_1",
       "timestamp": 1700000000000,
       "items": [\(paymentJSON)]

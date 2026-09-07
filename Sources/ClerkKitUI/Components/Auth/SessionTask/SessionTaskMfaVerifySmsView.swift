@@ -160,7 +160,7 @@ struct SessionTaskMfaVerifySmsView: View {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
+      if let clerkError = error as? ClerkAPIError, clerkError.meta?.paramName == nil {
         self.error = clerkError
         otpFieldIsFocused = false
       }

@@ -14,11 +14,11 @@ extension SignUp {
   static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
 
   var emailVerification: Verification? {
-    verifications["email_address"] ?? nil
+    verificationByAttribute["email_address"] ?? nil
   }
 
   func emailVerificationStrategy(prefersEmailLink: Bool) -> FactorStrategy {
-    if let strategy = emailVerification?.strategy {
+    if let strategy = emailVerification?.factorStrategy {
       return strategy
     }
 
@@ -26,20 +26,20 @@ extension SignUp {
   }
 
   var firstFieldToCollect: SignUp.Field? {
-    missingFields.sortedByPriority(SignUp.fieldPriority).first
+    missing.sortedByPriority(SignUp.fieldPriority).first
   }
 
   var firstFieldToVerify: SignUp.Field? {
-    unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
+    unverified.sortedByPriority(SignUp.fieldPriority).first
   }
 
   func fieldIsRequired(field: SignUp.Field) -> Bool {
-    requiredFields.contains(field)
+    required.contains(field)
   }
 
   var firstVerification: Verification? {
     guard let firstFieldToVerify else { return nil }
-    return verifications.first(where: { $0.key == firstFieldToVerify.rawValue })?.value
+    return verificationByAttribute[firstFieldToVerify.rawValue] ?? nil
   }
 
   func fieldWasCollected(field: SignUp.Field) -> Bool {
@@ -63,7 +63,7 @@ extension SignUp {
 
   var canCompleteProfileHandleMissingFields: Bool {
     let allSupportedFields = SignUp.individuallyCollectableFields.union(SignUp.completeProfileFields)
-    return missingFields.allSatisfy { allSupportedFields.contains($0) }
+    return missing.allSatisfy { allSupportedFields.contains($0) }
   }
 }
 

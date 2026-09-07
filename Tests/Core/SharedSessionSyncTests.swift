@@ -2134,20 +2134,17 @@ struct SharedSessionSyncTests {
   @Test
   func concurrentSharedTokenlessRequestsShareStartupTakeoverGeneration() async throws {
     let startupGate = SharedRequestPreparationGate()
-    let node = try makeNode(
-      owner: "app.receiver",
-      backend: TestSlotBackend(),
-      clientService: MockClientService(get: {
-        await startupGate.suspend()
-        return nil
-      })
-    )
+    let node = try makeNode(owner: "app.receiver", backend: TestSlotBackend())
     defer {
       startupGate.resume()
       node.clerk.cleanupManagers()
     }
     _ = await node.coordinator.start().value
-    node.clerk.startStartupClientRefreshIfNeeded()
+    let reconciliation = Task<Bool, Never> {
+      await startupGate.suspend()
+      return true
+    }
+    node.clerk.startStartupClientRefreshIfNeeded(after: reconciliation)
     try await waitUntil { startupGate.isSuspended }
     let startupGeneration = node.clerk.clientResponseGeneration
 
@@ -2810,7 +2807,7 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func updateDeviceTokenPublishesClearedIdentityBeforeRefreshFailure() async throws {
+  func updateDeviceTokenPublishesClearedIdentityThenReturnsCachedClient() async throws {
     let backend = TestSlotBackend()
     let previous = SharedSessionLocalIdentity(
       state: .present,
@@ -2821,14 +2818,12 @@ struct SharedSessionSyncTests {
     let node = try makeNode(
       owner: "app.a",
       backend: backend,
-      initialIdentity: previous,
-      clientService: MockClientService(get: { throw TestSlotBackend.Failure.read })
+      initialIdentity: previous
     )
 
-    await #expect(throws: TestSlotBackend.Failure.self) {
-      try await node.clerk.updateDeviceToken("new-token")
-    }
+    let refreshed = try await node.clerk.updateDeviceToken("new-token")
 
+    #expect(refreshed == nil)
     let event = try #require(backend.allSlots().first?.event)
     #expect(event.state == .cleared)
     #expect(event.deviceToken == "new-token")
@@ -3204,8 +3199,7 @@ struct SharedSessionSyncTests {
     initialIdentity: SharedSessionLocalIdentity? = nil,
     hydrateInitialIdentity: Bool = true,
     localStore suppliedLocalStore: TestLocalIdentityStore? = nil,
-    keychain suppliedKeychain: (any KeychainStorage)? = nil,
-    clientService: (any ClientServiceProtocol)? = nil
+    keychain suppliedKeychain: (any KeychainStorage)? = nil
   ) throws -> TestNode {
     let clerk = Clerk()
     let keychain = suppliedKeychain ?? InMemoryKeychain()
@@ -3238,8 +3232,7 @@ struct SharedSessionSyncTests {
           identityStore: localStore,
           slotStore: slotStore
         )
-      ),
-      clientService: clientService ?? MockClientService(get: { nil })
+      )
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,

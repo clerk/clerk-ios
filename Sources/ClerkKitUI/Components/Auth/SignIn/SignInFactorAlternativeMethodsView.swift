@@ -35,7 +35,7 @@ struct SignInFactorAlternativeMethodsView: View {
     if mode.usesSecondFactorAPI {
       []
     } else {
-      clerk.environment?.authenticatableSocialProviders ?? []
+      clerk.environment?.authenticatableOAuthProviders ?? []
     }
   }
 

@@ -56,7 +56,7 @@ public final class Clerk {
   /// Whether ClerkKitUI should show the development mode warning.
   public var shouldShowDevelopmentModeWarning: Bool {
     guard let displayConfig = environment?.displayConfig else { return false }
-    return displayConfig.showDevmodeWarning && displayConfig.instanceEnvironmentType != .production
+    return displayConfig.showDevmodeWarning && displayConfig.instanceEnvironment != .production
   }
 
   /// The Client object for the current device.
@@ -105,7 +105,18 @@ public final class Clerk {
 
   /// The current user for the device.
   public var user: User? {
-    session?.user
+    guard let user = session?.user, !user.id.isEmpty else { return nil }
+    return user
+  }
+
+  /// The signed-in user id, or nil when there is no user.
+  public var userId: String? {
+    user?.id
+  }
+
+  /// The active session id, or nil when there is no session.
+  public var sessionId: String? {
+    session?.id
   }
 
   /// The current user's membership in the active organization.
@@ -114,7 +125,7 @@ public final class Clerk {
       return nil
     }
 
-    return user?.organizationMemberships?.first { $0.organization.id == activeOrganizationId }
+    return user?.organizationMemberships.first { $0.organization.id == activeOrganizationId }
   }
 
   /// The active organization for the current session.
@@ -450,7 +461,7 @@ extension Clerk {
           operationName: "client refresh"
         ) {
           try Task.checkCancellation()
-          try await self.refreshClient(skipClientId: false)
+          try await self.refreshClient()
         }
       } catch is CancellationError {
         return
@@ -727,40 +738,16 @@ extension Clerk {
     _shared = nil
   }
 
-  /// Refreshes the current client from the API.
+  /// Refreshes the current client from the JS engine.
+  ///
+  /// Watch and other hosts without an engine return the cached client.
   @discardableResult
   public func refreshClient() async throws -> Client? {
-    try await refreshClient(skipClientId: false)
-  }
-
-  /// Refreshes the current client from the API.
-  ///
-  /// - Parameter skipClientId: When `true`, omits the currently cached client id
-  ///   from the request while still sending the stored device token. This is used
-  ///   after replacing the device token so a stale client id from the previous
-  ///   native client cannot conflict with the newly stored token.
-  @discardableResult
-  func refreshClient(skipClientId: Bool) async throws -> Client? {
     if await Clerk.resolvedEngineClient() != nil {
+      try await Clerk.js(.clerk, ClerkJSCall.load)
       return client
     }
     try Task.checkCancellation()
-    let runtime = runtimeScope
-    let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
-    try Task.checkCancellation()
-    try runtime.validateStableRuntime()
-    switch response.update {
-    case .client(let responseClient):
-      identityController.applyDecodedClientFallback(
-        responseClient,
-        responseSequence: response.requestSequence,
-        serverDate: response.serverDate,
-        clientResponseGeneration: clientResponseGeneration
-      )
-    case .preserve:
-      break
-    }
     return client
   }
 
@@ -782,15 +769,18 @@ extension Clerk {
       }
 
       if await Clerk.resolvedEngineClient() != nil {
+        try await Clerk.js(.clerk, ClerkJSCall.load)
         if let environment {
+          self.environmentRefreshRevision += 1
           return environment
         }
         throw ClerkClientError(message: "JS engine did not publish an environment.")
       }
-      let environment = try await self.dependencies.environmentService.get()
       try Task.checkCancellation()
       try runtime.validateStableRuntime()
-      self.environment = environment
+      guard let environment else {
+        throw ClerkClientError(message: "Environment is not loaded.")
+      }
       self.environmentRefreshRevision += 1
       return environment
     }

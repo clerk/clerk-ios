@@ -2,6 +2,7 @@
 //  Factor.swift
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// The Factor type represents the factor verification strategy that can be used in the sign-in process.
@@ -71,5 +72,55 @@ public struct Factor: Codable, Equatable, Hashable, Sendable {
     self.safeIdentifier = safeIdentifier
     self.primary = primary
     self.default = `default`
+  }
+
+  init(_ factor: SignInFirstFactor) {
+    self.init(
+      strategy: FactorStrategy(rawValue: factor.strategy),
+      emailAddressId: factor.emailAddressId,
+      phoneNumberId: factor.phoneNumberId,
+      web3WalletId: factor.web3WalletId,
+      enterpriseConnectionId: factor.enterpriseConnectionId,
+      enterpriseConnectionName: factor.enterpriseConnectionName,
+      safeIdentifier: factor.safeIdentifier,
+      primary: factor.primary,
+      default: factor.default
+    )
+  }
+
+  init(_ factor: SignInSecondFactor) {
+    self.init(
+      strategy: FactorStrategy(rawValue: factor.strategy.rawValue),
+      emailAddressId: factor.emailAddressId,
+      phoneNumberId: factor.phoneNumberId,
+      safeIdentifier: factor.safeIdentifier,
+      primary: factor.primary,
+      default: factor.default
+    )
+  }
+
+  var signInFirstFactor: SignInFirstFactor {
+    SignInFirstFactor(
+      strategy: strategy.rawValue,
+      emailAddressId: emailAddressId,
+      safeIdentifier: safeIdentifier,
+      primary: primary,
+      phoneNumberId: phoneNumberId,
+      default: `default`,
+      web3WalletId: web3WalletId,
+      enterpriseConnectionId: enterpriseConnectionId,
+      enterpriseConnectionName: enterpriseConnectionName
+    )
+  }
+
+  var signInSecondFactor: SignInSecondFactor {
+    SignInSecondFactor(
+      strategy: SignInSecondFactorStrategy(rawValue: strategy.rawValue),
+      emailAddressId: emailAddressId,
+      safeIdentifier: safeIdentifier,
+      primary: primary,
+      phoneNumberId: phoneNumberId,
+      default: `default`
+    )
   }
 }

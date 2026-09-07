@@ -30,7 +30,7 @@ struct OrganizationDomainEnrollmentModeView: View {
 
   private var enrollmentModeOptions: [OrganizationDomainEnrollmentModeOption] {
     OrganizationDomainEnrollmentModeOption.options(
-      for: clerk.environment?.organizationSettings.domains.enrollmentModes ?? []
+      for: clerk.environment?.organizationSettings.domains.enrollmentModes.map(\.rawValue) ?? []
     )
   }
 
@@ -244,7 +244,7 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
     domain: {
       var domain = OrganizationDomain.mock
       domain.name = "clerky.com"
-      domain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
+      domain.enrollmentMode = .manualInvitation
       domain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
       return domain
     }()
@@ -253,9 +253,9 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
       Clerk.preview { preview in
         var environment = Clerk.Environment.mock
         environment.organizationSettings.domains.enrollmentModes = [
-          OrganizationDomain.EnrollmentMode.manualInvitation.rawValue,
-          OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue,
-          OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue,
+          .manualInvitation,
+          .automaticInvitation,
+          .automaticSuggestion,
         ]
         preview.environment = environment
       }
