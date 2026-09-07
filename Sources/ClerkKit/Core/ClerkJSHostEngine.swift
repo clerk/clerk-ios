@@ -43,6 +43,12 @@ final class ClerkJSHostEngine: ClerkEngineClient {
     }
   }
 
+  func validateIdentityGeneration() throws {
+    guard !disposed, try scope.requireCurrentClerk().clientResponseGeneration == expectedIdentityGeneration else {
+      throw CancellationError()
+    }
+  }
+
   func invalidate() {
     disposed = true
   }
@@ -77,6 +83,7 @@ package enum ClerkJSHostStore {
       tokenCache: .init(getToken: { token }, saveToken: { _ in }),
       resourceCache: .init(load: { resources }, save: { _ in }),
       secureStorage: secureStorage(for: kit),
+      biometricCredential: biometricCredential(for: kit),
       oauthRedirectURL: URL(string: kit.options.redirectConfig.redirectUrl) ?? ClerkJSRuntime.defaultOAuthRedirectURL,
       proxyURL: kit.options.proxyUrl
     )
@@ -114,6 +121,12 @@ package enum ClerkJSHostStore {
 
 enum KitJSErrorMapping {
   static func kitError(_ error: ClerkJSError) -> any Error {
+    if error.code == "native_biometric_key_error", let payload = error.nativeError,
+       let data = try? JSONEncoder().encode(payload),
+       let native = try? JSONDecoder().decode(BiometricCredentialKeyManagerError.self, from: data)
+    {
+      return native
+    }
     if let rawStage = error.stage, let stage = PasskeyAuthenticationFailure.Stage(rawValue: rawStage) {
       var cause = error
       cause.stage = nil
@@ -205,5 +218,29 @@ enum ClerkEngineAuthorization {
     let data = try ClerkJSAuthorization.evaluate("splitByScope", arguments: [JSONEncoder().encode(claim)])
     let values = try JSONDecoder().decode([String: [String]].self, from: data)
     return (values["org"] ?? [], values["user"] ?? [])
+  }
+}
+
+extension ClerkJSHostStore {
+  static func biometricCredential(for kit: Clerk, appIdentifier: String? = nil) -> ClerkJSNativeCapability {
+    let credentials = BiometricCredentials(
+      keyManager: kit.dependencies.biometricCredentialKeyManager,
+      credentialStore: kit.dependencies.biometricCredentialStore,
+      appIdentifierProvider: { appIdentifier ?? Bundle.main.bundleIdentifier }
+    )
+    let capability = credentials.deviceCapability(scope: kit.runtimeScope) {
+      try (Clerk.engineClient as? ClerkJSHostEngine)?.validateIdentityGeneration()
+    }
+    return { request in
+      do {
+        return try await capability(request)
+      } catch let error as BiometricCredentialKeyManagerError {
+        throw try ClerkJSNativeCapabilityError(
+          code: "native_biometric_key_error",
+          message: error.localizedDescription,
+          nativeError: JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(error))
+        )
+      }
+    }
   }
 }

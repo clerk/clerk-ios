@@ -48,6 +48,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     tokenCache _: ClerkJSTokenCache = .memory(),
     resourceCache _: ClerkJSResourceCache? = nil,
     secureStorage _: ClerkJSSecureStorage = .memory(),
+    biometricCredential _: ClerkJSNativeCapability? = nil,
     oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL _: URL? = nil,
     appAttestKeyIdStore _: ClerkJSAppAttestKeyIdStore = .memory(),
@@ -142,6 +143,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
     secureStorage: ClerkJSSecureStorage = .memory(),
+    biometricCredential: ClerkJSNativeCapability? = nil,
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
@@ -154,6 +156,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime = JSRuntime(tokenCache: tokenCache, sessionConfiguration: sessionConfiguration)
     runtime.host.resourceCache = resourceCache
     runtime.host.secureStorage = secureStorage
+    runtime.host.biometricCredential = biometricCredential
     runtime.host.oauth.redirectURL = oauthRedirectURL
     runtime.host.appAttest.keyIdStore = appAttestKeyIdStore
   }
@@ -224,6 +227,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             }
           }, {
             storage: function(request) { return __clerkNativeStorage(JSON.stringify(request)); },
+            biometricCredential: function(request) { return __clerkNativeBiometricCredential(JSON.stringify(request)); },
             getToken: __clerkNativeGetToken,
             saveToken: __clerkNativeSaveToken,
             getCachedResources: __clerkNativeGetCachedResources,

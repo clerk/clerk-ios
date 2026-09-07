@@ -61,7 +61,6 @@ func setupMockAPIClient() {
     signInService: SignInService(apiClient: mockAPIClient),
     sessionService: SessionService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
-    biometricCredentialService: BiometricCredentialService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient)
   )
 }

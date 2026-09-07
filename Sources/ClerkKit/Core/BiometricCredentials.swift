@@ -3,28 +3,23 @@
 //  Clerk
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// The main entry point for biometric credential operations.
 @MainActor
 public struct BiometricCredentials {
-  private let biometricCredentialService: BiometricCredentialServiceProtocol
-  private let signInService: SignInServiceProtocol
   private let keyManager: any BiometricCredentialKeyManagerProtocol
   private let credentialStore: any BiometricCredentialLocalStoreProtocol
   private let appIdentifierProvider: @MainActor @Sendable () -> String?
 
   init(
-    biometricCredentialService: BiometricCredentialServiceProtocol,
-    signInService: SignInServiceProtocol,
     keyManager: any BiometricCredentialKeyManagerProtocol,
     credentialStore: any BiometricCredentialLocalStoreProtocol,
     appIdentifierProvider: @escaping @MainActor @Sendable () -> String? = {
       Bundle.main.bundleIdentifier
     }
   ) {
-    self.biometricCredentialService = biometricCredentialService
-    self.signInService = signInService
     self.keyManager = keyManager
     self.credentialStore = credentialStore
     self.appIdentifierProvider = appIdentifierProvider
@@ -32,7 +27,7 @@ public struct BiometricCredentials {
 
   /// Lists active biometric credentials for the signed-in user.
   public func list() async throws -> [BiometricCredential] {
-    try await biometricCredentialService.list()
+    try await Clerk.js(.clerk, JSRawCall("listNativeBiometricCredentials"), as: [BiometricCredential].self)
   }
 
   /// Returns local biometric sign-in availability.
@@ -44,25 +39,11 @@ public struct BiometricCredentials {
     id: String? = nil,
     identifierHint: String? = nil
   ) async throws -> BiometricCredentialAvailability {
-    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
-    case .available:
-      .available
-    case let .unavailable(reason):
-      .unavailable(reason)
-    }
+    try await sharedAvailability(id: id, identifierHint: identifierHint)
   }
 
   package func currentUserAvailability() async throws -> BiometricCredentialAvailability {
-    guard let userID = Clerk.shared.user?.id else {
-      return .unavailable(.noLocalCredential)
-    }
-
-    switch try await selectedLocalCredential(id: nil, identifierHint: nil, userID: userID) {
-    case .available:
-      return .available
-    case let .unavailable(reason):
-      return .unavailable(reason)
-    }
+    try await sharedAvailability(currentUser: true)
   }
 
   /// Returns local biometric sign-in availability without reconciling with the server.
@@ -107,59 +88,12 @@ public struct BiometricCredentials {
     reason: String? = nil,
     policy: BiometricCredentialPolicy = .biometryCurrentSet
   ) async throws -> BiometricCredential {
-    guard let session = Clerk.shared.session,
-          session.status.allowsBiometricCredentialEnrollment
-    else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without an active or pending Clerk session.")
-    }
-    try ensureBiometricCredentialFeatureEnabled()
-
-    guard let appIdentifier = appIdentifierProvider() else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without a bundle identifier.")
-    }
-    let userID = session.user.id
-    guard !userID.isEmpty else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without a user for the current session.")
-    }
-
-    let localKey = try keyManager.createKey(policy: policy)
-    do {
-      let challenge = try await biometricCredentialService.prepareEnrollment(
-        sessionId: session.id,
-        params: .init(
-          appIdentifier: appIdentifier,
-          name: name,
-          publicKeyJWK: localKey.publicKeyJWK
-        )
-      )
-      let signature = try keyManager.sign(
-        clientData: challenge.clientData,
-        localKeyId: localKey.localKeyId,
-        localizedReason: reason ?? "Use biometrics to enroll this device."
-      )
-      let biometricCredential = try await biometricCredentialService.attemptEnrollment(
-        sessionId: session.id,
-        params: .init(
-          appIdentifier: appIdentifier,
-          name: name,
-          publicKeyJWK: localKey.publicKeyJWK,
-          clientData: signature.clientData,
-          signature: signature.signature
-        )
-      )
-      try await saveLocalCredential(
-        biometricCredential: biometricCredential,
-        localKey: localKey,
-        sessionId: session.id,
-        userID: userID,
-        identifierHint: identifierHint
-      )
-      removeOtherLocalCredentialsForCurrentApp(keeping: biometricCredential)
-      return biometricCredential
-    } catch {
-      try? keyManager.deleteKey(localKeyId: localKey.localKeyId)
-      throw error
-    }
+    try await Clerk.js(.clerk, JSRawCall("enrollNativeBiometricCredential", .object([
+      "name": name.map(JSONValue.string) ?? .null,
+      "identifierHint": identifierHint.map(JSONValue.string) ?? .null,
+      "reason": reason.map(JSONValue.string) ?? .null,
+      "policy": .string(policy.rawValue),
+    ])), as: BiometricCredential.self)
   }
 
   /// Revokes a biometric credential for the signed-in user.
@@ -168,21 +102,7 @@ public struct BiometricCredentials {
   /// and metadata. A local cleanup failure does not affect the returned revoked credential.
   @discardableResult
   public func revoke(id: String) async throws -> BiometricCredential {
-    let biometricCredential = try await biometricCredentialService.revoke(
-      biometricCredentialId: id,
-      sessionId: Clerk.shared.session?.id
-    )
-    do {
-      if let localCredential = try credentialStore.credential(id: id) {
-        try deleteLocalCredential(localCredential)
-      }
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to delete local biometric credential after server revocation. This is non-critical."
-      )
-    }
-    return biometricCredential
+    try await Clerk.js(.clerk, JSRawCall("revokeNativeBiometricCredentialAndForget", .string(id)), as: BiometricCredential.self)
   }
 
   /// Revokes the biometric credential for the current app installation and signed-in user.
@@ -196,19 +116,7 @@ public struct BiometricCredentials {
   ///   available local credential for the current user.
   @discardableResult
   public func revokeCurrentDeviceCredential() async throws -> BiometricCredential? {
-    guard Clerk.shared.session?.status.allowsBiometricCredentialEnrollment == true else {
-      throw ClerkClientError(message: "Unable to revoke a biometric credential without an active or pending Clerk session.")
-    }
-    guard let userID = Clerk.shared.user?.id else {
-      return nil
-    }
-
-    switch try await selectedLocalCredential(id: nil, identifierHint: nil, userID: userID) {
-    case let .available(localCredential):
-      return try await revoke(id: localCredential.id)
-    case .unavailable:
-      return nil
-    }
+    try await Clerk.js(.clerk, JSRawCall("revokeCurrentNativeBiometricCredential"), as: BiometricCredential?.self)
   }
 
   @discardableResult
@@ -240,48 +148,11 @@ public struct BiometricCredentials {
     identifierHint: String? = nil,
     reason: String? = nil
   ) async throws -> SignIn {
-    let localCredential: BiometricCredentialLocalRecord
-    switch try await selectedLocalCredential(id: id, identifierHint: identifierHint, userID: nil) {
-    case let .available(credential):
-      localCredential = credential
-    case .unavailable:
-      throw ClerkClientError(
-        message: "Biometric sign-in is unavailable."
-      )
-    }
-    let biometricCredentialId = localCredential.id
-
-    let signIn: SignIn
-    do {
-      signIn = try await signInService.create(params: .init(
-        strategy: .biometricCredential,
-        biometricCredentialId: biometricCredentialId
-      ))
-    } catch {
-      throw handleBiometricSignInError(error, localCredential: localCredential)
-    }
-
-    let challenge = try biometricCredentialChallenge(from: signIn)
-    let signature = try keyManager.sign(
-      clientData: challenge.clientData,
-      localKeyId: localCredential.localKeyId,
-      localizedReason: reason ?? "Use biometrics to sign in."
-    )
-
-    do {
-      return try await signInService.attemptFirstFactor(
-        signInId: signIn.id,
-        params: .init(
-          strategy: .biometricCredential,
-          biometricCredentialId: biometricCredentialId,
-          clientData: signature.clientData,
-          signature: signature.signature,
-          algorithm: signature.algorithm
-        )
-      )
-    } catch {
-      throw handleBiometricSignInError(error, localCredential: localCredential)
-    }
+    try await Clerk.js(.clerk, JSRawCall("signInWithNativeBiometricCredential", .object([
+      "id": id.map(JSONValue.string) ?? .null,
+      "identifierHint": identifierHint.map(JSONValue.string) ?? .null,
+      "reason": reason.map(JSONValue.string) ?? .null,
+    ])), as: SignIn.self)
   }
 }
 
@@ -290,51 +161,17 @@ extension BiometricCredentials {
     id: String? = nil,
     identifierHint: String? = nil
   ) async -> BiometricCredentialValidationResult {
-    if biometricCredentialFeatureUnavailableReason == .environmentUnavailable {
-      return .inconclusive
-    }
-
-    let localCredentials: [BiometricCredentialLocalRecord]
     do {
-      switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: nil) {
-      case let .available(credentials):
-        localCredentials = credentials
-      case let .unavailable(reason):
-        return .invalid(reason)
-      }
+      let result = try await Clerk.js(.clerk, JSRawCall("validateNativeLocalBiometricCredential", .object([
+        "id": id.map(JSONValue.string) ?? .null,
+        "identifierHint": identifierHint.map(JSONValue.string) ?? .null,
+      ])), as: NativeBiometricAvailability.self)
+      if result.status == "valid" { return .valid }
+      if result.status == "invalid", let reason = result.reason { return .invalid(reason) }
+      return .inconclusive
     } catch {
       return .inconclusive
     }
-
-    guard Clerk.shared.client != nil else {
-      return .inconclusive
-    }
-
-    var firstUnavailableReason: BiometricCredentialAvailability.UnavailableReason?
-
-    for localCredential in localCredentials {
-      do {
-        let validation = try await biometricCredentialService.validateSignInCredential(biometricCredentialId: localCredential.id)
-        guard validation.valid else {
-          try? deleteLocalCredential(localCredential)
-          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
-          continue
-        }
-        return .valid
-      } catch {
-        if error.isMissingBiometricCredential {
-          try? deleteLocalCredential(localCredential)
-          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
-          continue
-        }
-        if let unavailableReason = error.biometricCredentialValidationUnavailableReason {
-          return .invalid(unavailableReason)
-        }
-        return .inconclusive
-      }
-    }
-
-    return .invalid(firstUnavailableReason ?? .serverCredentialMissing)
   }
 
   private var biometricCredentialFeatureUnavailableReason: BiometricCredentialAvailability.UnavailableReason? {
@@ -350,87 +187,18 @@ extension BiometricCredentials {
     return nil
   }
 
-  private func ensureBiometricCredentialFeatureEnabled() throws {
-    guard let reason = biometricCredentialFeatureUnavailableReason else {
-      return
-    }
-
-    switch reason {
-    case .environmentUnavailable:
-      throw ClerkClientError(message: "Unable to use biometric sign-in before the Clerk environment is loaded.")
-    case .nativeAPIDisabled:
-      throw ClerkClientError(message: "Unable to use biometric sign-in because Native API is disabled.")
-    case .featureDisabled:
-      throw ClerkClientError(message: "Unable to use biometric sign-in because it is disabled.")
-    default:
-      throw ClerkClientError(message: "Biometric sign-in is unavailable.")
-    }
-  }
-
   private enum LocalCredentialResult<Value> {
     case available(Value)
     case unavailable(BiometricCredentialAvailability.UnavailableReason)
   }
 
-  private func selectedLocalCredential(
-    id: String?,
-    identifierHint: String?,
-    userID: String?
-  ) async throws -> LocalCredentialResult<BiometricCredentialLocalRecord> {
-    switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID) {
-    case let .available(supportedCredentials):
-      guard Clerk.shared.session?.status == .active else {
-        return .available(supportedCredentials[0])
-      }
-
-      guard let activeUserID = Clerk.shared.session?.user.id, !activeUserID.isEmpty else {
-        return .available(supportedCredentials[0])
-      }
-
-      var biometricCredentials: [BiometricCredential]?
-      var firstUnavailableReason: BiometricCredentialAvailability.UnavailableReason?
-      let activeUserCredentials = supportedCredentials.filter { $0.userID == activeUserID }
-      guard !activeUserCredentials.isEmpty else {
-        return .unavailable(.noLocalCredential)
-      }
-
-      for credential in activeUserCredentials {
-        let activeUserBiometricCredentials: [BiometricCredential]
-        if let biometricCredentials {
-          activeUserBiometricCredentials = biometricCredentials
-        } else {
-          let fetchedBiometricCredentials = try await biometricCredentialService.list()
-          biometricCredentials = fetchedBiometricCredentials
-          activeUserBiometricCredentials = fetchedBiometricCredentials
-        }
-
-        guard let biometricCredential = activeUserBiometricCredentials.first(where: { $0.id == credential.id }) else {
-          try deleteLocalCredential(credential)
-          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
-          continue
-        }
-
-        guard biometricCredential.status == .active else {
-          try deleteLocalCredential(credential)
-          firstUnavailableReason = firstUnavailableReason ?? .serverCredentialRevoked
-          continue
-        }
-
-        return .available(credential)
-      }
-
-      return .unavailable(firstUnavailableReason ?? .serverCredentialMissing)
-    case let .unavailable(reason):
-      return .unavailable(reason)
-    }
-  }
-
   private func localCredentialCandidates(
     id: String?,
     identifierHint: String?,
-    userID: String?
+    userID: String?,
+    checkFeature: Bool = true
   ) throws -> LocalCredentialResult<[BiometricCredentialLocalRecord]> {
-    if let unavailableReason = biometricCredentialFeatureUnavailableReason {
+    if checkFeature, let unavailableReason = biometricCredentialFeatureUnavailableReason {
       return .unavailable(unavailableReason)
     }
 
@@ -513,115 +281,6 @@ extension BiometricCredentials {
     try keyManager.deleteKey(localKeyId: credential.localKeyId)
     try credentialStore.delete(id: credential.id)
   }
-
-  private func saveLocalCredential(
-    biometricCredential: BiometricCredential,
-    localKey: BiometricCredentialLocalKey,
-    sessionId: String,
-    userID: String,
-    identifierHint: String?
-  ) async throws {
-    do {
-      try credentialStore.save(
-        .init(
-          biometricCredential: biometricCredential,
-          localKey: localKey,
-          userID: userID,
-          identifierHint: identifierHint
-        ),
-        deleteReplacedLocalKey: { localKeyId in
-          try keyManager.deleteKey(localKeyId: localKeyId)
-        }
-      )
-    } catch {
-      _ = try? await biometricCredentialService.revoke(
-        biometricCredentialId: biometricCredential.id,
-        sessionId: sessionId
-      )
-      throw error
-    }
-  }
-
-  private func removeOtherLocalCredentialsForCurrentApp(keeping biometricCredential: BiometricCredential) {
-    let credentialsToReplace: [BiometricCredentialLocalRecord]
-    do {
-      // The backend replaces active credentials by installation and app identifier, even across users.
-      credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != biometricCredential.id }
-    } catch {
-      ClerkLogger.warning(
-        "Failed to load replaced biometric credentials for local cleanup. Error: \(error)"
-      )
-      return
-    }
-
-    for credential in credentialsToReplace {
-      do {
-        try deleteLocalCredential(credential)
-      } catch {
-        ClerkLogger.warning(
-          "Failed to remove replaced biometric credential locally. Error: \(error)"
-        )
-      }
-    }
-  }
-
-  private func biometricCredentialChallenge(from signIn: SignIn) throws -> BiometricCredentialChallenge {
-    guard let biometricCredentialChallenge = signIn.firstFactorVerification?.biometricCredentialChallenge else {
-      throw ClerkClientError(message: "Biometric sign-in did not return a challenge.")
-    }
-    return biometricCredentialChallenge
-  }
-
-  private func handleBiometricSignInError(
-    _ error: Error,
-    localCredential: BiometricCredentialLocalRecord
-  ) -> Error {
-    guard error.isMissingBiometricCredential else {
-      return error
-    }
-
-    try? deleteLocalCredential(localCredential)
-    return ClerkClientError(message: "This device is no longer trusted. Sign in another way to enroll it again.")
-  }
-}
-
-extension Error {
-  fileprivate var isMissingBiometricCredential: Bool {
-    guard let error = self as? ClerkAPIError else {
-      return false
-    }
-
-    return BiometricCredentialAPIError.missingCredentialCodes.contains(error.code) &&
-      error.meta?.paramName == BiometricCredentialAPIError.biometricCredentialIDParamName
-  }
-
-  fileprivate var biometricCredentialValidationUnavailableReason: BiometricCredentialAvailability.UnavailableReason? {
-    guard let error = self as? ClerkAPIError else {
-      return nil
-    }
-
-    switch error.code {
-    case BiometricCredentialAPIError.nativeAPIDisabledCode:
-      return .nativeAPIDisabled
-    case BiometricCredentialAPIError.featureNotEnabledCode:
-      return .featureDisabled
-    default:
-      return nil
-    }
-  }
-}
-
-private enum BiometricCredentialAPIError {
-  static let formResourceNotFoundCode = "form_resource_not_found"
-  static let biometricCredentialNotRegisteredCode = "trusted_device_not_registered"
-  static let biometricCredentialIDParamName = "trusted_device_id"
-  static let nativeAPIDisabledCode = "native_api_disabled"
-  static let featureNotEnabledCode = "feature_not_enabled"
-
-  static let missingCredentialCodes = [
-    formResourceNotFoundCode,
-    biometricCredentialNotRegisteredCode,
-  ]
 }
 
 extension Session.SessionStatus {
@@ -634,3 +293,132 @@ extension Session.SessionStatus {
     }
   }
 }
+
+private struct NativeBiometricAvailability: Decodable {
+  let status: String?
+  let reason: BiometricCredentialAvailability.UnavailableReason?
+}
+
+extension BiometricCredentials {
+  private func sharedAvailability(
+    id: String? = nil,
+    identifierHint: String? = nil,
+    currentUser: Bool = false
+  ) async throws -> BiometricCredentialAvailability {
+    let result = try await Clerk.js(.clerk, JSRawCall("nativeBiometricAvailability", .object([
+      "id": id.map(JSONValue.string) ?? .null,
+      "identifierHint": identifierHint.map(JSONValue.string) ?? .null,
+      "currentUser": .bool(currentUser),
+    ])), as: NativeBiometricAvailability.self)
+    return result.reason.map(BiometricCredentialAvailability.unavailable) ?? .available
+  }
+
+  func deviceCapability(
+    scope: ClerkRuntimeScope,
+    validateIdentity: @escaping @MainActor @Sendable () throws -> Void
+  ) -> BiometricDeviceCapability {
+    let pendingKeys = BiometricPendingKeys()
+    return { request in
+      try await MainActor.run {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+        let request = try decoder.decode(BiometricCapabilityRequest.self, from: JSONEncoder().encode(request))
+        if request.operation != "deleteKey", request.operation != "dispose" {
+          _ = try scope.requireCurrentClerk()
+          try validateIdentity()
+        }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        func encoded(_ value: some Encodable) throws -> JSONValue {
+          try JSONDecoder().decode(JSONValue.self, from: encoder.encode(value))
+        }
+        func required<T>(_ value: T?) throws -> T {
+          guard let value else { throw ClerkClientError(message: "Missing biometric capability argument.") }
+          return value
+        }
+        switch request.operation {
+        case "context":
+          return .object([
+            "appIdentifier": appIdentifierProvider().map(JSONValue.string) ?? .null,
+            "platform": .string("ios"),
+          ])
+        case "candidates":
+          switch try localCredentialCandidates(id: request.id, identifierHint: request.identifierHint, userID: request.userID, checkFeature: false) {
+          case let .available(credentials):
+            return try .object(["credentials": encoded(credentials)])
+          case let .unavailable(reason):
+            return .object(["reason": .string(reason.rawValue)])
+          }
+        case "records":
+          return try encoded(storedLocalCredentialsForCurrentApp())
+        case "createKey":
+          let key = try keyManager.createKey(policy: required(request.policy))
+          pendingKeys.ids.insert(key.localKeyId)
+          return .object([
+            "localKeyId": .string(key.localKeyId),
+            "publicKeyJWK": .string(key.publicKeyJWK),
+            "algorithm": .string(key.algorithm.rawValue),
+            "policy": .string(key.policy.rawValue),
+          ])
+        case "sign":
+          let signature = try keyManager.sign(
+            clientData: required(request.clientData),
+            localKeyId: required(request.localKeyId),
+            localizedReason: request.reason
+          )
+          try validateIdentity()
+          return .object([
+            "clientData": .string(signature.clientData),
+            "signature": .string(signature.signature),
+            "algorithm": .string(signature.algorithm.rawValue),
+          ])
+        case "save":
+          let credential = try required(request.credential)
+          try credentialStore.save(credential, deleteReplacedLocalKey: {
+            try keyManager.deleteKey(localKeyId: $0)
+          })
+          pendingKeys.ids.remove(credential.localKeyId)
+        case "remove":
+          let expected = try required(request.credential)
+          if try credentialStore.credential(id: expected.id) == expected {
+            try deleteLocalCredential(expected)
+          }
+        case "removeById":
+          if let credential = try credentialStore.credential(id: required(request.id)) {
+            try deleteLocalCredential(credential)
+          }
+        case "deleteKey":
+          let id = try required(request.localKeyId)
+          try keyManager.deleteKey(localKeyId: id)
+          pendingKeys.ids.remove(id)
+        case "dispose":
+          for id in pendingKeys.ids {
+            if (try? keyManager.deleteKey(localKeyId: id)) != nil { pendingKeys.ids.remove(id) }
+          }
+        default:
+          throw ClerkClientError(message: "Unknown biometric capability operation.")
+        }
+        return .null
+      }
+    }
+  }
+}
+
+private struct BiometricCapabilityRequest: Decodable {
+  let operation: String
+  let id: String?
+  let identifierHint: String?
+  let userID: String?
+  let localKeyId: String?
+  let clientData: String?
+  let reason: String?
+  let policy: BiometricCredentialPolicy?
+  let credential: BiometricCredentialLocalRecord?
+}
+
+@MainActor
+private final class BiometricPendingKeys {
+  var ids: Set<String> = []
+}
+
+typealias BiometricDeviceCapability = @Sendable (JSONValue) async throws -> JSONValue

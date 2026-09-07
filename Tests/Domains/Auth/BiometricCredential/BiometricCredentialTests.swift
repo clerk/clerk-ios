@@ -95,22 +95,4 @@ struct BiometricCredentialTests {
     #expect(verification.biometricCredentialChallenge?.challengeId == "tdch_123")
     #expect(verification.biometricCredentialChallenge?.biometricCredentialId == "tdc_123")
   }
-
-  @Test
-  func prepareEnrollmentParamsEncodeBackendKeys() throws {
-    let params = BiometricCredential.PrepareEnrollmentParams(
-      appIdentifier: "com.clerk.example",
-      name: "Sean's iPhone",
-      publicKeyJWK: "{\"kty\":\"EC\"}"
-    )
-
-    let data = try encoder.encode(params)
-    let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-
-    #expect(object["platform"] as? String == "ios")
-    #expect(object["app_identifier"] as? String == "com.clerk.example")
-    #expect(object["name"] as? String == "Sean's iPhone")
-    #expect(object["algorithm"] as? String == "ES256")
-    #expect(object["public_key_jwk"] as? String == "{\"kty\":\"EC\"}")
-  }
 }

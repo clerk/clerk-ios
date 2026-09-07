@@ -44,7 +44,6 @@ final class DependencyContainer: Dependencies {
   let signInService: SignInServiceProtocol
   let sessionService: SessionServiceProtocol
   let passkeyService: PasskeyServiceProtocol
-  let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
 
   // MARK: - Magic Link
@@ -165,7 +164,6 @@ final class DependencyContainer: Dependencies {
     signInService = SignInService(apiClient: apiClient)
     sessionService = SessionService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
-    biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
   }
 

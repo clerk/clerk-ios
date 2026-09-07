@@ -33,7 +33,6 @@ final class MockDependencyContainer: Dependencies {
   let signInService: SignInServiceProtocol
   let sessionService: SessionServiceProtocol
   let passkeyService: PasskeyServiceProtocol
-  let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
 
   let sessionStatusLogger: SessionStatusLogger
@@ -50,7 +49,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
-  ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
   init(
     apiClient: APIClient,
@@ -69,7 +67,6 @@ final class MockDependencyContainer: Dependencies {
     signInService: (any SignInServiceProtocol)? = nil,
     sessionService: (any SessionServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
-    biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
@@ -99,7 +96,6 @@ final class MockDependencyContainer: Dependencies {
     self.signInService = signInService ?? MockSignInService()
     self.sessionService = sessionService ?? MockSessionService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
-    self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
   }
 }

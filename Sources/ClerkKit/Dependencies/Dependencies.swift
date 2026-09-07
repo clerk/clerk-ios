@@ -67,8 +67,7 @@ protocol Dependencies: AnyObject {
   /// Service for passkey operations.
   var passkeyService: PasskeyServiceProtocol { get }
 
-  /// Service for biometric-credential operations.
-  var biometricCredentialService: BiometricCredentialServiceProtocol { get }
+  // Service for biometric-credential operations.
 
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }

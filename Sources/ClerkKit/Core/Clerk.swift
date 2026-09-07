@@ -290,8 +290,6 @@ public final class Clerk {
   /// The main entry point for biometric credential operations.
   public var biometricCredentials: BiometricCredentials {
     BiometricCredentials(
-      biometricCredentialService: dependencies.biometricCredentialService,
-      signInService: dependencies.signInService,
       keyManager: dependencies.biometricCredentialKeyManager,
       credentialStore: dependencies.biometricCredentialStore
     )

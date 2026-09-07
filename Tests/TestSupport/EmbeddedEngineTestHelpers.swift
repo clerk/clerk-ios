@@ -6,14 +6,14 @@ import Mocker
 
 @MainActor
 @discardableResult
-func configureEmbeddedClerkForTesting(signedIn: Bool = true, configure: ((Clerk) throws -> Void)? = nil) async throws -> ClerkJSHost {
+func configureEmbeddedClerkForTesting(signedIn: Bool = true, biometricAppIdentifier: String? = nil, configure: ((Clerk) throws -> Void)? = nil) async throws -> ClerkJSHost {
   await Clerk.disposeEngine()
   Mocker.removeAll()
   configureClerkForTesting()
   try configure?(Clerk.shared)
   let configuration = URLSessionConfiguration.ephemeral
   configuration.protocolClasses = [MockingURLProtocol.self]
-  let host = ClerkJSHost(publishableKey: testPublishableKey, tokenCache: .init(getToken: { signedIn ? "fixture-client-jwt" : "" }, saveToken: { _ in }), secureStorage: ClerkJSHostStore.secureStorage(for: Clerk.shared), sessionConfiguration: configuration)
+  let host = ClerkJSHost(publishableKey: testPublishableKey, tokenCache: .init(getToken: { signedIn ? "fixture-client-jwt" : "" }, saveToken: { _ in }), secureStorage: ClerkJSHostStore.secureStorage(for: Clerk.shared), biometricCredential: ClerkJSHostStore.biometricCredential(for: Clerk.shared, appIdentifier: biometricAppIdentifier), sessionConfiguration: configuration)
   let environment = try ClerkJSHost.snapshotEnvironmentJSON()
   var client = try JSONSerialization.jsonObject(with: ClerkJSHost.snapshotSignedInClient()) as! [String: Any]
   var sessions = client["sessions"] as! [[String: Any]]

@@ -466,7 +466,7 @@ package struct BiometricCredentialKeySignature: Equatable {
 }
 
 /// Errors produced by local biometric-credential key management.
-public enum BiometricCredentialKeyManagerError: Error, Equatable, LocalizedError, Sendable {
+public enum BiometricCredentialKeyManagerError: Error, Equatable, LocalizedError, Sendable, Codable {
   case unsupportedPlatform
   case biometricAuthenticationUnavailable
   case biometricAuthenticationCanceled

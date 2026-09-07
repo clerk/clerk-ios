@@ -17,6 +17,7 @@ final class NativeHost: @unchecked Sendable {
 
   private let tokenCache: ClerkJSTokenCache
   var resourceCache: ClerkJSResourceCache?
+  var biometricCredential: ClerkJSNativeCapability?
   var secureStorage = ClerkJSSecureStorage.memory()
   private let passkeys = ClerkJSPasskeyCeremony()
   let oauth = ClerkJSOAuthSession()
@@ -65,6 +66,9 @@ final class NativeHost: @unchecked Sendable {
     callbacks.removeAll()
     for id in Array(fetches.keys) {
       abortFetch(id)
+    }
+    if let biometricCredential {
+      Task { _ = try? await biometricCredential(.object(["operation": .string("dispose")])) }
     }
     passkeys.cancel()
     oauth.cancel()
@@ -245,6 +249,31 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(storage, forKeyedSubscript: "__clerkNativeStorageImpl" as NSString)
+
+    let biometricCredential: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      let capability = self.biometricCredential
+      Task {
+        do {
+          guard let capability else { throw ClerkJSCoreError.invalidArgument("Biometric credential capability is unavailable") }
+          let request = try JSONDecoder().decode(JSONValue.self, from: Data(payload.utf8))
+          let result = try await capability(request)
+          let json = try String(decoding: JSONEncoder().encode(result), as: UTF8.self)
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json]) }
+        } catch {
+          let json: String
+          if let native = error as? ClerkJSNativeCapabilityError, let data = try? JSONEncoder().encode(native) {
+            json = String(decoding: data, as: UTF8.self)
+          } else {
+            let data = try? JSONEncoder().encode(["message": error.localizedDescription])
+            json = data.map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+          }
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [json, NSNull()]) }
+        }
+      }
+    }
+    context.setObject(biometricCredential, forKeyedSubscript: "__clerkNativeBiometricCredentialImpl" as NSString)
 
     let createPublicCredentials: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
       guard let self, let runtime else { return }
@@ -917,6 +946,21 @@ final class NativeHost: @unchecked Sendable {
         return new Promise(function(resolve, reject) {
           __clerkNativeStorageImpl(request, function(error, json) {
             if (error) { reject(new Error(error)); return; }
+            try { resolve(JSON.parse(json)); } catch (error) { reject(error); }
+          });
+        });
+      };
+      globalThis.__clerkNativeBiometricCredential = function(request) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeBiometricCredentialImpl(request, function(failure, json) {
+            if (failure) {
+              var details = JSON.parse(failure);
+              var error = new Error(details.message);
+              error.code = details.code;
+              error.nativeError = details.nativeError;
+              reject(error);
+              return;
+            }
             try { resolve(JSON.parse(json)); } catch (error) { reject(error); }
           });
         });

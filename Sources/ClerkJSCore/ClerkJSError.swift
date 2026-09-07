@@ -15,6 +15,7 @@ public struct ClerkJSError: Error, Sendable, Equatable, Decodable {
   public var clerkTraceId: String?
   public var status: Int?
   public var code: String?
+  public var nativeError: JSONValue?
   public var stage: String?
   public var message: String
 
