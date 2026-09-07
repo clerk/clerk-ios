@@ -7,7 +7,10 @@
 
 import ClerkKit
 import ClerkKitUI
+import os
 import SwiftUI
+
+private let watchSyncLog = Logger(subsystem: "com.clerk.WatchExampleApp", category: "watch-sync")
 
 struct ContentView: View {
   @State private var authViewIsPresented = false
@@ -22,6 +25,12 @@ struct ContentView: View {
     }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView()
+    }
+    .onAppear {
+      watchSyncLog.notice("clerk-watch-sync phone ui user=\(Clerk.shared.user?.id ?? "nil", privacy: .public)")
+    }
+    .onChange(of: Clerk.shared.user?.id) { _, id in
+      watchSyncLog.notice("clerk-watch-sync phone ui user=\(id ?? "nil", privacy: .public)")
     }
   }
 }
