@@ -6,7 +6,7 @@ protocol SessionServiceProtocol: Sendable {
 }
 
 final class SessionService: SessionServiceProtocol {
-  init(apiClient _: APIClient) {}
+  init() {}
 
   @MainActor
   func setActive(sessionId: String, organizationId: String?) async throws {

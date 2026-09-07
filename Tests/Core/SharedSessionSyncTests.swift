@@ -3207,9 +3207,6 @@ struct SharedSessionSyncTests {
     if let initialIdentity {
       try localStore.save(initialIdentity)
     }
-    let apiClient = createMockAPIClient(
-      runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
-    )
     let slotStore = TestOwnerSlotStore(owner: owner, backend: backend)
     let recoveryIntent = SharedSessionOwnerSlotClearRecovery.Intent(
       localIdentityService: "identity.\(owner)",
@@ -3220,7 +3217,6 @@ struct SharedSessionSyncTests {
       ownerIdentifier: owner
     )
     let dependencies = MockDependencyContainer(
-      apiClient: apiClient,
       keychain: keychain,
       appLocalKeychain: keychain,
       identityKeychain: keychain,

@@ -11,7 +11,6 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     let keychain = InMemoryKeychain()
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -39,7 +38,6 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -86,7 +84,6 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )

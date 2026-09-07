@@ -80,7 +80,6 @@ struct CacheManagerTests {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )

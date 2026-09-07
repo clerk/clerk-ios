@@ -161,7 +161,6 @@ struct WatchSyncPayloadTests {
     try keychain.set("100", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
 
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: .current(clerkProvider: { clerk })),
       keychain: keychain
     )
     try dependencies.configurationManager.configure(
@@ -192,7 +191,6 @@ struct WatchSyncPayloadTests {
       )
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -221,7 +219,6 @@ struct WatchSyncPayloadTests {
       )
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -240,7 +237,6 @@ struct WatchSyncPayloadTests {
     let keychain = MetadataReadCountingKeychain()
     try WatchSyncMetadataStore(keychain: keychain).save(.empty)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -261,7 +257,6 @@ struct WatchSyncPayloadTests {
     try keychain.set("new-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try WatchSyncMetadataStore(keychain: keychain).save(.empty)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -300,7 +295,6 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
     try keychain.set(" \n\t ", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -327,7 +321,6 @@ struct WatchSyncPayloadTests {
     let phoneClient = client(id: "phone-client", updatedAt: 100)
     try keychain.set("phone-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -354,7 +347,6 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
     let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -398,7 +390,6 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
     let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -460,7 +451,6 @@ struct WatchSyncPayloadTests {
       )
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: legacyShared,
       appLocalKeychain: appLocal,
       identityKeychain: identityKeychain,
@@ -743,7 +733,6 @@ struct WatchSyncPayloadTests {
     clerk.client = client(id: "old-client", updatedAt: 100)
     clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -770,7 +759,6 @@ struct WatchSyncPayloadTests {
     let keychain = InMemoryKeychain()
     let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -815,7 +803,6 @@ struct WatchSyncPayloadTests {
     )
     try identityStore.save(previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -1129,7 +1116,6 @@ struct WatchSyncPayloadTests {
     clerk.client = previousClient
     clerk.identityController.lastServerDate = Date(timeIntervalSince1970: 50)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: InMemoryKeychain(),
       identityKeychain: SetFailingKeychain(),
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -1157,7 +1143,6 @@ struct WatchSyncPayloadTests {
     let previousClient = client(id: "previous", updatedAt: 100)
     clerk.client = previousClient
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: ReadFailingKeychain(),
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -1237,7 +1222,6 @@ struct WatchSyncPayloadTests {
     )
     try store.save(record)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: fallbackKeychain,
       appLocalKeychain: metadataKeychain,
       identityKeychain: fallbackKeychain,
@@ -1409,7 +1393,6 @@ struct WatchSyncPayloadTests {
     let metadataKeychain = PromotionFailingKeychain()
     let identityKeychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: metadataKeychain,
       appLocalKeychain: metadataKeychain,
       identityKeychain: identityKeychain,
@@ -1492,7 +1475,6 @@ struct WatchSyncPayloadTests {
     )
     let identityStore = FailingOnceIdentityStore(identity: initialIdentity)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: metadataKeychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -1544,7 +1526,6 @@ struct WatchSyncPayloadTests {
     let currentClient = client(id: "accepted-zero-client", updatedAt: 400)
     let currentDate = Date(timeIntervalSince1970: 400)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -1579,7 +1560,6 @@ struct WatchSyncPayloadTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -1903,7 +1883,6 @@ struct WatchSyncPayloadTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -1945,7 +1924,6 @@ struct WatchSyncPayloadTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -2091,7 +2069,6 @@ struct WatchSyncPayloadTests {
     keychain: InMemoryKeychain
   ) {
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )

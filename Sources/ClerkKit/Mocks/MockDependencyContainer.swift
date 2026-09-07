@@ -13,7 +13,6 @@ import Foundation
 /// testing UI behavior in SwiftUI previews or unit testing without making real API calls.
 /// It can be used in both test code (via `@testable import ClerkKit`) and preview code.
 final class MockDependencyContainer: Dependencies {
-  let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityKeychain: any KeychainStorage
@@ -26,7 +25,6 @@ final class MockDependencyContainer: Dependencies {
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
-  let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
   let userService: UserServiceProtocol
@@ -37,10 +35,9 @@ final class MockDependencyContainer: Dependencies {
 
   let sessionStatusLogger: SessionStatusLogger
 
-  /// Creates a dependency container with the provided API client and optional custom services.
+  /// Creates a dependency container with optional custom storage and services.
   ///
   /// - Parameters:
-  ///   - apiClient: The API client to use (typically a mock for tests/previews).
   ///   - keychain: Optional keychain storage (defaults to InMemoryKeychain).
   ///   - biometricCredentialKeyManager: Optional biometric-credential key manager (defaults to MockBiometricCredentialKeyManager).
   ///   - biometricCredentialStore: Optional biometric credential store.
@@ -51,7 +48,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
   init(
-    apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
@@ -69,7 +65,6 @@ final class MockDependencyContainer: Dependencies {
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil
   ) {
-    networkingPipeline = NetworkingPipeline()
     let resolvedKeychain = keychain ?? InMemoryKeychain()
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
@@ -87,7 +82,6 @@ final class MockDependencyContainer: Dependencies {
     self.biometricCredentialStore =
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)
     configurationManager = ConfigurationManager()
-    self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
     sessionStatusLogger = SessionStatusLogger()
 

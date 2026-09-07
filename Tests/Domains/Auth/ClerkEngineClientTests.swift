@@ -1822,7 +1822,6 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
     }
   )
   Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
     signInService: service
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
@@ -1839,7 +1838,6 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
     }
   )
   Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
     signInService: Clerk.shared.dependencies.signInService,
     sessionService: service
   )

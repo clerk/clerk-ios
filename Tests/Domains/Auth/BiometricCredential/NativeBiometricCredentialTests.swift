@@ -295,7 +295,7 @@ private func biometricHarness(signedIn: Bool = true, scenario: String = "success
   let keys = MockBiometricCredentialKeyManager(deleteKey: { key in deleted.withValue { $0.append(key) } })
   let store = BiometricCredentialLocalStore(keychain: keychain)
   let host = try await configureEmbeddedClerkForTesting(signedIn: signedIn, biometricAppIdentifier: "com.clerk.example") { clerk in
-    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), biometricCredentialKeyManager: keys, biometricCredentialStore: store)
+    clerk.dependencies = MockDependencyContainer(biometricCredentialKeyManager: keys, biometricCredentialStore: store)
   }
   let settings = try String(decoding: JSONEncoder().encode(["scenario": scenario, "clientData": biometricClientData]), as: UTF8.self)
   _ = try await host.runtime.evaluateJSON("""

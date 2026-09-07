@@ -152,7 +152,6 @@ struct ClerkReconfigureTests {
   func reconfigureClearsLocalStateAndStorage() async throws {
     let oldKeychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -198,7 +197,6 @@ struct ClerkReconfigureTests {
     }
 
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -232,7 +230,6 @@ struct ClerkReconfigureTests {
       keychain: sourceKeychain
     )
     let sourceDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: sourceKeychain,
       appLocalKeychain: sourceKeychain,
       identityKeychain: sourceKeychain,
@@ -296,7 +293,6 @@ struct ClerkReconfigureTests {
       keychain: sourceIdentityKeychain
     )
     let sourceDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
       keychain: MissingEntitlementKeychain(),
       appLocalKeychain: sourceIdentityKeychain,
       identityKeychain: sourceIdentityKeychain,
@@ -367,7 +363,6 @@ struct ClerkReconfigureTests {
     let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
     let previousDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: throwingKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -423,7 +418,6 @@ struct ClerkReconfigureTests {
       targetProvider: FailingReconfigurationRecoveryTargets()
     )
     let previousDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
       sharedSessionOwnerSlotClearRecovery: recovery,
       telemetryCollector: original.dependencies.telemetryCollector
     )
@@ -462,7 +456,6 @@ struct ClerkReconfigureTests {
     let clerk = Clerk.shared
     let keychain = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -499,7 +492,6 @@ struct ClerkReconfigureTests {
     let throwingKeychain = ThrowingDeleteKeychain()
     let localIdentityStore = SharedSessionLocalIdentityStore(keychain: InMemoryKeychain())
     let previousDependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
       keychain: throwingKeychain,
       atomicIdentityStore: localIdentityStore,
       telemetryCollector: original.dependencies.telemetryCollector
@@ -548,7 +540,6 @@ struct ClerkReconfigureTests {
   func reconfigureDrainsPendingCacheWritesBeforeClearingOldKeychain() async throws {
     let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -576,7 +567,6 @@ struct ClerkReconfigureTests {
   func tokenReadsAreCancelledWhileReconfigureIsInProgress() async throws {
     let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -666,7 +656,6 @@ struct ClerkReconfigureTests {
   func concurrentReconfigureThrowsWhileFirstReconfigureIsInProgress() async throws {
     let slowKeychain = SlowKeychain(delay: 0.2)
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: slowKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )

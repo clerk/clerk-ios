@@ -20,7 +20,6 @@ struct ClerkIdentityControllerTests {
     let keychain = InMemoryKeychain()
     let store = SharedSessionLocalIdentityStore(keychain: keychain)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -57,7 +56,6 @@ struct ClerkIdentityControllerTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     let identity = ClerkIdentitySnapshot(
@@ -95,7 +93,6 @@ struct ClerkIdentityControllerTests {
     )
     try store.save(previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -129,7 +126,6 @@ struct ClerkIdentityControllerTests {
     let store = SharedSessionLocalIdentityStore(keychain: keychain)
     try store.invalidateOperations(through: UInt64.max)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -174,7 +170,6 @@ struct ClerkIdentityControllerTests {
     )
     try store.save(accepted)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -213,7 +208,6 @@ struct ClerkIdentityControllerTests {
     )
     try store.save(initialIdentity)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -326,7 +320,6 @@ struct ClerkIdentityControllerTests {
     )
     try store.save(initialIdentity)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -396,7 +389,6 @@ struct ClerkIdentityControllerTests {
     let store = ControllerFailingOnceIdentityStore(identity: previous)
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: store
     )
@@ -429,7 +421,6 @@ struct ClerkIdentityControllerTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
 
@@ -459,7 +450,6 @@ struct ClerkIdentityControllerTests {
     let keychain = InMemoryKeychain()
     try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     let previousGeneration = clerk.clientResponseGeneration
@@ -503,7 +493,6 @@ struct ClerkIdentityControllerTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     try keychain.set("token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
@@ -563,7 +552,6 @@ struct ClerkIdentityControllerTests {
       forKey: ClerkKeychainKey.cachedEnvironment.rawValue
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     var currentClient = Client.mock

@@ -651,7 +651,6 @@ struct ClerkResponseClientStateTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient()
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager

@@ -138,7 +138,6 @@ struct ClerkLoggerTests {
     let keychain = PreInstallationDeleteFailingKeychain()
     let clerk = Clerk()
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     try dependencies.configurationManager.configure(

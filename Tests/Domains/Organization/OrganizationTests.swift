@@ -12,7 +12,6 @@ struct OrganizationTests {
 
   private func configureOrganizationService(_ service: MockOrganizationService) {
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       organizationService: service
     )
   }

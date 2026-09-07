@@ -20,7 +20,6 @@ struct ClerkTests {
     environment: Clerk.Environment? = .mock
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService
@@ -97,7 +96,6 @@ struct ClerkTests {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -154,7 +152,6 @@ struct ClerkTests {
       )
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -185,7 +182,6 @@ struct ClerkTests {
       )
     )
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
@@ -219,7 +215,6 @@ struct ClerkTests {
       forKey: ClerkKeychainKey.cachedClientServerDate.rawValue
     )
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: sharedKeychain,
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
@@ -246,7 +241,6 @@ struct ClerkTests {
     let keychain = InMemoryKeychain()
     let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: localStore
     )
@@ -277,7 +271,6 @@ struct ClerkTests {
     let keychain = InMemoryKeychain()
     let localStore = SharedSessionLocalIdentityStore(keychain: keychain)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: localStore
     )
@@ -314,7 +307,6 @@ struct ClerkTests {
       forKey: ClerkKeychainKey.cachedClient.rawValue
     )
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: sharedKeychain,
       appLocalKeychain: appLocalKeychain,
       identityKeychain: stableIdentityKeychain,
@@ -357,7 +349,6 @@ struct ClerkTests {
       event: peerEvent
     ))
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: localStore
     )
@@ -405,7 +396,6 @@ struct ClerkTests {
       serverDate: Date(timeIntervalSince1970: 200)
     ))
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       identityKeychain: keychain,
       atomicIdentityStore: localStore
@@ -481,7 +471,6 @@ struct ClerkTests {
       )
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -524,7 +513,6 @@ struct ClerkTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: InMemoryKeychain(),
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -568,7 +556,6 @@ struct ClerkTests {
       forKey: ClerkKeychainKey.cachedEnvironment.rawValue
     )
     let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: legacyShared,
       appLocalKeychain: appLocal,
       identityKeychain: identityKeychain,
@@ -614,7 +601,6 @@ struct ClerkTests {
       )
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -647,7 +633,6 @@ struct ClerkTests {
       serverDate: nil
     ))
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -672,7 +657,6 @@ struct ClerkTests {
       slotStore: slotStore
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
@@ -738,7 +722,6 @@ struct ClerkTests {
       slotStore: slotStore
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
@@ -821,7 +804,6 @@ struct ClerkTests {
       slotStore: slotStore
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: identityStore,
       sharedSessionOwnerSlotClearRecovery: recovery,
@@ -907,7 +889,6 @@ struct ClerkTests {
       )
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -953,7 +934,6 @@ struct ClerkTests {
     let clerk = Clerk()
     let keychain = SuspendingCacheKeychain()
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -993,7 +973,6 @@ struct ClerkTests {
     try store.save(initialIdentity)
     let keychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -1044,7 +1023,6 @@ struct ClerkTests {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -1073,7 +1051,6 @@ struct ClerkTests {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -1093,7 +1070,6 @@ struct ClerkTests {
     // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -1159,7 +1135,6 @@ struct ClerkTests {
     )
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -1195,7 +1170,6 @@ struct ClerkTests {
     let credentialStore = BiometricCredentialLocalStore(keychain: keychain)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -1249,7 +1223,6 @@ struct ClerkTests {
     )
     let deletedLocalKeyIds = LockIsolated<[String]>([])
     let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       biometricCredentialKeyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
@@ -2598,7 +2571,7 @@ struct ClerkTests {
   @Test
   func handleReturnsFalseForMismatchedMagicLinkCallbackOrigin() async throws {
     let clerk = Clerk()
-    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient())
+    clerk.dependencies = MockDependencyContainer()
     try (#require(clerk.dependencies as? MockDependencyContainer))
       .configurationManager
       .configure(

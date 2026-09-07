@@ -111,10 +111,6 @@ extension Clerk {
     // Configure Clerk.shared if not already configured
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
-    // Create a minimal API client (won't be used if services are mocked)
-    let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
-    let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
-
     // Create preview builder and apply closure
     let previewBuilder = PreviewBuilder()
     preview?(previewBuilder)
@@ -126,7 +122,6 @@ extension Clerk {
 
     // Create mock dependency container using services from builder
     let container = createMockDependencyContainer(
-      apiClient: mockAPIClient,
       services: previewBuilder.services
     )
 
@@ -152,13 +147,11 @@ extension Clerk {
   /// Creates a mock dependency container with all mock services configured.
   @MainActor
   private static func createMockDependencyContainer(
-    apiClient: APIClient,
     services: MockServicesBuilder
   ) -> MockDependencyContainer {
     // Use the services from the builder directly - this allows users to customize
     // individual service behaviors (like adding delays for loading states).
     MockDependencyContainer(
-      apiClient: apiClient,
       userService: services.userService,
       signInService: services.signInService,
       sessionService: services.sessionService,

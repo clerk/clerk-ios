@@ -12,7 +12,6 @@ struct UserTests {
 
   private func configureService(_ service: MockUserService) {
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       userService: service
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)

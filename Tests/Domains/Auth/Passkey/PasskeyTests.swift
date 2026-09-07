@@ -12,7 +12,6 @@ struct PasskeyTests {
 
   private func configureService(_ service: MockPasskeyService) {
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       passkeyService: service
     )
   }

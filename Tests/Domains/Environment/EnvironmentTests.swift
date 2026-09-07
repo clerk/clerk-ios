@@ -87,7 +87,6 @@ struct EnvironmentTests {
   private func makeClerk() -> Clerk {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
     )
     return clerk
   }

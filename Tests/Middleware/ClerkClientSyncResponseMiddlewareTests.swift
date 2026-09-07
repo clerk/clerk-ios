@@ -158,7 +158,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
       serverDate: .distantPast
     ))
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: identityStore
     )
@@ -194,7 +193,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let keychain = InMemoryKeychain()
     try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain
     )
     let existingClient = client(id: "existing-client", updatedAt: .distantPast)
@@ -434,7 +432,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
     )
     try identityStore.save(previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: identityStore
     )
@@ -476,7 +473,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
     )
     let identityStore = ThreadRecordingIdentityStore(identity: previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       atomicIdentityStore: identityStore
     )
     clerk.hydrateIdentityIfNeeded(previous)
@@ -519,7 +515,6 @@ struct ClerkClientSyncResponseMiddlewareTests {
     )
     try identityStore.save(previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       atomicIdentityStore: identityStore
     )

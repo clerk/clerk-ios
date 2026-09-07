@@ -101,10 +101,22 @@ package enum ClerkJSHostStore {
   static func httpMiddleware(for kit: Clerk) -> ClerkJSHTTPMiddleware {
     let scope = kit.runtimeScope
     let middleware = kit.options.middleware
+    let deviceHeaders: [String: String?] = [
+      "x-native-device-id": DeviceHelper.deviceID,
+      "x-device-type": DeviceHelper.deviceType,
+      "x-device-model": DeviceHelper.deviceModel,
+      "x-os-version": DeviceHelper.osVersion,
+      "x-app-version": DeviceHelper.appVersion,
+      "x-bundle-id": DeviceHelper.bundleID,
+      "x-is-sandbox": DeviceHelper.isSandbox,
+    ]
     return .init(
       prepare: { request in
         _ = try await scope.requireCurrentClerk()
         var request = request
+        for (header, value) in deviceHeaders {
+          request.setValue(value, forHTTPHeaderField: header)
+        }
         for hook in middleware.request {
           try await hook.prepare(&request)
           try Task.checkCancellation()

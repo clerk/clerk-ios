@@ -6,7 +6,7 @@ protocol UserServiceProtocol: Sendable {
 }
 
 final class UserService: UserServiceProtocol {
-  init(apiClient _: APIClient) {}
+  init() {}
 
   @MainActor
   func setProfileImage(imageData: Data) async throws -> ImageResource {

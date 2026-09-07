@@ -21,7 +21,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Core Dependencies
 
-  let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityKeychain: any KeychainStorage
@@ -35,7 +34,6 @@ final class DependencyContainer: Dependencies {
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
-  let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
   // MARK: - Services
@@ -65,7 +63,7 @@ final class DependencyContainer: Dependencies {
   init(
     publishableKey: String,
     options: Clerk.Options,
-    runtimeScope: ClerkRuntimeScope,
+    runtimeScope _: ClerkRuntimeScope,
     deferSharedSessionAdoption: Bool = false,
     persistentAdoptionEnabledOverride: Bool? = nil,
     keychainStorageOverride: (any KeychainStorage)? = nil,
@@ -83,20 +81,6 @@ final class DependencyContainer: Dependencies {
 
     sessionStatusLogger = SessionStatusLogger()
 
-    // Determine baseURL from configured manager (use default if not configured)
-    // Note: frontendApiUrl is always extracted from the publishable key, even when using a proxy,
-    // because it's needed for passkey authentication which requires the original Clerk domain
-    // (not the proxy domain) as the relying party identifier.
-    let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
-      configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
-    } else {
-      // Temporary container fallback
-      URL(string: "https://clerk.clerk.dev")!
-    }
-
-    networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
-      .appendingRequestMiddleware(options.middleware.request)
-      .appendingResponseMiddleware(options.middleware.response)
     sharedSessionOwnerIdentifier = ownerIdentifierProvider()?
       .trimmingCharacters(in: .whitespacesAndNewlines)
     persistentAdoptionEnabled = persistentAdoptionEnabledOverride
@@ -139,32 +123,16 @@ final class DependencyContainer: Dependencies {
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
     biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
-    // Phase 2: API client (depends on networkingPipeline)
-    let pipeline = networkingPipeline
-    apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
-      configuration.pipeline = pipeline
-      configuration.decoder = .clerkDecoder
-      configuration.encoder = .clerkEncoder
-      configuration.sessionConfiguration.httpAdditionalHeaders = [
-        "Content-Type": "application/x-www-form-urlencoded",
-        "clerk-api-version": Clerk.apiVersion,
-        "x-ios-sdk-version": Clerk.sdkVersion,
-        "x-mobile": Self.mobileHeaderValue,
-      ]
-    }
-
-    // Phase 3: Telemetry collector (depends on options)
     telemetryCollector = Self.createTelemetryCollector(
       publishableKey: configurationManager.publishableKey,
       options: options
     )
 
-    // Phase 4: Services (depend on apiClient and other dependencies)
-    userService = UserService(apiClient: apiClient)
-    signInService = SignInService(apiClient: apiClient)
-    sessionService = SessionService(apiClient: apiClient)
-    passkeyService = PasskeyService(apiClient: apiClient)
-    organizationService = OrganizationService(apiClient: apiClient)
+    userService = UserService()
+    signInService = SignInService()
+    sessionService = SessionService()
+    passkeyService = PasskeyService()
+    organizationService = OrganizationService()
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {
@@ -357,14 +325,6 @@ final class DependencyContainer: Dependencies {
     )
     #else
     return legacyKeychain
-    #endif
-  }
-
-  static var mobileHeaderValue: String {
-    #if os(macOS) || targetEnvironment(macCatalyst)
-    "0"
-    #else
-    "1"
     #endif
   }
 

@@ -57,7 +57,7 @@ extension HostedAuthFlowTests {
 @MainActor
 private func hostedPersistenceHarness(store: HostedIdentityStore, slots: HostedSlotStore, shared: Bool) async throws -> ClerkJSHost {
   let host = try await hostedAuthHarness { clerk in
-    let dependencies = MockDependencyContainer(apiClient: clerk.dependencies.apiClient, keychain: InMemoryKeychain(), atomicIdentityStore: store)
+    let dependencies = MockDependencyContainer(keychain: InMemoryKeychain(), atomicIdentityStore: store)
     try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
     clerk.dependencies = dependencies
   }

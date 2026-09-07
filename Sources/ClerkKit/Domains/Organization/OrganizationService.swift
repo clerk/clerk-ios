@@ -6,7 +6,7 @@ protocol OrganizationServiceProtocol: Sendable {
 }
 
 final class OrganizationService: OrganizationServiceProtocol {
-  init(apiClient _: APIClient) {}
+  init() {}
 
   @MainActor
   func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization {

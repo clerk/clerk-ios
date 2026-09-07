@@ -25,7 +25,6 @@ struct ClerkHeaderRequestMiddlewareTests {
     let keychain = InMemoryKeychain()
 
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
@@ -57,9 +56,6 @@ struct ClerkHeaderRequestMiddlewareTests {
     )
     let store = ReadCountingIdentityStore(identity: identity)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(
-        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
-      ),
       atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
@@ -86,9 +82,6 @@ struct ClerkHeaderRequestMiddlewareTests {
       serverDate: nil
     ))
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(
-        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
-      ),
       atomicIdentityStore: store,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )

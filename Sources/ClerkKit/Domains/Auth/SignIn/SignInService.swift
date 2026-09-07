@@ -7,7 +7,7 @@ protocol SignInServiceProtocol: Sendable {
 }
 
 final class SignInService: SignInServiceProtocol {
-  init(apiClient _: APIClient) {}
+  init() {}
 
   @MainActor
   func create(params: SignIn.CreateParams) async throws -> SignIn {

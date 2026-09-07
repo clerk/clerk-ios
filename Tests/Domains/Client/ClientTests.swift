@@ -27,7 +27,6 @@ struct ClientTests {
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient()
     )
     Clerk.shared.client = expectedClient
 
@@ -42,7 +41,6 @@ struct ClientTests {
   func refreshClientPreservesClientWhenCanonicalResponseRequestsPreserve() async throws {
     configureClerkForTesting()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient()
     )
     Clerk.shared.client = Client.mock
 
@@ -65,7 +63,6 @@ struct ClientTests {
     )
     try identityStore.save(previous)
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
       keychain: keychain,
       atomicIdentityStore: identityStore
     )

@@ -322,7 +322,7 @@ private func waitForMagicRedeem(_ host: ClerkJSHost) async throws {
 @MainActor
 private func magicHarness(flow: String = "signIn", scenario: String = "success", keychain: MagicKeychain = .init(), create: Bool = true) async throws -> ClerkJSHost {
   let host = try await configureEmbeddedClerkForTesting(signedIn: false) { clerk in
-    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), keychain: keychain)
+    clerk.dependencies = MockDependencyContainer(keychain: keychain)
     try clerk.dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init(redirectConfig: .init(redirectUrl: "myapp://callback")))
   }
   let settings = try String(decoding: JSONEncoder().encode(["flow": flow, "scenario": scenario]), as: UTF8.self)

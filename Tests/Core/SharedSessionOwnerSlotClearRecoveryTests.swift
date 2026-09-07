@@ -20,7 +20,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       slotStore: slotStore
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       identityKeychain: keychain,
       atomicIdentityStore: localStore,
@@ -66,7 +65,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       slotStore: slotStore
     )
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: MissingEntitlementKeychain(),
       appLocalKeychain: localKeychain,
       identityKeychain: localKeychain,
@@ -115,7 +113,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       slotStore: slotStore
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: identityKeychain,
       identityKeychain: identityKeychain,
       atomicIdentityStore: localStore,
@@ -185,7 +182,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
 
     let clerk = Clerk()
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       atomicIdentityStore: localStore
     )
     clerk.dependencies = dependencies
@@ -269,7 +265,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
       targetProvider: provider
     )
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       atomicIdentityStore: localStore,
       sharedSessionOwnerSlotClearRecovery: disabledContext
     )
@@ -312,7 +307,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     let clerk = Clerk()
     let initialKeychain = InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       keychain: initialKeychain,
       identityKeychain: initialKeychain
     )
@@ -330,7 +324,6 @@ struct SharedSessionOwnerSlotClearRecoveryTests {
     try cachedIdentityStore.save(makeIdentity(token: "must-not-hydrate"))
     try SharedSessionOwnerSlotClearRecovery.markPending(in: context)
     let dependencies = MockDependencyContainer(
-      apiClient: clerk.dependencies.apiClient,
       atomicIdentityStore: cachedIdentityStore,
       sharedSessionOwnerSlotClearRecovery: context
     )

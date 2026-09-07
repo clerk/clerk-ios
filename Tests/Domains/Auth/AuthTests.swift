@@ -19,13 +19,11 @@ struct AuthTests {
     sessionService: MockSessionService? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
-    baseURL: URL = mockBaseUrl,
+    baseURL _: URL = mockBaseUrl,
     options: Clerk.Options = .init()
   ) {
     configureClerkForTesting()
-    let apiClient = createMockAPIClient(baseURL: baseURL)
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService

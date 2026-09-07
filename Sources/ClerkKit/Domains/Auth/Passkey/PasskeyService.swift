@@ -5,7 +5,7 @@ protocol PasskeyServiceProtocol: Sendable {
 }
 
 final class PasskeyService: PasskeyServiceProtocol {
-  init(apiClient _: APIClient) {}
+  init() {}
 
   @MainActor
   func attemptVerification(passkeyId: String, credential: String) async throws -> Passkey {

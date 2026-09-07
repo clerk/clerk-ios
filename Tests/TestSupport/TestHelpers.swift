@@ -27,10 +27,7 @@ extension Clerk {
   }
 }
 
-/// Configures Clerk for testing and replaces the API client with one that uses MockingURLProtocol.
-/// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
-///
-/// This function should be called at the start of each test suite or test to ensure proper isolation.
+/// Configures isolated Clerk state with injectable service implementations.
 @MainActor
 func configureClerkForTesting() {
   Clerk.engineClient = nil
@@ -39,53 +36,25 @@ func configureClerkForTesting() {
   // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
 
-  // Replace the container with a mock container that uses MockingURLProtocol
-  setupMockAPIClient()
+  setupMockDependencies()
 
   // Unit tests should not inherit startup refreshes or session polling from configure().
   Clerk.shared.cleanupManagers()
 }
 
-/// Replaces the API client with MockingURLProtocol after Clerk.configure() creates the container.
-/// This ensures that HTTP requests are intercepted by Mocker instead of reaching the real API.
 @MainActor
-func setupMockAPIClient() {
-  let mockAPIClient = createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope)
-
-  // Replace the container with a mock container that uses the mock API client
-  // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
+func setupMockDependencies() {
   Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: mockAPIClient,
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-    userService: UserService(apiClient: mockAPIClient),
-    signInService: SignInService(apiClient: mockAPIClient),
-    sessionService: SessionService(apiClient: mockAPIClient),
-    passkeyService: PasskeyService(apiClient: mockAPIClient),
-    organizationService: OrganizationService(apiClient: mockAPIClient)
+    userService: UserService(),
+    signInService: SignInService(),
+    sessionService: SessionService(),
+    passkeyService: PasskeyService(),
+    organizationService: OrganizationService()
   )
 }
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
-@MainActor
-func createMockAPIClient(
-  baseURL: URL = mockBaseUrl,
-  runtimeScope: ClerkRuntimeScope? = nil
-) -> APIClient {
-  let runtimeScope = runtimeScope ?? Clerk.shared.runtimeScope
-  return APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
-    configuration.pipeline = .clerkDefault(runtimeScope: runtimeScope)
-    configuration.decoder = .clerkDecoder
-    configuration.encoder = .clerkEncoder
-    configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
-    configuration.sessionConfiguration.httpAdditionalHeaders = [
-      "Content-Type": "application/x-www-form-urlencoded",
-      "clerk-api-version": Clerk.apiVersion,
-      "x-ios-sdk-version": Clerk.sdkVersion,
-      "x-mobile": DependencyContainer.mobileHeaderValue,
-    ]
-  }
-}
-
 extension URLRequest {
   /// Returns request body data from `httpBody` or `httpBodyStream`.
   var requestBodyData: Data? {

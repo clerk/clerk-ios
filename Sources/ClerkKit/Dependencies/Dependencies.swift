@@ -10,12 +10,6 @@ import Foundation
 /// This protocol provides a single interface for accessing all dependencies,
 /// making it easy to inject dependencies for testing and maintainability.
 protocol Dependencies: AnyObject {
-  /// The API client for making network requests.
-  var apiClient: APIClient { get }
-
-  /// The networking pipeline for request/response processing.
-  var networkingPipeline: NetworkingPipeline { get }
-
   /// The keychain storage for secure data persistence.
   var keychain: any KeychainStorage { get }
 
