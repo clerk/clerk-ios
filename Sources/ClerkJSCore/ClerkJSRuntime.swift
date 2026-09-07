@@ -209,7 +209,9 @@ public final class ClerkJSRuntime: @unchecked Sendable {
         }
         function rejectReason(error) {
           var first = error && Array.isArray(error.errors) ? error.errors[0] : null;
-          var code = first && first.code ? String(first.code) : '';
+          var code = first && first.code
+            ? String(first.code)
+            : (error && error.code ? String(error.code) : '');
           var message = first && (first.long_message || first.message)
             ? String(first.long_message || first.message)
             : (error && error.message ? String(error.message) : '');

@@ -302,6 +302,10 @@ struct ClerkAPITests {
     let autofill = try encodeJSON(AuthenticateWithPasskeyParams(flow: .autofill))
     #expect(autofill["flow"] as? String == "autofill")
     #expect(autofill.count == 1)
+
+    let discoverable = try encodeJSON(AuthenticateWithPasskeyParams(flow: .discoverable))
+    #expect(discoverable["flow"] as? String == "discoverable")
+    #expect(discoverable.count == 1)
   }
 
   @Test

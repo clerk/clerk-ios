@@ -589,46 +589,59 @@ extension AuthStartView {
     }
   }
 
-  private func createPasskeySignIn() async -> ClerkKit.SignIn? {
-    do {
-      return try await clerk.auth.createPasskeySignIn()
-    } catch {
-      if Task.isCancelled || error.isCancellationError { return nil }
-      guard navigation.path.isEmpty else { return nil }
-
-      ClerkLogger.error("Failed to create passkey sign-in", error: error)
-      return nil
-    }
-  }
-
   /// Presents an actionable failure from the automatic passkey sign-in.
   ///
   /// The automatic modal and the AutoFill fallback both start without user intent, so
-  /// failures from stages before credential selection and authorization ceremony failures
-  /// are logged instead of presented. Other errors, such as the server rejecting a
-  /// credential the user selected, remain actionable and are presented.
-  private func presentAutomaticPasskeyError(_ failure: PasskeyAuthenticationFailure) {
-    guard Self.shouldPresentAutomaticPasskeyError(at: failure.stage) else { return }
-    generalError = failure.underlyingError
+  /// ceremony failures are logged instead of presented. A server rejection after the
+  /// user completed a ceremony remains actionable.
+  private func presentAutomaticPasskeyError(_ error: Error) {
+    guard Self.shouldPresentAutomaticPasskeyError(error) else { return }
+    generalError = error
   }
 
-  static func shouldPresentAutomaticPasskeyError(
-    at stage: PasskeyAuthenticationFailure.Stage
-  ) -> Bool {
-    stage == .attemptingFirstFactor
+  static func shouldPresentAutomaticPasskeyError(_ error: Error) -> Bool {
+    if error.isCancellationError || error.isUserCancelledError {
+      return false
+    }
+    return !isAutomaticPasskeyCeremonyFailure(error)
+  }
+
+  private static let automaticPasskeyCeremonyFailureCodes = [
+    "passkey_already_exists",
+    "passkey_invalid_rpID_or_domain",
+    "passkey_not_supported",
+    "passkey_operation_aborted",
+    "passkey_pa_not_supported",
+    "passkey_registration_failed",
+    "passkey_retrieval_failed",
+  ]
+
+  static func isAutomaticPasskeyCeremonyFailure(_ error: Error) -> Bool {
+    let text: String = if let jsError = error as? ClerkJSCoreError, case .javascript(let message) = jsError {
+      message
+    } else {
+      error.localizedDescription
+    }
+    return automaticPasskeyCeremonyFailureCodes.contains { text.contains($0) }
   }
 
   @discardableResult
   private func authenticateWithPasskey(
-    signIn: ClerkKit.SignIn,
-    autofill: Bool,
-    preferImmediatelyAvailableCredentials: Bool
+    flow: AuthenticateWithPasskeyParamsFlow
   ) async -> PasskeySignInResult {
+    let isAutofill = switch flow {
+    case .autofill:
+      true
+    case .discoverable, .unknown:
+      false
+    }
+
     do {
-      let signIn = try await signIn.authenticateWithPasskeyWithFailureContext(
-        autofill: autofill,
-        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+      let jsSignIn = try await jsClerk.client.signIn.authenticateWithPasskey(
+        AuthenticateWithPasskeyParams(flow: flow)
       )
+      let signIn = JSCoreAuthMapping.signIn(from: jsSignIn)
+      try await JSCoreAuthMapping.activateIfComplete(signIn, using: jsClerk)
 
       guard !Task.isCancelled else { return .stopped }
       generalError = nil
@@ -636,20 +649,20 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return .completed
     } catch {
-      let underlyingError = error.underlyingError
-      if Task.isCancelled || underlyingError.isCancellationError { return .stopped }
-      if underlyingError.isUserCancelledError { return .continueWithAutofill }
+      if Task.isCancelled || error.isCancellationError { return .stopped }
+      if error as? ClerkJSCoreError == .cancelled { return .stopped }
+      if error.isUserCancelledError { return .continueWithAutofill }
       guard navigation.path.isEmpty else { return .stopped }
 
       presentAutomaticPasskeyError(error)
-      if autofill {
-        ClerkLogger.error("Failed to authenticate with passkey autofill", error: underlyingError)
+      if isAutofill {
+        ClerkLogger.error("Failed to authenticate with passkey autofill", error: error)
       } else {
-        ClerkLogger.error("Failed to authenticate with passkey", error: underlyingError)
+        ClerkLogger.error("Failed to authenticate with passkey", error: error)
       }
       // Keep iOS text-field AutoFill armed after a modal error so users can
       // pick another passkey without a second modal.
-      return autofill ? .stopped : .continueWithAutofill
+      return isAutofill ? .stopped : .continueWithAutofill
     }
   }
 
@@ -667,15 +680,8 @@ extension AuthStartView {
     let shouldStartAutoFillFallback = passkeyAutoFillFallbackIsEnabled(environment: environment)
     guard shouldPresentAutomaticModal || shouldStartAutoFillFallback else { return }
 
-    guard let signIn = await createPasskeySignIn() else { return }
-    guard !Task.isCancelled, navigation.path.isEmpty else { return }
-
     if shouldPresentAutomaticModal {
-      let result = await authenticateWithPasskey(
-        signIn: signIn,
-        autofill: false,
-        preferImmediatelyAvailableCredentials: true
-      )
+      let result = await authenticateWithPasskey(flow: .discoverable)
       guard case .continueWithAutofill = result else { return }
     }
 
@@ -683,11 +689,7 @@ extension AuthStartView {
     // Clerk's AutoFill setting gates the automatic modal above; this keeps
     // iOS text-field AutoFill available when a visible identifier field can
     // surface suggestions.
-    await authenticateWithPasskey(
-      signIn: signIn,
-      autofill: true,
-      preferImmediatelyAvailableCredentials: true
-    )
+    await authenticateWithPasskey(flow: .autofill)
   }
   #endif
 

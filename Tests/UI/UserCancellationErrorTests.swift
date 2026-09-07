@@ -1,6 +1,7 @@
 #if os(iOS) || os(macOS)
 
 import AuthenticationServices
+import ClerkJSCore
 @testable import ClerkKitUI
 import Foundation
 import Testing
@@ -47,6 +48,19 @@ struct UserCancellationErrorTests {
 
     #expect(!error.isUserCancelledError)
     #expect(error.isCancellationError)
+  }
+
+  @Test(arguments: [
+    "passkey_retrieval_cancelled: The user cancelled.",
+    "passkey_registration_cancelled: The user cancelled.",
+  ])
+  func javascriptPasskeyCancelIsUserCancellation(_ message: String) {
+    #expect(ClerkJSCoreError.javascript(message).isUserCancelledError)
+  }
+
+  @Test
+  func javascriptPasskeyFailureIsNotUserCancellation() {
+    #expect(!ClerkJSCoreError.javascript("passkey_retrieval_failed: Could not retrieve passkey").isUserCancelledError)
   }
 
   private func authorizationError(
