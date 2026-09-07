@@ -5,86 +5,71 @@ import Foundation
 @MainActor
 final class ClerkJSHostEngine: ClerkEngineClient {
   private let host: ClerkJSHost
-  private let kit: Clerk
+  private let scope: ClerkRuntimeScope
+  private var disposed = false
 
   init(host: ClerkJSHost, kit: Clerk) {
     self.host = host
-    self.kit = kit
+    scope = kit.runtimeScope
+    let scope = scope
+    host.onStateChange = { [weak self] state in
+      guard let self, !self.disposed else { throw CancellationError() }
+      let current = try scope.requireCurrentClerk()
+      try await current.applyEngineState(state, scope: scope) { [weak self] in
+        guard let self, !self.disposed else { throw CancellationError() }
+      }
+    }
   }
 
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
-    await ClerkJSHostStore.loadIfNeeded(host, key: kit.publishableKey, onto: kit)
-    defer { ClerkJSHostStore.publish(host, onto: kit) }
+    guard !disposed else { throw CancellationError() }
+    try scope.validateStableRuntime()
     do {
-      return try await host.invoke(invocation)
+      try await host.load()
+      let result = try await host.invoke(invocation)
+      try scope.validateStableRuntime()
+      return result
     } catch let error as ClerkJSError {
       throw KitJSErrorMapping.kitError(error)
     }
+  }
+
+  func invalidate() {
+    disposed = true
+  }
+
+  func dispose() async {
+    invalidate()
+    await host.dispose()
   }
 }
 
 @MainActor
 package enum ClerkJSHostStore {
-  private static var instances: [String: ClerkJSHost] = [:]
-  private static var loadTasks: [String: Task<Void, Error>] = [:]
-
-  static func shared(for publishableKey: String) -> ClerkJSHost {
-    if let existing = instances[publishableKey] {
-      return existing
-    }
-    let created = ClerkJSHost.persistent(publishableKey: publishableKey)
-    instances[publishableKey] = created
-    return created
-  }
-
-  static func register(_ host: ClerkJSHost, for publishableKey: String, alreadyLoaded: Bool) {
-    instances[publishableKey] = host
-    if alreadyLoaded {
-      loadTasks[publishableKey] = Task {}
-    }
-  }
-
-  package static func registerPreview(isSignedIn: Bool, publishableKey: String, onto kit: Clerk) {
-    let host = ClerkJSHost(publishableKey: publishableKey)
-    if let environment = try? ClerkJSHost.snapshotEnvironment() {
-      host.publishEnvironment(environment)
+  package static func registerPreview(isSignedIn: Bool, publishableKey _: String, onto kit: Clerk) {
+    if let environment = try? ClerkJSHost.snapshotEnvironmentJSON() {
+      try? kit.applyEngineEnvironmentJSON(environment)
     }
     if isSignedIn, let data = try? ClerkJSHost.snapshotSignedInClient() {
-      try? host.publishClient(data)
-    }
-    register(host, for: publishableKey, alreadyLoaded: true)
-    publish(host, onto: kit)
-  }
-
-  static func loadIfNeeded(_ host: ClerkJSHost, key: String, onto kit: Clerk) async {
-    if let existing = loadTasks[key] {
-      try? await existing.value
-      publish(host, onto: kit)
-      return
-    }
-    let task = Task {
-      try await host.load()
-    }
-    loadTasks[key] = task
-    do {
-      try await task.value
-      publish(host, onto: kit)
-    } catch {
-      loadTasks[key] = nil
+      try? kit.applyEngineClientJSON(data)
     }
   }
 
-  static func publish(_ host: ClerkJSHost, onto kit: Clerk) {
-    if let environment = host.lastEnvironmentJSON {
-      do {
-        try kit.applyEngineEnvironmentJSON(environment)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to apply JS environment")
-      }
-    }
-    guard let data = host.lastClientJSON else { return }
-    let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
-    try? kit.applyEngineClientJSON(payload, deviceToken: host.lastClientToken)
+  static func makeHost(for kit: Clerk) -> ClerkJSHost {
+    // Persistence belongs to ClerkKit's complete identity transaction. The host's
+    // cache callbacks only seed this realm; published states are its sole writer.
+    let token = kit.identityController.currentDeviceToken ?? ""
+    let resources = ClerkJSCachedResources(
+      client: kit.client.flatMap { try? JSONEncoder.clerkEncoder.encode($0) },
+      environment: kit.environment.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
+    )
+    return ClerkJSHost(
+      publishableKey: kit.publishableKey,
+      tokenCache: .init(getToken: { token }, saveToken: { _ in }),
+      resourceCache: .init(load: { resources }, save: { _ in }),
+      oauthRedirectURL: URL(string: kit.options.redirectConfig.redirectUrl) ?? ClerkJSRuntime.defaultOAuthRedirectURL,
+      proxyURL: kit.options.proxyUrl
+    )
   }
 }
 
@@ -92,7 +77,7 @@ enum KitJSErrorMapping {
   static func kitError(_ error: ClerkJSError) -> any Error {
     switch error.kind {
     case .api:
-      var first = error.errors.first ?? ClerkAPIError(
+      let first = error.errors.first ?? ClerkAPIError(
         code: error.code ?? "api_error",
         message: error.message
       )
@@ -115,10 +100,43 @@ extension Clerk {
     return
     #else
     makeEngineClient = { kit in
-      let host = ClerkJSHostStore.shared(for: kit.publishableKey)
-      await ClerkJSHostStore.loadIfNeeded(host, key: kit.publishableKey, onto: kit)
+      let host = ClerkJSHostStore.makeHost(for: kit)
       return ClerkJSHostEngine(host: host, kit: kit)
     }
     #endif
+  }
+}
+
+extension Clerk {
+  func applyEngineState(
+    _ state: ClerkJSState,
+    scope: ClerkRuntimeScope,
+    validate: @escaping @MainActor @Sendable () throws -> Void
+  ) async throws {
+    try validate()
+    try scope.validateStableRuntime()
+    // Loading publishes provisional snapshots before a client credential exists.
+    guard state.status == "ready" || state.status == "degraded" else { return }
+    let client = try state.client.map { try JSONDecoder.clerkDecoder.decode(Client.self, from: JSONEncoder().encode($0)) }
+    let environment = try state.environment.map { try JSONDecoder.clerkDecoder.decode(Environment.self, from: JSONEncoder().encode($0)) }
+    let token = Optional(state.clientToken).nilIfEmpty
+    if client != nil, token == nil {
+      throw ClerkClientError(message: "The JS client snapshot has no device credential.")
+    }
+    let identity = ClerkIdentitySnapshot(
+      state: client == nil ? .cleared : .present,
+      deviceToken: token,
+      client: client,
+      serverDate: nil
+    )
+    let operation = try identityController.submitExternalTransition {
+      try validate()
+      try scope.validateStableRuntime()
+      return .init(identity: identity, fenceAllClientResponses: false)
+    }
+    try await operation?.value
+    try validate()
+    try scope.validateStableRuntime()
+    self.environment = environment
   }
 }

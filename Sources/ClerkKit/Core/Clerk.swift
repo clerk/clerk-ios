@@ -676,6 +676,7 @@ extension Clerk {
       )
       let rollbackState = existing.captureReconfigurationRollbackState()
 
+      await disposeEngine()
       existing.setConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndDrainCache(
         deleteSharedSessionOwnerSlot: false
@@ -702,7 +703,6 @@ extension Clerk {
 
       await existing.resetRuntimeStateForReconfiguration()
       existing.installConfiguration(dependencies: newDependencies)
-      engineClient = nil
       installJSHostFactoryIfNeeded()
       return existing
     }
@@ -733,7 +733,7 @@ extension Clerk {
     guard let shared = _shared else { return }
 
     await shared.cleanupManagersAndDrainCache()
-    engineClient = nil
+    await disposeEngine()
     makeEngineClient = nil
     _shared = nil
   }
@@ -744,7 +744,7 @@ extension Clerk {
   @discardableResult
   public func refreshClient() async throws -> Client? {
     if await Clerk.resolvedEngineClient() != nil {
-      try await Clerk.js(.clerk, ClerkJSCall.load)
+      try await Clerk.js(.clerk, JSRawCall("refreshClient"))
       return client
     }
     try Task.checkCancellation()
@@ -769,7 +769,7 @@ extension Clerk {
       }
 
       if await Clerk.resolvedEngineClient() != nil {
-        try await Clerk.js(.clerk, ClerkJSCall.load)
+        try await Clerk.js(.clerk, JSRawCall("refreshEnvironment"))
         if let environment {
           self.environmentRefreshRevision += 1
           return environment

@@ -6,4 +6,6 @@ public enum ClerkJSCoreError: Error, Sendable, Equatable {
   case javascript(String)
   case invalidArgument(String)
   case cancelled
+  case disposed
+  case timedOut
 }

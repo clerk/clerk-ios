@@ -8,10 +8,13 @@ final class JSRuntime: @unchecked Sendable {
   let host: NativeHost
   private var bundleEvaluated = false
   private var nextCallID: UInt64 = 1
-  private var currentCall: Call?
+  private var calls: [UInt64: Call] = [:]
+  private var disposed = false
+  private let queueKey = DispatchSpecificKey<Bool>()
 
   init(tokenCache: ClerkJSTokenCache) {
     host = NativeHost(tokenCache: tokenCache)
+    queue.setSpecific(key: queueKey, value: true)
     queue.sync {
       let context = JSContext()!
       self.context = context
@@ -21,13 +24,55 @@ final class JSRuntime: @unchecked Sendable {
   }
 
   deinit {
-    queue.sync {
+    if DispatchQueue.getSpecific(key: queueKey) == true {
       host.invalidate()
+    } else {
+      queue.sync { host.invalidate() }
     }
   }
 
-  var currentCallID: UInt64? {
-    currentCall?.id
+  var lastStateJSON: Data? {
+    queue.sync { host.lastStateJSON }
+  }
+
+  func observeState(_ handler: (@Sendable (Data) -> Void)?) {
+    queue.sync { host.onStateChange = handler }
+  }
+
+  func dispose() async {
+    await withCheckedContinuation { continuation in
+      queue.async {
+        self.disposed = true
+        self.host.onStateChange = nil
+        _ = self.context.objectForKeyedSubscript("__clerkEmbeddedCore")?.invokeMethod("dispose", withArguments: [])
+        self.host.invalidate()
+        for call in self.calls.values {
+          call.publish(.failure(ClerkJSCoreError.disposed))
+        }
+        self.calls.removeAll()
+        continuation.resume()
+      }
+    }
+  }
+
+  func invokeJSON(receiver: String, method: String, argumentsJSON: String = "[]") async throws -> String {
+    try await perform { [self] call in
+      try ensureBundleEvaluated()
+      let arguments = try JSONSerialization.jsonObject(with: Data(argumentsJSON.utf8)) as? [Any] ?? []
+      context.exception = nil
+      guard let target = context.objectForKeyedSubscript(receiver),
+            let value = target.invokeMethod(method, withArguments: arguments)
+      else { throw jsError() }
+      if context.exception != nil { throw jsError() }
+      guard let encoded = context.objectForKeyedSubscript("__clerkEncodeResult")?.call(withArguments: [value]) else {
+        throw jsError()
+      }
+      if encoded.isObject, encoded.hasProperty("then") {
+        awaitPromise(encoded, call: call)
+      } else {
+        finish(call, .success(encoded.toString() ?? "null"))
+      }
+    }
   }
 
   var lastClientJSON: Data? {
@@ -83,9 +128,16 @@ final class JSRuntime: @unchecked Sendable {
           let call = Call(id: self.nextCallID, continuation: continuation)
           self.nextCallID += 1
           box.call = call
-          self.currentCall = call
+          guard !self.disposed else {
+            call.publish(.failure(ClerkJSCoreError.disposed))
+            return
+          }
+          self.calls[call.id] = call
+          self.queue.asyncAfter(deadline: .now() + 120) { [weak self, weak call] in
+            guard let self, let call, calls[call.id] != nil else { return }
+            finish(call, .failure(ClerkJSCoreError.timedOut))
+          }
           if box.cancelRequested {
-            self.host.abortFetches(for: call.id)
             self.finish(call, .failure(ClerkJSCoreError.cancelled))
             return
           }
@@ -101,7 +153,6 @@ final class JSRuntime: @unchecked Sendable {
       runtime.queue.async {
         box.cancelRequested = true
         guard let call = box.call else { return }
-        runtime.host.abortFetches(for: call.id)
         runtime.finish(call, .failure(ClerkJSCoreError.cancelled))
       }
     }
@@ -126,9 +177,7 @@ final class JSRuntime: @unchecked Sendable {
   }
 
   private func finish(_ call: Call, _ result: Result<String, Error>) {
-    if currentCall?.id == call.id {
-      currentCall = nil
-    }
+    calls[call.id] = nil
     call.publish(result)
   }
 
@@ -136,7 +185,7 @@ final class JSRuntime: @unchecked Sendable {
     if bundleEvaluated {
       return
     }
-    guard let url = Bundle.module.url(forResource: "clerk.native", withExtension: "js") else {
+    guard let url = Bundle.module.url(forResource: "clerk.embedded", withExtension: "js") else {
       throw ClerkJSCoreError.missingBundle
     }
     let source = try String(contentsOf: url, encoding: .utf8)
@@ -145,23 +194,16 @@ final class JSRuntime: @unchecked Sendable {
     if let exception = context.exception {
       throw ClerkJSCoreError.javascript(exception.toString() ?? "Bundle evaluate failed")
     }
-    let clerkType = context.evaluateScript("typeof Clerk")?.toString() ?? "undefined"
-    if clerkType != "function" {
-      let moduleType = context.evaluateScript("typeof module")?.toString() ?? "undefined"
-      let exportsType = context.evaluateScript("typeof exports")?.toString() ?? "undefined"
-      throw ClerkJSCoreError.javascript(
-        "globalThis.Clerk missing after evaluate (typeof Clerk=\(clerkType), typeof module=\(moduleType), typeof exports=\(exportsType))"
-      )
-    }
-    guard let invokeURL = Bundle.module.url(forResource: "native-invoke", withExtension: "js") else {
-      throw ClerkJSCoreError.missingBundle
-    }
-    let invokeSource = try String(contentsOf: invokeURL, encoding: .utf8)
-    context.exception = nil
-    context.evaluateScript(invokeSource, withSourceURL: invokeURL)
-    if let exception = context.exception {
-      throw ClerkJSCoreError.javascript(exception.toString() ?? "native-invoke evaluate failed")
-    }
+    context.evaluateScript("""
+      globalThis.Clerk = ClerkEmbedded.Clerk;
+      globalThis.__clerkEncodeResult = function(value) {
+        if (value && typeof value.then === 'function') {
+          return value.then(function(result) { return JSON.stringify(result === undefined ? null : result); });
+        }
+        return JSON.stringify(value === undefined ? null : value);
+      };
+      """)
+    if context.exception != nil { throw jsError() }
     bundleEvaluated = true
   }
 

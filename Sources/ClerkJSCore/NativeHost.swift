@@ -19,6 +19,8 @@ final class NativeHost: @unchecked Sendable {
   private var timers: [UInt64: DispatchWorkItem] = [:]
   private var fetches: [UInt64: InFlightFetch] = [:]
   private var callbacks: [UInt64: JSValue] = [:]
+  private(set) var lastStateJSON: Data?
+  var onStateChange: (@Sendable (Data) -> Void)?
   private(set) var lastClientJSON: Data?
   private(set) var lastEnvironmentJSON: Data?
   private(set) var lastClientToken: String?
@@ -42,13 +44,6 @@ final class NativeHost: @unchecked Sendable {
     let token = await tokenCache.getToken()
     if !token.isEmpty {
       lastClientToken = token
-    }
-  }
-
-  func abortFetches(for callID: UInt64) {
-    let ids = fetches.compactMap { $0.value.callID == callID ? $0.key : nil }
-    for id in ids {
-      abortFetch(id)
     }
   }
 
@@ -79,6 +74,18 @@ final class NativeHost: @unchecked Sendable {
   }
 
   private func installBridges(on context: JSContext) {
+    let publishState: @convention(block) (String) -> Void = { [weak self] json in
+      guard let self, let data = json.data(using: .utf8),
+            let state = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+      else { return }
+      lastStateJSON = data
+      lastClientJSON = Self.snapshotData(state["client"])
+      lastEnvironmentJSON = Self.snapshotData(state["environment"])
+      lastClientToken = state["clientToken"] as? String
+      onStateChange?(data)
+    }
+    context.setObject(publishState, forKeyedSubscript: "__clerkNativePublishState" as NSString)
+
     let parseURL: @convention(block) (String, String?) -> [String: String]? = { href, base in
       Self.parseURL(href, base: base)
     }
@@ -135,9 +142,6 @@ final class NativeHost: @unchecked Sendable {
       let callbackID = retainCallback(callback)
       Task {
         let token = await self.tokenCache.getToken()
-        if !token.isEmpty {
-          self.lastClientToken = token
-        }
         runtime.queue.async {
           self.takeCallback(callbackID)?.call(withArguments: [NSNull(), token])
         }
@@ -149,7 +153,6 @@ final class NativeHost: @unchecked Sendable {
       guard let self, let runtime else { return }
       let callbackID = retainCallback(callback)
       Task {
-        self.lastClientToken = token
         await self.tokenCache.saveToken(token)
         runtime.queue.async {
           self.takeCallback(callbackID)?.call(withArguments: [NSNull()])
@@ -165,12 +168,6 @@ final class NativeHost: @unchecked Sendable {
         let cached = await self.resourceCache?.load() ?? ClerkJSCachedResources()
         let json = Self.encodedCachedResources(cached)
         runtime.queue.async {
-          if let client = cached.client, let captured = Self.clientJSON(fromFAPIBody: client) {
-            self.lastClientJSON = captured
-          }
-          if let environment = cached.environment, let captured = Self.environmentJSON(fromFAPIBody: environment) {
-            self.lastEnvironmentJSON = captured
-          }
           self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json])
         }
       }
@@ -330,7 +327,6 @@ final class NativeHost: @unchecked Sendable {
   private func startFetch(payload: String, callback: JSValue) -> UInt64 {
     let id = nextFetchID
     nextFetchID += 1
-    let callID = runtime?.currentCallID
     guard let data = payload.data(using: .utf8),
           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let urlString = object["url"] as? String,
@@ -360,7 +356,7 @@ final class NativeHost: @unchecked Sendable {
         self.completeFetch(id, data: data, response: response, error: error)
       }
     }
-    fetches[id] = InFlightFetch(callID: callID, task: task, callback: callback)
+    fetches[id] = InFlightFetch(task: task, callback: callback)
     task.resume()
     return id
   }
@@ -378,13 +374,6 @@ final class NativeHost: @unchecked Sendable {
     guard let http = response as? HTTPURLResponse else {
       inflight.callback.call(withArguments: ["Expected an HTTP response", NSNull()])
       return
-    }
-    if let data, let clientJSON = Self.clientJSON(fromFAPIBody: data) {
-      lastClientJSON = clientJSON
-      applyClientJSONToJSInstance(clientJSON)
-    }
-    if let data, let environmentJSON = Self.environmentJSON(fromFAPIBody: data) {
-      lastEnvironmentJSON = environmentJSON
     }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
@@ -406,37 +395,6 @@ final class NativeHost: @unchecked Sendable {
       return
     }
     inflight.callback.call(withArguments: [NSNull(), text])
-  }
-
-  func applyClientJSONToJSInstance(_ data: Data) {
-    guard let runtime, let script = Self.applyClientJSONScript(data) else {
-      return
-    }
-    runtime.context.exception = nil
-    runtime.context.evaluateScript(script)
-  }
-
-  static func applyClientJSONScript(_ data: Data) -> String? {
-    guard let text = String(data: data, encoding: .utf8),
-          let encodedData = try? JSONEncoder().encode(text),
-          let encoded = String(data: encodedData, encoding: .utf8)
-    else {
-      return nil
-    }
-    return """
-      (function() {
-        var clerk = globalThis.__clerkInstance;
-        if (!clerk || !clerk.client || typeof clerk.client.fromJSON !== 'function') {
-          return false;
-        }
-        try {
-          clerk.client.fromJSON(JSON.parse(\(encoded)));
-          return true;
-        } catch (e) {
-          return false;
-        }
-      })()
-      """
   }
 
   private func abortFetch(_ id: UInt64) {
@@ -976,7 +934,6 @@ final class NativeHost: @unchecked Sendable {
 }
 
 private struct InFlightFetch {
-  let callID: UInt64?
   let task: URLSessionDataTask
   let callback: JSValue
 }

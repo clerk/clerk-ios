@@ -2,8 +2,15 @@ import ClerkSnapshots
 import Foundation
 
 @MainActor
-package protocol ClerkEngineClient: AnyObject {
+package protocol ClerkEngineClient: AnyObject, Sendable {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue
+  func invalidate()
+  func dispose() async
+}
+
+extension ClerkEngineClient {
+  package func invalidate() {}
+  package func dispose() async {}
 }
 
 extension Clerk {
@@ -13,15 +20,50 @@ extension Clerk {
   @MainActor
   package static var makeEngineClient: (@MainActor (Clerk) async -> any ClerkEngineClient)?
 
+  @MainActor private static var engineCreationTask: Task<any ClerkEngineClient, Never>?
+  @MainActor private static var engineGeneration: UInt64 = 0
+
+  @MainActor
+  static func detachEngine() -> (any ClerkEngineClient)? {
+    engineGeneration += 1
+    engineCreationTask?.cancel()
+    engineCreationTask = nil
+    let previous = engineClient
+    engineClient = nil
+    previous?.invalidate()
+    return previous
+  }
+
+  @MainActor
+  static func disposeEngine() async {
+    await detachEngine()?.dispose()
+  }
+
   @MainActor
   package static func resolvedEngineClient() async -> (any ClerkEngineClient)? {
+    if let clear = shared.keychainClearTask {
+      do { try await clear.value } catch { return nil }
+    }
     if let engineClient {
       return engineClient
     }
     guard let makeEngineClient else {
       return nil
     }
-    let created = await makeEngineClient(shared)
+    let generation = engineGeneration
+    let task: Task<any ClerkEngineClient, Never>
+    if let pending = engineCreationTask {
+      task = pending
+    } else {
+      task = Task { await makeEngineClient(shared) }
+      engineCreationTask = task
+    }
+    let created = await task.value
+    guard generation == engineGeneration else {
+      await created.dispose()
+      return nil
+    }
+    engineCreationTask = nil
     engineClient = created
     return created
   }

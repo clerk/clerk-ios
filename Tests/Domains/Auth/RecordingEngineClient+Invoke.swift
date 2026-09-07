@@ -155,7 +155,7 @@ extension RecordingEngineClient {
       }
       try await signOut(sessionId: sessionId)
       return .null
-    case "load":
+    case "load", "refreshClient", "refreshEnvironment":
       lastJSMethod = invocation.method
       return .null
     case "setActive":

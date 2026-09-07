@@ -213,7 +213,7 @@ struct ClerkEngineClientTests {
 
     #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
     #expect(client == Clerk.shared.client)
-    #expect(engine.lastJSMethod == "load")
+    #expect(engine.lastJSMethod == "refreshClient")
   }
 
   @Test

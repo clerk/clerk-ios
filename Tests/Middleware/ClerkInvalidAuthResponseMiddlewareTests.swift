@@ -10,7 +10,7 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
   func coalescesConcurrentInvalidAuthRefreshes() async {
     configureClerkForTesting()
     let clerk = Clerk()
-    let engine = DelayedLoadEngine()
+    let engine = DelayedRefreshEngine()
     Clerk.engineClient = engine
     defer { Clerk.engineClient = nil }
     clerk.dependencies = MockDependencyContainer(
@@ -21,17 +21,17 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
     async let second: Void = clerk.refreshClientAfterInvalidAuth()
     _ = await (first, second)
 
-    #expect(engine.loadCount == 1)
+    #expect(engine.refreshCount == 1)
   }
 }
 
 @MainActor
-private final class DelayedLoadEngine: ClerkEngineClient {
-  private(set) var loadCount = 0
+private final class DelayedRefreshEngine: ClerkEngineClient {
+  private(set) var refreshCount = 0
 
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
-    if invocation.method == "load" {
-      loadCount += 1
+    if invocation.method == "refreshClient" {
+      refreshCount += 1
       try await Task.sleep(for: .milliseconds(100))
     }
     return .null

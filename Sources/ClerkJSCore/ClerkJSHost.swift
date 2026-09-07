@@ -137,19 +137,35 @@ public final class ClerkJSHost: ClerkJSBridge {
   private var fapiClient: FAPIClient?
   private var fapiEnvironment: ClerkEnvironment?
   private var fapiNativeSettings = NativeSettings.default
+  @ObservationIgnored private var loadTask: Task<Void, Error>?
+  @ObservationIgnored private var stateError: (any Error)?
+  @ObservationIgnored public var onStateChange: (@MainActor (ClerkJSState) async throws -> Void)?
+  @ObservationIgnored private var stateTask: Task<Void, Error>?
+  @ObservationIgnored private var disposed = false
+  public private(set) var state: ClerkJSState?
 
   public init(
     publishableKey: String,
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
+    oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
+    proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory()
   ) {
     self.publishableKey = publishableKey
     runtime = ClerkJSRuntime(
       tokenCache: tokenCache,
       resourceCache: resourceCache,
+      oauthRedirectURL: oauthRedirectURL,
+      proxyURL: proxyURL,
       appAttestKeyIdStore: appAttestKeyIdStore
     )
+    runtime.observeState { [weak self] data in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        do { try await enqueueState(data).value } catch { stateError = error }
+      }
+    }
   }
 
   public static func persistent(publishableKey: String) -> ClerkJSHost {
@@ -245,22 +261,68 @@ public final class ClerkJSHost: ClerkJSBridge {
   }
 
   public func load() async throws {
-    try await runtime.load(publishableKey: publishableKey)
-    try publishLastClient()
-    publishLastEnvironment()
+    if let loadTask {
+      try await loadTask.value
+    } else {
+      let task = Task { try await self.runtime.load(publishableKey: self.publishableKey) }
+      loadTask = task
+      do { try await task.value } catch {
+        loadTask = nil
+        throw error
+      }
+    }
+    try await consumeState()
+  }
+
+  public func dispose() async {
+    disposed = true
+    onStateChange = nil
+    loadTask?.cancel()
+    await runtime.dispose()
+    _ = await stateTask?.result
+    loadTask = nil
   }
 
   public func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
     do {
       let payload = try await runtime.invoke(invocation)
-      try? publishLastClient()
-      publishLastEnvironment()
+      try await consumeState()
       return payload
     } catch {
-      try? publishLastClient()
-      publishLastEnvironment()
+      try await consumeState()
       throw error
     }
+  }
+
+  private func consumeState() async throws {
+    if let data = runtime.lastStateJSON { try await enqueueState(data).value }
+    if let stateError { throw stateError }
+  }
+
+  private func enqueueState(_ data: Data) -> Task<Void, Error> {
+    let previous = stateTask
+    let task = Task {
+      _ = await previous?.result
+      try await self.acceptState(data)
+    }
+    stateTask = task
+    return task
+  }
+
+  private func acceptState(_ data: Data) async throws {
+    guard !disposed else { throw ClerkJSCoreError.disposed }
+    let next = try JSONDecoder().decode(ClerkJSState.self, from: data)
+    guard next.protocolVersion == 1, next.generation == runtime.generation else {
+      throw ClerkJSCoreError.invalidArgument("state protocol or generation")
+    }
+    guard next.revision > (state?.revision ?? 0) else { return }
+    try await onStateChange?(next)
+    guard !disposed else { throw ClerkJSCoreError.disposed }
+    state = next
+    stateError = nil
+    fapiClient = next.client
+    fapiEnvironment = next.environment
+    fapiNativeSettings = next.environment?.authConfig.nativeSettings ?? .default
   }
 
   public func setActive(_ params: SetActiveParams) async throws {
@@ -1393,7 +1455,8 @@ public final class ClerkJSHost: ClerkJSBridge {
 
   private func publishLastClient() throws {
     guard let data = runtime.lastFAPIClientJSON else {
-      throw ClerkJSCoreError.invalidArgument("lastFAPIClientJSON")
+      fapiClient = nil
+      return
     }
     fapiClient = try FAPIJSON.decodeClient(data)
   }

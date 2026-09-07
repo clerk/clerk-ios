@@ -342,59 +342,6 @@ struct ClerkJSCoreTests {
   }
 
   @Test
-  func applyFAPIClientJSONHydratesJSSessions() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          client: {
-            sessions: [],
-            fromJSON: function(payload) {
-              this.sessions = (payload.sessions || []).map(function(session) {
-                return { id: session.id };
-              });
-              return this;
-            }
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let payload = try #require(
-      #"{"object":"client","id":"client_apply","sessions":[{"id":"sess_apply"}]}"#.data(using: .utf8)
-    )
-    let applied = try await runtime.applyFAPIClientJSON(payload)
-    #expect(applied)
-    let count = try await JSONDecoder().decode(
-      Int.self,
-      from: Data((runtime.evaluateJSON("globalThis.__clerkInstance.client.sessions.length")).utf8)
-    )
-    #expect(count == 1)
-    let prefix = try await decodeJSONString(
-      runtime.evaluateJSON("globalThis.__clerkInstance.client.sessions[0].id.slice(0, 5)")
-    )
-    #expect(prefix == "sess_")
-  }
-
-  @Test
-  func applyClientJSONScriptKeepsRawFAPIUserDataNull() throws {
-    let url = try #require(Bundle.module.url(forResource: "null-user-data-client", withExtension: "json"))
-    let data = try Data(contentsOf: url)
-    let script = try #require(NativeHost.applyClientJSONScript(data))
-    let payload = try applyScriptPayload(script)
-    let signIn = try #require(payload["sign_in"] as? [String: Any])
-    #expect(signIn["user_data"] is NSNull)
-
-    let normalized = try FAPIJSON.normalizeClientJSON(data)
-    let normalizedPayload = try applyScriptPayload(#require(NativeHost.applyClientJSONScript(normalized)))
-    let normalizedSignIn = try #require(normalizedPayload["sign_in"] as? [String: Any])
-    let userData = try #require(normalizedSignIn["user_data"] as? [String: Any])
-    #expect(userData["image_url"] as? String == "")
-  }
-
-  @Test
   func passkeyHooksAreInstalledOnClerkInstance() async throws {
     let runtime = ClerkJSRuntime()
     let payload = try await decodePasskeyHookProbe(
@@ -881,11 +828,4 @@ private func decodePasskeyCredentialReturn(_ json: String) throws -> PasskeyCred
   try JSONDecoder().decode(PasskeyCredentialReturn.self, from: Data(json.utf8))
 }
 
-private func applyScriptPayload(_ script: String) throws -> [String: Any] {
-  let start = try #require(script.range(of: "JSON.parse(")?.upperBound)
-  let rest = script[start...]
-  let end = try #require(rest.range(of: "));")?.lowerBound)
-  let jsonText = try JSONDecoder().decode(String.self, from: Data(String(rest[..<end]).utf8))
-  return try #require(JSONSerialization.jsonObject(with: Data(jsonText.utf8)) as? [String: Any])
-}
 #endif

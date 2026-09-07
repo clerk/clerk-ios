@@ -35,6 +35,7 @@ private actor MemoryTokenBox {
 
 public final class ClerkJSRuntime: @unchecked Sendable {
   public static let sdkVersion = "1.5.3"
+  public let generation = UUID().uuidString
 
   public static var defaultOAuthRedirectURL: URL {
     let scheme = Bundle.main.bundleIdentifier ?? "clerk"
@@ -47,8 +48,16 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     tokenCache _: ClerkJSTokenCache = .memory(),
     resourceCache _: ClerkJSResourceCache? = nil,
     oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
+    proxyURL _: URL? = nil,
     appAttestKeyIdStore _: ClerkJSAppAttestKeyIdStore = .memory()
   ) {}
+
+  public var lastStateJSON: Data? {
+    nil
+  }
+
+  public func observeState(_: (@Sendable (Data) -> Void)?) {}
+  public func dispose() async {}
 
   public var lastFAPIClientJSON: Data? {
     nil
@@ -123,17 +132,20 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   private let sdkVersion: String
   private let resourceCache: ClerkJSResourceCache?
   private let oauthRedirectURL: URL
+  private let proxyURL: URL?
 
   public init(
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
+    proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory()
   ) {
     self.sdkVersion = sdkVersion
     self.resourceCache = resourceCache
     self.oauthRedirectURL = oauthRedirectURL
+    self.proxyURL = proxyURL
     runtime = JSRuntime(tokenCache: tokenCache)
     runtime.host.resourceCache = resourceCache
     runtime.host.oauth.redirectURL = oauthRedirectURL
@@ -168,55 +180,56 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime.lastClientToken
   }
 
+  public var lastStateJSON: Data? {
+    runtime.lastStateJSON
+  }
+
+  public func observeState(_ handler: (@Sendable (Data) -> Void)?) {
+    runtime.observeState(handler)
+  }
+
+  public func dispose() async {
+    await runtime.dispose()
+  }
+
   public func load(publishableKey: String) async throws {
-    await runtime.hydrateClientToken()
     let pk = try Self.jsonString(publishableKey)
     let version = try Self.jsonString(sdkVersion)
+    let generation = try Self.jsonString(generation)
+    let proxy = try Self.jsonString(proxyURL?.absoluteString ?? "")
     let allowedProtocol = try Self.jsonString(Self.oauthAllowedRedirectProtocol(from: oauthRedirectURL))
     let oauthTransport = Self.oauthTransportInstallSource(redirectURL: oauthRedirectURL)
-    let script = """
+    _ = try await runtime.evaluateJSON("""
       (async function() {
-        if (typeof Clerk !== 'function') {
-          throw new Error('Clerk constructor missing');
+        if (!globalThis.__clerkEmbeddedCore) {
+          globalThis.__clerkEmbeddedCore = ClerkEmbedded.createEmbeddedClerk({
+            protocolVersion: 1,
+            generation: \(generation),
+            publishableKey: \(pk),
+            sdkVersion: \(version),
+            options: {
+              proxyUrl: \(proxy) || undefined,
+              allowedRedirectProtocols: [\(allowedProtocol)],
+              __internal_oauthTransport: \(oauthTransport)
+            }
+          }, {
+            getToken: __clerkNativeGetToken,
+            saveToken: __clerkNativeSaveToken,
+            getCachedResources: __clerkNativeGetCachedResources,
+            saveCachedResources: function(value) { return __clerkNativeSaveCachedResources(JSON.stringify(value)); },
+            publish: function(state) { __clerkNativePublishState(JSON.stringify(state)); }
+          });
+          var clerk = globalThis.__clerkEmbeddedCore.clerk;
+          globalThis.__clerkInstance = clerk;
+          \(Self.passkeyHookInstallSource)
+          \(Self.appleHookInstallSource)
+          \(Self.biometricHookInstallSource)
+          \(Self.appAttestHookInstallSource)
         }
-        var clerk = new Clerk(\(pk));
-        globalThis.__clerkInstance = clerk;
-        clerk.__internal_onBeforeRequest(async function(requestInit) {
-          requestInit.credentials = 'omit';
-          if (requestInit.url && requestInit.url.searchParams) {
-            requestInit.url.searchParams.append('_is_native', '1');
-          }
-          var jwt = await __clerkNativeGetToken();
-          if (jwt) {
-            requestInit.headers.set('authorization', jwt);
-          }
-          requestInit.headers.set('x-mobile', '1');
-          requestInit.headers.set('x-ios-sdk-version', \(version));
-        });
-        clerk.__internal_onAfterResponse(async function(_, response) {
-          var auth = response.headers.get('authorization');
-          if (auth) {
-            await __clerkNativeSaveToken(auth);
-          }
-        });
-        \(resourceCache == nil ? "" : Self.resourceCacheInstallSource)
-        \(Self.passkeyHookInstallSource)
-        \(Self.appleHookInstallSource)
-        \(Self.biometricHookInstallSource)
-        \(Self.appAttestHookInstallSource)
-        await clerk.load({
-          standardBrowser: false,
-          experimental: {
-            runtimeEnvironment: 'headless',
-            rethrowOfflineNetworkErrors: true
-          },
-          allowedRedirectProtocols: [\(allowedProtocol)],
-          __internal_oauthTransport: \(oauthTransport)
-        });
+        await globalThis.__clerkEmbeddedCore.load();
         return true;
       })()
-      """
-    _ = try await runtime.evaluateJSON(script)
+      """)
   }
 
   public func evaluateJSON(_ js: String) async throws -> String {
@@ -229,15 +242,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       throw ClerkJSCoreError.invalidArgument("invocation")
     }
     do {
-      let result = try await runtime.evaluateJSON("globalThis.__clerkNativeInvoke(\(json))")
-      _ = try? await applyLastFAPIClientJSON()
+      let result = try await runtime.invokeJSON(receiver: "__clerkEmbeddedCore", method: "invoke", argumentsJSON: "[\(json)]")
       return try JSONDecoder().decode(JSONValue.self, from: Data(result.utf8))
     } catch let ClerkJSCoreError.javascript(message) {
-      _ = try? await applyLastFAPIClientJSON()
       throw ClerkJSError.parse(message)
-    } catch {
-      _ = try? await applyLastFAPIClientJSON()
-      throw error
     }
   }
 
@@ -293,10 +301,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       """
     do {
       let result = try await runtime.evaluateJSON(script)
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       return result
     } catch {
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       throw error
     }
   }
@@ -358,10 +366,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       """
     do {
       let result = try await runtime.evaluateJSON(script)
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       return result
     } catch {
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       throw error
     }
   }
@@ -439,10 +447,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       """
     do {
       let result = try await runtime.evaluateJSON(script)
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       return result
     } catch {
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       throw error
     }
   }
@@ -558,26 +566,17 @@ public final class ClerkJSRuntime: @unchecked Sendable {
       """
     do {
       let result = try await runtime.evaluateJSON(script)
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       return result
     } catch {
-      _ = try? await applyLastFAPIClientJSON()
+      _ = try? await publishCurrentState()
       throw error
     }
   }
 
-  func applyLastFAPIClientJSON() async throws -> Bool {
-    guard let data = lastFAPIClientJSON else {
-      return false
-    }
-    return try await applyFAPIClientJSON(data)
-  }
-
-  func applyFAPIClientJSON(_ data: Data) async throws -> Bool {
-    guard let script = NativeHost.applyClientJSONScript(data) else {
-      throw ClerkJSCoreError.invalidArgument("clientJSON")
-    }
-    return try await JSONDecoder().decode(Bool.self, from: Data(evaluateJSON(script).utf8))
+  private func publishCurrentState() async throws -> Bool {
+    _ = try await runtime.evaluateJSON("globalThis.__clerkEmbeddedCore ? globalThis.__clerkEmbeddedCore.snapshot() : null")
+    return true
   }
 
   static let resourceCacheInstallSource = """
@@ -602,160 +601,13 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     });
     """
 
-  static let passkeyHookInstallSource = """
-    (function() {
-      function bytesToBase64Url(value) {
-        if (value == null) return '';
-        if (typeof value === 'string') return value;
-        var bytes;
-        if (value instanceof ArrayBuffer) bytes = new Uint8Array(value);
-        else if (value.buffer instanceof ArrayBuffer) {
-          bytes = new Uint8Array(value.buffer, value.byteOffset || 0, value.byteLength || value.length);
-        } else if (typeof value.length === 'number') bytes = new Uint8Array(value);
-        else return '';
-        var bin = '';
-        for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-        return btoa(bin).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, '');
-      }
-      function base64UrlToBytes(value) {
-        var base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
-        var pad = base64.length % 4;
-        if (pad) base64 += '===='.slice(0, 4 - pad);
-        var bin = atob(base64);
-        var bytes = new Uint8Array(bin.length);
-        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return bytes.buffer;
-      }
-      function passkeyError(error, fallbackCode) {
-        var err = new Error(error && error.message ? String(error.message) : String(error));
-        err.name = (error && error.name) || 'ClerkWebAuthnError';
-        err.code = error && error.code ? String(error.code) : fallbackCode;
-        return err;
-      }
-      clerk.__internal_isWebAuthnSupported = function() { return true; };
-      clerk.__internal_isWebAuthnAutofillSupported = function() { return Promise.resolve(false); };
-      clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = function() {
-        return Promise.resolve(true);
-      };
-      clerk.__internal_createPublicCredentials = async function(publicKey) {
-        if (!publicKey || !publicKey.rp || !publicKey.rp.id) {
-          throw new Error('Invalid public key or RpID');
-        }
-        var payload = {
-          challenge: bytesToBase64Url(publicKey.challenge),
-          rpId: String(publicKey.rp.id),
-          userId: bytesToBase64Url(publicKey.user && publicKey.user.id),
-          displayName: String((publicKey.user && (publicKey.user.displayName || publicKey.user.name)) || ''),
-          excludeCredentials: (publicKey.excludeCredentials || []).map(function(credential) {
-            return bytesToBase64Url(credential.id);
-          })
-        };
-        try {
-          var credential = await __clerkNativeCreatePublicCredentials(JSON.stringify(payload));
-          return {
-            publicKeyCredential: {
-              id: credential.id,
-              rawId: base64UrlToBytes(credential.rawId),
-              type: credential.type || 'public-key',
-              authenticatorAttachment: credential.authenticatorAttachment || 'platform',
-              response: {
-                clientDataJSON: base64UrlToBytes(credential.response.clientDataJSON),
-                attestationObject: base64UrlToBytes(credential.response.attestationObject),
-                getTransports: function() {
-                  return credential.response.transports || ['internal'];
-                }
-              }
-            },
-            error: null
-          };
-        } catch (error) {
-          return { publicKeyCredential: null, error: passkeyError(error, 'passkey_registration_failed') };
-        }
-      };
-      clerk.__internal_getPublicCredentials = async function(params) {
-        var publicKeyOptions = params && params.publicKeyOptions;
-        if (!publicKeyOptions) {
-          throw new Error('publicKeyCredential has not been provided');
-        }
-        var payload = {
-          challenge: bytesToBase64Url(publicKeyOptions.challenge),
-          rpId: String(publicKeyOptions.rpId || ''),
-          allowCredentials: (publicKeyOptions.allowCredentials || []).map(function(credential) {
-            return bytesToBase64Url(credential.id);
-          })
-        };
-        if (!payload.rpId) {
-          throw new Error('Invalid public key or RpID');
-        }
-        try {
-          var credential = await __clerkNativeGetPublicCredentials(JSON.stringify(payload));
-          return {
-            publicKeyCredential: {
-              id: credential.id,
-              rawId: base64UrlToBytes(credential.rawId),
-              type: credential.type || 'public-key',
-              authenticatorAttachment: credential.authenticatorAttachment || 'platform',
-              response: {
-                clientDataJSON: base64UrlToBytes(credential.response.clientDataJSON),
-                authenticatorData: base64UrlToBytes(credential.response.authenticatorData),
-                signature: base64UrlToBytes(credential.response.signature),
-                userHandle: credential.response.userHandle
-                  ? base64UrlToBytes(credential.response.userHandle)
-                  : null
-              }
-            },
-            error: null
-          };
-        } catch (error) {
-          return { publicKeyCredential: null, error: passkeyError(error, 'passkey_retrieval_failed') };
-        }
-      };
-    })();
-    """
+  static let passkeyHookInstallSource = "ClerkEmbedded.installPasskeyHooks(clerk, { createPublicCredentials: __clerkNativeCreatePublicCredentials, getPublicCredentials: __clerkNativeGetPublicCredentials });"
 
-  static let appleHookInstallSource = """
-    clerk.__internal_startAppleAuthentication = async function(params) {
-      var payload = '{}';
-      if (params && typeof params === 'object') {
-        payload = JSON.stringify(params);
-      }
-      return await __clerkNativeAppleSignIn(payload);
-    };
-    """
+  static let appleHookInstallSource = "ClerkEmbedded.installAppleHooks(clerk, { startAppleAuthentication: __clerkNativeAppleSignIn });"
 
-  static let biometricHookInstallSource = """
-    clerk.__internal_biometricPresence = async function(params) {
-      var payload = '{}';
-      if (params && typeof params === 'object') {
-        payload = JSON.stringify(params);
-      }
-      return await __clerkNativeBiometricPresence(payload);
-    };
-    clerk.__internal_promptBiometrics = async function(params) {
-      var payload = '{}';
-      if (params && typeof params === 'object') {
-        payload = JSON.stringify(params);
-      }
-      return await __clerkNativePromptBiometrics(payload);
-    };
-    """
+  static let biometricHookInstallSource = "ClerkEmbedded.installBiometricHooks(clerk, { biometricPresence: __clerkNativeBiometricPresence, promptBiometrics: __clerkNativePromptBiometrics });"
 
-  static let appAttestHookInstallSource = """
-    clerk.__internal_prepareDeviceAttestation = async function(params) {
-      var payload = '{}';
-      if (params && typeof params === 'object') {
-        payload = JSON.stringify(params);
-      }
-      return await __clerkNativePrepareDeviceAttestation(payload);
-    };
-    clerk.__internal_prepareDeviceAssertion = async function(params) {
-      var payload = '{}';
-      if (params && typeof params === 'object') {
-        payload = JSON.stringify(params);
-      }
-      return await __clerkNativePrepareDeviceAssertion(payload);
-    };
-    """
+  static let appAttestHookInstallSource = "ClerkEmbedded.installAppAttestHooks(clerk, { prepareDeviceAttestation: __clerkNativePrepareDeviceAttestation, prepareDeviceAssertion: __clerkNativePrepareDeviceAssertion });"
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     switch await appleCeremony.start(payload: "{}") {

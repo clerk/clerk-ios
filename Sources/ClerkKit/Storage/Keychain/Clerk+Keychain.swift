@@ -73,6 +73,7 @@ extension Clerk {
   private struct PendingKeychainClear {
     let clerk: Clerk
     let dependencies: any Dependencies
+    let engine: (any ClerkEngineClient)?
     let clearOperation: Task<KeychainClearResult, Error>
     let identityClear: ClerkIdentityController.StorageClearContext
     let cacheManager: CacheManager?
@@ -233,6 +234,7 @@ extension Clerk {
         )
       }
     }
+    let engine = detachEngine()
     let cacheManager = clerk.cacheManager
     cacheManager?.freezePersistence()
     let identityClear = clerk.identityController.beginStorageClear()
@@ -293,6 +295,7 @@ extension Clerk {
     return PendingKeychainClear(
       clerk: clerk,
       dependencies: dependencies,
+      engine: engine,
       clearOperation: clearOperation,
       identityClear: identityClear,
       cacheManager: cacheManager,
@@ -471,6 +474,7 @@ extension Clerk {
 
   @MainActor
   private static func finishKeychainClear(_ pendingClear: PendingKeychainClear) async throws {
+    await pendingClear.engine?.dispose()
     let result: Result<Void, any Error>
     let canReleaseSharedClearBarrier: Bool
     do {
