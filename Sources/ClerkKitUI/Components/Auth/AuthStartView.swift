@@ -36,17 +36,17 @@ struct AuthStartView: View {
   // MARK: - Configuration
 
   var emailIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    jsClerk.environment?.enabledFirstFactorAttributes
       .contains("email_address") ?? false
   }
 
   var usernameIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    jsClerk.environment?.enabledFirstFactorAttributes
       .contains("username") ?? false
   }
 
   var phoneNumberIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    jsClerk.environment?.enabledFirstFactorAttributes
       .contains("phone_number") ?? false
   }
 
