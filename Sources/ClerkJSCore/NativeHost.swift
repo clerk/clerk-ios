@@ -1,4 +1,5 @@
 #if !os(watchOS)
+import CryptoKit
 import Foundation
 @preconcurrency import JavaScriptCore
 import Security
@@ -21,6 +22,7 @@ final class NativeHost: @unchecked Sendable {
   private var callbacks: [UInt64: JSValue] = [:]
   private(set) var lastStateJSON: Data?
   var onStateChange: (@Sendable (Data) -> Void)?
+  var commitState: (@Sendable (Data) async throws -> Void)?
   private(set) var lastClientJSON: Data?
   private(set) var lastEnvironmentJSON: Data?
   private(set) var lastClientToken: String?
@@ -86,6 +88,21 @@ final class NativeHost: @unchecked Sendable {
     }
     context.setObject(publishState, forKeyedSubscript: "__clerkNativePublishState" as NSString)
 
+    let commitState: @convention(block) (String, JSValue) -> Void = { [weak self] json, callback in
+      guard let self, let runtime, let data = json.data(using: .utf8) else { return }
+      let callbackID = retainCallback(callback)
+      Task {
+        do {
+          try await self.commitState?(data)
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [NSNull()]) }
+        } catch {
+          let message = error.localizedDescription
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [message]) }
+        }
+      }
+    }
+    context.setObject(commitState, forKeyedSubscript: "__clerkNativeCommitStateImpl" as NSString)
+
     let parseURL: @convention(block) (String, String?) -> [String: String]? = { href, base in
       Self.parseURL(href, base: base)
     }
@@ -100,6 +117,11 @@ final class NativeHost: @unchecked Sendable {
       Self.btoa(raw)
     }
     context.setObject(btoa, forKeyedSubscript: "__clerkNativeBtoa" as NSString)
+
+    let sha256: @convention(block) ([UInt8]) -> [UInt8] = { bytes in
+      Array(SHA256.hash(data: Data(bytes)))
+    }
+    context.setObject(sha256, forKeyedSubscript: "__clerkNativeSHA256" as NSString)
 
     let random: @convention(block) (Int) -> [UInt8] = { count in
       Self.randomBytes(count)
@@ -463,8 +485,9 @@ final class NativeHost: @unchecked Sendable {
     let port = url.port.map(String.init) ?? ""
     let host = port.isEmpty ? hostname : "\(hostname):\(port)"
     let scheme = url.scheme.map { "\($0):" } ?? ""
-    var pathname = url.path
-    if pathname.isEmpty {
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    var pathname = components?.percentEncodedPath ?? url.path
+    if pathname.isEmpty, ["http", "https", "ftp", "ws", "wss"].contains(url.scheme?.lowercased() ?? "") {
       pathname = "/"
     }
     let search = url.query.map { "?\($0)" } ?? ""
@@ -474,6 +497,8 @@ final class NativeHost: @unchecked Sendable {
       "protocol": scheme,
       "host": host,
       "hostname": hostname,
+      "username": components?.percentEncodedUser ?? "",
+      "password": components?.percentEncodedPassword ?? "",
       "port": port,
       "pathname": pathname,
       "search": search,
@@ -587,6 +612,10 @@ final class NativeHost: @unchecked Sendable {
         }
         return null;
       };
+      URLSearchParams.prototype.getAll = function(key) {
+        key = String(key);
+        return this._pairs.filter(function(pair) { return pair[0] === key; }).map(function(pair) { return pair[1]; });
+      };
       URLSearchParams.prototype.has = function(key) {
         return this.get(key) !== null;
       };
@@ -613,6 +642,8 @@ final class NativeHost: @unchecked Sendable {
         if (!parsed) throw new TypeError('Invalid URL');
         this.protocol = parsed.protocol;
         this.hostname = parsed.hostname;
+        this.username = parsed.username;
+        this.password = parsed.password;
         this.port = parsed.port;
         this.hash = parsed.hash;
         this.origin = parsed.origin;
@@ -623,7 +654,7 @@ final class NativeHost: @unchecked Sendable {
         get: function() { return this._pathname; },
         set: function(value) {
           value = String(value);
-          this._pathname = value.charAt(0) === '/' ? value : '/' + value;
+          this._pathname = !value || value.charAt(0) === '/' ? value : '/' + value;
         }
       });
       Object.defineProperty(URL.prototype, 'host', {
@@ -637,7 +668,10 @@ final class NativeHost: @unchecked Sendable {
         set: function(value) { this.searchParams = new URLSearchParams(value); }
       });
       Object.defineProperty(URL.prototype, 'href', {
-        get: function() { return this.protocol + '//' + this.host + this.pathname + this.search + this.hash; }
+        get: function() {
+          var credentials = this.username || this.password ? this.username + (this.password ? ':' + this.password : '') + '@' : '';
+          return this.protocol + '//' + credentials + this.host + this.pathname + this.search + this.hash;
+        }
       });
       URL.prototype.toString = function() { return this.href; };
       URL.prototype.toJSON = function() { return this.href; };
@@ -820,11 +854,27 @@ final class NativeHost: @unchecked Sendable {
       globalThis.setTimeout = function(fn, delay) { return __clerkNativeSetTimeout(fn, Number(delay) || 0); };
       globalThis.clearTimeout = function(id) { __clerkNativeClearTimeout(id); };
       globalThis.crypto = {
+        subtle: {
+          digest: function(algorithm, data) {
+            var name = typeof algorithm === 'string' ? algorithm : algorithm && algorithm.name;
+            if (String(name).toUpperCase() !== 'SHA-256') return Promise.reject(new Error('Unsupported digest algorithm'));
+            var bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+            return Promise.resolve(new Uint8Array(__clerkNativeSHA256(Array.from(bytes))).buffer);
+          }
+        },
         getRandomValues: function(arr) {
           var bytes = __clerkNativeRandom(arr.length);
           for (var i = 0; i < arr.length; i++) arr[i] = bytes[i];
           return arr;
         }
+      };
+      globalThis.__clerkNativeCommitState = function(state) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeCommitStateImpl(state, function(error) {
+            if (error) reject(new Error(String(error)));
+            else resolve();
+          });
+        });
       };
       globalThis.__clerkNativeGetToken = function() {
         return new Promise(function(resolve, reject) {

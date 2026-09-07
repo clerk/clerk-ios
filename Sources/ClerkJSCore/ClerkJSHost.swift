@@ -162,6 +162,10 @@ public final class ClerkJSHost: ClerkJSBridge {
       appAttestKeyIdStore: appAttestKeyIdStore,
       sessionConfiguration: sessionConfiguration
     )
+    runtime.setStateCommitHandler { [weak self] data in
+      guard let self else { throw ClerkJSCoreError.disposed }
+      try await commitPublishedState(data)
+    }
     runtime.observeState { [weak self] data in
       Task { @MainActor [weak self] in
         guard let self else { return }
@@ -260,6 +264,10 @@ public final class ClerkJSHost: ClerkJSBridge {
 
   package var lastClientToken: String? {
     runtime.lastClientToken
+  }
+
+  private func commitPublishedState(_ data: Data) async throws {
+    try await enqueueState(data).value
   }
 
   public func load() async throws {

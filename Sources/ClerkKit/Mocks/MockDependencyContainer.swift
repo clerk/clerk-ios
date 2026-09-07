@@ -29,7 +29,6 @@ final class MockDependencyContainer: Dependencies {
   let apiClient: APIClient
   let telemetryCollector: any TelemetryCollectorProtocol
 
-  let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let sessionService: SessionServiceProtocol
@@ -49,7 +48,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - biometricCredentialKeyManager: Optional biometric-credential key manager (defaults to MockBiometricCredentialKeyManager).
   ///   - biometricCredentialStore: Optional biometric credential store.
   ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
-  ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
   ///   - userService: Optional custom user service (defaults to MockUserService).
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
@@ -70,7 +68,6 @@ final class MockDependencyContainer: Dependencies {
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
-    hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
     sessionService: (any SessionServiceProtocol)? = nil,
@@ -103,7 +100,6 @@ final class MockDependencyContainer: Dependencies {
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services
-    self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
     self.sessionService = sessionService ?? MockSessionService()

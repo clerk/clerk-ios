@@ -39,11 +39,16 @@ final class JSRuntime: @unchecked Sendable {
     queue.sync { host.onStateChange = handler }
   }
 
+  func setStateCommitHandler(_ handler: (@Sendable (Data) async throws -> Void)?) {
+    queue.sync { host.commitState = handler }
+  }
+
   func dispose() async {
     await withCheckedContinuation { continuation in
       queue.async {
         self.disposed = true
         self.host.onStateChange = nil
+        self.host.commitState = nil
         _ = self.context.objectForKeyedSubscript("__clerkEmbeddedCore")?.invokeMethod("dispose", withArguments: [])
         self.host.invalidate()
         for call in self.calls.values {

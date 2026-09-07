@@ -53,8 +53,7 @@ protocol Dependencies: AnyObject {
   /// The telemetry collector for development diagnostics.
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  /// Service for hosted authentication operations.
-  var hostedAuthService: HostedAuthServiceProtocol { get }
+  // Service for hosted authentication operations.
 
   /// Service for user-related operations.
   var userService: UserServiceProtocol { get }

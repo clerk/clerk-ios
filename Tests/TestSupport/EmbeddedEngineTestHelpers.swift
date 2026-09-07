@@ -5,10 +5,12 @@ import Foundation
 import Mocker
 
 @MainActor
-func configureEmbeddedClerkForTesting(signedIn: Bool = true) async throws {
+@discardableResult
+func configureEmbeddedClerkForTesting(signedIn: Bool = true, configure: ((Clerk) throws -> Void)? = nil) async throws -> ClerkJSHost {
   await Clerk.disposeEngine()
   Mocker.removeAll()
   configureClerkForTesting()
+  try configure?(Clerk.shared)
   let configuration = URLSessionConfiguration.ephemeral
   configuration.protocolClasses = [MockingURLProtocol.self]
   let host = ClerkJSHost(publishableKey: testPublishableKey, tokenCache: .init(getToken: { signedIn ? "fixture-client-jwt" : "" }, saveToken: { _ in }), sessionConfiguration: configuration)
@@ -36,5 +38,6 @@ func configureEmbeddedClerkForTesting(signedIn: Bool = true) async throws {
   let organization = Organization.mock
   let organizationData = try JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: nil))
   Mock(url: URL(string: mockBaseUrl.absoluteString + "/v1/organizations/" + organization.id)!, ignoreQuery: true, contentType: .json, statusCode: 200, data: [.get: organizationData]).register()
+  return host
 }
 #endif

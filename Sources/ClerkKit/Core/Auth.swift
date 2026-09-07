@@ -17,7 +17,6 @@ import Foundation
 public struct Auth {
   private let magicLinkStore: MagicLinkStore
   private let magicLinkService: MagicLinkServiceProtocol
-  let hostedAuthService: HostedAuthServiceProtocol
   private let signInService: SignInServiceProtocol
   private let sessionService: SessionServiceProtocol
   private let biometricCredentials: BiometricCredentials
@@ -27,7 +26,6 @@ public struct Auth {
   init(
     magicLinkStore: MagicLinkStore,
     magicLinkService: MagicLinkServiceProtocol,
-    hostedAuthService: HostedAuthServiceProtocol,
     signInService: SignInServiceProtocol,
     sessionService: SessionServiceProtocol,
     biometricCredentials: BiometricCredentials,
@@ -36,7 +34,6 @@ public struct Auth {
   ) {
     self.magicLinkStore = magicLinkStore
     self.magicLinkService = magicLinkService
-    self.hostedAuthService = hostedAuthService
     self.signInService = signInService
     self.sessionService = sessionService
     self.biometricCredentials = biometricCredentials

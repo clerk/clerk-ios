@@ -7,17 +7,26 @@ final class ClerkJSHostEngine: ClerkEngineClient {
   private let host: ClerkJSHost
   private let scope: ClerkRuntimeScope
   private var disposed = false
+  private var expectedIdentityGeneration: ClientResponseGeneration
 
   init(host: ClerkJSHost, kit: Clerk) {
     self.host = host
     scope = kit.runtimeScope
+    expectedIdentityGeneration = kit.clientResponseGeneration
     let scope = scope
     host.onStateChange = { [weak self] state in
       guard let self, !self.disposed else { throw CancellationError() }
       let current = try scope.requireCurrentClerk()
+      guard current.clientResponseGeneration == expectedIdentityGeneration else {
+        invalidate()
+        if Clerk.engineClient === self { _ = Clerk.detachEngine() }
+        Task { await self.host.dispose() }
+        throw CancellationError()
+      }
       try await current.applyEngineState(state, scope: scope) { [weak self] in
         guard let self, !self.disposed else { throw CancellationError() }
       }
+      expectedIdentityGeneration = current.clientResponseGeneration
     }
   }
 
@@ -137,6 +146,9 @@ extension Clerk {
     try await operation?.value
     try validate()
     try scope.validateStableRuntime()
+    guard self.client == client, identityController.currentDeviceToken == token else {
+      throw CancellationError()
+    }
     self.environment = environment
   }
 }

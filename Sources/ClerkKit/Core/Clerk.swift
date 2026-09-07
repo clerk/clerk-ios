@@ -263,7 +263,6 @@ public final class Clerk {
     Auth(
       magicLinkStore: dependencies.magicLinkStore,
       magicLinkService: dependencies.magicLinkService,
-      hostedAuthService: dependencies.hostedAuthService,
       signInService: dependencies.signInService,
       sessionService: dependencies.sessionService,
       biometricCredentials: biometricCredentials,

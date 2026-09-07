@@ -14,8 +14,6 @@ typealias HostedAuthWebAuthentication = @MainActor @Sendable (
 ) async throws -> URL
 
 extension Auth {
-  @MainActor private static var isHostedAuthInFlight = false
-
   /// Opens Clerk's hosted authentication flow and activates the created session.
   ///
   /// Completion is observable through the returned ``Session`` and ``AuthEvent/sessionChanged(oldValue:newValue:)``
@@ -55,105 +53,32 @@ extension Auth {
     prefersEphemeralWebBrowserSession: Bool,
     webAuthentication: HostedAuthWebAuthentication
   ) async throws -> Session {
-    guard !Self.isHostedAuthInFlight else {
-      throw ClerkClientError(message: "A hosted authentication session is already in progress.", localizationBundle: .module)
-    }
-    Self.isHostedAuthInFlight = true
-    defer { Self.isHostedAuthInFlight = false }
-
     let clerk = Clerk.shared
-    let runtime = clerk.runtimeScope
-    let authFlowOwnerId = AuthFlowRequestScope.ownerId
-
-    let redirect = try HostedAuthRedirect(redirectUrl ?? clerk.options.redirectConfig.redirectUrl)
-    let state = try HostedAuthState.generate()
-    let pkce = try PKCE.generatePair()
-
-    let createParams = HostedAuthCreateParams(
-      redirectUrl: redirect.rawValue,
-      codeChallenge: pkce.challenge,
-      state: state,
-      mode: mode
+    let ownerId = AuthFlowRequestScope.ownerId
+    let flow = try await Clerk.js(
+      .clerk,
+      JSRawCall("beginNativeHostedAuth", JSONValue(encoding: HostedAuthOptions(
+        redirectUrl: redirectUrl ?? clerk.options.redirectConfig.redirectUrl, mode: mode
+      ))), as: HostedAuthBrowserRequest.self
     )
-    let hostedAuth: HostedAuthResource
     do {
-      hostedAuth = try await hostedAuthService.create(params: createParams)
-    } catch let error as ClerkAPIError where error.code == "signed_out" {
-      // Reconcile an abandoned handoff before retrying once with the same request inputs.
-      try await clerk.refreshClient()
-      hostedAuth = try await hostedAuthService.create(params: createParams)
-    }
-    let hostedAuthUrl = try hostedAuth.authenticationUrl()
-
-    try Task.checkCancellation()
-    try runtime.validateStableRuntime()
-    let browserStartClientResponseGeneration = clerk.clientResponseGeneration
-    let callbackUrl = try await webAuthentication(
-      hostedAuthUrl,
-      redirect.callbackUrlScheme,
-      prefersEphemeralWebBrowserSession
-    )
-    let callback = try HostedAuthCallback(url: callbackUrl, redirect: redirect, state: state)
-
-    // A reconfiguration while the browser was open invalidates this flow; fail
-    // before the redeem request consumes the single-use rotating token nonce.
-    try Task.checkCancellation()
-    try runtime.validateStableRuntime()
-    guard clerk.clientResponseGeneration == browserStartClientResponseGeneration else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
-    }
-
-    let response = try await hostedAuthService.redeem(params: HostedAuthRedeemParams(
-      rotatingTokenNonce: callback.rotatingTokenNonce,
-      codeVerifier: pkce.verifier
-    ))
-    try Task.checkCancellation()
-    try runtime.validateStableRuntime()
-
-    if response.clientSyncContext.update == .explicitClear {
-      try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
-    }
-
-    guard
-      let returnedClient = response.client,
-      returnedClient.sessions.contains(where: { $0.id == callback.createdSessionId })
-    else {
-      throw ClerkClientError(message: "Hosted auth completion did not include the created session.", localizationBundle: .module)
-    }
-
-    guard
-      response.clientSyncContext.clientResponseGeneration
-        == browserStartClientResponseGeneration
-    else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
-    }
-
-    let authFlowActivation = clerk.beginAuthSessionActivation(
-      sessionId: callback.createdSessionId,
-      ownerId: authFlowOwnerId
-    )
-    defer {
-      if let authFlowActivation {
-        clerk.authSessionActivationDidFinish(
-          activation: authFlowActivation
-        )
+      try Task.checkCancellation()
+      let callback = try await webAuthentication(flow.url, flow.callbackUrlScheme, prefersEphemeralWebBrowserSession)
+      try Task.checkCancellation()
+      let completion = try await Clerk.js(
+        .clerk,
+        JSRawCall("prepareNativeHostedAuthCompletion", .string(flow.id), .string(callback.absoluteString)),
+        as: HostedAuthActivation.self
+      )
+      let activation = clerk.beginAuthSessionActivation(sessionId: completion.sessionId, ownerId: ownerId)
+      defer {
+        if let activation { clerk.authSessionActivationDidFinish(activation: activation) }
       }
+      return try await Clerk.js(.clerk, JSRawCall("completeNativeHostedAuth", .string(flow.id)), as: Session.self)
+    } catch {
+      try? await Clerk.js(.clerk, JSRawCall("cancelNativeHostedAuth", .string(flow.id)))
+      throw error
     }
-
-    try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
-    guard clerk.client?.sessions.contains(where: { $0.id == callback.createdSessionId }) == true else {
-      throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
-    }
-
-    try await activateSession(sessionId: callback.createdSessionId)
-    guard
-      clerk.client?.lastActiveSessionId == callback.createdSessionId,
-      let activeSession = clerk.client?.sessions.first(where: { $0.id == callback.createdSessionId })
-    else {
-      throw ClerkClientError(message: "Hosted auth completion could not activate the created session.", localizationBundle: .module)
-    }
-    return activeSession
   }
 
   private static func startHostedAuthWebAuthentication(
@@ -168,6 +93,21 @@ extension Auth {
     )
     return try await authSession.start()
   }
+}
+
+private struct HostedAuthOptions: Encodable {
+  var redirectUrl: String
+  var mode: HostedAuthMode?
+}
+
+private struct HostedAuthBrowserRequest: Decodable {
+  var id: String
+  var url: URL
+  var callbackUrlScheme: String
+}
+
+private struct HostedAuthActivation: Decodable {
+  var sessionId: String
 }
 
 #endif

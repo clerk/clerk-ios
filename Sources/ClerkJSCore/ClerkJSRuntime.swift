@@ -58,6 +58,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   }
 
   public func observeState(_: (@Sendable (Data) -> Void)?) {}
+  public func setStateCommitHandler(_: (@Sendable (Data) async throws -> Void)?) {}
   public func dispose() async {}
 
   public var lastFAPIClientJSON: Data? {
@@ -190,6 +191,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime.observeState(handler)
   }
 
+  public func setStateCommitHandler(_ handler: (@Sendable (Data) async throws -> Void)?) {
+    runtime.setStateCommitHandler(handler)
+  }
+
   public func dispose() async {
     await runtime.dispose()
   }
@@ -219,6 +224,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             saveToken: __clerkNativeSaveToken,
             getCachedResources: __clerkNativeGetCachedResources,
             saveCachedResources: function(value) { return __clerkNativeSaveCachedResources(JSON.stringify(value)); },
+            commitState: function(state) { return __clerkNativeCommitState(JSON.stringify(state)); },
             publish: function(state) { __clerkNativePublishState(JSON.stringify(state)); }
           });
           var clerk = globalThis.__clerkEmbeddedCore.clerk;
