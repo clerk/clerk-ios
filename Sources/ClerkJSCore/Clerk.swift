@@ -308,6 +308,30 @@ public final class Clerk {
     try await callSteps(receiverPath: ClerkJSPath.userRoot, receiverArg: nil, steps: steps)
   }
 
+  public func emailAddress(_ id: String) -> UserChildHandle {
+    UserChildHandle(clerk: self, pick: "emailAddresses", id: id)
+  }
+
+  @MainActor
+  public struct UserChildHandle {
+    unowned let clerk: Clerk
+    let pick: String
+    let id: String
+
+    public func call(_ method: String, args: Data) async throws -> Data {
+      let argsObject = (try? JSONSerialization.jsonObject(with: args)) ?? [String: Any]()
+      let steps: [[String: Any]] = [
+        ["pick": pick, "findId": id],
+        ["method": method, "args": argsObject],
+      ]
+      return try await clerk.callSteps(
+        receiverPath: ClerkJSPath.userRoot,
+        receiverArg: nil,
+        steps: JSONSerialization.data(withJSONObject: steps)
+      )
+    }
+  }
+
   public func callSignInSteps(_ steps: Data) async throws -> Data {
     try await callSteps(receiverPath: ClerkJSPath.signInRoot, receiverArg: nil, steps: steps)
   }

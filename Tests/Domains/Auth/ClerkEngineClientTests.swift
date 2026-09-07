@@ -496,14 +496,14 @@ struct ClerkEngineClientTests {
 
     let email = EmailAddress.mock
     _ = try await email.sendCode()
-    #expect(stepPicks(engine.resourceSteps) == ["emailAddresses"])
-    #expect(stepMethods(engine.resourceSteps) == ["prepareVerification"])
+    #expect(engine.emailAddressId == email.id)
+    #expect(engine.emailAddressMethod == "prepareVerification")
 
     _ = try await email.verifyCode("424242")
-    #expect(stepMethods(engine.resourceSteps) == ["attemptVerification"])
+    #expect(engine.emailAddressMethod == "attemptVerification")
 
     let deletedEmail = try await email.destroy()
-    #expect(stepMethods(engine.resourceSteps) == ["destroy"])
+    #expect(engine.emailAddressMethod == "destroy")
     #expect(deletedEmail.deleted == true)
 
     let phone = PhoneNumber.mock
@@ -1473,6 +1473,17 @@ final class RecordingEngineClient: ClerkEngineClient {
   var reloadedNonce: String?
   var signInOnReload = SignIn.mock
   var signUpOnReload = SignUp.mock
+  var emailAddressId: String?
+  var emailAddressMethod: String?
+
+  func callEmailAddress(_ id: String, _ method: String, args _: Data) async throws -> Data {
+    emailAddressId = id
+    emailAddressMethod = method
+    if method == "destroy" {
+      return Data(#"{"id":"1","deleted":true}"#.utf8)
+    }
+    return try JSONEncoder.clerkEncoder.encode(EmailAddress.mock)
+  }
 
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
     resourceReceiver = receiver

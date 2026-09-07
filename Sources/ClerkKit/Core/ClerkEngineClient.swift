@@ -1,4 +1,7 @@
+import ClerkSnapshots
 import Foundation
+
+private struct EmptyEngineArgs: Encodable {}
 
 package enum ClerkResourceReceiver: Equatable {
   case organization(String)
@@ -95,6 +98,7 @@ package protocol ClerkEngineClient: AnyObject {
   func createOrganization(name: String, slug: String?) async throws -> Organization
   func getOrganization(id: String) async throws -> Organization
   func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
+  func callEmailAddress(_ id: String, _ method: String, args: Data) async throws -> Data
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
@@ -145,6 +149,53 @@ extension Clerk {
     let created = await makeEngineClient(shared)
     engineClient = created
     return created
+  }
+
+  @MainActor
+  package static func prepareEmailAddressVerification(id: String) async throws -> EmailAddress {
+    try await callEmailAddress(
+      id,
+      .prepareVerification,
+      PrepareEmailAddressVerificationParams(strategy: .emailCode, redirectUrl: nil),
+      as: EmailAddress.self
+    )
+  }
+
+  @MainActor
+  package static func attemptEmailAddressVerification(id: String, code: String) async throws -> EmailAddress {
+    try await callEmailAddress(
+      id,
+      .attemptVerification,
+      AttemptEmailAddressVerificationParams(code: code),
+      as: EmailAddress.self
+    )
+  }
+
+  @MainActor
+  package static func destroyEmailAddress(id: String) async throws -> DeletedObject {
+    try await callEmailAddress(id, .destroy, as: DeletedObject.self)
+  }
+
+  @MainActor
+  package static func callEmailAddress(
+    _ id: String,
+    _ method: EmailAddressJSMethod,
+    _ args: some Encodable = EmptyEngineArgs()
+  ) async throws {
+    let engine = try await requireEngineClient()
+    _ = try await engine.callEmailAddress(id, method.rawValue, args: JSONEncoder().encode(args))
+  }
+
+  @MainActor
+  package static func callEmailAddress<T: Decodable>(
+    _ id: String,
+    _ method: EmailAddressJSMethod,
+    _ args: some Encodable = EmptyEngineArgs(),
+    as _: T.Type
+  ) async throws -> T {
+    let engine = try await requireEngineClient()
+    let data = try await engine.callEmailAddress(id, method.rawValue, args: JSONEncoder().encode(args))
+    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
   }
 
   @MainActor

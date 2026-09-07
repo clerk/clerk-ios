@@ -4,7 +4,8 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 models_dest="$repo_root/Sources/ClerkSnapshots/Generated"
-methods_dest="$repo_root/Sources/ClerkJSCore/Generated/methods"
+methods_dest="$repo_root/Sources/ClerkSnapshots/Generated/methods"
+legacy_jscore_methods="$repo_root/Sources/ClerkJSCore/Generated/methods"
 default_src="$repo_root/../clerk-js-ios-embed/packages/shared/generated/swift"
 
 usage() {
@@ -31,32 +32,13 @@ if [ ! -d "$src/methods" ]; then
   exit 1
 fi
 
-if [ "$src" = "$models_dest" ] || [ "$src" = "$methods_dest" ]; then
+if [ "$src" = "$models_dest" ] || [ "$src" = "$methods_dest" ] || [ "$src" = "$legacy_jscore_methods" ]; then
   echo "ERROR: source must be the JS generated/swift tree, not an iOS dest dir." >&2
   exit 1
 fi
 
 list_swift() {
   find "$1" -maxdepth 1 -type f -name '*.swift' | LC_ALL=C sort
-}
-
-with_snapshots_import() {
-  awk '
-    /^import ClerkSnapshots$/ { next }
-    /^import Foundation$/ {
-      print
-      print "import ClerkSnapshots"
-      saw_foundation = 1
-      next
-    }
-    { print }
-    END {
-      if (!saw_foundation) {
-        print "ERROR: missing import Foundation" > "/dev/stderr"
-        exit 1
-      }
-    }
-  '
 }
 
 write_if_changed() {
@@ -114,12 +96,21 @@ fi
 method_count=0
 while IFS= read -r file; do
   [ -n "$file" ] || continue
+  if grep -q '^import ClerkSnapshots$' "$file"; then
+    echo "ERROR: method must not import ClerkSnapshots: $file" >&2
+    exit 1
+  fi
   basename "$file" >>"$expected_methods"
-  with_snapshots_import <"$file" | write_if_changed "$methods_dest/$(basename "$file")"
+  write_if_changed "$methods_dest/$(basename "$file")" <"$file"
   method_count=$((method_count + 1))
 done < <(list_swift "$src/methods")
 
 prune_unexpected "$models_dest" "$expected_models"
 prune_unexpected "$methods_dest" "$expected_methods"
+
+if [ -d "$legacy_jscore_methods" ]; then
+  find "$legacy_jscore_methods" -type f -name '*.swift' -delete
+  rmdir "$legacy_jscore_methods" 2>/dev/null || true
+fi
 
 echo "Vendored $model_count models and $method_count methods from $src"

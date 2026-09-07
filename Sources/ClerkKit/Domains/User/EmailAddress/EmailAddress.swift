@@ -62,14 +62,7 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func sendCode() async throws -> EmailAddress {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "emailAddresses", "findId": id],
-        ["method": "prepareVerification", "args": ["strategy": "email_code"]],
-      ],
-      as: EmailAddress.self
-    )
+    try await Clerk.prepareEmailAddressVerification(id: id)
   }
 
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -86,26 +79,12 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> EmailAddress {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "emailAddresses", "findId": id],
-        ["method": "attemptVerification", "args": ["code": code]],
-      ],
-      as: EmailAddress.self
-    )
+    try await Clerk.attemptEmailAddressVerification(id: id, code: code)
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "emailAddresses", "findId": id],
-        ["method": "destroy", "args": [String: String]()],
-      ],
-      as: DeletedObject.self
-    )
+    try await Clerk.destroyEmailAddress(id: id)
   }
 }
