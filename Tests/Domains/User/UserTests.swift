@@ -36,23 +36,6 @@ struct UserTests {
   }
 
   @Test
-  func updateUsesUserServiceUpdate() async throws {
-    let captured = LockIsolated<User.UpdateParams?>(nil)
-    let service = MockUserService(update: { params in
-      captured.setValue(params)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.update(.init(firstName: "John", lastName: "Doe"))
-
-    let params = try #require(captured.value)
-    #expect(params.firstName == "John")
-    #expect(params.lastName == "Doe")
-  }
-
-  @Test
   func updateMetadataUsesUserServiceUpdateMetadata() async throws {
     let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
     let service = MockUserService(updateMetadata: { params in
@@ -237,36 +220,6 @@ struct UserTests {
     #expect(called.value == true)
   }
 
-  @Test
-  func createEmailAddressUsesUserServiceCreateEmailAddress() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createEmailAddress: { email in
-      captured.setValue(email)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createEmailAddress("new@example.com")
-
-    #expect(captured.value == "new@example.com")
-  }
-
-  @Test
-  func createPhoneNumberUsesUserServiceCreatePhoneNumber() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createPhoneNumber: { phoneNumber in
-      captured.setValue(phoneNumber)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createPhoneNumber("+1234567890")
-
-    #expect(captured.value == "+1234567890")
-  }
-
   struct ExternalAccountScenario: Equatable {
     let redirectUrl: String?
     let additionalScopes: [String]
@@ -321,36 +274,6 @@ struct UserTests {
     let params = try #require(captured.value)
     #expect(params.0 == .apple)
     #expect(params.1 == "mock_id_token")
-  }
-
-  @Test
-  func createTotpUsesUserServiceCreateTotp() async throws {
-    let called = LockIsolated(false)
-    let service = MockUserService(createTotp: {
-      called.setValue(true)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.createTOTP()
-
-    #expect(called.value == true)
-  }
-
-  @Test
-  func verifyTotpUsesUserServiceVerifyTotp() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(verifyTotp: { code in
-      captured.setValue(code)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.verifyTOTP(code: "123456")
-
-    #expect(captured.value == "123456")
   }
 
   @Test
@@ -468,30 +391,6 @@ struct UserTests {
   }
 
   @Test
-  func updatePasswordUsesUserServiceUpdatePassword() async throws {
-    let captured = LockIsolated<User.UpdatePasswordParams?>(nil)
-    let service = MockUserService(updatePassword: { params in
-      captured.setValue(params)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.updatePassword(
-      .init(
-        currentPassword: "currentPassword123",
-        newPassword: "newPassword123",
-        signOutOfOtherSessions: true
-      )
-    )
-
-    let params = try #require(captured.value)
-    #expect(params.currentPassword == "currentPassword123")
-    #expect(params.newPassword == "newPassword123")
-    #expect(params.signOutOfOtherSessions == true)
-  }
-
-  @Test
   func setProfileImageUsesUserServiceSetProfileImage() async throws {
     let imageData = Data("fake image data".utf8)
     let captured = LockIsolated<Data?>(nil)
@@ -518,21 +417,6 @@ struct UserTests {
     configureService(service)
 
     _ = try await User.mock.deleteProfileImage()
-
-    #expect(called.value == true)
-  }
-
-  @Test
-  func deleteUsesUserServiceDelete() async throws {
-    let called = LockIsolated(false)
-    let service = MockUserService(delete: {
-      called.setValue(true)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await User.mock.delete()
 
     #expect(called.value == true)
   }

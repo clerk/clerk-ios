@@ -1,10 +1,5 @@
 import Foundation
 
-package enum EngineTokenLookup {
-  case unavailable
-  case token(String?)
-}
-
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
   func signIn(identifier: String) async throws
@@ -87,11 +82,17 @@ extension Clerk {
   }
 
   @MainActor
-  package static func engineGetToken(template: String?, skipCache: Bool) async throws -> EngineTokenLookup {
+  package static func requireEngineClient() async throws -> any ClerkEngineClient {
     guard let engine = await resolvedEngineClient() else {
-      return .unavailable
+      throw ClerkClientError(message: "Clerk JS engine is not available.")
     }
-    return try await .token(engine.getToken(template: template, skipCache: skipCache))
+    return engine
+  }
+
+  @MainActor
+  package static func engineGetToken(template: String?, skipCache: Bool) async throws -> String? {
+    let engine = try await requireEngineClient()
+    return try await engine.getToken(template: template, skipCache: skipCache)
   }
 
   @MainActor
@@ -119,18 +120,6 @@ extension Clerk {
       return .signIn(signIn)
     }
     throw ClerkClientError(message: "OAuth did not produce a client.")
-  }
-
-  @MainActor
-  package static func redirectEngineClient(
-    prefersEphemeralWebBrowserSession: Bool,
-    transferable: Bool,
-    unsafeMetadata: JSON?
-  ) async -> (any ClerkEngineClient)? {
-    guard !prefersEphemeralWebBrowserSession, transferable, unsafeMetadata == nil else {
-      return nil
-    }
-    return await resolvedEngineClient()
   }
 
   @MainActor

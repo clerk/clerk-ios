@@ -143,31 +143,20 @@ extension SignUp {
     lastName: String? = nil,
     username: String? = nil,
     phoneNumber: String? = nil,
-    unsafeMetadata: JSON? = nil,
+    unsafeMetadata _: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
-      try await engine.updateSignUp(
-        emailAddress: emailAddress,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        username: username,
-        phoneNumber: phoneNumber,
-        legalAccepted: legalAccepted
-      )
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.update(signUpId: id, params: .init(
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.updateSignUp(
       emailAddress: emailAddress,
-      phoneNumber: phoneNumber,
       password: password,
       firstName: firstName,
       lastName: lastName,
       username: username,
-      unsafeMetadata: unsafeMetadata,
+      phoneNumber: phoneNumber,
       legalAccepted: legalAccepted
-    ))
+    )
+    return try Clerk.requireEngineSignUp()
   }
 
   /// Sends a native magic link to the email address for verification.
@@ -211,14 +200,9 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendEmailCode() async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendSignUpEmailCode()
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.prepareVerification(
-      signUpId: id,
-      params: .init(strategy: .emailCode, emailAddressId: nil)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendSignUpEmailCode()
+    return try Clerk.requireEngineSignUp()
   }
 
   /// Sends a verification code to the phone number.
@@ -227,14 +211,9 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendPhoneCode() async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendSignUpPhoneCode()
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.prepareVerification(
-      signUpId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: nil)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendSignUpPhoneCode()
+    return try Clerk.requireEngineSignUp()
   }
 
   /// Verifies the email code entered by the user.
@@ -244,14 +223,9 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.verifySignUpEmailCode(code)
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.attemptVerification(
-      signUpId: id,
-      params: .init(strategy: .emailCode, code: code)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.verifySignUpEmailCode(code)
+    return try Clerk.requireEngineSignUp()
   }
 
   /// Verifies the phone code entered by the user.
@@ -261,14 +235,9 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.verifySignUpPhoneCode(code)
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.attemptVerification(
-      signUpId: id,
-      params: .init(strategy: .phoneCode, code: code)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.verifySignUpPhoneCode(code)
+    return try Clerk.requireEngineSignUp()
   }
 }
 

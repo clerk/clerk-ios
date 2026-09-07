@@ -100,15 +100,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendEmailCode(emailAddressId: emailAddressId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendEmailCode(emailAddressId: emailAddressId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a native magic link to the specified email address.
@@ -171,15 +165,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendPhoneCode(phoneNumberId: phoneNumberId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendPhoneCode(phoneNumberId: phoneNumberId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Verifies the code entered by the user.
@@ -200,29 +188,23 @@ extension SignIn {
       throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
 
-    if let engine = await Clerk.resolvedEngineClient() {
-      switch resolvedStrategy {
-      case .emailCode:
-        try await engine.verifyEmailCode(code)
-        return try Clerk.requireEngineSignIn()
-      case .phoneCode:
-        try await engine.verifyPhoneCode(code)
-        return try Clerk.requireEngineSignIn()
-      case .resetPasswordEmailCode:
-        try await engine.verifyResetPasswordCode(code, isEmail: true)
-        return try Clerk.requireEngineSignIn()
-      case .resetPasswordPhoneCode:
-        try await engine.verifyResetPasswordCode(code, isEmail: false)
-        return try Clerk.requireEngineSignIn()
-      default:
-        break
-      }
+    let engine = try await Clerk.requireEngineClient()
+    switch resolvedStrategy {
+    case .emailCode:
+      try await engine.verifyEmailCode(code)
+      return try Clerk.requireEngineSignIn()
+    case .phoneCode:
+      try await engine.verifyPhoneCode(code)
+      return try Clerk.requireEngineSignIn()
+    case .resetPasswordEmailCode:
+      try await engine.verifyResetPasswordCode(code, isEmail: true)
+      return try Clerk.requireEngineSignIn()
+    case .resetPasswordPhoneCode:
+      try await engine.verifyResetPasswordCode(code, isEmail: false)
+      return try Clerk.requireEngineSignIn()
+    default:
+      throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
-
-    return try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: resolvedStrategy, code: code)
-    )
   }
 
   /// Authenticates with the user's password.
@@ -233,14 +215,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.authenticateWithPassword(password)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: .password, password: password)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithPassword(password)
+    return try Clerk.requireEngineSignIn()
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -285,14 +262,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.authenticateWithIdToken(strategy: provider.strategy, token: idToken)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.attemptFirstFactor(
-      signInId: id,
-      params: .init(strategy: .idToken(provider), token: idToken)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithIdToken(strategy: provider.strategy, token: idToken)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Authenticates with Apple using Sign in with Apple.
@@ -345,15 +317,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendMfaPhoneCode(phoneNumberId: phoneNumberId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareSecondFactor(
-      signInId: id,
-      params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendMfaPhoneCode(phoneNumberId: phoneNumberId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends an MFA code to the email address.
@@ -364,15 +330,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendMfaEmailCode(emailAddressId: emailAddressId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareSecondFactor(
-      signInId: id,
-      params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendMfaEmailCode(emailAddressId: emailAddressId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Verifies the MFA code with the specified type.
@@ -385,14 +345,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.verifyMfaCode(code, type: type)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.attemptSecondFactor(
-      signInId: id,
-      params: .init(strategy: type.strategy, code: code)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.verifyMfaCode(code, type: type)
+    return try Clerk.requireEngineSignIn()
   }
 
   // MARK: - Password Reset
@@ -405,15 +360,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendResetPasswordEmailCode(emailAddressId: emailAddressId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendResetPasswordEmailCode(emailAddressId: emailAddressId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a password reset code to the specified phone number.
@@ -424,15 +373,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.sendResetPasswordPhoneCode(phoneNumberId: phoneNumberId)
-      return try Clerk.requireEngineSignIn()
-    }
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendResetPasswordPhoneCode(phoneNumberId: phoneNumberId)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Resets the user's password after verification.
@@ -445,14 +388,9 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.resetPassword(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.resetPassword(
-      signInId: id,
-      params: .init(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.resetPassword(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
+    return try Clerk.requireEngineSignIn()
   }
 
   // MARK: - Enterprise SSO
@@ -474,46 +412,17 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
-    prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    transferable _: Bool = true,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.redirectEngineClient(
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) {
-      try await engine.authenticateWithRedirect(
-        strategy: FactorStrategy.enterpriseSSO.rawValue,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-        identifier: identifier
-      )
-      return try Clerk.requireEngineTransferResult()
-    }
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .enterpriseSSO,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithRedirect(
+      strategy: FactorStrategy.enterpriseSSO.rawValue,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      identifier: identifier
     )
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(
-      callbackUrl,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    )
+    return try Clerk.requireEngineTransferResult()
   }
 
   /// Authenticates with OAuth using the specified provider.
@@ -534,46 +443,17 @@ extension SignIn {
   @MainActor
   public func authenticateWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    transferable _: Bool = true,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.redirectEngineClient(
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) {
-      try await engine.authenticateWithRedirect(
-        strategy: provider.strategy,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-        identifier: identifier
-      )
-      return try Clerk.requireEngineTransferResult()
-    }
-    let signIn = try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .oauth(provider),
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithRedirect(
+      strategy: provider.strategy,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      identifier: identifier
     )
-
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
-    return try await signIn.handleRedirectCallbackUrl(
-      callbackUrl,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    )
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -611,8 +491,9 @@ extension SignIn {
     autofill: Bool = false,
     preferImmediatelyAvailableCredentials: Bool = true
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
-    if !usesPasskeyAsSecondFactor, let engine = await Clerk.resolvedEngineClient() {
+    if !usesPasskeyAsSecondFactor {
       do {
+        let engine = try await Clerk.requireEngineClient()
         try await engine.authenticateWithPasskey(autofill: autofill)
         return try Clerk.requireEngineSignIn()
       } catch {
@@ -857,13 +738,6 @@ extension SignIn {
   /// The first factor matching the specified strategy string and identifier.
   package func identifyingFirstFactor(for strategy: String, matching identifier: String) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
-      factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
-    })
-  }
-
-  /// The second factor matching the specified strategy string.
-  func identifyingSecondFactor(for strategy: String) -> Factor? {
-    supportedSecondFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }

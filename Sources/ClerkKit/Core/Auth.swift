@@ -92,11 +92,9 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation fails.
   @discardableResult
   public func signIn(_ identifier: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signIn(identifier: identifier)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(identifier: identifier))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signIn(identifier: identifier)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with an identifier and password.
@@ -108,11 +106,9 @@ public struct Auth {
   /// - Throws: An error if the sign-in fails.
   @discardableResult
   public func signInWithPassword(identifier: String, password: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signInWithPassword(identifier: identifier, password: password)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(identifier: identifier, password: password))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithPassword(identifier: identifier, password: password)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with OTP (One-Time Password) using an email address.
@@ -124,11 +120,9 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithEmailCode(emailAddress: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signInWithEmailCode(emailAddress: emailAddress)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithEmailCode(emailAddress: emailAddress)
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Starts a native magic-link sign-in flow for an email address.
@@ -159,11 +153,9 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithPhoneCode(phoneNumber: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signInWithPhoneCode(phoneNumber: phoneNumber)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithPhoneCode(phoneNumber: phoneNumber)
+    return try Clerk.requireEngineSignIn()
   }
 
   // Signs in with OAuth using the specified provider.
@@ -180,32 +172,17 @@ public struct Auth {
   @discardableResult
   public func signInWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    transferable _: Bool = true,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.redirectEngineClient(
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) {
-      try await engine.authenticateWithRedirect(
-        strategy: provider.strategy,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-        identifier: nil
-      )
-      return try Clerk.requireEngineTransferResult()
-    }
-    let signIn = try await signInService.create(params: .init(
-      strategy: .oauth(provider),
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-    return try await signIn.authenticateWithOAuth(
-      provider: provider,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithRedirect(
+      strategy: provider.strategy,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      identifier: nil
     )
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -225,33 +202,23 @@ public struct Auth {
     _ idToken: String,
     provider: IDTokenProvider,
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
-      try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
-      if transferable, Clerk.shared.client?.signIn?.needsTransferToSignUp == true {
-        try await engine.signUp(
-          emailAddress: nil,
-          password: nil,
-          firstName: nil,
-          lastName: nil,
-          username: nil,
-          phoneNumber: nil,
-          legalAccepted: nil,
-          transfer: true
-        )
-      }
-      let result = try Clerk.requireEngineTransferResult()
-      if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
-        throw error
-      }
-      return result
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
+    if transferable, Clerk.shared.client?.signIn?.needsTransferToSignUp == true {
+      try await engine.signUp(
+        emailAddress: nil,
+        password: nil,
+        firstName: nil,
+        lastName: nil,
+        username: nil,
+        phoneNumber: nil,
+        legalAccepted: nil,
+        transfer: true
+      )
     }
-    let signIn = try await createSignInWithIdToken(idToken, provider: provider)
-    let result = try await signIn.handleTransferFlow(
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    )
+    let result = try Clerk.requireEngineTransferResult()
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
     }
@@ -262,11 +229,9 @@ public struct Auth {
     _ idToken: String,
     provider: IDTokenProvider
   ) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
+    return try Clerk.requireEngineSignIn()
   }
   #endif
 
@@ -321,11 +286,9 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in attempt cannot be created.
   @discardableResult
   public func createPasskeySignIn() async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.createPasskeySignIn()
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(strategy: .passkey))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.createPasskeySignIn()
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with a passkey.
@@ -337,12 +300,9 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.authenticateWithPasskey(autofill: false)
-      return try Clerk.requireEngineSignIn()
-    }
-    let signIn = try await createPasskeySignIn()
-    return try await signIn.authenticateWithPasskey()
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithPasskey(autofill: false)
+    return try Clerk.requireEngineSignIn()
   }
   #endif
 
@@ -417,32 +377,17 @@ public struct Auth {
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
-    prefersEphemeralWebBrowserSession: Bool = false,
-    transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    transferable _: Bool = true,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.redirectEngineClient(
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) {
-      try await engine.authenticateWithRedirect(
-        strategy: FactorStrategy.enterpriseSSO.rawValue,
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-        identifier: emailAddress
-      )
-      return try Clerk.requireEngineTransferResult()
-    }
-    let signIn = try await signInService.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-    return try await signIn.authenticateWithEnterpriseSSO(
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
-      transferable: transferable,
-      unsafeMetadata: unsafeMetadata
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateWithRedirect(
+      strategy: FactorStrategy.enterpriseSSO.rawValue,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      identifier: emailAddress
     )
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -453,14 +398,9 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-in fails.
   @discardableResult
   public func signInWithTicket(_ ticket: String) async throws -> SignIn {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signInWithTicket(ticket)
-      return try Clerk.requireEngineSignIn()
-    }
-    return try await signInService.create(params: .init(
-      strategy: .ticket,
-      ticket: ticket
-    ))
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signInWithTicket(ticket)
+    return try Clerk.requireEngineSignIn()
   }
 
   // MARK: - Sign Up Entry Points
@@ -487,34 +427,22 @@ public struct Auth {
     lastName: String? = nil,
     username: String? = nil,
     phoneNumber: String? = nil,
-    unsafeMetadata: JSON? = nil,
+    unsafeMetadata _: JSON? = nil,
     legalAccepted: Bool? = nil,
     transfer: Bool = false
   ) async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
-      try await engine.signUp(
-        emailAddress: emailAddress,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        username: username,
-        phoneNumber: phoneNumber,
-        legalAccepted: legalAccepted,
-        transfer: transfer
-      )
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.create(params: .init(
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signUp(
       emailAddress: emailAddress,
-      phoneNumber: phoneNumber,
       password: password,
       firstName: firstName,
       lastName: lastName,
       username: username,
-      unsafeMetadata: unsafeMetadata,
+      phoneNumber: phoneNumber,
       legalAccepted: legalAccepted,
-      transfer: transfer ? true : nil
-    ))
+      transfer: transfer
+    )
+    return try Clerk.requireEngineSignUp()
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -604,25 +532,16 @@ public struct Auth {
     provider: IDTokenProvider,
     firstName: String? = nil,
     lastName: String? = nil,
-    unsafeMetadata: JSON? = nil
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
-      try await engine.signUpWithIdToken(
-        strategy: provider.strategy,
-        token: idToken,
-        firstName: firstName,
-        lastName: lastName
-      )
-      return try Clerk.requireEngineTransferResult()
-    }
-    let signUp = try await signUpService.create(params: .init(
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signUpWithIdToken(
+      strategy: provider.strategy,
+      token: idToken,
       firstName: firstName,
-      lastName: lastName,
-      unsafeMetadata: unsafeMetadata,
-      strategy: FactorStrategy(rawValue: provider.strategy),
-      token: idToken
-    ))
-    return try await signUp.handleTransferFlow()
+      lastName: lastName
+    )
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -673,16 +592,10 @@ public struct Auth {
   /// - Returns: A `SignUp` object representing the sign-up attempt.
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
-  public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
-    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
-      try await engine.signUpWithTicket(ticket)
-      return try Clerk.requireEngineSignUp()
-    }
-    return try await signUpService.create(params: .init(
-      unsafeMetadata: unsafeMetadata,
-      ticket: ticket,
-      strategy: .ticket
-    ))
+  public func signUpWithTicket(_ ticket: String, unsafeMetadata _: JSON? = nil) async throws -> SignUp {
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signUpWithTicket(ticket)
+    return try Clerk.requireEngineSignUp()
   }
 }
 
@@ -694,11 +607,8 @@ extension Auth {
   /// - Parameter sessionId: An optional session ID to sign out from a specific session. If nil, signs out from all sessions.
   /// - Throws: An error if the sign-out process fails.
   public func signOut(sessionId: String? = nil) async throws {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.signOut(sessionId: sessionId)
-      return
-    }
-    try await sessionService.signOut(sessionId: sessionId)
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signOut(sessionId: sessionId)
   }
 
   /// Sets the active session and optionally the active organization.
@@ -708,14 +618,8 @@ extension Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    if let engine = await Clerk.resolvedEngineClient() {
-      try await engine.setActive(sessionId: sessionId, organizationId: organizationId)
-      return
-    }
-    try await sessionService.setActive(
-      sessionId: sessionId,
-      organizationId: organizationId
-    )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.setActive(sessionId: sessionId, organizationId: organizationId)
   }
 
   /// Retrieves the user's session token for the given template or the default Clerk token.
@@ -728,13 +632,8 @@ extension Auth {
   /// - Throws: An error if token retrieval fails.
   @discardableResult
   public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> String? {
-    if let engine = await Clerk.resolvedEngineClient() {
-      return try await engine.getToken(template: options.template, skipCache: options.skipCache)
-    }
-    guard let session = Clerk.shared.session else {
-      return nil
-    }
-    return try await session.getToken(options)
+    let engine = try await Clerk.requireEngineClient()
+    return try await engine.getToken(template: options.template, skipCache: options.skipCache)
   }
 
   /// Revokes the specified session.
@@ -819,7 +718,7 @@ extension Auth {
     }
 
     do {
-      try await setActive(sessionId: sessionId)
+      try await sessionService.setActive(sessionId: sessionId, organizationId: nil)
     } catch {
       if Clerk.shared.client?.lastActiveSessionId != sessionId {
         throw error
@@ -921,7 +820,9 @@ extension Auth {
         )
       }
 
-      let signIn = try await signInWithTicket(response.ticket)
+      let signIn = try await signInService.create(
+        params: .init(strategy: .ticket, ticket: response.ticket)
+      )
       if let sessionId = signIn.createdSessionId {
         let activation = Clerk.shared.beginCompletedAuthSessionActivation(
           sessionId: sessionId,

@@ -276,6 +276,15 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func signInWithEmailCodeThrowsWhenEngineIsUnavailable() async {
+    #expect(Clerk.engineClient == nil)
+    #expect(Clerk.makeEngineClient == nil)
+    await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signInWithEmailCode(emailAddress: "user@example.com")
+    }
+  }
+
+  @Test
   func configureDoesNotInstallEngineInTests() async {
     #expect(Clerk.makeEngineClient == nil)
     #expect(await Clerk.resolvedEngineClient() == nil)
