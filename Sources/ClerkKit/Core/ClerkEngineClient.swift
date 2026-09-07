@@ -109,6 +109,7 @@ package enum ClerkInstanceRoot: String {
 
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
+  func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue
   func signIn(identifier: String) async throws
   func signInWithEmailCode(emailAddress: String) async throws
   func signInWithPhoneCode(phoneNumber: String) async throws

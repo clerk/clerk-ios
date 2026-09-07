@@ -129,7 +129,7 @@ package enum ClerkJSPath {
 
 @MainActor
 @Observable
-public final class Clerk {
+public final class Clerk: ClerkJSBridge {
   @ObservationIgnored
   private let publishableKey: String
   @ObservationIgnored
@@ -244,6 +244,19 @@ public final class Clerk {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()
     publishLastEnvironment()
+  }
+
+  public func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
+    do {
+      let payload = try await runtime.invoke(invocation)
+      try? publishLastClient()
+      publishLastEnvironment()
+      return payload
+    } catch {
+      try? publishLastClient()
+      publishLastEnvironment()
+      throw error
+    }
   }
 
   public func setActive(_ params: SetActiveParams) async throws {

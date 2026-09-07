@@ -316,24 +316,6 @@ extension Session {
 }
 
 extension Session {
-  /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
-  @discardableResult @MainActor
-  public func revoke() async throws -> Session {
-    try await Clerk.revokeSession(id: id)
-  }
-
-  /**
-   Retrieves the user's session token for the given template or the default Clerk token.
-   This method uses a cache so a network request will only be made if the token in memory is expired.
-   The TTL for the Clerk token is one minute.
-
-   - Returns: The JWT string, or nil if no active session exists.
-   */
-  @discardableResult
-  public func getToken(_ options: GetTokenOptions = .init()) async throws -> String? {
-    try await Clerk.engineGetToken(template: options.template, skipCache: options.skipCache)
-  }
-
   /// Options that can be passed as parameters to the `getToken()` function.
   public struct GetTokenOptions: Sendable {
     /// The name of the JWT template from the Clerk Dashboard to generate a new token from. E.g. 'firebase', 'grafbase', or your custom template's name.

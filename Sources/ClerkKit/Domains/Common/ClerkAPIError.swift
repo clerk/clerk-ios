@@ -22,6 +22,20 @@ public struct ClerkAPIError: Error, LocalizedError, Codable, Equatable, Hashable
   /// A unique identifier for tracing the specific request, useful for debugging.
   public var clerkTraceId: String?
 
+  public init(
+    code: String,
+    message: String? = nil,
+    longMessage: String? = nil,
+    meta: JSON? = nil,
+    clerkTraceId: String? = nil
+  ) {
+    self.code = code
+    self.message = message
+    self.longMessage = longMessage
+    self.meta = meta
+    self.clerkTraceId = clerkTraceId
+  }
+
   /// Additional context about the error, including trace ID and parameter name if available.
   public var context: [String: String]? {
     var ctx: [String: String] = [:]

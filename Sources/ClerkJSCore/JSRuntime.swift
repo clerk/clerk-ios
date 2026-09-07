@@ -145,6 +145,15 @@ final class JSRuntime: @unchecked Sendable {
         "globalThis.Clerk missing after evaluate (typeof Clerk=\(clerkType), typeof module=\(moduleType), typeof exports=\(exportsType))"
       )
     }
+    guard let invokeURL = Bundle.module.url(forResource: "native-invoke", withExtension: "js") else {
+      throw ClerkJSCoreError.missingBundle
+    }
+    let invokeSource = try String(contentsOf: invokeURL, encoding: .utf8)
+    context.exception = nil
+    context.evaluateScript(invokeSource, withSourceURL: invokeURL)
+    if let exception = context.exception {
+      throw ClerkJSCoreError.javascript(exception.toString() ?? "native-invoke evaluate failed")
+    }
     bundleEvaluated = true
   }
 

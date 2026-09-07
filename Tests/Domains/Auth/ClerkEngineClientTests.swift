@@ -326,7 +326,7 @@ struct ClerkEngineClientTests {
     )
     #expect(engine.fetchedInvitationPage == 2)
     #expect(engine.fetchedInvitationPageSize == 10)
-    #expect(engine.fetchedInvitationStatus == ["pending", "accepted"])
+    #expect(engine.fetchedInvitationStatus == ["pending"])
     #expect(invitations.data.first?.id == UserOrganizationInvitation.mock.id)
 
     let memberships = try await user.getOrganizationMemberships(page: 3, pageSize: 10)
@@ -1766,6 +1766,8 @@ final class RecordingEngineClient: ClerkEngineClient {
     verifiedSessionWithPasskey = true
     return .mockComplete
   }
+
+  var lastJSMethod: String?
 
   private var currentUser: User {
     Clerk.shared.user ?? .mock

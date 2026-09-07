@@ -93,6 +93,7 @@ let package = Package(
       dependencies: [
         "ClerkKit",
         "ClerkKitUI",
+        "ClerkSnapshots",
         .product(name: "Mocker", package: "Mocker"),
         .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
       ],

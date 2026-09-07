@@ -91,6 +91,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     throw ClerkJSCoreError.unsupportedPlatform
   }
 
+  public func invoke(_: ClerkJSInvocation) async throws -> JSONValue {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -208,6 +212,24 @@ public final class ClerkJSRuntime: @unchecked Sendable {
 
   public func evaluateJSON(_ js: String) async throws -> String {
     try await runtime.evaluateJSON(js)
+  }
+
+  public func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
+    let data = try JSONEncoder().encode(invocation)
+    guard let json = String(data: data, encoding: .utf8) else {
+      throw ClerkJSCoreError.invalidArgument("invocation")
+    }
+    do {
+      let result = try await runtime.evaluateJSON("globalThis.__clerkNativeInvoke(\(json))")
+      _ = try? await applyLastFAPIClientJSON()
+      return try JSONDecoder().decode(JSONValue.self, from: Data(result.utf8))
+    } catch let ClerkJSCoreError.javascript(message) {
+      _ = try? await applyLastFAPIClientJSON()
+      throw ClerkJSError.parse(message)
+    } catch {
+      _ = try? await applyLastFAPIClientJSON()
+      throw error
+    }
   }
 
   public func call(methodPath: String, args: some Encodable) async throws -> String {

@@ -6,6 +6,7 @@
 // swiftlint:disable file_length
 
 import AuthenticationServices
+import ClerkSnapshots
 import Foundation
 
 /// The main entry point for all authentication operations in the Clerk SDK.
@@ -586,8 +587,15 @@ extension Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.setActive(sessionId: sessionId, organizationId: organizationId)
+    try await Clerk.js(
+      .clerk,
+      ClerkJSCall.setActive(
+        .init(
+          session: .string(sessionId),
+          organization: organizationId.map(JSONValue.string)
+        )
+      )
+    )
   }
 
   /// Retrieves the user's session token for the given template or the default Clerk token.
@@ -686,7 +694,14 @@ extension Auth {
     }
 
     do {
-      try await sessionService.setActive(sessionId: sessionId, organizationId: nil)
+      if await Clerk.resolvedEngineClient() != nil {
+        try await Clerk.js(
+          .clerk,
+          ClerkJSCall.setActive(.init(session: .string(sessionId)))
+        )
+      } else {
+        try await sessionService.setActive(sessionId: sessionId, organizationId: nil)
+      }
     } catch {
       if Clerk.shared.client?.lastActiveSessionId != sessionId {
         throw error

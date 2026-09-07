@@ -14,6 +14,16 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     self.kit = kit
   }
 
+  func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
+    await loadIfNeeded()
+    defer { publish() }
+    do {
+      return try await engine.invoke(invocation)
+    } catch let error as ClerkJSError {
+      throw KitJSErrorMapping.kitError(error)
+    }
+  }
+
   func signIn(identifier: String) async throws {
     await loadIfNeeded()
     _ = try await engine.client.signIn.create(.init(identifier: identifier))
@@ -823,6 +833,27 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       return date.map { $0.timeIntervalSince1970 * 1000 }
     default:
       return nil
+    }
+  }
+}
+
+enum KitJSErrorMapping {
+  static func kitError(_ error: ClerkJSError) -> any Error {
+    switch error.kind {
+    case .api:
+      let first = error.errors.first
+      let meta = first.flatMap(\.meta).flatMap { value in
+        (try? JSONEncoder().encode(value)).flatMap { try? JSONDecoder().decode(JSON.self, from: $0) }
+      }
+      return ClerkKit.ClerkAPIError(
+        code: first?.code ?? error.code ?? "api_error",
+        message: first?.message ?? error.message,
+        longMessage: first?.longMessage,
+        meta: meta,
+        clerkTraceId: error.clerkTraceId
+      )
+    case .offline, .runtime, .resolution, .javascript:
+      return ClerkClientError(message: String.LocalizationValue(stringLiteral: error.message))
     }
   }
 }
