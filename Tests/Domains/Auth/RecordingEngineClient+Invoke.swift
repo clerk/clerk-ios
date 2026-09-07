@@ -41,6 +41,22 @@ extension RecordingEngineClient {
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
+    if case .signIn = invocation.receiver {
+      let data = try await callInstance(
+        root: "signIn",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
+    if case .signUp = invocation.receiver {
+      let data = try await callInstance(
+        root: "signUp",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)

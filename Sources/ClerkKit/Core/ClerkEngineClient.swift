@@ -1,47 +1,6 @@
 import ClerkSnapshots
 import Foundation
 
-private struct EmptyEngineArgs: Encodable {}
-
-private struct PasskeyFactorArgs: Encodable {
-  var strategy: String
-  var redirectUrl: String?
-  var publicKeyCredential: String?
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(strategy, forKey: .strategy)
-    try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
-    try container.encodeIfPresent(publicKeyCredential, forKey: .publicKeyCredential)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case strategy
-    case redirectUrl
-    case publicKeyCredential
-  }
-}
-
-private struct ReloadArgs: Encodable {
-  var rotatingTokenNonce: String?
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encodeIfPresent(rotatingTokenNonce, forKey: .rotatingTokenNonce)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case rotatingTokenNonce
-  }
-}
-
-package enum ClerkInstanceRoot: String {
-  case billing
-  case signIn
-  case signUp
-  case user
-}
-
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue
@@ -106,7 +65,6 @@ package protocol ClerkEngineClient: AnyObject {
     phoneNumber: String?,
     legalAccepted: Bool?
   ) async throws
-  func callInstance(root: String, method: String, args: Data) async throws -> Data
   func transferToSignUp(unsafeMetadata: JSON?) async throws
   func transferToSignIn() async throws
   func startSessionVerification(level: String) async throws -> SessionVerification
@@ -150,93 +108,6 @@ extension Clerk {
     let created = await makeEngineClient(shared)
     engineClient = created
     return created
-  }
-
-  @MainActor
-  package static func callInstance(
-    _ root: ClerkInstanceRoot,
-    _ method: some RawRepresentable<String>,
-    _ args: some Encodable = EmptyEngineArgs()
-  ) async throws {
-    let engine = try await requireEngineClient()
-    _ = try await engine.callInstance(
-      root: root.rawValue,
-      method: method.rawValue,
-      args: JSONEncoder().encode(args)
-    )
-  }
-
-  @MainActor
-  package static func callInstance<T: Decodable>(
-    _ root: ClerkInstanceRoot,
-    _ method: some RawRepresentable<String>,
-    _ args: some Encodable = EmptyEngineArgs(),
-    as _: T.Type
-  ) async throws -> T {
-    let engine = try await requireEngineClient()
-    let data = try await engine.callInstance(
-      root: root.rawValue,
-      method: method.rawValue,
-      args: JSONEncoder().encode(args)
-    )
-    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
-  }
-
-  @MainActor
-  package static func prepareSignInPasskeyFirstFactor() async throws {
-    try await callInstance(
-      .signIn,
-      SignInJSMethod.prepareFirstFactor,
-      PasskeyFactorArgs(
-        strategy: "passkey",
-        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-      )
-    )
-  }
-
-  @MainActor
-  package static func prepareSignInPasskeySecondFactor() async throws {
-    try await callInstance(
-      .signIn,
-      SignInJSMethod.prepareSecondFactor,
-      PasskeyFactorArgs(strategy: "passkey")
-    )
-  }
-
-  @MainActor
-  package static func attemptSignInPasskeyFirstFactor(credential: String) async throws {
-    try await callInstance(
-      .signIn,
-      SignInJSMethod.attemptFirstFactor,
-      PasskeyFactorArgs(strategy: "passkey", publicKeyCredential: credential)
-    )
-  }
-
-  @MainActor
-  package static func attemptSignInPasskeySecondFactor(credential: String) async throws {
-    try await callInstance(
-      .signIn,
-      SignInJSMethod.attemptSecondFactor,
-      PasskeyFactorArgs(strategy: "passkey", publicKeyCredential: credential)
-    )
-  }
-
-  @MainActor
-  package static func reloadSignIn(rotatingTokenNonce: String?) async throws {
-    try await callInstance(
-      .signIn,
-      SignInJSMethod.reload,
-      ReloadArgs(rotatingTokenNonce: rotatingTokenNonce)
-    )
-  }
-
-  @MainActor
-  package static func reloadSignUp(rotatingTokenNonce: String?) async throws {
-    try await callInstance(
-      .signUp,
-      SignUpJSMethod.reload,
-      ReloadArgs(rotatingTokenNonce: rotatingTokenNonce)
-    )
   }
 
   @MainActor

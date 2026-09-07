@@ -285,11 +285,4 @@ extension SignUp {
       return result
     }
   }
-
-  /// Returns the current sign up.
-  @discardableResult @MainActor
-  func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await Clerk.reloadSignUp(rotatingTokenNonce: rotatingTokenNonce)
-    return try Clerk.requireEngineSignUp()
-  }
 }

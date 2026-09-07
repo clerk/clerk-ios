@@ -340,13 +340,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signUp)
   }
 
-  func callInstance(root: String, method: String, args: Data) async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.callInstanceMethod(root: root, method: method, args: args)
-    publish()
-    return data
-  }
-
   func transferToSignUp(unsafeMetadata: JSON?) async throws {
     await loadIfNeeded()
     let converted = try unsafeMetadata.map {

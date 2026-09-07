@@ -511,9 +511,9 @@ extension SignIn {
     let signIn: SignIn
     do {
       if usesSecondFactor {
-        try await Clerk.prepareSignInPasskeySecondFactor()
+        try await SignIn.preparePasskeySecondFactor()
       } else {
-        try await Clerk.prepareSignInPasskeyFirstFactor()
+        try await SignIn.preparePasskeyFirstFactor()
       }
       signIn = try Clerk.requireEngineSignIn()
     } catch {
@@ -535,9 +535,9 @@ extension SignIn {
 
     do {
       if usesSecondFactor {
-        try await Clerk.attemptSignInPasskeySecondFactor(credential: credential)
+        try await SignIn.attemptPasskeySecondFactor(credential: credential)
       } else {
-        try await Clerk.attemptSignInPasskeyFirstFactor(credential: credential)
+        try await SignIn.attemptPasskeyFirstFactor(credential: credential)
       }
       return try Clerk.requireEngineSignIn()
     } catch {
@@ -552,18 +552,6 @@ extension SignIn {
 
 extension SignIn {
   // MARK: - Internal Helpers
-
-  /// Reloads the current sign-in state from the server.
-  ///
-  /// - Parameter rotatingTokenNonce: Optional rotating token nonce for reloading.
-  /// - Returns: An updated `SignIn` object with the latest state.
-  /// - Throws: An error if reloading fails.
-  @discardableResult
-  @MainActor
-  func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await Clerk.reloadSignIn(rotatingTokenNonce: rotatingTokenNonce)
-    return try Clerk.requireEngineSignIn()
-  }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   /// Gets the credential for passkey authentication.
