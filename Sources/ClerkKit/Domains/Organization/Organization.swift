@@ -31,7 +31,7 @@ extension Organization {
     name: String,
     slug: String? = nil
   ) async throws -> Organization {
-    try await call("update", UpdateArgs(name: name, slug: slug), as: Organization.self)
+    try await js(OrganizationJSCall.update(UpdateOrganizationParams(name: name, slug: slug)), as: Organization.self)
   }
 
   /// Deletes the organization. Only administrators can delete an organization.
@@ -39,7 +39,7 @@ extension Organization {
   /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await call("destroy", EmptyArgs(), as: DeletedObject.self)
+    try await js(OrganizationJSCall.destroy, as: DeletedObject.self)
   }
 
   /// Sets or replaces an organization's logo.
@@ -71,9 +71,8 @@ extension Organization {
     page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
-    try await call(
-      "getRoles",
-      ListArgs(initialPage: page, pageSize: pageSize),
+    try await js(
+      OrganizationJSCall.getRoles(GetRolesParams(initialPage: page, pageSize: pageSize)),
       as: ClerkPaginatedResponse<RoleResource>.self
     )
   }
@@ -141,7 +140,7 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    try await call("addMember", MemberArgs(userId: userId, role: role), as: OrganizationMembership.self)
+    try await js(OrganizationJSCall.addMember(AddMemberParams(userId: userId, role: role)), as: OrganizationMembership.self)
   }
 
   /// Updates a member of an organization.
@@ -159,7 +158,10 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    try await call("updateMember", MemberArgs(userId: userId, role: role), as: OrganizationMembership.self)
+    try await js(
+      OrganizationJSCall.updateMember(UpdateMembershipParams(userId: userId, role: role)),
+      as: OrganizationMembership.self
+    )
   }
 
   /// Removes a member from the organization based on the user ID.
@@ -171,7 +173,7 @@ extension Organization {
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
   public func removeMember(userId: String) async throws -> OrganizationMembership {
-    try await call("removeMember", userId, as: OrganizationMembership.self)
+    try await js(OrganizationJSCall.removeMember(userId: userId), as: OrganizationMembership.self)
   }
 
   /// Retrieves the list of invitations for the currently active organization.
@@ -227,7 +229,10 @@ extension Organization {
     emailAddress: String,
     role: String
   ) async throws -> OrganizationInvitation {
-    try await call("inviteMember", InviteArgs(emailAddress: emailAddress, role: role), as: OrganizationInvitation.self)
+    try await js(
+      OrganizationJSCall.inviteMember(InviteMemberParams(emailAddress: emailAddress, role: role)),
+      as: OrganizationInvitation.self
+    )
   }
 
   /// Creates and sends invitations to the target email addresses to become members with the specified role.
@@ -243,9 +248,8 @@ extension Organization {
     emailAddresses: [String],
     role: String
   ) async throws -> [OrganizationInvitation] {
-    try await call(
-      "inviteMembers",
-      InviteManyArgs(emailAddresses: emailAddresses, role: role),
+    try await js(
+      OrganizationJSCall.inviteMembers(InviteMembersParams(emailAddresses: emailAddresses, role: role)),
       as: [OrganizationInvitation].self
     )
   }
@@ -257,7 +261,7 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @discardableResult @MainActor
   public func createDomain(domainName: String) async throws -> OrganizationDomain {
-    try await call("createDomain", domainName, as: OrganizationDomain.self)
+    try await js(OrganizationJSCall.createDomain(domainName: domainName, params: nil), as: OrganizationDomain.self)
   }
 
   /// Retrieves the list of domains for the currently active organization.
@@ -305,7 +309,7 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @MainActor
   public func getDomain(domainId: String) async throws -> OrganizationDomain {
-    try await call("getDomain", DomainArgs(domainId: domainId), as: OrganizationDomain.self)
+    try await js(OrganizationJSCall.getDomain(OrganizationGetDomain_0(domainId: domainId)), as: OrganizationDomain.self)
   }
 
   /// Retrieves the list of membership requests for the currently active organization.
@@ -345,105 +349,25 @@ extension Organization {
   }
 
   @MainActor
-  public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await call(
-      OrganizationJSMethod.getPaymentMethods.rawValue,
-      PaymentMethodsArgs(initialPage: params?.initialPage, pageSize: params?.pageSize),
+  public func getPaymentMethods(params: ClerkKit.GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+    try await js(
+      OrganizationJSCall.getPaymentMethods(
+        ClerkSnapshots.GetPaymentMethodsParams(initialPage: params?.initialPage, pageSize: params?.pageSize)
+      ),
       as: ClerkPaginatedResponse<BillingPaymentMethod>.self
     )
   }
 }
 
 extension Organization {
-  private struct PaymentMethodsArgs: Encodable {
-    var initialPage: Int?
-    var pageSize: Int?
-
-    func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encodeIfPresent(initialPage, forKey: .initialPage)
-      try container.encodeIfPresent(pageSize, forKey: .pageSize)
-    }
-
-    private enum CodingKeys: String, CodingKey {
-      case initialPage
-      case pageSize
-    }
-  }
-
-  private struct EmptyArgs: Encodable {}
-
-  private struct UpdateArgs: Encodable {
-    var name: String
-    var slug: String?
-  }
-
-  private struct MemberArgs: Encodable {
-    var userId: String
-    var role: String
-  }
-
-  private struct InviteArgs: Encodable {
-    var emailAddress: String
-    var role: String
-  }
-
-  private struct InviteManyArgs: Encodable {
-    var emailAddresses: [String]
-    var role: String
-  }
-
-  private struct DomainArgs: Encodable {
-    var domainId: String
-  }
-
-  private struct ListArgs: Encodable {
-    var initialPage: Int
-    var pageSize: Int
-    var query: String?
-    var role: [String]?
-    var status: [String]?
-    var requestStatus: String?
-    var enrollmentMode: String?
-
-    func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(initialPage, forKey: .initialPage)
-      try container.encode(pageSize, forKey: .pageSize)
-      try container.encodeIfPresent(query, forKey: .query)
-      try container.encodeIfPresent(role, forKey: .role)
-      try container.encodeIfPresent(enrollmentMode, forKey: .enrollmentMode)
-      if let requestStatus {
-        try container.encode(requestStatus, forKey: .status)
-      } else if let status, !status.isEmpty {
-        try container.encode(status, forKey: .status)
-      }
-    }
-
-    private enum CodingKeys: String, CodingKey {
-      case initialPage
-      case pageSize
-      case query
-      case role
-      case status
-      case enrollmentMode
-    }
-  }
-
   private func page(fromOffset offset: Int, pageSize: Int) -> Int {
     guard pageSize > 0 else { return 1 }
     return offset / pageSize + 1
   }
 
   @MainActor
-  private func call<T: Decodable>(_ method: String, _ args: some Encodable, as _: T.Type) async throws -> T {
-    let engine = try await Clerk.requireEngineClient()
-    let data = try await engine.callOrganizationMethod(
-      id: id,
-      method: method,
-      args: JSONEncoder().encode(args)
-    )
-    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
+  private func js<T: Decodable>(_ call: OrganizationJSCall, as _: T.Type) async throws -> T {
+    try await Clerk.js(.organization(id: ClerkJSResourceID(id)), call, as: T.self)
   }
 
   @MainActor
@@ -453,9 +377,10 @@ extension Organization {
     page: Int,
     pageSize: Int
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await call(
-      "getMemberships",
-      ListArgs(initialPage: page, pageSize: pageSize, query: query, role: role),
+    try await js(
+      OrganizationJSCall.getMemberships(
+        GetMembersParams(initialPage: page, pageSize: pageSize, role: role, query: query)
+      ),
       as: ClerkPaginatedResponse<OrganizationMembership>.self
     )
   }
@@ -466,9 +391,14 @@ extension Organization {
     pageSize: Int,
     status: [String]
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-    try await call(
-      "getInvitations",
-      ListArgs(initialPage: page, pageSize: pageSize, status: status),
+    try await js(
+      OrganizationJSCall.getInvitations(
+        GetInvitationsParams(
+          initialPage: page,
+          pageSize: pageSize,
+          status: status.isEmpty ? nil : status.map(invitationStatus(from:))
+        )
+      ),
       as: ClerkPaginatedResponse<OrganizationInvitation>.self
     )
   }
@@ -479,9 +409,14 @@ extension Organization {
     pageSize: Int,
     enrollmentMode: String?
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-    try await call(
-      "getDomains",
-      ListArgs(initialPage: page, pageSize: pageSize, enrollmentMode: enrollmentMode),
+    try await js(
+      OrganizationJSCall.getDomains(
+        GetDomainsParams(
+          initialPage: page,
+          pageSize: pageSize,
+          enrollmentMode: enrollmentMode.map(domainEnrollmentMode(from:))
+        )
+      ),
       as: ClerkPaginatedResponse<OrganizationDomain>.self
     )
   }
@@ -492,10 +427,60 @@ extension Organization {
     pageSize: Int,
     status: String?
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-    try await call(
-      "getMembershipRequests",
-      ListArgs(initialPage: page, pageSize: pageSize, requestStatus: status),
+    try await js(
+      OrganizationJSCall.getMembershipRequests(
+        GetMembershipRequestParams(
+          initialPage: page,
+          pageSize: pageSize,
+          status: status.map(membershipRequestStatus(from:))
+        )
+      ),
       as: ClerkPaginatedResponse<OrganizationMembershipRequest>.self
     )
+  }
+
+  private func invitationStatus(from raw: String) -> OrganizationInvitationStatus {
+    switch raw {
+    case "expired":
+      .expired
+    case "revoked":
+      .revoked
+    case "pending":
+      .pending
+    case "accepted":
+      .accepted
+    default:
+      .unknown(raw)
+    }
+  }
+
+  private func membershipRequestStatus(from raw: String) -> GetUserOrganizationInvitationsParamsStatus {
+    switch raw {
+    case "expired":
+      .expired
+    case "revoked":
+      .revoked
+    case "pending":
+      .pending
+    case "accepted":
+      .accepted
+    default:
+      .unknown(raw)
+    }
+  }
+
+  private func domainEnrollmentMode(from raw: String) -> GetDomainsParamsEnrollmentMode {
+    switch raw {
+    case "enterprise_sso":
+      .enterpriseSso
+    case "manual_invitation":
+      .manualInvitation
+    case "automatic_invitation":
+      .automaticInvitation
+    case "automatic_suggestion":
+      .automaticSuggestion
+    default:
+      .unknown(raw)
+    }
   }
 }

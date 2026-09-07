@@ -499,13 +499,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return try decodeOrganization(data)
   }
 
-  func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.organization(id).call(method, args: args)
-    publish()
-    return data
-  }
-
   func callInstance(root: String, method: String, args: Data) async throws -> Data {
     await loadIfNeeded()
     let data = try await engine.callInstanceMethod(root: root, method: method, args: args)

@@ -25,6 +25,14 @@ extension RecordingEngineClient {
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
+    if case .organization(let id) = invocation.receiver {
+      let data = try await callOrganizationMethod(
+        id: id.rawValue,
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)
