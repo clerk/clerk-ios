@@ -740,6 +740,9 @@ extension Clerk {
   ///   native client cannot conflict with the newly stored token.
   @discardableResult
   func refreshClient(skipClientId: Bool) async throws -> Client? {
+    if await Clerk.resolvedEngineClient() != nil {
+      return client
+    }
     try Task.checkCancellation()
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
@@ -777,6 +780,12 @@ extension Clerk {
         }
       }
 
+      if await Clerk.resolvedEngineClient() != nil {
+        if let environment {
+          return environment
+        }
+        throw ClerkClientError(message: "JS engine did not publish an environment.")
+      }
       let environment = try await self.dependencies.environmentService.get()
       try Task.checkCancellation()
       try runtime.validateStableRuntime()

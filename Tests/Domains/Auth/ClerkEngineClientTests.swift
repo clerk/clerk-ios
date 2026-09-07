@@ -177,6 +177,33 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func refreshSkipsKitFAPIWhenEngineIsRegistered() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    Clerk.shared.environment = .mock
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      clientService: MockClientService {
+        kitCalls.clientRefreshCount += 1
+        throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+      },
+      environmentService: MockEnvironmentService {
+        kitCalls.environmentRefreshCount += 1
+        throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+      }
+    )
+
+    let environment = try await Clerk.shared.refreshEnvironment()
+    let client = try await Clerk.shared.refreshClient()
+
+    #expect(environment.displayConfig.applicationName == Clerk.Environment.mock.displayConfig.applicationName)
+    #expect(client == Clerk.shared.client)
+    #expect(kitCalls.environmentRefreshCount == 0)
+    #expect(kitCalls.clientRefreshCount == 0)
+  }
+
+  @Test
   func configureDoesNotInstallEngineInTests() async {
     #expect(Clerk.makeEngineClient == nil)
     #expect(await Clerk.resolvedEngineClient() == nil)
@@ -556,6 +583,8 @@ private final class KitCallCounter {
   var setActiveCount = 0
   var fetchTokenCount = 0
   var signOutCount = 0
+  var environmentRefreshCount = 0
+  var clientRefreshCount = 0
   var prepareSecondCount = 0
   var attemptSecondCount = 0
   var resetPasswordCount = 0
