@@ -22,6 +22,9 @@ final class AuthNavigation {
   /// Whether identifier sign-in should start on a password factor.
   var prefersPassword = false
 
+  /// Whether sign-up email verification should use an email link when the live strategy is missing.
+  var prefersEmailLink = false
+
   /// Creates a new AuthNavigation instance.
   init() {}
 
@@ -98,7 +101,7 @@ final class AuthNavigation {
         path = []
         return
       }
-      if signUp.emailVerificationStrategy == .emailLink {
+      if signUp.emailVerificationStrategy(prefersEmailLink: prefersEmailLink) == .emailLink {
         path.append(AuthView.Destination.signUpEmailLink)
       } else {
         path.append(AuthView.Destination.signUpCode(.email(emailAddress)))

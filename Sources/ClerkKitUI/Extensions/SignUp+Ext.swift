@@ -17,19 +17,12 @@ extension SignUp {
     verifications["email_address"] ?? nil
   }
 
-  @MainActor
-  var emailVerificationStrategy: FactorStrategy {
+  func emailVerificationStrategy(prefersEmailLink: Bool) -> FactorStrategy {
     if let strategy = emailVerification?.strategy {
       return strategy
     }
 
-    if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
-       verifications.contains(FactorStrategy.emailLink.rawValue)
-    {
-      return .emailLink
-    }
-
-    return .emailCode
+    return prefersEmailLink ? .emailLink : .emailCode
   }
 
   var firstFieldToCollect: SignUp.Field? {

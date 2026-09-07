@@ -227,9 +227,13 @@ public struct AuthView: View {
         resumeAuth(callbackContinuation)
       }
       syncPrefersPasswordFromJSEnvironment()
+      syncPrefersEmailLinkFromJSEnvironment()
     }
     .onChange(of: jsClerk.environment?.displayConfig.preferredSignInStrategy) { _, _ in
       syncPrefersPasswordFromJSEnvironment()
+    }
+    .onChange(of: jsClerk.environment?.userSettings.attributes.emailAddress.verifications) { _, _ in
+      syncPrefersEmailLinkFromJSEnvironment()
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
@@ -312,6 +316,11 @@ extension AuthView {
   private func syncPrefersPasswordFromJSEnvironment() {
     navigation.prefersPassword =
       jsClerk.environment?.displayConfig.preferredSignInStrategy == .password
+  }
+
+  private func syncPrefersEmailLinkFromJSEnvironment() {
+    navigation.prefersEmailLink =
+      jsClerk.environment?.userSettings.attributes.emailAddress.verifications.contains(.emailLink) ?? false
   }
 }
 

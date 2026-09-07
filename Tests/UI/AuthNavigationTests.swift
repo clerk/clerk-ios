@@ -228,6 +228,35 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func signUpEmptyVerificationPrefersEmailLinkRoutesToEmailLink() {
+    let navigation = AuthNavigation()
+    navigation.prefersEmailLink = true
+    let signUp = signUp(
+      missingFields: [],
+      unverifiedFields: [.emailAddress],
+      verifications: [:]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpEmailLink])
+  }
+
+  @Test
+  func signUpEmptyVerificationDefaultsToEmailCode() {
+    let navigation = AuthNavigation()
+    let signUp = signUp(
+      missingFields: [],
+      unverifiedFields: [.emailAddress],
+      verifications: [:]
+    )
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCode(.email("test@example.com"))])
+  }
+
+  @Test
   func signUpLegalAcceptedMissingRequirementRoutesToCompleteProfile() {
     let navigation = AuthNavigation()
     let signUp = signUp(
