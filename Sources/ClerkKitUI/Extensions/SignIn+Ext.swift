@@ -9,10 +9,8 @@ import ClerkKit
 import Foundation
 
 extension SignIn {
-  @MainActor
-  var startingFirstFactor: Factor? {
-    let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
-    return preferredSignInStrategy == .password
+  func startingFirstFactor(prefersPassword: Bool) -> Factor? {
+    prefersPassword
       ? factorWhenPasswordIsPreferred
       : factorWhenOtpIsPreferred
   }

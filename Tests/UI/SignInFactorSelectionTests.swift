@@ -12,10 +12,6 @@ struct SignInFactorSelectionTests {
 
   @Test
   func startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .password
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -30,15 +26,11 @@ struct SignInFactorSelectionTests {
       )
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .password)
+    #expect(signIn.startingFirstFactor(prefersPassword: true)?.strategy == .password)
   }
 
   @Test
   func startingFirstFactorDoesNotMatchMissingIdentifierToMissingSafeIdentifier() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .otp
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -53,15 +45,11 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .emailCode)
+    #expect(signIn.startingFirstFactor(prefersPassword: false)?.strategy == .emailCode)
   }
 
   @Test
   func startingFirstFactorPrefersPasswordWhenPasswordIsPreferred() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .password
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -73,15 +61,11 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .password)
+    #expect(signIn.startingFirstFactor(prefersPassword: true)?.strategy == .password)
   }
 
   @Test
   func startingFirstFactorChoosesMatchingEmailLinkWhenPasswordIsPreferredAndPasswordIsUnavailable() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .password
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -105,17 +89,13 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    let factor = signIn.startingFirstFactor
+    let factor = signIn.startingFirstFactor(prefersPassword: true)
     #expect(factor?.strategy == .emailLink)
     #expect(factor?.emailAddressId == "ema_123")
   }
 
   @Test
   func startingFirstFactorDoesNotForceEmailLinkForNonEmailIdentifier() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .otp
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -129,15 +109,11 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .passkey)
+    #expect(signIn.startingFirstFactor(prefersPassword: false)?.strategy == .passkey)
   }
 
   @Test
   func startingFirstFactorDoesNotUseUnrelatedEmailLinkForUsernameSignIn() {
-    var environment = Clerk.Environment.mock
-    environment.displayConfig.preferredSignInStrategy = .password
-    Clerk.shared.environment = environment
-
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -151,7 +127,7 @@ struct SignInFactorSelectionTests {
       ]
     )
 
-    #expect(signIn.startingFirstFactor?.strategy == .password)
+    #expect(signIn.startingFirstFactor(prefersPassword: true)?.strategy == .password)
   }
 
   @Test

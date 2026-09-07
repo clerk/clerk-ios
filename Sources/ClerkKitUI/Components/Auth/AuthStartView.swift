@@ -564,7 +564,7 @@ extension AuthStartView {
       let created = try await jsClerk.client.signIn.create(.init(identifier: activeIdentifier))
       let signIn = JSCoreAuthMapping.signIn(from: created)
 
-      if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
+      if signIn.startingFirstFactor(prefersPassword: navigation.prefersPassword)?.strategy == .enterpriseSSO {
         let result = try await signIn.authenticateWithEnterpriseSSO(
           transferable: authState.transferable,
           unsafeMetadata: authState.unsafeMetadata

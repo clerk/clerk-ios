@@ -226,6 +226,10 @@ public struct AuthView: View {
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
+      syncPrefersPasswordFromJSEnvironment()
+    }
+    .onChange(of: jsClerk.environment?.displayConfig.preferredSignInStrategy) { _, _ in
+      syncPrefersPasswordFromJSEnvironment()
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
@@ -303,6 +307,11 @@ extension AuthView {
     session: JSSessionSnapshot
   ) -> Bool {
     isDismissible && session.id != nil && session.status == .active
+  }
+
+  private func syncPrefersPasswordFromJSEnvironment() {
+    navigation.prefersPassword =
+      jsClerk.environment?.displayConfig.preferredSignInStrategy == .password
   }
 }
 

@@ -19,6 +19,9 @@ final class AuthNavigation {
   /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
+  /// Whether identifier sign-in should start on a password factor.
+  var prefersPassword = false
+
   /// Creates a new AuthNavigation instance.
   init() {}
 
@@ -33,7 +36,7 @@ final class AuthNavigation {
     case .needsIdentifier:
       path = []
     case .needsFirstFactor:
-      guard let factor = signIn.startingFirstFactor else {
+      guard let factor = signIn.startingFirstFactor(prefersPassword: prefersPassword) else {
         ClerkLogger.info("Navigating to GetHelp: No starting first factor available for sign-in", force: true)
         path.append(AuthView.Destination.getHelp(.signIn))
         return
