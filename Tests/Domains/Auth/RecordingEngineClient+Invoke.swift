@@ -53,6 +53,24 @@ extension RecordingEngineClient {
       return try await dispatchSession(invocation)
     }
     switch invocation.method {
+    case "completeNativeAppleSignIn":
+      nativeAppleArguments = invocation.arguments.first
+      if let nativeCompletionError { throw nativeCompletionError }
+      return try nativeResult(nativeCompletionResult ?? .signUp(ClerkKit.SignUp.mock))
+    case "finishNativeSignIn", "finishNativeSignUp":
+      return .null
+    case "completeNativeAuth":
+      let args = try decodeInvocation(NativeCompletionArgs.self, invocation)
+      nativeCompletionFlow = args.flow
+      nativeCompletionMetadata = args.unsafeMetadata
+      if let nativeCompletionError { throw nativeCompletionError }
+      if let nativeCompletionResult { return try nativeResult(nativeCompletionResult) }
+      return try nativeResult(args.flow == "signIn" ? .signIn(Clerk.requireEngineSignIn()) : .signUp(Clerk.requireEngineSignUp()))
+    case "authenticateNativeWithRedirect":
+      let args = try decodeInvocation(NativeRedirectArgs.self, invocation)
+      let call = ClerkJSInvocation(receiver: args.flow == "signIn" ? .signIn : .signUp, method: "authenticateWithRedirect", arguments: [args.params])
+      if args.flow == "signIn" { try await dispatchSignIn(call) } else { try await dispatchSignUp(call) }
+      return try nativeResult(args.flow == "signIn" ? .signIn(Clerk.requireEngineSignIn()) : .signUp(Clerk.requireEngineSignUp()))
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)
       try await updateUser(
@@ -602,4 +620,21 @@ private struct SignUpRedirectArgs: Decodable {
   var strategy: String
   var redirectUrl: String
   var emailAddress: String?
+}
+
+private struct NativeCompletionArgs: Decodable {
+  var flow: String
+  var unsafeMetadata: JSONValue?
+}
+
+private struct NativeRedirectArgs: Decodable {
+  var flow: String
+  var params: JSONValue
+}
+
+private func nativeResult(_ value: TransferFlowResult) throws -> JSONValue {
+  switch value {
+  case .signIn(let signIn): try .object(["kind": .string("signIn"), "resource": JSONValue(encoding: signIn)])
+  case .signUp(let signUp): try .object(["kind": .string("signUp"), "resource": JSONValue(encoding: signUp)])
+  }
 }

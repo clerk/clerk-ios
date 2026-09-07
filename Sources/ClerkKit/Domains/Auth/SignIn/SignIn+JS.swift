@@ -304,17 +304,7 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if needsTransferToSignUp == true, transferable {
-      try await Clerk.js(
-        .signUp,
-        SignUpJSCall.create(
-          SignUpCreateParams(transfer: true, unsafeMetadata: unsafeMetadata?.jsonValue)
-        )
-      )
-      return try await .signUp(Clerk.finishedSignUp())
-    } else {
-      return .signIn(self)
-    }
+    try await Clerk.completeNativeAuth(flow: "signIn", expectedId: id, transferable: transferable, unsafeMetadata: unsafeMetadata)
   }
 
   @MainActor

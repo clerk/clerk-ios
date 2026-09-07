@@ -165,12 +165,7 @@ extension SignUp {
 
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
-    if needsTransferToSignIn == true {
-      try await Clerk.js(.signIn, SignInJSCall.create(SignInCreateParams(transfer: true)))
-      return try await .signIn(Clerk.finishedSignIn())
-    } else {
-      return .signUp(self)
-    }
+    try await Clerk.completeNativeAuth(flow: "signUp", expectedId: id)
   }
 }
 

@@ -6,13 +6,9 @@
 #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
 
 import AuthenticationServices
+import ClerkSnapshots
 
 extension Auth {
-  private static let appleSignUpRestrictionErrorCodes: Set<String> = [
-    "sign_up_mode_restricted",
-    "sign_up_restricted_waitlist",
-  ]
-
   static func normalizedAppleScopes(
     _ requestedScopes: [ASAuthorization.Scope],
     environment: Clerk.Environment?
@@ -54,48 +50,22 @@ extension Auth {
     transferable: Bool,
     unsafeMetadata: JSON?
   ) async throws -> TransferFlowResult {
-    guard transferable else {
-      return try await signInWithIdToken(
-        idToken,
-        provider: .apple,
-        transferable: false,
-        unsafeMetadata: unsafeMetadata
-      )
-    }
-
-    let result: TransferFlowResult
-    do {
-      result = try await signUpWithIdToken(
-        idToken,
-        provider: .apple,
-        firstName: firstName,
-        lastName: lastName,
-        unsafeMetadata: unsafeMetadata
-      )
-    } catch let signUpError as ClerkAPIError
-      where Self.appleSignUpRestrictionErrorCodes.contains(signUpError.code)
-    {
-      let signIn = try await createSignInWithIdToken(idToken, provider: .apple)
-
-      guard !signIn.needsTransferToSignUp else {
-        throw signUpError
-      }
-
-      if let error = signIn.firstFactorVerification?.kitError {
-        throw error
-      }
-
-      return .signIn(signIn)
-    }
-
-    if case .signIn(let signIn) = result,
-       let error = signIn.firstFactorVerification?.kitError
-    {
-      throw error
-    }
-
-    return result
+    let result = try await Clerk.js(
+      .clerk,
+      JSRawCall("completeNativeAppleSignIn", JSONValue(encoding: AppleSignInArgs(
+        idToken: idToken, firstName: firstName, lastName: lastName, transferable: transferable, unsafeMetadata: unsafeMetadata?.jsonValue
+      ))), as: NativeAuthResult.self
+    )
+    return try result.transferResult()
   }
+}
+
+private struct AppleSignInArgs: Encodable {
+  var idToken: String
+  var firstName: String?
+  var lastName: String?
+  var transferable: Bool
+  var unsafeMetadata: JSONValue?
 }
 
 #endif

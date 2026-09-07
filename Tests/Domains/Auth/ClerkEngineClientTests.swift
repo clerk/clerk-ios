@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import ClerkSnapshots
 import Foundation
 import Testing
 
@@ -704,11 +705,13 @@ struct ClerkEngineClientTests {
     let metadata: JSON = ["plan": "pro"]
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
+    engine.nativeCompletionResult = .signUp(SignUp.mock)
     let toSignUp = try await signIn.handleTransferFlow(
       transferable: true,
       unsafeMetadata: metadata
     )
-    #expect(engine.transferredToSignUpMetadata == metadata)
+    #expect(engine.nativeCompletionMetadata == metadata.jsonValue)
+    #expect(engine.nativeCompletionFlow == "signIn")
     if case .signUp(let signUp) = toSignUp {
       #expect(signUp.id == SignUp.mock.id)
     } else {
@@ -719,8 +722,9 @@ struct ClerkEngineClientTests {
 
     var signUp = SignUp.mock
     signUp.verificationByAttribute = ["external_account": Verification(status: .transferable)]
+    engine.nativeCompletionResult = .signIn(SignIn(id: "sia_engine", status: .needsFirstFactor))
     let toSignIn = try await signUp.handleTransferFlow()
-    #expect(engine.transferredToSignIn)
+    #expect(engine.nativeCompletionFlow == "signUp")
     if case .signIn(let transferred) = toSignIn {
       #expect(transferred.id == "sia_engine")
     } else {
@@ -828,6 +832,11 @@ struct ClerkEngineClientTests {
 
 @MainActor
 final class RecordingEngineClient: ClerkEngineClient {
+  var nativeAppleArguments: ClerkSnapshots.JSONValue?
+  var nativeCompletionResult: TransferFlowResult?
+  var nativeCompletionError: (any Error)?
+  var nativeCompletionFlow: String?
+  var nativeCompletionMetadata: ClerkSnapshots.JSONValue?
   var signedInIdentifier: String?
   var signedInEmail: String?
   var signedInPhone: String?

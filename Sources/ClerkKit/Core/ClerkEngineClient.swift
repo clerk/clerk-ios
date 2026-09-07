@@ -91,15 +91,4 @@ extension Clerk {
     }
     return signUp
   }
-
-  @MainActor
-  package static func requireEngineTransferResult() throws -> TransferFlowResult {
-    if let signUp = shared.client?.signUp, signUp.status != .abandoned {
-      return .signUp(signUp)
-    }
-    if let signIn = shared.client?.signIn {
-      return .signIn(signIn)
-    }
-    throw ClerkClientError(message: "OAuth did not produce a client.")
-  }
 }

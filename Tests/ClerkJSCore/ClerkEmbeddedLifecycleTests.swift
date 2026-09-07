@@ -90,6 +90,113 @@ struct ClerkEmbeddedLifecycleTests {
   }
 
   @Test
+  func authCompletionKeepsItsFlowAndRejectsRetainedStaleAttempts() async throws {
+    let host = try await host(signedIn: true)
+    _ = try await host.runtime.evaluateJSON("""
+      fixtureClient.sign_up = { object: 'sign_up', id: 'sua_unrelated', status: 'missing_requirements', required_fields: [], optional_fields: [], missing_fields: [], unverified_fields: [], verifications: {} }
+      """)
+    try await host.load()
+    let result = try await host.invoke(.init(receiver: .clerk, method: "completeNativeAuth", arguments: [.object([
+      "flow": .string("signIn"), "expectedId": .string("sia_fixture"),
+    ])]))
+    guard case .object(let object) = result else { Issue.record("Expected a tagged authentication result"); return }
+    #expect(object["kind"] == .string("signIn"))
+    #expect(host.state?.client?.signUp?.id == "sua_unrelated")
+    do {
+      _ = try await host.invoke(.init(receiver: .clerk, method: "attemptNativeFirstFactor", arguments: [.object([
+        "expectedId": .string("sia_old"), "params": .object(["strategy": .string("email_code"), "code": .string("424242")]),
+      ])]))
+      Issue.record("A retained stale sign-in must not mutate the current attempt")
+    } catch let error as ClerkJSError {
+      #expect(error.code == "stale_authentication")
+    }
+    #expect(try await host.runtime.evaluateJSON("requests.filter(r => r.method === 'POST').length") == "0")
+    await host.dispose()
+  }
+
+  @Test
+  func authTransferUsesSharedRequestAndPreservesMetadata() async throws {
+    let host = try await host(signedIn: true)
+    _ = try await host.runtime.evaluateJSON("""
+      (function() {
+        fixtureClient.sign_in.status = 'needs_first_factor';
+        fixtureClient.sign_in.created_session_id = null;
+        fixtureClient.sign_in.first_factor_verification.status = 'transferable';
+        var originalFetch = fetch;
+        globalThis.fetch = async function(url, options) {
+          if (url.pathname !== '/v1/client/sign_ups') return originalFetch(url, options);
+          globalThis.transferBody = options.body.toString();
+          fixtureClient.sign_up = { object: 'sign_up', id: 'sua_transferred', status: 'missing_requirements', required_fields: ['first_name'], missing_fields: ['first_name'], optional_fields: [], unverified_fields: [], verifications: {} };
+          return { status: 200, ok: true, headers: new Headers(), json: async () => ({ response: fixtureClient.sign_up, client: fixtureClient }) };
+        };
+        return true;
+      })()
+      """)
+    try await host.load()
+    let result = try await host.invoke(.init(receiver: .clerk, method: "completeNativeAuth", arguments: [.object([
+      "flow": .string("signIn"), "expectedId": .string("sia_fixture"), "unsafeMetadata": .object(["plan": .string("pro")]),
+    ])]))
+    guard case .object(let object) = result else { Issue.record("Expected a tagged authentication result"); return }
+    #expect(object["kind"] == .string("signUp"))
+    #expect(host.state?.client?.signUp?.id == "sua_transferred")
+    #expect(try await host.runtime.evaluateJSON("new URLSearchParams(transferBody).get('transfer')") == "\"true\"")
+    #expect(try await host.runtime.evaluateJSON("JSON.parse(new URLSearchParams(transferBody).get('unsafe_metadata')).plan") == "\"pro\"")
+    await host.dispose()
+  }
+
+  @Test(arguments: ["disabled", "new", "existing", "sign_up_mode_restricted", "sign_up_restricted_waitlist", "restricted_new", "invalid"])
+  func appleCompletionRunsSharedFallbackPolicy(scenario: String) async throws {
+    let host = try await host(signedIn: true)
+    _ = try await host.runtime.evaluateJSON("""
+      (function() {
+        var scenario = '\(scenario)';
+        globalThis.appleBodies = [];
+        var originalFetch = fetch;
+        globalThis.fetch = async function(url, options) {
+          var signUp = url.pathname === '/v1/client/sign_ups';
+          if (!signUp && url.pathname !== '/v1/client/sign_ins') return originalFetch(url, options);
+          appleBodies.push({ signUp: signUp, body: options.body.toString() });
+          if (signUp && ['sign_up_mode_restricted', 'sign_up_restricted_waitlist', 'restricted_new', 'invalid'].includes(scenario)) {
+            var code = scenario === 'restricted_new' ? 'sign_up_mode_restricted' : scenario === 'invalid' ? 'form_param_invalid' : scenario;
+            return { status: 422, ok: false, headers: new Headers(), json: async () => ({ errors: [{ code: code, message: 'Rejected', long_message: 'Rejected' }] }) };
+          }
+          var response;
+          if (signUp) {
+            fixtureClient.sign_up = { object: 'sign_up', id: 'sua_apple', status: 'missing_requirements', required_fields: [], missing_fields: [], optional_fields: [], unverified_fields: [], verifications: { external_account: { status: scenario === 'existing' ? 'transferable' : 'verified' } } };
+            response = fixtureClient.sign_up;
+          } else {
+            fixtureClient.sign_in.first_factor_verification.status = scenario === 'restricted_new' ? 'transferable' : 'verified';
+            response = fixtureClient.sign_in;
+          }
+          return { status: 200, ok: true, headers: new Headers(), json: async () => ({ response: response, client: fixtureClient }) };
+        };
+        return true;
+      })()
+      """)
+    try await host.load()
+    do {
+      let result = try await host.invoke(.init(receiver: .clerk, method: "completeNativeAppleSignIn", arguments: [.object([
+        "idToken": .string("apple_token"), "firstName": .string("Jane"), "lastName": .string("Doe"),
+        "transferable": .bool(scenario != "disabled"), "unsafeMetadata": .object(["plan": .string("pro")]),
+      ])]))
+      #expect(scenario != "restricted_new" && scenario != "invalid")
+      guard case .object(let object) = result else { Issue.record("Expected a tagged result"); return }
+      #expect(object["kind"] == .string(scenario == "new" ? "signUp" : "signIn"))
+    } catch let error as ClerkJSError {
+      #expect(error.errors.first?.code == (scenario == "invalid" ? "form_param_invalid" : "sign_up_mode_restricted"))
+      #expect(scenario == "restricted_new" || scenario == "invalid")
+    }
+    let expectedRequests = ["disabled", "new", "invalid"].contains(scenario) ? "1" : "2"
+    #expect(try await host.runtime.evaluateJSON("appleBodies.length") == expectedRequests)
+    #expect(try await host.runtime.evaluateJSON("new URLSearchParams(appleBodies[0].body).get('token')") == "\"apple_token\"")
+    if scenario != "disabled" {
+      #expect(try await host.runtime.evaluateJSON("new URLSearchParams(appleBodies[0].body).get('first_name')") == "\"Jane\"")
+      #expect(try await host.runtime.evaluateJSON("JSON.parse(new URLSearchParams(appleBodies[0].body).get('unsafe_metadata')).plan") == "\"pro\"")
+    }
+    await host.dispose()
+  }
+
+  @Test
   func listedInvitationCanBeRevokedInMinifiedBundle() async throws {
     let host = try await host()
     try await host.load()

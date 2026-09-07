@@ -210,14 +210,7 @@ public struct Auth {
       .signIn,
       SignInJSCall.create(.init(strategy: provider.strategy, token: idToken))
     )
-    if transferable, Clerk.shared.client?.signIn?.needsTransferToSignUp == true {
-      try await Clerk.js(.signUp, SignUpJSCall.create(.init(transfer: true, unsafeMetadata: unsafeMetadata?.jsonValue)))
-    }
-    let result = try Clerk.requireEngineTransferResult()
-    if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.kitError {
-      throw error
-    }
-    return result
+    return try await Clerk.completeNativeAuth(flow: "signIn", transferable: transferable, unsafeMetadata: unsafeMetadata)
   }
 
   func createSignInWithIdToken(
@@ -531,7 +524,7 @@ public struct Auth {
         )
       )
     )
-    return try Clerk.requireEngineTransferResult()
+    return try await Clerk.completeNativeAuth(flow: "signUp", unsafeMetadata: unsafeMetadata)
   }
   #endif
 

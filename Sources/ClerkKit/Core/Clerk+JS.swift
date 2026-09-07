@@ -35,29 +35,31 @@ extension Clerk {
 
   @MainActor
   static func finishedSignIn() async throws -> SignIn {
-    let signIn = try requireEngineSignIn()
-    if signIn.status == .complete, let sessionId = signIn.createdSessionId {
-      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
-    }
-    return signIn
+    try await js(.clerk, JSRawCall("finishNativeSignIn"))
+    return try requireEngineSignIn()
   }
 
   @MainActor
   static func finishedSignUp() async throws -> SignUp {
-    let signUp = try requireEngineSignUp()
-    if let sessionId = signUp.createdSessionId {
-      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
-    }
-    return signUp
+    try await js(.clerk, JSRawCall("finishNativeSignUp"))
+    return try requireEngineSignUp()
   }
 
   @MainActor
-  static func activateCompletedAuth() async throws {
-    if shared.client?.signIn?.status == .complete, let sessionId = shared.client?.signIn?.createdSessionId {
-      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
-    } else if let sessionId = shared.client?.signUp?.createdSessionId {
-      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
-    }
+  static func completeNativeAuth(
+    flow: String,
+    expectedId: String? = nil,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
+    let result = try await js(
+      .clerk,
+      JSRawCall("completeNativeAuth", JSONValue(encoding: NativeAuthCompletionArgs(
+        flow: flow, expectedId: expectedId, transferable: transferable, unsafeMetadata: unsafeMetadata?.jsonValue
+      ))),
+      as: NativeAuthResult.self
+    )
+    return try result.transferResult()
   }
 
   @MainActor
@@ -78,23 +80,22 @@ extension Clerk {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await js(
-      .signIn,
+    let result = try await js(
+      .clerk,
       JSRawCall(
-        "authenticateWithRedirect",
+        "authenticateNativeWithRedirect",
         JSONValue(
-          encoding: SignInRedirectArgs(
+          encoding: NativeRedirectArgs(flow: "signIn", params: SignInRedirectArgs(
             strategy: strategy,
             redirectUrl: oauthRedirectURL,
             identifier: identifier,
             __internal_callbackParams: .init(transferable: transferable, unsafeMetadata: unsafeMetadata?.jsonValue),
             __internal_oauthOptions: .init(prefersEphemeralSession: prefersEphemeralWebBrowserSession)
-          )
+          ))
         )
-      )
+      ), as: NativeAuthResult.self
     )
-    try await activateCompletedAuth()
-    return try requireEngineTransferResult()
+    return try result.transferResult()
   }
 
   @MainActor
@@ -104,24 +105,23 @@ extension Clerk {
     prefersEphemeralWebBrowserSession: Bool = false,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await js(
-      .signUp,
+    let result = try await js(
+      .clerk,
       JSRawCall(
-        "authenticateWithRedirect",
+        "authenticateNativeWithRedirect",
         JSONValue(
-          encoding: SignUpRedirectArgs(
+          encoding: NativeRedirectArgs(flow: "signUp", params: SignUpRedirectArgs(
             strategy: strategy,
             redirectUrl: oauthRedirectURL,
             emailAddress: emailAddress,
             unsafeMetadata: unsafeMetadata?.jsonValue,
             __internal_callbackParams: .init(transferable: true, unsafeMetadata: unsafeMetadata?.jsonValue),
             __internal_oauthOptions: .init(prefersEphemeralSession: prefersEphemeralWebBrowserSession)
-          )
+          ))
         )
-      )
+      ), as: NativeAuthResult.self
     )
-    try await activateCompletedAuth()
-    return try requireEngineTransferResult()
+    return try result.transferResult()
   }
 }
 
@@ -155,4 +155,32 @@ extension JSON {
   var jsonValue: JSONValue {
     (try? JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(self))) ?? .null
   }
+}
+
+private struct NativeAuthCompletionArgs: Encodable {
+  var flow: String
+  var expectedId: String?
+  var transferable: Bool
+  var unsafeMetadata: JSONValue?
+}
+
+struct NativeAuthResult: Decodable {
+  var kind: String
+  var resource: JSONValue
+
+  func transferResult() throws -> TransferFlowResult {
+    switch kind {
+    case "signIn":
+      return try .signIn(JSONDecoder.clerkDecoder.decode(SignIn.self, from: resource.data()))
+    case "signUp":
+      return try .signUp(JSONDecoder.clerkDecoder.decode(SignUp.self, from: resource.data()))
+    default:
+      throw ClerkClientError(message: "Unknown authentication result from the shared runtime.")
+    }
+  }
+}
+
+private struct NativeRedirectArgs<Params: Encodable>: Encodable {
+  var flow: String
+  var params: Params
 }

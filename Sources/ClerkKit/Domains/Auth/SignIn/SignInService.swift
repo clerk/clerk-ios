@@ -1,3 +1,4 @@
+import ClerkSnapshots
 import Foundation
 
 protocol SignInServiceProtocol: Sendable {
@@ -6,32 +7,20 @@ protocol SignInServiceProtocol: Sendable {
 }
 
 final class SignInService: SignInServiceProtocol {
-  private let apiClient: APIClient
-
-  init(apiClient: APIClient) {
-    self.apiClient = apiClient
-  }
+  init(apiClient _: APIClient) {}
 
   @MainActor
   func create(params: SignIn.CreateParams) async throws -> SignIn {
-    let request = Request<ClientResponse<SignIn>>(
-      path: "/v1/client/sign_ins",
-      method: .post,
-      canEstablishClientWhenTokenless: true,
-      body: params
-    )
-
-    return try await apiClient.send(request).value.response
+    try await Clerk.js(.clerk, JSRawCall("createNativeSignIn", JSONValue(encoding: params)), as: SignIn.self)
   }
 
   @MainActor
   func attemptFirstFactor(signInId: String, params: SignIn.AttemptFirstFactorParams) async throws -> SignIn {
-    let request = Request<ClientResponse<SignIn>>(
-      path: "/v1/client/sign_ins/\(signInId)/attempt_first_factor",
-      method: .post,
-      body: params
-    )
+    try await Clerk.js(.clerk, JSRawCall("attemptNativeFirstFactor", JSONValue(encoding: Attempt(expectedId: signInId, params: params))), as: SignIn.self)
+  }
 
-    return try await apiClient.send(request).value.response
+  private struct Attempt: Encodable {
+    var expectedId: String
+    var params: SignIn.AttemptFirstFactorParams
   }
 }

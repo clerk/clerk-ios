@@ -255,6 +255,9 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
+    let engine = RecordingEngineClient()
+    engine.nativeCompletionResult = .signIn(signIn)
+    Clerk.engineClient = engine
     let result = try await signIn.handleTransferFlow(transferable: false)
 
     switch result {
@@ -300,13 +303,14 @@ struct SignInTests {
     Clerk.engineClient = engine
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
+    engine.nativeCompletionResult = .signUp(SignUp.mock)
     let result = try await signIn.completeEnterpriseSSO(
       callbackURL: callbackURL,
       unsafeMetadata: metadata
     )
 
     #expect(engine.reloadedNonce == nil)
-    #expect(engine.transferredToSignUpMetadata == metadata)
+    #expect(engine.nativeCompletionMetadata == metadata.jsonValue)
 
     switch result {
     case .signUp(let signUp):
