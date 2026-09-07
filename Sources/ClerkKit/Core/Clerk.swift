@@ -722,8 +722,6 @@ extension Clerk {
     guard let shared = _shared else { return }
 
     await shared.cleanupManagersAndDrainCache()
-    await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
     engineClient = nil
     makeEngineClient = nil
     _shared = nil
@@ -840,9 +838,6 @@ extension Clerk {
 
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
-    await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
-
     resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()
     environment = nil

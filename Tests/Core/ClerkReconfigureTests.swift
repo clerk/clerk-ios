@@ -171,7 +171,6 @@ struct ClerkReconfigureTests {
     Clerk.shared.client = .mock
     Clerk.shared.environment = .mock
     Clerk.shared.sessionsByUserId = [User.mock.id: [.mock]]
-    await SessionTokensCache.shared.insertToken(.init(jwt: "jwt_123"), cacheKey: "session-token")
 
     let options = Clerk.Options(keychainConfig: .init(service: targetService))
     let reconfigured = try await Clerk.reconfigure(
@@ -186,7 +185,6 @@ struct ClerkReconfigureTests {
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try targetKeychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
-    #expect(await SessionTokensCache.shared.getToken(cacheKey: "session-token") == nil)
   }
 
   @Test
@@ -575,55 +573,7 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func reconfigureClearsTokensBeforeSessionChangedEvent() async throws {
-    let cachedJWT = try unexpiredJWT()
-    let sessionService = MockSessionService(fetchToken: { _, _, _ in
-      throw CancellationError()
-    })
-    let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      keychain: InMemoryKeychain(),
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      sessionService: sessionService
-    )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
-    Clerk.shared.client = .mock
-    await SessionTokensCache.shared.insertToken(
-      .init(jwt: cachedJWT),
-      cacheKey: Session.mock.tokenCacheKey(template: nil)
-    )
-
-    let observedToken = LockIsolated<String?>(nil)
-    let observedEventProcessed = LockIsolated(false)
-    let stream = Clerk.shared.auth.events
-    let eventTask = Task { @MainActor in
-      for await event in stream {
-        guard case .sessionChanged(let oldValue, nil) = event else {
-          continue
-        }
-
-        if let oldValue {
-          let token = await SessionTokensCache.shared.getToken(cacheKey: oldValue.tokenCacheKey(template: nil))?.jwt
-          observedToken.setValue(token)
-        }
-        observedEventProcessed.setValue(true)
-        break
-      }
-    }
-    defer { eventTask.cancel() }
-
-    let reconfigured = try await Clerk.reconfigure(
-      publishableKey: publishableKey(for: "token-reset-before-event.clerk.example.com")
-    )
-    defer { reconfigured.cleanupManagers() }
-
-    try await waitUntil(timeout: .seconds(2)) { observedEventProcessed.value }
-    #expect(observedToken.value == nil)
-  }
-
-  @Test
   func tokenReadsAreCancelledWhileReconfigureIsInProgress() async throws {
-    let cachedJWT = try unexpiredJWT()
     let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
@@ -633,10 +583,6 @@ struct ClerkReconfigureTests {
     try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     let staleSession = try #require(Clerk.shared.session)
-    await SessionTokensCache.shared.insertToken(
-      .init(jwt: cachedJWT),
-      cacheKey: staleSession.tokenCacheKey(template: nil)
-    )
 
     let reconfigureTask = Task { @MainActor in
       try await Clerk.reconfigure(publishableKey: publishableKey(for: "token-read-window.clerk.example.com"))

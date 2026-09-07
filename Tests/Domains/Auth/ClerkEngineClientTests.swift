@@ -80,7 +80,6 @@ struct ClerkEngineClientTests {
     #expect(engine.signedOut)
     #expect(kitCalls.createCount == 0)
     #expect(kitCalls.setActiveCount == 0)
-    #expect(kitCalls.fetchTokenCount == 0)
     #expect(kitCalls.signOutCount == 0)
   }
 
@@ -1843,7 +1842,6 @@ private final class KitCallCounter {
   var prepareCount = 0
   var attemptCount = 0
   var setActiveCount = 0
-  var fetchTokenCount = 0
   var signOutCount = 0
   var environmentRefreshCount = 0
   var clientRefreshCount = 0
@@ -1888,10 +1886,6 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
   let service = MockSessionService(
     setActive: { _, _ in
       counts.setActiveCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    fetchToken: { _, _, _ in
-      counts.fetchTokenCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     }
   )

@@ -300,19 +300,6 @@ extension Session {
   package var pendingTasks: [Task] {
     tasks ?? []
   }
-
-  /// Format for the session token cache key
-  ///
-  /// For example:
-  /// - If the template is null, the key includes the active organization.
-  /// - If the template is 'supabase', the key includes the active organization and template name.
-  func tokenCacheKey(template: String?) -> String {
-    let organizationKey = "\(id)-organization-\(lastActiveOrganizationId ?? "")"
-    if let template {
-      return "\(organizationKey)-template-\(template)"
-    }
-    return organizationKey
-  }
 }
 
 extension Session {
