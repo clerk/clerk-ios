@@ -58,7 +58,23 @@ struct ClerkAPITests {
     #expect(json["strategy"] as? String == "oauth_google")
     #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
     #expect(json["redirectUrlComplete"] == nil)
+    #expect(json["identifier"] == nil)
     #expect(json.count == 2)
+  }
+
+  @Test
+  func authenticateWithRedirectParamsEncodeIdentifierWhenPresent() throws {
+    let json = try encodeJSON(
+      Clerk.SignIn.AuthenticateWithRedirectParams(
+        strategy: "enterprise_sso",
+        redirectUrl: "clerk://sso-callback",
+        identifier: "user@example.com"
+      )
+    )
+    #expect(json["strategy"] as? String == "enterprise_sso")
+    #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
+    #expect(json["identifier"] as? String == "user@example.com")
+    #expect(json.count == 3)
   }
 
   @Test

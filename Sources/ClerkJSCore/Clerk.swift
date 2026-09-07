@@ -302,21 +302,25 @@ public final class Clerk {
     public struct AuthenticateWithRedirectParams: Encodable, Sendable {
       public var strategy: String
       public var redirectUrl: String
+      public var identifier: String?
 
-      public init(strategy: String, redirectUrl: String) {
+      public init(strategy: String, redirectUrl: String, identifier: String? = nil) {
         self.strategy = strategy
         self.redirectUrl = redirectUrl
+        self.identifier = identifier
       }
 
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(strategy, forKey: .strategy)
         try container.encode(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(identifier, forKey: .identifier)
       }
 
       private enum CodingKeys: String, CodingKey {
         case strategy
         case redirectUrl
+        case identifier
       }
     }
 

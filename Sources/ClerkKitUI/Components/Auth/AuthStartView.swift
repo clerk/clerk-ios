@@ -565,10 +565,14 @@ extension AuthStartView {
       let signIn = JSCoreAuthMapping.signIn(from: created)
 
       if signIn.startingFirstFactor(prefersPassword: navigation.prefersPassword)?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO(
-          transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata
+        try await jsClerk.client.signIn.authenticateWithRedirect(
+          .init(
+            strategy: "enterprise_sso",
+            redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString,
+            identifier: activeIdentifier
+          )
         )
+        let result = try await JSCoreAuthMapping.transferFlowResult(from: jsClerk)
         handleTransferFlowResult(result)
         return false
       }
