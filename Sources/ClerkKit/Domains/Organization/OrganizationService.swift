@@ -3,6 +3,7 @@
 //  Clerk
 //
 
+import ClerkSnapshots
 import Foundation
 
 protocol OrganizationServiceProtocol: Sendable {

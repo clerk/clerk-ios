@@ -7,6 +7,7 @@
 
 // swiftlint:disable file_length
 
+import ClerkSnapshots
 import Foundation
 
 // MARK: - Clerk
@@ -710,18 +711,21 @@ extension ExternalAccount {
 extension Organization {
   public static var mock: Self {
     .init(
+      object: "organization",
       id: "1",
-      name: "Organization Name",
-      slug: "org-slug",
       imageUrl: "",
       hasImage: false,
-      membersCount: 3,
-      pendingInvitationsCount: 1,
-      maxAllowedMemberships: 100,
-      adminDeleteEnabled: true,
+      name: "Organization Name",
+      slug: "org-slug",
+      publicMetadata: .object([:]),
       createdAt: Date.distantPast,
       updatedAt: .now,
-      publicMetadata: nil
+      membersCount: 3,
+      pendingInvitationsCount: 1,
+      adminDeleteEnabled: true,
+      maxAllowedMemberships: 100,
+      selfServeSsoEnabled: nil,
+      exclusiveMembership: nil
     )
   }
 }

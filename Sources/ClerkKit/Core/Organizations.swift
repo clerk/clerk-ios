@@ -3,6 +3,7 @@
 //  Clerk
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// The main entry point for organization operations in the Clerk SDK.

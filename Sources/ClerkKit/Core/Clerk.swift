@@ -4,6 +4,7 @@
 
 // swiftlint:disable file_length
 
+import ClerkSnapshots
 import Foundation
 
 /**

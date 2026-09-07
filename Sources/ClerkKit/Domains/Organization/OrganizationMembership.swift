@@ -3,6 +3,7 @@
 //  Clerk
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// The `OrganizationMembership` object is the model around an organization membership entity

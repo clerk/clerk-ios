@@ -3,106 +3,15 @@
 //  Clerk
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// The Organization object holds information about an organization, as well as methods for managing it.
-public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable {
-  /// The unique identifier of the related organization.
-  public var id: String
+public typealias Organization = ClerkSnapshots.Organization
 
-  /// The name of the related organization.
-  public var name: String
-
-  /// The organization slug. If supplied, it must be unique for the instance.
-  public var slug: String?
-
-  /// Holds the organization logo or default logo. Compatible with Clerk's Image Optimization.
-  public var imageUrl: String
-
-  /// A getter boolean to check if the organization has an uploaded image.
-  ///
-  /// Returns false if Clerk is displaying an avatar for the organization.
-  public var hasImage: Bool
-
-  /// The number of members the associated organization contains.
-  public var membersCount: Int?
-
-  /// The number of pending invitations to users to join the organization.
-  public var pendingInvitationsCount: Int?
-
-  /// The maximum number of memberships allowed for the organization.
-  public var maxAllowedMemberships: Int
-
-  /// A getter boolean to check if the admin of the organization can delete it.
-  public var adminDeleteEnabled: Bool
-
-  /// The date when the organization was created.
-  public var createdAt: Date
-
-  /// The date when the organization was last updated.
-  public var updatedAt: Date
-
-  /// Metadata that can be read from the Frontend API and Backend API
-  /// and can be set only from the Backend API.
-  public var publicMetadata: JSON?
-
-  private enum CodingKeys: String, CodingKey {
-    case id
-    case name
-    case slug
-    case imageUrl
-    case hasImage
-    case membersCount
-    case pendingInvitationsCount
-    case maxAllowedMemberships
-    case adminDeleteEnabled
-    case createdAt
-    case updatedAt
-    case publicMetadata
-  }
-
-  public init(
-    id: String,
-    name: String,
-    slug: String? = nil,
-    imageUrl: String,
-    hasImage: Bool,
-    membersCount: Int? = nil,
-    pendingInvitationsCount: Int? = nil,
-    maxAllowedMemberships: Int,
-    adminDeleteEnabled: Bool,
-    createdAt: Date,
-    updatedAt: Date,
-    publicMetadata: JSON? = nil
-  ) {
-    self.id = id
-    self.name = name
-    self.slug = slug
-    self.imageUrl = imageUrl
-    self.hasImage = hasImage
-    self.membersCount = membersCount
-    self.pendingInvitationsCount = pendingInvitationsCount
-    self.maxAllowedMemberships = maxAllowedMemberships
-    self.adminDeleteEnabled = adminDeleteEnabled
-    self.createdAt = createdAt
-    self.updatedAt = updatedAt
-    self.publicMetadata = publicMetadata
-  }
-
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    id = try container.decode(String.self, forKey: .id)
-    name = try container.decode(String.self, forKey: .name)
-    slug = try container.decodeIfPresent(String.self, forKey: .slug)
-    imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl) ?? ""
-    hasImage = try container.decodeIfPresent(Bool.self, forKey: .hasImage) ?? false
-    membersCount = try container.decodeIfPresent(Int.self, forKey: .membersCount)
-    pendingInvitationsCount = try container.decodeIfPresent(Int.self, forKey: .pendingInvitationsCount)
-    maxAllowedMemberships = try container.decode(Int.self, forKey: .maxAllowedMemberships)
-    adminDeleteEnabled = try container.decode(Bool.self, forKey: .adminDeleteEnabled)
-    createdAt = try container.decode(Date.self, forKey: .createdAt)
-    updatedAt = try container.decode(Date.self, forKey: .updatedAt)
-    publicMetadata = try container.decodeIfPresent(JSON.self, forKey: .publicMetadata)
+extension Organization: Hashable {
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
   }
 }
 

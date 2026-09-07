@@ -5,6 +5,7 @@
 //  Created on 2025-01-27.
 //
 
+import ClerkSnapshots
 import Foundation
 
 /// Mock implementation of `OrganizationServiceProtocol` for testing and previews.

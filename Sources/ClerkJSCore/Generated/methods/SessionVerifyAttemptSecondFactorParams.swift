@@ -19,4 +19,10 @@ public struct SessionVerifyAttemptSecondFactorParams: Codable, Equatable, Sendab
     case strategy
     case code
   }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: FAPIJSONKey.self)
+    self.strategy = try container.decodeFlexible(SessionVerifyAttemptSecondFactorParamsStrategy.self, snake: "strategy", camel: "strategy")
+    self.code = try container.decodeFlexible(String.self, snake: "code", camel: "code")
+  }
 }

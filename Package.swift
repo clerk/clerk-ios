@@ -62,7 +62,7 @@ let package = Package(
     ),
     .target(
       name: "ClerkKit",
-      dependencies: [],
+      dependencies: ["ClerkSnapshots"],
       path: "Sources/ClerkKit",
       resources: [
         .process("Resources"),

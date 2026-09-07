@@ -316,18 +316,21 @@ private func setDependencies(
 
 private func organization(id: String, name: String? = nil) -> Organization {
   Organization(
+    object: "organization",
     id: id,
-    name: name ?? id,
-    slug: nil,
     imageUrl: "",
     hasImage: false,
-    membersCount: nil,
-    pendingInvitationsCount: nil,
-    maxAllowedMemberships: 100,
-    adminDeleteEnabled: true,
+    name: name ?? id,
+    slug: "",
+    publicMetadata: .object([:]),
     createdAt: .distantPast,
     updatedAt: .now,
-    publicMetadata: nil
+    membersCount: 0,
+    pendingInvitationsCount: 0,
+    adminDeleteEnabled: true,
+    maxAllowedMemberships: 100,
+    selfServeSsoEnabled: nil,
+    exclusiveMembership: nil
   )
 }
 

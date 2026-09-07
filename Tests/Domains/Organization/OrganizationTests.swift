@@ -35,7 +35,7 @@ struct OrganizationTests {
   }
 
   @Test
-  func decodesOrganizationWithoutImageUrl() throws {
+  func decodesOrganizationFromSnakeCaseJSON() throws {
     let json = Data(
       """
       {
@@ -43,7 +43,10 @@ struct OrganizationTests {
         "id": "org_123",
         "name": "Acme",
         "slug": "acme",
+        "image_url": "",
         "has_image": false,
+        "members_count": 0,
+        "pending_invitations_count": 0,
         "max_allowed_memberships": 100,
         "admin_delete_enabled": true,
         "created_at": 0,
@@ -55,8 +58,10 @@ struct OrganizationTests {
 
     let organization = try JSONDecoder.clerkDecoder.decode(Organization.self, from: json)
 
+    #expect(organization.id == "org_123")
     #expect(organization.imageUrl == "")
     #expect(!organization.hasImage)
+    #expect(organization.membersCount == 0)
   }
 
   @Test
