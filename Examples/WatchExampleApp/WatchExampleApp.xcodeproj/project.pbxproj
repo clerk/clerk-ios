@@ -212,6 +212,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8FATLANTIS009E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */,
+				9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8FC2FE0A2E3A5C32001E5954 /* Products */;
@@ -562,6 +563,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		8FATLANTIS009E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -576,14 +584,17 @@
 /* Begin XCSwiftPackageProductDependency section */
 		8F692CC02E3D008D00E6E7ED /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */;
 			productName = ClerkKit;
 		};
 		8F692CC22E3D008D00E6E7EE /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */;
 			productName = ClerkKit;
 		};
 		8F9023522E3A648E00831B13 /* ClerkKitUI */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 9A1000142F60000000000001 /* XCLocalSwiftPackageReference "../.." */;
 			productName = ClerkKitUI;
 		};
 		8FATLANTIS008E3A648E00831B13 /* Atlantis */ = {

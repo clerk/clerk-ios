@@ -54,13 +54,8 @@ struct ClerkJSCoreFAPITests {
     let snapshot = try await runtime.evaluateJSON(
       "globalThis.__clerkInstance.client.__internal_toSnapshot()"
     )
-    var snapshotCodingPath = ""
-    do {
-      _ = try JSONDecoder().decode(Client.self, from: Data(snapshot.utf8))
-    } catch let error as DecodingError {
-      snapshotCodingPath = decodingPath(error)
-    }
-    #expect(snapshotCodingPath.hasSuffix("status") || snapshotCodingPath.contains("identifier"))
+    let snapshotClient = try JSONDecoder().decode(Client.self, from: Data(snapshot.utf8))
+    #expect(snapshotClient.id.hasPrefix("client_"))
 
     let payload = try #require(runtime.lastFAPIClientJSON)
     let object = try #require(JSONSerialization.jsonObject(with: payload) as? [String: Any])
