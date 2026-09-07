@@ -7,6 +7,7 @@ import os
 
 enum WatchSyncVerification {
   static let argument = "-clerk-verify-watch-sync"
+  static let deleteArgument = "-clerk-delete-watch-sync-user"
   static let log = Logger(subsystem: "com.clerk.WatchExampleApp", category: "watch-sync")
 
   static var isEnabled: Bool {
@@ -15,6 +16,10 @@ enum WatchSyncVerification {
 
   @MainActor
   static func runIfNeeded() async {
+    if ProcessInfo.processInfo.arguments.contains(deleteArgument) {
+      await deleteSignedInUserIfNeeded()
+      return
+    }
     guard isEnabled else { return }
     logSession()
     log.notice("clerk-watch-sync phone start")
@@ -51,6 +56,36 @@ enum WatchSyncVerification {
         log.error("clerk-watch-sync phone error=\(String(describing: error), privacy: .public)")
       }
     }
+  }
+
+  @MainActor
+  private static func deleteSignedInUserIfNeeded() async {
+    let user = await waitForSignedInUser()
+    guard let user else {
+      log.notice("clerk-watch-sync delete user=nil")
+      return
+    }
+    let id = user.id
+    do {
+      _ = try await user.delete()
+      log.notice("clerk-watch-sync deleted user=\(id, privacy: .public) remaining=\(Clerk.shared.user?.id ?? "nil", privacy: .public)")
+    } catch {
+      log.error("clerk-watch-sync delete error=\(String(describing: error), privacy: .public)")
+    }
+  }
+
+  @MainActor
+  private static func waitForSignedInUser() async -> User? {
+    if let user = Clerk.shared.user {
+      return user
+    }
+    for _ in 0 ..< 20 {
+      try? await Task.sleep(for: .milliseconds(250))
+      if let user = Clerk.shared.user {
+        return user
+      }
+    }
+    return Clerk.shared.user
   }
 
   private static func logSession() {
