@@ -140,3 +140,23 @@ extension Clerk {
     self.environment = environment
   }
 }
+
+enum ClerkEngineAuthorization {
+  static func evaluate(session: Session, params: CheckAuthorizationParams) -> Bool {
+    do {
+      let encoder = JSONEncoder()
+      encoder.dateEncodingStrategy = .millisecondsSince1970
+      let data = try ClerkJSAuthorization.evaluate("checkSessionAuthorization", arguments: [encoder.encode(session), encoder.encode(params)])
+      return try JSONDecoder().decode(Bool.self, from: data)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to evaluate session authorization")
+      return false
+    }
+  }
+
+  static func splitByScope(_ claim: String?) throws -> (org: [String], user: [String]) {
+    let data = try ClerkJSAuthorization.evaluate("splitByScope", arguments: [JSONEncoder().encode(claim)])
+    let values = try JSONDecoder().decode([String: [String]].self, from: data)
+    return (values["org"] ?? [], values["user"] ?? [])
+  }
+}

@@ -690,9 +690,9 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     return """
       {
         getRedirectUrl: function() { return \(encoded); },
-        open: async function(url) {
+        open: async function(url, options) {
           var href = (url && typeof url.href === 'string') ? url.href : String(url);
-          var callbackUrl = await __clerkNativeOAuthOpen(href);
+          var callbackUrl = await __clerkNativeOAuthOpen(href, options);
           return { callbackUrl: callbackUrl };
         }
       }

@@ -9,7 +9,7 @@ import Foundation
 /// Matches clerk-js `CheckAuthorizationParams`. The public TypeScript type treats role, permission,
 /// feature, and plan as mutually exclusive. The runtime combiner still ANDs every dimension that is
 /// present, including feature + plan.
-public struct CheckAuthorizationParams: Sendable, Equatable {
+public struct CheckAuthorizationParams: Sendable, Equatable, Encodable {
   public var role: String?
   public var permission: String?
   public var feature: String?
@@ -35,12 +35,29 @@ public struct CheckAuthorizationParams: Sendable, Equatable {
 ///
 /// Matches clerk-js `ReverificationConfig`: presets `strict_mfa`, `strict`, `moderate`, `lax`, or a
 /// custom `{ level, afterMinutes }` object.
-public enum ReverificationConfig: Sendable, Equatable {
+public enum ReverificationConfig: Sendable, Equatable, Encodable {
   case strictMfa
   case strict
   case moderate
   case lax
   case custom(level: SessionVerification.Level, afterMinutes: Int)
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .strictMfa: try container.encode("strict_mfa")
+    case .strict: try container.encode("strict")
+    case .moderate: try container.encode("moderate")
+    case .lax: try container.encode("lax")
+    case .custom(let level, let afterMinutes):
+      try container.encode(Custom(level: level.rawValue, afterMinutes: afterMinutes))
+    }
+  }
+
+  private struct Custom: Encodable {
+    var level: String
+    var afterMinutes: Int
+  }
 }
 
 extension Session {
@@ -60,6 +77,18 @@ extension Session {
   }
 }
 
+#if !os(watchOS)
+enum SessionAuthorization {
+  static func evaluate(session: Session, params: CheckAuthorizationParams) -> Bool {
+    ClerkEngineAuthorization.evaluate(session: session, params: params)
+  }
+
+  static func splitByScope(_ claim: String?) throws -> (org: [String], user: [String]) {
+    try ClerkEngineAuthorization.splitByScope(claim)
+  }
+}
+#else
+/// watchOS has no JavaScriptCore. Preserve the companion's synchronous snapshot API.
 enum SessionAuthorization {
   private enum CheckResult {
     case pass
@@ -348,3 +377,5 @@ private enum SessionAuthorizationError: Error {
   case invalidClaimElement(String)
   case invalidScope(String)
 }
+
+#endif

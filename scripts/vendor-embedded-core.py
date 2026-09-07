@@ -24,6 +24,8 @@ if args.check:
     manifest = json.loads(manifest_path.read_text())
     if manifest["protocolVersion"] != 1 or digest(bundle_path.read_bytes()) != manifest["sha256"]:
         raise SystemExit("Embedded bundle does not match its protocol/digest manifest")
+    if digest((resources / "clerk.authorization.js").read_bytes()) != manifest["authorizationSha256"]:
+        raise SystemExit("Authorization bundle does not match its digest manifest")
     print("Embedded protocol 1 and bundle SHA-256 verified")
 else:
     source = args.source.resolve()
@@ -31,6 +33,8 @@ else:
     clerk_js = source / "packages/clerk-js"
     subprocess.run(["pnpm", "build"], cwd=shared, check=True)
     subprocess.run(["pnpm", "exec", "rspack", "build", "--config", "rspack.config.mjs", "--env", "production", "--env", "variant=clerk.embedded"], cwd=clerk_js, check=True)
+    subprocess.run(["pnpm", "exec", "rspack", "build", "--config", "rspack.config.mjs", "--env", "production", "--env", "variant=clerk.authorization"], cwd=clerk_js, check=True)
+    authorization = (clerk_js / "dist/clerk.authorization.js").read_bytes()
     bundle = (clerk_js / "dist/clerk.embedded.js").read_bytes()
     source_digest = hashlib.sha256()
     files = [source / "pnpm-lock.yaml", clerk_js / "rspack.config.mjs"]
@@ -46,7 +50,9 @@ else:
         "sourceRevision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip(),
         "sourceSha256": source_digest.hexdigest(),
         "sha256": digest(bundle),
+        "authorizationSha256": digest(authorization),
     }
     bundle_path.write_bytes(bundle)
+    (resources / "clerk.authorization.js").write_bytes(authorization)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"Vendored {len(bundle)} bytes; SHA-256 {manifest['sha256']}")

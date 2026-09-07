@@ -175,11 +175,16 @@ public struct Auth {
   @discardableResult
   public func signInWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    transferable _: Bool = true,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await Clerk.authenticateWithRedirect(strategy: provider.strategy)
+    try await Clerk.authenticateWithRedirect(
+      strategy: provider.strategy,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -199,14 +204,14 @@ public struct Auth {
     _ idToken: String,
     provider: IDTokenProvider,
     transferable: Bool = true,
-    unsafeMetadata _: JSON? = nil
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await Clerk.js(
       .signIn,
       SignInJSCall.create(.init(strategy: provider.strategy, token: idToken))
     )
     if transferable, Clerk.shared.client?.signIn?.needsTransferToSignUp == true {
-      try await Clerk.js(.signUp, SignUpJSCall.create(.init(transfer: true)))
+      try await Clerk.js(.signUp, SignUpJSCall.create(.init(transfer: true, unsafeMetadata: unsafeMetadata?.jsonValue)))
     }
     let result = try Clerk.requireEngineTransferResult()
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.kitError {
@@ -368,13 +373,16 @@ public struct Auth {
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    transferable _: Bool = true,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await Clerk.authenticateWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      identifier: emailAddress
+      identifier: emailAddress,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -414,7 +422,7 @@ public struct Auth {
     lastName: String? = nil,
     username: String? = nil,
     phoneNumber: String? = nil,
-    unsafeMetadata _: JSON? = nil,
+    unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil,
     transfer: Bool = false
   ) async throws -> SignUp {
@@ -423,6 +431,7 @@ public struct Auth {
       SignUpJSCall.create(
         .init(
           transfer: transfer ? true : nil,
+          unsafeMetadata: unsafeMetadata?.jsonValue,
           legalAccepted: legalAccepted,
           username: username,
           password: password,
@@ -448,10 +457,14 @@ public struct Auth {
   @discardableResult
   public func signUpWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await Clerk.authenticateSignUpWithRedirect(strategy: provider.strategy)
+    try await Clerk.authenticateSignUpWithRedirect(
+      strategy: provider.strategy,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 
@@ -504,13 +517,14 @@ public struct Auth {
     provider: IDTokenProvider,
     firstName: String? = nil,
     lastName: String? = nil,
-    unsafeMetadata _: JSON? = nil
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await Clerk.js(
       .signUp,
       SignUpJSCall.create(
         .init(
           strategy: provider.strategy,
+          unsafeMetadata: unsafeMetadata?.jsonValue,
           token: idToken,
           firstName: firstName,
           lastName: lastName
@@ -533,12 +547,14 @@ public struct Auth {
   @discardableResult
   public func signUpWithEnterpriseSSO(
     emailAddress: String,
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await Clerk.authenticateSignUpWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      emailAddress: emailAddress
+      emailAddress: emailAddress,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      unsafeMetadata: unsafeMetadata
     )
   }
   #endif
@@ -551,8 +567,8 @@ public struct Auth {
   /// - Returns: A `SignUp` object representing the sign-up attempt.
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
-  public func signUpWithTicket(_ ticket: String, unsafeMetadata _: JSON? = nil) async throws -> SignUp {
-    try await Clerk.js(.signUp, SignUpJSCall.create(.init(strategy: "ticket", ticket: ticket)))
+  public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
+    try await Clerk.js(.signUp, SignUpJSCall.create(.init(strategy: "ticket", unsafeMetadata: unsafeMetadata?.jsonValue, ticket: ticket)))
     return try await Clerk.finishedSignUp()
   }
 }
@@ -583,7 +599,7 @@ extension Auth {
       ClerkJSCall.setActive(
         .init(
           session: .string(sessionId),
-          organization: organizationId.map(JSONValue.string)
+          organization: organizationId.map(JSONValue.string) ?? .null
         )
       )
     )

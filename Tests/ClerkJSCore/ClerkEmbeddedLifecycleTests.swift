@@ -12,15 +12,25 @@ struct ClerkEmbeddedLifecycleTests {
     return try String(contentsOf: url, encoding: .utf8)
   }
 
-  private func host() async throws -> ClerkJSHost {
-    let host = ClerkJSHost(publishableKey: key)
+  private func host(signedIn: Bool = false) async throws -> ClerkJSHost {
+    let host = ClerkJSHost(publishableKey: key, tokenCache: .init(getToken: { "restored-client-jwt" }, saveToken: { _ in }))
     let environment = try fixture("environment-snapshot")
-    let client = try fixture("unsigned-client")
+    let client = try fixture(signedIn ? "signed-in-client" : "unsigned-client")
     _ = try await host.runtime.evaluateJSON("""
       (function() {
         globalThis.requests = [];
         globalThis.fixtureEnvironment = \(environment);
         globalThis.fixtureClient = \(client);
+        globalThis.mintCount = 0;
+        globalThis.makeToken = function(expiration) {
+          return btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).replace(/=+$/g, '') + '.' +
+            btoa(JSON.stringify({ sub: 'user_fixture', sid: 'sess_fixture', iat: Math.floor(Date.now() / 1000), exp: expiration })).replace(/=+$/g, '') + '.signature';
+        };
+        if (fixtureClient.sessions.length) {
+          fixtureClient.sessions[0].expire_at = Date.now() + 3600000;
+          fixtureClient.sessions[0].abandon_at = Date.now() + 86400000;
+          fixtureClient.sessions[0].last_active_token.jwt = makeToken(Math.floor(Date.now() / 1000) - 60);
+        }
         globalThis.fixtureInvitation = { object: 'organization_invitation', id: 'inv_fixture', organization_id: 'org_fixture', email_address: 'test@example.com', public_metadata: {}, role: 'org:member', role_name: 'Member', status: 'pending', created_at: 1700000000000, updated_at: 1700000000000 };
         globalThis.fetch = async function(url, options) {
           var path = url.pathname;
@@ -28,11 +38,14 @@ struct ClerkEmbeddedLifecycleTests {
           var response;
           if (path === '/v1/environment') response = fixtureEnvironment;
           else if (path === '/v1/client') response = fixtureClient;
+          else if (path === '/v1/client/sessions/sess_fixture/touch') response = fixtureClient.sessions[0];
+          else if (path === '/v1/client/sessions/sess_fixture/tokens') { mintCount += 1; response = { object: 'token', jwt: makeToken(Math.floor(Date.now() / 1000) + 30 + mintCount) }; }
+          else if (path === '/v1/client/sessions/sess_fixture/remove') { fixtureClient.sessions = []; fixtureClient.last_active_session_id = null; response = fixtureClient; }
           else if (path === '/v1/organizations/org_fixture') response = { object: 'organization', id: 'org_fixture', name: 'Fixture', slug: 'fixture', public_metadata: {}, members_count: 0, created_at: 1700000000000, updated_at: 1700000000000 };
           else if (path.endsWith('/invitations/inv_fixture/revoke')) { fixtureInvitation.status = 'revoked'; response = fixtureInvitation; }
           else if (path.endsWith('/invitations')) response = { data: [fixtureInvitation], total_count: 1 };
           else throw new Error('Unexpected request: ' + path);
-          return { status: 200, ok: true, headers: new Headers({ authorization: 'fixture-client-jwt' }), json: async function() { return { response: response }; } };
+          return { status: 200, ok: true, headers: new Headers({ authorization: 'fixture-client-jwt' }), json: async function() { return path.endsWith('/tokens') ? response : { response: response }; } };
         };
         return true;
       })()
@@ -56,6 +69,23 @@ struct ClerkEmbeddedLifecycleTests {
     #expect(rows.count == 2)
     #expect(rows.last?["token"] as? String == "fixture-client-jwt")
     #expect(rows.allSatisfy { $0["native"] as? String == "1" })
+    await host.dispose()
+  }
+
+  @Test
+  func expiredTokenUsesSharedCacheAndHonorsExpirationBuffer() async throws {
+    let host = try await host(signedIn: true)
+    try await host.load()
+    let call = ClerkJSInvocation(receiver: .session(id: .init("sess_fixture")), method: "getToken", arguments: [])
+    async let first = host.invoke(call)
+    async let second = host.invoke(call)
+    let (firstToken, secondToken) = try await (first, second)
+    #expect(firstToken == secondToken)
+    let initialMints = try await host.runtime.evaluateJSON("mintCount")
+    #expect(initialMints == "1")
+    _ = try await host.invoke(.init(receiver: call.receiver, method: "getToken", arguments: [.object(["expirationBuffer": .number(59)])]))
+    #expect(try await host.runtime.evaluateJSON("mintCount") == "2")
+    #expect(host.state?.client?.sessions.first?.lastActiveToken.jwt.isEmpty == false)
     await host.dispose()
   }
 

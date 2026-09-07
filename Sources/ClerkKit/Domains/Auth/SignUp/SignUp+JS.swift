@@ -40,13 +40,14 @@ extension SignUp {
     lastName: String? = nil,
     username: String? = nil,
     phoneNumber: String? = nil,
-    unsafeMetadata _: JSON? = nil,
+    unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
     try await Clerk.js(
       .signUp,
       SignUpJSCall.update(
         SignUpCreateParams(
+          unsafeMetadata: unsafeMetadata?.jsonValue,
           legalAccepted: legalAccepted,
           username: username,
           password: password,

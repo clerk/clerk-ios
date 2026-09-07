@@ -73,7 +73,10 @@ extension Clerk {
   @MainActor
   static func authenticateWithRedirect(
     strategy: String,
-    identifier: String? = nil
+    identifier: String? = nil,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await js(
       .signIn,
@@ -83,7 +86,9 @@ extension Clerk {
           encoding: SignInRedirectArgs(
             strategy: strategy,
             redirectUrl: oauthRedirectURL,
-            identifier: identifier
+            identifier: identifier,
+            __internal_callbackParams: .init(transferable: transferable, unsafeMetadata: unsafeMetadata?.jsonValue),
+            __internal_oauthOptions: .init(prefersEphemeralSession: prefersEphemeralWebBrowserSession)
           )
         )
       )
@@ -95,7 +100,9 @@ extension Clerk {
   @MainActor
   static func authenticateSignUpWithRedirect(
     strategy: String,
-    emailAddress: String? = nil
+    emailAddress: String? = nil,
+    prefersEphemeralWebBrowserSession: Bool = false,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await js(
       .signUp,
@@ -105,7 +112,10 @@ extension Clerk {
           encoding: SignUpRedirectArgs(
             strategy: strategy,
             redirectUrl: oauthRedirectURL,
-            emailAddress: emailAddress
+            emailAddress: emailAddress,
+            unsafeMetadata: unsafeMetadata?.jsonValue,
+            __internal_callbackParams: .init(transferable: true, unsafeMetadata: unsafeMetadata?.jsonValue),
+            __internal_oauthOptions: .init(prefersEphemeralSession: prefersEphemeralWebBrowserSession)
           )
         )
       )
@@ -119,12 +129,26 @@ private struct SignInRedirectArgs: Encodable {
   var strategy: String
   var redirectUrl: String
   var identifier: String?
+  var __internal_callbackParams: RedirectCallbackArgs
+  var __internal_oauthOptions: OAuthBrowserOptions
 }
 
 private struct SignUpRedirectArgs: Encodable {
   var strategy: String
   var redirectUrl: String
   var emailAddress: String?
+  var unsafeMetadata: JSONValue?
+  var __internal_callbackParams: RedirectCallbackArgs
+  var __internal_oauthOptions: OAuthBrowserOptions
+}
+
+private struct RedirectCallbackArgs: Encodable {
+  var transferable: Bool
+  var unsafeMetadata: JSONValue?
+}
+
+private struct OAuthBrowserOptions: Encodable {
+  var prefersEphemeralSession: Bool
 }
 
 extension JSON {

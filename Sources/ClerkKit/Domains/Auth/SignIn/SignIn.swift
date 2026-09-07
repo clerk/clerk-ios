@@ -96,13 +96,16 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    transferable _: Bool = true,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     try await Clerk.authenticateWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      identifier: identifier
+      identifier: identifier,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
     )
   }
 
@@ -124,11 +127,17 @@ extension SignIn {
   @MainActor
   public func authenticateWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession _: Bool = false,
-    transferable _: Bool = true,
-    unsafeMetadata _: JSON? = nil
+    prefersEphemeralWebBrowserSession: Bool = false,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await Clerk.authenticateWithRedirect(strategy: provider.strategy, identifier: identifier)
+    try await Clerk.authenticateWithRedirect(
+      strategy: provider.strategy,
+      identifier: identifier,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
   }
   #endif
 

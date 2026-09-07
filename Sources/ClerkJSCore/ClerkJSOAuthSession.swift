@@ -112,7 +112,7 @@ final class ClerkJSOAuthSession: NSObject, @unchecked Sendable {
     return .success(url)
   }
 
-  func open(href: String) async -> Result<String, ClerkJSOAuthError> {
+  func open(href: String, prefersEphemeralSession: Bool? = nil) async -> Result<String, ClerkJSOAuthError> {
     switch Self.parseOpenURL(href) {
     case .failure(let error):
       return .failure(error)
@@ -121,7 +121,7 @@ final class ClerkJSOAuthSession: NSObject, @unchecked Sendable {
         return .failure(.invalidRedirect)
       }
       do {
-        let callback = try await perform(url)
+        let callback = try await perform(url, prefersEphemeralSession: prefersEphemeralSession)
         return .success(callback.absoluteString)
       } catch {
         return .failure(.from(error))
@@ -136,7 +136,7 @@ final class ClerkJSOAuthSession: NSObject, @unchecked Sendable {
   }
 
   @MainActor
-  private func perform(_ url: URL) async throws -> URL {
+  private func perform(_ url: URL, prefersEphemeralSession: Bool?) async throws -> URL {
     cancelOnMain()
     return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
@@ -147,7 +147,7 @@ final class ClerkJSOAuthSession: NSObject, @unchecked Sendable {
         }
       }
       #if !os(tvOS)
-      session.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
+      session.prefersEphemeralWebBrowserSession = prefersEphemeralSession ?? prefersEphemeralWebBrowserSession
       session.presentationContextProvider = self
       #endif
       self.session = session

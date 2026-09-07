@@ -221,11 +221,11 @@ final class NativeHost: @unchecked Sendable {
     }
     context.setObject(getPublicCredentials, forKeyedSubscript: "__clerkNativeGetPublicCredentialsImpl" as NSString)
 
-    let openOAuth: @convention(block) (String, JSValue) -> Void = { [weak self] href, callback in
+    let openOAuth: @convention(block) (String, Bool, JSValue) -> Void = { [weak self] href, ephemeral, callback in
       guard let self, let runtime else { return }
       let callbackID = retainCallback(callback)
       Task {
-        let result = await self.oauth.open(href: href)
+        let result = await self.oauth.open(href: href, prefersEphemeralSession: ephemeral)
         runtime.queue.async {
           switch result {
           case .success(let callbackURL):
@@ -851,9 +851,9 @@ final class NativeHost: @unchecked Sendable {
         error.code = (parsed && parsed.code) ? String(parsed.code) : 'oauth_session_failed';
         reject(error);
       }
-      globalThis.__clerkNativeOAuthOpen = function(href) {
+      globalThis.__clerkNativeOAuthOpen = function(href, options) {
         return new Promise(function(resolve, reject) {
-          __clerkNativeOAuthOpenImpl(String(href), function(err, callbackUrl) {
+          __clerkNativeOAuthOpenImpl(String(href), !!(options && options.prefersEphemeralSession), function(err, callbackUrl) {
             if (err) clerkNativeOAuthReject(err, reject);
             else resolve(String(callbackUrl));
           });

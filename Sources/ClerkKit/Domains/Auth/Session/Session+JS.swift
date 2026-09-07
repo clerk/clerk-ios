@@ -25,7 +25,7 @@ extension Session {
     return try await Clerk.js(
       .session(id: ClerkJSResourceID(id)),
       SessionJSCall.getToken(
-        ClerkSnapshots.GetTokenOptions(skipCache: options.skipCache, template: options.template)
+        ClerkSnapshots.GetTokenOptions(expirationBuffer: options.expirationBuffer, skipCache: options.skipCache, template: options.template)
       ),
       as: String?.self
     )
