@@ -14,6 +14,17 @@ extension RecordingEngineClient {
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
+    if case .listed(let kind, let id) = invocation.receiver {
+      let data = try await callListedChild(
+        organizationId: nil,
+        locate: listedLocateName(kind),
+        locateArgs: Data(),
+        findId: id.rawValue,
+        method: invocation.method,
+        args: Data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)
@@ -167,6 +178,29 @@ extension RecordingEngineClient {
       [raw]
     case nil:
       []
+    }
+  }
+
+  private func listedLocateName(_ kind: ClerkJSReceiver.ListedKind) -> String {
+    switch kind {
+    case .organizationDomain:
+      "getDomain"
+    case .organizationInvitation:
+      "getInvitations"
+    case .organizationMembershipRequest:
+      "getMembershipRequests"
+    case .organizationSuggestion:
+      "getOrganizationSuggestions"
+    case .userOrganizationInvitation:
+      "getOrganizationInvitations"
+    case .sessionWithActivities:
+      "getSessions"
+    case .organizationMembership:
+      "getMemberships"
+    case .organizationEnterpriseConnection:
+      "getEnterpriseConnections"
+    case .billingPaymentMethod:
+      "getPaymentMethods"
     }
   }
 

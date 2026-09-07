@@ -69,12 +69,3 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Identifiable
     }
   }
 }
-
-extension OrganizationSuggestion {
-  /// Accepts the organization suggestion.
-  /// - Returns: The accepted ``OrganizationSuggestion``.
-  @discardableResult @MainActor
-  public func accept() async throws -> OrganizationSuggestion {
-    try await Clerk.acceptOrganizationSuggestion(id: id)
-  }
-}

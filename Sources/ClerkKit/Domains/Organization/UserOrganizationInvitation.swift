@@ -85,12 +85,3 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
     }
   }
 }
-
-extension UserOrganizationInvitation {
-  /// Accepts the organization invitation.
-  /// - Returns: The accepted ``UserOrganizationInvitation``.
-  @discardableResult @MainActor
-  public func accept() async throws -> UserOrganizationInvitation {
-    try await Clerk.acceptUserOrganizationInvitation(id: id)
-  }
-}

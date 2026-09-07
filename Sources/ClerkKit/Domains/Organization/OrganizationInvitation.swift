@@ -53,11 +53,3 @@ public struct OrganizationInvitation: Codable, Sendable, Identifiable {
     self.updatedAt = updatedAt
   }
 }
-
-extension OrganizationInvitation {
-  /// Revokes the invitation for the email it corresponds to.
-  @discardableResult @MainActor
-  public func revoke() async throws -> OrganizationInvitation {
-    try await Clerk.revokeOrganizationInvitation(organizationId: organizationId, id: id)
-  }
-}

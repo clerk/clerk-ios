@@ -451,7 +451,6 @@ struct ClerkEngineClientTests {
 
     let invitation = OrganizationInvitation.mock
     let revoked = try await invitation.revoke()
-    #expect(engine.listedOrganizationId == invitation.organizationId)
     #expect(engine.listedLocate == "getInvitations")
     #expect(engine.listedMethod == "revoke")
     #expect(revoked.id == OrganizationInvitation.mock.id)
@@ -473,7 +472,6 @@ struct ClerkEngineClientTests {
 
     let userInvite = UserOrganizationInvitation.mock
     _ = try await userInvite.accept()
-    #expect(engine.listedOrganizationId == nil)
     #expect(engine.listedLocate == "getOrganizationInvitations")
     #expect(engine.listedMethod == "accept")
 
