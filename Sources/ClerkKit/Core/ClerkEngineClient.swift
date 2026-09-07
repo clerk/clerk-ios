@@ -106,8 +106,6 @@ package protocol ClerkEngineClient: AnyObject {
     phoneNumber: String?,
     legalAccepted: Bool?
   ) async throws
-  func createOrganization(name: String, slug: String?) async throws -> Organization
-  func getOrganization(id: String) async throws -> Organization
   func callInstance(root: String, method: String, args: Data) async throws -> Data
   func transferToSignUp(unsafeMetadata: JSON?) async throws
   func transferToSignIn() async throws

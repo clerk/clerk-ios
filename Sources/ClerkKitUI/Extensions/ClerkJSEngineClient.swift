@@ -340,20 +340,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signUp)
   }
 
-  func createOrganization(name: String, slug: String?) async throws -> Organization {
-    await loadIfNeeded()
-    let data = try await engine.createOrganization(CreateOrganizationParams(name: name, slug: slug))
-    publish()
-    return try decodeOrganization(data)
-  }
-
-  func getOrganization(id: String) async throws -> Organization {
-    await loadIfNeeded()
-    let data = try await engine.getOrganization(id)
-    publish()
-    return try decodeOrganization(data)
-  }
-
   func callInstance(root: String, method: String, args: Data) async throws -> Data {
     await loadIfNeeded()
     let data = try await engine.callInstanceMethod(root: root, method: method, args: args)
@@ -452,10 +438,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     let data = try await engine.session.verifyWithPasskey()
     publish()
     return try decodeSessionVerification(data)
-  }
-
-  private func decodeOrganization(_ data: Data) throws -> Organization {
-    try JSONDecoder().decode(Organization.self, from: data)
   }
 
   private func loadIfNeeded() async {

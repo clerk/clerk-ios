@@ -22,7 +22,11 @@ public struct Organizations {
   /// - Returns: The newly created ``Organization``.
   @discardableResult
   public func create(name: String, slug: String? = nil) async throws -> Organization {
-    try await Clerk.requireEngineClient().createOrganization(name: name, slug: slug)
+    try await Clerk.js(
+      .clerk,
+      ClerkJSCall.createOrganization(CreateOrganizationParams(name: name, slug: slug)),
+      as: Organization.self
+    )
   }
 
   /// Retrieves an organization by its ID.
@@ -30,6 +34,10 @@ public struct Organizations {
   /// - Parameter id: The organization ID.
   /// - Returns: The requested ``Organization``.
   public func get(id: String) async throws -> Organization {
-    try await Clerk.requireEngineClient().getOrganization(id: id)
+    try await Clerk.js(
+      .clerk,
+      ClerkJSCall.getOrganization(organizationId: id),
+      as: Organization.self
+    )
   }
 }

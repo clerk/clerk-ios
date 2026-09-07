@@ -163,6 +163,11 @@ extension RecordingEngineClient {
         args: (invocation.arguments.first ?? .object([:])).data()
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
+    case "createOrganization":
+      let params = try decodeInvocation(CreateOrganizationParams.self, invocation)
+      return try await encodeKit(createOrganization(name: params.name, slug: params.slug))
+    case "getOrganization":
+      return try await encodeKit(getOrganization(id: stringArgument(invocation)))
     default:
       throw ClerkClientError(message: "Unhandled JS invocation \(invocation.method)")
     }
