@@ -485,7 +485,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           function next(value) {
             var nextResource = value;
             if (step.findId) {
-              var items = value && value.data ? value.data : [];
+              var items = Array.isArray(value) ? value : (value && value.data ? value.data : []);
               nextResource = null;
               for (var i = 0; i < items.length; i++) {
                 if (items[i] && items[i].id === step.findId) {

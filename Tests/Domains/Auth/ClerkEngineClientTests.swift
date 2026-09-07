@@ -532,6 +532,22 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func sessionRevokeUsesEngineAndSkipsKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSessionService(kitCalls)
+
+    let revoked = try await Session.mock.revoke()
+    #expect(stepMethods(engine.resourceSteps) == ["getSessions", "revoke"])
+    #expect(revoked.id == Session.mock.id)
+
+    _ = try await Clerk.shared.auth.revokeSession(.mock)
+    #expect(stepMethods(engine.resourceSteps) == ["getSessions", "revoke"])
+    #expect(kitCalls.sessionRevokeCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1413,6 +1429,9 @@ final class RecordingEngineClient: ClerkEngineClient {
     if picks.contains("externalAccounts") {
       return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
     }
+    if methods.contains("getSessions") {
+      return try JSONEncoder.clerkEncoder.encode(Session.mock)
+    }
     if methods.contains("revoke") {
       return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
     }
@@ -1647,6 +1666,7 @@ private final class KitCallCounter {
   var organizationServiceCount = 0
   var identifierServiceCount = 0
   var sessionVerificationCount = 0
+  var sessionRevokeCount = 0
 }
 
 @MainActor
@@ -1693,6 +1713,10 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
     return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
   }
   let service = MockSessionService(
+    revoke: { _ in
+      counts.sessionRevokeCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
     signOut: { _ in
       counts.signOutCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")

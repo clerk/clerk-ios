@@ -223,6 +223,36 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceStepsFindsChildInReturnedArray() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          user: {
+            getSessions: function() {
+              return Promise.resolve([
+                { id: 'sess_1', revoke: function() { return Promise.resolve({ id: 'sess_1', status: 'revoked' }); } },
+                { id: 'sess_2', revoke: function() { return Promise.resolve({ id: 'sess_2', status: 'revoked' }); } }
+              ]);
+            }
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceSteps(
+      receiverPath: "__clerkInstance.user",
+      receiverArgJSON: "null",
+      stepsJSON: #"[{"method":"getSessions","findId":"sess_2"},{"method":"revoke","args":{}}]"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    #expect(payload?["id"] as? String == "sess_2")
+    #expect(payload?["status"] as? String == "revoked")
+  }
+
+  @Test
   func callOnResourceStepsPicksChildFromReceiverArray() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(

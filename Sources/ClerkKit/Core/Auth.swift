@@ -611,7 +611,7 @@ extension Auth {
   /// - Throws: An error if revoking the session fails.
   @discardableResult
   public func revokeSession(_ session: Session) async throws -> Session {
-    try await sessionService.revoke(sessionId: session.id)
+    try await session.revoke()
   }
 }
 
