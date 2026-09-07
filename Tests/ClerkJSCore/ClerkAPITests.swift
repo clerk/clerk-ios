@@ -162,12 +162,26 @@ struct ClerkAPITests {
     )
     #expect(withEmail["strategy"] as? String == "email_code")
     #expect(withEmail["emailAddressId"] as? String == "idn_1")
+    #expect(withEmail["redirectUrl"] == nil)
     #expect(withEmail.count == 2)
+
+    let emailLink = try encodeJSON(
+      Clerk.SignIn.PrepareFirstFactorParams(
+        strategy: .emailLink,
+        emailAddressId: "idn_1",
+        redirectUrl: "clerk://sso-callback"
+      )
+    )
+    #expect(emailLink["strategy"] as? String == "email_link")
+    #expect(emailLink["emailAddressId"] as? String == "idn_1")
+    #expect(emailLink["redirectUrl"] as? String == "clerk://sso-callback")
+    #expect(emailLink.count == 3)
 
     let strategyOnly = try encodeJSON(Clerk.SignIn.PrepareFirstFactorParams(strategy: .emailCode))
     #expect(strategyOnly["strategy"] as? String == "email_code")
     #expect(strategyOnly["emailAddressId"] == nil)
     #expect(strategyOnly["phoneNumberId"] == nil)
+    #expect(strategyOnly["redirectUrl"] == nil)
     #expect(strategyOnly.count == 1)
 
     let withPhone = try encodeJSON(

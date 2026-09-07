@@ -10,7 +10,6 @@ import ClerkKit
 import SwiftUI
 
 struct EmailLinkVerificationView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
   @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
   @SwiftUI.Environment(AuthNavigation.self) private var navigation
@@ -192,16 +191,6 @@ extension EmailLinkVerificationView {
 extension EmailLinkVerificationView {
   @MainActor
   private func sendInitialLinkIfNeeded() async {
-    if case .signIn = mode {
-      let alreadySent =
-        clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
-        && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
-      if alreadySent {
-        deliveryState = .sent
-        return
-      }
-    }
-
     await sendLink()
   }
 
@@ -212,12 +201,18 @@ extension EmailLinkVerificationView {
     do {
       switch mode {
       case .signIn(let factor):
-        guard let signIn = clerk.auth.currentSignIn else {
+        guard jsClerk.client.signIn.id != nil else {
           deliveryState = .idle
           navigation.path = []
           return
         }
-        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        try await jsClerk.client.signIn.prepareFirstFactor(
+          .init(
+            strategy: .emailLink,
+            emailAddressId: factor.emailAddressId,
+            redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
+          )
+        )
 
       case .signUp:
         guard jsClerk.client.signUp.id != nil else {

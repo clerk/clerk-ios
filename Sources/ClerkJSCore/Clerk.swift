@@ -328,15 +328,18 @@ public final class Clerk {
       public var strategy: Strategy
       public var emailAddressId: String?
       public var phoneNumberId: String?
+      public var redirectUrl: String?
 
       public init(
         strategy: Strategy,
         emailAddressId: String? = nil,
-        phoneNumberId: String? = nil
+        phoneNumberId: String? = nil,
+        redirectUrl: String? = nil
       ) {
         self.strategy = strategy
         self.emailAddressId = emailAddressId
         self.phoneNumberId = phoneNumberId
+        self.redirectUrl = redirectUrl
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -344,12 +347,14 @@ public final class Clerk {
         try container.encode(strategy, forKey: .strategy)
         try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
         try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
+        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
       }
 
       private enum CodingKeys: String, CodingKey {
         case strategy
         case emailAddressId
         case phoneNumberId
+        case redirectUrl
       }
     }
 
@@ -380,6 +385,7 @@ public final class Clerk {
 
     public enum Strategy: String, Encodable, Sendable {
       case emailCode = "email_code"
+      case emailLink = "email_link"
       case phoneCode = "phone_code"
       case password
       case resetPasswordEmailCode = "reset_password_email_code"
