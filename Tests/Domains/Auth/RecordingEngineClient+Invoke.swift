@@ -49,6 +49,9 @@ extension RecordingEngineClient {
       try await dispatchSignUp(invocation)
       return .null
     }
+    if case .session = invocation.receiver {
+      return try await dispatchSession(invocation)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)
@@ -372,6 +375,59 @@ extension RecordingEngineClient {
     }
   }
 
+  private func dispatchSession(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
+    switch invocation.method {
+    case "getToken":
+      return .string("jwt_engine")
+    case "revoke":
+      listedLocate = "getSessions"
+      listedMethod = "revoke"
+      return try encodeKit(ClerkKit.Session.mock)
+    case "startVerification":
+      let params = try decodeInvocation(SessionVerifyCreateParams.self, invocation)
+      return try await encodeKit(startSessionVerification(level: sessionLevelString(params.level)))
+    case "prepareFirstFactorVerification":
+      let params = try decodeInvocation(SessionVerifyPrepareFirstFactorParams.self, invocation)
+      return try await encodeKit(
+        prepareSessionFirstFactor(
+          strategy: sessionPrepareStrategyString(params.strategy),
+          emailAddressId: params.emailAddressId,
+          phoneNumberId: params.phoneNumberId,
+          enterpriseConnectionId: params.enterpriseConnectionId,
+          redirectUrl: params.redirectUrl
+        )
+      )
+    case "attemptFirstFactorVerification":
+      let args = try decodeInvocation(SessionAttemptArgs.self, invocation)
+      return try await encodeKit(
+        attemptSessionFirstFactor(
+          strategy: args.strategy,
+          code: args.code,
+          password: args.password,
+          publicKeyCredential: args.publicKeyCredential
+        )
+      )
+    case "prepareSecondFactorVerification":
+      let params = try decodeInvocation(PhoneCodeSecondFactorConfig.self, invocation)
+      return try await encodeKit(
+        prepareSessionSecondFactor(strategy: params.strategy, phoneNumberId: params.phoneNumberId)
+      )
+    case "attemptSecondFactorVerification":
+      let args = try decodeInvocation(SessionAttemptArgs.self, invocation)
+      return try await encodeKit(
+        attemptSessionSecondFactor(
+          strategy: args.strategy,
+          code: args.code,
+          publicKeyCredential: args.publicKeyCredential
+        )
+      )
+    case "verifyWithPasskey":
+      return try await encodeKit(verifySessionWithPasskey())
+    default:
+      throw ClerkClientError(message: "Unhandled session JS invocation \(invocation.method)")
+    }
+  }
+
   private func mfaType(_ strategy: String) -> ClerkKit.SignIn.MfaType {
     switch strategy {
     case "phone_code":
@@ -472,6 +528,41 @@ private struct FirstFactorAttemptArgs: Decodable {
 private struct SecondFactorAttemptArgs: Decodable {
   var strategy: String
   var code: String?
+}
+
+private struct SessionAttemptArgs: Decodable {
+  var strategy: String
+  var code: String?
+  var password: String?
+  var publicKeyCredential: String?
+}
+
+private func sessionLevelString(_ level: SessionVerifyCreateParamsLevel) -> String {
+  switch level {
+  case .firstFactor:
+    "first_factor"
+  case .secondFactor:
+    "second_factor"
+  case .multiFactor:
+    "multi_factor"
+  case .unknown(let value):
+    value
+  }
+}
+
+private func sessionPrepareStrategyString(_ strategy: SessionVerifyPrepareFirstFactorParamsStrategy) -> String {
+  switch strategy {
+  case .passkey:
+    "passkey"
+  case .emailCode:
+    "email_code"
+  case .phoneCode:
+    "phone_code"
+  case .enterpriseSso:
+    "enterprise_sso"
+  case .unknown(let value):
+    value
+  }
 }
 
 private struct SignUpPrepareArgs: Decodable {

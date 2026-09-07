@@ -32,7 +32,7 @@ extension Session {
   /// - Returns: A ``SessionVerification`` reflecting the current state of the flow.
   @discardableResult @MainActor
   public func startVerification(level: SessionVerification.Level) async throws -> SessionVerification {
-    try await Clerk.requireEngineClient().startSessionVerification(level: level.rawValue)
+    try await jsStartVerification(level: level)
   }
 
   // MARK: - First factor verification
@@ -119,7 +119,7 @@ extension Session {
     level: PasskeyVerificationLevel
   ) async throws -> SessionVerification {
     if level == .firstFactor {
-      return try await Clerk.requireEngineClient().verifySessionWithPasskey()
+      return try await jsVerifyWithPasskey()
     }
 
     let prepared = try await prepareSecondFactorVerification(strategy: .passkey)
@@ -217,8 +217,8 @@ extension Session {
     enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.requireEngineClient().prepareSessionFirstFactor(
-      strategy: strategy.rawValue,
+    try await jsPrepareFirstFactorVerification(
+      strategy: strategy,
       emailAddressId: emailAddressId,
       phoneNumberId: phoneNumberId,
       enterpriseConnectionId: enterpriseConnectionId,
@@ -234,8 +234,8 @@ extension Session {
     password: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.requireEngineClient().attemptSessionFirstFactor(
-      strategy: strategy.rawValue,
+    try await jsAttemptFirstFactorVerification(
+      strategy: strategy,
       code: code,
       password: password,
       publicKeyCredential: publicKeyCredential
@@ -248,10 +248,7 @@ extension Session {
     strategy: FactorStrategy,
     phoneNumberId: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.requireEngineClient().prepareSessionSecondFactor(
-      strategy: strategy.rawValue,
-      phoneNumberId: phoneNumberId
-    )
+    try await jsPrepareSecondFactorVerification(strategy: strategy, phoneNumberId: phoneNumberId)
   }
 
   /// Attempts the second factor of an in-session reverification flow.
@@ -261,8 +258,8 @@ extension Session {
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.requireEngineClient().attemptSessionSecondFactor(
-      strategy: strategy.rawValue,
+    try await jsAttemptSecondFactorVerification(
+      strategy: strategy,
       code: code,
       publicKeyCredential: publicKeyCredential
     )
