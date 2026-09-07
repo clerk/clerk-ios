@@ -93,7 +93,33 @@ package enum ClerkJSHostStore {
       biometricCredential: biometricCredential(for: kit),
       oauthRedirectURL: URL(string: kit.options.redirectConfig.redirectUrl) ?? ClerkJSRuntime.defaultOAuthRedirectURL,
       proxyURL: kit.options.proxyUrl,
-      sessionConfiguration: sessionConfiguration
+      sessionConfiguration: sessionConfiguration,
+      httpMiddleware: httpMiddleware(for: kit)
+    )
+  }
+
+  static func httpMiddleware(for kit: Clerk) -> ClerkJSHTTPMiddleware {
+    let scope = kit.runtimeScope
+    let middleware = kit.options.middleware
+    return .init(
+      prepare: { request in
+        _ = try await scope.requireCurrentClerk()
+        var request = request
+        for hook in middleware.request {
+          try await hook.prepare(&request)
+          try Task.checkCancellation()
+          _ = try await scope.requireCurrentClerk()
+        }
+        return request
+      },
+      validate: { response, data, request in
+        _ = try await scope.requireCurrentClerk()
+        for hook in middleware.response {
+          try await hook.validate(response, data: data, for: request)
+          try Task.checkCancellation()
+          _ = try await scope.requireCurrentClerk()
+        }
+      }
     )
   }
 

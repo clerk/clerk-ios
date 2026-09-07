@@ -9,6 +9,77 @@ import Testing
 @Suite(.serialized)
 struct EmbeddedPublicLifecycleTests {
   @Test
+  func customMiddlewareWrapsTheSharedRuntimeTransport() async throws {
+    let responses = LockIsolated<[String]>([])
+    let hook = LifecycleMiddleware(
+      prepareHook: { request in
+        var request = request
+        request.setValue("custom-header", forHTTPHeaderField: "X-Test-Middleware")
+        return request
+      },
+      validateHook: { response, data, request in
+        #expect(request.value(forHTTPHeaderField: "X-Test-Middleware") == "custom-header")
+        #expect(response.statusCode == 200)
+        #expect(!data.isEmpty)
+        responses.withValue { $0.append(request.url!.path) }
+      }
+    )
+    let fixture = try LifecycleFixture()
+    let clerk = try await fixture.configure(middleware: .init(request: [hook], response: [hook]))
+    #expect(try await clerk.auth.getToken() != nil)
+    #expect(fixture.customHeaders.allSatisfy { $0 == "custom-header" })
+    #expect(responses.value.contains("/v1/client/sessions/sess_fixture/tokens"))
+    await fixture.dispose()
+  }
+
+  @Test
+  func rejectedResponseCannotPublishItsToken() async throws {
+    let hook = LifecycleMiddleware(validateHook: { _, _, request in
+      if request.url?.path.hasSuffix("/tokens") == true { throw URLError(.noPermissionsToReadFile) }
+    })
+    let fixture = try LifecycleFixture()
+    let clerk = try await fixture.configure(middleware: .init(response: [hook]))
+    try await fixture.initialize()
+    let originalToken = clerk.session?.lastActiveToken.jwt
+    let host = try #require(fixture.host)
+    _ = try await host.runtime.evaluateJSON("(() => { globalThis.originalTimer = setTimeout; globalThis.setTimeout = (f, ms) => originalTimer(f, Math.min(ms, 1)); return true; })()")
+    await #expect(throws: Error.self) { try await clerk.auth.getToken() }
+    #expect(fixture.mints > 0)
+    #expect(clerk.session?.lastActiveToken.jwt == originalToken)
+    await fixture.dispose()
+  }
+
+  @Test
+  func disposalWhilePreparingMiddlewareNeverSendsTheRequest() async throws {
+    let entered = LockIsolated(false)
+    let cancelled = LockIsolated(false)
+    let hook = LifecycleMiddleware(prepareHook: { request in
+      if request.url?.path.hasSuffix("/tokens") == true {
+        entered.setValue(true)
+        do { try await Task.sleep(for: .seconds(30)) }
+        catch { cancelled.setValue(true); throw error }
+      }
+      return request
+    })
+    let fixture = try LifecycleFixture()
+    let clerk = try await fixture.configure(middleware: .init(request: [hook]))
+    let token = Task { try await clerk.auth.getToken() }
+    for _ in 0 ..< 5000 {
+      if entered.value { break }
+      try await Task.sleep(for: .milliseconds(1))
+    }
+    #expect(entered.value)
+    await fixture.dispose()
+    await #expect(throws: Error.self) { try await token.value }
+    for _ in 0 ..< 5000 {
+      if cancelled.value { break }
+      try await Task.sleep(for: .milliseconds(1))
+    }
+    #expect(cancelled.value)
+    #expect(fixture.mints == 0)
+  }
+
+  @Test
   func restoresLegacyIdentityBeforeLoadingAndCoalescesStartup() async throws {
     let fixture = try LifecycleFixture()
     let clerk = try await fixture.configure()
@@ -193,6 +264,7 @@ private final class LifecycleFixture {
     var offline = false
     var requests: [String] = []
     var credentials: [String] = []
+    var customHeaders: [String] = []
     var mints = 0
     var holdTokens = false
     var releases: [@Sendable () -> Void] = []
@@ -220,6 +292,10 @@ private final class LifecycleFixture {
 
   var credentials: [String] {
     state.value.credentials
+  }
+
+  var customHeaders: [String] {
+    state.value.customHeaders
   }
 
   var mints: Int {
@@ -260,7 +336,7 @@ private final class LifecycleFixture {
     releases.forEach { $0() }
   }
 
-  func configure() async throws -> Clerk {
+  func configure(middleware: Clerk.Options.MiddlewareConfig = .init()) async throws -> Clerk {
     await Clerk.resetSharedInstanceForTesting()
     let state = state
     LifecycleURLProtocol.gate.setValue { request, release in
@@ -275,6 +351,7 @@ private final class LifecycleFixture {
         let path = request.url!.path
         value.requests.append(path)
         value.credentials.append(request.value(forHTTPHeaderField: "Authorization") ?? "")
+        value.customHeaders.append(request.value(forHTTPHeaderField: "X-Test-Middleware") ?? "")
         if value.offline { throw URLError(.notConnectedToInternet) }
         let response: Any
         switch path {
@@ -300,7 +377,7 @@ private final class LifecycleFixture {
       self?.host = host
       return ClerkJSHostEngine(host: host, kit: kit)
     }
-    return try Clerk.configureForTesting(publishableKey: testPublishableKey, options: .init(watchConnectivityEnabled: false), keychainStorage: keychain)
+    return try Clerk.configureForTesting(publishableKey: testPublishableKey, options: .init(watchConnectivityEnabled: false, middleware: middleware), keychainStorage: keychain)
   }
 
   func initialize() async throws {
@@ -316,6 +393,19 @@ private final class LifecycleFixture {
     let now = Int(Date().timeIntervalSince1970)
     let payload = try! JSONSerialization.data(withJSONObject: ["sub": "user_fixture", "sid": "sess_fixture", "iat": now + count, "exp": now + Int(expiry) + count])
     return "eyJhbGciOiJSUzI1NiJ9." + payload.base64EncodedString().replacingOccurrences(of: "=", with: "") + ".signature"
+  }
+}
+
+private struct LifecycleMiddleware: ClerkRequestMiddleware, ClerkResponseMiddleware {
+  var prepareHook: @Sendable (URLRequest) async throws -> URLRequest = { $0 }
+  var validateHook: @Sendable (HTTPURLResponse, Data, URLRequest) async throws -> Void = { _, _, _ in }
+
+  func prepare(_ request: inout URLRequest) async throws {
+    request = try await prepareHook(request)
+  }
+
+  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+    try await validateHook(response, data, request)
   }
 }
 

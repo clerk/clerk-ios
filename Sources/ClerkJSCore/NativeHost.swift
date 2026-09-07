@@ -16,6 +16,7 @@ final class NativeHost: @unchecked Sendable {
   }
 
   private let tokenCache: ClerkJSTokenCache
+  var httpMiddleware = ClerkJSHTTPMiddleware()
   var resourceCache: ClerkJSResourceCache?
   var biometricCredential: ClerkJSNativeCapability?
   var secureStorage = ClerkJSSecureStorage.memory()
@@ -440,14 +441,26 @@ final class NativeHost: @unchecked Sendable {
       request.httpBody = body.data(using: .utf8)
     }
 
-    let task = session.dataTask(with: request) { [weak self] data, response, error in
+    let originalRequest = request
+    let middleware = httpMiddleware
+    let task = Task { [weak self] in
       guard let self, let runtime else { return }
-      runtime.queue.async {
-        self.completeFetch(id, data: data, response: response, error: error)
+      do {
+        let prepared = try await middleware.prepare(originalRequest)
+        try Task.checkCancellation()
+        let (data, response) = try await session.data(for: prepared)
+        try Task.checkCancellation()
+        guard let http = response as? HTTPURLResponse else {
+          throw URLError(.badServerResponse)
+        }
+        try await middleware.validate(http, data, prepared)
+        try Task.checkCancellation()
+        runtime.queue.async { self.completeFetch(id, data: data, response: response, error: nil) }
+      } catch {
+        runtime.queue.async { self.completeFetch(id, data: nil, response: nil, error: error) }
       }
     }
     fetches[id] = InFlightFetch(task: task, callback: callback)
-    task.resume()
     return id
   }
 
@@ -491,24 +504,6 @@ final class NativeHost: @unchecked Sendable {
     guard let inflight = fetches.removeValue(forKey: id) else { return }
     inflight.task.cancel()
     inflight.callback.call(withArguments: ["The operation was aborted.", NSNull()])
-  }
-
-  private static func clientJSON(fromFAPIBody data: Data) -> Data? {
-    guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-      return nil
-    }
-    let inner = asClientJSON(object["client"]) ?? asClientJSON(object["response"]) ?? asClientJSON(object)
-    guard let inner else {
-      return nil
-    }
-    return try? JSONSerialization.data(withJSONObject: inner)
-  }
-
-  private static func asClientJSON(_ value: Any?) -> [String: Any]? {
-    guard let object = value as? [String: Any], object["object"] as? String == "client" else {
-      return nil
-    }
-    return object
   }
 
   static func environmentJSON(fromFAPIBody data: Data) -> Data? {
@@ -1116,7 +1111,7 @@ final class NativeHost: @unchecked Sendable {
 }
 
 private struct InFlightFetch {
-  let task: URLSessionDataTask
+  let task: Task<Void, Never>
   let callback: JSValue
 }
 #endif

@@ -23,7 +23,8 @@ public final class ClerkJSHost: ClerkJSBridge {
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
-    sessionConfiguration: URLSessionConfiguration? = nil
+    sessionConfiguration: URLSessionConfiguration? = nil,
+    httpMiddleware: ClerkJSHTTPMiddleware = .init()
   ) {
     self.publishableKey = publishableKey
     runtime = ClerkJSRuntime(
@@ -34,7 +35,8 @@ public final class ClerkJSHost: ClerkJSBridge {
       oauthRedirectURL: oauthRedirectURL,
       proxyURL: proxyURL,
       appAttestKeyIdStore: appAttestKeyIdStore,
-      sessionConfiguration: sessionConfiguration
+      sessionConfiguration: sessionConfiguration,
+      httpMiddleware: httpMiddleware
     )
     runtime.setStateCommitHandler { [weak self] data in
       guard let self else { throw ClerkJSCoreError.disposed }

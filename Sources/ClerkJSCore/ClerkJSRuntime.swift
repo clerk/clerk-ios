@@ -52,7 +52,8 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL _: URL? = nil,
     appAttestKeyIdStore _: ClerkJSAppAttestKeyIdStore = .memory(),
-    sessionConfiguration _: URLSessionConfiguration? = nil
+    sessionConfiguration _: URLSessionConfiguration? = nil,
+    httpMiddleware _: ClerkJSHTTPMiddleware = .init()
   ) {}
 
   public var lastStateJSON: Data? {
@@ -122,13 +123,15 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
-    sessionConfiguration: URLSessionConfiguration? = nil
+    sessionConfiguration: URLSessionConfiguration? = nil,
+    httpMiddleware: ClerkJSHTTPMiddleware = .init()
   ) {
     self.sdkVersion = sdkVersion
     self.resourceCache = resourceCache
     self.oauthRedirectURL = oauthRedirectURL
     self.proxyURL = proxyURL
     runtime = JSRuntime(tokenCache: tokenCache, sessionConfiguration: sessionConfiguration)
+    runtime.host.httpMiddleware = httpMiddleware
     runtime.host.resourceCache = resourceCache
     runtime.host.secureStorage = secureStorage
     runtime.host.biometricCredential = biometricCredential
