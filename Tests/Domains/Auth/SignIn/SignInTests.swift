@@ -61,22 +61,15 @@ struct SignInTests {
     _ expectedStage: PasskeyAuthenticationFailure.Stage
   ) async {
     let signIn = SignIn.mock
-    let service = MockSignInService(
-      prepareFirstFactor: { _, _ in
-        if expectedStage == .preparingFirstFactor {
-          throw PasskeyTestError.preparationFailed
-        }
-        return .mock
-      },
-      attemptFirstFactor: { _, _ in
-        if expectedStage == .attemptingFirstFactor {
-          throw PasskeyTestError.attemptFailed
-        }
-        return .mock
-      }
-    )
-
-    configureService(service)
+    let engine = RecordingEngineClient()
+    engine.signInOnReload = .mock
+    if expectedStage == .preparingFirstFactor {
+      engine.resourceStepErrors["prepareFirstFactor"] = PasskeyTestError.preparationFailed
+    }
+    if expectedStage == .attemptingFirstFactor {
+      engine.resourceStepErrors["attemptFirstFactor"] = PasskeyTestError.attemptFailed
+    }
+    Clerk.engineClient = engine
 
     do {
       _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
@@ -126,31 +119,19 @@ struct SignInTests {
         nonce: "{\"challenge\":\"challenge\"}"
       )
     )
-    let capturedPrepare = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
-    let capturedAttempt = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
-    let service = MockSignInService(
-      prepareSecondFactor: { id, params in
-        capturedPrepare.setValue((id, params))
-        return preparedSignIn
-      },
-      attemptSecondFactor: { id, params in
-        capturedAttempt.setValue((id, params))
-        return preparedSignIn
-      }
-    )
-
-    configureService(service)
+    let engine = RecordingEngineClient()
+    engine.signInOnReload = preparedSignIn
+    Clerk.engineClient = engine
 
     _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
 
-    let prepare = try #require(capturedPrepare.value)
-    #expect(prepare.0 == signIn.id)
-    #expect(prepare.1.strategy == .passkey)
-    let attempt = try #require(capturedAttempt.value)
-    #expect(attempt.0 == signIn.id)
-    #expect(attempt.1.strategy == .passkey)
-    #expect(attempt.1.code == nil)
-    #expect(attempt.1.publicKeyCredential == "credential")
+    #expect(engine.allResourceMethods == ["prepareSecondFactor", "attemptSecondFactor"])
+    #expect(engine.resourceReceiver == .signIn)
+    let steps = try #require(engine.resourceSteps)
+    let list = try #require(JSONSerialization.jsonObject(with: steps) as? [[String: Any]])
+    let args = try #require(list.last?["args"] as? [String: Any])
+    #expect(args["strategy"] as? String == "passkey")
+    #expect(args["publicKeyCredential"] as? String == "credential")
   }
 
   @Test(arguments: [
@@ -165,22 +146,15 @@ struct SignInTests {
       status: .needsSecondFactor,
       supportedSecondFactors: [Factor(strategy: .passkey)]
     )
-    let service = MockSignInService(
-      prepareSecondFactor: { _, _ in
-        if expectedStage == .preparingSecondFactor {
-          throw PasskeyTestError.secondFactorPreparationFailed
-        }
-        return signIn
-      },
-      attemptSecondFactor: { _, _ in
-        if expectedStage == .attemptingSecondFactor {
-          throw PasskeyTestError.secondFactorAttemptFailed
-        }
-        return signIn
-      }
-    )
-
-    configureService(service)
+    let engine = RecordingEngineClient()
+    engine.signInOnReload = signIn
+    if expectedStage == .preparingSecondFactor {
+      engine.resourceStepErrors["prepareSecondFactor"] = PasskeyTestError.secondFactorPreparationFailed
+    }
+    if expectedStage == .attemptingSecondFactor {
+      engine.resourceStepErrors["attemptSecondFactor"] = PasskeyTestError.secondFactorAttemptFailed
+    }
+    Clerk.engineClient = engine
 
     do {
       _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }

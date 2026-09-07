@@ -1434,6 +1434,8 @@ final class RecordingEngineClient: ClerkEngineClient {
 
   var resourceReceiver: ClerkResourceReceiver?
   var resourceSteps: Data?
+  var allResourceMethods: [String] = []
+  var resourceStepErrors: [String: any Error] = [:]
   var reloadedNonce: String?
   var signInOnReload = SignIn.mock
   var signUpOnReload = SignUp.mock
@@ -1443,6 +1445,18 @@ final class RecordingEngineClient: ClerkEngineClient {
     resourceSteps = steps
     let methods = stepMethods(steps)
     let picks = stepPicks(steps)
+    allResourceMethods.append(contentsOf: methods)
+    if let method = methods.first, let error = resourceStepErrors[method] {
+      throw error
+    }
+    if methods.contains("prepareFirstFactor")
+      || methods.contains("prepareSecondFactor")
+      || methods.contains("attemptFirstFactor")
+      || methods.contains("attemptSecondFactor")
+    {
+      publish(signInOnReload)
+      return try JSONEncoder.clerkEncoder.encode(signInOnReload)
+    }
     if methods.contains("reload") {
       reloadedNonce = stepArgs(steps)["rotatingTokenNonce"] as? String
       switch receiver {

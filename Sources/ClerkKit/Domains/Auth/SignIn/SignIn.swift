@@ -81,11 +81,6 @@ public struct SignIn: Codable, Sendable, Equatable {
 
 extension SignIn {
   @MainActor
-  private var signInService: any SignInServiceProtocol {
-    Clerk.shared.dependencies.signInService
-  }
-
-  @MainActor
   private var magicLinkStore: MagicLinkStore {
     Clerk.shared.dependencies.magicLinkStore
   }
@@ -516,16 +511,23 @@ extension SignIn {
     let signIn: SignIn
     do {
       if usesSecondFactor {
-        signIn = try await signInService.prepareSecondFactor(
-          signInId: id,
-          params: .init(strategy: .passkey)
+        try await Clerk.callResourceSteps(
+          .signIn,
+          [["method": "prepareSecondFactor", "args": ["strategy": "passkey"]]]
         )
       } else {
-        signIn = try await signInService.prepareFirstFactor(
-          signInId: id,
-          params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
+        try await Clerk.callResourceSteps(
+          .signIn,
+          [[
+            "method": "prepareFirstFactor",
+            "args": [
+              "strategy": "passkey",
+              "redirectUrl": Clerk.shared.options.redirectConfig.redirectUrl,
+            ],
+          ]]
         )
       }
+      signIn = try Clerk.requireEngineSignIn()
     } catch {
       throw PasskeyAuthenticationFailure(
         stage: usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor,
@@ -545,16 +547,29 @@ extension SignIn {
 
     do {
       if usesSecondFactor {
-        return try await signInService.attemptSecondFactor(
-          signInId: signIn.id,
-          params: .init(strategy: .passkey, publicKeyCredential: credential)
+        try await Clerk.callResourceSteps(
+          .signIn,
+          [[
+            "method": "attemptSecondFactor",
+            "args": [
+              "strategy": "passkey",
+              "publicKeyCredential": credential,
+            ],
+          ]]
+        )
+      } else {
+        try await Clerk.callResourceSteps(
+          .signIn,
+          [[
+            "method": "attemptFirstFactor",
+            "args": [
+              "strategy": "passkey",
+              "publicKeyCredential": credential,
+            ],
+          ]]
         )
       }
-
-      return try await signInService.attemptFirstFactor(
-        signInId: signIn.id,
-        params: .init(strategy: .passkey, publicKeyCredential: credential)
-      )
+      return try Clerk.requireEngineSignIn()
     } catch {
       throw PasskeyAuthenticationFailure(
         stage: usesSecondFactor ? .attemptingSecondFactor : .attemptingFirstFactor,
