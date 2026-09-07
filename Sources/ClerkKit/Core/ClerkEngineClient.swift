@@ -4,9 +4,6 @@ import Foundation
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue
-  func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws
-  func authenticateSignUpWithRedirect(strategy: String, redirectUrl: String, emailAddress: String?) async throws
-  func authenticateWithPasskey(autofill: Bool) async throws
 }
 
 extension Clerk {

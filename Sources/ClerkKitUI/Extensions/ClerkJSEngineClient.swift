@@ -24,59 +24,12 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     }
   }
 
-  func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws {
-    await loadIfNeeded()
-    try await engine.client.signIn.authenticateWithRedirect(
-      .init(strategy: strategy, redirectUrl: resolvedRedirectUrl(redirectUrl), identifier: identifier)
-    )
-    try await activateIfCompleteAfterRedirect()
-  }
-
-  func authenticateSignUpWithRedirect(strategy: String, redirectUrl: String, emailAddress: String?) async throws {
-    await loadIfNeeded()
-    try await engine.client.signUp.authenticateWithRedirect(
-      .init(strategy: strategy, redirectUrl: resolvedRedirectUrl(redirectUrl), emailAddress: emailAddress)
-    )
-    try await activateIfCompleteAfterRedirect()
-  }
-
-  func authenticateWithPasskey(autofill: Bool) async throws {
-    await loadIfNeeded()
-    let signIn = try await engine.client.signIn.authenticateWithPasskey(
-      AuthenticateWithPasskeyParams(flow: autofill ? .autofill : nil)
-    )
-    try await activateIfComplete(signIn)
-  }
-
   private func loadIfNeeded() async {
     await ClerkRuntimeStore.loadIfNeeded(engine, key: kit.publishableKey, onto: kit)
   }
 
   private func publish() {
     ClerkRuntimeStore.publish(engine, onto: kit)
-  }
-
-  private func activateIfComplete(_ signIn: ClerkJSCore.Clerk.SignIn) async throws {
-    if signIn.status == .complete, let sessionId = signIn.createdSessionId {
-      try await engine.setActive(.init(session: sessionId))
-    }
-    publish()
-  }
-
-  private func activateIfCompleteAfterRedirect() async throws {
-    if let sessionId = engine.client.signIn.createdSessionId {
-      try await engine.setActive(.init(session: sessionId))
-    } else if let sessionId = engine.client.signUp.createdSessionId {
-      try await engine.setActive(.init(session: sessionId))
-    }
-    publish()
-  }
-
-  private func resolvedRedirectUrl(_ redirectUrl: String) -> String {
-    if redirectUrl.isEmpty {
-      return ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
-    }
-    return redirectUrl
   }
 }
 

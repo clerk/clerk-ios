@@ -50,6 +50,81 @@ extension Clerk {
     }
     return signUp
   }
+
+  @MainActor
+  static func activateCompletedAuth() async throws {
+    if shared.client?.signIn?.status == .complete, let sessionId = shared.client?.signIn?.createdSessionId {
+      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
+    } else if let sessionId = shared.client?.signUp?.createdSessionId {
+      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
+    }
+  }
+
+  @MainActor
+  static var oauthRedirectURL: String {
+    let configured = shared.options.redirectConfig.redirectUrl
+    if !configured.isEmpty {
+      return configured
+    }
+    let scheme = Bundle.main.bundleIdentifier ?? "clerk"
+    return "\(scheme)://sso-callback"
+  }
+
+  @MainActor
+  static func authenticateWithRedirect(
+    strategy: String,
+    identifier: String? = nil
+  ) async throws -> TransferFlowResult {
+    try await js(
+      .signIn,
+      JSRawCall(
+        "authenticateWithRedirect",
+        JSONValue(
+          encoding: SignInRedirectArgs(
+            strategy: strategy,
+            redirectUrl: oauthRedirectURL,
+            identifier: identifier
+          )
+        )
+      )
+    )
+    try await activateCompletedAuth()
+    return try requireEngineTransferResult()
+  }
+
+  @MainActor
+  static func authenticateSignUpWithRedirect(
+    strategy: String,
+    emailAddress: String? = nil
+  ) async throws -> TransferFlowResult {
+    try await js(
+      .signUp,
+      JSRawCall(
+        "authenticateWithRedirect",
+        JSONValue(
+          encoding: SignUpRedirectArgs(
+            strategy: strategy,
+            redirectUrl: oauthRedirectURL,
+            emailAddress: emailAddress
+          )
+        )
+      )
+    )
+    try await activateCompletedAuth()
+    return try requireEngineTransferResult()
+  }
+}
+
+private struct SignInRedirectArgs: Encodable {
+  var strategy: String
+  var redirectUrl: String
+  var identifier: String?
+}
+
+private struct SignUpRedirectArgs: Encodable {
+  var strategy: String
+  var redirectUrl: String
+  var emailAddress: String?
 }
 
 extension JSON {

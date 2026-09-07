@@ -171,13 +171,10 @@ extension SignIn {
     transferable _: Bool = true,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithRedirect(
+    try await Clerk.authenticateWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
       identifier: identifier
     )
-    return try Clerk.requireEngineTransferResult()
   }
 
   /// Authenticates with OAuth using the specified provider.
@@ -202,13 +199,7 @@ extension SignIn {
     transferable _: Bool = true,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithRedirect(
-      strategy: provider.strategy,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-      identifier: identifier
-    )
-    return try Clerk.requireEngineTransferResult()
+    try await Clerk.authenticateWithRedirect(strategy: provider.strategy, identifier: identifier)
   }
   #endif
 
@@ -248,9 +239,8 @@ extension SignIn {
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
     if !usesPasskeyAsSecondFactor {
       do {
-        let engine = try await Clerk.requireEngineClient()
-        try await engine.authenticateWithPasskey(autofill: autofill)
-        return try Clerk.requireEngineSignIn()
+        try await SignIn.authenticatePasskey(autofill: autofill)
+        return try await Clerk.finishedSignIn()
       } catch {
         throw PasskeyAuthenticationFailure(stage: .attemptingFirstFactor, underlyingError: error)
       }

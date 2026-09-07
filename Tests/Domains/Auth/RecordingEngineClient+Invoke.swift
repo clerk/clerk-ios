@@ -298,6 +298,16 @@ extension RecordingEngineClient {
         password: params.password,
         signOutOfOtherSessions: params.signOutOfOtherSessions ?? false
       )
+    case "authenticateWithRedirect":
+      let args = try decodeInvocation(SignInRedirectArgs.self, invocation)
+      try await authenticateWithRedirect(
+        strategy: args.strategy,
+        redirectUrl: args.redirectUrl,
+        identifier: args.identifier
+      )
+    case "authenticateWithPasskey":
+      let params = try? decodeInvocation(AuthenticateWithPasskeyParams.self, invocation)
+      try await authenticateWithPasskey(autofill: params?.flow == .autofill)
     default:
       _ = try await callInstance(
         root: "signIn",
@@ -366,6 +376,13 @@ extension RecordingEngineClient {
       default:
         try await verifySignUpEmailCode(params.code ?? "")
       }
+    case "authenticateWithRedirect":
+      let args = try decodeInvocation(SignUpRedirectArgs.self, invocation)
+      try await authenticateSignUpWithRedirect(
+        strategy: args.strategy,
+        redirectUrl: args.redirectUrl,
+        emailAddress: args.emailAddress
+      )
     default:
       _ = try await callInstance(
         root: "signUp",
@@ -570,4 +587,16 @@ private struct SignUpPrepareArgs: Decodable {
   var redirectUrl: String?
   var codeChallenge: String?
   var codeChallengeMethod: String?
+}
+
+private struct SignInRedirectArgs: Decodable {
+  var strategy: String
+  var redirectUrl: String
+  var identifier: String?
+}
+
+private struct SignUpRedirectArgs: Decodable {
+  var strategy: String
+  var redirectUrl: String
+  var emailAddress: String?
 }

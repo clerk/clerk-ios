@@ -318,6 +318,16 @@ extension SignIn {
   }
 
   @MainActor
+  static func authenticatePasskey(autofill: Bool) async throws {
+    try await Clerk.js(
+      .signIn,
+      SignInJSCall.authenticateWithPasskey(
+        AuthenticateWithPasskeyParams(flow: autofill ? .autofill : nil)
+      )
+    )
+  }
+
+  @MainActor
   static func preparePasskeyFirstFactor() async throws {
     try await Clerk.js(
       .signIn,

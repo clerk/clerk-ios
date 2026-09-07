@@ -182,13 +182,7 @@ public struct Auth {
     transferable _: Bool = true,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithRedirect(
-      strategy: provider.strategy,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-      identifier: nil
-    )
-    return try Clerk.requireEngineTransferResult()
+    try await Clerk.authenticateWithRedirect(strategy: provider.strategy)
   }
   #endif
 
@@ -300,9 +294,8 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithPasskey(autofill: false)
-    return try Clerk.requireEngineSignIn()
+    try await SignIn.authenticatePasskey(autofill: false)
+    return try await Clerk.finishedSignIn()
   }
   #endif
 
@@ -382,13 +375,10 @@ public struct Auth {
     transferable _: Bool = true,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithRedirect(
+    try await Clerk.authenticateWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
       identifier: emailAddress
     )
-    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -464,13 +454,7 @@ public struct Auth {
     prefersEphemeralWebBrowserSession _: Bool = false,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateSignUpWithRedirect(
-      strategy: provider.strategy,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
-      emailAddress: nil
-    )
-    return try Clerk.requireEngineTransferResult()
+    try await Clerk.authenticateSignUpWithRedirect(strategy: provider.strategy)
   }
   #endif
 
@@ -555,13 +539,10 @@ public struct Auth {
     prefersEphemeralWebBrowserSession _: Bool = false,
     unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateSignUpWithRedirect(
+    try await Clerk.authenticateSignUpWithRedirect(
       strategy: FactorStrategy.enterpriseSSO.rawValue,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
       emailAddress: emailAddress
     )
-    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
