@@ -496,37 +496,44 @@ struct ClerkEngineClientTests {
 
     let email = EmailAddress.mock
     _ = try await email.sendCode()
-    #expect(engine.emailAddressId == email.id)
-    #expect(engine.emailAddressMethod == "prepareVerification")
+    #expect(engine.userChildPick == "emailAddresses")
+    #expect(engine.userChildId == email.id)
+    #expect(engine.userChildMethod == "prepareVerification")
 
     _ = try await email.verifyCode("424242")
-    #expect(engine.emailAddressMethod == "attemptVerification")
+    #expect(engine.userChildMethod == "attemptVerification")
 
     let deletedEmail = try await email.destroy()
-    #expect(engine.emailAddressMethod == "destroy")
+    #expect(engine.userChildMethod == "destroy")
     #expect(deletedEmail.deleted == true)
 
     let phone = PhoneNumber.mock
     _ = try await phone.sendCode()
-    #expect(stepPicks(engine.resourceSteps) == ["phoneNumbers"])
+    #expect(engine.userChildPick == "phoneNumbers")
+    #expect(engine.userChildMethod == "prepareVerification")
     _ = try await phone.verifyCode("424242")
+    #expect(engine.userChildMethod == "attemptVerification")
     _ = try await phone.makeDefaultSecondFactor()
+    #expect(engine.userChildMethod == "makeDefaultSecondFactor")
     _ = try await phone.setReservedForSecondFactor(reserved: true)
+    #expect(engine.userChildMethod == "setReservedForSecondFactor")
     let deletedPhone = try await phone.delete()
+    #expect(engine.userChildMethod == "destroy")
     #expect(deletedPhone.deleted == true)
 
     let passkey = Passkey.mock
     _ = try await passkey.update(name: "Laptop")
-    #expect(stepPicks(engine.resourceSteps) == ["passkeys"])
-    #expect(stepMethods(engine.resourceSteps) == ["update"])
+    #expect(engine.userChildPick == "passkeys")
+    #expect(engine.userChildMethod == "update")
     _ = try await passkey.delete()
-    #expect(stepMethods(engine.resourceSteps) == ["delete"])
+    #expect(engine.userChildMethod == "delete")
 
     let account = ExternalAccount.mockVerified
     _ = try await account.prepareReauthorization(redirectUrl: "myapp://callback", additionalScopes: ["email"])
-    #expect(stepPicks(engine.resourceSteps) == ["externalAccounts"])
-    #expect(stepMethods(engine.resourceSteps) == ["reauthorize"])
+    #expect(engine.userChildPick == "externalAccounts")
+    #expect(engine.userChildMethod == "reauthorize")
     _ = try await account.destroy()
+    #expect(engine.userChildMethod == "destroy")
 
     #expect(kitCalls.identifierServiceCount == 0)
   }
@@ -1473,16 +1480,29 @@ final class RecordingEngineClient: ClerkEngineClient {
   var reloadedNonce: String?
   var signInOnReload = SignIn.mock
   var signUpOnReload = SignUp.mock
-  var emailAddressId: String?
-  var emailAddressMethod: String?
+  var userChildPick: String?
+  var userChildId: String?
+  var userChildMethod: String?
 
-  func callEmailAddress(_ id: String, _ method: String, args _: Data) async throws -> Data {
-    emailAddressId = id
-    emailAddressMethod = method
-    if method == "destroy" {
+  func callUserChild(pick: String, id: String, method: String, args _: Data) async throws -> Data {
+    userChildPick = pick
+    userChildId = id
+    userChildMethod = method
+    if method == "destroy" || method == "delete" {
       return Data(#"{"id":"1","deleted":true}"#.utf8)
     }
-    return try JSONEncoder.clerkEncoder.encode(EmailAddress.mock)
+    switch pick {
+    case "emailAddresses":
+      return try JSONEncoder.clerkEncoder.encode(EmailAddress.mock)
+    case "phoneNumbers":
+      return try JSONEncoder.clerkEncoder.encode(PhoneNumber.mock)
+    case "passkeys":
+      return try JSONEncoder.clerkEncoder.encode(Passkey.mock)
+    case "externalAccounts":
+      return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
+    default:
+      throw ClerkClientError(message: "Unexpected user child \(pick)")
+    }
   }
 
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {

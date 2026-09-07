@@ -308,8 +308,24 @@ public final class Clerk {
     try await callSteps(receiverPath: ClerkJSPath.userRoot, receiverArg: nil, steps: steps)
   }
 
+  public func userChild(pick: String, id: String) -> UserChildHandle {
+    UserChildHandle(clerk: self, pick: pick, id: id)
+  }
+
   public func emailAddress(_ id: String) -> UserChildHandle {
-    UserChildHandle(clerk: self, pick: "emailAddresses", id: id)
+    userChild(pick: "emailAddresses", id: id)
+  }
+
+  public func phoneNumber(_ id: String) -> UserChildHandle {
+    userChild(pick: "phoneNumbers", id: id)
+  }
+
+  public func passkey(_ id: String) -> UserChildHandle {
+    userChild(pick: "passkeys", id: id)
+  }
+
+  public func externalAccount(_ id: String) -> UserChildHandle {
+    userChild(pick: "externalAccounts", id: id)
   }
 
   @MainActor

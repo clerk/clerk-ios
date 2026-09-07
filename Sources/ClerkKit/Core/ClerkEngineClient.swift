@@ -3,6 +3,10 @@ import Foundation
 
 private struct EmptyEngineArgs: Encodable {}
 
+private struct PasskeyUpdateNameParams: Encodable {
+  var name: String
+}
+
 package enum ClerkResourceReceiver: Equatable {
   case organization(String)
   case user
@@ -98,7 +102,7 @@ package protocol ClerkEngineClient: AnyObject {
   func createOrganization(name: String, slug: String?) async throws -> Organization
   func getOrganization(id: String) async throws -> Organization
   func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
-  func callEmailAddress(_ id: String, _ method: String, args: Data) async throws -> Data
+  func callUserChild(pick: String, id: String, method: String, args: Data) async throws -> Data
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
@@ -153,9 +157,10 @@ extension Clerk {
 
   @MainActor
   package static func prepareEmailAddressVerification(id: String) async throws -> EmailAddress {
-    try await callEmailAddress(
-      id,
-      .prepareVerification,
+    try await callUserChild(
+      pick: "emailAddresses",
+      id: id,
+      EmailAddressJSMethod.prepareVerification,
       PrepareEmailAddressVerificationParams(strategy: .emailCode, redirectUrl: nil),
       as: EmailAddress.self
     )
@@ -163,9 +168,10 @@ extension Clerk {
 
   @MainActor
   package static func attemptEmailAddressVerification(id: String, code: String) async throws -> EmailAddress {
-    try await callEmailAddress(
-      id,
-      .attemptVerification,
+    try await callUserChild(
+      pick: "emailAddresses",
+      id: id,
+      EmailAddressJSMethod.attemptVerification,
       AttemptEmailAddressVerificationParams(code: code),
       as: EmailAddress.self
     )
@@ -173,28 +179,103 @@ extension Clerk {
 
   @MainActor
   package static func destroyEmailAddress(id: String) async throws -> DeletedObject {
-    try await callEmailAddress(id, .destroy, as: DeletedObject.self)
+    try await callUserChild(pick: "emailAddresses", id: id, EmailAddressJSMethod.destroy, as: DeletedObject.self)
   }
 
   @MainActor
-  package static func callEmailAddress(
-    _ id: String,
-    _ method: EmailAddressJSMethod,
-    _ args: some Encodable = EmptyEngineArgs()
-  ) async throws {
-    let engine = try await requireEngineClient()
-    _ = try await engine.callEmailAddress(id, method.rawValue, args: JSONEncoder().encode(args))
+  package static func preparePhoneNumberVerification(id: String) async throws -> PhoneNumber {
+    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.prepareVerification, as: PhoneNumber.self)
   }
 
   @MainActor
-  package static func callEmailAddress<T: Decodable>(
-    _ id: String,
-    _ method: EmailAddressJSMethod,
+  package static func attemptPhoneNumberVerification(id: String, code: String) async throws -> PhoneNumber {
+    try await callUserChild(
+      pick: "phoneNumbers",
+      id: id,
+      PhoneNumberJSMethod.attemptVerification,
+      AttemptPhoneNumberVerificationParams(code: code),
+      as: PhoneNumber.self
+    )
+  }
+
+  @MainActor
+  package static func makeDefaultPhoneNumberSecondFactor(id: String) async throws -> PhoneNumber {
+    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.makeDefaultSecondFactor, as: PhoneNumber.self)
+  }
+
+  @MainActor
+  package static func setPhoneNumberReservedForSecondFactor(id: String, reserved: Bool) async throws -> PhoneNumber {
+    try await callUserChild(
+      pick: "phoneNumbers",
+      id: id,
+      PhoneNumberJSMethod.setReservedForSecondFactor,
+      SetReservedForSecondFactorParams(reserved: reserved),
+      as: PhoneNumber.self
+    )
+  }
+
+  @MainActor
+  package static func destroyPhoneNumber(id: String) async throws -> DeletedObject {
+    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.destroy, as: DeletedObject.self)
+  }
+
+  @MainActor
+  package static func updatePasskey(id: String, name: String) async throws -> Passkey {
+    try await callUserChild(
+      pick: "passkeys",
+      id: id,
+      PasskeyJSMethod.update,
+      PasskeyUpdateNameParams(name: name),
+      as: Passkey.self
+    )
+  }
+
+  @MainActor
+  package static func deletePasskey(id: String) async throws -> DeletedObject {
+    try await callUserChild(pick: "passkeys", id: id, PasskeyJSMethod.delete, as: DeletedObject.self)
+  }
+
+  @MainActor
+  package static func reauthorizeExternalAccount(
+    id: String,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompt: String?
+  ) async throws -> ExternalAccount {
+    try await callUserChild(
+      pick: "externalAccounts",
+      id: id,
+      ExternalAccountJSMethod.reauthorize,
+      ReauthorizeExternalAccountParams(
+        additionalScopes: additionalScopes,
+        redirectUrl: redirectUrl,
+        oidcPrompt: oidcPrompt,
+        oidcLoginHint: nil
+      ),
+      as: ExternalAccount.self
+    )
+  }
+
+  @MainActor
+  package static func destroyExternalAccount(id: String) async throws -> DeletedObject {
+    try await callUserChild(pick: "externalAccounts", id: id, ExternalAccountJSMethod.destroy, as: DeletedObject.self)
+  }
+
+  @MainActor
+  package static func callUserChild<T: Decodable>(
+    pick: String,
+    id: String,
+    _ method: some RawRepresentable<String>,
     _ args: some Encodable = EmptyEngineArgs(),
     as _: T.Type
   ) async throws -> T {
     let engine = try await requireEngineClient()
-    let data = try await engine.callEmailAddress(id, method.rawValue, args: JSONEncoder().encode(args))
+    let data = try await engine.callUserChild(
+      pick: pick,
+      id: id,
+      method: method.rawValue,
+      args: JSONEncoder().encode(args)
+    )
     return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
   }
 

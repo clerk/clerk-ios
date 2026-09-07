@@ -79,14 +79,7 @@ extension Passkey {
   /// Updates the name of the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func update(name: String) async throws -> Passkey {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "passkeys", "findId": id],
-        ["method": "update", "args": ["name": name]],
-      ],
-      as: Passkey.self
-    )
+    try await Clerk.updatePasskey(id: id, name: name)
   }
 
   /// Attempts to verify the passkey with a credential.
@@ -98,13 +91,6 @@ extension Passkey {
   /// Deletes the associated passkey for the signed-in user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "passkeys", "findId": id],
-        ["method": "delete", "args": [String: String]()],
-      ],
-      as: DeletedObject.self
-    )
+    try await Clerk.deletePasskey(id: id)
   }
 }

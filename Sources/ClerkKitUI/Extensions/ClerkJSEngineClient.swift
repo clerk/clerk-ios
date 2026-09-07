@@ -495,9 +495,9 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return data
   }
 
-  func callEmailAddress(_ id: String, _ method: String, args: Data) async throws -> Data {
+  func callUserChild(pick: String, id: String, method: String, args: Data) async throws -> Data {
     await loadIfNeeded()
-    let data = try await engine.emailAddress(id).call(method, args: args)
+    let data = try await engine.userChild(pick: pick, id: id).call(method, args: args)
     publish()
     return data
   }

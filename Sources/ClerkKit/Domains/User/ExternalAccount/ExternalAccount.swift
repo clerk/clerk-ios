@@ -101,20 +101,11 @@ extension ExternalAccount {
     additionalScopes: [String] = [],
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
-    var args: [String: Any] = [
-      "redirectUrl": redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
-      "additionalScopes": additionalScopes,
-    ]
-    if let prompt = oidcPrompts.serializedPrompt {
-      args["oidcPrompt"] = prompt
-    }
-    return try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "externalAccounts", "findId": id],
-        ["method": "reauthorize", "args": args],
-      ],
-      as: ExternalAccount.self
+    try await Clerk.reauthorizeExternalAccount(
+      id: id,
+      redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
+      additionalScopes: additionalScopes,
+      oidcPrompt: oidcPrompts.serializedPrompt
     )
   }
 
@@ -155,13 +146,6 @@ extension ExternalAccount {
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["pick": "externalAccounts", "findId": id],
-        ["method": "destroy", "args": [String: String]()],
-      ],
-      as: DeletedObject.self
-    )
+    try await Clerk.destroyExternalAccount(id: id)
   }
 }
