@@ -111,14 +111,11 @@ struct SharedSessionSyncAdoptionTests {
     let privateKeychain = InMemoryKeychain()
     let configuredAppLocal = InMemoryKeychain()
     let legacyShared = InMemoryKeychain()
-    let flow = PendingMagicLinkFlow(
-      kind: .signIn,
-      flowId: "flow",
-      codeVerifier: "verifier",
-      createdAt: Date(),
-      expiresAt: Date().addingTimeInterval(600)
-    )
-    let flowData = try JSONEncoder.clerkEncoder.encode(flow)
+    let flowData = try JSONSerialization.data(withJSONObject: [
+      "kind": "signIn", "flow_id": "flow", "code_verifier": "verifier",
+      "created_at": Date().timeIntervalSince1970 * 1000,
+      "expires_at": Date().addingTimeInterval(600).timeIntervalSince1970 * 1000,
+    ])
     try configuredAppLocal.set(flowData, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
     try configuredAppLocal.set("app-attest", forKey: ClerkKeychainKey.attestKeyId.rawValue)
     try legacyShared.set("shared-attest", forKey: ClerkKeychainKey.attestKeyId.rawValue)

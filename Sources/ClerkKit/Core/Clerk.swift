@@ -261,10 +261,6 @@ public final class Clerk {
   /// This is a lightweight facade - Clerk owns the underlying EventEmitter.
   public var auth: Auth {
     Auth(
-      magicLinkStore: dependencies.magicLinkStore,
-      magicLinkService: dependencies.magicLinkService,
-      signInService: dependencies.signInService,
-      sessionService: dependencies.sessionService,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator

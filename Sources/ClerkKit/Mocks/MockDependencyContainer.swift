@@ -32,12 +32,10 @@ final class MockDependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let sessionService: SessionServiceProtocol
-  let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
 
-  let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
 
   /// Creates a dependency container with the provided API client and optional custom services.
@@ -51,7 +49,6 @@ final class MockDependencyContainer: Dependencies {
   ///   - userService: Optional custom user service (defaults to MockUserService).
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
-  ///   - magicLinkService: Optional custom magic-link service (defaults to MockMagicLinkService).
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
@@ -71,7 +68,6 @@ final class MockDependencyContainer: Dependencies {
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
     sessionService: (any SessionServiceProtocol)? = nil,
-    magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil
@@ -96,14 +92,12 @@ final class MockDependencyContainer: Dependencies {
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
-    magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
 
     // Use custom services if provided, otherwise use mock services
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
     self.sessionService = sessionService ?? MockSessionService()
-    self.magicLinkService = magicLinkService ?? MockMagicLinkService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()

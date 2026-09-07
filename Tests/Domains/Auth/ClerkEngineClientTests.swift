@@ -628,30 +628,6 @@ struct ClerkEngineClientTests {
   }
 
   @Test
-  func emailLinkUsesEngineAndSkipsKitFAPI() async throws {
-    let engine = RecordingEngineClient()
-    let kitCalls = KitCallCounter()
-    Clerk.engineClient = engine
-    installFailingSignInService(kitCalls)
-    installFailingSignUpService(kitCalls)
-
-    let signIn = try await Clerk.shared.auth.signInWithEmailLink(emailAddress: " user@example.com ")
-    #expect(engine.signedInIdentifier == "user@example.com")
-    #expect(engine.sentEmailLinkAddressId == "idn_email")
-    #expect(engine.sentEmailLinkChallengeMethod == PKCE.codeChallengeMethod)
-    #expect(engine.sentEmailLinkChallenge?.isEmpty == false)
-    #expect(signIn.firstFactorVerification?.factorStrategy == .emailLink)
-    #expect(kitCalls.createCount == 0)
-    #expect(kitCalls.prepareCount == 0)
-
-    engine.publish(SignUp.mock)
-    let signUp = try #require(Clerk.shared.auth.currentSignUp)
-    _ = try await signUp.sendEmailLink()
-    #expect(engine.sentSignUpEmailLinkChallenge?.isEmpty == false)
-    #expect(kitCalls.signUpCreateCount == 0)
-  }
-
-  @Test
   func signUpOAuthAndEnterpriseSSOUseEngineAndSkipKitFAPI() async throws {
     let engine = RecordingEngineClient()
     let kitCalls = KitCallCounter()

@@ -76,8 +76,38 @@ package enum ClerkJSHostStore {
       publishableKey: kit.publishableKey,
       tokenCache: .init(getToken: { token }, saveToken: { _ in }),
       resourceCache: .init(load: { resources }, save: { _ in }),
+      secureStorage: secureStorage(for: kit),
       oauthRedirectURL: URL(string: kit.options.redirectConfig.redirectUrl) ?? ClerkJSRuntime.defaultOAuthRedirectURL,
       proxyURL: kit.options.proxyUrl
+    )
+  }
+
+  static func secureStorage(for kit: Clerk) -> ClerkJSSecureStorage {
+    let scope = kit.runtimeScope
+    return ClerkJSSecureStorage(
+      read: { key in
+        try await MainActor.run {
+          let current = try scope.requireCurrentClerk()
+          return try current.dependencies.appLocalKeychain.data(forKey: key).map { String(decoding: $0, as: UTF8.self) }
+        }
+      },
+      write: { key, value in
+        try await MainActor.run {
+          let current = try scope.requireCurrentClerk()
+          if let value { try current.dependencies.appLocalKeychain.set(Data(value.utf8), forKey: key) }
+          else { try current.dependencies.appLocalKeychain.deleteItem(forKey: key) }
+        }
+      },
+      compareAndSwap: { key, expected, value in
+        try await MainActor.run {
+          let current = try scope.requireCurrentClerk()
+          let keychain = current.dependencies.appLocalKeychain
+          guard try keychain.data(forKey: key).map({ String(decoding: $0, as: UTF8.self) }) == expected else { return false }
+          if let value { try keychain.set(Data(value.utf8), forKey: key) }
+          else { try keychain.deleteItem(forKey: key) }
+          return true
+        }
+      }
     )
   }
 }

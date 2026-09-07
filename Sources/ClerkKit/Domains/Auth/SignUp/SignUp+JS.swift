@@ -72,31 +72,9 @@ extension SignUp {
   @discardableResult
   @MainActor
   public func sendEmailLink(redirectUri: String? = nil) async throws -> SignUp {
-    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
-    guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-up verification.", localizationBundle: .module)
-    }
-
-    let pkcePair = try PKCE.generatePair()
-    try Clerk.shared.dependencies.magicLinkStore.save(
-      kind: .signUp,
-      flowId: id,
-      codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
-
-    try await Clerk.js(
-      .signUp,
-      JSRawCall(
-        "prepareVerification",
-        JSONValue(
-          encoding: SignUpEmailLinkArgs(
-            redirectUrl: resolvedRedirectUri,
-            codeChallenge: pkcePair.challenge,
-            codeChallengeMethod: PKCE.codeChallengeMethod
-          )
-        )
-      )
+    try await Clerk.sendNativeMagicLink(
+      flow: "signUp", expectedId: id,
+      redirectUrl: redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
     )
     return try Clerk.requireEngineSignUp()
   }
@@ -167,11 +145,4 @@ extension SignUp {
   func handleTransferFlow() async throws -> TransferFlowResult {
     try await Clerk.completeNativeAuth(flow: "signUp", expectedId: id)
   }
-}
-
-private struct SignUpEmailLinkArgs: Encodable {
-  var strategy = "email_link"
-  var redirectUrl: String
-  var codeChallenge: String
-  var codeChallengeMethod: String
 }

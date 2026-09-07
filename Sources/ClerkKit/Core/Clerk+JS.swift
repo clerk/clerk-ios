@@ -34,6 +34,15 @@ extension Clerk {
   }
 
   @MainActor
+  static func sendNativeMagicLink(flow: String, expectedId: String, redirectUrl: String, emailAddressId: String? = nil) async throws {
+    try await js(.clerk, JSRawCall("sendNativeMagicLink", .object([
+      "flow": .string(flow), "expectedId": .string(expectedId), "redirectUrl": .string(redirectUrl),
+      "emailAddressId": emailAddressId.map(JSONValue.string) ?? .null,
+      "ownerId": AuthFlowRequestScope.ownerId.map { .string($0.uuidString) } ?? .null,
+    ])))
+  }
+
+  @MainActor
   static func finishedSignIn() async throws -> SignIn {
     try await js(.clerk, JSRawCall("finishNativeSignIn"))
     return try requireEngineSignIn()

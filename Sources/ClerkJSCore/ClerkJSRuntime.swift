@@ -47,6 +47,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     sdkVersion _: String = ClerkJSRuntime.sdkVersion,
     tokenCache _: ClerkJSTokenCache = .memory(),
     resourceCache _: ClerkJSResourceCache? = nil,
+    secureStorage _: ClerkJSSecureStorage = .memory(),
     oauthRedirectURL _: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL _: URL? = nil,
     appAttestKeyIdStore _: ClerkJSAppAttestKeyIdStore = .memory(),
@@ -140,6 +141,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     sdkVersion: String = ClerkJSRuntime.sdkVersion,
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
+    secureStorage: ClerkJSSecureStorage = .memory(),
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
@@ -151,6 +153,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     self.proxyURL = proxyURL
     runtime = JSRuntime(tokenCache: tokenCache, sessionConfiguration: sessionConfiguration)
     runtime.host.resourceCache = resourceCache
+    runtime.host.secureStorage = secureStorage
     runtime.host.oauth.redirectURL = oauthRedirectURL
     runtime.host.appAttest.keyIdStore = appAttestKeyIdStore
   }
@@ -220,6 +223,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
               __internal_oauthTransport: \(oauthTransport)
             }
           }, {
+            storage: function(request) { return __clerkNativeStorage(JSON.stringify(request)); },
             getToken: __clerkNativeGetToken,
             saveToken: __clerkNativeSaveToken,
             getCachedResources: __clerkNativeGetCachedResources,

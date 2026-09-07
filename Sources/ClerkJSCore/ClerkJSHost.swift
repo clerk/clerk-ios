@@ -148,6 +148,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     publishableKey: String,
     tokenCache: ClerkJSTokenCache = .memory(),
     resourceCache: ClerkJSResourceCache? = nil,
+    secureStorage: ClerkJSSecureStorage = .memory(),
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
     appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
@@ -157,6 +158,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     runtime = ClerkJSRuntime(
       tokenCache: tokenCache,
       resourceCache: resourceCache,
+      secureStorage: secureStorage,
       oauthRedirectURL: oauthRedirectURL,
       proxyURL: proxyURL,
       appAttestKeyIdStore: appAttestKeyIdStore,
@@ -184,6 +186,7 @@ public final class ClerkJSHost: ClerkJSBridge {
         clientAccount: "client-snapshot",
         environmentAccount: "environment-snapshot"
       ),
+      secureStorage: .keychain(service: service),
       appAttestKeyIdStore: .keychain(service: service)
     )
   }

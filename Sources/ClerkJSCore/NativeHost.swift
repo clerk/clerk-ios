@@ -1,4 +1,5 @@
 #if !os(watchOS)
+import ClerkSnapshots
 import CryptoKit
 import Foundation
 @preconcurrency import JavaScriptCore
@@ -6,8 +7,17 @@ import Security
 
 final class NativeHost: @unchecked Sendable {
   weak var runtime: JSRuntime?
+  private struct StorageRequest: Decodable {
+    enum Operation: String, Decodable { case read, write, compareAndSwap }
+    var operation: Operation
+    var key: String
+    var value: String?
+    var expected: String?
+  }
+
   private let tokenCache: ClerkJSTokenCache
   var resourceCache: ClerkJSResourceCache?
+  var secureStorage = ClerkJSSecureStorage.memory()
   private let passkeys = ClerkJSPasskeyCeremony()
   let oauth = ClerkJSOAuthSession()
   let apple = ClerkJSAppleCeremony()
@@ -208,6 +218,33 @@ final class NativeHost: @unchecked Sendable {
       }
     }
     context.setObject(saveCachedResources, forKeyedSubscript: "__clerkNativeSaveCachedResourcesImpl" as NSString)
+
+    let storage: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
+      guard let self, let runtime else { return }
+      let callbackID = retainCallback(callback)
+      let storage = secureStorage
+      Task {
+        do {
+          let request = try JSONDecoder().decode(StorageRequest.self, from: Data(payload.utf8))
+          let result: JSONValue
+          switch request.operation {
+          case .read:
+            result = try await storage.read(request.key).map(JSONValue.string) ?? .null
+          case .write:
+            try await storage.write(request.key, request.value)
+            result = .null
+          case .compareAndSwap:
+            result = try await .bool(storage.compareAndSwap(request.key, request.expected, request.value))
+          }
+          let json = try String(decoding: JSONEncoder().encode(result), as: UTF8.self)
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [NSNull(), json]) }
+        } catch {
+          let message = error.localizedDescription
+          runtime.queue.async { self.takeCallback(callbackID)?.call(withArguments: [message, NSNull()]) }
+        }
+      }
+    }
+    context.setObject(storage, forKeyedSubscript: "__clerkNativeStorageImpl" as NSString)
 
     let createPublicCredentials: @convention(block) (String, JSValue) -> Void = { [weak self] payload, callback in
       guard let self, let runtime else { return }
@@ -873,6 +910,14 @@ final class NativeHost: @unchecked Sendable {
           __clerkNativeCommitStateImpl(state, function(error) {
             if (error) reject(new Error(String(error)));
             else resolve();
+          });
+        });
+      };
+      globalThis.__clerkNativeStorage = function(request) {
+        return new Promise(function(resolve, reject) {
+          __clerkNativeStorageImpl(request, function(error, json) {
+            if (error) { reject(new Error(error)); return; }
+            try { resolve(JSON.parse(json)); } catch (error) { reject(error); }
           });
         });
       };

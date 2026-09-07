@@ -132,10 +132,7 @@ struct SharedSessionSyncAdoption {
 
   private func migratePrivateAppStateIfNeeded() throws {
     try migratePrivateValueIfNeeded(for: .pendingMagicLinkFlow) { data in
-      guard let flow = try? JSONDecoder.clerkDecoder.decode(PendingMagicLinkFlow.self, from: data) else {
-        return false
-      }
-      return flow.expiresAt > Date()
+      (try? JSONSerialization.jsonObject(with: data)) != nil
     }
     try migratePrivateValueIfNeeded(for: .attestKeyId) { data in
       guard let value = decodeString(data)?.trimmingCharacters(in: .whitespacesAndNewlines) else {

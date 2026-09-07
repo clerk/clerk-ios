@@ -43,14 +43,11 @@ final class DependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let sessionService: SessionServiceProtocol
-  let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
 
   // MARK: - Magic Link
-
-  let magicLinkStore: MagicLinkStore
 
   // MARK: - Logging
 
@@ -143,8 +140,6 @@ final class DependencyContainer: Dependencies {
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
     biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
-    magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
-
     // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
     apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
@@ -169,7 +164,6 @@ final class DependencyContainer: Dependencies {
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
     sessionService = SessionService(apiClient: apiClient)
-    magicLinkService = MagicLinkService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
     biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)

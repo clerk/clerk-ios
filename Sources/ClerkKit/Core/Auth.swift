@@ -15,27 +15,15 @@ import Foundation
 /// This is a lightweight facade that namespaces auth-related methods - it holds no state itself.
 @MainActor
 public struct Auth {
-  private let magicLinkStore: MagicLinkStore
-  private let magicLinkService: MagicLinkServiceProtocol
-  private let signInService: SignInServiceProtocol
-  private let sessionService: SessionServiceProtocol
   private let biometricCredentials: BiometricCredentials
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
 
   init(
-    magicLinkStore: MagicLinkStore,
-    magicLinkService: MagicLinkServiceProtocol,
-    signInService: SignInServiceProtocol,
-    sessionService: SessionServiceProtocol,
     biometricCredentials: BiometricCredentials,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
-    self.magicLinkStore = magicLinkStore
-    self.magicLinkService = magicLinkService
-    self.signInService = signInService
-    self.sessionService = sessionService
     self.biometricCredentials = biometricCredentials
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
@@ -133,13 +121,12 @@ public struct Auth {
   /// - Throws: An error if the email address is invalid or email-link preparation fails.
   @discardableResult
   public func signInWithEmailLink(emailAddress: String) async throws -> SignIn {
-    let identifier = emailAddress.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !identifier.isEmpty else {
-      throw ClerkClientError(message: "Email address is required.", localizationBundle: .module)
-    }
-
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(identifier: identifier)))
-    return try await Clerk.requireEngineSignIn().sendEmailLink()
+    try await Clerk.js(.clerk, JSRawCall("createNativeMagicLinkSignIn", .object([
+      "emailAddress": .string(emailAddress),
+      "redirectUrl": .string(Clerk.shared.options.redirectConfig.redirectUrl),
+      "ownerId": AuthFlowRequestScope.ownerId.map { .string($0.uuidString) } ?? .null,
+    ])))
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with OTP (One-Time Password) using a phone number.
@@ -683,34 +670,6 @@ extension Auth {
       send(.signUpNeedsContinuation(signUp: signUp))
     }
   }
-
-  func activateSession(
-    sessionId: String,
-    authFlowActivation: AuthFlowActivationToken? = nil
-  ) async throws {
-    defer {
-      if let authFlowActivation {
-        Clerk.shared.authSessionActivationDidFinish(
-          activation: authFlowActivation
-        )
-      }
-    }
-
-    do {
-      if await Clerk.resolvedEngineClient() != nil {
-        try await Clerk.js(
-          .clerk,
-          ClerkJSCall.setActive(.init(session: .string(sessionId)))
-        )
-      } else {
-        try await sessionService.setActive(sessionId: sessionId, organizationId: nil)
-      }
-    } catch {
-      if Clerk.shared.client?.lastActiveSessionId != sessionId {
-        throw error
-      }
-    }
-  }
 }
 
 extension Auth {
@@ -721,12 +680,7 @@ extension Auth {
   /// - Throws: An error if the callback URL is missing required magic-link parameters or completion fails.
   @discardableResult
   public func completeMagicLink(callbackURL: URL) async throws -> TransferFlowResult {
-    let callback = try MagicLinkCallback(url: callbackURL)
-
-    return try await completeMagicLink(
-      flowId: callback.flowId,
-      approvalToken: callback.approvalToken
-    )
+    try await completeSharedMagicLink(.object(["callbackUrl": .string(callbackURL.absoluteString)]))
   }
 
   /// Completes a pending native magic-link flow using callback values from the deep link.
@@ -738,98 +692,34 @@ extension Auth {
   /// - Throws: An error if no pending flow exists or completion fails.
   @discardableResult
   public func completeMagicLink(flowId: String, approvalToken: String) async throws -> TransferFlowResult {
-    let resolvedFlowId = flowId.trimmingCharacters(in: .whitespacesAndNewlines)
-    let resolvedApprovalToken = approvalToken.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    guard !resolvedFlowId.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing flow_id.", localizationBundle: .module)
-    }
-
-    guard !resolvedApprovalToken.isEmpty else {
-      throw ClerkClientError(message: "Magic link callback is missing approval_token.", localizationBundle: .module)
-    }
-
-    guard let pendingFlow = magicLinkStore.load() else {
-      throw ClerkClientError(message: "No pending magic link flow was found.", localizationBundle: .module)
-    }
-
-    if let expectedFlowId = pendingFlow.flowId, expectedFlowId != resolvedFlowId {
-      throw ClerkClientError(message: "Magic link callback does not match the pending flow.", localizationBundle: .module)
-    }
-    let authFlowOwnerId = magicLinkStore.authFlowOwnerId(for: pendingFlow)
-
-    return try await AuthFlowRequestScope.withOwner(authFlowOwnerId) {
-      Clerk.shared.setCallbackContinuation(nil)
-
-      let params = MagicLinkCompleteParams(
-        flowId: resolvedFlowId,
-        approvalToken: resolvedApprovalToken,
-        codeVerifier: pendingFlow.codeVerifier
-      )
-
-      let completionResult: MagicLinkCompleteResult
-      do {
-        completionResult = try await magicLinkService.complete(params: params)
-      } catch {
-        if MagicLinkTerminalError.contains(error) {
-          magicLinkStore.clear(flow: pendingFlow)
-        }
-        throw error
-      }
-      magicLinkStore.clear(flow: pendingFlow)
-
-      let result = try await resolveMagicLinkCompletion(
-        completionResult,
-        pendingFlow: pendingFlow,
-        authFlowOwnerId: authFlowOwnerId
-      )
-
-      if result.needsContinuation {
-        sendContinuation(for: result)
-      }
-
-      return result
-    }
+    try await completeSharedMagicLink(.object(["flowId": .string(flowId), "approvalToken": .string(approvalToken)]))
   }
 
-  private func resolveMagicLinkCompletion(
-    _ completion: MagicLinkCompleteResult,
-    pendingFlow: PendingMagicLinkFlow,
-    authFlowOwnerId: UUID?
-  ) async throws -> TransferFlowResult {
-    switch pendingFlow.kind {
-    case .signIn:
-      guard case .ticket(let response) = completion else {
-        throw ClerkClientError(
-          message: "Magic link callback returned a sign-up for a sign-in flow.",
-          localizationBundle: .module
+  private func completeSharedMagicLink(_ options: JSONValue) async throws -> TransferFlowResult {
+    let pending = try await Clerk.js(
+      .clerk, JSRawCall("beginNativeMagicLinkCompletion", options), as: NativeMagicLinkPending.self
+    )
+    do {
+      return try await AuthFlowRequestScope.withOwner(pending.ownerId) {
+        Clerk.shared.setCallbackContinuation(nil)
+        let prepared = try await Clerk.js(
+          .clerk, JSRawCall("completeNativeMagicLink", .string(pending.id)), as: NativeMagicLinkResult.self
         )
+        let activation = prepared.activation.flatMap {
+          Clerk.shared.beginCompletedAuthSessionActivation(sessionId: $0.sessionId, flowId: $0.flowId, ownerId: pending.ownerId)
+        }
+        defer {
+          if let activation { Clerk.shared.authSessionActivationDidFinish(activation: activation) }
+        }
+        let result = try await Clerk.js(
+          .clerk, JSRawCall("finishNativeMagicLinkCompletion", .string(pending.id)), as: NativeAuthResult.self
+        ).transferResult()
+        if result.needsContinuation { sendContinuation(for: result) }
+        return result
       }
-
-      let signIn = try await signInService.create(
-        params: .init(strategy: .ticket, ticket: response.ticket)
-      )
-      if let sessionId = signIn.createdSessionId {
-        let activation = Clerk.shared.beginCompletedAuthSessionActivation(
-          sessionId: sessionId,
-          flowId: signIn.id,
-          ownerId: authFlowOwnerId
-        )
-        try await activateSession(
-          sessionId: sessionId,
-          authFlowActivation: activation
-        )
-      }
-      return .signIn(signIn)
-
-    case .signUp:
-      guard case .signUp(let signUp) = completion else {
-        throw ClerkClientError(
-          message: "Magic link callback returned a ticket for a sign-up flow.",
-          localizationBundle: .module
-        )
-      }
-      return .signUp(signUp)
+    } catch {
+      try? await Clerk.js(.clerk, JSRawCall("cancelNativeMagicLinkCompletion", .string(pending.id)))
+      throw error
     }
   }
 
@@ -845,4 +735,18 @@ extension Auth {
       }
     }
   }
+}
+
+private struct NativeMagicLinkPending: Decodable {
+  var id: String
+  var ownerId: UUID?
+}
+
+private struct NativeMagicLinkResult: Decodable {
+  struct Activation: Decodable {
+    var flowId: String
+    var sessionId: String
+  }
+
+  var activation: Activation?
 }

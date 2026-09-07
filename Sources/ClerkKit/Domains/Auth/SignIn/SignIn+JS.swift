@@ -49,39 +49,10 @@ extension SignIn {
     emailAddressId: String? = nil,
     redirectUri: String? = nil
   ) async throws -> SignIn {
-    let emailId =
-      emailAddressId
-        ?? identifyingFirstFactor(for: FactorStrategy.emailLink.rawValue)?.emailAddressId
-        ?? firstFactors.first(where: { $0.strategy == .emailLink })?.emailAddressId
-
-    guard let emailId else {
-      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
-    }
-
-    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
-    guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
-    }
-
-    let pkcePair = try PKCE.generatePair()
-    try Clerk.shared.dependencies.magicLinkStore.save(
-      kind: .signIn,
-      flowId: id,
-      codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
-
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.prepareFirstFactor(
-        ClerkSnapshots.PrepareFirstFactorParams(
-          strategy: "email_link",
-          emailAddressId: emailId,
-          redirectUrl: resolvedRedirectUri,
-          codeChallenge: pkcePair.challenge,
-          codeChallengeMethod: PKCE.codeChallengeMethod
-        )
-      )
+    try await Clerk.sendNativeMagicLink(
+      flow: "signIn", expectedId: id,
+      redirectUrl: redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl,
+      emailAddressId: emailAddressId
     )
     return try Clerk.requireEngineSignIn()
   }
