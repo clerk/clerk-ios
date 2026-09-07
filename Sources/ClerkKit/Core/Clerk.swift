@@ -254,7 +254,6 @@ public final class Clerk {
       magicLinkService: dependencies.magicLinkService,
       hostedAuthService: dependencies.hostedAuthService,
       signInService: dependencies.signInService,
-      signUpService: dependencies.signUpService,
       sessionService: dependencies.sessionService,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
@@ -270,7 +269,7 @@ public final class Clerk {
   ///
   /// Use this property to create organizations.
   public var organizations: Organizations {
-    Organizations(organizationService: dependencies.organizationService)
+    Organizations()
   }
 
   /// The main entry point for Billing GET APIs.
@@ -572,7 +571,7 @@ extension Clerk {
     }
 
     _shared = clerk
-    installLinkedEngineFactoryIfAvailable()
+    installJSHostFactoryIfNeeded()
     return clerk
   }
 
@@ -692,6 +691,8 @@ extension Clerk {
 
       await existing.resetRuntimeStateForReconfiguration()
       existing.installConfiguration(dependencies: newDependencies)
+      engineClient = nil
+      installJSHostFactoryIfNeeded()
       return existing
     }
 
@@ -708,6 +709,7 @@ extension Clerk {
     try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
     clerk.installConfiguration(dependencies: newDependencies)
     _shared = clerk
+    installJSHostFactoryIfNeeded()
     return clerk
   }
 

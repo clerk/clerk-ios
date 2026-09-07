@@ -35,6 +35,30 @@ import Testing
   #expect(imports.isEmpty, "Hosts imported ClerkJSCore: \(imports)")
 }
 
+@Test func kitPublicSourcesDoNotImportClerkJSCore() throws {
+  let sources = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .appendingPathComponent("Sources/ClerkKit")
+  var leaks: [String] = []
+  let enumerator = FileManager.default.enumerator(
+    at: sources,
+    includingPropertiesForKeys: [.isRegularFileKey]
+  )
+  while let url = enumerator?.nextObject() as? URL {
+    guard url.pathExtension == "swift" else { continue }
+    if url.lastPathComponent == "ClerkJSHostEngine.swift" {
+      continue
+    }
+    let text = try String(contentsOf: url, encoding: .utf8)
+    if text.contains("import ClerkJSCore") || text.contains("ClerkJSHost") {
+      leaks.append(url.path)
+    }
+  }
+  #expect(leaks.isEmpty, "Public Kit sources imported the JS host: \(leaks)")
+}
+
 @Test func uiComponentsDoNotImportClerkJSCore() throws {
   let sources = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()

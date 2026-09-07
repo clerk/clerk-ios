@@ -2,7 +2,6 @@
 
 import AuthenticationServices
 @testable import ClerkKit
-import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -13,22 +12,12 @@ struct AuthAppleTests {
     configureClerkForTesting()
   }
 
-  private func configureDependencies(
-    signInService: MockSignInService = .init(),
-    signUpService: MockSignUpService = .init()
-  ) {
+  private func installEngine(_ engine: RecordingEngineClient = RecordingEngineClient()) -> RecordingEngineClient {
     configureClerkForTesting()
-    let apiClient = createMockAPIClient(baseURL: mockBaseUrl)
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: apiClient,
-      signInService: signInService,
-      signUpService: signUpService
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
+    Clerk.engineClient = engine
     Clerk.shared.environment = .mock
     Clerk.shared.setCallbackContinuation(nil)
+    return engine
   }
 
   private func restrictionError(_ code: String) -> ClerkAPIError {
@@ -43,17 +32,7 @@ struct AuthAppleTests {
 
   @Test
   func appleSignInSkipsSignUpWhenTransferIsDisabled() async throws {
-    let signUpCalled = LockIsolated(false)
-    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { params in
-      signInParams.setValue(params)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      signUpCalled.setValue(true)
-      return .mock
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -67,62 +46,42 @@ struct AuthAppleTests {
       Issue.record("Expected a sign-in result")
       return
     }
-    #expect(signUpCalled.value == false)
-    let params = try #require(signInParams.value)
-    #expect(params.strategy == .idToken(.apple))
-    #expect(params.token == "apple_token")
+    #expect(engine.signedUpIdToken == nil)
+    #expect(engine.signedInIdToken == "apple_token")
+    #expect(engine.signedInIdTokenStrategy == "oauth_token_apple")
   }
 
   @Test
   func appleSignInStartsWithSignUpAndPreservesAppleProfile() async throws {
-    let metadata: JSON = ["plan": "pro"]
-    let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
       firstName: "Jane",
       lastName: "Doe",
       transferable: true,
-      unsafeMetadata: metadata
+      unsafeMetadata: ["plan": "pro"]
     )
 
     guard case .signUp = result else {
       Issue.record("Expected a sign-up result")
       return
     }
-    #expect(signInCalled.value == false)
-    let params = try #require(signUpParams.value)
-    #expect(params.strategy == .idToken(.apple))
-    #expect(params.token == "apple_token")
-    #expect(params.firstName == "Jane")
-    #expect(params.lastName == "Doe")
-    #expect(params.unsafeMetadata == metadata)
+    #expect(engine.signedInIdToken == nil)
+    #expect(engine.signedUpIdToken == "apple_token")
+    #expect(engine.signedUpIdTokenStrategy == "oauth_token_apple")
+    #expect(engine.signedUpFirstName == "Jane")
+    #expect(engine.signedUpLastName == "Doe")
   }
 
   @Test
   func appleSignInTransfersSuccessfulSignUpToExistingUser() async throws {
-    var transferableSignUp = SignUp.mock
-    transferableSignUp.verifications["external_account"] = Verification(status: .transferable)
-
-    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { params in
-      signInParams.setValue(params)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      transferableSignUp
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
+    engine.signInPublishedBySignUpIdToken = SignIn(
+      id: "sia_engine",
+      status: .complete,
+      createdSessionId: "sess_engine"
+    )
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -136,8 +95,8 @@ struct AuthAppleTests {
       Issue.record("Expected a sign-in result")
       return
     }
-    let params = try #require(signInParams.value)
-    #expect(params.transfer == true)
+    #expect(engine.signedUpIdToken == "apple_token")
+    #expect(engine.signedInIdToken == nil)
   }
 
   @Test
@@ -149,8 +108,6 @@ struct AuthAppleTests {
       meta: nil,
       clerkTraceId: nil
     )
-    var transferableSignUp = SignUp.mock
-    transferableSignUp.verifications["external_account"] = Verification(status: .transferable)
     var failedSignIn = SignIn.mock
     failedSignIn.firstFactorVerification = Verification(
       status: .failed,
@@ -158,13 +115,8 @@ struct AuthAppleTests {
       error: verificationError
     )
 
-    let signInService = MockSignInService(create: { _ in
-      failedSignIn
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      transferableSignUp
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
+    engine.signInPublishedBySignUpIdToken = failedSignIn
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(
@@ -185,16 +137,8 @@ struct AuthAppleTests {
     "sign_up_restricted_waitlist",
   ])
   func appleSignInFallsBackForRestrictedSignUp(errorCode: String) async throws {
-    let error = restrictionError(errorCode)
-    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { params in
-      signInParams.setValue(params)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      throw error
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
+    engine.signUpWithIdTokenError = restrictionError(errorCode)
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -208,10 +152,9 @@ struct AuthAppleTests {
       Issue.record("Expected a sign-in result")
       return
     }
-    let params = try #require(signInParams.value)
-    #expect(params.strategy == .idToken(.apple))
-    #expect(params.token == "apple_token")
-    #expect(params.transfer == nil)
+    #expect(engine.signedUpIdToken == nil)
+    #expect(engine.signedInIdToken == "apple_token")
+    #expect(engine.signedInIdTokenStrategy == "oauth_token_apple")
   }
 
   @Test(arguments: [
@@ -227,13 +170,9 @@ struct AuthAppleTests {
       error: .mock
     )
 
-    let signInService = MockSignInService(create: { _ in
-      transferableSignIn
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      throw restrictionError
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
+    engine.signUpWithIdTokenError = restrictionError
+    engine.signInPublishedByIdToken = transferableSignIn
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(
@@ -258,15 +197,8 @@ struct AuthAppleTests {
       meta: nil,
       clerkTraceId: nil
     )
-    let signInCalled = LockIsolated(false)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { _ in
-      throw unrelatedError
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    let engine = installEngine()
+    engine.signUpWithIdTokenError = unrelatedError
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(
@@ -280,7 +212,7 @@ struct AuthAppleTests {
     } catch let error as ClerkAPIError {
       #expect(error == unrelatedError)
     }
-    #expect(signInCalled.value == false)
+    #expect(engine.signedInIdToken == nil)
   }
 }
 

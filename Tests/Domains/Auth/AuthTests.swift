@@ -16,7 +16,6 @@ struct AuthTests {
 
   private func configureDependencies(
     signInService: MockSignInService? = nil,
-    signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
     magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     environment: Clerk.Environment? = .mock,
@@ -30,7 +29,6 @@ struct AuthTests {
       apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
-      signUpService: signUpService,
       sessionService: sessionService,
       magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
     )
@@ -43,7 +41,6 @@ struct AuthTests {
 
   private func makeIsolatedClerk(
     signInService: MockSignInService? = nil,
-    signUpService: MockSignUpService? = nil,
     sessionService: MockSessionService? = nil,
     magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     environment: Clerk.Environment? = .mock,
@@ -58,7 +55,6 @@ struct AuthTests {
       apiClient: apiClient,
       keychain: keychain,
       signInService: signInService,
-      signUpService: signUpService,
       sessionService: sessionService,
       magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
     )
@@ -137,7 +133,6 @@ struct AuthTests {
       magicLinkService: MagicLinkService(apiClient: apiClient),
       hostedAuthService: MockHostedAuthService(),
       signInService: signInService,
-      signUpService: MockSignUpService(),
       sessionService: MockSessionService(),
       biometricCredentials: BiometricCredentials(
         biometricCredentialService: MockBiometricCredentialService(),
@@ -361,7 +356,6 @@ struct AuthTests {
   func completeMagicLinkRejectsTicketResponseForSignUpFlow() async throws {
     let keychain = InMemoryKeychain()
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
@@ -386,17 +380,12 @@ struct AuthTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
     let sessionService = MockSessionService(setActive: { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     })
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
@@ -408,7 +397,6 @@ struct AuthTests {
     }
 
     #expect(signInParams.value == nil)
-    #expect(signUpParams.value == nil)
     #expect(activatedSessionId.value == nil)
     #expect(Clerk.shared.callbackContinuation == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
@@ -417,7 +405,6 @@ struct AuthTests {
   @Test
   func completeMagicLinkUsesCompletedSignUpResponse() async throws {
     let keychain = InMemoryKeychain()
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup-response.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
@@ -464,16 +451,11 @@ struct AuthTests {
     )
     completionMock.register()
 
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
     let sessionService = MockSessionService(setActive: { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     })
 
     let clerk = makeIsolatedClerk(
-      signUpService: signUpService,
       sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
@@ -501,7 +483,6 @@ struct AuthTests {
       throw ClerkClientError(message: "Expected sign-up result.")
     }
 
-    #expect(signUpParams.value == nil)
     #expect(activatedSessionId.value == nil)
     #expect(signUp.id == "sign_up_123")
     #expect(signUp.status == .complete)

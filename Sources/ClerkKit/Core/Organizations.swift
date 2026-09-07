@@ -12,7 +12,7 @@ import Foundation
 /// organization-scoped operations.
 @MainActor
 public struct Organizations {
-  init(organizationService _: OrganizationServiceProtocol) {}
+  init() {}
 
   /// Creates an organization and makes the current user its administrator.
   ///

@@ -44,17 +44,12 @@ final class DependencyContainer: Dependencies {
   let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
-  let signUpService: SignUpServiceProtocol
   let sessionService: SessionServiceProtocol
   let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
-  let billingService: BillingServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let emailAddressService: EmailAddressServiceProtocol
-  let phoneNumberService: PhoneNumberServiceProtocol
-  let externalAccountService: ExternalAccountServiceProtocol
 
   // MARK: - Magic Link
 
@@ -178,17 +173,12 @@ final class DependencyContainer: Dependencies {
     hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
-    signUpService = SignUpService(apiClient: apiClient)
     sessionService = SessionService(apiClient: apiClient)
     magicLinkService = MagicLinkService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
     biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
-    billingService = BillingService(apiClient: apiClient)
     environmentService = EnvironmentService(apiClient: apiClient)
-    emailAddressService = EmailAddressService(apiClient: apiClient)
-    phoneNumberService = PhoneNumberService(apiClient: apiClient)
-    externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {

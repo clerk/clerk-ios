@@ -265,7 +265,7 @@ struct ClerkJSAppleTests {
   @Test
   @MainActor
   func clerkFacadeReturnsIdentity() async throws {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appleCeremony.performer = { _ in
       AppleIdentityToken(identityToken: "id-token", firstName: "Ada")
     }
@@ -278,7 +278,7 @@ struct ClerkJSAppleTests {
   @Test
   @MainActor
   func clerkFacadeMapsCancel() async {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appleCeremony.performer = { _ in
       throw ASAuthorizationError(.canceled)
     }

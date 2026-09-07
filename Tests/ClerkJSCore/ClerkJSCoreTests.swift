@@ -554,7 +554,7 @@ struct ClerkJSCoreTests {
     let cache = ClerkJSResourceCache.memory()
     await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
 
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: mockPublishableKey,
       tokenCache: .memory(),
       resourceCache: cache
@@ -589,7 +589,7 @@ struct ClerkJSCoreTests {
     let cache = ClerkJSResourceCache.memory()
     await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
 
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: mockPublishableKey,
       tokenCache: .memory(),
       resourceCache: cache
@@ -638,7 +638,7 @@ struct ClerkJSCoreTests {
     let cache = ClerkJSResourceCache.memory()
     await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
 
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: mockPublishableKey,
       tokenCache: .memory(),
       resourceCache: cache
@@ -675,7 +675,7 @@ struct ClerkJSCoreTests {
     let cache = ClerkJSResourceCache.memory()
     await cache.save(ClerkJSCachedResources(client: clientData, environment: environmentData))
 
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: mockPublishableKey,
       tokenCache: .memory(),
       resourceCache: cache

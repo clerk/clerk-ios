@@ -33,16 +33,16 @@ struct ClerkJSCoreSetActiveTests {
     }
 
     try await deferCleanup(signUpRuntime, email: email) {
-    let service = "com.clerk.jscore.\(Clerk.storageNamespace(for: publishableKey))"
+    let service = "com.clerk.jscore.\(ClerkJSHost.storageNamespace(for: publishableKey))"
     let keychain = ClerkJSKeychain(service: service)
     try? keychain.delete(account: "client-jwt")
     try? keychain.delete(account: "client-snapshot")
     try? keychain.delete(account: "environment-snapshot")
 
-    let clerk = await Clerk.persistent(publishableKey: publishableKey)
+    let clerk = await ClerkJSHost.persistent(publishableKey: publishableKey)
     try await clerk.load()
     try await deferCleanup(clerk.runtime, email: email) {
-    let created: Clerk.SignIn
+    let created: ClerkJSHost.SignIn
     do {
       created = try await clerk.client.signIn.create(.init(identifier: email))
     } catch {
@@ -69,7 +69,7 @@ struct ClerkJSCoreSetActiveTests {
       return
     }
 
-    let attempted: Clerk.SignIn
+    let attempted: ClerkJSHost.SignIn
     do {
       attempted = try await created.attemptFirstFactor(.init(strategy: .emailCode, code: "424242"))
     } catch {

@@ -6,7 +6,7 @@ struct ClerkAPITests {
   @Test
   @MainActor
   func constructsWithoutLoading() {
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
@@ -72,7 +72,7 @@ struct ClerkAPITests {
   @Test
   func authenticateWithRedirectParamsEncodeStrategyAndRedirectUrl() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.AuthenticateWithRedirectParams(
+      ClerkJSHost.SignIn.AuthenticateWithRedirectParams(
         strategy: "oauth_google",
         redirectUrl: "clerk://sso-callback"
       )
@@ -87,7 +87,7 @@ struct ClerkAPITests {
   @Test
   func authenticateWithRedirectParamsEncodeIdentifierWhenPresent() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.AuthenticateWithRedirectParams(
+      ClerkJSHost.SignIn.AuthenticateWithRedirectParams(
         strategy: "enterprise_sso",
         redirectUrl: "clerk://sso-callback",
         identifier: "user@example.com"
@@ -101,27 +101,27 @@ struct ClerkAPITests {
 
   @Test
   func signUpCreateParamsEncodePresentKeysOnly() throws {
-    let email = try encodeJSON(Clerk.SignUp.CreateParams(emailAddress: "user@example.com"))
+    let email = try encodeJSON(ClerkJSHost.SignUp.CreateParams(emailAddress: "user@example.com"))
     #expect(email["emailAddress"] as? String == "user@example.com")
     #expect(email["phoneNumber"] == nil)
     #expect(email["username"] == nil)
     #expect(email.count == 1)
 
-    let phone = try encodeJSON(Clerk.SignUp.CreateParams(phoneNumber: "+15555550100"))
+    let phone = try encodeJSON(ClerkJSHost.SignUp.CreateParams(phoneNumber: "+15555550100"))
     #expect(phone["phoneNumber"] as? String == "+15555550100")
     #expect(phone.count == 1)
 
-    let username = try encodeJSON(Clerk.SignUp.CreateParams(username: "ada"))
+    let username = try encodeJSON(ClerkJSHost.SignUp.CreateParams(username: "ada"))
     #expect(username["username"] as? String == "ada")
     #expect(username.count == 1)
 
-    let empty = try encodeJSON(Clerk.SignUp.CreateParams())
+    let empty = try encodeJSON(ClerkJSHost.SignUp.CreateParams())
     #expect(empty.isEmpty)
   }
 
   @Test
   func signUpUpdateParamsEncodePasswordOnly() throws {
-    let json = try encodeJSON(Clerk.SignUp.CreateParams(password: "hunter2"))
+    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(password: "hunter2"))
     #expect(json["password"] as? String == "hunter2")
     #expect(json["emailAddress"] == nil)
     #expect(json["phoneNumber"] == nil)
@@ -131,7 +131,7 @@ struct ClerkAPITests {
 
   @Test
   func signUpUpdateParamsEncodeNamesOnly() throws {
-    let json = try encodeJSON(Clerk.SignUp.CreateParams(firstName: "Ada", lastName: "Lovelace"))
+    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(firstName: "Ada", lastName: "Lovelace"))
     #expect(json["firstName"] as? String == "Ada")
     #expect(json["lastName"] as? String == "Lovelace")
     #expect(json["password"] == nil)
@@ -140,7 +140,7 @@ struct ClerkAPITests {
 
   @Test
   func signUpUpdateParamsEncodeLegalAcceptedOnly() throws {
-    let json = try encodeJSON(Clerk.SignUp.CreateParams(legalAccepted: true))
+    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(legalAccepted: true))
     #expect(json["legalAccepted"] as? Bool == true)
     #expect(json.count == 1)
   }
@@ -148,7 +148,7 @@ struct ClerkAPITests {
   @Test
   func signUpCreateParamsEncodeTransferAndUnsafeMetadata() throws {
     let json = try encodeJSON(
-      Clerk.SignUp.CreateParams(
+      ClerkJSHost.SignUp.CreateParams(
         transfer: true,
         unsafeMetadata: .object(["plan": .string("pro")])
       )
@@ -161,15 +161,15 @@ struct ClerkAPITests {
 
   @Test
   func prepareVerificationParamsEncodeStrategyOnly() throws {
-    let email = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailCode))
+    let email = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .emailCode))
     #expect(email["strategy"] as? String == "email_code")
     #expect(email.count == 1)
 
-    let emailLink = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailLink))
+    let emailLink = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .emailLink))
     #expect(emailLink["strategy"] as? String == "email_link")
     #expect(emailLink.count == 1)
 
-    let phone = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .phoneCode))
+    let phone = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .phoneCode))
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone.count == 1)
   }
@@ -177,14 +177,14 @@ struct ClerkAPITests {
   @Test
   func attemptVerificationParamsEncodeStrategyAndCode() throws {
     let email = try encodeJSON(
-      Clerk.SignUp.AttemptVerificationParams(strategy: .emailCode, code: "424242")
+      ClerkJSHost.SignUp.AttemptVerificationParams(strategy: .emailCode, code: "424242")
     )
     #expect(email["strategy"] as? String == "email_code")
     #expect(email["code"] as? String == "424242")
     #expect(email.count == 2)
 
     let phone = try encodeJSON(
-      Clerk.SignUp.AttemptVerificationParams(strategy: .phoneCode, code: "424242")
+      ClerkJSHost.SignUp.AttemptVerificationParams(strategy: .phoneCode, code: "424242")
     )
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone["code"] as? String == "424242")
@@ -368,20 +368,20 @@ struct ClerkAPITests {
 
   @Test
   func storageNamespaceIsStablePerKey() {
-    #expect(Clerk.storageNamespace(for: "pk_test_a") == Clerk.storageNamespace(for: "pk_test_a"))
-    #expect(Clerk.storageNamespace(for: "pk_test_a") != Clerk.storageNamespace(for: "pk_test_b"))
+    #expect(ClerkJSHost.storageNamespace(for: "pk_test_a") == ClerkJSHost.storageNamespace(for: "pk_test_a"))
+    #expect(ClerkJSHost.storageNamespace(for: "pk_test_a") != ClerkJSHost.storageNamespace(for: "pk_test_b"))
   }
 
   @Test
   func setActiveParamsEncodeSession() throws {
-    let json = try encodeJSON(Clerk.SetActiveParams(session: "sess_1"))
+    let json = try encodeJSON(ClerkJSHost.SetActiveParams(session: "sess_1"))
     #expect(json["session"] as? String == "sess_1")
     #expect(json.count == 1)
   }
 
   @Test
   func setActiveParamsEncodeOrganization() throws {
-    let json = try encodeJSON(Clerk.SetActiveParams(session: "sess_1", organization: "org_1"))
+    let json = try encodeJSON(ClerkJSHost.SetActiveParams(session: "sess_1", organization: "org_1"))
     #expect(json["session"] as? String == "sess_1")
     #expect(json["organization"] as? String == "org_1")
   }
@@ -403,7 +403,7 @@ struct ClerkAPITests {
   @Test
   @MainActor
   func signInHandleConformsToGeneratedMethods() {
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
@@ -474,27 +474,27 @@ struct ClerkAPITests {
 
   @Test
   func sessionStartVerificationParamsEncodeLevel() throws {
-    let first = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "first_factor"))
+    let first = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "first_factor"))
     #expect(first["level"] as? String == "first_factor")
     #expect(first.count == 1)
 
-    let second = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "second_factor"))
+    let second = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "second_factor"))
     #expect(second["level"] as? String == "second_factor")
 
-    let multi = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "multi_factor"))
+    let multi = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "multi_factor"))
     #expect(multi["level"] as? String == "multi_factor")
   }
 
   @Test
   func sessionPrepareFirstFactorVerificationParamsEncodeOptionals() throws {
     let strategyOnly = try encodeJSON(
-      Clerk.ActiveSession.PrepareFirstFactorVerificationParams(strategy: "email_code")
+      ClerkJSHost.ActiveSession.PrepareFirstFactorVerificationParams(strategy: "email_code")
     )
     #expect(strategyOnly["strategy"] as? String == "email_code")
     #expect(strategyOnly.count == 1)
 
     let full = try encodeJSON(
-      Clerk.ActiveSession.PrepareFirstFactorVerificationParams(
+      ClerkJSHost.ActiveSession.PrepareFirstFactorVerificationParams(
         strategy: "enterprise_sso",
         emailAddressId: "idn_email",
         phoneNumberId: "idn_phone",
@@ -512,7 +512,7 @@ struct ClerkAPITests {
   @Test
   func sessionAttemptFirstFactorVerificationParamsEncodeFields() throws {
     let password = try encodeJSON(
-      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
         strategy: "password",
         password: "hunter2"
       )
@@ -523,7 +523,7 @@ struct ClerkAPITests {
     #expect(password["publicKeyCredential"] == nil)
 
     let code = try encodeJSON(
-      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
         strategy: "email_code",
         code: "424242"
       )
@@ -532,7 +532,7 @@ struct ClerkAPITests {
     #expect(code["code"] as? String == "424242")
 
     let passkey = try encodeJSON(
-      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
         strategy: "passkey",
         publicKeyCredential: #"{"id":"cred"}"#
       )
@@ -544,13 +544,13 @@ struct ClerkAPITests {
   @Test
   func sessionPrepareSecondFactorVerificationParamsEncodeOptionals() throws {
     let strategyOnly = try encodeJSON(
-      Clerk.ActiveSession.PrepareSecondFactorVerificationParams(strategy: "phone_code")
+      ClerkJSHost.ActiveSession.PrepareSecondFactorVerificationParams(strategy: "phone_code")
     )
     #expect(strategyOnly["strategy"] as? String == "phone_code")
     #expect(strategyOnly.count == 1)
 
     let withPhone = try encodeJSON(
-      Clerk.ActiveSession.PrepareSecondFactorVerificationParams(
+      ClerkJSHost.ActiveSession.PrepareSecondFactorVerificationParams(
         strategy: "phone_code",
         phoneNumberId: "idn_phone"
       )
@@ -561,7 +561,7 @@ struct ClerkAPITests {
   @Test
   func sessionAttemptSecondFactorVerificationParamsEncodeFields() throws {
     let totp = try encodeJSON(
-      Clerk.ActiveSession.AttemptSecondFactorVerificationParams(
+      ClerkJSHost.ActiveSession.AttemptSecondFactorVerificationParams(
         strategy: "totp",
         code: "123456"
       )
@@ -571,7 +571,7 @@ struct ClerkAPITests {
     #expect(totp["publicKeyCredential"] == nil)
 
     let passkey = try encodeJSON(
-      Clerk.ActiveSession.AttemptSecondFactorVerificationParams(
+      ClerkJSHost.ActiveSession.AttemptSecondFactorVerificationParams(
         strategy: "passkey",
         publicKeyCredential: #"{"id":"cred"}"#
       )
@@ -584,7 +584,7 @@ struct ClerkAPITests {
   @MainActor
   func unsignedClientPublishLeavesSessionEmpty() throws {
     let url = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
@@ -604,11 +604,11 @@ struct ClerkAPITests {
   @Test
   @MainActor
   func signedInClientPublishExposesSessionIdAndStatus() throws {
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
-    try clerk.publishClient(Clerk.snapshotSignedInClient())
+    try clerk.publishClient(ClerkJSHost.snapshotSignedInClient())
     #expect(clerk.session.id == "sess_fixture")
     #expect(clerk.session.status == .active)
     #expect(clerk.session.user?.id == "user_fixture")
@@ -652,7 +652,7 @@ struct ClerkAPITests {
       "created_at": 1_700_000_000_000,
       "updated_at": 1_700_000_000_000,
     ]
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
@@ -693,7 +693,7 @@ struct ClerkAPITests {
       "created_at": 1_700_000_000_000,
       "updated_at": 1_700_000_000_000,
     ]
-    let clerk = Clerk(
+    let clerk = ClerkJSHost(
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )

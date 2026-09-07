@@ -62,7 +62,7 @@ let package = Package(
     ),
     .target(
       name: "ClerkKit",
-      dependencies: ["ClerkSnapshots"],
+      dependencies: ["ClerkSnapshots", "ClerkJSCore"],
       path: "Sources/ClerkKit",
       resources: [
         .process("Resources"),
@@ -75,7 +75,6 @@ let package = Package(
       name: "ClerkKitUI",
       dependencies: [
         "ClerkKit",
-        "ClerkJSCore",
         .product(name: "Nuke", package: "Nuke"),
         .product(name: "NukeUI", package: "Nuke"),
         .product(name: "PhoneNumberKit", package: "PhoneNumberKit"),

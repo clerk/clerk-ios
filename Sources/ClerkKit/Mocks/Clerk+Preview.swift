@@ -170,15 +170,10 @@ extension Clerk {
       clientService: services.clientService,
       userService: services.userService,
       signInService: services.signInService,
-      signUpService: services.signUpService,
       sessionService: services.sessionService,
       passkeyService: services.passkeyService,
       organizationService: services.organizationService,
-      billingService: services.billingService,
-      environmentService: services.environmentService,
-      emailAddressService: services.emailAddressService,
-      phoneNumberService: services.phoneNumberService,
-      externalAccountService: services.externalAccountService
+      environmentService: services.environmentService
     )
   }
 }

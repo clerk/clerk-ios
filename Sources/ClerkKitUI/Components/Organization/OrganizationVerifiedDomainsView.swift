@@ -440,20 +440,6 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
 
         preview.client = client
         preview.environment = environment
-        preview.services.organizationService.getOrganizationDomainsHandler = { _, _, _, _ in
-          var unverifiedDomain = OrganizationDomain.mock
-          unverifiedDomain.id = "domain_1"
-          unverifiedDomain.name = "clerk.com"
-          unverifiedDomain.verification = .init(status: "unverified", strategy: "strategy", attempts: 0)
-
-          var manualDomain = OrganizationDomain.mock
-          manualDomain.id = "domain_2"
-          manualDomain.name = "clerky.com"
-          manualDomain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
-          manualDomain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
-
-          return ClerkPaginatedResponse(data: [unverifiedDomain, manualDomain], totalCount: 2)
-        }
       })
   }
 }

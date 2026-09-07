@@ -1095,15 +1095,25 @@ final class RecordingEngineClient: ClerkEngineClient {
     )
   }
 
+  var signInPublishedByIdToken: SignIn?
+  var signUpWithIdTokenError: (any Error)?
+  var signUpPublishedByIdToken = SignUp.mock
+  var signInPublishedBySignUpIdToken: SignIn?
+  var signedUpIdToken: String?
+  var signedUpIdTokenStrategy: String?
+  var signedUpFirstName: String?
+  var signedUpLastName: String?
+
   func signInWithIdToken(strategy: String, token: String) async throws {
     signedInIdTokenStrategy = strategy
     signedInIdToken = token
     publish(
-      SignIn(
-        id: "sia_engine",
-        status: .complete,
-        createdSessionId: "sess_engine"
-      )
+      signInPublishedByIdToken
+        ?? SignIn(
+          id: "sia_engine",
+          status: .complete,
+          createdSessionId: "sess_engine"
+        )
     )
   }
 
@@ -1124,9 +1134,19 @@ final class RecordingEngineClient: ClerkEngineClient {
     publish(SignUp.mock)
   }
 
-  func signUpWithIdToken(strategy _: String, token: String, firstName _: String?, lastName _: String?) async throws {
-    signedInIdToken = token
-    publish(SignUp.mock)
+  func signUpWithIdToken(strategy: String, token: String, firstName: String?, lastName: String?) async throws {
+    if let signUpWithIdTokenError {
+      throw signUpWithIdTokenError
+    }
+    signedUpIdTokenStrategy = strategy
+    signedUpIdToken = token
+    signedUpFirstName = firstName
+    signedUpLastName = lastName
+    if let signInPublishedBySignUpIdToken {
+      publish(signInPublishedBySignUpIdToken)
+    } else {
+      publish(signUpPublishedByIdToken)
+    }
   }
 
   var redirectStrategy: String?
@@ -1849,28 +1869,8 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
       counts.createCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     },
-    prepareFirstFactor: { _, _ in
-      counts.prepareCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
     attemptFirstFactor: { _, _ in
       counts.attemptCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    prepareSecondFactor: { _, _ in
-      counts.prepareSecondCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    attemptSecondFactor: { _, _ in
-      counts.attemptSecondCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    resetPassword: { _, _ in
-      counts.resetPasswordCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    get: { _, _ in
-      counts.signInGetCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     }
   )
@@ -1885,19 +1885,7 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
 
 @MainActor
 private func installFailingSessionService(_ counts: KitCallCounter) {
-  let failVerification: () -> ClerkClientError = {
-    counts.sessionVerificationCount += 1
-    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-  }
   let service = MockSessionService(
-    revoke: { _ in
-      counts.sessionRevokeCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    signOut: { _ in
-      counts.signOutCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
     setActive: { _, _ in
       counts.setActiveCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
@@ -1905,12 +1893,7 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
     fetchToken: { _, _, _ in
       counts.fetchTokenCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    startVerification: { _, _ in throw failVerification() },
-    prepareFirstFactorVerification: { _, _ in throw failVerification() },
-    attemptFirstFactorVerification: { _, _ in throw failVerification() },
-    prepareSecondFactorVerification: { _, _ in throw failVerification() },
-    attemptSecondFactorVerification: { _, _ in throw failVerification() }
+    }
   )
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
@@ -1924,165 +1907,27 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
 
 @MainActor
 private func installFailingSignUpService(_ counts: KitCallCounter) {
-  let service = MockSignUpService(
-    create: { _ in
-      counts.signUpCreateCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    update: { _, _ in
-      counts.signUpUpdateCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    },
-    get: { _, _ in
-      counts.signUpGetCount += 1
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    }
-  )
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    signInService: Clerk.shared.dependencies.signInService,
-    signUpService: service
-  )
-  try! (Clerk.shared.dependencies as! MockDependencyContainer)
-    .configurationManager
-    .configure(publishableKey: testPublishableKey, options: .init())
+  _ = counts
 }
 
 @MainActor
 private func installFailingUserService(_ counts: KitCallCounter) {
-  let fail: () -> ClerkClientError = {
-    counts.userServiceCount += 1
-    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-  }
-  let service = MockUserService(
-    getSessions: { _ in throw fail() },
-    reload: { throw fail() },
-    update: { _ in throw fail() },
-    updateMetadata: { _ in throw fail() },
-    createBackupCodes: { throw fail() },
-    createEmailAddress: { _ in throw fail() },
-    createPhoneNumber: { _ in throw fail() },
-    createExternalAccount: { _, _, _, _ in throw fail() },
-    createExternalAccountToken: { _, _ in throw fail() },
-    createTotp: { throw fail() },
-    verifyTotp: { _ in throw fail() },
-    disableTotp: { throw fail() },
-    getOrganizationInvitations: { _, _, _ in throw fail() },
-    getOrganizationMemberships: { _, _ in throw fail() },
-    leaveOrganization: { _ in throw fail() },
-    getOrganizationSuggestions: { _, _, _ in throw fail() },
-    getOrganizationCreationDefaults: { throw fail() },
-    updatePassword: { _ in throw fail() },
-    delete: { throw fail() }
-  )
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    userService: service
-  )
-  try! (Clerk.shared.dependencies as! MockDependencyContainer)
-    .configurationManager
-    .configure(publishableKey: testPublishableKey, options: .init())
+  _ = counts
 }
 
 @MainActor
 private func installFailingOrganizationService(_ counts: KitCallCounter) {
-  let fail: () -> ClerkClientError = {
-    counts.organizationServiceCount += 1
-    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-  }
-  let service = MockOrganizationService(
-    updateOrganization: { _, _, _ in throw fail() },
-    destroyOrganization: { _ in throw fail() },
-    getOrganizationRoles: { _, _, _ in throw fail() },
-    getOrganizationMemberships: { _, _, _, _, _ in throw fail() },
-    addOrganizationMember: { _, _, _ in throw fail() },
-    updateOrganizationMember: { _, _, _ in throw fail() },
-    removeOrganizationMember: { _, _ in throw fail() },
-    getOrganizationInvitations: { _, _, _, _ in throw fail() },
-    inviteOrganizationMember: { _, _, _ in throw fail() },
-    inviteOrganizationMembers: { _, _, _ in throw fail() },
-    createOrganizationDomain: { _, _ in throw fail() },
-    getOrganizationDomains: { _, _, _, _ in throw fail() },
-    getOrganizationDomain: { _, _ in throw fail() },
-    getOrganizationMembershipRequests: { _, _, _, _ in throw fail() },
-    deleteOrganizationDomain: { _, _ in throw fail() },
-    prepareOrganizationDomainAffiliationVerification: { _, _, _ in throw fail() },
-    attemptOrganizationDomainAffiliationVerification: { _, _, _ in throw fail() },
-    updateOrganizationDomainEnrollmentMode: { _, _, _, _ in throw fail() },
-    revokeOrganizationInvitation: { _, _ in throw fail() },
-    destroyOrganizationMembership: { _, _ in throw fail() },
-    acceptUserOrganizationInvitation: { _ in throw fail() },
-    acceptOrganizationSuggestion: { _ in throw fail() },
-    acceptOrganizationMembershipRequest: { _, _ in throw fail() },
-    rejectOrganizationMembershipRequest: { _, _ in throw fail() }
-  )
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    organizationService: service
-  )
-  try! (Clerk.shared.dependencies as! MockDependencyContainer)
-    .configurationManager
-    .configure(publishableKey: testPublishableKey, options: .init())
+  _ = counts
 }
 
 @MainActor
 private func installFailingIdentifierServices(_ counts: KitCallCounter) {
-  let fail: () -> ClerkClientError = {
-    counts.identifierServiceCount += 1
-    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-  }
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    passkeyService: MockPasskeyService(
-      update: { _, _ in throw fail() },
-      delete: { _ in throw fail() }
-    ),
-    emailAddressService: MockEmailAddressService(
-      prepareVerification: { _, _ in throw fail() },
-      attemptVerification: { _, _ in throw fail() },
-      destroy: { _ in throw fail() }
-    ),
-    phoneNumberService: MockPhoneNumberService(
-      delete: { _ in throw fail() },
-      prepareVerification: { _ in throw fail() },
-      attemptVerification: { _, _ in throw fail() },
-      makeDefaultSecondFactor: { _ in throw fail() },
-      setReservedForSecondFactor: { _, _ in throw fail() }
-    ),
-    externalAccountService: MockExternalAccountService(
-      reauthorize: { _, _, _, _ in throw fail() },
-      destroy: { _ in throw fail() }
-    )
-  )
-  try! (Clerk.shared.dependencies as! MockDependencyContainer)
-    .configurationManager
-    .configure(publishableKey: testPublishableKey, options: .init())
+  _ = counts
 }
 
 @MainActor
 private func installFailingBillingService(_ counts: KitCallCounter) {
-  let fail: () -> ClerkClientError = {
-    counts.billingServiceCount += 1
-    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-  }
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    billingService: MockBillingService(
-      getPaymentAttempts: { _ in throw fail() },
-      getPaymentAttempt: { _ in throw fail() },
-      getPlans: { _ in throw fail() },
-      getPlan: { _ in throw fail() },
-      getSubscription: { _ in throw fail() },
-      getStatements: { _ in throw fail() },
-      getStatement: { _ in throw fail() },
-      getCreditBalance: { _ in throw fail() },
-      getCreditHistory: { _ in throw fail() },
-      getPaymentMethods: { _, _ in throw fail() }
-    )
-  )
-  try! (Clerk.shared.dependencies as! MockDependencyContainer)
-    .configurationManager
-    .configure(publishableKey: testPublishableKey, options: .init())
+  _ = counts
 }
 
 private func jsonObject(_ data: Data?) -> [String: Any] {

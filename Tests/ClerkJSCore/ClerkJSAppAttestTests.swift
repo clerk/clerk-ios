@@ -359,7 +359,7 @@ struct ClerkJSAppAttestTests {
   @Test
   @MainActor
   func clerkFacadeReturnsAttestation() async throws {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.attestPerformer = { _ in
       DeviceAttestationProof(keyId: "key_1", attestation: Data([9]))
     }
@@ -371,7 +371,7 @@ struct ClerkJSAppAttestTests {
   @Test
   @MainActor
   func clerkFacadeReturnsAssertion() async throws {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.assertPerformer = { _ in
       DeviceAssertionProof(keyId: "key_1", assertion: Data([8]))
     }
@@ -383,7 +383,7 @@ struct ClerkJSAppAttestTests {
   @Test
   @MainActor
   func clerkFacadeMapsCancel() async {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.attestPerformer = { _ in
       throw CancellationError()
     }
@@ -398,7 +398,7 @@ struct ClerkJSAppAttestTests {
   @Test
   @MainActor
   func clerkFacadeMapsUnavailable() async {
-    let clerk = Clerk(publishableKey: mockPublishableKey)
+    let clerk = ClerkJSHost(publishableKey: mockPublishableKey)
     clerk.runtime.appAttestCeremony.assertPerformer = { _ in
       throw ClerkJSAppAttestError.unavailable
     }

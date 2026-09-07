@@ -21,9 +21,8 @@ import Foundation
 ///     return .mock
 ///   }
 ///
-///   builder.services.userService.getSessionsHandler = { user in
-///     try? await Task.sleep(for: .seconds(1))
-///     return [Session.mock, Session.mock2]
+///   builder.services.userService.setProfileImageHandler = { _ in
+///     ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil)
 ///   }
 ///
 ///   // Or replace entire services
@@ -47,10 +46,6 @@ package final class MockServicesBuilder {
   /// You can modify handler properties directly or replace the entire service.
   package var signInService: MockSignInService = .init()
 
-  /// Mock sign-up service for customizing sign-up behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var signUpService: MockSignUpService = .init()
-
   /// Mock session service for customizing session behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var sessionService: MockSessionService = .init()
@@ -63,25 +58,9 @@ package final class MockServicesBuilder {
   /// You can modify handler properties directly or replace the entire service.
   package var organizationService: MockOrganizationService = .init()
 
-  /// Mock billing service for customizing billing behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var billingService: MockBillingService = .init()
-
   /// Mock environment service for customizing `clerk.refreshEnvironment()` behavior.
   /// You can modify handler properties directly or replace the entire service.
   package var environmentService: MockEnvironmentService = .init()
-
-  /// Mock email address service for customizing email address behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var emailAddressService: MockEmailAddressService = .init()
-
-  /// Mock phone number service for customizing phone number behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var phoneNumberService: MockPhoneNumberService = .init()
-
-  /// Mock external account service for customizing external account behavior.
-  /// You can modify handler properties directly or replace the entire service.
-  package var externalAccountService: MockExternalAccountService = .init()
 
   /// Creates a new mock services builder.
   ///

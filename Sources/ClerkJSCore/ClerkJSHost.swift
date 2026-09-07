@@ -129,7 +129,7 @@ package enum ClerkJSPath {
 
 @MainActor
 @Observable
-public final class Clerk: ClerkJSBridge {
+public final class ClerkJSHost: ClerkJSBridge {
   @ObservationIgnored
   private let publishableKey: String
   @ObservationIgnored
@@ -152,9 +152,9 @@ public final class Clerk: ClerkJSBridge {
     )
   }
 
-  public static func persistent(publishableKey: String) -> Clerk {
+  public static func persistent(publishableKey: String) -> ClerkJSHost {
     let service = "com.clerk.jscore.\(storageNamespace(for: publishableKey))"
-    return Clerk(
+    return ClerkJSHost(
       publishableKey: publishableKey,
       tokenCache: .keychain(service: service, account: "client-jwt"),
       resourceCache: .keychain(
@@ -293,7 +293,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct OrganizationHandle {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
     let id: String
 
     public func call(_ method: String, args: Data) async throws -> Data {
@@ -431,7 +431,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct UserChildHandle {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
     let pick: String
     let id: String
 
@@ -492,7 +492,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct Client {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
 
     public var id: String {
       clerk.fapiClient?.id ?? ""
@@ -517,7 +517,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct SignIn: SignInMethods {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
 
     public var id: String? {
       model?.id
@@ -653,7 +653,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct SignUp {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
 
     public var id: String? {
       model?.id
@@ -905,7 +905,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct ActiveSession {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
 
     public var id: String? {
       lastActiveSession?.id
@@ -1144,7 +1144,7 @@ public final class Clerk: ClerkJSBridge {
 
   @MainActor
   public struct User {
-    unowned let clerk: Clerk
+    unowned let clerk: ClerkJSHost
 
     @discardableResult
     public func update(_ params: UpdateUserParams) async throws -> ClerkSnapshots.User? {

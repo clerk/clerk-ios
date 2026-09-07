@@ -1,39 +1,18 @@
 @testable import ClerkKit
 @testable import ClerkKitUI
-import ConcurrencyExtras
+import ClerkSnapshots
 import Foundation
 import XCTest
 
 final class OrganizationAccountListDataSourceTests: XCTestCase {
   @MainActor
-  func testLoadInitialFetchesResourcesAndCreationDefaults() async throws {
-    configureClerkForTesting()
-
-    let membershipCalls = LockIsolated<[(offset: Int, pageSize: Int)]>([])
-    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
-    let suggestionCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
-    let defaultsCalled = LockIsolated(false)
-    let defaults = organizationCreationDefaults()
-
-    let userService = MockUserService(
-      getOrganizationInvitations: { offset, pageSize, status in
-        invitationCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
-      },
-      getOrganizationMemberships: { offset, pageSize in
-        membershipCalls.withValue { $0.append((offset, pageSize)) }
-        return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
-      },
-      getOrganizationSuggestions: { offset, pageSize, status in
-        suggestionCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
-      },
-      getOrganizationCreationDefaults: {
-        defaultsCalled.setValue(true)
-        return defaults
-      }
-    )
-    setDependencies(userService: userService)
+  func testLoadInitialFetchesResourcesAndCreationDefaults() async {
+    let engine = OrganizationListEngine()
+    engine.memberships = ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    engine.invitations = ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
+    engine.suggestions = ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
+    engine.creationDefaults = organizationCreationDefaults()
+    install(engine)
 
     let model = OrganizationAccountListDataSource(pageSize: 3)
     await model.loadInitial(user: .mock, includeCreationDefaults: true)
@@ -43,40 +22,22 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertEqual(model.membershipsPager.items.map(\.id), ["mem_1"])
     XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1"])
     XCTAssertEqual(model.suggestionsPager.items.map(\.id), ["sug_1"])
-    XCTAssertEqual(model.creationDefaults, defaults)
-    XCTAssertTrue(defaultsCalled.value)
+    XCTAssertEqual(model.creationDefaults, engine.creationDefaults)
+    XCTAssertTrue(engine.fetchedCreationDefaults)
 
-    let membershipCall = try XCTUnwrap(membershipCalls.value.first)
-    XCTAssertEqual(membershipCall.offset, 0)
-    XCTAssertEqual(membershipCall.pageSize, 3)
-
-    let invitationCall = try XCTUnwrap(invitationCalls.value.first)
-    XCTAssertEqual(invitationCall.offset, 0)
-    XCTAssertEqual(invitationCall.pageSize, 3)
-    XCTAssertEqual(invitationCall.status, ["pending"])
-
-    let suggestionCall = try XCTUnwrap(suggestionCalls.value.first)
-    XCTAssertEqual(suggestionCall.offset, 0)
-    XCTAssertEqual(suggestionCall.pageSize, 3)
-    XCTAssertEqual(suggestionCall.status, ["pending", "accepted"])
+    XCTAssertEqual(engine.membershipPage, 1)
+    XCTAssertEqual(engine.membershipPageSize, 3)
+    XCTAssertEqual(engine.invitationPage, 1)
+    XCTAssertEqual(engine.invitationPageSize, 3)
+    XCTAssertEqual(engine.invitationStatus, .pending)
+    XCTAssertEqual(engine.suggestionPage, 1)
+    XCTAssertEqual(engine.suggestionPageSize, 3)
+    XCTAssertEqual(engine.suggestionStatus, ["pending", "accepted"])
   }
 
   @MainActor
   func testLoadInitialTracksEmptyState() async {
-    configureClerkForTesting()
-
-    let userService = MockUserService(
-      getOrganizationInvitations: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationMemberships: { _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationSuggestions: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      }
-    )
-    setDependencies(userService: userService)
+    install(OrganizationListEngine())
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -89,14 +50,9 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
   @MainActor
   func testLoadInitialClearsLoadingStateAfterFailure() async {
-    configureClerkForTesting()
-
-    let userService = MockUserService(
-      getOrganizationMemberships: { _, _ in
-        throw ClerkClientError(message: "Failed to load memberships")
-      }
-    )
-    setDependencies(userService: userService)
+    let engine = OrganizationListEngine()
+    engine.membershipsError = ClerkClientError(message: "Failed to load memberships")
+    install(engine)
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -106,18 +62,13 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
-  func testLoadMoreMembershipsUsesCurrentOffset() async throws {
-    configureClerkForTesting()
-
-    let captured = LockIsolated<(offset: Int, pageSize: Int)?>(nil)
-    let userService = MockUserService(getOrganizationMemberships: { offset, pageSize in
-      captured.setValue((offset, pageSize))
-      return ClerkPaginatedResponse(
-        data: [membership(id: "mem_2", organizationId: "org_member_2")],
-        totalCount: 2
-      )
-    })
-    setDependencies(userService: userService)
+  func testLoadMoreMembershipsUsesCurrentOffset() async {
+    let engine = OrganizationListEngine()
+    engine.memberships = ClerkPaginatedResponse(
+      data: [membership(id: "mem_2", organizationId: "org_member_2")],
+      totalCount: 2
+    )
+    install(engine)
 
     let model = OrganizationAccountListDataSource(pageSize: 4)
     model.membershipsPager.replace(with: ClerkPaginatedResponse(
@@ -127,9 +78,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
     await model.loadMoreMemberships(user: .mock)
 
-    let params = try XCTUnwrap(captured.value)
-    XCTAssertEqual(params.offset, 1)
-    XCTAssertEqual(params.pageSize, 4)
+    XCTAssertEqual(engine.membershipPage, 1)
+    XCTAssertEqual(engine.membershipPageSize, 4)
     XCTAssertEqual(model.membershipsPager.items.map(\.id), ["mem_1", "mem_2"])
     XCTAssertFalse(model.membershipsPager.hasNextPage)
   }
@@ -183,14 +133,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
   @MainActor
   func testAcceptInvitationMarksInvitationSelectableAndAdjustsPagination() async {
-    configureClerkForTesting()
-
-    let capturedInvitationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
-      capturedInvitationId.setValue(invitationId)
-      return invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+    let engine = OrganizationListEngine()
+    install(engine)
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
@@ -198,7 +142,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
     await model.acceptInvitation(pendingInvitation)
 
-    XCTAssertEqual(capturedInvitationId.value, "inv_1")
+    XCTAssertEqual(engine.acceptedInvitationId, "inv_1")
     XCTAssertEqual(model.invitationsPager.items.first?.status, "accepted")
     XCTAssertEqual(model.invitationsPager.offset, 0)
     XCTAssertEqual(model.invitationsPager.totalCount, 0)
@@ -206,19 +150,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
   @MainActor
   func testAcceptInvitationKeepsPublicOrganizationDataWithoutFetchingOrganization() async throws {
-    configureClerkForTesting()
-
-    let fetchedOrganizationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(
-      getOrganization: { organizationId in
-        fetchedOrganizationId.setValue(organizationId)
-        throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
-      },
-      acceptUserOrganizationInvitation: { invitationId in
-        invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-      }
-    )
-    setDependencies(organizationService: organizationService)
+    install(OrganizationListEngine())
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
@@ -229,25 +161,16 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     let acceptedInvitation = try XCTUnwrap(model.invitationsPager.items.first)
     XCTAssertEqual(acceptedInvitation.status, "accepted")
     XCTAssertEqual(acceptedInvitation.publicOrganizationData.id, "org_invite")
-    XCTAssertNil(fetchedOrganizationId.value)
   }
 
   @MainActor
-  func testAcceptInvitationKeepsAcceptedRowAndUsesPendingOffsetForNextPage() async throws {
-    configureClerkForTesting()
-
-    let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
-    let userService = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
-      invitationCalls.withValue { $0.append((offset, pageSize, status)) }
-      return ClerkPaginatedResponse(
-        data: [invitation(id: "inv_3", organizationId: "org_3")],
-        totalCount: 2
-      )
-    })
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
-      invitation(id: invitationId, organizationId: "org_1", status: "accepted")
-    })
-    setDependencies(userService: userService, organizationService: organizationService)
+  func testAcceptInvitationKeepsAcceptedRowAndUsesPendingOffsetForNextPage() async {
+    let engine = OrganizationListEngine()
+    engine.invitations = ClerkPaginatedResponse(
+      data: [invitation(id: "inv_3", organizationId: "org_3")],
+      totalCount: 2
+    )
+    install(engine)
 
     let model = OrganizationAccountListDataSource(pageSize: 2)
     let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
@@ -267,10 +190,9 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
     await model.loadMoreInvitations(user: .mock)
 
-    let invitationCall = try XCTUnwrap(invitationCalls.value.first)
-    XCTAssertEqual(invitationCall.offset, 1)
-    XCTAssertEqual(invitationCall.pageSize, 2)
-    XCTAssertEqual(invitationCall.status, ["pending"])
+    XCTAssertEqual(engine.invitationPage, 1)
+    XCTAssertEqual(engine.invitationPageSize, 2)
+    XCTAssertEqual(engine.invitationStatus, .pending)
     XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
     XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending", "pending"])
     XCTAssertEqual(model.invitationsPager.offset, 2)
@@ -280,14 +202,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
   @MainActor
   func testAcceptSuggestionReplacesSuggestionWithAcceptedVersion() async {
-    configureClerkForTesting()
-
-    let capturedSuggestionId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
-      capturedSuggestionId.setValue(suggestionId)
-      return suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+    let engine = OrganizationListEngine()
+    install(engine)
 
     let model = OrganizationAccountListDataSource()
     model.suggestionsPager.replace(with: ClerkPaginatedResponse(
@@ -297,21 +213,99 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
     await model.acceptSuggestion(model.suggestionsPager.items[0])
 
-    XCTAssertEqual(capturedSuggestionId.value, "sug_1")
+    XCTAssertEqual(engine.acceptedSuggestionId, "sug_1")
     XCTAssertEqual(model.suggestionsPager.items.first?.status, "accepted")
   }
 }
 
 @MainActor
-private func setDependencies(
-  userService: (any UserServiceProtocol)? = nil,
-  organizationService: (any OrganizationServiceProtocol)? = nil
-) {
-  Clerk.shared.dependencies = MockDependencyContainer(
-    apiClient: createMockAPIClient(),
-    userService: userService,
-    organizationService: organizationService
-  )
+private func install(_ engine: OrganizationListEngine) {
+  configureClerkForTesting()
+  Clerk.engineClient = engine
+}
+
+@MainActor
+private final class OrganizationListEngine: ClerkEngineClient {
+  var memberships = ClerkPaginatedResponse<ClerkKit.OrganizationMembership>(data: [], totalCount: 0)
+  var invitations = ClerkPaginatedResponse<UserOrganizationInvitation>(data: [], totalCount: 0)
+  var suggestions = ClerkPaginatedResponse<OrganizationSuggestion>(data: [], totalCount: 0)
+  var creationDefaults: OrganizationCreationDefaults?
+  var membershipsError: (any Error)?
+  var membershipPage: Int?
+  var membershipPageSize: Int?
+  var invitationPage: Int?
+  var invitationPageSize: Int?
+  var invitationStatus: GetUserOrganizationInvitationsParamsStatus?
+  var suggestionPage: Int?
+  var suggestionPageSize: Int?
+  var suggestionStatus: [String] = []
+  var fetchedCreationDefaults = false
+  var acceptedInvitationId: String?
+  var acceptedSuggestionId: String?
+
+  func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
+    switch invocation.method {
+    case "getOrganizationMemberships":
+      if let membershipsError {
+        throw membershipsError
+      }
+      let params = try decode(GetUserOrganizationMembershipParams.self, invocation)
+      membershipPage = params.initialPage
+      membershipPageSize = params.pageSize
+      return try encode(memberships)
+    case "getOrganizationInvitations":
+      let params = try decode(GetUserOrganizationInvitationsParams.self, invocation)
+      invitationPage = params.initialPage
+      invitationPageSize = params.pageSize
+      invitationStatus = params.status
+      return try encode(invitations)
+    case "getOrganizationSuggestions":
+      let params = try decode(GetUserOrganizationSuggestionsParams.self, invocation)
+      suggestionPage = params.initialPage
+      suggestionPageSize = params.pageSize
+      suggestionStatus = statusStrings(params.status)
+      return try encode(suggestions)
+    case "getOrganizationCreationDefaults":
+      fetchedCreationDefaults = true
+      return try encode(creationDefaults ?? organizationCreationDefaults())
+    case "accept":
+      switch invocation.receiver {
+      case .listed(.userOrganizationInvitation, let id):
+        acceptedInvitationId = id.rawValue
+        return try encode(invitation(id: id.rawValue, organizationId: "org_invite", status: "accepted"))
+      case .listed(.organizationSuggestion, let id):
+        acceptedSuggestionId = id.rawValue
+        return try encode(suggestion(id: id.rawValue, organizationId: "org_suggested", status: "accepted"))
+      default:
+        throw ClerkClientError(message: "Unhandled accept receiver")
+      }
+    default:
+      throw ClerkClientError(message: "Unhandled JS invocation \(invocation.method)")
+    }
+  }
+
+  private func decode<T: Decodable>(_ type: T.Type, _ invocation: ClerkJSInvocation) throws -> T {
+    try JSONDecoder().decode(type, from: (invocation.arguments.first ?? .null).data())
+  }
+
+  private func encode(_ value: some Encodable) throws -> JSONValue {
+    try JSONDecoder().decode(JSONValue.self, from: JSONEncoder.clerkEncoder.encode(value))
+  }
+
+  private func statusStrings(_ value: JSONValue?) -> [String] {
+    guard case .array(let values) = value else {
+      if case .string(let status) = value {
+        return [status]
+      }
+      return []
+    }
+    return values.compactMap { item in
+      if case .string(let status) = item {
+        return status
+      }
+      return nil
+    }
+  }
 }
 
 private func organization(id: String, name: String? = nil) -> Organization {
@@ -334,7 +328,7 @@ private func organization(id: String, name: String? = nil) -> Organization {
   )
 }
 
-private func membership(id: String, organizationId: String) -> OrganizationMembership {
+private func membership(id: String, organizationId: String) -> ClerkKit.OrganizationMembership {
   OrganizationMembership(
     id: id,
     publicMetadata: "{}",

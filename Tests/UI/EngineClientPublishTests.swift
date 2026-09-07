@@ -7,7 +7,7 @@ import Testing
 @MainActor
 @Test func applyEngineClientJSONPublishesKitUser() throws {
   let clerk = Clerk()
-  let data = try ClerkJSCore.Clerk.snapshotSignedInClient()
+  let data = try ClerkJSHost.snapshotSignedInClient()
   let payload = try FAPIJSON.normalizeClientJSON(data)
   try clerk.applyEngineClientJSON(payload, deviceToken: "js-client-jwt")
   #expect(clerk.user?.id == "user_fixture")
@@ -18,7 +18,7 @@ import Testing
 @MainActor
 @Test func applyEngineEnvironmentJSONPublishesKitEnvironment() throws {
   let clerk = Clerk()
-  let data = try ClerkJSCore.Clerk.snapshotEnvironmentJSON()
+  let data = try ClerkJSHost.snapshotEnvironmentJSON()
   try clerk.applyEngineEnvironmentJSON(data)
   #expect(clerk.environment?.displayConfig.applicationName == "JSCore Cache")
 }

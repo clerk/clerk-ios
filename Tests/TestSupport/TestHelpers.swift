@@ -60,17 +60,12 @@ func setupMockAPIClient() {
     clientService: ClientService(apiClient: mockAPIClient),
     userService: UserService(apiClient: mockAPIClient),
     signInService: SignInService(apiClient: mockAPIClient),
-    signUpService: SignUpService(apiClient: mockAPIClient),
     sessionService: SessionService(apiClient: mockAPIClient),
     magicLinkService: MagicLinkService(apiClient: mockAPIClient),
     passkeyService: PasskeyService(apiClient: mockAPIClient),
     biometricCredentialService: BiometricCredentialService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
-    billingService: BillingService(apiClient: mockAPIClient),
-    environmentService: EnvironmentService(apiClient: mockAPIClient),
-    emailAddressService: EmailAddressService(apiClient: mockAPIClient),
-    phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
-    externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
+    environmentService: EnvironmentService(apiClient: mockAPIClient)
   )
 }
 

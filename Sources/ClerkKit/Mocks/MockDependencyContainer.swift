@@ -33,17 +33,12 @@ final class MockDependencyContainer: Dependencies {
   let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
-  let signUpService: SignUpServiceProtocol
   let sessionService: SessionServiceProtocol
   let magicLinkService: MagicLinkServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
-  let billingService: BillingServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let emailAddressService: EmailAddressServiceProtocol
-  let phoneNumberService: PhoneNumberServiceProtocol
-  let externalAccountService: ExternalAccountServiceProtocol
 
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
@@ -60,17 +55,12 @@ final class MockDependencyContainer: Dependencies {
   ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
   ///   - userService: Optional custom user service (defaults to MockUserService).
   ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
-  ///   - signUpService: Optional custom sign-up service (defaults to MockSignUpService).
   ///   - sessionService: Optional custom session service (defaults to MockSessionService).
   ///   - magicLinkService: Optional custom magic-link service (defaults to MockMagicLinkService).
   ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
   ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
   ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
-  ///   - billingService: Optional custom billing service (defaults to MockBillingService).
   ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
-  ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
-  ///   - phoneNumberService: Optional custom phone number service (defaults to MockPhoneNumberService).
-  ///   - externalAccountService: Optional custom external account service (defaults to MockExternalAccountService).
   init(
     apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
@@ -88,17 +78,12 @@ final class MockDependencyContainer: Dependencies {
     hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
-    signUpService: (any SignUpServiceProtocol)? = nil,
     sessionService: (any SessionServiceProtocol)? = nil,
     magicLinkService: (any MagicLinkServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
-    billingService: (any BillingServiceProtocol)? = nil,
-    environmentService: (any EnvironmentServiceProtocol)? = nil,
-    emailAddressService: (any EmailAddressServiceProtocol)? = nil,
-    phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
-    externalAccountService: (any ExternalAccountServiceProtocol)? = nil
+    environmentService: (any EnvironmentServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
     let resolvedKeychain = keychain ?? InMemoryKeychain()
@@ -128,16 +113,11 @@ final class MockDependencyContainer: Dependencies {
     self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
-    self.signUpService = signUpService ?? MockSignUpService()
     self.sessionService = sessionService ?? MockSessionService()
     self.magicLinkService = magicLinkService ?? MockMagicLinkService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
-    self.billingService = billingService ?? MockBillingService()
     self.environmentService = environmentService ?? MockEnvironmentService()
-    self.emailAddressService = emailAddressService ?? MockEmailAddressService()
-    self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
-    self.externalAccountService = externalAccountService ?? MockExternalAccountService()
   }
 }

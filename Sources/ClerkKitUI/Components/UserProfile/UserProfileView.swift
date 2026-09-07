@@ -650,11 +650,6 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
       }
     )
     .environment(AuthState())
@@ -699,11 +694,6 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
       }
     )
     .environment(AuthState())
@@ -723,11 +713,6 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         builder.services.environmentService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
         }
       }
     )
@@ -750,11 +735,6 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
         builder.services.environmentService.getHandler = {
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
         }
       }
     )

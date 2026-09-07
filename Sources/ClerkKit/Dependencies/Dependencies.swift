@@ -65,9 +65,6 @@ protocol Dependencies: AnyObject {
   /// Service for sign-in operations.
   var signInService: SignInServiceProtocol { get }
 
-  /// Service for sign-up operations.
-  var signUpService: SignUpServiceProtocol { get }
-
   /// Service for session-related operations.
   var sessionService: SessionServiceProtocol { get }
 
@@ -83,20 +80,8 @@ protocol Dependencies: AnyObject {
   /// Service for organization-related operations.
   var organizationService: OrganizationServiceProtocol { get }
 
-  /// Service for billing-related operations.
-  var billingService: BillingServiceProtocol { get }
-
   /// Service for environment-related operations.
   var environmentService: EnvironmentServiceProtocol { get }
-
-  /// Service for email address operations.
-  var emailAddressService: EmailAddressServiceProtocol { get }
-
-  /// Service for phone number operations.
-  var phoneNumberService: PhoneNumberServiceProtocol { get }
-
-  /// Service for external account operations.
-  var externalAccountService: ExternalAccountServiceProtocol { get }
 
   /// Manages Clerk configuration including API client setup and options.
   var configurationManager: ConfigurationManager { get }

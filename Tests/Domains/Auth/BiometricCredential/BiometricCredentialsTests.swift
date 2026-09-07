@@ -1291,13 +1291,8 @@ struct BiometricCredentialsTests {
   func signInRequiresCreateToReturnBiometricCredentialChallenge() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let prepareWasCalled = LockIsolated(false)
     let signInService = MockSignInService(
       create: { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) },
-      prepareFirstFactor: { _, _ in
-        prepareWasCalled.setValue(true)
-        return .mockBiometricCredentialChallenge
-      },
       attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
     )
     let setup = try makeBiometricCredentialsWithLocalCredential(signInService: signInService)
@@ -1307,7 +1302,6 @@ struct BiometricCredentialsTests {
       Issue.record("Expected sign-in to fail when create does not return a biometric-credential challenge.")
     } catch let error as ClerkClientError {
       #expect(error.message == "Biometric sign-in did not return a challenge.")
-      #expect(prepareWasCalled.value == false)
     } catch {
       Issue.record("Wrong error type: \(error)")
     }

@@ -19,7 +19,7 @@ struct SecuredByClerkEnvironmentTests {
         from: JSONSerialization.data(withJSONObject: object)
       )
 
-      let clerk = Clerk(publishableKey: "pk_test_preview")
+      let clerk = ClerkJSHost(publishableKey: "pk_test_preview")
       clerk.publishEnvironment(environment)
       #expect(clerk.environment?.displayConfig.branded == branded)
     }
@@ -60,7 +60,7 @@ struct SecuredByClerkEnvironmentTests {
 
   @Test
   func missingEnvironmentHidesFooterGates() {
-    let clerk = Clerk(publishableKey: "pk_test_preview")
+    let clerk = ClerkJSHost(publishableKey: "pk_test_preview")
     #expect(clerk.shouldShowDevelopmentModeWarning == false)
     #expect(clerk.shouldShowSecuredByClerkFooter == false)
   }
@@ -69,7 +69,7 @@ struct SecuredByClerkEnvironmentTests {
     branded: Bool,
     showDevmodeWarning: Bool,
     instanceEnvironmentType: String
-  ) throws -> Clerk {
+  ) throws -> ClerkJSHost {
     let url = try #require(Bundle.module.url(forResource: "environment-snapshot", withExtension: "json"))
     var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
     var displayConfig = try #require(object["display_config"] as? [String: Any])
@@ -81,7 +81,7 @@ struct SecuredByClerkEnvironmentTests {
       Environment.self,
       from: JSONSerialization.data(withJSONObject: object)
     )
-    let clerk = Clerk(publishableKey: "pk_test_preview")
+    let clerk = ClerkJSHost(publishableKey: "pk_test_preview")
     clerk.publishEnvironment(environment)
     return clerk
   }

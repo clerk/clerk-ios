@@ -60,14 +60,4 @@ extension Clerk {
     }
     throw ClerkClientError(message: "OAuth did not produce a client.")
   }
-
-  @MainActor
-  package static func installLinkedEngineFactoryIfAvailable() {
-    guard makeEngineClient == nil else { return }
-    guard !EnvironmentDetection.isRunningInTests else { return }
-    guard let marker = NSClassFromString("ClerkEngineBootstrapMarker") as? NSObject.Type else {
-      return
-    }
-    _ = marker.perform(NSSelectorFromString("installEngineFactory"))
-  }
 }

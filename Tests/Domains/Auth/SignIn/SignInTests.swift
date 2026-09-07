@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import ClerkSnapshots
 import ConcurrencyExtras
 import Foundation
 import Testing
@@ -22,30 +23,6 @@ struct SignInTests {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       signInService: service
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(signUpService: MockSignUpService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signUpService: signUpService
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(
-    signInService: MockSignInService,
-    signUpService: MockSignUpService
-  ) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signInService: signInService,
-      signUpService: signUpService
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -177,14 +154,10 @@ struct SignInTests {
         ),
       ]
     )
-    let service = MockSignInService(prepareFirstFactor: { _, _ in
-      throw ClerkClientError(message: "Prepare failed.")
-    })
-
+    Clerk.engineClient = ThrowingJSEngine(message: "Prepare failed.")
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signInService: service
+      keychain: keychain
     )
     let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
@@ -199,7 +172,7 @@ struct SignInTests {
 
   @Test
   func sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails() async throws {
-    let prepareWasCalled = LockIsolated(false)
+    let engine = CountingJSEngine()
     let signIn = SignIn(
       id: "sign_in_123",
       status: .needsFirstFactor,
@@ -212,21 +185,16 @@ struct SignInTests {
         ),
       ]
     )
-    let service = MockSignInService(prepareFirstFactor: { _, _ in
-      prepareWasCalled.setValue(true)
-      return signIn
-    })
-
+    Clerk.engineClient = engine
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: SetFailingKeychain(),
-      signInService: service
+      keychain: SetFailingKeychain()
     )
 
     await #expect(throws: SetFailingKeychain.Failure.self) {
       try await signIn.sendEmailLink()
     }
-    #expect(prepareWasCalled.value == false)
+    #expect(engine.invokeCount == 0)
   }
 
   @Test
@@ -237,7 +205,7 @@ struct SignInTests {
       strategy: .password
     )
 
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let captured = LockIsolated<(String, ClerkKit.SignIn.AttemptFirstFactorParams)?>(nil)
     let service = MockSignInService(attemptFirstFactor: { id, params in
       captured.setValue((id, params))
       return .mock
@@ -262,7 +230,7 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = nil
 
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
+    let captured = LockIsolated<(String, ClerkKit.SignIn.AttemptFirstFactorParams)?>(nil)
     let service = MockSignInService(attemptFirstFactor: { id, params in
       captured.setValue((id, params))
       return .mock
@@ -287,14 +255,6 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
-      captured.setValue(params)
-      return .mock
-    })
-
-    configureServices(signUpService: signUpService)
-
     let result = try await signIn.handleTransferFlow(transferable: false)
 
     switch result {
@@ -303,8 +263,6 @@ struct SignInTests {
     case .signUp:
       #expect(Bool(false))
     }
-
-    #expect(captured.value == nil)
   }
 
   @Test
@@ -341,14 +299,6 @@ struct SignInTests {
     engine.signInOnReload = reloadedSignIn
     Clerk.engineClient = engine
 
-    let createCount = LockIsolated(0)
-    let signUpService = MockSignUpService(create: { _ in
-      createCount.setValue(createCount.value + 1)
-      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    })
-
-    configureServices(signUpService: signUpService)
-
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
       callbackURL: callbackURL,
@@ -357,7 +307,6 @@ struct SignInTests {
 
     #expect(engine.reloadedNonce == nil)
     #expect(engine.transferredToSignUpMetadata == metadata)
-    #expect(createCount.value == 0)
 
     switch result {
     case .signUp(let signUp):
@@ -377,14 +326,6 @@ struct SignInTests {
     engine.signInOnReload = reloadedSignIn
     Clerk.engineClient = engine
 
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
-      createCaptured.setValue(params)
-      return .mock
-    })
-
-    configureServices(signUpService: signUpService)
-
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
       callbackURL: callbackURL,
@@ -392,7 +333,6 @@ struct SignInTests {
     )
 
     #expect(engine.reloadedNonce == nil)
-    #expect(createCaptured.value == nil)
 
     switch result {
     case .signIn(let updatedSignIn):
@@ -400,5 +340,28 @@ struct SignInTests {
     case .signUp:
       Issue.record("Expected sign-in result.")
     }
+  }
+}
+
+@MainActor
+private final class ThrowingJSEngine: ClerkEngineClient {
+  let message: String
+
+  init(message: String) {
+    self.message = message
+  }
+
+  func invoke(_: ClerkJSInvocation) async throws -> JSONValue {
+    throw ClerkClientError(message: String.LocalizationValue(stringLiteral: message))
+  }
+}
+
+@MainActor
+private final class CountingJSEngine: ClerkEngineClient {
+  var invokeCount = 0
+
+  func invoke(_: ClerkJSInvocation) async throws -> JSONValue {
+    invokeCount += 1
+    return .null
   }
 }
