@@ -506,6 +506,8 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       try await engine.callSignInSteps(steps)
     case .signUp:
       try await engine.callSignUpSteps(steps)
+    case .billing:
+      try await engine.callBillingSteps(steps)
     }
     publish()
     return data

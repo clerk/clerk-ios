@@ -279,7 +279,7 @@ public final class Clerk {
   /// Payment methods live on ``User/getPaymentMethods(params:)`` and
   /// ``Organization/getPaymentMethods(params:)``.
   public var billing: Billing {
-    Billing(billingService: dependencies.billingService)
+    Billing()
   }
 
   /// The main entry point for biometric credential operations.

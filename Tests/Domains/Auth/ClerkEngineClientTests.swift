@@ -574,6 +574,40 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func billingReadsUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingBillingService(kitCalls)
+
+    let plans = try await Clerk.shared.billing.getPlans(
+      params: .init(for: .organization, orgId: "org_123", minSeats: 5, initialPage: 3, pageSize: 10)
+    )
+    #expect(engine.resourceReceiver == .billing)
+    #expect(stepMethods(engine.resourceSteps) == ["getPlans"])
+    #expect(stepArgs(engine.resourceSteps)["for"] as? String == "organization")
+    #expect(stepArgs(engine.resourceSteps)["orgId"] as? String == "org_123")
+    #expect(stepArgs(engine.resourceSteps)["minSeats"] as? Int == 5)
+    #expect(stepArgs(engine.resourceSteps)["initialPage"] as? Int == 3)
+    #expect(plans.data.first?.id == BillingPlan.mock.id)
+
+    _ = try await Clerk.shared.billing.getPlan(params: .init(id: "plan_1"))
+    _ = try await Clerk.shared.billing.getSubscription(params: .init(orgId: "org_123"))
+    _ = try await Clerk.shared.billing.getStatements(params: .init())
+    _ = try await Clerk.shared.billing.getStatement(params: .init(id: "stmt_1"))
+    _ = try await Clerk.shared.billing.getPaymentAttempts(params: .init())
+    _ = try await Clerk.shared.billing.getPaymentAttempt(params: .init(id: "pay_1"))
+    _ = try await Clerk.shared.billing.getCreditBalance(params: .init())
+    _ = try await Clerk.shared.billing.getCreditHistory(params: .init())
+    _ = try await User.mock.getPaymentMethods()
+    #expect(engine.resourceReceiver == .user)
+    #expect(stepMethods(engine.resourceSteps) == ["getPaymentMethods"])
+    _ = try await Organization.mock.getPaymentMethods()
+    #expect(engine.resourceReceiver == .organization(Organization.mock.id))
+    #expect(kitCalls.billingServiceCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1466,7 +1500,7 @@ final class RecordingEngineClient: ClerkEngineClient {
       case .signUp:
         publish(signUpOnReload)
         return try JSONEncoder.clerkEncoder.encode(signUpOnReload)
-      case .organization, .user:
+      case .organization, .user, .billing:
         break
       }
     }
@@ -1484,6 +1518,43 @@ final class RecordingEngineClient: ClerkEngineClient {
     }
     if picks.contains("externalAccounts") {
       return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
+    }
+    if methods.contains("getPaymentMethods") {
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [BillingPaymentMethod.mock], totalCount: 1)
+      )
+    }
+    if receiver == .billing {
+      switch methods.first {
+      case "getPlans":
+        return try JSONEncoder.clerkEncoder.encode(
+          ClerkPaginatedResponse(data: [BillingPlan.mock], totalCount: 1)
+        )
+      case "getPlan":
+        return try JSONEncoder.clerkEncoder.encode(BillingPlan.mock)
+      case "getSubscription":
+        return try JSONEncoder.clerkEncoder.encode(BillingSubscription.mock)
+      case "getStatements":
+        return try JSONEncoder.clerkEncoder.encode(
+          ClerkPaginatedResponse(data: [BillingStatement.mock], totalCount: 1)
+        )
+      case "getStatement":
+        return try JSONEncoder.clerkEncoder.encode(BillingStatement.mock)
+      case "getPaymentAttempts":
+        return try JSONEncoder.clerkEncoder.encode(
+          ClerkPaginatedResponse(data: [BillingPayment.mock], totalCount: 1)
+        )
+      case "getPaymentAttempt":
+        return try JSONEncoder.clerkEncoder.encode(BillingPayment.mock)
+      case "getCreditBalance":
+        return try JSONEncoder.clerkEncoder.encode(BillingCreditBalance.mock)
+      case "getCreditHistory":
+        return try JSONEncoder.clerkEncoder.encode(
+          ClerkPaginatedResponse(data: [BillingCreditLedger.mock], totalCount: 1)
+        )
+      default:
+        throw ClerkClientError(message: "Unexpected billing method \(methods)")
+      }
     }
     if methods.contains("getSessions") {
       return try JSONEncoder.clerkEncoder.encode(Session.mock)
@@ -1732,6 +1803,7 @@ private final class KitCallCounter {
   var sessionRevokeCount = 0
   var signInGetCount = 0
   var signUpGetCount = 0
+  var billingServiceCount = 0
 }
 
 @MainActor
@@ -1949,6 +2021,41 @@ private func installFailingIdentifierServices(_ counts: KitCallCounter) {
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager
     .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingBillingService(_ counts: KitCallCounter) {
+  let fail: () -> ClerkClientError = {
+    counts.billingServiceCount += 1
+    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+  }
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    billingService: MockBillingService(
+      getPaymentAttempts: { _ in throw fail() },
+      getPaymentAttempt: { _ in throw fail() },
+      getPlans: { _ in throw fail() },
+      getPlan: { _ in throw fail() },
+      getSubscription: { _ in throw fail() },
+      getStatements: { _ in throw fail() },
+      getStatement: { _ in throw fail() },
+      getCreditBalance: { _ in throw fail() },
+      getCreditHistory: { _ in throw fail() },
+      getPaymentMethods: { _, _ in throw fail() }
+    )
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+private func stepArgs(_ data: Data?) -> [String: Any] {
+  guard let data,
+        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+  else {
+    return [:]
+  }
+  return steps.compactMap { $0["args"] as? [String: Any] }.first ?? [:]
 }
 
 private func stepPicks(_ data: Data?) -> [String] {

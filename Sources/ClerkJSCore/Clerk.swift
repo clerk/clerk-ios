@@ -121,6 +121,10 @@ package enum ClerkJSPath {
   static var signUpRoot: String {
     "\(instance).client.signUp"
   }
+
+  static var billingRoot: String {
+    "\(instance).billing"
+  }
 }
 
 @MainActor
@@ -310,6 +314,10 @@ public final class Clerk {
 
   public func callSignUpSteps(_ steps: Data) async throws -> Data {
     try await callSteps(receiverPath: ClerkJSPath.signUpRoot, receiverArg: nil, steps: steps)
+  }
+
+  public func callBillingSteps(_ steps: Data) async throws -> Data {
+    try await callSteps(receiverPath: ClerkJSPath.billingRoot, receiverArg: nil, steps: steps)
   }
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {

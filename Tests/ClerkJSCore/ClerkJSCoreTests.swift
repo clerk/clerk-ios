@@ -223,6 +223,38 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceStepsInvokesBillingGetPlans() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          billing: {
+            getPlans: function(params) {
+              return Promise.resolve({
+                data: [{ id: 'plan_1', payer: params && params.for ? params.for : 'user' }],
+                total_count: 1
+              });
+            }
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceSteps(
+      receiverPath: "__clerkInstance.billing",
+      receiverArgJSON: "null",
+      stepsJSON: #"[{"method":"getPlans","args":{"for":"organization","orgId":"org_1"}}]"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    let data = payload?["data"] as? [[String: Any]]
+    #expect(data?.first?["id"] as? String == "plan_1")
+    #expect(data?.first?["payer"] as? String == "organization")
+    #expect(payload?["total_count"] as? Int == 1)
+  }
+
+  @Test
   func callOnResourceStepsReloadsSignInWithNonce() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(

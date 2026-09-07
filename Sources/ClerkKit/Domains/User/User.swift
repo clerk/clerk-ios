@@ -210,11 +210,6 @@ extension User {
     Clerk.shared.dependencies.userService
   }
 
-  @MainActor
-  private var billingService: any BillingServiceProtocol {
-    Clerk.shared.dependencies.billingService
-  }
-
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
   public func reload() async throws -> User {
@@ -590,7 +585,11 @@ extension User {
 
   @discardableResult @MainActor
   public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: params, orgId: nil)
+    try await Clerk.callResourceSteps(
+      .user,
+      [["method": "getPaymentMethods", "args": paymentMethodArgs(params)]],
+      as: ClerkPaginatedResponse<BillingPaymentMethod>.self
+    )
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.

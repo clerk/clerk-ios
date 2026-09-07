@@ -5,6 +5,7 @@ package enum ClerkResourceReceiver: Equatable {
   case user
   case signIn
   case signUp
+  case billing
 }
 
 @MainActor

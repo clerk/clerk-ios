@@ -21,11 +21,6 @@ extension Organization {
     Clerk.shared.dependencies.organizationService
   }
 
-  @MainActor
-  private var billingService: any BillingServiceProtocol {
-    Clerk.shared.dependencies.billingService
-  }
-
   /// Updates an organization's attributes. Returns an Organization object.
   ///
   /// - Parameters:
@@ -351,7 +346,11 @@ extension Organization {
 
   @MainActor
   public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: params, orgId: id)
+    try await Clerk.callResourceSteps(
+      .organization(id),
+      [["method": "getPaymentMethods", "args": paymentMethodArgs(params)]],
+      as: ClerkPaginatedResponse<BillingPaymentMethod>.self
+    )
   }
 }
 
