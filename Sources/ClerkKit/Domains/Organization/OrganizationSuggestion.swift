@@ -75,13 +75,6 @@ extension OrganizationSuggestion {
   /// - Returns: The accepted ``OrganizationSuggestion``.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationSuggestion {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["method": "getOrganizationSuggestions", "args": ["pageSize": 100], "findId": id],
-        ["method": "accept", "args": [String: String]()],
-      ],
-      as: OrganizationSuggestion.self
-    )
+    try await Clerk.acceptOrganizationSuggestion(id: id)
   }
 }

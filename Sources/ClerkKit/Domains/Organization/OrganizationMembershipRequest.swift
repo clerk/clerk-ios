@@ -46,26 +46,12 @@ extension OrganizationMembershipRequest {
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationMembershipRequest {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getMembershipRequests", "args": ["pageSize": 100], "findId": id],
-        ["method": "accept", "args": [String: String]()],
-      ],
-      as: OrganizationMembershipRequest.self
-    )
+    try await Clerk.acceptOrganizationMembershipRequest(organizationId: organizationId, id: id)
   }
 
   /// Rejects the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func reject() async throws -> OrganizationMembershipRequest {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getMembershipRequests", "args": ["pageSize": 100], "findId": id],
-        ["method": "reject", "args": [String: String]()],
-      ],
-      as: OrganizationMembershipRequest.self
-    )
+    try await Clerk.rejectOrganizationMembershipRequest(organizationId: organizationId, id: id)
   }
 }

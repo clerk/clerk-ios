@@ -91,13 +91,6 @@ extension UserOrganizationInvitation {
   /// - Returns: The accepted ``UserOrganizationInvitation``.
   @discardableResult @MainActor
   public func accept() async throws -> UserOrganizationInvitation {
-    try await Clerk.callResourceSteps(
-      .user,
-      [
-        ["method": "getOrganizationInvitations", "args": ["pageSize": 100], "findId": id],
-        ["method": "accept", "args": [String: String]()],
-      ],
-      as: UserOrganizationInvitation.self
-    )
+    try await Clerk.acceptUserOrganizationInvitation(id: id)
   }
 }

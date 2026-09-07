@@ -58,13 +58,6 @@ extension OrganizationInvitation {
   /// Revokes the invitation for the email it corresponds to.
   @discardableResult @MainActor
   public func revoke() async throws -> OrganizationInvitation {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getInvitations", "args": ["pageSize": 100], "findId": id],
-        ["method": "revoke", "args": [String: String]()],
-      ],
-      as: OrganizationInvitation.self
-    )
+    try await Clerk.revokeOrganizationInvitation(organizationId: organizationId, id: id)
   }
 }

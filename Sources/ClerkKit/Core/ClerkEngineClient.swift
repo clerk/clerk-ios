@@ -7,6 +7,19 @@ private struct PasskeyUpdateNameParams: Encodable {
   var name: String
 }
 
+private struct DomainIdArgs: Encodable {
+  var domainId: String
+}
+
+private struct PageSizeArgs: Encodable {
+  var pageSize: Int
+}
+
+private struct EnrollmentModeArgs: Encodable {
+  var enrollmentMode: String
+  var deletePending: Bool?
+}
+
 package enum ClerkResourceReceiver: Equatable {
   case organization(String)
   case user
@@ -103,6 +116,14 @@ package protocol ClerkEngineClient: AnyObject {
   func getOrganization(id: String) async throws -> Organization
   func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
   func callUserChild(pick: String, id: String, method: String, args: Data) async throws -> Data
+  func callListedChild(
+    organizationId: String?,
+    locate: String,
+    locateArgs: Data,
+    findId: String?,
+    method: String,
+    args: Data
+  ) async throws -> Data
   func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
@@ -277,6 +298,152 @@ extension Clerk {
       args: JSONEncoder().encode(args)
     )
     return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
+  }
+
+  @MainActor
+  package static func callListedChild<T: Decodable>(
+    organizationId: String? = nil,
+    locate: String,
+    locateArgs: some Encodable = EmptyEngineArgs(),
+    findId: String? = nil,
+    method: some RawRepresentable<String>,
+    args: some Encodable = EmptyEngineArgs(),
+    as _: T.Type
+  ) async throws -> T {
+    let engine = try await requireEngineClient()
+    let data = try await engine.callListedChild(
+      organizationId: organizationId,
+      locate: locate,
+      locateArgs: JSONEncoder().encode(locateArgs),
+      findId: findId,
+      method: method.rawValue,
+      args: JSONEncoder().encode(args)
+    )
+    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
+  }
+
+  @MainActor
+  package static func deleteOrganizationDomain(organizationId: String, id: String) async throws -> DeletedObject {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getDomain",
+      locateArgs: DomainIdArgs(domainId: id),
+      method: OrganizationDomainJSMethod.delete,
+      as: DeletedObject.self
+    )
+  }
+
+  @MainActor
+  package static func prepareOrganizationDomainAffiliation(
+    organizationId: String,
+    id: String,
+    affiliationEmailAddress: String
+  ) async throws -> OrganizationDomain {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getDomain",
+      locateArgs: DomainIdArgs(domainId: id),
+      method: OrganizationDomainJSMethod.prepareAffiliationVerification,
+      args: PrepareAffiliationVerificationParams(affiliationEmailAddress: affiliationEmailAddress),
+      as: OrganizationDomain.self
+    )
+  }
+
+  @MainActor
+  package static func attemptOrganizationDomainAffiliation(
+    organizationId: String,
+    id: String,
+    code: String
+  ) async throws -> OrganizationDomain {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getDomain",
+      locateArgs: DomainIdArgs(domainId: id),
+      method: OrganizationDomainJSMethod.attemptAffiliationVerification,
+      args: AttemptAffiliationVerificationParams(code: code),
+      as: OrganizationDomain.self
+    )
+  }
+
+  @MainActor
+  package static func updateOrganizationDomainEnrollmentMode(
+    organizationId: String,
+    id: String,
+    enrollmentMode: String,
+    deletePending: Bool?
+  ) async throws -> OrganizationDomain {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getDomain",
+      locateArgs: DomainIdArgs(domainId: id),
+      method: OrganizationDomainJSMethod.updateEnrollmentMode,
+      args: EnrollmentModeArgs(enrollmentMode: enrollmentMode, deletePending: deletePending),
+      as: OrganizationDomain.self
+    )
+  }
+
+  @MainActor
+  package static func revokeOrganizationInvitation(organizationId: String, id: String) async throws -> OrganizationInvitation {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getInvitations",
+      locateArgs: PageSizeArgs(pageSize: 100),
+      findId: id,
+      method: OrganizationInvitationJSMethod.revoke,
+      as: OrganizationInvitation.self
+    )
+  }
+
+  @MainActor
+  package static func acceptOrganizationMembershipRequest(
+    organizationId: String,
+    id: String
+  ) async throws -> OrganizationMembershipRequest {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getMembershipRequests",
+      locateArgs: PageSizeArgs(pageSize: 100),
+      findId: id,
+      method: OrganizationMembershipRequestJSMethod.accept,
+      as: OrganizationMembershipRequest.self
+    )
+  }
+
+  @MainActor
+  package static func rejectOrganizationMembershipRequest(
+    organizationId: String,
+    id: String
+  ) async throws -> OrganizationMembershipRequest {
+    try await callListedChild(
+      organizationId: organizationId,
+      locate: "getMembershipRequests",
+      locateArgs: PageSizeArgs(pageSize: 100),
+      findId: id,
+      method: OrganizationMembershipRequestJSMethod.reject,
+      as: OrganizationMembershipRequest.self
+    )
+  }
+
+  @MainActor
+  package static func acceptOrganizationSuggestion(id: String) async throws -> OrganizationSuggestion {
+    try await callListedChild(
+      locate: "getOrganizationSuggestions",
+      locateArgs: PageSizeArgs(pageSize: 100),
+      findId: id,
+      method: OrganizationSuggestionJSMethod.accept,
+      as: OrganizationSuggestion.self
+    )
+  }
+
+  @MainActor
+  package static func acceptUserOrganizationInvitation(id: String) async throws -> UserOrganizationInvitation {
+    try await callListedChild(
+      locate: "getOrganizationInvitations",
+      locateArgs: PageSizeArgs(pageSize: 100),
+      findId: id,
+      method: UserOrganizationInvitationJSMethod.accept,
+      as: UserOrganizationInvitation.self
+    )
   }
 
   @MainActor

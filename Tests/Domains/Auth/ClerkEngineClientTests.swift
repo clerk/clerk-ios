@@ -451,38 +451,43 @@ struct ClerkEngineClientTests {
 
     let invitation = OrganizationInvitation.mock
     let revoked = try await invitation.revoke()
-    #expect(engine.resourceReceiver == .organization(invitation.organizationId))
-    #expect(stepMethods(engine.resourceSteps) == ["getInvitations", "revoke"])
+    #expect(engine.listedOrganizationId == invitation.organizationId)
+    #expect(engine.listedLocate == "getInvitations")
+    #expect(engine.listedMethod == "revoke")
     #expect(revoked.id == OrganizationInvitation.mock.id)
 
     let domain = OrganizationDomain.mock
     let deleted = try await domain.delete()
-    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "delete"])
+    #expect(engine.listedLocate == "getDomain")
+    #expect(engine.listedMethod == "delete")
     #expect(deleted.deleted == true)
 
     _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "ada@example.com")
-    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "prepareAffiliationVerification"])
+    #expect(engine.listedMethod == "prepareAffiliationVerification")
 
     _ = try await domain.attemptAffiliationVerification(code: "424242")
-    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "attemptAffiliationVerification"])
+    #expect(engine.listedMethod == "attemptAffiliationVerification")
 
     _ = try await domain.updateEnrollmentMode(.automaticInvitation, deletePending: true)
-    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "updateEnrollmentMode"])
+    #expect(engine.listedMethod == "updateEnrollmentMode")
 
     let userInvite = UserOrganizationInvitation.mock
     _ = try await userInvite.accept()
-    #expect(engine.resourceReceiver == .user)
-    #expect(stepMethods(engine.resourceSteps) == ["getOrganizationInvitations", "accept"])
+    #expect(engine.listedOrganizationId == nil)
+    #expect(engine.listedLocate == "getOrganizationInvitations")
+    #expect(engine.listedMethod == "accept")
 
     let suggestion = OrganizationSuggestion.mock
     _ = try await suggestion.accept()
-    #expect(stepMethods(engine.resourceSteps) == ["getOrganizationSuggestions", "accept"])
+    #expect(engine.listedLocate == "getOrganizationSuggestions")
+    #expect(engine.listedMethod == "accept")
 
     let request = OrganizationMembershipRequest.mock
     _ = try await request.accept()
-    #expect(stepMethods(engine.resourceSteps) == ["getMembershipRequests", "accept"])
+    #expect(engine.listedLocate == "getMembershipRequests")
+    #expect(engine.listedMethod == "accept")
     _ = try await request.reject()
-    #expect(stepMethods(engine.resourceSteps) == ["getMembershipRequests", "reject"])
+    #expect(engine.listedMethod == "reject")
 
     #expect(kitCalls.organizationServiceCount == 0)
   }
@@ -1502,6 +1507,40 @@ final class RecordingEngineClient: ClerkEngineClient {
       return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
     default:
       throw ClerkClientError(message: "Unexpected user child \(pick)")
+    }
+  }
+
+  var listedOrganizationId: String?
+  var listedLocate: String?
+  var listedMethod: String?
+
+  func callListedChild(
+    organizationId: String?,
+    locate: String,
+    locateArgs _: Data,
+    findId _: String?,
+    method: String,
+    args _: Data
+  ) async throws -> Data {
+    listedOrganizationId = organizationId
+    listedLocate = locate
+    listedMethod = method
+    if method == "delete" || method == "destroy" {
+      return Data(#"{"id":"1","deleted":true}"#.utf8)
+    }
+    switch locate {
+    case "getInvitations":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
+    case "getDomain":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationDomain.mock)
+    case "getOrganizationInvitations":
+      return try JSONEncoder.clerkEncoder.encode(UserOrganizationInvitation.mock)
+    case "getOrganizationSuggestions":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationSuggestion.mock)
+    case "getMembershipRequests":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationMembershipRequest.mock)
+    default:
+      throw ClerkClientError(message: "Unexpected listed child \(locate)")
     }
   }
 

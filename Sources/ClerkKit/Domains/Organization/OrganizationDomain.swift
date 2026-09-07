@@ -155,14 +155,7 @@ extension OrganizationDomain {
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getDomain", "args": ["domainId": id]],
-        ["method": "delete", "args": [String: String]()],
-      ],
-      as: DeletedObject.self
-    )
+    try await Clerk.deleteOrganizationDomain(organizationId: organizationId, id: id)
   }
 
   /// Prepares affiliation verification for this organization domain by sending a verification email.
@@ -174,13 +167,10 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
   public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getDomain", "args": ["domainId": id]],
-        ["method": "prepareAffiliationVerification", "args": ["affiliationEmailAddress": affiliationEmailAddress]],
-      ],
-      as: OrganizationDomain.self
+    try await Clerk.prepareOrganizationDomainAffiliation(
+      organizationId: organizationId,
+      id: id,
+      affiliationEmailAddress: affiliationEmailAddress
     )
   }
 
@@ -195,13 +185,10 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
-    try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getDomain", "args": ["domainId": id]],
-        ["method": "attemptAffiliationVerification", "args": ["code": code]],
-      ],
-      as: OrganizationDomain.self
+    try await Clerk.attemptOrganizationDomainAffiliation(
+      organizationId: organizationId,
+      id: id,
+      code: code
     )
   }
 
@@ -240,17 +227,11 @@ extension OrganizationDomain {
     _ enrollmentMode: EnrollmentMode,
     deletePending: Bool? = nil
   ) async throws -> OrganizationDomain {
-    var args: [String: Any] = ["enrollmentMode": enrollmentMode.rawValue]
-    if let deletePending {
-      args["deletePending"] = deletePending
-    }
-    return try await Clerk.callResourceSteps(
-      .organization(organizationId),
-      [
-        ["method": "getDomain", "args": ["domainId": id]],
-        ["method": "updateEnrollmentMode", "args": args],
-      ],
-      as: OrganizationDomain.self
+    try await Clerk.updateOrganizationDomainEnrollmentMode(
+      organizationId: organizationId,
+      id: id,
+      enrollmentMode: enrollmentMode.rawValue,
+      deletePending: deletePending
     )
   }
 }

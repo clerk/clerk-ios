@@ -302,6 +302,70 @@ public final class Clerk {
         steps: steps
       )
     }
+
+    public func callChild(
+      locate: String,
+      locateArgs: Data,
+      findId: String?,
+      method: String,
+      args: Data
+    ) async throws -> Data {
+      try await clerk.callListedChild(
+        receiverPath: ClerkJSPath.clerk(.getOrganization),
+        receiverArg: id,
+        locate: locate,
+        locateArgs: locateArgs,
+        findId: findId,
+        method: method,
+        args: args
+      )
+    }
+  }
+
+  public func callUserListedChild(
+    locate: String,
+    locateArgs: Data,
+    findId: String?,
+    method: String,
+    args: Data
+  ) async throws -> Data {
+    try await callListedChild(
+      receiverPath: ClerkJSPath.userRoot,
+      receiverArg: nil,
+      locate: locate,
+      locateArgs: locateArgs,
+      findId: findId,
+      method: method,
+      args: args
+    )
+  }
+
+  private func callListedChild(
+    receiverPath: String,
+    receiverArg: String?,
+    locate: String,
+    locateArgs: Data,
+    findId: String?,
+    method: String,
+    args: Data
+  ) async throws -> Data {
+    let locateArgsObject = (try? JSONSerialization.jsonObject(with: locateArgs)) ?? [String: Any]()
+    let argsObject = (try? JSONSerialization.jsonObject(with: args)) ?? [String: Any]()
+    var locateStep: [String: Any] = [
+      "method": locate,
+      "args": locateArgsObject,
+    ]
+    if let findId {
+      locateStep["findId"] = findId
+    }
+    return try await callSteps(
+      receiverPath: receiverPath,
+      receiverArg: receiverArg,
+      steps: JSONSerialization.data(withJSONObject: [
+        locateStep,
+        ["method": method, "args": argsObject],
+      ])
+    )
   }
 
   public func callUserSteps(_ steps: Data) async throws -> Data {
