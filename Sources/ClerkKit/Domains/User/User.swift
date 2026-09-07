@@ -234,11 +234,6 @@ extension User {
   }
   #endif
 
-  @discardableResult @MainActor
-  public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await Clerk.getUserPaymentMethods(initialPage: params?.initialPage, pageSize: params?.pageSize)
-  }
-
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
   /// - Parameters:
   ///     - imageData: The image, in data format, to set as the user's profile image.

@@ -326,6 +326,19 @@ extension User {
     return try Clerk.requireUser()
   }
 
+  @discardableResult @MainActor
+  public func getPaymentMethods(params: ClerkKit.GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+    try await Clerk.js(
+      .user,
+      UserJSCall.getPaymentMethods(
+        params.map {
+          ClerkSnapshots.GetPaymentMethodsParams(initialPage: $0.initialPage, pageSize: $0.pageSize)
+        }
+      ),
+      as: ClerkPaginatedResponse<BillingPaymentMethod>.self
+    )
+  }
+
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {

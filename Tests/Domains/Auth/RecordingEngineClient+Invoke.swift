@@ -33,6 +33,14 @@ extension RecordingEngineClient {
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
+    if case .billing = invocation.receiver {
+      let data = try await callInstance(
+        root: "billing",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)
@@ -148,6 +156,13 @@ extension RecordingEngineClient {
       return try encodeKit(ClerkKit.Session.mock)
     case "getToken":
       return .string("jwt_engine")
+    case "getPaymentMethods":
+      let data = try await callInstance(
+        root: "user",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
     default:
       throw ClerkClientError(message: "Unhandled JS invocation \(invocation.method)")
     }
