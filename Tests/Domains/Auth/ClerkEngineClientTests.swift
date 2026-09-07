@@ -415,6 +415,70 @@ struct ClerkEngineClientTests {
     #expect(first != nil)
     #expect(second != nil)
   }
+
+  @Test
+  func sessionVerificationUsesEngineAndSkipsKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSessionService(kitCalls)
+
+    let session = Session.mock
+    let started = try await session.startVerification(level: .firstFactor)
+    #expect(engine.sessionVerificationLevel == "first_factor")
+    #expect(started.status == .needsFirstFactor)
+
+    let emailed = try await session.sendEmailCode(emailAddressId: "idn_email")
+    #expect(engine.sessionFirstFactorStrategy == "email_code")
+    #expect(engine.sessionFirstFactorEmailAddressId == "idn_email")
+    #expect(emailed.status == .needsFirstFactor)
+
+    let password = try await session.verifyWithPassword("hunter2")
+    #expect(engine.sessionFirstFactorStrategy == "password")
+    #expect(engine.sessionFirstFactorPassword == "hunter2")
+    #expect(password.status == .complete)
+
+    let sso = try await session.startEnterpriseSSO(
+      emailAddressId: "idn_email",
+      enterpriseConnectionId: "econn_123",
+      redirectUrl: "myapp://callback"
+    )
+    #expect(engine.sessionFirstFactorStrategy == "enterprise_sso")
+    #expect(engine.sessionFirstFactorEnterpriseConnectionId == "econn_123")
+    #expect(engine.sessionFirstFactorRedirectUrl == "myapp://callback")
+    #expect(sso.status == .needsFirstFactor)
+
+    let mfaPrepared = try await session.sendMfaPhoneCode(phoneNumberId: "idn_phone")
+    #expect(engine.sessionSecondFactorStrategy == "phone_code")
+    #expect(engine.sessionSecondFactorPhoneNumberId == "idn_phone")
+    #expect(mfaPrepared.status == .needsSecondFactor)
+
+    let totp = try await session.verifyWithTOTP(code: "123456")
+    #expect(engine.sessionSecondFactorStrategy == "totp")
+    #expect(engine.sessionSecondFactorCode == "123456")
+    #expect(totp.status == .complete)
+
+    let backup = try await session.verifyWithBackupCode(code: "abcdef")
+    #expect(engine.sessionSecondFactorStrategy == "backup_code")
+    #expect(engine.sessionSecondFactorCode == "abcdef")
+    #expect(backup.status == .complete)
+
+    let passkeySecond = try await session.attemptSecondFactorVerification(
+      strategy: .passkey,
+      publicKeyCredential: "credential"
+    )
+    #expect(engine.sessionSecondFactorStrategy == "passkey")
+    #expect(engine.sessionSecondFactorPublicKeyCredential == "credential")
+    #expect(passkeySecond.status == .complete)
+
+    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+    let passkeyFirst = try await session.verifyWithPasskey(level: .firstFactor)
+    #expect(engine.verifiedSessionWithPasskey)
+    #expect(passkeyFirst.status == .complete)
+    #endif
+
+    #expect(kitCalls.sessionVerificationCount == 0)
+  }
 }
 
 @MainActor
@@ -959,6 +1023,74 @@ final class RecordingEngineClient: ClerkEngineClient {
     )
   }
 
+  var sessionVerificationLevel: String?
+  var sessionFirstFactorStrategy: String?
+  var sessionFirstFactorEmailAddressId: String?
+  var sessionFirstFactorPhoneNumberId: String?
+  var sessionFirstFactorEnterpriseConnectionId: String?
+  var sessionFirstFactorRedirectUrl: String?
+  var sessionFirstFactorCode: String?
+  var sessionFirstFactorPassword: String?
+  var sessionSecondFactorStrategy: String?
+  var sessionSecondFactorPhoneNumberId: String?
+  var sessionSecondFactorCode: String?
+  var sessionSecondFactorPublicKeyCredential: String?
+  var verifiedSessionWithPasskey = false
+
+  func startSessionVerification(level: String) async throws -> SessionVerification {
+    sessionVerificationLevel = level
+    return .mockNeedsFirstFactor
+  }
+
+  func prepareSessionFirstFactor(
+    strategy: String,
+    emailAddressId: String?,
+    phoneNumberId: String?,
+    enterpriseConnectionId: String?,
+    redirectUrl: String?
+  ) async throws -> SessionVerification {
+    sessionFirstFactorStrategy = strategy
+    sessionFirstFactorEmailAddressId = emailAddressId
+    sessionFirstFactorPhoneNumberId = phoneNumberId
+    sessionFirstFactorEnterpriseConnectionId = enterpriseConnectionId
+    sessionFirstFactorRedirectUrl = redirectUrl
+    return .mockNeedsFirstFactor
+  }
+
+  func attemptSessionFirstFactor(
+    strategy: String,
+    code: String?,
+    password: String?,
+    publicKeyCredential _: String?
+  ) async throws -> SessionVerification {
+    sessionFirstFactorStrategy = strategy
+    sessionFirstFactorCode = code
+    sessionFirstFactorPassword = password
+    return .mockComplete
+  }
+
+  func prepareSessionSecondFactor(strategy: String, phoneNumberId: String?) async throws -> SessionVerification {
+    sessionSecondFactorStrategy = strategy
+    sessionSecondFactorPhoneNumberId = phoneNumberId
+    return .mockNeedsSecondFactor
+  }
+
+  func attemptSessionSecondFactor(
+    strategy: String,
+    code: String?,
+    publicKeyCredential: String?
+  ) async throws -> SessionVerification {
+    sessionSecondFactorStrategy = strategy
+    sessionSecondFactorCode = code
+    sessionSecondFactorPublicKeyCredential = publicKeyCredential
+    return .mockComplete
+  }
+
+  func verifySessionWithPasskey() async throws -> SessionVerification {
+    verifiedSessionWithPasskey = true
+    return .mockComplete
+  }
+
   private var currentUser: User {
     Clerk.shared.user ?? .mock
   }
@@ -1015,6 +1147,7 @@ private final class KitCallCounter {
   var signUpUpdateCount = 0
   var signUpCreateCount = 0
   var userServiceCount = 0
+  var sessionVerificationCount = 0
 }
 
 @MainActor
@@ -1056,6 +1189,10 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
 
 @MainActor
 private func installFailingSessionService(_ counts: KitCallCounter) {
+  let failVerification: () -> ClerkClientError = {
+    counts.sessionVerificationCount += 1
+    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+  }
   let service = MockSessionService(
     signOut: { _ in
       counts.signOutCount += 1
@@ -1068,7 +1205,12 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
     fetchToken: { _, _, _ in
       counts.fetchTokenCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
-    }
+    },
+    startVerification: { _, _ in throw failVerification() },
+    prepareFirstFactorVerification: { _, _ in throw failVerification() },
+    attemptFirstFactorVerification: { _, _ in throw failVerification() },
+    prepareSecondFactorVerification: { _, _ in throw failVerification() },
+    attemptSecondFactorVerification: { _, _ in throw failVerification() }
   )
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),

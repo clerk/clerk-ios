@@ -884,6 +884,50 @@ public final class Clerk {
       return try JSONDecoder().decode(String.self, from: Data(json.utf8))
     }
 
+    public func startVerification(_ params: StartVerificationParams) async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.session(.startVerification), params)
+    }
+
+    public func prepareFirstFactorVerification(
+      _ params: PrepareFirstFactorVerificationParams
+    ) async throws -> Data {
+      try await clerk.callReturningAndPublish(
+        ClerkJSPath.session(.prepareFirstFactorVerification),
+        params
+      )
+    }
+
+    public func attemptFirstFactorVerification(
+      _ params: AttemptFirstFactorVerificationParams
+    ) async throws -> Data {
+      try await clerk.callReturningAndPublish(
+        ClerkJSPath.session(.attemptFirstFactorVerification),
+        params
+      )
+    }
+
+    public func prepareSecondFactorVerification(
+      _ params: PrepareSecondFactorVerificationParams
+    ) async throws -> Data {
+      try await clerk.callReturningAndPublish(
+        ClerkJSPath.session(.prepareSecondFactorVerification),
+        params
+      )
+    }
+
+    public func attemptSecondFactorVerification(
+      _ params: AttemptSecondFactorVerificationParams
+    ) async throws -> Data {
+      try await clerk.callReturningAndPublish(
+        ClerkJSPath.session(.attemptSecondFactorVerification),
+        params
+      )
+    }
+
+    public func verifyWithPasskey() async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.session(.verifyWithPasskey), EmptyArgs())
+    }
+
     public struct GetTokenParams: Encodable, Sendable {
       public var template: String?
       public var skipCache: Bool?
@@ -902,6 +946,146 @@ public final class Clerk {
       private enum CodingKeys: String, CodingKey {
         case template
         case skipCache
+      }
+    }
+
+    public struct StartVerificationParams: Encodable, Sendable {
+      public var level: String
+
+      public init(level: String) {
+        self.level = level
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(level, forKey: .level)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case level
+      }
+    }
+
+    public struct PrepareFirstFactorVerificationParams: Encodable, Sendable {
+      public var strategy: String
+      public var emailAddressId: String?
+      public var phoneNumberId: String?
+      public var enterpriseConnectionId: String?
+      public var redirectUrl: String?
+
+      public init(
+        strategy: String,
+        emailAddressId: String? = nil,
+        phoneNumberId: String? = nil,
+        enterpriseConnectionId: String? = nil,
+        redirectUrl: String? = nil
+      ) {
+        self.strategy = strategy
+        self.emailAddressId = emailAddressId
+        self.phoneNumberId = phoneNumberId
+        self.enterpriseConnectionId = enterpriseConnectionId
+        self.redirectUrl = redirectUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
+        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
+        try container.encodeIfPresent(enterpriseConnectionId, forKey: .enterpriseConnectionId)
+        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case emailAddressId
+        case phoneNumberId
+        case enterpriseConnectionId
+        case redirectUrl
+      }
+    }
+
+    public struct AttemptFirstFactorVerificationParams: Encodable, Sendable {
+      public var strategy: String
+      public var code: String?
+      public var password: String?
+      public var publicKeyCredential: String?
+
+      public init(
+        strategy: String,
+        code: String? = nil,
+        password: String? = nil,
+        publicKeyCredential: String? = nil
+      ) {
+        self.strategy = strategy
+        self.code = code
+        self.password = password
+        self.publicKeyCredential = publicKeyCredential
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(code, forKey: .code)
+        try container.encodeIfPresent(password, forKey: .password)
+        try container.encodeIfPresent(publicKeyCredential, forKey: .publicKeyCredential)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case code
+        case password
+        case publicKeyCredential
+      }
+    }
+
+    public struct PrepareSecondFactorVerificationParams: Encodable, Sendable {
+      public var strategy: String
+      public var phoneNumberId: String?
+
+      public init(strategy: String, phoneNumberId: String? = nil) {
+        self.strategy = strategy
+        self.phoneNumberId = phoneNumberId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case phoneNumberId
+      }
+    }
+
+    public struct AttemptSecondFactorVerificationParams: Encodable, Sendable {
+      public var strategy: String
+      public var code: String?
+      public var publicKeyCredential: String?
+
+      public init(
+        strategy: String,
+        code: String? = nil,
+        publicKeyCredential: String? = nil
+      ) {
+        self.strategy = strategy
+        self.code = code
+        self.publicKeyCredential = publicKeyCredential
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(code, forKey: .code)
+        try container.encodeIfPresent(publicKeyCredential, forKey: .publicKeyCredential)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case code
+        case publicKeyCredential
       }
     }
   }

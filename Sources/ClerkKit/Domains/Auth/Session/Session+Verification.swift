@@ -32,10 +32,7 @@ extension Session {
   /// - Returns: A ``SessionVerification`` reflecting the current state of the flow.
   @discardableResult @MainActor
   public func startVerification(level: SessionVerification.Level) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.startVerification(
-      sessionId: id,
-      params: .init(level: level)
-    )
+    try await Clerk.requireEngineClient().startSessionVerification(level: level.rawValue)
   }
 
   // MARK: - First factor verification
@@ -121,31 +118,19 @@ extension Session {
     preferImmediatelyAvailableCredentials: Bool = true,
     level: PasskeyVerificationLevel
   ) async throws -> SessionVerification {
-    let prepared =
-      if level == .secondFactor {
-        try await prepareSecondFactorVerification(strategy: .passkey)
-      } else {
-        try await prepareFirstFactorVerification(strategy: .passkey)
-      }
-
-    let verification =
-      level == .secondFactor
-        ? prepared.secondFactorVerification
-        : prepared.firstFactorVerification
-
-    let credentialString = try await passkeyCredential(
-      for: verification,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
-
-    if level == .secondFactor {
-      return try await attemptSecondFactorVerification(
-        strategy: .passkey,
-        publicKeyCredential: credentialString
-      )
+    if level == .firstFactor {
+      return try await Clerk.requireEngineClient().verifySessionWithPasskey()
     }
 
-    return try await attemptFirstFactorVerification(strategy: .passkey, publicKeyCredential: credentialString)
+    let prepared = try await prepareSecondFactorVerification(strategy: .passkey)
+    let credentialString = try await passkeyCredential(
+      for: prepared.secondFactorVerification,
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+    )
+    return try await attemptSecondFactorVerification(
+      strategy: .passkey,
+      publicKeyCredential: credentialString
+    )
   }
 
   @MainActor
@@ -232,15 +217,12 @@ extension Session {
     enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
-      sessionId: id,
-      params: .init(
-        strategy: strategy,
-        emailAddressId: emailAddressId,
-        phoneNumberId: phoneNumberId,
-        enterpriseConnectionId: enterpriseConnectionId,
-        redirectUrl: redirectUrl
-      )
+    try await Clerk.requireEngineClient().prepareSessionFirstFactor(
+      strategy: strategy.rawValue,
+      emailAddressId: emailAddressId,
+      phoneNumberId: phoneNumberId,
+      enterpriseConnectionId: enterpriseConnectionId,
+      redirectUrl: redirectUrl
     )
   }
 
@@ -252,14 +234,11 @@ extension Session {
     password: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
-      sessionId: id,
-      params: .init(
-        strategy: strategy,
-        code: code,
-        password: password,
-        publicKeyCredential: publicKeyCredential
-      )
+    try await Clerk.requireEngineClient().attemptSessionFirstFactor(
+      strategy: strategy.rawValue,
+      code: code,
+      password: password,
+      publicKeyCredential: publicKeyCredential
     )
   }
 
@@ -269,9 +248,9 @@ extension Session {
     strategy: FactorStrategy,
     phoneNumberId: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareSecondFactorVerification(
-      sessionId: id,
-      params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
+    try await Clerk.requireEngineClient().prepareSessionSecondFactor(
+      strategy: strategy.rawValue,
+      phoneNumberId: phoneNumberId
     )
   }
 
@@ -282,13 +261,10 @@ extension Session {
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
-      sessionId: id,
-      params: .init(
-        strategy: strategy,
-        code: code,
-        publicKeyCredential: publicKeyCredential
-      )
+    try await Clerk.requireEngineClient().attemptSessionSecondFactor(
+      strategy: strategy.rawValue,
+      code: code,
+      publicKeyCredential: publicKeyCredential
     )
   }
 }

@@ -74,6 +74,27 @@ package protocol ClerkEngineClient: AnyObject {
   func deleteUser() async throws -> Data
   func transferToSignUp(unsafeMetadata: JSON?) async throws
   func transferToSignIn() async throws
+  func startSessionVerification(level: String) async throws -> SessionVerification
+  func prepareSessionFirstFactor(
+    strategy: String,
+    emailAddressId: String?,
+    phoneNumberId: String?,
+    enterpriseConnectionId: String?,
+    redirectUrl: String?
+  ) async throws -> SessionVerification
+  func attemptSessionFirstFactor(
+    strategy: String,
+    code: String?,
+    password: String?,
+    publicKeyCredential: String?
+  ) async throws -> SessionVerification
+  func prepareSessionSecondFactor(strategy: String, phoneNumberId: String?) async throws -> SessionVerification
+  func attemptSessionSecondFactor(
+    strategy: String,
+    code: String?,
+    publicKeyCredential: String?
+  ) async throws -> SessionVerification
+  func verifySessionWithPasskey() async throws -> SessionVerification
 }
 
 extension Clerk {

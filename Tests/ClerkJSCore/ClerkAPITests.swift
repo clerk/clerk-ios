@@ -415,6 +415,12 @@ struct ClerkAPITests {
     #expect(SignUpJSMethod.attemptVerification.rawValue == "attemptVerification")
     #expect(ClerkJSMethod.setActive.rawValue == "setActive")
     #expect(SessionJSMethod.getToken.rawValue == "getToken")
+    #expect(SessionJSMethod.startVerification.rawValue == "startVerification")
+    #expect(SessionJSMethod.prepareFirstFactorVerification.rawValue == "prepareFirstFactorVerification")
+    #expect(SessionJSMethod.attemptFirstFactorVerification.rawValue == "attemptFirstFactorVerification")
+    #expect(SessionJSMethod.prepareSecondFactorVerification.rawValue == "prepareSecondFactorVerification")
+    #expect(SessionJSMethod.attemptSecondFactorVerification.rawValue == "attemptSecondFactorVerification")
+    #expect(SessionJSMethod.verifyWithPasskey.rawValue == "verifyWithPasskey")
   }
 
   @Test
@@ -436,6 +442,132 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signUp(.attemptVerification) == "__clerkInstance.client.signUp.attemptVerification")
     #expect(ClerkJSPath.clerk(.setActive) == "__clerkInstance.setActive")
     #expect(ClerkJSPath.session(.getToken) == "__clerkInstance.session.getToken")
+    #expect(ClerkJSPath.session(.startVerification) == "__clerkInstance.session.startVerification")
+    #expect(
+      ClerkJSPath.session(.prepareFirstFactorVerification)
+        == "__clerkInstance.session.prepareFirstFactorVerification"
+    )
+    #expect(
+      ClerkJSPath.session(.attemptFirstFactorVerification)
+        == "__clerkInstance.session.attemptFirstFactorVerification"
+    )
+    #expect(
+      ClerkJSPath.session(.prepareSecondFactorVerification)
+        == "__clerkInstance.session.prepareSecondFactorVerification"
+    )
+    #expect(
+      ClerkJSPath.session(.attemptSecondFactorVerification)
+        == "__clerkInstance.session.attemptSecondFactorVerification"
+    )
+    #expect(ClerkJSPath.session(.verifyWithPasskey) == "__clerkInstance.session.verifyWithPasskey")
+  }
+
+  @Test
+  func sessionStartVerificationParamsEncodeLevel() throws {
+    let first = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "first_factor"))
+    #expect(first["level"] as? String == "first_factor")
+    #expect(first.count == 1)
+
+    let second = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "second_factor"))
+    #expect(second["level"] as? String == "second_factor")
+
+    let multi = try encodeJSON(Clerk.ActiveSession.StartVerificationParams(level: "multi_factor"))
+    #expect(multi["level"] as? String == "multi_factor")
+  }
+
+  @Test
+  func sessionPrepareFirstFactorVerificationParamsEncodeOptionals() throws {
+    let strategyOnly = try encodeJSON(
+      Clerk.ActiveSession.PrepareFirstFactorVerificationParams(strategy: "email_code")
+    )
+    #expect(strategyOnly["strategy"] as? String == "email_code")
+    #expect(strategyOnly.count == 1)
+
+    let full = try encodeJSON(
+      Clerk.ActiveSession.PrepareFirstFactorVerificationParams(
+        strategy: "enterprise_sso",
+        emailAddressId: "idn_email",
+        phoneNumberId: "idn_phone",
+        enterpriseConnectionId: "econn_1",
+        redirectUrl: "myapp://callback"
+      )
+    )
+    #expect(full["strategy"] as? String == "enterprise_sso")
+    #expect(full["emailAddressId"] as? String == "idn_email")
+    #expect(full["phoneNumberId"] as? String == "idn_phone")
+    #expect(full["enterpriseConnectionId"] as? String == "econn_1")
+    #expect(full["redirectUrl"] as? String == "myapp://callback")
+  }
+
+  @Test
+  func sessionAttemptFirstFactorVerificationParamsEncodeFields() throws {
+    let password = try encodeJSON(
+      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+        strategy: "password",
+        password: "hunter2"
+      )
+    )
+    #expect(password["strategy"] as? String == "password")
+    #expect(password["password"] as? String == "hunter2")
+    #expect(password["code"] == nil)
+    #expect(password["publicKeyCredential"] == nil)
+
+    let code = try encodeJSON(
+      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+        strategy: "email_code",
+        code: "424242"
+      )
+    )
+    #expect(code["strategy"] as? String == "email_code")
+    #expect(code["code"] as? String == "424242")
+
+    let passkey = try encodeJSON(
+      Clerk.ActiveSession.AttemptFirstFactorVerificationParams(
+        strategy: "passkey",
+        publicKeyCredential: #"{"id":"cred"}"#
+      )
+    )
+    #expect(passkey["strategy"] as? String == "passkey")
+    #expect(passkey["publicKeyCredential"] as? String == #"{"id":"cred"}"#)
+  }
+
+  @Test
+  func sessionPrepareSecondFactorVerificationParamsEncodeOptionals() throws {
+    let strategyOnly = try encodeJSON(
+      Clerk.ActiveSession.PrepareSecondFactorVerificationParams(strategy: "phone_code")
+    )
+    #expect(strategyOnly["strategy"] as? String == "phone_code")
+    #expect(strategyOnly.count == 1)
+
+    let withPhone = try encodeJSON(
+      Clerk.ActiveSession.PrepareSecondFactorVerificationParams(
+        strategy: "phone_code",
+        phoneNumberId: "idn_phone"
+      )
+    )
+    #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
+  }
+
+  @Test
+  func sessionAttemptSecondFactorVerificationParamsEncodeFields() throws {
+    let totp = try encodeJSON(
+      Clerk.ActiveSession.AttemptSecondFactorVerificationParams(
+        strategy: "totp",
+        code: "123456"
+      )
+    )
+    #expect(totp["strategy"] as? String == "totp")
+    #expect(totp["code"] as? String == "123456")
+    #expect(totp["publicKeyCredential"] == nil)
+
+    let passkey = try encodeJSON(
+      Clerk.ActiveSession.AttemptSecondFactorVerificationParams(
+        strategy: "passkey",
+        publicKeyCredential: #"{"id":"cred"}"#
+      )
+    )
+    #expect(passkey["strategy"] as? String == "passkey")
+    #expect(passkey["publicKeyCredential"] as? String == #"{"id":"cred"}"#)
   }
 
   @Test
