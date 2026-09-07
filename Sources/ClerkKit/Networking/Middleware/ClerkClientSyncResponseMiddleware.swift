@@ -83,8 +83,10 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       init(from decoder: Decoder) throws {
         let container = try? decoder.container(keyedBy: CodingKeys.self)
 
-        if let responseClient = try? container?.decode(Client.self, forKey: .response) {
-          client = responseClient
+        if let response = try? container?.superDecoder(forKey: .response),
+           let value = Self.decodeClient(response)
+        {
+          client = value
           return
         }
 
@@ -100,12 +102,18 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
           return
         }
 
-        if let topLevelClient = try? Client(from: decoder) {
+        if let topLevelClient = Self.decodeClient(decoder) {
           client = topLevelClient
           return
         }
 
         client = nil
+      }
+
+      private static func decodeClient(_ decoder: Decoder) -> Client? {
+        struct Discriminator: Decodable { let object: String }
+        guard (try? Discriminator(from: decoder).object) == "client" else { return nil }
+        return try? Client(from: decoder)
       }
     }
 
