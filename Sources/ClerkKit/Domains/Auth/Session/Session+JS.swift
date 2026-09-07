@@ -14,8 +14,7 @@ extension Session {
 
   /**
    Retrieves the user's session token for the given template or the default Clerk token.
-   This method uses a cache so a network request will only be made if the token in memory is expired.
-   The TTL for the Clerk token is one minute.
+   Uses the shared token cache, refreshing tokens as they approach expiration.
 
    - Returns: The JWT string, or nil if no active session exists.
    */
@@ -25,7 +24,7 @@ extension Session {
     return try await Clerk.js(
       .session(id: ClerkJSResourceID(id)),
       SessionJSCall.getToken(
-        ClerkSnapshots.GetTokenOptions(expirationBuffer: options.expirationBuffer, skipCache: options.skipCache, template: options.template)
+        ClerkSnapshots.GetTokenOptions(skipCache: options.skipCache, template: options.template)
       ),
       as: String?.self
     )

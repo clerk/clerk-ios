@@ -73,7 +73,7 @@ struct ClerkEmbeddedLifecycleTests {
   }
 
   @Test
-  func expiredTokenUsesSharedCacheAndHonorsExpirationBuffer() async throws {
+  func expiredTokenUsesSharedCacheAndStandardRefreshThreshold() async throws {
     let host = try await host(signedIn: true)
     try await host.load()
     let call = ClerkJSInvocation(receiver: .session(id: .init("sess_fixture")), method: "getToken", arguments: [])
@@ -83,7 +83,10 @@ struct ClerkEmbeddedLifecycleTests {
     #expect(firstToken == secondToken)
     let initialMints = try await host.runtime.evaluateJSON("mintCount")
     #expect(initialMints == "1")
-    _ = try await host.invoke(.init(receiver: call.receiver, method: "getToken", arguments: [.object(["expirationBuffer": .number(59)])]))
+    _ = try await host.invoke(call)
+    #expect(try await host.runtime.evaluateJSON("mintCount") == "1")
+    _ = try await host.runtime.evaluateJSON("(() => { const now = Date.now; Date.now = () => now() + 27000; return true; })()")
+    _ = try await host.invoke(call)
     #expect(try await host.runtime.evaluateJSON("mintCount") == "2")
     #expect(host.state?.client?.sessions.first?.lastActiveToken.jwt.isEmpty == false)
     await host.dispose()
