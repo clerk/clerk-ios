@@ -13,6 +13,8 @@ private let watchSyncLog = Logger(subsystem: "com.clerk.WatchExampleApp", catego
 
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
+  @State private var operationError: String?
+  @State private var isSigningOut = false
 
   var body: some View {
     ScrollView {
@@ -55,14 +57,27 @@ struct ContentView: View {
           }
 
           Button {
+            isSigningOut = true
+            operationError = nil
             Task {
-              try? await clerk.auth.signOut(sessionId: clerk.sessionId)
+              defer { isSigningOut = false }
+              do {
+                try await clerk.auth.signOut(sessionId: clerk.sessionId)
+              } catch {
+                operationError = error.localizedDescription
+              }
             }
           } label: {
             Text("Sign Out")
           }
           .buttonStyle(.borderedProminent)
           .controlSize(.small)
+          .disabled(isSigningOut)
+          if let operationError {
+            Text(operationError)
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+          }
         } else {
           VStack(spacing: 8) {
             Text("Not Signed In")

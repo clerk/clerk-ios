@@ -231,7 +231,7 @@ public final class Clerk {
   lazy var identityController = ClerkIdentityController(clerk: self)
 
   /// Coordinates authentication state exchanged with a paired Apple Watch.
-  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
   /// Coalesces overlapping public Keychain clears so persistence remains frozen
   /// until the single clear transaction has completed.

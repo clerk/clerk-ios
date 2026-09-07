@@ -59,6 +59,10 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var clientRefreshTask: Task<Void, Never>?
   private var clientRefreshTaskID: UUID?
 
+  init(sync: any WatchConnectivitySyncing) {
+    watchConnectivitySync = sync
+  }
+
   init() {
     #if os(iOS)
     watchConnectivitySync = createWatchConnectivityManager(
@@ -67,6 +71,10 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       },
       activationHandler: { [weak self] in
         self?.syncCurrentState(from: Clerk.shared)
+      },
+      operationHandler: { [weak self] data in
+        guard let self, isAcceptingIdentityUpdates else { throw CancellationError() }
+        return try await handleOperation(data, for: Clerk.shared)
       }
     )
     #elseif os(watchOS)
@@ -189,6 +197,35 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       authGeneration: authGeneration ?? .initial
     )
     watchConnectivitySync.sync(payload)
+  }
+
+  func requestOperation(_ data: Data) async throws -> Data {
+    guard isAcceptingIdentityUpdates, let watchConnectivitySync else { throw CancellationError() }
+    return try await watchConnectivitySync.requestOperation(data)
+  }
+
+  func operationState(from clerk: Clerk) throws -> Data {
+    guard isAcceptingIdentityUpdates else { throw CancellationError() }
+    let metadata = try resolvedWatchMetadata(clerk: clerk, keychain: clerk.dependencies.watchSyncKeychain)
+    let payload = try WatchSyncPayload(clerk: clerk, metadata: metadata, authGeneration: effectiveVersion(accepted: metadata.authVersion, pending: metadata.pendingAuthVersion) ?? authGeneration ?? .initial)
+    return try PropertyListSerialization.data(fromPropertyList: payload.applicationContext, format: .binary, options: 0)
+  }
+
+  func applyOperationState(_ data: Data, to clerk: Clerk) async throws {
+    guard isAcceptingIdentityUpdates,
+          let context = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+          let payload = WatchSyncPayload(applicationContext: context)
+    else { throw CancellationError() }
+    apply(payload, from: .phone, to: clerk)
+    await waitForIdentityPublications()
+    guard isAcceptingIdentityUpdates else { throw CancellationError() }
+    switch payload.clientUpdate {
+    case .notIncluded: break
+    case .snapshot(let client, _, _):
+      guard clerk.authoritativeClient == client else { throw CancellationError() }
+    case .cleared:
+      guard clerk.authoritativeClient == nil else { throw CancellationError() }
+    }
   }
 
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {

@@ -21,6 +21,7 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 
   private let payloadHandler: @MainActor (WatchSyncPayload) -> Void
   private let activationHandler: @MainActor () -> Void
+  private let operationHandler: @MainActor (Data) async throws -> Data
 
   /// Whether the session is currently activated. Must be accessed from MainActor.
   @MainActor
@@ -36,11 +37,13 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   /// Creates a new Watch Connectivity manager.
   init(
     payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
-    activationHandler: @escaping @MainActor () -> Void
+    activationHandler: @escaping @MainActor () -> Void,
+    operationHandler: @escaping @MainActor (Data) async throws -> Data
   ) {
     session = WCSession.default
     self.payloadHandler = payloadHandler
     self.activationHandler = activationHandler
+    self.operationHandler = operationHandler
     super.init()
 
     if WCSession.isSupported() {
@@ -107,13 +110,27 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
 @MainActor
 func createWatchConnectivityManager(
   payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
-  activationHandler: @escaping @MainActor () -> Void
+  activationHandler: @escaping @MainActor () -> Void,
+  operationHandler: @escaping @MainActor (Data) async throws -> Data
 ) -> any WatchConnectivitySyncing {
-  WatchConnectivityManager(payloadHandler: payloadHandler, activationHandler: activationHandler)
+  WatchConnectivityManager(payloadHandler: payloadHandler, activationHandler: activationHandler, operationHandler: operationHandler)
 }
 #endif
 
 extension WatchConnectivityManager: WCSessionDelegate {
+  nonisolated func session(_: WCSession, didReceiveMessageData data: Data, replyHandler: @escaping (Data) -> Void) {
+    let reply = WatchOperationReply(call: replyHandler)
+    Task { @MainActor in
+      do {
+        try await reply.call(operationHandler(data))
+      } catch {
+        let id = (try? JSONDecoder().decode(WatchOperationRequest.self, from: data).id) ?? UUID()
+        let response = WatchOperationResponse(id: id, result: nil, apiError: error as? ClerkAPIError, message: error.localizedDescription, state: nil)
+        reply.call((try? JSONEncoder().encode(response)) ?? Data())
+      }
+    }
+  }
+
   nonisolated func session(
     _: WCSession,
     activationDidCompleteWith activationState: WCSessionActivationState,
@@ -166,4 +183,10 @@ extension WatchConnectivityManager: WCSessionDelegate {
   #endif
 }
 
+#endif
+
+#if os(iOS)
+private struct WatchOperationReply: @unchecked Sendable {
+  let call: (Data) -> Void
+}
 #endif

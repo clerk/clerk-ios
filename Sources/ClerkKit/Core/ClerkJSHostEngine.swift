@@ -162,7 +162,7 @@ extension Clerk {
     guard makeEngineClient == nil else { return }
     guard !EnvironmentDetection.isRunningInTests else { return }
     #if os(watchOS)
-    return
+    makeEngineClient = { kit in WatchOperationEngine(kit: kit) }
     #else
     makeEngineClient = { kit in
       let host = ClerkJSHostStore.makeHost(for: kit)

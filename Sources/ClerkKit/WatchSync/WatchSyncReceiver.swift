@@ -42,6 +42,33 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   }
 
   @MainActor
+  package func requestOperation(_ data: Data) async throws -> Data {
+    guard session.activationState == .activated, session.isReachable else {
+      throw ClerkClientError(message: "Open the paired iPhone app to use this Clerk operation.")
+    }
+    let pending = WatchMessagePendingReply()
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        pending.continuation = continuation
+        guard !Task.isCancelled else { pending.finish(.failure(CancellationError())); return }
+        pending.timeout = Task { @MainActor in
+          do {
+            try await Task.sleep(for: .seconds(30))
+            pending.finish(.failure(URLError(.timedOut)))
+          } catch {}
+        }
+        session.sendMessageData(data, replyHandler: { reply in
+          Task { @MainActor in pending.finish(.success(reply)) }
+        }, errorHandler: { error in
+          Task { @MainActor in pending.finish(.failure(error)) }
+        })
+      }
+    } onCancel: {
+      Task { @MainActor in pending.finish(.failure(CancellationError())) }
+    }
+  }
+
+  @MainActor
   private func applyPayload(_ payload: WatchSyncPayload) {
     isProcessingSync = true
     defer { isProcessingSync = false }
@@ -108,4 +135,20 @@ extension WatchSyncReceiver: WCSessionDelegate {
   }
 }
 
+#endif
+
+#if os(watchOS)
+@MainActor
+private final class WatchMessagePendingReply {
+  var continuation: CheckedContinuation<Data, Error>?
+  var timeout: Task<Void, Never>?
+
+  func finish(_ result: Result<Data, Error>) {
+    let continuation = continuation
+    self.continuation = nil
+    timeout?.cancel()
+    timeout = nil
+    continuation?.resume(with: result)
+  }
+}
 #endif

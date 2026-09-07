@@ -11,5 +11,12 @@ import Foundation
 /// This protocol allows type-erasure for conditional compilation and provides a unified interface.
 @MainActor
 package protocol WatchConnectivitySyncing {
+  func requestOperation(_ data: Data) async throws -> Data
   func sync(_ payload: WatchSyncPayload)
+}
+
+extension WatchConnectivitySyncing {
+  package func requestOperation(_: Data) async throws -> Data {
+    throw ClerkClientError(message: "The paired iPhone is not available for Clerk operations.")
+  }
 }

@@ -77,3 +77,9 @@ Clerk.configure(
 - Xcode 16.0+
 - Both apps must be signed with the same Team ID
 - Apple Watch must be paired with the iPhone
+
+## Watch operations
+
+Enable `watchConnectivityEnabled` in both apps. The Watch displays its last synchronized identity when the iPhone is unavailable. Token requests and account operations use the paired iPhone's Clerk JavaScript runtime, and apply its returned state before completing. Open the iPhone app when an operation reports that the phone is unreachable. Requests time out after 30 seconds; mutations are not automatically retried.
+
+The iPhone checks the Watch's instance, client, and active session before executing an operation. A stale identity produces an error and a fresh state snapshot so the user can retry against the current account. watchOS does not create a JavaScriptCore runtime; synchronous authorization checks use its local snapshot.
