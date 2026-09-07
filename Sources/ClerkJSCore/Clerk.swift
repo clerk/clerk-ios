@@ -60,6 +60,10 @@ package enum ClerkJSPath {
     "\(instance).client.signUp.\(method.rawValue)"
   }
 
+  static func signUpNamed(_ method: String) -> String {
+    "\(instance).client.signUp.\(method)"
+  }
+
   static func session(_ method: SessionJSMethod) -> String {
     "\(instance).session.\(method.rawValue)"
   }
@@ -658,6 +662,38 @@ public final class Clerk {
     public func attemptVerification(_ params: AttemptVerificationParams) async throws -> SignUp {
       try await clerk.callAndPublish(ClerkJSPath.signUp(.attemptVerification), params)
       return clerk.client.signUp
+    }
+
+    public func authenticateWithRedirect(_ params: AuthenticateWithRedirectParams) async throws {
+      try await clerk.callAndPublish(
+        ClerkJSPath.signUpNamed("authenticateWithRedirect"),
+        params
+      )
+    }
+
+    public struct AuthenticateWithRedirectParams: Encodable, Sendable {
+      public var strategy: String
+      public var redirectUrl: String
+      public var emailAddress: String?
+
+      public init(strategy: String, redirectUrl: String, emailAddress: String? = nil) {
+        self.strategy = strategy
+        self.redirectUrl = redirectUrl
+        self.emailAddress = emailAddress
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(strategy, forKey: .strategy)
+        try container.encode(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(emailAddress, forKey: .emailAddress)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case redirectUrl
+        case emailAddress
+      }
     }
 
     public struct CreateParams: Encodable, Sendable {

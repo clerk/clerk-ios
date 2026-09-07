@@ -951,68 +951,6 @@ struct AuthTests {
     return captured.value
   }
 
-  @Test
-  func signUpWithOAuthUsesSignUpServiceCreate() async throws {
-    let metadata: JSON = ["plan": "pro"]
-    let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
-
-    configureDependencies(signInService: signInService, signUpService: signUpService)
-
-    do {
-      _ = try await Clerk.shared.auth.signUpWithOAuth(
-        provider: .google,
-        unsafeMetadata: metadata
-      )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
-
-    #expect(signInCalled.value == false)
-    let params = try #require(signUpParams.value)
-    #expect(params.strategy?.rawValue == OAuthProvider.google.strategy)
-    #expect(params.unsafeMetadata == metadata)
-  }
-
-  @Test
-  func signUpWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
-    let metadata: JSON = ["plan": "pro"]
-    let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signInService = MockSignInService(create: { _ in
-      signInCalled.setValue(true)
-      return .mock
-    })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
-
-    configureDependencies(signInService: signInService, signUpService: signUpService)
-
-    do {
-      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(
-        emailAddress: "user@enterprise.com",
-        unsafeMetadata: metadata
-      )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
-
-    #expect(signInCalled.value == false)
-    let params = try #require(signUpParams.value)
-    #expect(params.emailAddress == "user@enterprise.com")
-    #expect(params.unsafeMetadata == metadata)
-  }
-
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
   func normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled() {

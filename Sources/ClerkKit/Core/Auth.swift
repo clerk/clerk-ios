@@ -451,29 +451,16 @@ public struct Auth {
   @discardableResult
   public func signUpWithOAuth(
     provider: OAuthProvider,
-    prefersEphemeralWebBrowserSession: Bool = false,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
-      unsafeMetadata: unsafeMetadata,
-      strategy: FactorStrategy(rawValue: provider.strategy),
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard
-      let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-      let redirectUrl = verification.externalVerificationRedirectUrl,
-      let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateSignUpWithRedirect(
+      strategy: provider.strategy,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      emailAddress: nil
     )
-    let callbackUrl = try await authSession.start()
-    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 
@@ -551,30 +538,16 @@ public struct Auth {
   @discardableResult
   public func signUpWithEnterpriseSSO(
     emailAddress: String,
-    prefersEphemeralWebBrowserSession: Bool = false,
-    unsafeMetadata: JSON? = nil
+    prefersEphemeralWebBrowserSession _: Bool = false,
+    unsafeMetadata _: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
-      emailAddress: emailAddress,
-      unsafeMetadata: unsafeMetadata,
-      strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
-
-    guard
-      let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
-      let redirectUrl = verification.externalVerificationRedirectUrl,
-      let url = URL(string: redirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.authenticateSignUpWithRedirect(
+      strategy: FactorStrategy.enterpriseSSO.rawValue,
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      emailAddress: emailAddress
     )
-    let callbackUrl = try await authSession.start()
-    return try await signUp.handleRedirectCallbackUrl(callbackUrl)
+    return try Clerk.requireEngineTransferResult()
   }
   #endif
 

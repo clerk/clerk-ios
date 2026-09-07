@@ -172,6 +172,14 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     publish()
   }
 
+  func authenticateSignUpWithRedirect(strategy: String, redirectUrl: String, emailAddress: String?) async throws {
+    await loadIfNeeded()
+    try await engine.client.signUp.authenticateWithRedirect(
+      .init(strategy: strategy, redirectUrl: resolvedRedirectUrl(redirectUrl), emailAddress: emailAddress)
+    )
+    try await activateIfCompleteAfterRedirect()
+  }
+
   func signInWithTicket(_ ticket: String) async throws {
     await loadIfNeeded()
     let signIn = try await engine.client.signIn.create(

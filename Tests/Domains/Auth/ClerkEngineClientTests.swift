@@ -295,6 +295,33 @@ struct ClerkEngineClientTests {
     #expect(kitCalls.createCount == 0)
     #expect(kitCalls.prepareCount == 0)
   }
+
+  @Test
+  func signUpOAuthAndEnterpriseSSOUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignUpService(kitCalls)
+
+    let oauth = try await Clerk.shared.auth.signUpWithOAuth(provider: .google)
+    #expect(engine.signUpRedirectStrategy == "oauth_google")
+    #expect(engine.signUpRedirectEmail == nil)
+    if case .signUp(let signUp) = oauth {
+      #expect(signUp.id == SignUp.mock.id)
+    } else {
+      Issue.record("Expected a sign-up transfer result")
+    }
+
+    let sso = try await Clerk.shared.auth.signUpWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+    #expect(engine.signUpRedirectStrategy == "enterprise_sso")
+    #expect(engine.signUpRedirectEmail == "user@enterprise.com")
+    if case .signUp(let signUp) = sso {
+      #expect(signUp.id == SignUp.mock.id)
+    } else {
+      Issue.record("Expected a sign-up transfer result")
+    }
+    #expect(kitCalls.signUpCreateCount == 0)
+  }
   #endif
 
   @Test
@@ -567,6 +594,8 @@ private final class RecordingEngineClient: ClerkEngineClient {
   var redirectStrategy: String?
   var startedEnterpriseSSOEmail: String?
   var startedEnterpriseSSORedirectUrl: String?
+  var signUpRedirectStrategy: String?
+  var signUpRedirectEmail: String?
   var resetEmailAddressId: String?
   var resetPhoneNumberId: String?
   var verifiedResetCode: String?
@@ -602,6 +631,12 @@ private final class RecordingEngineClient: ClerkEngineClient {
         )
       )
     )
+  }
+
+  func authenticateSignUpWithRedirect(strategy: String, redirectUrl _: String, emailAddress: String?) async throws {
+    signUpRedirectStrategy = strategy
+    signUpRedirectEmail = emailAddress
+    publish(SignUp.mock)
   }
 
   func createPasskeySignIn() async throws {
@@ -854,6 +889,7 @@ private final class KitCallCounter {
   var attemptSecondCount = 0
   var resetPasswordCount = 0
   var signUpUpdateCount = 0
+  var signUpCreateCount = 0
   var userServiceCount = 0
 }
 
@@ -923,6 +959,10 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
 @MainActor
 private func installFailingSignUpService(_ counts: KitCallCounter) {
   let service = MockSignUpService(
+    create: { _ in
+      counts.signUpCreateCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
     update: { _, _ in
       counts.signUpUpdateCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
