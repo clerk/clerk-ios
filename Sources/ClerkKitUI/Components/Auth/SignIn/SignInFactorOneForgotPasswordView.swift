@@ -5,28 +5,28 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorOneForgotPasswordView: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
-  @SwiftUI.Environment(AuthNavigation.self) private var navigation
-  @SwiftUI.Environment(AuthState.self) private var authState
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
+  @Environment(AuthState.self) private var authState
 
   @State private var error: Error?
 
+  var signIn: SignIn? {
+    clerk.auth.currentSignIn
+  }
+
   var alternativeFactors: [Factor] {
-    guard jsClerk.client.signIn.id != nil else { return [] }
-    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
-    return signIn.alternativeFirstFactors(currentFactor: nil).filter { $0.strategy != .password }
+    let factors = signIn?.alternativeFirstFactors(currentFactor: nil) ?? []
+    return factors.filter { $0.strategy != .password }
   }
 
   var socialProviders: [OAuthProvider] {
-    JSCoreAuthMapping.oauthProviders(
-      from: jsClerk.environment?.authenticatableSocialProviders ?? []
-    )
+    clerk.environment?.authenticatableSocialProviders ?? []
   }
 
   func actionText(factor: Factor) -> LocalizedStringKey? {
@@ -101,20 +101,10 @@ struct SignInFactorOneForgotPasswordView: View {
             SocialButton(
               provider: provider,
               transferable: authState.transferable,
-              unsafeMetadata: authState.unsafeMetadata,
-              showsTitle: showsTitle,
-              onSuccess: { result in
-                switch result {
-                case .signIn(let signIn):
-                  navigation.setToStepForStatus(signIn: signIn)
-                case .signUp(let signUp):
-                  navigation.setToStepForStatus(signUp: signUp)
-                }
-              },
-              onError: { error in
-                self.error = error
-              }
-            )
+              showsTitle: showsTitle
+            ) {
+              await signInWithProvider(provider)
+            }
             .simultaneousGesture(TapGesture())
           }
 
@@ -159,13 +149,7 @@ struct SignInFactorOneForgotPasswordView: View {
 
 extension SignInFactorOneForgotPasswordView {
   func resetPassword() async {
-    guard jsClerk.client.signIn.id != nil else {
-      navigation.path = []
-      return
-    }
-
-    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
-    guard let resetFactor = signIn.resetPasswordFactor else {
+    guard let signIn, let resetFactor = signIn.resetPasswordFactor else {
       navigation.path = []
       return
     }
@@ -173,6 +157,41 @@ extension SignInFactorOneForgotPasswordView {
     navigation.path.append(
       AuthView.Destination.signInFactorOne(factor: resetFactor)
     )
+  }
+
+  func signInWithProvider(_ provider: OAuthProvider) async {
+    do {
+      guard let signIn else {
+        navigation.path = []
+        return
+      }
+
+      let result: TransferFlowResult =
+        if provider == .apple {
+          try await signIn.authenticateWithApple(
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
+        } else {
+          try await signIn.authenticateWithOAuth(
+            provider: provider,
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
+        }
+
+      switch result {
+      case .signIn(let signIn):
+        navigation.setToStepForStatus(signIn: signIn)
+      case .signUp(let signUp):
+        navigation.setToStepForStatus(signUp: signUp)
+      }
+
+    } catch {
+      if error.isUserCancelledError { return }
+      self.error = error
+      ClerkLogger.error("Failed to sign in with OAuth provider in forgot password flow", error: error)
+    }
   }
 }
 

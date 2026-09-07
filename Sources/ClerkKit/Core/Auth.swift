@@ -431,7 +431,20 @@ public struct Auth {
     legalAccepted: Bool? = nil,
     transfer: Bool = false
   ) async throws -> SignUp {
-    try await signUpService.create(params: .init(
+    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
+      try await engine.signUp(
+        emailAddress: emailAddress,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        phoneNumber: phoneNumber,
+        legalAccepted: legalAccepted,
+        transfer: transfer
+      )
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.create(params: .init(
       emailAddress: emailAddress,
       phoneNumber: phoneNumber,
       password: password,

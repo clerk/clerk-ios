@@ -199,7 +199,11 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendEmailCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.sendSignUpEmailCode()
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.prepareVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, emailAddressId: nil)
     )
@@ -211,7 +215,11 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendPhoneCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.sendSignUpPhoneCode()
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.prepareVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: nil)
     )
@@ -224,7 +232,11 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.verifySignUpEmailCode(code)
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.attemptVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, code: code)
     )
@@ -237,7 +249,11 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.verifySignUpPhoneCode(code)
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.attemptVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, code: code)
     )

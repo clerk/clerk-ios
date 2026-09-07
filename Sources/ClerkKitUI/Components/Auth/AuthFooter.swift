@@ -5,7 +5,7 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
+import ClerkKit
 import SwiftUI
 
 extension View {
@@ -21,7 +21,7 @@ extension View {
 }
 
 private struct AuthFooterModifier: ViewModifier {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
+  @Environment(Clerk.self) private var clerk
 
   let macOSDismissAction: (() -> Void)?
 
@@ -62,8 +62,8 @@ private struct AuthFooterModifier: ViewModifier {
 }
 
 private struct AuthFooter: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
   let macOSDismissAction: (() -> Void)?
 

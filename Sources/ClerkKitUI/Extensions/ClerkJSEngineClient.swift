@@ -92,6 +92,56 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     )
   }
 
+  func signUp(
+    emailAddress: String?,
+    password: String?,
+    firstName: String?,
+    lastName: String?,
+    username: String?,
+    phoneNumber: String?,
+    legalAccepted: Bool?,
+    transfer: Bool
+  ) async throws {
+    await loadIfNeeded()
+    let signUp = try await engine.client.signUp.create(
+      .init(
+        emailAddress: emailAddress,
+        phoneNumber: phoneNumber,
+        username: username,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        legalAccepted: legalAccepted,
+        transfer: transfer ? true : nil
+      )
+    )
+    try await activateIfComplete(signUp)
+  }
+
+  func sendSignUpEmailCode() async throws {
+    _ = try await engine.client.signUp.prepareVerification(.init(strategy: .emailCode))
+    publish()
+  }
+
+  func sendSignUpPhoneCode() async throws {
+    _ = try await engine.client.signUp.prepareVerification(.init(strategy: .phoneCode))
+    publish()
+  }
+
+  func verifySignUpEmailCode(_ code: String) async throws {
+    let signUp = try await engine.client.signUp.attemptVerification(
+      .init(strategy: .emailCode, code: code)
+    )
+    try await activateIfComplete(signUp)
+  }
+
+  func verifySignUpPhoneCode(_ code: String) async throws {
+    let signUp = try await engine.client.signUp.attemptVerification(
+      .init(strategy: .phoneCode, code: code)
+    )
+    try await activateIfComplete(signUp)
+  }
+
   private func loadIfNeeded() async {
     await ClerkRuntimeStore.loadIfNeeded(engine, key: kit.publishableKey, onto: kit)
   }
@@ -102,6 +152,13 @@ final class ClerkJSEngineClient: ClerkEngineClient {
 
   private func activateIfComplete(_ signIn: ClerkJSCore.Clerk.SignIn) async throws {
     if signIn.status == .complete, let sessionId = signIn.createdSessionId {
+      try await engine.setActive(.init(session: sessionId))
+    }
+    publish()
+  }
+
+  private func activateIfComplete(_ signUp: ClerkJSCore.Clerk.SignUp) async throws {
+    if let sessionId = signUp.createdSessionId {
       try await engine.setActive(.init(session: sessionId))
     }
     publish()

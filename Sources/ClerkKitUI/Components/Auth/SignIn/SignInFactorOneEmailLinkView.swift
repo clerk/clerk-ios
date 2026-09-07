@@ -5,17 +5,16 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct EmailLinkVerificationView: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
-  @SwiftUI.Environment(AuthNavigation.self) private var navigation
-  @SwiftUI.Environment(AuthState.self) private var authState
-  @SwiftUI.Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
-  @SwiftUI.Environment(\.openURL) private var openURL
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
+  @Environment(AuthState.self) private var authState
+  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
+  @Environment(\.openURL) private var openURL
 
   @State private var deliveryState = DeliveryState.idle
   @State private var error: Error?
@@ -27,7 +26,7 @@ struct EmailLinkVerificationView: View {
     case .signIn(let factor):
       factor.safeIdentifier
     case .signUp:
-      jsClerk.client.signUp.emailAddress
+      clerk.auth.currentSignUp?.emailAddress
     }
   }
 
@@ -90,7 +89,7 @@ extension EmailLinkVerificationView {
   }
 
   private var subtitleString: LocalizedStringKey {
-    if let appName = jsClerk.environment?.displayConfig.applicationName {
+    if let appName = clerk.environment?.displayConfig.applicationName {
       "to continue to \(appName)"
     } else {
       "to continue"
@@ -191,6 +190,20 @@ extension EmailLinkVerificationView {
 extension EmailLinkVerificationView {
   @MainActor
   private func sendInitialLinkIfNeeded() async {
+    let alreadySent: Bool = switch mode {
+    case .signIn:
+      clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
+        && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
+    case .signUp:
+      clerk.auth.currentSignUp?.emailVerification?.strategy == .emailLink
+        && clerk.auth.currentSignUp?.emailVerification?.status == .unverified
+    }
+
+    guard !alreadySent else {
+      deliveryState = .sent
+      return
+    }
+
     await sendLink()
   }
 
@@ -201,26 +214,20 @@ extension EmailLinkVerificationView {
     do {
       switch mode {
       case .signIn(let factor):
-        guard jsClerk.client.signIn.id != nil else {
+        guard let signIn = clerk.auth.currentSignIn else {
           deliveryState = .idle
           navigation.path = []
           return
         }
-        try await jsClerk.client.signIn.prepareFirstFactor(
-          .init(
-            strategy: .emailLink,
-            emailAddressId: factor.emailAddressId,
-            redirectUrl: ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
-          )
-        )
+        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
 
       case .signUp:
-        guard jsClerk.client.signUp.id != nil else {
+        guard let signUp = clerk.auth.currentSignUp else {
           deliveryState = .idle
           navigation.path = []
           return
         }
-        try await jsClerk.client.signUp.prepareVerification(.init(strategy: .emailLink))
+        try await signUp.sendEmailLink()
       }
       deliveryState = .sent
     } catch {

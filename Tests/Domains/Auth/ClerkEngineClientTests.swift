@@ -81,6 +81,24 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func signUpEmailCodeUsesEngine() async throws {
+    let engine = RecordingEngineClient()
+    Clerk.engineClient = engine
+
+    let created = try await Clerk.shared.auth.signUp(emailAddress: "user@example.com")
+    #expect(engine.signedUpEmail == "user@example.com")
+    #expect(created.emailAddress == "user@example.com")
+
+    _ = try await created.sendEmailCode()
+    #expect(engine.sentSignUpEmailCode)
+
+    let verified = try await created.verifyEmailCode("424242")
+    #expect(engine.verifiedSignUpEmailCode == "424242")
+    #expect(verified.status == .complete)
+    #expect(verified.createdSessionId == "sess_engine")
+  }
+
+  @Test
   func configureDoesNotInstallEngineInTests() async {
     #expect(Clerk.makeEngineClient == nil)
     #expect(await Clerk.resolvedEngineClient() == nil)
@@ -232,11 +250,70 @@ private final class RecordingEngineClient: ClerkEngineClient {
     "jwt_engine"
   }
 
+  var signedUpEmail: String?
+  var sentSignUpEmailCode = false
+  var verifiedSignUpEmailCode: String?
+
+  func signUp(
+    emailAddress: String?,
+    password _: String?,
+    firstName _: String?,
+    lastName _: String?,
+    username _: String?,
+    phoneNumber _: String?,
+    legalAccepted _: Bool?,
+    transfer _: Bool
+  ) async throws {
+    signedUpEmail = emailAddress
+    var signUp = SignUp.mock
+    signUp.emailAddress = emailAddress
+    signUp.status = .missingRequirements
+    publish(signUp)
+  }
+
+  func sendSignUpEmailCode() async throws {
+    sentSignUpEmailCode = true
+    var signUp = SignUp.mock
+    signUp.emailAddress = "user@example.com"
+    publish(signUp)
+  }
+
+  func sendSignUpPhoneCode() async throws {
+    let signUp = SignUp.mock
+    publish(signUp)
+  }
+
+  func verifySignUpEmailCode(_ code: String) async throws {
+    verifiedSignUpEmailCode = code
+    var signUp = SignUp.mock
+    signUp.status = .complete
+    signUp.createdSessionId = "sess_engine"
+    publish(signUp)
+  }
+
+  func verifySignUpPhoneCode(_: String) async throws {
+    var signUp = SignUp.mock
+    signUp.status = .complete
+    signUp.createdSessionId = "sess_engine"
+    publish(signUp)
+  }
+
   private func publish(_ signIn: SignIn) {
     Clerk.shared.applyResponseClient(
       Client(
         id: "client_engine",
         signIn: signIn,
+        sessions: [],
+        updatedAt: Date()
+      )
+    )
+  }
+
+  private func publish(_ signUp: SignUp) {
+    Clerk.shared.applyResponseClient(
+      Client(
+        id: "client_engine",
+        signUp: signUp,
         sessions: [],
         updatedAt: Date()
       )

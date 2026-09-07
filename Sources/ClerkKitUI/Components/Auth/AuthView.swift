@@ -5,7 +5,6 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
@@ -68,9 +67,9 @@ import SwiftUI
 /// }
 /// ```
 public struct AuthView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) var clerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
-  @SwiftUI.Environment(\.dismiss) var dismiss
+  @Environment(Clerk.self) var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(\.dismiss) var dismiss
   /// Navigation state for the auth flow.
   @State var navigation = AuthNavigation()
 
@@ -114,10 +113,6 @@ public struct AuthView: View {
   }
 
   let isDismissible: Bool
-
-  private func jsSessionSnapshot(from jsClerk: ClerkJSCore.Clerk) -> JSSessionSnapshot {
-    JSSessionSnapshot(id: jsClerk.session.id, status: jsClerk.session.status)
-  }
 
   /// Creates a new authentication view.
   ///
@@ -182,13 +177,6 @@ public struct AuthView: View {
   }
 
   public var body: some View {
-    ClerkRuntimeContainer { jsClerk in
-      authCanvas(jsClerk: jsClerk)
-    }
-  }
-
-  @ViewBuilder
-  private func authCanvas(jsClerk: ClerkJSCore.Clerk) -> some View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
         #if os(iOS)
@@ -232,14 +220,6 @@ public struct AuthView: View {
       if let callbackContinuation = clerk.callbackContinuation {
         resumeAuth(callbackContinuation)
       }
-      syncPrefersPassword(from: jsClerk)
-      syncPrefersEmailLink(from: jsClerk)
-    }
-    .onChange(of: jsClerk.environment?.displayConfig.preferredSignInStrategy) { _, _ in
-      syncPrefersPassword(from: jsClerk)
-    }
-    .onChange(of: jsClerk.environment?.userSettings.attributes.emailAddress.verifications) { _, _ in
-      syncPrefersEmailLink(from: jsClerk)
     }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
@@ -273,13 +253,6 @@ public struct AuthView: View {
         registerAuthFlowIfNeeded()
       }
     }
-    .onChange(of: jsSessionSnapshot(from: jsClerk)) { _, snapshot in
-      guard Self.shouldFinishForJSSession(isDismissible: isDismissible, session: snapshot) else {
-        return
-      }
-      onAuthComplete()
-      dismissAuthView()
-    }
     .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
     }
@@ -303,30 +276,7 @@ public struct AuthView: View {
         )
       )
     }
-  }
-}
-
-extension AuthView {
-  struct JSSessionSnapshot: Equatable {
-    let id: String?
-    let status: SessionStatus?
-  }
-
-  static func shouldFinishForJSSession(
-    isDismissible: Bool,
-    session: JSSessionSnapshot
-  ) -> Bool {
-    isDismissible && session.id != nil && session.status == .active
-  }
-
-  private func syncPrefersPassword(from jsClerk: ClerkJSCore.Clerk) {
-    navigation.prefersPassword =
-      jsClerk.environment?.displayConfig.preferredSignInStrategy == .password
-  }
-
-  private func syncPrefersEmailLink(from jsClerk: ClerkJSCore.Clerk) {
-    navigation.prefersEmailLink =
-      jsClerk.environment?.userSettings.attributes.emailAddress.verifications.contains(.emailLink) ?? false
+    .clerkEngineAttached()
   }
 }
 

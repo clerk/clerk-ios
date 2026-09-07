@@ -6,7 +6,6 @@
 #if os(iOS) || os(macOS)
 
 import AuthenticationServices
-import ClerkJSCore
 import ClerkKit
 import Foundation
 
@@ -23,11 +22,6 @@ extension Error {
        biometricCredentialError == .biometricAuthenticationCanceled
     {
       return true
-    }
-
-    if let jsError = self as? ClerkJSCoreError, case .javascript(let text) = jsError {
-      return text.contains("passkey_retrieval_cancelled")
-        || text.contains("passkey_registration_cancelled")
     }
 
     return false

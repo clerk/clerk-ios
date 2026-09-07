@@ -5,18 +5,21 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorOnePasswordView: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
-  @SwiftUI.Environment(AuthNavigation.self) private var navigation
-  @SwiftUI.Environment(AuthState.self) private var authState
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
+  @Environment(AuthState.self) private var authState
 
   @FocusState private var isFocused: Bool
   @State private var fieldError: Error?
+
+  var signIn: SignIn? {
+    clerk.auth.currentSignIn
+  }
 
   let factor: Factor
 
@@ -97,8 +100,7 @@ struct SignInFactorOnePasswordView: View {
             .frame(width: 1, height: 16)
 
           Button {
-            let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
-            if signIn.resetPasswordFactor != nil {
+            if signIn?.resetPasswordFactor != nil {
               navigation.path.append(
                 AuthView.Destination.signInForgotPassword
               )
@@ -141,16 +143,12 @@ extension SignInFactorOnePasswordView {
     isFocused = false
 
     do {
-      guard jsClerk.client.signIn.id != nil else {
+      guard var signIn else {
         navigation.path = []
         return
       }
 
-      let jsSignIn = try await jsClerk.client.signIn.attemptFirstFactor(
-        .init(strategy: .password, password: authState.signInPassword)
-      )
-      let signIn = JSCoreAuthMapping.signIn(from: jsSignIn)
-      try await JSCoreAuthMapping.activateIfComplete(signIn, using: jsClerk)
+      signIn = try await signIn.authenticateWithPassword(authState.signInPassword)
 
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)

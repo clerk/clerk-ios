@@ -5,37 +5,37 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInFactorAlternativeMethodsView: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
-  @SwiftUI.Environment(AuthNavigation.self) private var navigation
-  @SwiftUI.Environment(AuthState.self) private var authState
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
+  @Environment(AuthNavigation.self) private var navigation
+  @Environment(AuthState.self) private var authState
 
   let currentFactor: Factor
   let mode: SignInFactorMode
 
   @State private var error: Error?
 
+  var signIn: SignIn? {
+    clerk.auth.currentSignIn
+  }
+
   var alternativeFactors: [Factor] {
-    guard jsClerk.client.signIn.id != nil else { return [] }
-    let signIn = JSCoreAuthMapping.signIn(from: jsClerk.client.signIn)
     if mode.usesSecondFactorAPI {
-      return signIn.alternativeSecondFactors(currentFactor: currentFactor)
+      signIn?.alternativeSecondFactors(currentFactor: currentFactor) ?? []
+    } else {
+      signIn?.alternativeFirstFactors(currentFactor: currentFactor) ?? []
     }
-    return signIn.alternativeFirstFactors(currentFactor: currentFactor)
   }
 
   var socialProviders: [OAuthProvider] {
     if mode.usesSecondFactorAPI {
       []
     } else {
-      JSCoreAuthMapping.oauthProviders(
-        from: jsClerk.environment?.authenticatableSocialProviders ?? []
-      )
+      clerk.environment?.authenticatableSocialProviders ?? []
     }
   }
 
@@ -114,20 +114,10 @@ struct SignInFactorAlternativeMethodsView: View {
             SocialButton(
               provider: provider,
               transferable: authState.transferable,
-              unsafeMetadata: authState.unsafeMetadata,
-              showsTitle: showsTitle,
-              onSuccess: { result in
-                switch result {
-                case .signIn(let signIn):
-                  navigation.setToStepForStatus(signIn: signIn)
-                case .signUp(let signUp):
-                  navigation.setToStepForStatus(signUp: signUp)
-                }
-              },
-              onError: { error in
-                self.error = error
-              }
-            )
+              showsTitle: showsTitle
+            ) {
+              await signInWithProvider(provider)
+            }
             .simultaneousGesture(TapGesture())
           }
 
@@ -167,6 +157,43 @@ struct SignInFactorAlternativeMethodsView: View {
     }
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
+  }
+}
+
+extension SignInFactorAlternativeMethodsView {
+  func signInWithProvider(_ provider: OAuthProvider) async {
+    do {
+      guard let signIn else {
+        navigation.path = []
+        return
+      }
+
+      let result: TransferFlowResult =
+        if provider == .apple {
+          try await signIn.authenticateWithApple(
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
+        } else {
+          try await signIn.authenticateWithOAuth(
+            provider: provider,
+            transferable: authState.transferable,
+            unsafeMetadata: authState.unsafeMetadata
+          )
+        }
+
+      switch result {
+      case .signIn(let signIn):
+        navigation.setToStepForStatus(signIn: signIn)
+      case .signUp(let signUp):
+        navigation.setToStepForStatus(signUp: signUp)
+      }
+
+    } catch {
+      if error.isUserCancelledError { return }
+      self.error = error
+      ClerkLogger.error("Failed to sign in with OAuth provider", error: error)
+    }
   }
 }
 

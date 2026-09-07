@@ -18,6 +18,20 @@ package protocol ClerkEngineClient: AnyObject {
   func authenticateWithPassword(_ password: String) async throws
   func setActive(sessionId: String, organizationId: String?) async throws
   func getToken(template: String?, skipCache: Bool) async throws -> String?
+  func signUp(
+    emailAddress: String?,
+    password: String?,
+    firstName: String?,
+    lastName: String?,
+    username: String?,
+    phoneNumber: String?,
+    legalAccepted: Bool?,
+    transfer: Bool
+  ) async throws
+  func sendSignUpEmailCode() async throws
+  func sendSignUpPhoneCode() async throws
+  func verifySignUpEmailCode(_ code: String) async throws
+  func verifySignUpPhoneCode(_ code: String) async throws
 }
 
 extension Clerk {
@@ -54,6 +68,14 @@ extension Clerk {
       throw ClerkClientError(message: "Sign-in did not produce a client.")
     }
     return signIn
+  }
+
+  @MainActor
+  package static func requireEngineSignUp() throws -> SignUp {
+    guard let signUp = shared.client?.signUp else {
+      throw ClerkClientError(message: "Sign-up did not produce a client.")
+    }
+    return signUp
   }
 
   @MainActor

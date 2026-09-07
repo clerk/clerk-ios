@@ -50,31 +50,20 @@ enum ClerkRuntimeStore {
   }
 }
 
-struct ClerkRuntimeContainer<Content: View>: View {
+struct ClerkEngineAttachedModifier: ViewModifier {
   @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
-  @State private var engine: ClerkJSCore.Clerk?
-  private let content: (ClerkJSCore.Clerk) -> Content
 
-  init(@ViewBuilder content: @escaping (ClerkJSCore.Clerk) -> Content) {
-    ClerkEngineBootstrap.install()
-    self.content = content
+  func body(content: Content) -> some View {
+    content.task(id: clerk.publishableKey) {
+      ClerkEngineBootstrap.install()
+      _ = await Clerk.resolvedEngineClient()
+    }
   }
+}
 
-  var body: some View {
-    let resolved = engine ?? ClerkRuntimeStore.shared(for: clerk.publishableKey)
-    content(resolved)
-      .environment(resolved)
-      .task(id: clerk.publishableKey) {
-        let created = ClerkRuntimeStore.shared(for: clerk.publishableKey)
-        engine = created
-        await ClerkRuntimeStore.loadIfNeeded(created, key: clerk.publishableKey, onto: clerk)
-      }
-      .onChange(of: resolved.user?.id) { _, _ in
-        ClerkRuntimeStore.publish(resolved, onto: clerk)
-      }
-      .onChange(of: resolved.session.id) { _, _ in
-        ClerkRuntimeStore.publish(resolved, onto: clerk)
-      }
+extension View {
+  func clerkEngineAttached() -> some View {
+    modifier(ClerkEngineAttachedModifier())
   }
 }
 

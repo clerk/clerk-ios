@@ -5,12 +5,12 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
+import ClerkKit
 import SwiftUI
 
 struct SecuredByClerkView: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
   var body: some View {
     if clerk.environment?.displayConfig.branded == true {
@@ -28,8 +28,8 @@ struct SecuredByClerkView: View {
 }
 
 struct SecuredByClerkFooter: View {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
   private let showBackground: Bool
   private let safeArea: FooterSafeArea
@@ -127,7 +127,7 @@ extension View {
 }
 
 private struct SecuredByClerkFooterModifier: ViewModifier {
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var clerk
+  @Environment(Clerk.self) private var clerk
 
   private let macOSDismissAction: (() -> Void)?
 
@@ -161,12 +161,18 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
   }
 }
 
+extension Clerk {
+  fileprivate var shouldShowSecuredByClerkFooter: Bool {
+    shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
+  }
+}
+
 #Preview {
   SecuredByClerkView()
 }
 
 #Preview {
-  @Previewable @SwiftUI.Environment(\.clerkTheme) var theme
+  @Previewable @Environment(\.clerkTheme) var theme
 
   VStack(spacing: 0) {
     ScrollView {

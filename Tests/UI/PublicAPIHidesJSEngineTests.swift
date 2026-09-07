@@ -34,3 +34,27 @@ import Testing
   }
   #expect(imports.isEmpty, "Hosts imported ClerkJSCore: \(imports)")
 }
+
+@Test func uiComponentsDoNotImportClerkJSCore() throws {
+  let sources = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .appendingPathComponent("Sources/ClerkKitUI")
+  var leaks: [String] = []
+  for folder in ["Components", "Common"] {
+    let root = sources.appendingPathComponent(folder)
+    let enumerator = FileManager.default.enumerator(
+      at: root,
+      includingPropertiesForKeys: [.isRegularFileKey]
+    )
+    while let url = enumerator?.nextObject() as? URL {
+      guard url.pathExtension == "swift" else { continue }
+      let text = try String(contentsOf: url, encoding: .utf8)
+      if text.contains("import ClerkJSCore") || text.contains("ClerkJSCore.") || text.contains("jsClerk") {
+        leaks.append(url.path)
+      }
+    }
+  }
+  #expect(leaks.isEmpty, "UI components imported the JS engine: \(leaks)")
+}

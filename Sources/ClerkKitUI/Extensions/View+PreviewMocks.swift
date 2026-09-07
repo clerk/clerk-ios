@@ -16,7 +16,6 @@ extension View {
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
   /// - `ClerkKit.Clerk.preview` for `@Environment(Clerk.self)`
-  /// - A snapshot-backed runtime for ClerkKitUI auth views
   /// - `AuthState()` for `@Environment(AuthState.self)`
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
@@ -48,7 +47,6 @@ extension View {
 
       return AnyView(
         environment(clerk)
-          .environment(runtime)
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
           .environment(AuthState())

@@ -5,7 +5,6 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 import ClerkKit
 import NukeUI
 import SwiftUI
@@ -53,8 +52,8 @@ import SwiftUI
 /// }
 /// ```
 public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: View>: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
-  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @Environment(Clerk.self) private var clerk
+  @Environment(\.clerkTheme) private var theme
 
   @State private var presentedSheet: PresentedSheet?
   private let presentationContext: UserButtonPresentationContext
@@ -125,14 +124,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   }
 
   public var body: some View {
-    ClerkRuntimeContainer { jsClerk in
-      userButtonCanvas(jsClerk: jsClerk)
-    }
-  }
-
-  private func userButtonCanvas(jsClerk: ClerkJSCore.Clerk) -> some View {
     ZStack {
-      if let user = jsClerk.user {
+      if let user = clerk.user {
         Button {
           handleTap()
         } label: {
@@ -186,7 +179,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           .environment(clerk)
       }
     }
-    .onChange(of: jsClerk.user) { _, newValue in
+    .onChange(of: clerk.user) { _, newValue in
       guard newValue == nil else { return }
       guard presentedSheet != .sessionTaskAuth else { return }
       presentedSheet = nil
@@ -194,6 +187,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
     }
+    .clerkEngineAttached()
   }
 }
 
