@@ -6,40 +6,15 @@ protocol OrganizationServiceProtocol: Sendable {
 }
 
 final class OrganizationService: OrganizationServiceProtocol {
-  private let apiClient: APIClient
-
-  init(apiClient: APIClient) {
-    self.apiClient = apiClient
-  }
+  init(apiClient _: APIClient) {}
 
   @MainActor
   func setOrganizationLogo(organizationId: String, imageData: Data) async throws -> Organization {
-    let boundary = UUID().uuidString
-    var data = Data()
-    data.append(Data("\r\n--\(boundary)\r\n".utf8))
-    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
-    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-    data.append(imageData)
-    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
-
-    let request = Request<ClientResponse<Organization>>(
-      path: "/v1/organizations/\(organizationId)/logo",
-      method: .put,
-      headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-
-    return try await apiClient.upload(for: request, from: data).value.response
+    try await Clerk.js(.clerk, JSRawCall("setNativeOrganizationLogo", .string(organizationId), .string(imageData.base64EncodedString())), as: Organization.self)
   }
 
   @MainActor
   func deleteOrganizationLogo(organizationId: String) async throws -> DeletedObject {
-    let request = Request<ClientResponse<DeletedObject>>(
-      path: "/v1/organizations/\(organizationId)/logo",
-      method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-
-    return try await apiClient.send(request).value.response
+    try await Clerk.js(.clerk, JSRawCall("deleteNativeOrganizationLogo", .string(organizationId)), as: DeletedObject.self)
   }
 }

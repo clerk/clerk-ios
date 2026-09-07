@@ -150,7 +150,8 @@ public final class ClerkJSHost: ClerkJSBridge {
     resourceCache: ClerkJSResourceCache? = nil,
     oauthRedirectURL: URL = ClerkJSRuntime.defaultOAuthRedirectURL,
     proxyURL: URL? = nil,
-    appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory()
+    appAttestKeyIdStore: ClerkJSAppAttestKeyIdStore = .memory(),
+    sessionConfiguration: URLSessionConfiguration? = nil
   ) {
     self.publishableKey = publishableKey
     runtime = ClerkJSRuntime(
@@ -158,7 +159,8 @@ public final class ClerkJSHost: ClerkJSBridge {
       resourceCache: resourceCache,
       oauthRedirectURL: oauthRedirectURL,
       proxyURL: proxyURL,
-      appAttestKeyIdStore: appAttestKeyIdStore
+      appAttestKeyIdStore: appAttestKeyIdStore,
+      sessionConfiguration: sessionConfiguration
     )
     runtime.observeState { [weak self] data in
       Task { @MainActor [weak self] in

@@ -1,3 +1,4 @@
+#if !os(watchOS)
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
@@ -7,8 +8,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct MagicLinkServiceTests {
-  init() {
-    configureClerkForTesting()
+  init() async throws {
+    try await configureEmbeddedClerkForTesting(signedIn: false)
   }
 
   @Test
@@ -25,13 +26,14 @@ struct MagicLinkServiceTests {
       statusCode: 200,
       data: [
         .post: JSONEncoder.clerkEncoder.encode(
-          ClientResponse<MagicLinkCompleteResult>(response: response, client: .mock)
+          ClientResponse<MagicLinkCompleteResult>(response: response, client: Client(id: "client_established", signIn: nil, signUp: nil, sessions: [], lastActiveSessionId: nil, updatedAt: Date(timeIntervalSince1970: 1_700_000_000)))
         ),
-      ]
+      ],
+      additionalHeaders: ["Authorization": "established-client-jwt"]
     )
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
-      #expect(request.clerkStartupClientRefreshTakeoverID != nil)
+      #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -45,5 +47,9 @@ struct MagicLinkServiceTests {
     )
 
     #expect(requestHandled.value)
+    #expect(Clerk.shared.client?.id == "client_established")
+    #expect(Clerk.shared.identityController.currentDeviceToken == "established-client-jwt")
   }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if !os(watchOS)
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
@@ -7,8 +8,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct BiometricCredentialServiceTests {
-  init() {
-    configureClerkForTesting()
+  init() async throws {
+    try await configureEmbeddedClerkForTesting()
   }
 
   @Test
@@ -19,7 +20,7 @@ struct BiometricCredentialServiceTests {
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<[BiometricCredential]>(response: [.mock], client: .mock)),
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<[BiometricCredential]>(response: [.mock], client: nil)),
       ]
     )
 
@@ -44,7 +45,7 @@ struct BiometricCredentialServiceTests {
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredentialChallenge>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredentialChallenge>(response: .mock, client: nil)),
       ]
     )
 
@@ -81,7 +82,7 @@ struct BiometricCredentialServiceTests {
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: nil)),
       ]
     )
 
@@ -124,7 +125,7 @@ struct BiometricCredentialServiceTests {
         .post: JSONEncoder.clerkEncoder.encode(
           ClientResponse<BiometricCredentialValidation>(
             response: .init(valid: true),
-            client: .mock
+            client: nil
           )
         ),
       ]
@@ -155,12 +156,13 @@ struct BiometricCredentialServiceTests {
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<BiometricCredential>(response: .mock, client: nil)),
       ]
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "DELETE")
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.queryParam(named: "_method") == "DELETE")
       #expect(request.url?.queryParam(named: "_clerk_session_id") == sessionId)
       requestHandled.setValue(true)
     }
@@ -174,3 +176,5 @@ struct BiometricCredentialServiceTests {
     #expect(requestHandled.value)
   }
 }
+
+#endif

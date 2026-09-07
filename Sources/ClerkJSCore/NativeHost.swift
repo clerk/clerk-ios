@@ -25,9 +25,9 @@ final class NativeHost: @unchecked Sendable {
   private(set) var lastEnvironmentJSON: Data?
   private(set) var lastClientToken: String?
 
-  init(tokenCache: ClerkJSTokenCache) {
+  init(tokenCache: ClerkJSTokenCache, sessionConfiguration: URLSessionConfiguration? = nil) {
     self.tokenCache = tokenCache
-    let configuration = URLSessionConfiguration.ephemeral
+    let configuration = (sessionConfiguration?.copy() as? URLSessionConfiguration) ?? .ephemeral
     configuration.httpShouldSetCookies = false
     configuration.httpCookieStorage = nil
     configuration.httpCookieAcceptPolicy = .never
@@ -346,7 +346,9 @@ final class NativeHost: @unchecked Sendable {
         request.setValue(value, forHTTPHeaderField: key)
       }
     }
-    if let body = object["body"] as? String {
+    if let bodyBase64 = object["bodyBase64"] as? String {
+      request.httpBody = Data(base64Encoded: bodyBase64)
+    } else if let body = object["body"] as? String {
       request.httpBody = body.data(using: .utf8)
     }
 
@@ -688,8 +690,24 @@ final class NativeHost: @unchecked Sendable {
       Headers.prototype[Symbol.iterator] = function() { return this.entries()[Symbol.iterator](); };
       globalThis.Headers = Headers;
 
+      function Blob(parts, options) {
+        this.type = options && options.type || '';
+        this._binary = (parts || []).map(function(part) {
+          if (part instanceof Blob) return part._binary;
+          if (part instanceof ArrayBuffer) part = new Uint8Array(part);
+          if (ArrayBuffer.isView(part)) {
+            var bytes = new Uint8Array(part.buffer, part.byteOffset, part.byteLength);
+            var result = '';
+            for (var i = 0; i < bytes.length; i++) result += String.fromCharCode(bytes[i]);
+            return result;
+          }
+          return unescape(encodeURIComponent(String(part)));
+        }).join('');
+        this.size = this._binary.length;
+      }
+      globalThis.Blob = Blob;
       function FormData() { this._pairs = []; }
-      FormData.prototype.append = function(key, value) { this._pairs.push([String(key), value]); };
+      FormData.prototype.append = function(key, value, filename) { this._pairs.push([String(key), value, filename]); };
       globalThis.FormData = FormData;
 
       function AbortSignal() {
@@ -737,7 +755,31 @@ final class NativeHost: @unchecked Sendable {
         else url = String(input);
         var method = (init.method || (input && input.method) || 'GET').toUpperCase();
         var headers = new Headers(init.headers || (input && input.headers));
-        var body = init.body != null ? String(init.body) : (input && input.body != null ? String(input.body) : null);
+        var rawBody = init.body != null ? init.body : (input && input.body != null ? input.body : null);
+        var body = rawBody == null ? null : String(rawBody);
+        var bodyBase64 = null;
+        if (rawBody instanceof FormData) {
+          var boundary = '----clerk-' + Array.from(crypto.getRandomValues(new Uint8Array(16)), function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+          var multipart = '';
+          rawBody._pairs.forEach(function(pair) {
+            var name = pair[0].replace(/["\\r\\n]/g, '_');
+            var value = pair[1];
+            multipart += '--' + boundary + '\\r\\nContent-Disposition: form-data; name="' + name + '"';
+            if (value instanceof Blob) {
+              var filename = String(pair[2] || 'blob').replace(/["\\r\\n]/g, '_');
+              multipart += '; filename="' + filename + '"\\r\\nContent-Type: ' + (value.type || 'application/octet-stream');
+            }
+            multipart += '\\r\\n\\r\\n' + (value instanceof Blob ? value._binary : unescape(encodeURIComponent(String(value)))) + '\\r\\n';
+          });
+          multipart += '--' + boundary + '--\\r\\n';
+          headers.set('content-type', 'multipart/form-data; boundary=' + boundary);
+          bodyBase64 = btoa(multipart);
+          body = null;
+        } else if (rawBody instanceof Blob) {
+          bodyBase64 = btoa(rawBody._binary);
+          body = null;
+          if (!headers.has('content-type') && rawBody.type) headers.set('content-type', rawBody.type);
+        }
         var signal = init.signal || (input && input.signal) || null;
         if (signal && signal.aborted) {
           return Promise.reject(new Error('The operation was aborted.'));
@@ -758,7 +800,8 @@ final class NativeHost: @unchecked Sendable {
             url: url,
             method: method,
             headers: headersToObject(headers),
-            body: body
+            body: body,
+            bodyBase64: bodyBase64
           }), function(err, result) {
             if (err) fail(String(err));
             else ok(typeof result === 'string' ? JSON.parse(result) : result);

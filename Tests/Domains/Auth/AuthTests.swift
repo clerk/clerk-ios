@@ -30,7 +30,7 @@ struct AuthTests {
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService,
-      magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
+      magicLinkService: magicLinkService ?? mockMagicLinkService(apiClient: apiClient)
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -56,7 +56,7 @@ struct AuthTests {
       keychain: keychain,
       signInService: signInService,
       sessionService: sessionService,
-      magicLinkService: magicLinkService ?? MagicLinkService(apiClient: apiClient)
+      magicLinkService: magicLinkService ?? mockMagicLinkService(apiClient: apiClient)
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -64,6 +64,16 @@ struct AuthTests {
     clerk.environment = environment
     clerk.setCallbackContinuation(nil)
     return clerk
+  }
+
+  private func mockMagicLinkService(apiClient: APIClient) -> MockMagicLinkService {
+    MockMagicLinkService { params in
+      let request = Request<ClientResponse<MagicLinkCompleteResult>>(
+        path: "/v1/client/magic_links/complete", method: .post,
+        canEstablishClientWhenTokenless: true, body: params
+      )
+      return try await apiClient.send(request).value.response
+    }
   }
 
   private func enabledBiometricCredentialEnvironment() -> Clerk.Environment {

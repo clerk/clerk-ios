@@ -91,6 +91,7 @@ let package = Package(
       name: "ClerkKitTests",
       dependencies: [
         "ClerkKit",
+        "ClerkJSCore",
         "ClerkKitUI",
         "ClerkSnapshots",
         .product(name: "Mocker", package: "Mocker"),

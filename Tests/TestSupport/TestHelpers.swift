@@ -90,7 +90,7 @@ func createMockAPIClient(
 
 extension URLRequest {
   /// Returns request body data from `httpBody` or `httpBodyStream`.
-  private var requestBodyData: Data? {
+  var requestBodyData: Data? {
     if let body = httpBody {
       return body
     }

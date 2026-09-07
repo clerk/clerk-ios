@@ -1,3 +1,4 @@
+#if !os(watchOS)
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
@@ -7,8 +8,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct OrganizationServiceTests {
-  init() {
-    configureClerkForTesting()
+  init() async throws {
+    try await configureEmbeddedClerkForTesting()
   }
 
   @Test
@@ -16,18 +17,20 @@ struct OrganizationServiceTests {
     let organization = Organization.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/organizations/\(organization.id)/logo")!
-    let imageData = Data("fake image data".utf8)
+    let imageData = Data([0xFF, 0xD8, 0x00, 0x80, 0xFE, 0xFF, 0xD9])
 
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .put: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Organization>(response: organization, client: nil)),
       ]
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "PUT")
-      #expect(request.allHTTPHeaderFields?["Content-Type"]?.contains("multipart/form-data") == true)
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.queryParam(named: "_method") == "PUT")
+      #expect(request.value(forHTTPHeaderField: "Content-Type")?.contains("multipart/form-data") == true)
+      #expect(request.requestBodyData?.range(of: imageData) != nil)
       requestHandled.setValue(true)
     }
     mock.register()
@@ -49,12 +52,13 @@ struct OrganizationServiceTests {
     var mock = try Mock(
       url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
       data: [
-        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: deletedObject, client: .mock)),
+        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<DeletedObject>(response: deletedObject, client: nil)),
       ]
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "DELETE")
+      #expect(request.httpMethod == "POST")
+      #expect(request.url?.queryParam(named: "_method") == "DELETE")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
@@ -67,3 +71,5 @@ struct OrganizationServiceTests {
     #expect(response.deleted == true)
   }
 }
+
+#endif

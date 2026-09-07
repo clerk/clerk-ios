@@ -23,75 +23,30 @@ protocol BiometricCredentialServiceProtocol: Sendable {
 }
 
 final class BiometricCredentialService: BiometricCredentialServiceProtocol {
-  private let apiClient: APIClient
-
-  init(apiClient: APIClient) {
-    self.apiClient = apiClient
-  }
+  init(apiClient _: APIClient) {}
 
   @MainActor
   func list() async throws -> [BiometricCredential] {
-    let request = Request<ClientResponse<[BiometricCredential]>>(
-      path: "/v1/me/biometric_credentials",
-      method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
-    )
-
-    return try await apiClient.send(request).value.response
+    try await Clerk.js(.clerk, JSRawCall("listNativeBiometricCredentials"), as: [BiometricCredential].self)
   }
 
   @MainActor
-  func prepareEnrollment(
-    sessionId: String,
-    params: BiometricCredential.PrepareEnrollmentParams
-  ) async throws -> BiometricCredentialChallenge {
-    let request = Request<ClientResponse<BiometricCredentialChallenge>>(
-      path: "/v1/me/biometric_credentials/prepare",
-      method: .post,
-      query: [("_clerk_session_id", value: sessionId)],
-      body: params
-    )
-
-    return try await apiClient.send(request).value.response
+  func prepareEnrollment(sessionId: String, params: BiometricCredential.PrepareEnrollmentParams) async throws -> BiometricCredentialChallenge {
+    try await Clerk.js(.clerk, JSRawCall("prepareNativeBiometricEnrollment", .string(sessionId), JSONValue(encoding: params)), as: BiometricCredentialChallenge.self)
   }
 
   @MainActor
-  func attemptEnrollment(
-    sessionId: String,
-    params: BiometricCredential.AttemptEnrollmentParams
-  ) async throws -> BiometricCredential {
-    let request = Request<ClientResponse<BiometricCredential>>(
-      path: "/v1/me/biometric_credentials/attempt",
-      method: .post,
-      query: [("_clerk_session_id", value: sessionId)],
-      body: params
-    )
-
-    return try await apiClient.send(request).value.response
+  func attemptEnrollment(sessionId: String, params: BiometricCredential.AttemptEnrollmentParams) async throws -> BiometricCredential {
+    try await Clerk.js(.clerk, JSRawCall("attemptNativeBiometricEnrollment", .string(sessionId), JSONValue(encoding: params)), as: BiometricCredential.self)
   }
 
   @MainActor
   func validateSignInCredential(biometricCredentialId: String) async throws -> BiometricCredentialValidation {
-    let request = Request<ClientResponse<BiometricCredentialValidation>>(
-      path: "/v1/client/biometric_credentials/validate",
-      method: .post,
-      body: BiometricCredentialValidation.Params(biometricCredentialId: biometricCredentialId)
-    )
-
-    return try await apiClient.send(request).value.response
+    try await Clerk.js(.clerk, JSRawCall("validateNativeBiometricCredential", .string(biometricCredentialId)), as: BiometricCredentialValidation.self)
   }
 
   @MainActor
-  func revoke(
-    biometricCredentialId: String,
-    sessionId: String?
-  ) async throws -> BiometricCredential {
-    let request = Request<ClientResponse<BiometricCredential>>(
-      path: "/v1/me/biometric_credentials/\(biometricCredentialId)",
-      method: .delete,
-      query: [("_clerk_session_id", value: sessionId)]
-    )
-
-    return try await apiClient.send(request).value.response
+  func revoke(biometricCredentialId: String, sessionId: String?) async throws -> BiometricCredential {
+    try await Clerk.js(.clerk, JSRawCall("revokeNativeBiometricCredential", .string(biometricCredentialId), sessionId.map(JSONValue.string) ?? .null), as: BiometricCredential.self)
   }
 }

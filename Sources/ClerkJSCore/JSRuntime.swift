@@ -12,8 +12,8 @@ final class JSRuntime: @unchecked Sendable {
   private var disposed = false
   private let queueKey = DispatchSpecificKey<Bool>()
 
-  init(tokenCache: ClerkJSTokenCache) {
-    host = NativeHost(tokenCache: tokenCache)
+  init(tokenCache: ClerkJSTokenCache, sessionConfiguration: URLSessionConfiguration? = nil) {
+    host = NativeHost(tokenCache: tokenCache, sessionConfiguration: sessionConfiguration)
     queue.setSpecific(key: queueKey, value: true)
     queue.sync {
       let context = JSContext()!
