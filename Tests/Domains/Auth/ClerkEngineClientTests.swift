@@ -1010,6 +1010,16 @@ final class RecordingEngineClient: ClerkEngineClient {
   func setActive(sessionId: String, organizationId: String?) async throws {
     activeSessionId = sessionId
     activeOrganizationId = organizationId
+    var session = Session.mock
+    session.lastActiveOrganizationId = organizationId
+    Clerk.shared.applyResponseClient(
+      Client(
+        id: "client_engine",
+        sessions: [session],
+        lastActiveSessionId: session.id,
+        updatedAt: Date()
+      )
+    )
   }
 
   func signOut(sessionId _: String?) async throws {

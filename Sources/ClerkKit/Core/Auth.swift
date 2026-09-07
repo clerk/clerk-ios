@@ -608,8 +608,10 @@ extension Auth {
   /// - Throws: An error if token retrieval fails.
   @discardableResult
   public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> String? {
-    let engine = try await Clerk.requireEngineClient()
-    return try await engine.getToken(template: options.template, skipCache: options.skipCache)
+    guard let session = Clerk.shared.session else {
+      return nil
+    }
+    return try await session.getToken(options)
   }
 
   /// Revokes the specified session.

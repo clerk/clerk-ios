@@ -3,10 +3,6 @@ import Foundation
 
 private struct EmptyEngineArgs: Encodable {}
 
-private struct PasskeyUpdateNameParams: Encodable {
-  var name: String
-}
-
 private struct DomainIdArgs: Encodable {
   var domainId: String
 }
@@ -195,7 +191,6 @@ package protocol ClerkEngineClient: AnyObject {
   func createOrganization(name: String, slug: String?) async throws -> Organization
   func getOrganization(id: String) async throws -> Organization
   func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
-  func callUserChild(pick: String, id: String, method: String, args: Data) async throws -> Data
   func callListedChild(
     organizationId: String?,
     locate: String,
@@ -254,130 +249,6 @@ extension Clerk {
     let created = await makeEngineClient(shared)
     engineClient = created
     return created
-  }
-
-  @MainActor
-  package static func prepareEmailAddressVerification(id: String) async throws -> EmailAddress {
-    try await callUserChild(
-      pick: "emailAddresses",
-      id: id,
-      EmailAddressJSMethod.prepareVerification,
-      PrepareEmailAddressVerificationParams(strategy: .emailCode, redirectUrl: nil),
-      as: EmailAddress.self
-    )
-  }
-
-  @MainActor
-  package static func attemptEmailAddressVerification(id: String, code: String) async throws -> EmailAddress {
-    try await callUserChild(
-      pick: "emailAddresses",
-      id: id,
-      EmailAddressJSMethod.attemptVerification,
-      AttemptEmailAddressVerificationParams(code: code),
-      as: EmailAddress.self
-    )
-  }
-
-  @MainActor
-  package static func destroyEmailAddress(id: String) async throws -> DeletedObject {
-    try await callUserChild(pick: "emailAddresses", id: id, EmailAddressJSMethod.destroy, as: DeletedObject.self)
-  }
-
-  @MainActor
-  package static func preparePhoneNumberVerification(id: String) async throws -> PhoneNumber {
-    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.prepareVerification, as: PhoneNumber.self)
-  }
-
-  @MainActor
-  package static func attemptPhoneNumberVerification(id: String, code: String) async throws -> PhoneNumber {
-    try await callUserChild(
-      pick: "phoneNumbers",
-      id: id,
-      PhoneNumberJSMethod.attemptVerification,
-      AttemptPhoneNumberVerificationParams(code: code),
-      as: PhoneNumber.self
-    )
-  }
-
-  @MainActor
-  package static func makeDefaultPhoneNumberSecondFactor(id: String) async throws -> PhoneNumber {
-    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.makeDefaultSecondFactor, as: PhoneNumber.self)
-  }
-
-  @MainActor
-  package static func setPhoneNumberReservedForSecondFactor(id: String, reserved: Bool) async throws -> PhoneNumber {
-    try await callUserChild(
-      pick: "phoneNumbers",
-      id: id,
-      PhoneNumberJSMethod.setReservedForSecondFactor,
-      SetReservedForSecondFactorParams(reserved: reserved),
-      as: PhoneNumber.self
-    )
-  }
-
-  @MainActor
-  package static func destroyPhoneNumber(id: String) async throws -> DeletedObject {
-    try await callUserChild(pick: "phoneNumbers", id: id, PhoneNumberJSMethod.destroy, as: DeletedObject.self)
-  }
-
-  @MainActor
-  package static func updatePasskey(id: String, name: String) async throws -> Passkey {
-    try await callUserChild(
-      pick: "passkeys",
-      id: id,
-      PasskeyJSMethod.update,
-      PasskeyUpdateNameParams(name: name),
-      as: Passkey.self
-    )
-  }
-
-  @MainActor
-  package static func deletePasskey(id: String) async throws -> DeletedObject {
-    try await callUserChild(pick: "passkeys", id: id, PasskeyJSMethod.delete, as: DeletedObject.self)
-  }
-
-  @MainActor
-  package static func reauthorizeExternalAccount(
-    id: String,
-    redirectUrl: String?,
-    additionalScopes: [String],
-    oidcPrompt: String?
-  ) async throws -> ExternalAccount {
-    try await callUserChild(
-      pick: "externalAccounts",
-      id: id,
-      ExternalAccountJSMethod.reauthorize,
-      ReauthorizeExternalAccountParams(
-        additionalScopes: additionalScopes,
-        redirectUrl: redirectUrl,
-        oidcPrompt: oidcPrompt,
-        oidcLoginHint: nil
-      ),
-      as: ExternalAccount.self
-    )
-  }
-
-  @MainActor
-  package static func destroyExternalAccount(id: String) async throws -> DeletedObject {
-    try await callUserChild(pick: "externalAccounts", id: id, ExternalAccountJSMethod.destroy, as: DeletedObject.self)
-  }
-
-  @MainActor
-  package static func callUserChild<T: Decodable>(
-    pick: String,
-    id: String,
-    _ method: some RawRepresentable<String>,
-    _ args: some Encodable = EmptyEngineArgs(),
-    as _: T.Type
-  ) async throws -> T {
-    let engine = try await requireEngineClient()
-    let data = try await engine.callUserChild(
-      pick: pick,
-      id: id,
-      method: method.rawValue,
-      args: JSONEncoder().encode(args)
-    )
-    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
   }
 
   @MainActor
@@ -757,12 +628,6 @@ extension Clerk {
       throw ClerkClientError(message: "Clerk JS engine is not available.")
     }
     return engine
-  }
-
-  @MainActor
-  package static func engineGetToken(template: String?, skipCache: Bool) async throws -> String? {
-    let engine = try await requireEngineClient()
-    return try await engine.getToken(template: template, skipCache: skipCache)
   }
 
   @MainActor

@@ -5,6 +5,15 @@ import Foundation
 extension RecordingEngineClient {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
     lastJSMethod = invocation.method
+    if case .userResource(let collection, let id) = invocation.receiver {
+      let data = try await callUserChild(
+        pick: collection.rawValue,
+        id: id.rawValue,
+        method: invocation.method,
+        args: Data()
+      )
+      return try JSONDecoder().decode(JSONValue.self, from: data)
+    }
     switch invocation.method {
     case "update":
       let params = try decodeInvocation(UpdateUserParams.self, invocation)

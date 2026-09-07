@@ -506,13 +506,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return data
   }
 
-  func callUserChild(pick: String, id: String, method: String, args: Data) async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.userChild(pick: pick, id: id).call(method, args: args)
-    publish()
-    return data
-  }
-
   func callListedChild(
     organizationId: String?,
     locate: String,

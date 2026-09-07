@@ -208,6 +208,9 @@
     }
     try {
       var value = await target[method].apply(target, args);
+      if ((method === 'destroy' || method === 'delete') && (value === null || value === true || value === undefined)) {
+        return { id: receiver.id, deleted: true };
+      }
       return serialize(value);
     } catch (error) {
       throw JSON.stringify(envelopeFrom(error));
