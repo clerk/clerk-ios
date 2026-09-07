@@ -14,4 +14,12 @@ import Testing
   #expect(clerk.session?.id == "sess_fixture")
 }
 
+@MainActor
+@Test func applyEngineEnvironmentJSONPublishesKitEnvironment() throws {
+  let clerk = Clerk()
+  let data = try ClerkJSCore.Clerk.snapshotEnvironmentJSON()
+  try clerk.applyEngineEnvironmentJSON(data)
+  #expect(clerk.environment?.displayConfig.applicationName == "JSCore Cache")
+}
+
 #endif

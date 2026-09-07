@@ -43,6 +43,9 @@ enum ClerkRuntimeStore {
   }
 
   static func publish(_ engine: ClerkJSCore.Clerk, onto kit: ClerkKit.Clerk) {
+    if let environment = engine.lastEnvironmentJSON {
+      try? kit.applyEngineEnvironmentJSON(environment)
+    }
     guard let data = engine.lastClientJSON else { return }
     let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
     try? kit.applyEngineClientJSON(payload)

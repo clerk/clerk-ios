@@ -104,11 +104,15 @@ public final class Clerk {
     fapiClient = try FAPIJSON.decodeClient(data)
   }
 
-  package static func snapshotEnvironment() throws -> Environment {
+  package static func snapshotEnvironmentJSON() throws -> Data {
     guard let url = Bundle.module.url(forResource: "environment-snapshot", withExtension: "json") else {
       throw ClerkJSCoreError.missingBundle
     }
-    return try JSONDecoder().decode(Environment.self, from: Data(contentsOf: url))
+    return try Data(contentsOf: url)
+  }
+
+  package static func snapshotEnvironment() throws -> Environment {
+    try JSONDecoder().decode(Environment.self, from: snapshotEnvironmentJSON())
   }
 
   package static func snapshotSignedInClient() throws -> Data {
@@ -138,6 +142,10 @@ public final class Clerk {
     runtime.lastFAPIClientJSON
   }
 
+  package var lastEnvironmentJSON: Data? {
+    runtime.lastFAPIEnvironmentJSON
+  }
+
   public func load() async throws {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()
@@ -146,6 +154,16 @@ public final class Clerk {
 
   public func setActive(_ params: SetActiveParams) async throws {
     _ = try await runtime.call(methodPath: ClerkJSPath.clerk(.setActive), args: params)
+    try publishLastClient()
+    publishLastEnvironment()
+  }
+
+  public func signOut(_ options: SignOutOptions? = nil) async throws {
+    if let options {
+      _ = try await runtime.call(methodPath: ClerkJSPath.clerk(.signOut), args: options)
+    } else {
+      _ = try await runtime.call(methodPath: ClerkJSPath.clerk(.signOut), args: EmptyArgs())
+    }
     try publishLastClient()
     publishLastEnvironment()
   }

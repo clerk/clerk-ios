@@ -17,6 +17,7 @@ package protocol ClerkEngineClient: AnyObject {
   func verifyPhoneCode(_ code: String) async throws
   func authenticateWithPassword(_ password: String) async throws
   func setActive(sessionId: String, organizationId: String?) async throws
+  func signOut(sessionId: String?) async throws
   func getToken(template: String?, skipCache: Bool) async throws -> String?
   func signUp(
     emailAddress: String?,

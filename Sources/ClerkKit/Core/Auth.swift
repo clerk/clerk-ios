@@ -653,6 +653,10 @@ extension Auth {
   /// - Parameter sessionId: An optional session ID to sign out from a specific session. If nil, signs out from all sessions.
   /// - Throws: An error if the sign-out process fails.
   public func signOut(sessionId: String? = nil) async throws {
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signOut(sessionId: sessionId)
+      return
+    }
     try await sessionService.signOut(sessionId: sessionId)
   }
 

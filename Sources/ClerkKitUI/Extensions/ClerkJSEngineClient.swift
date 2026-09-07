@@ -85,6 +85,16 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     publish()
   }
 
+  func signOut(sessionId: String?) async throws {
+    await loadIfNeeded()
+    if let sessionId {
+      try await engine.signOut(SignOutOptions(sessionId: sessionId, redirectUrl: nil))
+    } else {
+      try await engine.signOut()
+    }
+    publish()
+  }
+
   func getToken(template: String?, skipCache: Bool) async throws -> String? {
     await loadIfNeeded()
     return try await engine.session.getToken(

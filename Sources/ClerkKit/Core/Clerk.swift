@@ -918,6 +918,10 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
+  package func applyEngineEnvironmentJSON(_ data: Data) throws {
+    environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
+  }
+
   package func applyEngineClientJSON(_ data: Data) throws {
     if let client = ClerkClientSyncResponseMiddleware.decodeClient(from: data) {
       setClientFromIdentityController(client)

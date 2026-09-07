@@ -75,9 +75,13 @@ struct ClerkEngineClientTests {
 
     let token = try await Clerk.shared.auth.getToken()
     #expect(token == "jwt_engine")
+
+    try await Clerk.shared.auth.signOut()
+    #expect(engine.signedOut)
     #expect(kitCalls.createCount == 0)
     #expect(kitCalls.setActiveCount == 0)
     #expect(kitCalls.fetchTokenCount == 0)
+    #expect(kitCalls.signOutCount == 0)
   }
 
   @Test
@@ -208,6 +212,7 @@ private final class RecordingEngineClient: ClerkEngineClient {
   var verifiedPhoneCode: String?
   var activeSessionId: String?
   var activeOrganizationId: String?
+  var signedOut = false
 
   func signIn(identifier: String) async throws {
     signedInIdentifier = identifier
@@ -318,6 +323,13 @@ private final class RecordingEngineClient: ClerkEngineClient {
   func setActive(sessionId: String, organizationId: String?) async throws {
     activeSessionId = sessionId
     activeOrganizationId = organizationId
+  }
+
+  func signOut(sessionId _: String?) async throws {
+    signedOut = true
+    Clerk.shared.applyResponseClient(
+      Client(id: "client_engine", sessions: [], updatedAt: Date())
+    )
   }
 
   func getToken(template _: String?, skipCache _: Bool) async throws -> String? {
@@ -543,6 +555,7 @@ private final class KitCallCounter {
   var attemptCount = 0
   var setActiveCount = 0
   var fetchTokenCount = 0
+  var signOutCount = 0
   var prepareSecondCount = 0
   var attemptSecondCount = 0
   var resetPasswordCount = 0
@@ -589,6 +602,10 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
 @MainActor
 private func installFailingSessionService(_ counts: KitCallCounter) {
   let service = MockSessionService(
+    signOut: { _ in
+      counts.signOutCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
     setActive: { _, _ in
       counts.setActiveCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
