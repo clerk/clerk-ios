@@ -44,14 +44,12 @@ extension Clerk {
 
   @MainActor
   static func finishedSignIn() async throws -> SignIn {
-    try await js(.clerk, JSRawCall("finishNativeSignIn"))
-    return try requireEngineSignIn()
+    try await js(.clerk, JSRawCall("finishNativeSignIn"), as: SignIn.self)
   }
 
   @MainActor
   static func finishedSignUp() async throws -> SignUp {
-    try await js(.clerk, JSRawCall("finishNativeSignUp"))
-    return try requireEngineSignUp()
+    try await js(.clerk, JSRawCall("finishNativeSignUp"), as: SignUp.self)
   }
 
   @MainActor

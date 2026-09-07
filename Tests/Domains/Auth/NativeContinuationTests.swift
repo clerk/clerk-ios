@@ -20,6 +20,23 @@ struct NativeContinuationTests {
     await Clerk.disposeEngine()
   }
 
+  @Test(arguments: [false, true])
+  func completionReturnsTheAttemptAfterTheServerClearsItFromTheClient(separateCompletion: Bool) async throws {
+    _ = try await continuationHarness(strategy: "email_code", clearCompletedAttempt: true)
+    let signIn = try Clerk.requireEngineSignIn()
+    let result = if separateCompletion {
+      try await signIn.authenticateWithPassword("test-password")
+    } else {
+      try await signIn.verifyCode("424242")
+    }
+    #expect(result.id == "sia_continuation")
+    #expect(result.status == .complete)
+    #expect(result.createdSessionId == "sess_verified")
+    #expect(Clerk.shared.session?.id == "sess_verified")
+    #expect(Clerk.shared.client?.signIn?.id != "sia_continuation")
+    await Clerk.disposeEngine()
+  }
+
   @Test(arguments: ["", "password"])
   func rejectsMissingOrUnsupportedCodeStrategyWithoutRequest(strategy: String) async throws {
     let host = try await continuationHarness(strategy: strategy)
@@ -112,13 +129,21 @@ private func continuationRequests(_ host: ClerkJSHost) async throws -> [Continua
 }
 
 @MainActor
-private func continuationHarness(flow: String = "signIn", strategy: String = "oauth_google", verificationStatus: String = "unverified") async throws -> ClerkJSHost {
+private func continuationHarness(flow: String = "signIn", strategy: String = "oauth_google", verificationStatus: String = "unverified", clearCompletedAttempt: Bool = false) async throws -> ClerkJSHost {
   let host = try await configureEmbeddedClerkForTesting()
   let settings = try String(decoding: JSONEncoder().encode(["flow": flow, "strategy": strategy, "verificationStatus": verificationStatus]), as: UTF8.self)
   _ = try await host.runtime.evaluateJSON("""
     (function() {
       var settings = \(settings);
       globalThis.continuationRequests = [];
+      var clearCompletedAttempt = \(clearCompletedAttempt ? "true" : "false");
+      var completedClient = JSON.parse(JSON.stringify(__clerkInstance.client.__internal_toSnapshot()));
+      var completedSession = JSON.parse(JSON.stringify(completedClient.sessions[0]));
+      completedSession.id = 'sess_verified';
+      completedSession.last_active_token = {object:'token',jwt:'eyJhbGciOiJSUzI1NiJ9.' + btoa(JSON.stringify({sid:'sess_verified',sub:'user_fixture',exp:Math.floor(Date.now()/1000)+3600})).replace(/=/g,'') + '.signature'};
+      completedClient.sessions = [completedSession];
+      completedClient.last_active_session_id = null;
+      completedClient.sign_in = null;
       var verification = {strategy:settings.strategy || null,status:settings.verificationStatus};
       if (settings.verificationStatus === 'failed') verification.error = {code:'external_verification_failed',message:'Verification failed'};
       var signIn = {object:'sign_in',id:'sia_continuation',status:'needs_first_factor',identifier:'ada@example.com',
@@ -130,12 +155,14 @@ private func continuationHarness(flow: String = "signIn", strategy: String = "oa
       globalThis.fetch = async function(url, options) {
         var body = Object.fromEntries(new URLSearchParams(options.body || ''));
         continuationRequests.push({path:url.pathname,body:body,query:Object.fromEntries(url.searchParams)});
+        if (url.pathname.endsWith('/touch')) return {status:200,ok:true,headers:new Headers(),json:async () => ({response:completedSession})};
+        if (url.pathname.endsWith('/tokens')) return {status:200,ok:true,headers:new Headers(),json:async () => completedSession.last_active_token};
         var response = url.pathname.includes('/sign_ups') ? signUp : signIn;
         if (url.pathname.endsWith('/attempt_first_factor')) {
           response.status = settings.strategy.startsWith('reset_') ? 'needs_new_password' : 'complete';
-          response.created_session_id = response.status === 'complete' ? 'sess_fixture' : null;
+          response.created_session_id = response.status === 'complete' ? (clearCompletedAttempt ? 'sess_verified' : 'sess_fixture') : null;
         }
-        return {status:200,ok:true,headers:new Headers(),json:async () => ({response})};
+        return {status:200,ok:true,headers:new Headers(),json:async () => clearCompletedAttempt && response.status === 'complete' ? ({response:response,client:completedClient}) : ({response:response})};
       };
       return true;
     })()

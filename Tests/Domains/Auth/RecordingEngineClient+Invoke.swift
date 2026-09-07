@@ -43,11 +43,11 @@ extension RecordingEngineClient {
     }
     if case .signIn = invocation.receiver {
       try await dispatchSignIn(invocation)
-      return .null
+      return try encodeKit(Clerk.requireEngineSignIn())
     }
     if case .signUp = invocation.receiver {
       try await dispatchSignUp(invocation)
-      return .null
+      return try encodeKit(Clerk.requireEngineSignUp())
     }
     if case .session = invocation.receiver {
       return try await dispatchSession(invocation)
@@ -57,8 +57,10 @@ extension RecordingEngineClient {
       nativeAppleArguments = invocation.arguments.first
       if let nativeCompletionError { throw nativeCompletionError }
       return try nativeResult(nativeCompletionResult ?? .signUp(ClerkKit.SignUp.mock))
-    case "finishNativeSignIn", "finishNativeSignUp":
-      return .null
+    case "finishNativeSignIn":
+      return try encodeKit(Clerk.requireEngineSignIn())
+    case "finishNativeSignUp":
+      return try encodeKit(Clerk.requireEngineSignUp())
     case "completeNativeAuth":
       let args = try decodeInvocation(NativeCompletionArgs.self, invocation)
       nativeCompletionFlow = args.flow

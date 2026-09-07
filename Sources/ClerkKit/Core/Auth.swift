@@ -75,8 +75,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation fails.
   @discardableResult
   public func signIn(_ identifier: String) async throws -> SignIn {
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(identifier: identifier)))
-    return try Clerk.requireEngineSignIn()
+    try await Clerk.js(.signIn, SignInJSCall.create(.init(identifier: identifier)), as: SignIn.self)
   }
 
   /// Signs in with an identifier and password.
@@ -106,9 +105,9 @@ public struct Auth {
   public func signInWithEmailCode(emailAddress: String) async throws -> SignIn {
     try await Clerk.js(
       .signIn,
-      SignInJSCall.create(.init(strategy: "email_code", identifier: emailAddress))
+      SignInJSCall.create(.init(strategy: "email_code", identifier: emailAddress)),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Starts a native magic-link sign-in flow for an email address.
@@ -125,8 +124,7 @@ public struct Auth {
       "emailAddress": .string(emailAddress),
       "redirectUrl": .string(Clerk.shared.options.redirectConfig.redirectUrl),
       "ownerId": AuthFlowRequestScope.ownerId.map { .string($0.uuidString) } ?? .null,
-    ])))
-    return try Clerk.requireEngineSignIn()
+    ])), as: SignIn.self)
   }
 
   /// Signs in with OTP (One-Time Password) using a phone number.
@@ -140,9 +138,9 @@ public struct Auth {
   public func signInWithPhoneCode(phoneNumber: String) async throws -> SignIn {
     try await Clerk.js(
       .signIn,
-      SignInJSCall.create(.init(strategy: "phone_code", identifier: phoneNumber))
+      SignInJSCall.create(.init(strategy: "phone_code", identifier: phoneNumber)),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   // Signs in with OAuth using the specified provider.
@@ -260,8 +258,7 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in attempt cannot be created.
   @discardableResult
   public func createPasskeySignIn() async throws -> SignIn {
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(strategy: "passkey")))
-    return try Clerk.requireEngineSignIn()
+    try await Clerk.js(.signIn, SignInJSCall.create(.init(strategy: "passkey")), as: SignIn.self)
   }
 
   /// Signs in with a passkey.
@@ -274,8 +271,7 @@ public struct Auth {
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
     do {
-      try await Clerk.js(.clerk, JSRawCall("authenticateNativePasskey", .object(["createNew": .bool(true)])))
-      return try Clerk.requireEngineSignIn()
+      return try await Clerk.js(.clerk, JSRawCall("authenticateNativePasskey", .object(["createNew": .bool(true)])), as: SignIn.self)
     } catch let error as PasskeyAuthenticationFailure {
       throw error.underlyingError
     }
@@ -329,13 +325,13 @@ public struct Auth {
         .init(strategy: "enterprise_sso", redirectUrl: resolvedRedirectUrl, identifier: emailAddress)
       )
     )
-    try await Clerk.js(
+    return try await Clerk.js(
       .signIn,
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "enterprise_sso", redirectUrl: resolvedRedirectUrl)
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with Enterprise SSO using an email address.

@@ -9,9 +9,9 @@ extension SignIn {
       .signIn,
       SignInJSCall.reload(
         rotatingTokenNonce.map { ClerkResourceReloadParams(rotatingTokenNonce: $0) }
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a verification code to the specified email address.
@@ -26,9 +26,9 @@ extension SignIn {
       .signIn,
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "email_code", emailAddressId: emailAddressId)
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a native magic link to the specified email address.
@@ -69,9 +69,9 @@ extension SignIn {
       .signIn,
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "phone_code", phoneNumberId: phoneNumberId)
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Verifies the code entered by the user.
@@ -86,9 +86,9 @@ extension SignIn {
   public func verifyCode(_ code: String) async throws -> SignIn {
     try await Clerk.js(
       .clerk,
-      JSRawCall("verifyNativeSignInCode", .object(["expectedId": .string(id), "code": .string(code)]))
+      JSRawCall("verifyNativeSignInCode", .object(["expectedId": .string(id), "code": .string(code)])),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Authenticates with the user's password.
@@ -146,9 +146,9 @@ extension SignIn {
       .signIn,
       SignInJSCall.prepareSecondFactor(
         ClerkSnapshots.PrepareSecondFactorParams(strategy: .phoneCode, phoneNumberId: phoneNumberId)
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends an MFA code to the email address.
@@ -163,9 +163,9 @@ extension SignIn {
       .signIn,
       SignInJSCall.prepareSecondFactor(
         ClerkSnapshots.PrepareSecondFactorParams(strategy: .emailCode, emailAddressId: emailAddressId)
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Verifies the MFA code with the specified type.
@@ -202,9 +202,9 @@ extension SignIn {
           strategy: "reset_password_email_code",
           emailAddressId: emailAddressId
         )
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a password reset code to the specified phone number.
@@ -222,9 +222,9 @@ extension SignIn {
           strategy: "reset_password_phone_code",
           phoneNumberId: phoneNumberId
         )
-      )
+      ),
+      as: SignIn.self
     )
-    return try Clerk.requireEngineSignIn()
   }
 
   /// Resets the user's password after verification.

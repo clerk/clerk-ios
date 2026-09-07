@@ -9,9 +9,9 @@ extension SignUp {
       .signUp,
       SignUpJSCall.reload(
         rotatingTokenNonce.map { ClerkResourceReloadParams(rotatingTokenNonce: $0) }
-      )
+      ),
+      as: SignUp.self
     )
-    return try Clerk.requireEngineSignUp()
   }
 
   /// This method is used to update the current sign-up.
@@ -88,9 +88,9 @@ extension SignUp {
   public func sendEmailCode() async throws -> SignUp {
     try await Clerk.js(
       .signUp,
-      SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "email_code"))
+      SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "email_code")),
+      as: SignUp.self
     )
-    return try Clerk.requireEngineSignUp()
   }
 
   /// Sends a verification code to the phone number.
@@ -102,9 +102,9 @@ extension SignUp {
   public func sendPhoneCode() async throws -> SignUp {
     try await Clerk.js(
       .signUp,
-      SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "phone_code"))
+      SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "phone_code")),
+      as: SignUp.self
     )
-    return try Clerk.requireEngineSignUp()
   }
 
   /// Verifies the email code entered by the user.

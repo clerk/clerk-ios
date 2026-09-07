@@ -176,15 +176,15 @@ extension SignIn {
     preferImmediatelyAvailableCredentials: Bool = true
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
     do {
-      try await Clerk.js(
+      return try await Clerk.js(
         .clerk,
         JSRawCall("authenticateNativePasskey", JSONValue(encoding: NativePasskeyArgs(
           expectedId: id,
           autofill: autofill,
           preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-        )))
+        ))),
+        as: SignIn.self
       )
-      return try Clerk.requireEngineSignIn()
     } catch let error as PasskeyAuthenticationFailure {
       throw error
     } catch {
