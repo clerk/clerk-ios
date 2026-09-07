@@ -227,6 +227,26 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
+      try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
+      if transferable, Clerk.shared.client?.signIn?.needsTransferToSignUp == true {
+        try await engine.signUp(
+          emailAddress: nil,
+          password: nil,
+          firstName: nil,
+          lastName: nil,
+          username: nil,
+          phoneNumber: nil,
+          legalAccepted: nil,
+          transfer: true
+        )
+      }
+      let result = try Clerk.requireEngineTransferResult()
+      if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
+        throw error
+      }
+      return result
+    }
     let signIn = try await createSignInWithIdToken(idToken, provider: provider)
     let result = try await signIn.handleTransferFlow(
       transferable: transferable,
@@ -242,7 +262,11 @@ public struct Auth {
     _ idToken: String,
     provider: IDTokenProvider
   ) async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signInWithIdToken(strategy: provider.strategy, token: idToken)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
   }
   #endif
 
@@ -429,7 +453,11 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-in fails.
   @discardableResult
   public func signInWithTicket(_ ticket: String) async throws -> SignIn {
-    try await signInService.create(params: .init(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signInWithTicket(ticket)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(
       strategy: .ticket,
       ticket: ticket
     ))
@@ -578,6 +606,15 @@ public struct Auth {
     lastName: String? = nil,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
+      try await engine.signUpWithIdToken(
+        strategy: provider.strategy,
+        token: idToken,
+        firstName: firstName,
+        lastName: lastName
+      )
+      return try Clerk.requireEngineTransferResult()
+    }
     let signUp = try await signUpService.create(params: .init(
       firstName: firstName,
       lastName: lastName,
@@ -637,7 +674,11 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
   public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
-    try await signUpService.create(params: .init(
+    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
+      try await engine.signUpWithTicket(ticket)
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.create(params: .init(
       unsafeMetadata: unsafeMetadata,
       ticket: ticket,
       strategy: .ticket

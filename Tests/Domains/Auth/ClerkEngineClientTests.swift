@@ -177,6 +177,33 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func ticketAndIdTokenUseEngine() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+    installFailingSignUpService(kitCalls)
+
+    let ticket = try await Clerk.shared.auth.signInWithTicket("tkt_engine")
+    #expect(engine.signedInTicket == "tkt_engine")
+    #expect(ticket.status == .complete)
+
+    let idToken = try await Clerk.shared.auth.signInWithIdToken("apple_token", provider: .apple)
+    #expect(engine.signedInIdToken == "apple_token")
+    #expect(engine.signedInIdTokenStrategy == "oauth_token_apple")
+    if case .signIn(let signIn) = idToken {
+      #expect(signIn.status == .complete)
+    } else {
+      Issue.record("Expected a sign-in transfer result")
+    }
+
+    let signUp = try await Clerk.shared.auth.signUpWithTicket("tkt_signup")
+    #expect(engine.signedUpTicket == "tkt_signup")
+    #expect(signUp.id == SignUp.mock.id)
+    #expect(kitCalls.createCount == 0)
+  }
+
+  @Test
   func refreshSkipsKitFAPIWhenEngineIsRegistered() async throws {
     let engine = RecordingEngineClient()
     let kitCalls = KitCallCounter()
@@ -409,6 +436,56 @@ private final class RecordingEngineClient: ClerkEngineClient {
     signUp.status = .complete
     signUp.createdSessionId = "sess_engine"
     publish(signUp)
+  }
+
+  var signedInTicket: String?
+  var signedInIdToken: String?
+  var signedInIdTokenStrategy: String?
+  var signedUpTicket: String?
+
+  func signInWithTicket(_ ticket: String) async throws {
+    signedInTicket = ticket
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func signInWithIdToken(strategy: String, token: String) async throws {
+    signedInIdTokenStrategy = strategy
+    signedInIdToken = token
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func authenticateWithIdToken(strategy: String, token: String) async throws {
+    signedInIdTokenStrategy = strategy
+    signedInIdToken = token
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func signUpWithTicket(_ ticket: String) async throws {
+    signedUpTicket = ticket
+    publish(SignUp.mock)
+  }
+
+  func signUpWithIdToken(strategy _: String, token: String, firstName _: String?, lastName _: String?) async throws {
+    signedInIdToken = token
+    publish(SignUp.mock)
   }
 
   var redirectStrategy: String?

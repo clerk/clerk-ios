@@ -34,6 +34,11 @@ package protocol ClerkEngineClient: AnyObject {
   func verifySignUpEmailCode(_ code: String) async throws
   func verifySignUpPhoneCode(_ code: String) async throws
   func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws
+  func signInWithTicket(_ ticket: String) async throws
+  func signInWithIdToken(strategy: String, token: String) async throws
+  func authenticateWithIdToken(strategy: String, token: String) async throws
+  func signUpWithTicket(_ ticket: String) async throws
+  func signUpWithIdToken(strategy: String, token: String, firstName: String?, lastName: String?) async throws
   func createPasskeySignIn() async throws
   func authenticateWithPasskey(autofill: Bool) async throws
   func sendMfaPhoneCode(phoneNumberId: String?) async throws

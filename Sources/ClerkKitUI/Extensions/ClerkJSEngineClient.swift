@@ -160,6 +160,45 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfCompleteAfterRedirect()
   }
 
+  func signInWithTicket(_ ticket: String) async throws {
+    await loadIfNeeded()
+    let signIn = try await engine.client.signIn.create(
+      .init(strategy: "ticket", ticket: ticket)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func signInWithIdToken(strategy: String, token: String) async throws {
+    await loadIfNeeded()
+    let signIn = try await engine.client.signIn.create(
+      .init(strategy: strategy, token: token)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func authenticateWithIdToken(strategy _: String, token: String) async throws {
+    let signIn = try await engine.client.signIn.attemptFirstFactor(
+      .init(strategy: .oauthTokenApple, token: token)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func signUpWithTicket(_ ticket: String) async throws {
+    await loadIfNeeded()
+    let signUp = try await engine.client.signUp.create(
+      .init(ticket: ticket, strategy: "ticket")
+    )
+    try await activateIfComplete(signUp)
+  }
+
+  func signUpWithIdToken(strategy: String, token: String, firstName: String?, lastName: String?) async throws {
+    await loadIfNeeded()
+    let signUp = try await engine.client.signUp.create(
+      .init(firstName: firstName, lastName: lastName, token: token, strategy: strategy)
+    )
+    try await activateIfComplete(signUp)
+  }
+
   func createPasskeySignIn() async throws {
     await loadIfNeeded()
     _ = try await engine.client.signIn.create(.init(strategy: "passkey"))

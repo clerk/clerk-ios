@@ -48,6 +48,21 @@ struct ClerkAPITests {
   }
 
   @Test
+  func createParamsEncodeTicketAndToken() throws {
+    let ticket = try encodeJSON(Clerk.SignIn.CreateParams(strategy: "ticket", ticket: "tkt_1"))
+    #expect(ticket["strategy"] as? String == "ticket")
+    #expect(ticket["ticket"] as? String == "tkt_1")
+    #expect(ticket.count == 2)
+
+    let token = try encodeJSON(
+      Clerk.SignIn.CreateParams(strategy: "oauth_token_apple", token: "id_token")
+    )
+    #expect(token["strategy"] as? String == "oauth_token_apple")
+    #expect(token["token"] as? String == "id_token")
+    #expect(token.count == 2)
+  }
+
+  @Test
   func authenticateWithRedirectParamsEncodeStrategyAndRedirectUrl() throws {
     let json = try encodeJSON(
       Clerk.SignIn.AuthenticateWithRedirectParams(

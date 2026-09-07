@@ -318,17 +318,23 @@ public final class Clerk {
       public var strategy: String?
       public var redirectUrl: String?
       public var password: String?
+      public var ticket: String?
+      public var token: String?
 
       public init(
         identifier: String? = nil,
         strategy: String? = nil,
         redirectUrl: String? = nil,
-        password: String? = nil
+        password: String? = nil,
+        ticket: String? = nil,
+        token: String? = nil
       ) {
         self.identifier = identifier
         self.strategy = strategy
         self.redirectUrl = redirectUrl
         self.password = password
+        self.ticket = ticket
+        self.token = token
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -337,6 +343,8 @@ public final class Clerk {
         try container.encodeIfPresent(strategy, forKey: .strategy)
         try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
         try container.encodeIfPresent(password, forKey: .password)
+        try container.encodeIfPresent(ticket, forKey: .ticket)
+        try container.encodeIfPresent(token, forKey: .token)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -344,6 +352,8 @@ public final class Clerk {
         case strategy
         case redirectUrl
         case password
+        case ticket
+        case token
       }
     }
 
@@ -410,11 +420,18 @@ public final class Clerk {
       public var strategy: Strategy
       public var code: String?
       public var password: String?
+      public var token: String?
 
-      public init(strategy: Strategy, code: String? = nil, password: String? = nil) {
+      public init(
+        strategy: Strategy,
+        code: String? = nil,
+        password: String? = nil,
+        token: String? = nil
+      ) {
         self.strategy = strategy
         self.code = code
         self.password = password
+        self.token = token
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -422,12 +439,14 @@ public final class Clerk {
         try container.encode(strategy, forKey: .strategy)
         try container.encodeIfPresent(code, forKey: .code)
         try container.encodeIfPresent(password, forKey: .password)
+        try container.encodeIfPresent(token, forKey: .token)
       }
 
       private enum CodingKeys: String, CodingKey {
         case strategy
         case code
         case password
+        case token
       }
     }
 
@@ -438,6 +457,7 @@ public final class Clerk {
       case password
       case resetPasswordEmailCode = "reset_password_email_code"
       case resetPasswordPhoneCode = "reset_password_phone_code"
+      case oauthTokenApple = "oauth_token_apple"
     }
 
     public enum SecondFactorStrategy: String, Encodable, Sendable {
@@ -612,6 +632,9 @@ public final class Clerk {
       public var lastName: String?
       public var legalAccepted: Bool?
       public var transfer: Bool?
+      public var ticket: String?
+      public var token: String?
+      public var strategy: String?
 
       public init(
         emailAddress: String? = nil,
@@ -621,7 +644,10 @@ public final class Clerk {
         firstName: String? = nil,
         lastName: String? = nil,
         legalAccepted: Bool? = nil,
-        transfer: Bool? = nil
+        transfer: Bool? = nil,
+        ticket: String? = nil,
+        token: String? = nil,
+        strategy: String? = nil
       ) {
         self.emailAddress = emailAddress
         self.phoneNumber = phoneNumber
@@ -631,6 +657,9 @@ public final class Clerk {
         self.lastName = lastName
         self.legalAccepted = legalAccepted
         self.transfer = transfer
+        self.ticket = ticket
+        self.token = token
+        self.strategy = strategy
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -643,6 +672,9 @@ public final class Clerk {
         try container.encodeIfPresent(lastName, forKey: .lastName)
         try container.encodeIfPresent(legalAccepted, forKey: .legalAccepted)
         try container.encodeIfPresent(transfer, forKey: .transfer)
+        try container.encodeIfPresent(ticket, forKey: .ticket)
+        try container.encodeIfPresent(token, forKey: .token)
+        try container.encodeIfPresent(strategy, forKey: .strategy)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -654,6 +686,9 @@ public final class Clerk {
         case lastName
         case legalAccepted
         case transfer
+        case ticket
+        case token
+        case strategy
       }
     }
 

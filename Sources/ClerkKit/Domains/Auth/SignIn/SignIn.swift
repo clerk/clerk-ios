@@ -285,7 +285,11 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.authenticateWithIdToken(strategy: provider.strategy, token: idToken)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .idToken(provider), token: idToken)
     )
