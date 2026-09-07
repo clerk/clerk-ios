@@ -72,6 +72,8 @@ struct ClerkJSPasskeyGetOptions: Equatable {
   var challenge: Data
   var relyingPartyID: String
   var allowCredentials: [Data]
+  var conditionalUI = false
+  var preferImmediatelyAvailableCredentials = true
 }
 
 final class ClerkJSPasskeyCeremony: NSObject, @unchecked Sendable {
@@ -156,7 +158,9 @@ final class ClerkJSPasskeyCeremony: NSObject, @unchecked Sendable {
       ClerkJSPasskeyGetOptions(
         challenge: challenge,
         relyingPartyID: relyingPartyID,
-        allowCredentials: allowCredentials
+        allowCredentials: allowCredentials,
+        conditionalUI: object["conditionalUI"] as? Bool ?? false,
+        preferImmediatelyAvailableCredentials: object["preferImmediatelyAvailableCredentials"] as? Bool ?? true
       )
     )
   }
@@ -301,11 +305,19 @@ final class ClerkJSPasskeyCeremony: NSObject, @unchecked Sendable {
     request.allowedCredentials = options.allowCredentials.map {
       ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0)
     }
-    return try await perform(request)
+    return try await perform(
+      request,
+      conditionalUI: options.conditionalUI,
+      preferImmediatelyAvailableCredentials: options.preferImmediatelyAvailableCredentials
+    )
   }
 
   @MainActor
-  private func perform(_ request: ASAuthorizationRequest) async throws -> ASAuthorization {
+  private func perform(
+    _ request: ASAuthorizationRequest,
+    conditionalUI: Bool = false,
+    preferImmediatelyAvailableCredentials: Bool = false
+  ) async throws -> ASAuthorization {
     cancelOnMain()
     return try await withCheckedThrowingContinuation { continuation in
       self.continuation = continuation
@@ -313,6 +325,18 @@ final class ClerkJSPasskeyCeremony: NSObject, @unchecked Sendable {
       controller.delegate = self
       controller.presentationContextProvider = self
       self.controller = controller
+      #if os(iOS) && !targetEnvironment(macCatalyst)
+      if conditionalUI {
+        controller.performAutoFillAssistedRequests()
+        return
+      }
+      #endif
+      #if !os(tvOS)
+      if preferImmediatelyAvailableCredentials {
+        controller.performRequests(options: .preferImmediatelyAvailableCredentials)
+        return
+      }
+      #endif
       controller.performRequests()
     }
   }

@@ -7,14 +7,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SignInTests {
-  private enum PasskeyTestError: Error {
-    case preparationFailed
-    case secondFactorPreparationFailed
-    case authorizationFailed
-    case attemptFailed
-    case secondFactorAttemptFailed
-  }
-
   init() {
     configureClerkForTesting()
   }
@@ -27,116 +19,6 @@ struct SignInTests {
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
       .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  @Test(arguments: [
-    PasskeyAuthenticationFailure.Stage.preparingFirstFactor,
-    .requestingAuthorization,
-    .attemptingFirstFactor,
-  ])
-  func passkeyFailureContextIdentifiesFailureStage(
-    _ expectedStage: PasskeyAuthenticationFailure.Stage
-  ) async {
-    let signIn = SignIn.mock
-    let engine = RecordingEngineClient()
-    engine.signInOnReload = .mock
-    if expectedStage == .preparingFirstFactor {
-      engine.instanceMethodErrors["prepareFirstFactor"] = PasskeyTestError.preparationFailed
-    }
-    if expectedStage == .attemptingFirstFactor {
-      engine.instanceMethodErrors["attemptFirstFactor"] = PasskeyTestError.attemptFailed
-    }
-    Clerk.engineClient = engine
-
-    do {
-      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
-        if expectedStage == .requestingAuthorization {
-          throw PasskeyTestError.authorizationFailed
-        }
-        return "credential"
-      }
-      Issue.record("Expected passkey authentication to fail.")
-    } catch {
-      #expect(error.stage == expectedStage)
-      #expect(error.underlyingError as? PasskeyTestError == passkeyTestError(for: expectedStage))
-    }
-  }
-
-  private func passkeyTestError(
-    for stage: PasskeyAuthenticationFailure.Stage
-  ) -> PasskeyTestError {
-    switch stage {
-    case .preparingFirstFactor:
-      .preparationFailed
-    case .preparingSecondFactor:
-      .secondFactorPreparationFailed
-    case .requestingAuthorization:
-      .authorizationFailed
-    case .attemptingFirstFactor:
-      .attemptFailed
-    case .attemptingSecondFactor:
-      .secondFactorAttemptFailed
-    }
-  }
-
-  @Test
-  func passkeyAuthenticationUsesSecondFactorEndpointsWhenAdvertised() async throws {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsSecondFactor,
-      supportedSecondFactors: [Factor(strategy: .passkey)]
-    )
-    let preparedSignIn = SignIn(
-      id: signIn.id,
-      status: .needsSecondFactor,
-      supportedSecondFactors: signIn.secondFactors,
-      secondFactorVerification: Verification(
-        status: .unverified,
-        strategy: .passkey,
-        nonce: "{\"challenge\":\"challenge\"}"
-      )
-    )
-    let engine = RecordingEngineClient()
-    engine.signInOnReload = preparedSignIn
-    Clerk.engineClient = engine
-
-    _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
-
-    #expect(engine.allInstanceMethods == ["prepareSecondFactor", "attemptSecondFactor"])
-    #expect(engine.instanceRoot == "signIn")
-    #expect(engine.instanceArgsObject["strategy"] as? String == "passkey")
-    #expect(engine.instanceArgsObject["publicKeyCredential"] as? String == "credential")
-  }
-
-  @Test(arguments: [
-    PasskeyAuthenticationFailure.Stage.preparingSecondFactor,
-    .attemptingSecondFactor,
-  ])
-  func passkeySecondFactorFailureContextIdentifiesFailureStage(
-    _ expectedStage: PasskeyAuthenticationFailure.Stage
-  ) async {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsSecondFactor,
-      supportedSecondFactors: [Factor(strategy: .passkey)]
-    )
-    let engine = RecordingEngineClient()
-    engine.signInOnReload = signIn
-    if expectedStage == .preparingSecondFactor {
-      engine.instanceMethodErrors["prepareSecondFactor"] = PasskeyTestError.secondFactorPreparationFailed
-    }
-    if expectedStage == .attemptingSecondFactor {
-      engine.instanceMethodErrors["attemptSecondFactor"] = PasskeyTestError.secondFactorAttemptFailed
-    }
-    Clerk.engineClient = engine
-
-    do {
-      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
-      Issue.record("Expected passkey authentication to fail.")
-    } catch {
-      #expect(error.stage == expectedStage)
-      #expect(error.underlyingError as? PasskeyTestError == passkeyTestError(for: expectedStage))
-    }
   }
 
   @Test

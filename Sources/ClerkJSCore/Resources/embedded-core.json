@@ -2,8 +2,8 @@
   "protocolVersion": 1,
   "entry": "@clerk/clerk-js/index.embedded",
   "clerkJsVersion": "6.31.0",
-  "sourceRevision": "c4c5ce960b1813a3f34fc5bd4f6b0246b5232570",
-  "sourceSha256": "13a00346af1b9a8d5ea8c925c7a4813b05152f45818213c0d1f1735ed2c542fc",
-  "sha256": "1587550eb43b04b3681e43443e30c542f6cbfb473c85d6e4341867d7493c2fa8",
+  "sourceRevision": "aa29b3d514b266123528f4c8f84e8ecd07e53662",
+  "sourceSha256": "c6f4e796d8a875b0cc219fd139c7b644ce339b7a408fa28689626229c18f061f",
+  "sha256": "07350cc68e73a3686a687df027ac4828ff3d797d6d3a48a67bd881c99fce94bb",
   "authorizationSha256": "c191af080c924b6e6fcd1fa4f6b61afb179a5567f7e52638c90375f95c475535"
 }

@@ -4,7 +4,7 @@
 //
 
 package struct PasskeyAuthenticationFailure: Error {
-  package enum Stage {
+  package enum Stage: String {
     case preparingFirstFactor
     case preparingSecondFactor
     case requestingAuthorization

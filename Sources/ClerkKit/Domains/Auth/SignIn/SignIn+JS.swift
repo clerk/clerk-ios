@@ -306,55 +306,6 @@ extension SignIn {
   ) async throws -> TransferFlowResult {
     try await Clerk.completeNativeAuth(flow: "signIn", expectedId: id, transferable: transferable, unsafeMetadata: unsafeMetadata)
   }
-
-  @MainActor
-  static func authenticatePasskey(autofill: Bool) async throws {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.authenticateWithPasskey(
-        AuthenticateWithPasskeyParams(flow: autofill ? .autofill : nil)
-      )
-    )
-  }
-
-  @MainActor
-  static func preparePasskeyFirstFactor() async throws {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.prepareFirstFactor(
-        ClerkSnapshots.PrepareFirstFactorParams(
-          strategy: "passkey",
-          redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-        )
-      )
-    )
-  }
-
-  @MainActor
-  static func preparePasskeySecondFactor() async throws {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.prepareSecondFactor(
-        ClerkSnapshots.PrepareSecondFactorParams(strategy: .unknown("passkey"))
-      )
-    )
-  }
-
-  @MainActor
-  static func attemptPasskeyFirstFactor(credential: String) async throws {
-    try await Clerk.js(
-      .signIn,
-      JSRawCall("attemptFirstFactor", JSONValue(encoding: PasskeyAttemptArgs(publicKeyCredential: credential)))
-    )
-  }
-
-  @MainActor
-  static func attemptPasskeySecondFactor(credential: String) async throws {
-    try await Clerk.js(
-      .signIn,
-      JSRawCall("attemptSecondFactor", JSONValue(encoding: PasskeyAttemptArgs(publicKeyCredential: credential)))
-    )
-  }
 }
 
 extension SignIn.MfaType {
@@ -370,11 +321,6 @@ extension SignIn.MfaType {
       .backupCode
     }
   }
-}
-
-private struct PasskeyAttemptArgs: Encodable {
-  var strategy = "passkey"
-  var publicKeyCredential: String
 }
 
 private struct IdTokenAttemptArgs: Encodable {

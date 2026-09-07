@@ -175,66 +175,20 @@ extension SignIn {
     autofill: Bool = false,
     preferImmediatelyAvailableCredentials: Bool = true
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
-    if !usesPasskeyAsSecondFactor {
-      do {
-        try await SignIn.authenticatePasskey(autofill: autofill)
-        return try await Clerk.finishedSignIn()
-      } catch {
-        throw PasskeyAuthenticationFailure(stage: .attemptingFirstFactor, underlyingError: error)
-      }
-    }
-    let usesSecondFactor = usesPasskeyAsSecondFactor
-    return try await authenticateWithPasskeyWithFailureContext { signIn in
-      try await signIn.getCredentialForPasskey(
-        autofill: usesSecondFactor ? false : autofill,
-        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-      )
-    }
-  }
-
-  @discardableResult
-  @MainActor
-  func authenticateWithPasskeyWithFailureContext(
-    credentialProvider: @MainActor (SignIn) async throws -> String
-  ) async throws(PasskeyAuthenticationFailure) -> SignIn {
-    let usesSecondFactor = usesPasskeyAsSecondFactor
-    let signIn: SignIn
     do {
-      if usesSecondFactor {
-        try await SignIn.preparePasskeySecondFactor()
-      } else {
-        try await SignIn.preparePasskeyFirstFactor()
-      }
-      signIn = try Clerk.requireEngineSignIn()
-    } catch {
-      throw PasskeyAuthenticationFailure(
-        stage: usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor,
-        underlyingError: error
+      try await Clerk.js(
+        .clerk,
+        JSRawCall("authenticateNativePasskey", JSONValue(encoding: NativePasskeyArgs(
+          expectedId: id,
+          autofill: autofill,
+          preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+        )))
       )
-    }
-
-    let credential: String
-    do {
-      credential = try await credentialProvider(signIn)
-    } catch {
-      throw PasskeyAuthenticationFailure(
-        stage: .requestingAuthorization,
-        underlyingError: error
-      )
-    }
-
-    do {
-      if usesSecondFactor {
-        try await SignIn.attemptPasskeySecondFactor(credential: credential)
-      } else {
-        try await SignIn.attemptPasskeyFirstFactor(credential: credential)
-      }
       return try Clerk.requireEngineSignIn()
+    } catch let error as PasskeyAuthenticationFailure {
+      throw error
     } catch {
-      throw PasskeyAuthenticationFailure(
-        stage: usesSecondFactor ? .attemptingSecondFactor : .attemptingFirstFactor,
-        underlyingError: error
-      )
+      throw PasskeyAuthenticationFailure(stage: .preparingFirstFactor, underlyingError: error)
     }
   }
   #endif
@@ -242,88 +196,6 @@ extension SignIn {
 
 extension SignIn {
   // MARK: - Internal Helpers
-
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Gets the credential for passkey authentication.
-  ///
-  /// - Parameters:
-  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
-  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
-  /// - Returns: A JSON-encoded string containing the passkey credential.
-  /// - Throws: An error if getting the credential fails.
-  @MainActor
-  func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
-    let verification =
-      usesPasskeyAsSecondFactor
-        ? secondFactorVerification
-        : firstFactorVerification
-
-    guard
-      let nonceJSON = verification?.nonce?.toJSON(),
-      let challengeString = nonceJSON["challenge"]?.stringValue,
-      let challenge = challengeString.dataFromBase64URL()
-    else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
-    }
-
-    let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
-    let allowedCredentialIDs = nonceJSON.webAuthnAssertionAllowedCredentialIDs
-    let manager = PasskeyHelper()
-    let authorization: ASAuthorization
-
-    #if os(iOS) && !targetEnvironment(macCatalyst)
-    if autofill {
-      authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
-      )
-    } else {
-      authorization = try await manager.signIn(
-        challenge: challenge,
-        relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs,
-        preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-      )
-    }
-    #else
-    authorization = try await manager.signIn(
-      challenge: challenge,
-      relyingPartyIdentifier: relyingPartyIdentifier,
-      allowedCredentialIDs: allowedCredentialIDs,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
-    #endif
-
-    guard
-      let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-      let authenticatorData = credentialAssertion.rawAuthenticatorData
-    else {
-      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
-    }
-
-    let publicKeyCredential: [String: Any] = [
-      "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "type": "public-key",
-      "response": [
-        "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
-        "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-        "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-        "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
-      ],
-    ]
-
-    let jsonData = try JSONSerialization.data(
-      withJSONObject: publicKeyCredential,
-      options: []
-    )
-    return String(
-      data: jsonData,
-      encoding: .utf8
-    ) ?? ""
-  }
-  #endif
 
   /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
@@ -364,12 +236,6 @@ extension SignIn {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
   }
 
-  var usesPasskeyAsSecondFactor: Bool {
-    let needsSecondFactor = status == .needsSecondFactor || status == .needsClientTrust
-    let supportsPasskey = secondFactors.contains(where: { $0.strategy == .passkey })
-    return needsSecondFactor && supportsPasskey
-  }
-
   /// The first factor matching the specified strategy string.
   package func identifyingFirstFactor(for strategy: String) -> Factor? {
     firstFactors.first(where: { factor in
@@ -383,4 +249,10 @@ extension SignIn {
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
+}
+
+private struct NativePasskeyArgs: Encodable {
+  let expectedId: String
+  let autofill: Bool
+  let preferImmediatelyAvailableCredentials: Bool
 }

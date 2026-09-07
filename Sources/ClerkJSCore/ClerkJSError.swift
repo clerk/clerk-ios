@@ -15,6 +15,7 @@ public struct ClerkJSError: Error, Sendable, Equatable, Decodable {
   public var clerkTraceId: String?
   public var status: Int?
   public var code: String?
+  public var stage: String?
   public var message: String
 
   public init(
@@ -23,7 +24,8 @@ public struct ClerkJSError: Error, Sendable, Equatable, Decodable {
     clerkTraceId: String? = nil,
     status: Int? = nil,
     code: String? = nil,
-    message: String
+    message: String,
+    stage: String? = nil
   ) {
     self.kind = kind
     self.errors = errors
@@ -31,6 +33,7 @@ public struct ClerkJSError: Error, Sendable, Equatable, Decodable {
     self.status = status
     self.code = code
     self.message = message
+    self.stage = stage
   }
 
   public static func parse(_ raw: String) -> ClerkJSError {

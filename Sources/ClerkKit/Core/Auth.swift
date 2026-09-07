@@ -286,8 +286,12 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
-    try await SignIn.authenticatePasskey(autofill: false)
-    return try await Clerk.finishedSignIn()
+    do {
+      try await Clerk.js(.clerk, JSRawCall("authenticateNativePasskey", .object(["createNew": .bool(true)])))
+      return try Clerk.requireEngineSignIn()
+    } catch let error as PasskeyAuthenticationFailure {
+      throw error.underlyingError
+    }
   }
   #endif
 

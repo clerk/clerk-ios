@@ -157,10 +157,6 @@ struct ClerkEngineClientTests {
     #expect(engine.verifiedMfaType == .totp)
     #expect(mfa.status == .complete)
 
-    let passkey = try await Clerk.shared.auth.signInWithPasskey()
-    #expect(engine.authenticatedPasskey)
-    #expect(passkey.status == .complete)
-
     engine.publish(SignUp.mock)
     let signUp = try #require(Clerk.shared.auth.currentSignUp)
     let updated = try await signUp.update(firstName: "Ada", lastName: "Lovelace")

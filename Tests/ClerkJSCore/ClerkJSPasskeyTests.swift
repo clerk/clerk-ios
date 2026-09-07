@@ -45,13 +45,17 @@ struct ClerkJSPasskeyTests {
       {
         "challenge": "\(ClerkJSPasskeyCeremony.base64URL(from: challenge))",
         "rpId": "clerk.com",
-        "allowCredentials": ["\(ClerkJSPasskeyCeremony.base64URL(from: allowed))"]
+        "allowCredentials": ["\(ClerkJSPasskeyCeremony.base64URL(from: allowed))"],
+        "conditionalUI": true,
+        "preferImmediatelyAvailableCredentials": false
       }
       """
     let options = try ClerkJSPasskeyCeremony.parseGet(payload).get()
     #expect(options.challenge == challenge)
     #expect(options.relyingPartyID == "clerk.com")
     #expect(options.allowCredentials == [allowed])
+    #expect(options.conditionalUI)
+    #expect(!options.preferImmediatelyAvailableCredentials)
   }
 
   @Test

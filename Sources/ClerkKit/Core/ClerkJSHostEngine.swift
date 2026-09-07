@@ -84,6 +84,11 @@ package enum ClerkJSHostStore {
 
 enum KitJSErrorMapping {
   static func kitError(_ error: ClerkJSError) -> any Error {
+    if let rawStage = error.stage, let stage = PasskeyAuthenticationFailure.Stage(rawValue: rawStage) {
+      var cause = error
+      cause.stage = nil
+      return PasskeyAuthenticationFailure(stage: stage, underlyingError: kitError(cause))
+    }
     switch error.kind {
     case .api:
       let first = error.errors.first ?? ClerkAPIError(
