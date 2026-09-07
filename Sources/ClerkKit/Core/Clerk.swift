@@ -218,8 +218,7 @@ public final class Clerk {
   /// Manages caching of client and environment data.
   var cacheManager: CacheManager?
 
-  /// Manages periodic polling of session tokens to keep them refreshed.
-  private var sessionPollingManager: SessionPollingManager?
+  // Manages periodic polling of session tokens to keep them refreshed.
 
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
@@ -364,15 +363,7 @@ extension Clerk {
     reconcileBiometricCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
-    // Set up session polling and lifecycle management
-    sessionPollingManager = SessionPollingManager(
-      sessionProvider: self,
-      authEventsProvider: { [weak self] in
-        self?.auth.events ?? AsyncStream { $0.finish() }
-      }
-    )
     lifecycleManager = LifecycleManager(handler: self)
-    sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
     // Set up cache manager and load cached data synchronously
@@ -405,24 +396,6 @@ extension Clerk {
       internalStateChanges.addObserver(coordinator)
     }
 
-    // Fire and forget: fetch fresh client and environment from API
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    taskCoordinator?.task { @MainActor [weak self] in
-      do {
-        guard let self else { return }
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "environment refresh"
-        ) {
-          try await self.refreshEnvironment()
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load environment")
-      }
-    }
-
     startStartupClientRefreshIfNeeded(after: initialSharedSessionReconciliation)
   }
 
@@ -435,7 +408,6 @@ extension Clerk {
       return
     }
 
-    let retryPolicy = Self.startupRefreshRetryPolicy
     let startupClientRefreshID = UUID()
     self.startupClientRefreshID = startupClientRefreshID
     startupClientRefreshTask = taskCoordinator.task { @MainActor [weak self] in
@@ -449,12 +421,8 @@ extension Clerk {
       do {
         _ = await initialSharedSessionReconciliation?.value
         try Task.checkCancellation()
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try Task.checkCancellation()
-          try await self.refreshClient()
+        if let engine = await Self.resolvedEngineClient() {
+          _ = try await engine.invoke(.init(receiver: .clerk, method: "initialize", arguments: []))
         }
       } catch is CancellationError {
         return
@@ -792,12 +760,6 @@ extension Clerk {
     return try await refreshEnvironment()
   }
 
-  private static let startupRefreshRetryPolicy = RetryPolicy(
-    maxAttempts: 3,
-    initialDelay: .milliseconds(500),
-    maximumDelay: .seconds(5)
-  )
-
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
   /// If the URL matches a known Clerk callback (e.g. a magic link), it will
@@ -854,49 +816,30 @@ extension Clerk: CacheCoordinator {
   }
 }
 
-extension Clerk: SessionProviding {}
-
 extension Clerk: LifecycleEventHandling {
-  /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
-    sessionPollingManager?.startPolling()
-
     emitInternalStateChange(.applicationDidEnterForeground)
-
+    var refresh = true
     #if os(macOS)
-    if WebAuthentication.consumePendingForegroundRefreshSuppression() {
-      return
-    }
+    refresh = !WebAuthentication.consumePendingForegroundRefreshSuppression()
     #endif
-
-    // Refresh client and environment concurrently
-    taskCoordinator?.task { [weak self] in
-      guard let self else { return }
-      do {
-        try await refreshClient()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
+    do {
+      if let engine = await Self.resolvedEngineClient() {
+        _ = try await engine.invoke(.init(receiver: .clerk, method: "setApplicationActive", arguments: [.bool(true), .bool(refresh)]))
       }
-
-      // Force an immediate token evaluation after foreground client refresh
-      // rather than waiting for the next polling interval.
-      await sessionPollingManager?.refreshNowIfNeeded()
-    }
-
-    taskCoordinator?.task { [weak self] in
-      guard let self else { return }
-      do {
-        _ = try await refreshEnvironment()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh environment on foreground")
-      }
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to resume Clerk")
     }
   }
 
-  /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
-    sessionPollingManager?.stopPolling()
-
+    do {
+      if let engine = Self.engineClient {
+        _ = try await engine.invoke(.init(receiver: .clerk, method: "setApplicationActive", arguments: [.bool(false)]))
+      }
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to suspend Clerk")
+    }
     taskCoordinator?.task(priority: .utility) { [weak self] in
       await self?.telemetry.flush()
     }
@@ -1152,8 +1095,6 @@ extension Clerk {
   }
 
   private func teardownNonCacheManagers() {
-    sessionPollingManager?.stopPolling()
-    sessionPollingManager = nil
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
     internalStateChanges.removeAllObservers()

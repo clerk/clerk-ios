@@ -7,6 +7,7 @@ final class ClerkJSHostEngine: ClerkEngineClient {
   private let host: ClerkJSHost
   private let scope: ClerkRuntimeScope
   private var disposed = false
+  private var tokenEventSequence: UInt64 = 0
   private var expectedIdentityGeneration: ClientResponseGeneration
 
   init(host: ClerkJSHost, kit: Clerk) {
@@ -27,6 +28,12 @@ final class ClerkJSHostEngine: ClerkEngineClient {
         guard let self, !self.disposed else { throw CancellationError() }
       }
       expectedIdentityGeneration = current.clientResponseGeneration
+      if let event = state.tokenEvent, event.sequence > tokenEventSequence {
+        tokenEventSequence = event.sequence
+        if current.session?.id == event.sessionId {
+          current.auth.send(.tokenRefreshed(token: event.jwt))
+        }
+      }
     }
   }
 
@@ -70,12 +77,12 @@ package enum ClerkJSHostStore {
     }
   }
 
-  static func makeHost(for kit: Clerk) -> ClerkJSHost {
+  static func makeHost(for kit: Clerk, sessionConfiguration: URLSessionConfiguration? = nil) -> ClerkJSHost {
     // Persistence belongs to ClerkKit's complete identity transaction. The host's
     // cache callbacks only seed this realm; published states are its sole writer.
     let token = kit.identityController.currentDeviceToken ?? ""
     let resources = ClerkJSCachedResources(
-      client: kit.client.flatMap { try? JSONEncoder.clerkEncoder.encode($0) },
+      client: token.isEmpty ? nil : kit.client.flatMap { try? JSONEncoder.clerkEncoder.encode($0) },
       environment: kit.environment.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
     )
     return ClerkJSHost(
@@ -85,7 +92,8 @@ package enum ClerkJSHostStore {
       secureStorage: secureStorage(for: kit),
       biometricCredential: biometricCredential(for: kit),
       oauthRedirectURL: URL(string: kit.options.redirectConfig.redirectUrl) ?? ClerkJSRuntime.defaultOAuthRedirectURL,
-      proxyURL: kit.options.proxyUrl
+      proxyURL: kit.options.proxyUrl,
+      sessionConfiguration: sessionConfiguration
     )
   }
 
