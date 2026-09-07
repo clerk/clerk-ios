@@ -74,6 +74,15 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     throw ClerkJSCoreError.unsupportedPlatform
   }
 
+  public func callOnResourceReturning(
+    factoryPath _: String,
+    id _: String,
+    method _: String,
+    argsJSON _: String
+  ) async throws -> String {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -306,6 +315,87 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           });
         }
         return serialize(result);
+      })()
+      """
+    do {
+      let result = try await runtime.evaluateJSON(script)
+      _ = try? await applyLastFAPIClientJSON()
+      return result
+    } catch {
+      _ = try? await applyLastFAPIClientJSON()
+      throw error
+    }
+  }
+
+  public func callOnResourceReturning(
+    factoryPath: String,
+    id: String,
+    method: String,
+    argsJSON: String
+  ) async throws -> String {
+    let path = try Self.jsonString(factoryPath)
+    let resourceId = try Self.jsonString(id)
+    let methodName = try Self.jsonString(method)
+    let script = """
+      (function() {
+        var parts = \(path).split('.');
+        var receiver = globalThis;
+        var fn = globalThis;
+        for (var i = 0; i < parts.length; i++) {
+          receiver = fn;
+          fn = fn[parts[i]];
+        }
+        if (typeof fn !== 'function') {
+          throw new Error('Not a function: ' + \(path));
+        }
+        function rejectReason(error) {
+          var first = error && Array.isArray(error.errors) ? error.errors[0] : null;
+          var code = first && first.code
+            ? String(first.code)
+            : (error && error.code ? String(error.code) : '');
+          var message = first && (first.long_message || first.message)
+            ? String(first.long_message || first.message)
+            : (error && error.message ? String(error.message) : '');
+          var name = error && error.name ? String(error.name) : 'js_error';
+          var text = code || message || name;
+          if (code && message && message.indexOf(code) === -1) {
+            text = code + ': ' + message;
+          }
+          return new Error(text);
+        }
+        function serialize(value) {
+          if (value === undefined) {
+            return null;
+          }
+          if (value === null || typeof value !== 'object') {
+            return value;
+          }
+          try {
+            return JSON.parse(JSON.stringify(value));
+          } catch (error) {
+            throw rejectReason(error);
+          }
+        }
+        function invoke(resource) {
+          var method = \(methodName);
+          if (!resource || typeof resource[method] !== 'function') {
+            throw new Error('Not a function: ' + method);
+          }
+          var result = resource[method](\(argsJSON));
+          if (result && typeof result.then === 'function') {
+            return result.then(serialize, function(error) {
+              throw rejectReason(error);
+            });
+          }
+          return serialize(result);
+        }
+        var resource = fn.call(receiver, \(resourceId));
+        if (resource && typeof resource.then === 'function') {
+          return resource.then(invoke, function(error) {
+            throw rejectReason(error);
+          });
+        }
+        return invoke(resource);
       })()
       """
     do {

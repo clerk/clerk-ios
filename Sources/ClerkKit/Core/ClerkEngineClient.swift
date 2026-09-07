@@ -86,6 +86,7 @@ package protocol ClerkEngineClient: AnyObject {
   func createPasskey() async throws -> Passkey
   func createOrganization(name: String, slug: String?) async throws -> Organization
   func getOrganization(id: String) async throws -> Organization
+  func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
   func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data

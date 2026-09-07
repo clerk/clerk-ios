@@ -356,6 +356,85 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func organizationMethodsUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingOrganizationService(kitCalls)
+    let organization = Organization.mock
+
+    let updated = try await organization.update(name: "Acme", slug: "acme")
+    #expect(engine.organizationMethodId == organization.id)
+    #expect(engine.organizationMethodName == "update")
+    #expect(jsonObject(engine.organizationMethodArgs)["name"] as? String == "Acme")
+    #expect(jsonObject(engine.organizationMethodArgs)["slug"] as? String == "acme")
+    #expect(updated.id == Organization.mock.id)
+
+    let deleted = try await organization.destroy()
+    #expect(engine.organizationMethodName == "destroy")
+    #expect(deleted.deleted == true)
+
+    let roles = try await organization.getRoles(page: 2, pageSize: 10)
+    #expect(engine.organizationMethodName == "getRoles")
+    #expect(jsonObject(engine.organizationMethodArgs)["initialPage"] as? Int == 2)
+    #expect(roles.data.first?.id == RoleResource.mock.id)
+
+    let memberships = try await organization.getMemberships(query: "ada", role: ["org:admin"], page: 3, pageSize: 10)
+    #expect(engine.organizationMethodName == "getMemberships")
+    #expect(jsonObject(engine.organizationMethodArgs)["initialPage"] as? Int == 3)
+    #expect(jsonObject(engine.organizationMethodArgs)["query"] as? String == "ada")
+    #expect(memberships.data.first?.id == OrganizationMembership.mockWithUserData.id)
+
+    _ = try await organization.getMemberships(offset: 20, pageSize: 10)
+    #expect(jsonObject(engine.organizationMethodArgs)["initialPage"] as? Int == 3)
+
+    let added = try await organization.addMember(userId: "user_123", role: "org:member")
+    #expect(engine.organizationMethodName == "addMember")
+    #expect(jsonObject(engine.organizationMethodArgs)["userId"] as? String == "user_123")
+    #expect(added.id == OrganizationMembership.mockWithUserData.id)
+
+    _ = try await organization.updateMember(userId: "user_123", role: "org:admin")
+    #expect(engine.organizationMethodName == "updateMember")
+
+    _ = try await organization.removeMember(userId: "user_123")
+    #expect(engine.organizationMethodName == "removeMember")
+
+    let invitations = try await organization.getInvitations(page: 2, pageSize: 10, status: ["pending", "accepted"])
+    #expect(engine.organizationMethodName == "getInvitations")
+    #expect(jsonObject(engine.organizationMethodArgs)["status"] as? [String] == ["pending", "accepted"])
+    #expect(invitations.data.first?.id == OrganizationInvitation.mock.id)
+
+    let invited = try await organization.inviteMember(emailAddress: "ada@example.com", role: "org:member")
+    #expect(engine.organizationMethodName == "inviteMember")
+    #expect(invited.id == OrganizationInvitation.mock.id)
+
+    let bulk = try await organization.inviteMembers(emailAddresses: ["a@example.com"], role: "org:member")
+    #expect(engine.organizationMethodName == "inviteMembers")
+    #expect(bulk.first?.id == OrganizationInvitation.mock.id)
+
+    let domain = try await organization.createDomain(domainName: "example.com")
+    #expect(engine.organizationMethodName == "createDomain")
+    #expect(domain.id == OrganizationDomain.mock.id)
+
+    let domains = try await organization.getDomains(page: 2, pageSize: 10, enrollmentMode: .automaticInvitation)
+    #expect(engine.organizationMethodName == "getDomains")
+    #expect(jsonObject(engine.organizationMethodArgs)["enrollmentMode"] as? String == "automatic_invitation")
+    #expect(domains.data.first?.id == OrganizationDomain.mock.id)
+
+    let fetchedDomain = try await organization.getDomain(domainId: "orgdmn_1")
+    #expect(engine.organizationMethodName == "getDomain")
+    #expect(jsonObject(engine.organizationMethodArgs)["domainId"] as? String == "orgdmn_1")
+    #expect(fetchedDomain.id == OrganizationDomain.mock.id)
+
+    let requests = try await organization.getMembershipRequests(page: 2, pageSize: 10, status: "pending")
+    #expect(engine.organizationMethodName == "getMembershipRequests")
+    #expect(jsonObject(engine.organizationMethodArgs)["status"] as? String == "pending")
+    #expect(requests.data.first?.id == OrganizationMembershipRequest.mock.id)
+
+    #expect(kitCalls.organizationServiceCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1170,6 +1249,50 @@ final class RecordingEngineClient: ClerkEngineClient {
     return .mock
   }
 
+  var organizationMethodId: String?
+  var organizationMethodName: String?
+  var organizationMethodArgs: Data?
+
+  func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data {
+    organizationMethodId = id
+    organizationMethodName = method
+    organizationMethodArgs = args
+    switch method {
+    case "update":
+      return try JSONEncoder.clerkEncoder.encode(Organization.mock)
+    case "destroy":
+      return Data(#"{"id":"1","deleted":true}"#.utf8)
+    case "getRoles":
+      return try JSONEncoder.clerkEncoder.encode(ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1))
+    case "getMemberships":
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [OrganizationMembership.mockWithUserData], totalCount: 1)
+      )
+    case "addMember", "updateMember", "removeMember":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationMembership.mockWithUserData)
+    case "getInvitations":
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [OrganizationInvitation.mock], totalCount: 1)
+      )
+    case "inviteMember":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
+    case "inviteMembers":
+      return try JSONEncoder.clerkEncoder.encode([OrganizationInvitation.mock])
+    case "createDomain", "getDomain":
+      return try JSONEncoder.clerkEncoder.encode(OrganizationDomain.mock)
+    case "getDomains":
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [OrganizationDomain.mock], totalCount: 1)
+      )
+    case "getMembershipRequests":
+      return try JSONEncoder.clerkEncoder.encode(
+        ClerkPaginatedResponse(data: [OrganizationMembershipRequest.mock], totalCount: 1)
+      )
+    default:
+      throw ClerkClientError(message: "Unexpected organization method \(method)")
+    }
+  }
+
   var fetchedInvitationPage: Int?
   var fetchedInvitationPageSize: Int?
   var fetchedInvitationStatus: [String]?
@@ -1366,6 +1489,7 @@ private final class KitCallCounter {
   var signUpUpdateCount = 0
   var signUpCreateCount = 0
   var userServiceCount = 0
+  var organizationServiceCount = 0
   var sessionVerificationCount = 0
 }
 
@@ -1497,4 +1621,44 @@ private func installFailingUserService(_ counts: KitCallCounter) {
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager
     .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingOrganizationService(_ counts: KitCallCounter) {
+  let fail: () -> ClerkClientError = {
+    counts.organizationServiceCount += 1
+    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+  }
+  let service = MockOrganizationService(
+    updateOrganization: { _, _, _ in throw fail() },
+    destroyOrganization: { _ in throw fail() },
+    getOrganizationRoles: { _, _, _ in throw fail() },
+    getOrganizationMemberships: { _, _, _, _, _ in throw fail() },
+    addOrganizationMember: { _, _, _ in throw fail() },
+    updateOrganizationMember: { _, _, _ in throw fail() },
+    removeOrganizationMember: { _, _ in throw fail() },
+    getOrganizationInvitations: { _, _, _, _ in throw fail() },
+    inviteOrganizationMember: { _, _, _ in throw fail() },
+    inviteOrganizationMembers: { _, _, _ in throw fail() },
+    createOrganizationDomain: { _, _ in throw fail() },
+    getOrganizationDomains: { _, _, _, _ in throw fail() },
+    getOrganizationDomain: { _, _ in throw fail() },
+    getOrganizationMembershipRequests: { _, _, _, _ in throw fail() }
+  )
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    organizationService: service
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+private func jsonObject(_ data: Data?) -> [String: Any] {
+  guard let data,
+        let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+  else {
+    return [:]
+  }
+  return object
 }

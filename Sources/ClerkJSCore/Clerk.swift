@@ -254,6 +254,32 @@ public final class Clerk {
     try await callReturningAndPublish(ClerkJSPath.clerk(.getOrganization), organizationId)
   }
 
+  public func organization(_ id: String) -> OrganizationHandle {
+    OrganizationHandle(clerk: self, id: id)
+  }
+
+  @MainActor
+  public struct OrganizationHandle {
+    unowned let clerk: Clerk
+    let id: String
+
+    public func call(_ method: String, args: Data) async throws -> Data {
+      guard let argsJSON = String(data: args, encoding: .utf8) else {
+        throw ClerkJSCoreError.invalidArgument("args")
+      }
+      let json = try await clerk.callOnResourceReturningAndPublish(
+        factoryPath: ClerkJSPath.clerk(.getOrganization),
+        id: id,
+        method: method,
+        argsJSON: argsJSON
+      )
+      if method == "destroy", json == "null" || json == "true" {
+        return try JSONSerialization.data(withJSONObject: ["id": id, "deleted": true])
+      }
+      return ClerkJSUserJSON.resourceJSONForKit(Data(json.utf8))
+    }
+  }
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     try await runtime.startAppleAuthentication()
   }
@@ -1320,6 +1346,30 @@ public final class Clerk {
     try publishLastClient()
     publishLastEnvironment()
     return Data(json.utf8)
+  }
+
+  private func callOnResourceReturningAndPublish(
+    factoryPath: String,
+    id: String,
+    method: String,
+    argsJSON: String
+  ) async throws -> String {
+    let json: String
+    do {
+      json = try await runtime.callOnResourceReturning(
+        factoryPath: factoryPath,
+        id: id,
+        method: method,
+        argsJSON: argsJSON
+      )
+    } catch {
+      try? publishLastClient()
+      publishLastEnvironment()
+      throw error
+    }
+    try publishLastClient()
+    publishLastEnvironment()
+    return json
   }
 
   private func publishLastClient() throws {

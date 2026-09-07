@@ -157,6 +157,38 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceReturningInvokesFactoryThenMethod() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          getOrganization: function(id) {
+            return Promise.resolve({
+              id: id,
+              update: function(params) {
+                return Promise.resolve({ id: id, name: params.name, slug: params.slug });
+              }
+            });
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceReturning(
+      factoryPath: "__clerkInstance.getOrganization",
+      id: "org_1",
+      method: "update",
+      argsJSON: #"{"name":"Acme","slug":"acme"}"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    #expect(payload?["id"] as? String == "org_1")
+    #expect(payload?["name"] as? String == "Acme")
+    #expect(payload?["slug"] as? String == "acme")
+  }
+
+  @Test
   func applyFAPIClientJSONHydratesJSSessions() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(
