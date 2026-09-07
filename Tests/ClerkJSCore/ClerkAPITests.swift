@@ -129,6 +129,10 @@ struct ClerkAPITests {
     #expect(email["strategy"] as? String == "email_code")
     #expect(email.count == 1)
 
+    let emailLink = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .emailLink))
+    #expect(emailLink["strategy"] as? String == "email_link")
+    #expect(emailLink.count == 1)
+
     let phone = try encodeJSON(Clerk.SignUp.PrepareVerificationParams(strategy: .phoneCode))
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone.count == 1)

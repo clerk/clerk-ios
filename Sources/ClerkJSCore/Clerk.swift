@@ -600,6 +600,7 @@ public final class Clerk {
 
     public enum Strategy: String, Encodable, Sendable {
       case emailCode = "email_code"
+      case emailLink = "email_link"
       case phoneCode = "phone_code"
     }
 
