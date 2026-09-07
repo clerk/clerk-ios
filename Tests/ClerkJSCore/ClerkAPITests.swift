@@ -294,6 +294,17 @@ struct ClerkAPITests {
   }
 
   @Test
+  func authenticateWithPasskeyParamsOmitNilFlow() throws {
+    let omitted = try encodeJSON(AuthenticateWithPasskeyParams(flow: nil))
+    #expect(omitted["flow"] == nil)
+    #expect(omitted.isEmpty)
+
+    let autofill = try encodeJSON(AuthenticateWithPasskeyParams(flow: .autofill))
+    #expect(autofill["flow"] as? String == "autofill")
+    #expect(autofill.count == 1)
+  }
+
+  @Test
   func resetPasswordParamsEncodePasswordOnlyWhenBoolOmitted() throws {
     let json = try encodeJSON(Clerk.SignIn.ResetPasswordParams(password: "hunter2"))
     #expect(json["password"] as? String == "hunter2")
@@ -331,6 +342,7 @@ struct ClerkAPITests {
     #expect(SignInJSMethod.attemptFirstFactor.rawValue == "attemptFirstFactor")
     #expect(SignInJSMethod.prepareSecondFactor.rawValue == "prepareSecondFactor")
     #expect(SignInJSMethod.attemptSecondFactor.rawValue == "attemptSecondFactor")
+    #expect(SignInJSMethod.authenticateWithPasskey.rawValue == "authenticateWithPasskey")
     #expect(SignInJSMethod.resetPassword.rawValue == "resetPassword")
     #expect(SignUpJSMethod.create.rawValue == "create")
     #expect(SignUpJSMethod.update.rawValue == "update")
@@ -347,6 +359,7 @@ struct ClerkAPITests {
     #expect(ClerkJSPath.signIn(.attemptFirstFactor) == "__clerkInstance.client.signIn.attemptFirstFactor")
     #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
     #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
+    #expect(ClerkJSPath.signIn(.authenticateWithPasskey) == "__clerkInstance.client.signIn.authenticateWithPasskey")
     #expect(ClerkJSPath.signIn(.resetPassword) == "__clerkInstance.client.signIn.resetPassword")
     #expect(
       ClerkJSPath.signInNamed("authenticateWithRedirect")

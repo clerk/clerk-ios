@@ -5,15 +5,16 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkJSCore
 import ClerkKit
 import SwiftUI
 
 struct SignInPasskeyView: View {
-  @Environment(Clerk.self) private var clerk
-  @Environment(\.clerkTheme) private var theme
-  @Environment(AuthNavigation.self) private var navigation
-  @Environment(AuthState.self) private var authState
-  @Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
+  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
+  @SwiftUI.Environment(\.clerkTheme) private var theme
+  @SwiftUI.Environment(AuthNavigation.self) private var navigation
+  @SwiftUI.Environment(AuthState.self) private var authState
+  @SwiftUI.Environment(\.authFlowRequestOwnerId) private var authFlowRequestOwnerId
 
   let factor: Factor
   let mode: SignInFactorMode
@@ -22,10 +23,6 @@ struct SignInPasskeyView: View {
   @State private var automaticPasskeyAuthenticationHasStarted = false
   @State private var animateSymbol = false
   @State private var error: Error?
-
-  private var signIn: SignIn? {
-    clerk.auth.currentSignIn
-  }
 
   var body: some View {
     ScrollView {
@@ -141,7 +138,7 @@ extension SignInPasskeyView {
   }
 
   private func authWithPasskey() async {
-    guard var signIn else {
+    guard jsClerk.client.signIn.id != nil else {
       navigation.path = []
       return
     }
@@ -150,7 +147,9 @@ extension SignInPasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      signIn = try await signIn.authenticateWithPasskey()
+      let jsSignIn = try await jsClerk.client.signIn.authenticateWithPasskey()
+      let signIn = JSCoreAuthMapping.signIn(from: jsSignIn)
+      try await JSCoreAuthMapping.activateIfComplete(signIn, using: jsClerk)
 
       error = nil
       navigation.setToStepForStatus(signIn: signIn)

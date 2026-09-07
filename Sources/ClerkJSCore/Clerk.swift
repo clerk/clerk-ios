@@ -258,6 +258,14 @@ public final class Clerk {
     }
 
     @discardableResult
+    public func authenticateWithPasskey(
+      _ params: AuthenticateWithPasskeyParams = AuthenticateWithPasskeyParams(flow: nil)
+    ) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.authenticateWithPasskey), params)
+      return clerk.client.signIn
+    }
+
+    @discardableResult
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.resetPassword), params)
       return clerk.client.signIn
