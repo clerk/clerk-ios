@@ -488,6 +488,50 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func userIdentifierResourcesUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingIdentifierServices(kitCalls)
+
+    let email = EmailAddress.mock
+    _ = try await email.sendCode()
+    #expect(stepPicks(engine.resourceSteps) == ["emailAddresses"])
+    #expect(stepMethods(engine.resourceSteps) == ["prepareVerification"])
+
+    _ = try await email.verifyCode("424242")
+    #expect(stepMethods(engine.resourceSteps) == ["attemptVerification"])
+
+    let deletedEmail = try await email.destroy()
+    #expect(stepMethods(engine.resourceSteps) == ["destroy"])
+    #expect(deletedEmail.deleted == true)
+
+    let phone = PhoneNumber.mock
+    _ = try await phone.sendCode()
+    #expect(stepPicks(engine.resourceSteps) == ["phoneNumbers"])
+    _ = try await phone.verifyCode("424242")
+    _ = try await phone.makeDefaultSecondFactor()
+    _ = try await phone.setReservedForSecondFactor(reserved: true)
+    let deletedPhone = try await phone.delete()
+    #expect(deletedPhone.deleted == true)
+
+    let passkey = Passkey.mock
+    _ = try await passkey.update(name: "Laptop")
+    #expect(stepPicks(engine.resourceSteps) == ["passkeys"])
+    #expect(stepMethods(engine.resourceSteps) == ["update"])
+    _ = try await passkey.delete()
+    #expect(stepMethods(engine.resourceSteps) == ["delete"])
+
+    let account = ExternalAccount.mockVerified
+    _ = try await account.prepareReauthorization(redirectUrl: "myapp://callback", additionalScopes: ["email"])
+    #expect(stepPicks(engine.resourceSteps) == ["externalAccounts"])
+    #expect(stepMethods(engine.resourceSteps) == ["reauthorize"])
+    _ = try await account.destroy()
+
+    #expect(kitCalls.identifierServiceCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1353,6 +1397,22 @@ final class RecordingEngineClient: ClerkEngineClient {
     resourceReceiver = receiver
     resourceSteps = steps
     let methods = stepMethods(steps)
+    let picks = stepPicks(steps)
+    if methods.contains("destroy") || (methods.contains("delete") && picks.contains("passkeys")) {
+      return Data(#"{"id":"1","deleted":true}"#.utf8)
+    }
+    if picks.contains("emailAddresses") {
+      return try JSONEncoder.clerkEncoder.encode(EmailAddress.mock)
+    }
+    if picks.contains("phoneNumbers") {
+      return try JSONEncoder.clerkEncoder.encode(PhoneNumber.mock)
+    }
+    if picks.contains("passkeys") {
+      return try JSONEncoder.clerkEncoder.encode(Passkey.mock)
+    }
+    if picks.contains("externalAccounts") {
+      return try JSONEncoder.clerkEncoder.encode(ExternalAccount.mockVerified)
+    }
     if methods.contains("revoke") {
       return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
     }
@@ -1379,6 +1439,13 @@ final class RecordingEngineClient: ClerkEngineClient {
       return []
     }
     return steps.compactMap { $0["method"] as? String }
+  }
+
+  private func stepPicks(_ data: Data) -> [String] {
+    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+      return []
+    }
+    return steps.compactMap { $0["pick"] as? String }
   }
 
   var fetchedInvitationPage: Int?
@@ -1578,6 +1645,7 @@ private final class KitCallCounter {
   var signUpCreateCount = 0
   var userServiceCount = 0
   var organizationServiceCount = 0
+  var identifierServiceCount = 0
   var sessionVerificationCount = 0
 }
 
@@ -1750,6 +1818,49 @@ private func installFailingOrganizationService(_ counts: KitCallCounter) {
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager
     .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingIdentifierServices(_ counts: KitCallCounter) {
+  let fail: () -> ClerkClientError = {
+    counts.identifierServiceCount += 1
+    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+  }
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    passkeyService: MockPasskeyService(
+      update: { _, _ in throw fail() },
+      delete: { _ in throw fail() }
+    ),
+    emailAddressService: MockEmailAddressService(
+      prepareVerification: { _, _ in throw fail() },
+      attemptVerification: { _, _ in throw fail() },
+      destroy: { _ in throw fail() }
+    ),
+    phoneNumberService: MockPhoneNumberService(
+      delete: { _ in throw fail() },
+      prepareVerification: { _ in throw fail() },
+      attemptVerification: { _, _ in throw fail() },
+      makeDefaultSecondFactor: { _ in throw fail() },
+      setReservedForSecondFactor: { _, _ in throw fail() }
+    ),
+    externalAccountService: MockExternalAccountService(
+      reauthorize: { _, _, _, _ in throw fail() },
+      destroy: { _ in throw fail() }
+    )
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+private func stepPicks(_ data: Data?) -> [String] {
+  guard let data,
+        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+  else {
+    return []
+  }
+  return steps.compactMap { $0["pick"] as? String }
 }
 
 private func stepMethods(_ data: Data?) -> [String] {

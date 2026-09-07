@@ -223,6 +223,34 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceStepsPicksChildFromReceiverArray() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          user: {
+            emailAddresses: [
+              { id: 'idn_1', prepareVerification: function(params) { return Promise.resolve({ id: 'idn_1', strategy: params.strategy }); } },
+              { id: 'idn_2', prepareVerification: function(params) { return Promise.resolve({ id: 'idn_2', strategy: params.strategy }); } }
+            ]
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceSteps(
+      receiverPath: "__clerkInstance.user",
+      receiverArgJSON: "null",
+      stepsJSON: #"[{"pick":"emailAddresses","findId":"idn_2"},{"method":"prepareVerification","args":{"strategy":"email_code"}}]"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    #expect(payload?["id"] as? String == "idn_2")
+    #expect(payload?["strategy"] as? String == "email_code")
+  }
+
+  @Test
   func applyFAPIClientJSONHydratesJSSessions() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(

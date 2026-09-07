@@ -18,24 +18,6 @@ struct PasskeyTests {
   }
 
   @Test
-  func updateUsesPasskeyServiceUpdate() async throws {
-    let passkey = Passkey.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockPasskeyService(update: { passkeyId, name in
-      captured.setValue((passkeyId, name))
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await passkey.update(name: "New Name")
-
-    let params = try #require(captured.value)
-    #expect(params.0 == passkey.id)
-    #expect(params.1 == "New Name")
-  }
-
-  @Test
   func attemptVerificationUsesPasskeyServiceAttemptVerification() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<(String, String)?>(nil)
@@ -51,22 +33,6 @@ struct PasskeyTests {
     let params = try #require(captured.value)
     #expect(params.0 == passkey.id)
     #expect(params.1 == "mock_credential")
-  }
-
-  @Test
-  func deleteUsesPasskeyServiceDelete() async throws {
-    let passkey = Passkey.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockPasskeyService(delete: { passkeyId in
-      captured.setValue(passkeyId)
-      return .mock
-    })
-
-    configureService(service)
-
-    _ = try await passkey.delete()
-
-    #expect(captured.value == passkey.id)
   }
 
   @Test

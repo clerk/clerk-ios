@@ -464,6 +464,20 @@ public final class ClerkJSRuntime: @unchecked Sendable {
             return serialize(resource);
           }
           var step = steps[stepIndex];
+          if (step.pick) {
+            var items = resource[step.pick] || [];
+            var picked = null;
+            for (var i = 0; i < items.length; i++) {
+              if (items[i] && items[i].id === step.findId) {
+                picked = items[i];
+                break;
+              }
+            }
+            if (!picked) {
+              throw new Error('Resource not found: ' + step.findId);
+            }
+            return applySteps(picked, stepIndex + 1, steps);
+          }
           if (!resource || typeof resource[step.method] !== 'function') {
             throw new Error('Not a function: ' + step.method);
           }
