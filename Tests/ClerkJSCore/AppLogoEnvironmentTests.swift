@@ -17,8 +17,6 @@ struct AppLogoEnvironmentTests {
       from: JSONSerialization.data(withJSONObject: object)
     )
 
-    let clerk = ClerkJSHost(publishableKey: "pk_test_preview")
-    clerk.publishEnvironment(environment)
-    #expect(clerk.environment?.displayConfig.logoImageUrl == logoImageUrl)
+    #expect(environment.displayConfig.logoImageUrl == logoImageUrl)
   }
 }

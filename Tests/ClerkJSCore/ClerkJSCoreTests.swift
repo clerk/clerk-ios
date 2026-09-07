@@ -114,17 +114,13 @@ struct ClerkJSCoreTests {
   }
 
   @Test
-  func resourceCacheHookReturnsNullsWhenEmpty() async throws {
+  func resourceCacheBridgeReturnsNullsWhenEmpty() async throws {
     let cache = ClerkJSResourceCache.memory()
     let runtime = ClerkJSRuntime(resourceCache: cache)
     let payload = try await decodeCachedResources(
       runtime.evaluateJSON(
         """
-        (async function() {
-          var clerk = new Clerk('\(mockPublishableKey)');
-          \(ClerkJSRuntime.resourceCacheInstallSource)
-          return await clerk.__internal_getCachedResources();
-        })()
+        __clerkNativeGetCachedResources()
         """
       )
     )
@@ -133,7 +129,7 @@ struct ClerkJSCoreTests {
   }
 
   @Test
-  func resourceCacheHookReturnsSavedSnapshots() async throws {
+  func resourceCacheBridgeReturnsSavedSnapshots() async throws {
     let cache = ClerkJSResourceCache.memory()
     let client = try #require(#"{"object":"client","id":"client_hook"}"#.data(using: .utf8))
     let environment = try #require(#"{"object":"environment","id":"env_hook"}"#.data(using: .utf8))
@@ -142,11 +138,7 @@ struct ClerkJSCoreTests {
     let payload = try await decodeCachedResources(
       runtime.evaluateJSON(
         """
-        (async function() {
-          var clerk = new Clerk('\(mockPublishableKey)');
-          \(ClerkJSRuntime.resourceCacheInstallSource)
-          return await clerk.__internal_getCachedResources();
-        })()
+        __clerkNativeGetCachedResources()
         """
       )
     )
@@ -154,191 +146,6 @@ struct ClerkJSCoreTests {
     #expect(payload.client?.id == "client_hook")
     #expect(payload.environment?.object == "environment")
     #expect(payload.environment?.id == "env_hook")
-  }
-
-  @Test
-  func callOnResourceReturningInvokesFactoryThenMethod() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          getOrganization: function(id) {
-            return Promise.resolve({
-              id: id,
-              update: function(params) {
-                return Promise.resolve({ id: id, name: params.name, slug: params.slug });
-              }
-            });
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceReturning(
-      factoryPath: "__clerkInstance.getOrganization",
-      id: "org_1",
-      method: "update",
-      argsJSON: #"{"name":"Acme","slug":"acme"}"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    #expect(payload?["id"] as? String == "org_1")
-    #expect(payload?["name"] as? String == "Acme")
-    #expect(payload?["slug"] as? String == "acme")
-  }
-
-  @Test
-  func callOnResourceStepsFindsListedChildThenInvokesMethod() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          getOrganization: function(id) {
-            return Promise.resolve({
-              getInvitations: function() {
-                return Promise.resolve({
-                  data: [
-                    { id: 'inv_1', revoke: function() { return Promise.resolve({ id: 'inv_1', status: 'revoked' }); } },
-                    { id: 'inv_2', revoke: function() { return Promise.resolve({ id: 'inv_2', status: 'revoked' }); } }
-                  ]
-                });
-              }
-            });
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceSteps(
-      receiverPath: "__clerkInstance.getOrganization",
-      receiverArgJSON: #""org_1""#,
-      stepsJSON: #"[{"method":"getInvitations","args":{"pageSize":100},"findId":"inv_2"},{"method":"revoke","args":{}}]"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    #expect(payload?["id"] as? String == "inv_2")
-    #expect(payload?["status"] as? String == "revoked")
-  }
-
-  @Test
-  func callOnResourceStepsInvokesBillingGetPlans() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          billing: {
-            getPlans: function(params) {
-              return Promise.resolve({
-                data: [{ id: 'plan_1', payer: params && params.for ? params.for : 'user' }],
-                total_count: 1
-              });
-            }
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceSteps(
-      receiverPath: "__clerkInstance.billing",
-      receiverArgJSON: "null",
-      stepsJSON: #"[{"method":"getPlans","args":{"for":"organization","orgId":"org_1"}}]"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    let data = payload?["data"] as? [[String: Any]]
-    #expect(data?.first?["id"] as? String == "plan_1")
-    #expect(data?.first?["payer"] as? String == "organization")
-    #expect(payload?["total_count"] as? Int == 1)
-  }
-
-  @Test
-  func callOnResourceStepsReloadsSignInWithNonce() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          client: {
-            signIn: {
-              reload: function(params) {
-                return Promise.resolve({ id: 'sia_1', nonce: params.rotatingTokenNonce || null });
-              }
-            }
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceSteps(
-      receiverPath: "__clerkInstance.client.signIn",
-      receiverArgJSON: "null",
-      stepsJSON: #"[{"method":"reload","args":{"rotatingTokenNonce":"test_nonce"}}]"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    #expect(payload?["id"] as? String == "sia_1")
-    #expect(payload?["nonce"] as? String == "test_nonce")
-  }
-
-  @Test
-  func callOnResourceStepsFindsChildInReturnedArray() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          user: {
-            getSessions: function() {
-              return Promise.resolve([
-                { id: 'sess_1', revoke: function() { return Promise.resolve({ id: 'sess_1', status: 'revoked' }); } },
-                { id: 'sess_2', revoke: function() { return Promise.resolve({ id: 'sess_2', status: 'revoked' }); } }
-              ]);
-            }
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceSteps(
-      receiverPath: "__clerkInstance.user",
-      receiverArgJSON: "null",
-      stepsJSON: #"[{"method":"getSessions","findId":"sess_2"},{"method":"revoke","args":{}}]"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    #expect(payload?["id"] as? String == "sess_2")
-    #expect(payload?["status"] as? String == "revoked")
-  }
-
-  @Test
-  func callOnResourceStepsPicksChildFromReceiverArray() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__clerkInstance = {
-          user: {
-            emailAddresses: [
-              { id: 'idn_1', prepareVerification: function(params) { return Promise.resolve({ id: 'idn_1', strategy: params.strategy }); } },
-              { id: 'idn_2', prepareVerification: function(params) { return Promise.resolve({ id: 'idn_2', strategy: params.strategy }); } }
-            ]
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callOnResourceSteps(
-      receiverPath: "__clerkInstance.user",
-      receiverArgJSON: "null",
-      stepsJSON: #"[{"pick":"emailAddresses","findId":"idn_2"},{"method":"prepareVerification","args":{"strategy":"email_code"}}]"#
-    )
-    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
-    #expect(payload?["id"] as? String == "idn_2")
-    #expect(payload?["strategy"] as? String == "email_code")
   }
 
   @Test
@@ -521,8 +328,8 @@ struct ClerkJSCoreTests {
     #expect(stubbed)
 
     try await clerk.load()
-    #expect(clerk.client.id == "client_fixture")
-    #expect(clerk.client.sessions.isEmpty)
+    #expect(clerk.client?.id == "client_fixture")
+    #expect(clerk.client?.sessions.isEmpty == true)
   }
 
   @Test
@@ -643,71 +450,10 @@ struct ClerkJSCoreTests {
 
     try await clerk.load()
     #expect(clerk.environment?.id == "env_fixture")
-    #expect(clerk.client.id == "client_fixture")
+    #expect(clerk.client?.id == "client_fixture")
     let environment = try #require(clerk.environment)
     #expect(environment.emailIsEnabled)
     #expect(!environment.phoneNumberIsEnabled)
-  }
-
-  @Test
-  func callReturningStringifiesObjectResults() async throws {
-    let runtime = ClerkJSRuntime()
-    _ = try await runtime.evaluateJSON(
-      """
-      (function() {
-        globalThis.__returningProbe = {
-          createTOTP: function() {
-            return { id: 'totp_1', secret: 's3cret', uri: 'otpauth://totp/x' };
-          }
-        };
-        return true;
-      })()
-      """
-    )
-    let json = try await runtime.callReturning(
-      methodPath: "__returningProbe.createTOTP",
-      args: EmptyCallArgs()
-    )
-    let object = try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
-    #expect(object["id"] as? String == "totp_1")
-    #expect(object["secret"] as? String == "s3cret")
-    #expect(object["uri"] as? String == "otpauth://totp/x")
-  }
-
-  @Test
-  func totpJSONForKitConvertsStringifiedResourceDates() throws {
-    let input = Data(
-      """
-      {
-        "id": "totp_1",
-        "secret": "s3cret",
-        "uri": "otpauth://totp/x",
-        "verified": false,
-        "backupCodes": ["a1"],
-        "createdAt": "2023-11-14T22:13:20.000Z",
-        "updatedAt": "2023-11-14T22:13:20.000Z",
-        "pathRoot": "/me"
-      }
-      """.utf8
-    )
-    let data = ClerkJSUserJSON.totpForKit(input)
-    let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-    #expect(object["id"] as? String == "totp_1")
-    #expect(object["secret"] as? String == "s3cret")
-    #expect((object["created_at"] as? NSNumber)?.doubleValue == 1_700_000_000_000)
-    #expect((object["updated_at"] as? NSNumber)?.doubleValue == 1_700_000_000_000)
-    #expect(object["backup_codes"] as? [String] == ["a1"])
-    #expect(object["createdAt"] == nil)
-    #expect(object["pathRoot"] == nil)
-
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    decoder.dateDecodingStrategy = .millisecondsSince1970
-    let totp = try decoder.decode(KitTOTPResource.self, from: data)
-    #expect(totp.id == "totp_1")
-    #expect(totp.secret == "s3cret")
-    #expect(totp.verified == false)
-    #expect(totp.createdAt.timeIntervalSince1970 == 1_700_000_000)
   }
 
   @Test
@@ -734,18 +480,6 @@ struct ClerkJSCoreTests {
     #expect(stored.environment != nil)
   }
 }
-
-private struct KitTOTPResource: Decodable {
-  var id: String
-  var secret: String?
-  var uri: String?
-  var verified: Bool
-  var backupCodes: [String]?
-  var createdAt: Date
-  var updatedAt: Date
-}
-
-private struct EmptyCallArgs: Encodable {}
 
 private func decodeJSONString(_ json: String) throws -> String {
   try JSONDecoder().decode(String.self, from: Data(json.utf8))

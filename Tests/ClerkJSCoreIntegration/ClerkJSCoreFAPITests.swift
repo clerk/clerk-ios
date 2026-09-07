@@ -714,10 +714,7 @@ func deleteCreatedTestUser(_ runtime: ClerkJSRuntime, email: String) async -> In
         return 0
       }
       if let sessionId = fapiSessionID(runtime) {
-        _ = try? await runtime.call(
-          methodPath: "__clerkInstance.setActive",
-          args: ["session": sessionId]
-        )
+        _ = try? await runtime.invoke(.init(receiver: .clerk, method: "setActive", arguments: [.object(["session": .string(sessionId)])]))
       }
     }
     let deleted = try await JSONDecoder().decode(

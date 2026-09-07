@@ -17,8 +17,6 @@ struct GetHelpEnvironmentTests {
       from: JSONSerialization.data(withJSONObject: object)
     )
 
-    let clerk = ClerkJSHost(publishableKey: "pk_test_preview")
-    clerk.publishEnvironment(environment)
-    #expect(clerk.environment?.displayConfig.supportEmail == supportEmail)
+    #expect(environment.displayConfig.supportEmail == supportEmail)
   }
 }

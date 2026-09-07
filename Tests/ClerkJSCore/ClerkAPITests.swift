@@ -10,17 +10,9 @@ struct ClerkAPITests {
       publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
       tokenCache: .memory()
     )
-    #expect(clerk.client.id == "")
-    #expect(clerk.client.sessions.isEmpty)
-    #expect(clerk.client.signIn.createdSessionId == nil)
-    #expect(clerk.client.signIn.supportedSecondFactors.isEmpty)
-    #expect(clerk.client.signIn.id == nil)
-    #expect(clerk.client.signUp.id == nil)
-    #expect(clerk.client.signUp.status == nil)
-    #expect(clerk.client.signUp.createdSessionId == nil)
-    #expect(clerk.session.id == nil)
-    #expect(clerk.session.status != .active)
-    #expect(clerk.session.user == nil)
+    #expect(clerk.state == nil)
+    #expect(clerk.client == nil)
+    #expect(clerk.environment == nil)
   }
 
   @Test
@@ -67,128 +59,6 @@ struct ClerkAPITests {
     #expect(json["transfer"] as? Bool == true)
     #expect(json["identifier"] == nil)
     #expect(json.count == 1)
-  }
-
-  @Test
-  func authenticateWithRedirectParamsEncodeStrategyAndRedirectUrl() throws {
-    let json = try encodeJSON(
-      ClerkJSHost.SignIn.AuthenticateWithRedirectParams(
-        strategy: "oauth_google",
-        redirectUrl: "clerk://sso-callback"
-      )
-    )
-    #expect(json["strategy"] as? String == "oauth_google")
-    #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
-    #expect(json["redirectUrlComplete"] == nil)
-    #expect(json["identifier"] == nil)
-    #expect(json.count == 2)
-  }
-
-  @Test
-  func authenticateWithRedirectParamsEncodeIdentifierWhenPresent() throws {
-    let json = try encodeJSON(
-      ClerkJSHost.SignIn.AuthenticateWithRedirectParams(
-        strategy: "enterprise_sso",
-        redirectUrl: "clerk://sso-callback",
-        identifier: "user@example.com"
-      )
-    )
-    #expect(json["strategy"] as? String == "enterprise_sso")
-    #expect(json["redirectUrl"] as? String == "clerk://sso-callback")
-    #expect(json["identifier"] as? String == "user@example.com")
-    #expect(json.count == 3)
-  }
-
-  @Test
-  func signUpCreateParamsEncodePresentKeysOnly() throws {
-    let email = try encodeJSON(ClerkJSHost.SignUp.CreateParams(emailAddress: "user@example.com"))
-    #expect(email["emailAddress"] as? String == "user@example.com")
-    #expect(email["phoneNumber"] == nil)
-    #expect(email["username"] == nil)
-    #expect(email.count == 1)
-
-    let phone = try encodeJSON(ClerkJSHost.SignUp.CreateParams(phoneNumber: "+15555550100"))
-    #expect(phone["phoneNumber"] as? String == "+15555550100")
-    #expect(phone.count == 1)
-
-    let username = try encodeJSON(ClerkJSHost.SignUp.CreateParams(username: "ada"))
-    #expect(username["username"] as? String == "ada")
-    #expect(username.count == 1)
-
-    let empty = try encodeJSON(ClerkJSHost.SignUp.CreateParams())
-    #expect(empty.isEmpty)
-  }
-
-  @Test
-  func signUpUpdateParamsEncodePasswordOnly() throws {
-    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(password: "hunter2"))
-    #expect(json["password"] as? String == "hunter2")
-    #expect(json["emailAddress"] == nil)
-    #expect(json["phoneNumber"] == nil)
-    #expect(json["username"] == nil)
-    #expect(json.count == 1)
-  }
-
-  @Test
-  func signUpUpdateParamsEncodeNamesOnly() throws {
-    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(firstName: "Ada", lastName: "Lovelace"))
-    #expect(json["firstName"] as? String == "Ada")
-    #expect(json["lastName"] as? String == "Lovelace")
-    #expect(json["password"] == nil)
-    #expect(json.count == 2)
-  }
-
-  @Test
-  func signUpUpdateParamsEncodeLegalAcceptedOnly() throws {
-    let json = try encodeJSON(ClerkJSHost.SignUp.CreateParams(legalAccepted: true))
-    #expect(json["legalAccepted"] as? Bool == true)
-    #expect(json.count == 1)
-  }
-
-  @Test
-  func signUpCreateParamsEncodeTransferAndUnsafeMetadata() throws {
-    let json = try encodeJSON(
-      ClerkJSHost.SignUp.CreateParams(
-        transfer: true,
-        unsafeMetadata: .object(["plan": .string("pro")])
-      )
-    )
-    #expect(json["transfer"] as? Bool == true)
-    let metadata = try #require(json["unsafeMetadata"] as? [String: Any])
-    #expect(metadata["plan"] as? String == "pro")
-    #expect(json.count == 2)
-  }
-
-  @Test
-  func prepareVerificationParamsEncodeStrategyOnly() throws {
-    let email = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .emailCode))
-    #expect(email["strategy"] as? String == "email_code")
-    #expect(email.count == 1)
-
-    let emailLink = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .emailLink))
-    #expect(emailLink["strategy"] as? String == "email_link")
-    #expect(emailLink.count == 1)
-
-    let phone = try encodeJSON(ClerkJSHost.SignUp.PrepareVerificationParams(strategy: .phoneCode))
-    #expect(phone["strategy"] as? String == "phone_code")
-    #expect(phone.count == 1)
-  }
-
-  @Test
-  func attemptVerificationParamsEncodeStrategyAndCode() throws {
-    let email = try encodeJSON(
-      ClerkJSHost.SignUp.AttemptVerificationParams(strategy: .emailCode, code: "424242")
-    )
-    #expect(email["strategy"] as? String == "email_code")
-    #expect(email["code"] as? String == "424242")
-    #expect(email.count == 2)
-
-    let phone = try encodeJSON(
-      ClerkJSHost.SignUp.AttemptVerificationParams(strategy: .phoneCode, code: "424242")
-    )
-    #expect(phone["strategy"] as? String == "phone_code")
-    #expect(phone["code"] as? String == "424242")
-    #expect(phone.count == 2)
   }
 
   @Test
@@ -373,20 +243,6 @@ struct ClerkAPITests {
   }
 
   @Test
-  func setActiveParamsEncodeSession() throws {
-    let json = try encodeJSON(ClerkJSHost.SetActiveParams(session: "sess_1"))
-    #expect(json["session"] as? String == "sess_1")
-    #expect(json.count == 1)
-  }
-
-  @Test
-  func setActiveParamsEncodeOrganization() throws {
-    let json = try encodeJSON(ClerkJSHost.SetActiveParams(session: "sess_1", organization: "org_1"))
-    #expect(json["session"] as? String == "sess_1")
-    #expect(json["organization"] as? String == "org_1")
-  }
-
-  @Test
   func createParamsEncodePassword() throws {
     let json = try encodeJSON(
       SignInCreateParams(
@@ -398,16 +254,6 @@ struct ClerkAPITests {
     #expect(json["identifier"] as? String == "user@example.com")
     #expect(json["strategy"] as? String == "password")
     #expect(json["password"] as? String == "hunter2")
-  }
-
-  @Test
-  @MainActor
-  func signInHandleConformsToGeneratedMethods() {
-    let clerk = ClerkJSHost(
-      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-      tokenCache: .memory()
-    )
-    assertSignInMethods(clerk.client.signIn)
   }
 
   @Test
@@ -434,184 +280,23 @@ struct ClerkAPITests {
   }
 
   @Test
-  func jsMethodPathsJoinReceiverAndName() {
-    #expect(ClerkJSPath.signIn(.create) == "__clerkInstance.client.signIn.create")
-    #expect(ClerkJSPath.signIn(.prepareFirstFactor) == "__clerkInstance.client.signIn.prepareFirstFactor")
-    #expect(ClerkJSPath.signIn(.attemptFirstFactor) == "__clerkInstance.client.signIn.attemptFirstFactor")
-    #expect(ClerkJSPath.signIn(.prepareSecondFactor) == "__clerkInstance.client.signIn.prepareSecondFactor")
-    #expect(ClerkJSPath.signIn(.attemptSecondFactor) == "__clerkInstance.client.signIn.attemptSecondFactor")
-    #expect(ClerkJSPath.signIn(.authenticateWithPasskey) == "__clerkInstance.client.signIn.authenticateWithPasskey")
-    #expect(ClerkJSPath.signIn(.resetPassword) == "__clerkInstance.client.signIn.resetPassword")
-    #expect(
-      ClerkJSPath.signInNamed("authenticateWithRedirect")
-        == "__clerkInstance.client.signIn.authenticateWithRedirect"
-    )
-    #expect(ClerkJSPath.signUp(.create) == "__clerkInstance.client.signUp.create")
-    #expect(ClerkJSPath.signUp(.update) == "__clerkInstance.client.signUp.update")
-    #expect(ClerkJSPath.signUp(.prepareVerification) == "__clerkInstance.client.signUp.prepareVerification")
-    #expect(ClerkJSPath.signUp(.attemptVerification) == "__clerkInstance.client.signUp.attemptVerification")
-    #expect(ClerkJSPath.clerk(.setActive) == "__clerkInstance.setActive")
-    #expect(ClerkJSPath.session(.getToken) == "__clerkInstance.session.getToken")
-    #expect(ClerkJSPath.session(.startVerification) == "__clerkInstance.session.startVerification")
-    #expect(
-      ClerkJSPath.session(.prepareFirstFactorVerification)
-        == "__clerkInstance.session.prepareFirstFactorVerification"
-    )
-    #expect(
-      ClerkJSPath.session(.attemptFirstFactorVerification)
-        == "__clerkInstance.session.attemptFirstFactorVerification"
-    )
-    #expect(
-      ClerkJSPath.session(.prepareSecondFactorVerification)
-        == "__clerkInstance.session.prepareSecondFactorVerification"
-    )
-    #expect(
-      ClerkJSPath.session(.attemptSecondFactorVerification)
-        == "__clerkInstance.session.attemptSecondFactorVerification"
-    )
-    #expect(ClerkJSPath.session(.verifyWithPasskey) == "__clerkInstance.session.verifyWithPasskey")
-  }
-
-  @Test
-  func sessionStartVerificationParamsEncodeLevel() throws {
-    let first = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "first_factor"))
-    #expect(first["level"] as? String == "first_factor")
-    #expect(first.count == 1)
-
-    let second = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "second_factor"))
-    #expect(second["level"] as? String == "second_factor")
-
-    let multi = try encodeJSON(ClerkJSHost.ActiveSession.StartVerificationParams(level: "multi_factor"))
-    #expect(multi["level"] as? String == "multi_factor")
-  }
-
-  @Test
-  func sessionPrepareFirstFactorVerificationParamsEncodeOptionals() throws {
-    let strategyOnly = try encodeJSON(
-      ClerkJSHost.ActiveSession.PrepareFirstFactorVerificationParams(strategy: "email_code")
-    )
-    #expect(strategyOnly["strategy"] as? String == "email_code")
-    #expect(strategyOnly.count == 1)
-
-    let full = try encodeJSON(
-      ClerkJSHost.ActiveSession.PrepareFirstFactorVerificationParams(
-        strategy: "enterprise_sso",
-        emailAddressId: "idn_email",
-        phoneNumberId: "idn_phone",
-        enterpriseConnectionId: "econn_1",
-        redirectUrl: "myapp://callback"
-      )
-    )
-    #expect(full["strategy"] as? String == "enterprise_sso")
-    #expect(full["emailAddressId"] as? String == "idn_email")
-    #expect(full["phoneNumberId"] as? String == "idn_phone")
-    #expect(full["enterpriseConnectionId"] as? String == "econn_1")
-    #expect(full["redirectUrl"] as? String == "myapp://callback")
-  }
-
-  @Test
-  func sessionAttemptFirstFactorVerificationParamsEncodeFields() throws {
-    let password = try encodeJSON(
-      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
-        strategy: "password",
-        password: "hunter2"
-      )
-    )
-    #expect(password["strategy"] as? String == "password")
-    #expect(password["password"] as? String == "hunter2")
-    #expect(password["code"] == nil)
-    #expect(password["publicKeyCredential"] == nil)
-
-    let code = try encodeJSON(
-      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
-        strategy: "email_code",
-        code: "424242"
-      )
-    )
-    #expect(code["strategy"] as? String == "email_code")
-    #expect(code["code"] as? String == "424242")
-
-    let passkey = try encodeJSON(
-      ClerkJSHost.ActiveSession.AttemptFirstFactorVerificationParams(
-        strategy: "passkey",
-        publicKeyCredential: #"{"id":"cred"}"#
-      )
-    )
-    #expect(passkey["strategy"] as? String == "passkey")
-    #expect(passkey["publicKeyCredential"] as? String == #"{"id":"cred"}"#)
-  }
-
-  @Test
-  func sessionPrepareSecondFactorVerificationParamsEncodeOptionals() throws {
-    let strategyOnly = try encodeJSON(
-      ClerkJSHost.ActiveSession.PrepareSecondFactorVerificationParams(strategy: "phone_code")
-    )
-    #expect(strategyOnly["strategy"] as? String == "phone_code")
-    #expect(strategyOnly.count == 1)
-
-    let withPhone = try encodeJSON(
-      ClerkJSHost.ActiveSession.PrepareSecondFactorVerificationParams(
-        strategy: "phone_code",
-        phoneNumberId: "idn_phone"
-      )
-    )
-    #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
-  }
-
-  @Test
-  func sessionAttemptSecondFactorVerificationParamsEncodeFields() throws {
-    let totp = try encodeJSON(
-      ClerkJSHost.ActiveSession.AttemptSecondFactorVerificationParams(
-        strategy: "totp",
-        code: "123456"
-      )
-    )
-    #expect(totp["strategy"] as? String == "totp")
-    #expect(totp["code"] as? String == "123456")
-    #expect(totp["publicKeyCredential"] == nil)
-
-    let passkey = try encodeJSON(
-      ClerkJSHost.ActiveSession.AttemptSecondFactorVerificationParams(
-        strategy: "passkey",
-        publicKeyCredential: #"{"id":"cred"}"#
-      )
-    )
-    #expect(passkey["strategy"] as? String == "passkey")
-    #expect(passkey["publicKeyCredential"] as? String == #"{"id":"cred"}"#)
-  }
-
-  @Test
   @MainActor
   func unsignedClientPublishLeavesSessionEmpty() throws {
     let url = try #require(Bundle.module.url(forResource: "unsigned-client", withExtension: "json"))
-    let clerk = ClerkJSHost(
-      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-      tokenCache: .memory()
-    )
-    try clerk.publishClient(Data(contentsOf: url))
-    #expect(clerk.client.signUp.id == nil)
-    #expect(clerk.client.signUp.status == nil)
-    #expect(clerk.client.signUp.emailAddress == nil)
-    #expect(clerk.client.signUp.missingFields.isEmpty)
-    #expect(clerk.client.signUp.unverifiedFields.isEmpty)
-    #expect(clerk.client.signUp.hasPassword == false)
-    #expect(clerk.client.signUp.createdSessionId == nil)
-    #expect(clerk.session.id == nil)
-    #expect(clerk.session.status != .active)
-    #expect(clerk.session.user == nil)
+    let client = try FAPIJSON.decodeClient(Data(contentsOf: url))
+    #expect(client.signUp == nil)
+    #expect(client.sessions.isEmpty)
+    #expect(client.lastActiveSessionId == nil)
   }
 
   @Test
   @MainActor
   func signedInClientPublishExposesSessionIdAndStatus() throws {
-    let clerk = ClerkJSHost(
-      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-      tokenCache: .memory()
-    )
-    try clerk.publishClient(ClerkJSHost.snapshotSignedInClient())
-    #expect(clerk.session.id == "sess_fixture")
-    #expect(clerk.session.status == .active)
-    #expect(clerk.session.user?.id == "user_fixture")
+    let client = try FAPIJSON.decodeClient(ClerkJSHost.snapshotSignedInClient())
+    let session = try #require(client.sessions.first { $0.id == client.lastActiveSessionId })
+    #expect(session.id == "sess_fixture")
+    #expect(session.status == .active)
+    #expect(session.user.id == "user_fixture")
   }
 
   @Test
@@ -652,20 +337,17 @@ struct ClerkAPITests {
       "created_at": 1_700_000_000_000,
       "updated_at": 1_700_000_000_000,
     ]
-    let clerk = ClerkJSHost(
-      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-      tokenCache: .memory()
-    )
-    try clerk.publishClient(JSONSerialization.data(withJSONObject: payload))
-    #expect(clerk.client.signIn.id == "sia_mfa")
-    #expect(clerk.client.signIn.status == .needsSecondFactor)
-    #expect(clerk.client.signIn.supportedSecondFactors.count == 2)
-    #expect(clerk.client.signIn.supportedSecondFactors[0].strategy == .totp)
-    #expect(clerk.client.signIn.supportedSecondFactors[1].strategy == .phoneCode)
-    #expect(clerk.client.signIn.supportedSecondFactors[1].phoneNumberId == "idn_phone")
-    #expect(clerk.client.signIn.supportedSecondFactors[1].safeIdentifier == "+1••••••00")
-    #expect(clerk.client.signIn.supportedSecondFactors[1].primary == true)
-    #expect(clerk.client.signIn.supportedSecondFactors[1].default == true)
+    let client = try FAPIJSON.decodeClient(JSONSerialization.data(withJSONObject: payload))
+    let resource = try #require(client.signIn)
+    #expect(resource.id == "sia_mfa")
+    #expect(resource.status == .needsSecondFactor)
+    #expect(resource.supportedSecondFactors.count == 2)
+    #expect(resource.supportedSecondFactors[0].strategy == .totp)
+    #expect(resource.supportedSecondFactors[1].strategy == .phoneCode)
+    #expect(resource.supportedSecondFactors[1].phoneNumberId == "idn_phone")
+    #expect(resource.supportedSecondFactors[1].safeIdentifier == "+1••••••00")
+    #expect(resource.supportedSecondFactors[1].primary == true)
+    #expect(resource.supportedSecondFactors[1].default == true)
   }
 
   @Test
@@ -693,19 +375,12 @@ struct ClerkAPITests {
       "created_at": 1_700_000_000_000,
       "updated_at": 1_700_000_000_000,
     ]
-    let clerk = ClerkJSHost(
-      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
-      tokenCache: .memory()
-    )
-    try clerk.publishClient(JSONSerialization.data(withJSONObject: payload))
-    #expect(clerk.client.signUp.id == "sua_1")
-    #expect(clerk.client.signUp.status == .complete)
-    #expect(clerk.client.signUp.createdSessionId == "sess_1")
+    let client = try FAPIJSON.decodeClient(JSONSerialization.data(withJSONObject: payload))
+    let resource = try #require(client.signUp)
+    #expect(resource.id == "sua_1")
+    #expect(resource.status == .complete)
+    #expect(resource.createdSessionId == "sess_1")
   }
-}
-
-private func assertSignInMethods(_ handle: some SignInMethods) {
-  _ = handle
 }
 
 private func encodeJSON(_ value: some Encodable) throws -> [String: Any] {
