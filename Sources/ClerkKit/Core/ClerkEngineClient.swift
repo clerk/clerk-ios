@@ -4,69 +4,9 @@ import Foundation
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue
-  func signIn(identifier: String) async throws
-  func signInWithEmailCode(emailAddress: String) async throws
-  func signInWithPhoneCode(phoneNumber: String) async throws
-  func signInWithPassword(identifier: String, password: String) async throws
-  func sendEmailCode(emailAddressId: String?) async throws
-  func sendEmailLink(
-    emailAddressId: String?,
-    redirectUrl: String,
-    codeChallenge: String,
-    codeChallengeMethod: String
-  ) async throws
-  func sendSignUpEmailLink(
-    redirectUrl: String,
-    codeChallenge: String,
-    codeChallengeMethod: String
-  ) async throws
-  func sendPhoneCode(phoneNumberId: String?) async throws
-  func verifyEmailCode(_ code: String) async throws
-  func verifyPhoneCode(_ code: String) async throws
-  func authenticateWithPassword(_ password: String) async throws
-  func signOut(sessionId: String?) async throws
-  func signUp(
-    emailAddress: String?,
-    password: String?,
-    firstName: String?,
-    lastName: String?,
-    username: String?,
-    phoneNumber: String?,
-    legalAccepted: Bool?,
-    transfer: Bool
-  ) async throws
-  func sendSignUpEmailCode() async throws
-  func sendSignUpPhoneCode() async throws
-  func verifySignUpEmailCode(_ code: String) async throws
-  func verifySignUpPhoneCode(_ code: String) async throws
   func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws
-  func startEnterpriseSSO(emailAddress: String, redirectUrl: String) async throws
   func authenticateSignUpWithRedirect(strategy: String, redirectUrl: String, emailAddress: String?) async throws
-  func signInWithTicket(_ ticket: String) async throws
-  func signInWithIdToken(strategy: String, token: String) async throws
-  func authenticateWithIdToken(strategy: String, token: String) async throws
-  func signUpWithTicket(_ ticket: String) async throws
-  func signUpWithIdToken(strategy: String, token: String, firstName: String?, lastName: String?) async throws
-  func createPasskeySignIn() async throws
   func authenticateWithPasskey(autofill: Bool) async throws
-  func sendMfaPhoneCode(phoneNumberId: String?) async throws
-  func sendMfaEmailCode(emailAddressId: String?) async throws
-  func verifyMfaCode(_ code: String, type: SignIn.MfaType) async throws
-  func sendResetPasswordEmailCode(emailAddressId: String?) async throws
-  func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws
-  func verifyResetPasswordCode(_ code: String, isEmail: Bool) async throws
-  func resetPassword(password: String, signOutOfOtherSessions: Bool) async throws
-  func updateSignUp(
-    emailAddress: String?,
-    password: String?,
-    firstName: String?,
-    lastName: String?,
-    username: String?,
-    phoneNumber: String?,
-    legalAccepted: Bool?
-  ) async throws
-  func transferToSignUp(unsafeMetadata: JSON?) async throws
-  func transferToSignIn() async throws
   func startSessionVerification(level: String) async throws -> SessionVerification
   func prepareSessionFirstFactor(
     strategy: String,

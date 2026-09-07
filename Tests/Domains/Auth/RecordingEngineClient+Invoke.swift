@@ -42,20 +42,12 @@ extension RecordingEngineClient {
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
     if case .signIn = invocation.receiver {
-      let data = try await callInstance(
-        root: "signIn",
-        method: invocation.method,
-        args: (invocation.arguments.first ?? .object([:])).data()
-      )
-      return try JSONDecoder().decode(JSONValue.self, from: data)
+      try await dispatchSignIn(invocation)
+      return .null
     }
     if case .signUp = invocation.receiver {
-      let data = try await callInstance(
-        root: "signUp",
-        method: invocation.method,
-        args: (invocation.arguments.first ?? .object([:])).data()
-      )
-      return try JSONDecoder().decode(JSONValue.self, from: data)
+      try await dispatchSignUp(invocation)
+      return .null
     }
     switch invocation.method {
     case "update":
@@ -152,6 +144,14 @@ extension RecordingEngineClient {
       return try await JSONDecoder().decode(JSONValue.self, from: leaveOrganization(organizationId: organizationId))
     case "getOrganizationCreationDefaults":
       return try await JSONDecoder().decode(JSONValue.self, from: getOrganizationCreationDefaults())
+    case "signOut":
+      let sessionId: String? = if let options = try? decodeInvocation(SignOutOptions.self, invocation) {
+        options.sessionId
+      } else {
+        nil
+      }
+      try await signOut(sessionId: sessionId)
+      return .null
     case "setActive":
       let params = try decodeInvocation(SetActiveParams.self, invocation)
       let sessionId: String = if case .string(let value) = params.session {
@@ -186,6 +186,204 @@ extension RecordingEngineClient {
       return try await encodeKit(getOrganization(id: stringArgument(invocation)))
     default:
       throw ClerkClientError(message: "Unhandled JS invocation \(invocation.method)")
+    }
+  }
+
+  private func dispatchSignIn(_ invocation: ClerkJSInvocation) async throws {
+    switch invocation.method {
+    case "create":
+      let params = try decodeInvocation(SignInCreateParams.self, invocation)
+      if params.transfer == true {
+        try await transferToSignIn()
+      } else if params.strategy == "email_code", let identifier = params.identifier {
+        try await signInWithEmailCode(emailAddress: identifier)
+      } else if params.strategy == "phone_code", let identifier = params.identifier {
+        try await signInWithPhoneCode(phoneNumber: identifier)
+      } else if params.strategy == "password", let identifier = params.identifier, let password = params.password {
+        try await signInWithPassword(identifier: identifier, password: password)
+      } else if params.strategy == "ticket", let ticket = params.ticket {
+        try await signInWithTicket(ticket)
+      } else if params.strategy == "passkey" {
+        try await createPasskeySignIn()
+      } else if params.strategy == "enterprise_sso" {
+        try await startEnterpriseSSO(
+          emailAddress: params.identifier ?? "",
+          redirectUrl: params.redirectUrl ?? ""
+        )
+      } else if let token = params.token, let strategy = params.strategy {
+        try await signInWithIdToken(strategy: strategy, token: token)
+      } else if let identifier = params.identifier {
+        try await signIn(identifier: identifier)
+      } else {
+        throw ClerkClientError(message: "Unhandled signIn.create")
+      }
+    case "prepareFirstFactor":
+      let params = try decodeInvocation(ClerkSnapshots.PrepareFirstFactorParams.self, invocation)
+      switch params.strategy {
+      case "email_code":
+        try await sendEmailCode(emailAddressId: params.emailAddressId)
+      case "phone_code":
+        try await sendPhoneCode(phoneNumberId: params.phoneNumberId)
+      case "email_link":
+        try await sendEmailLink(
+          emailAddressId: params.emailAddressId,
+          redirectUrl: params.redirectUrl ?? "",
+          codeChallenge: params.codeChallenge ?? "",
+          codeChallengeMethod: params.codeChallengeMethod ?? ""
+        )
+      case "reset_password_email_code":
+        try await sendResetPasswordEmailCode(emailAddressId: params.emailAddressId)
+      case "reset_password_phone_code":
+        try await sendResetPasswordPhoneCode(phoneNumberId: params.phoneNumberId)
+      case "enterprise_sso":
+        break
+      default:
+        _ = try await callInstance(
+          root: "signIn",
+          method: invocation.method,
+          args: (invocation.arguments.first ?? .object([:])).data()
+        )
+      }
+    case "attemptFirstFactor":
+      let args = try decodeInvocation(FirstFactorAttemptArgs.self, invocation)
+      if args.token != nil {
+        try await authenticateWithIdToken(strategy: args.strategy, token: args.token ?? "")
+      } else if args.strategy == "email_code", let code = args.code {
+        try await verifyEmailCode(code)
+      } else if args.strategy == "phone_code", let code = args.code {
+        try await verifyPhoneCode(code)
+      } else if args.strategy == "password", let password = args.password {
+        try await authenticateWithPassword(password)
+      } else if args.strategy == "reset_password_email_code", let code = args.code {
+        try await verifyResetPasswordCode(code, isEmail: true)
+      } else if args.strategy == "reset_password_phone_code", let code = args.code {
+        try await verifyResetPasswordCode(code, isEmail: false)
+      } else {
+        _ = try await callInstance(
+          root: "signIn",
+          method: invocation.method,
+          args: (invocation.arguments.first ?? .object([:])).data()
+        )
+      }
+    case "prepareSecondFactor":
+      let params = try decodeInvocation(PrepareSecondFactorParams.self, invocation)
+      switch params.strategy {
+      case .phoneCode:
+        try await sendMfaPhoneCode(phoneNumberId: params.phoneNumberId)
+      case .emailCode:
+        try await sendMfaEmailCode(emailAddressId: params.emailAddressId)
+      default:
+        _ = try await callInstance(
+          root: "signIn",
+          method: invocation.method,
+          args: (invocation.arguments.first ?? .object([:])).data()
+        )
+      }
+    case "attemptSecondFactor":
+      if let args = try? decodeInvocation(SecondFactorAttemptArgs.self, invocation), let code = args.code {
+        try await verifyMfaCode(code, type: mfaType(args.strategy))
+      } else {
+        _ = try await callInstance(
+          root: "signIn",
+          method: invocation.method,
+          args: (invocation.arguments.first ?? .object([:])).data()
+        )
+      }
+    case "resetPassword":
+      let params = try decodeInvocation(ResetPasswordParams.self, invocation)
+      try await resetPassword(
+        password: params.password,
+        signOutOfOtherSessions: params.signOutOfOtherSessions ?? false
+      )
+    default:
+      _ = try await callInstance(
+        root: "signIn",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+    }
+  }
+
+  private func dispatchSignUp(_ invocation: ClerkJSInvocation) async throws {
+    switch invocation.method {
+    case "create":
+      let params = try decodeInvocation(SignUpCreateParams.self, invocation)
+      if params.transfer == true {
+        try await transferToSignUp(unsafeMetadata: params.unsafeMetadata.map { try json(from: $0) })
+      } else if params.strategy == "ticket", let ticket = params.ticket {
+        try await signUpWithTicket(ticket)
+      } else if let token = params.token, let strategy = params.strategy {
+        try await signUpWithIdToken(
+          strategy: strategy,
+          token: token,
+          firstName: params.firstName,
+          lastName: params.lastName
+        )
+      } else {
+        try await signUp(
+          emailAddress: params.emailAddress,
+          password: params.password,
+          firstName: params.firstName,
+          lastName: params.lastName,
+          username: params.username,
+          phoneNumber: params.phoneNumber,
+          legalAccepted: params.legalAccepted,
+          transfer: params.transfer == true
+        )
+      }
+    case "update":
+      let params = try decodeInvocation(SignUpCreateParams.self, invocation)
+      try await updateSignUp(
+        emailAddress: params.emailAddress,
+        password: params.password,
+        firstName: params.firstName,
+        lastName: params.lastName,
+        username: params.username,
+        phoneNumber: params.phoneNumber,
+        legalAccepted: params.legalAccepted
+      )
+    case "prepareVerification":
+      let args = try decodeInvocation(SignUpPrepareArgs.self, invocation)
+      if args.strategy == "email_link" {
+        try await sendSignUpEmailLink(
+          redirectUrl: args.redirectUrl ?? "",
+          codeChallenge: args.codeChallenge ?? "",
+          codeChallengeMethod: args.codeChallengeMethod ?? ""
+        )
+      } else if args.strategy == "phone_code" {
+        try await sendSignUpPhoneCode()
+      } else {
+        try await sendSignUpEmailCode()
+      }
+    case "attemptVerification":
+      let params = try decodeInvocation(AttemptVerificationParams.self, invocation)
+      switch params.strategy {
+      case .phoneCode:
+        try await verifySignUpPhoneCode(params.code ?? "")
+      default:
+        try await verifySignUpEmailCode(params.code ?? "")
+      }
+    default:
+      _ = try await callInstance(
+        root: "signUp",
+        method: invocation.method,
+        args: (invocation.arguments.first ?? .object([:])).data()
+      )
+    }
+  }
+
+  private func mfaType(_ strategy: String) -> ClerkKit.SignIn.MfaType {
+    switch strategy {
+    case "phone_code":
+      .phoneCode
+    case "email_code":
+      .emailCode
+    case "totp":
+      .totp
+    case "backup_code":
+      .backupCode
+    default:
+      .phoneCode
     }
   }
 
@@ -262,4 +460,23 @@ extension RecordingEngineClient {
       return nil
     }
   }
+}
+
+private struct FirstFactorAttemptArgs: Decodable {
+  var strategy: String
+  var code: String?
+  var password: String?
+  var token: String?
+}
+
+private struct SecondFactorAttemptArgs: Decodable {
+  var strategy: String
+  var code: String?
+}
+
+private struct SignUpPrepareArgs: Decodable {
+  var strategy: String?
+  var redirectUrl: String?
+  var codeChallenge: String?
+  var codeChallengeMethod: String?
 }

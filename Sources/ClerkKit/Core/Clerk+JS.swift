@@ -32,6 +32,24 @@ extension Clerk {
     }
     return session
   }
+
+  @MainActor
+  static func finishedSignIn() async throws -> SignIn {
+    let signIn = try requireEngineSignIn()
+    if signIn.status == .complete, let sessionId = signIn.createdSessionId {
+      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
+    }
+    return signIn
+  }
+
+  @MainActor
+  static func finishedSignUp() async throws -> SignUp {
+    let signUp = try requireEngineSignUp()
+    if let sessionId = signUp.createdSessionId {
+      try await js(.clerk, ClerkJSCall.setActive(.init(session: .string(sessionId))))
+    }
+    return signUp
+  }
 }
 
 extension JSON {

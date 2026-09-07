@@ -24,183 +24,12 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     }
   }
 
-  func signIn(identifier: String) async throws {
-    await loadIfNeeded()
-    _ = try await engine.client.signIn.create(.init(identifier: identifier))
-    publish()
-  }
-
-  func signInWithEmailCode(emailAddress: String) async throws {
-    await loadIfNeeded()
-    _ = try await engine.client.signIn.create(
-      .init(strategy: "email_code", identifier: emailAddress)
-    )
-    publish()
-  }
-
-  func signInWithPhoneCode(phoneNumber: String) async throws {
-    await loadIfNeeded()
-    _ = try await engine.client.signIn.create(
-      .init(strategy: "phone_code", identifier: phoneNumber)
-    )
-    publish()
-  }
-
-  func signInWithPassword(identifier: String, password: String) async throws {
-    await loadIfNeeded()
-    let signIn = try await engine.client.signIn.create(
-      .init(strategy: "password", identifier: identifier, password: password)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func sendEmailCode(emailAddressId: String?) async throws {
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: "email_code", emailAddressId: emailAddressId)
-    )
-    publish()
-  }
-
-  func sendEmailLink(
-    emailAddressId: String?,
-    redirectUrl: String,
-    codeChallenge: String,
-    codeChallengeMethod: String
-  ) async throws {
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(
-        strategy: "email_link",
-        emailAddressId: emailAddressId,
-        redirectUrl: redirectUrl,
-        codeChallenge: codeChallenge,
-        codeChallengeMethod: codeChallengeMethod
-      )
-    )
-    publish()
-  }
-
-  func sendSignUpEmailLink(
-    redirectUrl: String,
-    codeChallenge: String,
-    codeChallengeMethod: String
-  ) async throws {
-    _ = try await engine.client.signUp.prepareVerification(
-      .init(
-        strategy: .emailLink,
-        redirectUrl: redirectUrl,
-        codeChallenge: codeChallenge,
-        codeChallengeMethod: codeChallengeMethod
-      )
-    )
-    publish()
-  }
-
-  func sendPhoneCode(phoneNumberId: String?) async throws {
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: "phone_code", phoneNumberId: phoneNumberId)
-    )
-    publish()
-  }
-
-  func verifyEmailCode(_ code: String) async throws {
-    let signIn = try await engine.client.signIn.attemptFirstFactor(
-      .init(strategy: .emailCode, code: code)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func verifyPhoneCode(_ code: String) async throws {
-    let signIn = try await engine.client.signIn.attemptFirstFactor(
-      .init(strategy: .phoneCode, code: code)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func authenticateWithPassword(_ password: String) async throws {
-    let signIn = try await engine.client.signIn.attemptFirstFactor(
-      .init(strategy: .password, password: password)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func signOut(sessionId: String?) async throws {
-    await loadIfNeeded()
-    if let sessionId {
-      try await engine.signOut(SignOutOptions(sessionId: sessionId, redirectUrl: nil))
-    } else {
-      try await engine.signOut()
-    }
-    publish()
-  }
-
-  func signUp(
-    emailAddress: String?,
-    password: String?,
-    firstName: String?,
-    lastName: String?,
-    username: String?,
-    phoneNumber: String?,
-    legalAccepted: Bool?,
-    transfer: Bool
-  ) async throws {
-    await loadIfNeeded()
-    let signUp = try await engine.client.signUp.create(
-      .init(
-        emailAddress: emailAddress,
-        phoneNumber: phoneNumber,
-        username: username,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        legalAccepted: legalAccepted,
-        transfer: transfer ? true : nil
-      )
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func sendSignUpEmailCode() async throws {
-    _ = try await engine.client.signUp.prepareVerification(.init(strategy: .emailCode))
-    publish()
-  }
-
-  func sendSignUpPhoneCode() async throws {
-    _ = try await engine.client.signUp.prepareVerification(.init(strategy: .phoneCode))
-    publish()
-  }
-
-  func verifySignUpEmailCode(_ code: String) async throws {
-    let signUp = try await engine.client.signUp.attemptVerification(
-      .init(strategy: .emailCode, code: code)
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func verifySignUpPhoneCode(_ code: String) async throws {
-    let signUp = try await engine.client.signUp.attemptVerification(
-      .init(strategy: .phoneCode, code: code)
-    )
-    try await activateIfComplete(signUp)
-  }
-
   func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws {
     await loadIfNeeded()
     try await engine.client.signIn.authenticateWithRedirect(
       .init(strategy: strategy, redirectUrl: resolvedRedirectUrl(redirectUrl), identifier: identifier)
     )
     try await activateIfCompleteAfterRedirect()
-  }
-
-  func startEnterpriseSSO(emailAddress: String, redirectUrl: String) async throws {
-    await loadIfNeeded()
-    let resolved = resolvedRedirectUrl(redirectUrl)
-    _ = try await engine.client.signIn.create(
-      .init(strategy: "enterprise_sso", redirectUrl: resolved, identifier: emailAddress)
-    )
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: "enterprise_sso", redirectUrl: resolved)
-    )
-    publish()
   }
 
   func authenticateSignUpWithRedirect(strategy: String, redirectUrl: String, emailAddress: String?) async throws {
@@ -211,149 +40,11 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfCompleteAfterRedirect()
   }
 
-  func signInWithTicket(_ ticket: String) async throws {
-    await loadIfNeeded()
-    let signIn = try await engine.client.signIn.create(
-      .init(strategy: "ticket", ticket: ticket)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func signInWithIdToken(strategy: String, token: String) async throws {
-    await loadIfNeeded()
-    let signIn = try await engine.client.signIn.create(
-      .init(strategy: strategy, token: token)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func authenticateWithIdToken(strategy _: String, token: String) async throws {
-    let signIn = try await engine.client.signIn.attemptFirstFactor(
-      strategy: "oauth_token_apple",
-      token: token
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func signUpWithTicket(_ ticket: String) async throws {
-    await loadIfNeeded()
-    let signUp = try await engine.client.signUp.create(
-      .init(ticket: ticket, strategy: "ticket")
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func signUpWithIdToken(strategy: String, token: String, firstName: String?, lastName: String?) async throws {
-    await loadIfNeeded()
-    let signUp = try await engine.client.signUp.create(
-      .init(firstName: firstName, lastName: lastName, token: token, strategy: strategy)
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func createPasskeySignIn() async throws {
-    await loadIfNeeded()
-    _ = try await engine.client.signIn.create(.init(strategy: "passkey"))
-    publish()
-  }
-
   func authenticateWithPasskey(autofill: Bool) async throws {
     await loadIfNeeded()
     let signIn = try await engine.client.signIn.authenticateWithPasskey(
       AuthenticateWithPasskeyParams(flow: autofill ? .autofill : nil)
     )
-    try await activateIfComplete(signIn)
-  }
-
-  func sendMfaPhoneCode(phoneNumberId: String?) async throws {
-    _ = try await engine.client.signIn.prepareSecondFactor(
-      .init(strategy: .phoneCode, phoneNumberId: phoneNumberId)
-    )
-    publish()
-  }
-
-  func sendMfaEmailCode(emailAddressId: String?) async throws {
-    _ = try await engine.client.signIn.prepareSecondFactor(
-      .init(strategy: .emailCode, emailAddressId: emailAddressId)
-    )
-    publish()
-  }
-
-  func verifyMfaCode(_ code: String, type: ClerkKit.SignIn.MfaType) async throws {
-    let signIn = try await engine.client.signIn.attemptSecondFactor(
-      .init(strategy: secondFactorStrategy(type), code: code)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func sendResetPasswordEmailCode(emailAddressId: String?) async throws {
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: "reset_password_email_code", emailAddressId: emailAddressId)
-    )
-    publish()
-  }
-
-  func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws {
-    _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: "reset_password_phone_code", phoneNumberId: phoneNumberId)
-    )
-    publish()
-  }
-
-  func verifyResetPasswordCode(_ code: String, isEmail: Bool) async throws {
-    _ = try await engine.client.signIn.attemptFirstFactor(
-      .init(
-        strategy: isEmail ? .resetPasswordEmailCode : .resetPasswordPhoneCode,
-        code: code
-      )
-    )
-    publish()
-  }
-
-  func resetPassword(password: String, signOutOfOtherSessions: Bool) async throws {
-    let signIn = try await engine.client.signIn.resetPassword(
-      .init(password: password, signOutOfOtherSessions: signOutOfOtherSessions)
-    )
-    try await activateIfComplete(signIn)
-  }
-
-  func updateSignUp(
-    emailAddress: String?,
-    password: String?,
-    firstName: String?,
-    lastName: String?,
-    username: String?,
-    phoneNumber: String?,
-    legalAccepted: Bool?
-  ) async throws {
-    let signUp = try await engine.client.signUp.update(
-      .init(
-        emailAddress: emailAddress,
-        phoneNumber: phoneNumber,
-        username: username,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        legalAccepted: legalAccepted
-      )
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func transferToSignUp(unsafeMetadata: JSON?) async throws {
-    await loadIfNeeded()
-    let converted = try unsafeMetadata.map {
-      try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode($0))
-    }
-    let signUp = try await engine.client.signUp.create(
-      .init(transfer: true, unsafeMetadata: converted)
-    )
-    try await activateIfComplete(signUp)
-  }
-
-  func transferToSignIn() async throws {
-    await loadIfNeeded()
-    let signIn = try await engine.client.signIn.create(.init(transfer: true))
     try await activateIfComplete(signIn)
   }
 
@@ -448,13 +139,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     publish()
   }
 
-  private func activateIfComplete(_ signUp: ClerkJSCore.Clerk.SignUp) async throws {
-    if let sessionId = signUp.createdSessionId {
-      try await engine.setActive(.init(session: sessionId))
-    }
-    publish()
-  }
-
   private func activateIfCompleteAfterRedirect() async throws {
     if let sessionId = engine.client.signIn.createdSessionId {
       try await engine.setActive(.init(session: sessionId))
@@ -469,19 +153,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       return ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
     }
     return redirectUrl
-  }
-
-  private func secondFactorStrategy(_ type: ClerkKit.SignIn.MfaType) -> AttemptSecondFactorParamsStrategy {
-    switch type {
-    case .phoneCode:
-      .phoneCode
-    case .emailCode:
-      .emailCode
-    case .totp:
-      .totp
-    case .backupCode:
-      .backupCode
-    }
   }
 
   private func decodeSessionVerification(_ data: Data) throws -> SessionVerification {

@@ -80,139 +80,6 @@ public struct SignIn: Codable, Sendable, Equatable {
 }
 
 extension SignIn {
-  @MainActor
-  private var magicLinkStore: MagicLinkStore {
-    Clerk.shared.dependencies.magicLinkStore
-  }
-
-  // MARK: - First Factor Verification
-
-  /// Sends a verification code to the specified email address.
-  ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
-  /// - Returns: An updated `SignIn` object with the verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendEmailCode(emailAddressId: emailAddressId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Sends a native magic link to the specified email address.
-  ///
-  /// This prepares the `email_link` first factor using PKCE and stores the verifier locally
-  /// so the callback can be completed inside the app. Only one pending native
-  /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier.
-  ///
-  /// - Parameters:
-  ///   - emailAddressId: Optional email address ID. If not provided, uses the identifying email-link factor.
-  ///   - redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
-  /// - Returns: An updated `SignIn` object with the email-link verification started.
-  /// - Throws: An error if email-link sign-in is unavailable or preparation fails.
-  @discardableResult
-  @MainActor
-  public func sendEmailLink(
-    emailAddressId: String? = nil,
-    redirectUri: String? = nil
-  ) async throws -> SignIn {
-    let emailId =
-      emailAddressId
-        ?? identifyingFirstFactor(for: FactorStrategy.emailLink.rawValue)?.emailAddressId
-        ?? supportedFirstFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
-
-    guard let emailId else {
-      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
-    }
-
-    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
-    guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
-    }
-
-    let pkcePair = try PKCE.generatePair()
-    try magicLinkStore.save(
-      kind: .signIn,
-      flowId: id,
-      codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
-
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendEmailLink(
-      emailAddressId: emailId,
-      redirectUrl: resolvedRedirectUri,
-      codeChallenge: pkcePair.challenge,
-      codeChallengeMethod: PKCE.codeChallengeMethod
-    )
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Sends a verification code to the specified phone number.
-  ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
-  /// - Returns: An updated `SignIn` object with the verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendPhoneCode(phoneNumberId: phoneNumberId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Verifies the code entered by the user.
-  ///
-  /// The verification strategy is inferred from the current `firstFactorVerification` state.
-  ///
-  /// - Parameter code: The verification code entered by the user.
-  /// - Returns: An updated `SignIn` object reflecting the verification result.
-  /// - Throws: An error if verification fails.
-  @discardableResult
-  @MainActor
-  public func verifyCode(_ code: String) async throws -> SignIn {
-    guard let resolvedStrategy = firstFactorVerification?.strategy else {
-      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.", localizationBundle: .module)
-    }
-
-    guard resolvedStrategy.canAttemptFirstFactorCode else {
-      throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
-    }
-
-    let engine = try await Clerk.requireEngineClient()
-    switch resolvedStrategy {
-    case .emailCode:
-      try await engine.verifyEmailCode(code)
-      return try Clerk.requireEngineSignIn()
-    case .phoneCode:
-      try await engine.verifyPhoneCode(code)
-      return try Clerk.requireEngineSignIn()
-    case .resetPasswordEmailCode:
-      try await engine.verifyResetPasswordCode(code, isEmail: true)
-      return try Clerk.requireEngineSignIn()
-    case .resetPasswordPhoneCode:
-      try await engine.verifyResetPasswordCode(code, isEmail: false)
-      return try Clerk.requireEngineSignIn()
-    default:
-      throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
-    }
-  }
-
-  /// Authenticates with the user's password.
-  ///
-  /// - Parameter password: The user's password.
-  /// - Returns: An updated `SignIn` object reflecting the authentication result.
-  /// - Throws: An error if password authentication fails.
-  @discardableResult
-  @MainActor
-  public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithPassword(password)
-    return try Clerk.requireEngineSignIn()
-  }
-
   #if !os(tvOS) && !os(watchOS)
   /// Completes enterprise SSO after your app receives the callback URL.
   ///
@@ -241,25 +108,6 @@ extension SignIn {
   #endif
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Authenticates with an ID token from a provider (e.g., Sign in with Apple).
-  ///
-  /// This method attempts first factor authentication using an ID token directly,
-  /// without requiring a prepare step. This is useful for native authentication flows
-  /// where you already have an ID token from the provider.
-  ///
-  /// - Parameters:
-  ///   - idToken: The ID token from the provider.
-  ///   - provider: The ID token provider (e.g., `.apple`).
-  /// - Returns: An updated `SignIn` object reflecting the authentication result.
-  /// - Throws: An error if authentication fails.
-  @discardableResult
-  @MainActor
-  public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.authenticateWithIdToken(strategy: provider.strategy, token: idToken)
-    return try Clerk.requireEngineSignIn()
-  }
-
   /// Authenticates with Apple using Sign in with Apple.
   ///
   /// This method handles the entire Sign in with Apple flow for an existing sign-in, including:
@@ -299,92 +147,6 @@ extension SignIn {
     return result
   }
   #endif
-
-  // MARK: - Second Factor Verification (MFA)
-
-  /// Sends an MFA code to the phone number.
-  ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying second factor.
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendMfaPhoneCode(phoneNumberId: phoneNumberId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Sends an MFA code to the email address.
-  ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying second factor.
-  /// - Returns: An updated `SignIn` object with the MFA verification process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendMfaEmailCode(emailAddressId: emailAddressId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Verifies the MFA code with the specified type.
-  ///
-  /// - Parameters:
-  ///   - code: The MFA code entered by the user.
-  ///   - type: The type of MFA verification (`.phoneCode`, `.emailCode`, `.totp`, or `.backupCode`).
-  /// - Returns: An updated `SignIn` object reflecting the verification result.
-  /// - Throws: An error if verification fails.
-  @discardableResult
-  @MainActor
-  public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.verifyMfaCode(code, type: type)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  // MARK: - Password Reset
-
-  /// Sends a password reset code to the specified email address.
-  ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
-  /// - Returns: An updated `SignIn` object with the password reset process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendResetPasswordEmailCode(emailAddressId: emailAddressId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Sends a password reset code to the specified phone number.
-  ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
-  /// - Returns: An updated `SignIn` object with the password reset process started.
-  /// - Throws: An error if sending the code fails.
-  @discardableResult
-  @MainActor
-  public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.sendResetPasswordPhoneCode(phoneNumberId: phoneNumberId)
-    return try Clerk.requireEngineSignIn()
-  }
-
-  /// Resets the user's password after verification.
-  ///
-  /// - Parameters:
-  ///   - newPassword: The new password to set.
-  ///   - signOutOfOtherSessions: Whether to sign out of all other active sessions (default is `false`).
-  /// - Returns: An updated `SignIn` object reflecting the password reset result.
-  /// - Throws: An error if password reset fails.
-  @discardableResult
-  @MainActor
-  public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
-    let engine = try await Clerk.requireEngineClient()
-    try await engine.resetPassword(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
-    return try Clerk.requireEngineSignIn()
-  }
 
   // MARK: - Enterprise SSO
 
@@ -668,20 +430,6 @@ extension SignIn {
         }
       }
       return result
-    }
-  }
-
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
-  @MainActor
-  func handleTransferFlow(
-    transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
-  ) async throws -> TransferFlowResult {
-    if needsTransferToSignUp == true, transferable {
-      try await Clerk.requireEngineClient().transferToSignUp(unsafeMetadata: unsafeMetadata)
-      return try .signUp(Clerk.requireEngineSignUp())
-    } else {
-      return .signIn(self)
     }
   }
 
