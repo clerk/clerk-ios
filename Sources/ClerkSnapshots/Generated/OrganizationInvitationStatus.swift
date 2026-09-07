@@ -2,7 +2,7 @@
 
 import Foundation
 
-public enum OrganizationInvitationStatus: Codable, Equatable, Sendable {
+public enum OrganizationInvitationStatus: Codable, Equatable, Hashable, Sendable {
   case expired
   case revoked
   case pending

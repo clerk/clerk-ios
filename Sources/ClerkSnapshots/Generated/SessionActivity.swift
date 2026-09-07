@@ -2,8 +2,9 @@
 
 import Foundation
 
-public struct SessionActivity: Codable, Equatable, Sendable {
+public struct SessionActivity: Codable, Equatable, Sendable, Identifiable {
   public var id: String
+  public var object: String
   public var browserName: String?
   public var browserVersion: String?
   public var deviceType: String?
@@ -14,6 +15,7 @@ public struct SessionActivity: Codable, Equatable, Sendable {
 
   public init(
     id: String,
+    object: String = "session_activity",
     browserName: String? = nil,
     browserVersion: String? = nil,
     deviceType: String? = nil,
@@ -23,6 +25,7 @@ public struct SessionActivity: Codable, Equatable, Sendable {
     isMobile: Bool? = nil
   ) {
     self.id = id
+    self.object = object
     self.browserName = browserName
     self.browserVersion = browserVersion
     self.deviceType = deviceType
@@ -32,8 +35,21 @@ public struct SessionActivity: Codable, Equatable, Sendable {
     self.isMobile = isMobile
   }
 
+  public static func == (lhs: SessionActivity, rhs: SessionActivity) -> Bool {
+    lhs.id == rhs.id
+      && lhs.object == rhs.object
+      && lhs.browserName == rhs.browserName
+      && lhs.browserVersion == rhs.browserVersion
+      && lhs.deviceType == rhs.deviceType
+      && lhs.ipAddress == rhs.ipAddress
+      && lhs.city == rhs.city
+      && lhs.country == rhs.country
+      && lhs.isMobile == rhs.isMobile
+  }
+
   public enum CodingKeys: String, CodingKey {
     case id
+    case object
     case browserName = "browser_name"
     case browserVersion = "browser_version"
     case deviceType = "device_type"
@@ -45,7 +61,8 @@ public struct SessionActivity: Codable, Equatable, Sendable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: FAPIJSONKey.self)
-    self.id = try container.decodeIfPresentFlexible(String.self, snake: "id", camel: "id") ?? ""
+    self.id = try container.decodeFlexibleDefault(String.self, snake: "id", camel: "id", default: "")
+    self.object = try container.decodeFlexibleDefault(String.self, snake: "object", camel: "object", default: "session_activity")
     self.browserName = try container.decodeIfPresentFlexible(String.self, snake: "browser_name", camel: "browserName")
     self.browserVersion = try container.decodeIfPresentFlexible(String.self, snake: "browser_version", camel: "browserVersion")
     self.deviceType = try container.decodeIfPresentFlexible(String.self, snake: "device_type", camel: "deviceType")
@@ -58,6 +75,7 @@ public struct SessionActivity: Codable, Equatable, Sendable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(id, forKey: .id)
+    try container.encode(object, forKey: .object)
     try container.encodeIfPresent(browserName, forKey: .browserName)
     try container.encodeIfPresent(browserVersion, forKey: .browserVersion)
     try container.encodeIfPresent(deviceType, forKey: .deviceType)

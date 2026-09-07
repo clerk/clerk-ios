@@ -11,42 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED = ROOT / "Sources" / "ClerkSnapshots" / "Generated"
 
-# Families the generator now owns. Method façades stay unpublished.
-MUST_MATCH = [
-    "Session.swift",
-    "EmailAddress.swift",
-    "PhoneNumber.swift",
-    "ExternalAccount.swift",
-    "IdentificationLink.swift",
-    "SessionTask.swift",
-    "SignInStatus.swift",
-    "SignUpStatus.swift",
-    "VerificationStatus.swift",
-    "SessionTaskKey.swift",
-    "SignInFirstFactorChannel.swift",
-    "SignInIdentifier.swift",
-    "SignInSecondFactorStrategy.swift",
-    "OrganizationEnrollmentMode.swift",
-    "User.swift",
-    "Client.swift",
-    "SignIn.swift",
-    "SignUp.swift",
-    "SignUpVerification.swift",
-    "SignUpVerifications.swift",
-    "Token.swift",
-    "UserData.swift",
-    "AuthConfig.swift",
-    "ClerkAPIError.swift",
-    "Verification.swift",
-    "SessionStatus.swift",
-    "PhoneCodeChannel.swift",
-    "SignUpDataMode.swift",
-    "SignInClientTrustState.swift",
-    "VerificationStrategy.swift",
-    "BillingSubscriptionStatus.swift",
-    "OrganizationDomainEnrollmentMode.swift",
-    "Environment.swift",
-]
+# Root Generated files the generator owns. Method façades stay unpublished.
+MUST_MATCH = sorted(path.name for path in GENERATED.glob("*.swift"))
 
 
 def main() -> int:
