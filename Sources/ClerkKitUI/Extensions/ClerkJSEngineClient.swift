@@ -142,6 +142,103 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signUp)
   }
 
+  func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws {
+    await loadIfNeeded()
+    try await engine.client.signIn.authenticateWithRedirect(
+      .init(strategy: strategy, redirectUrl: resolvedRedirectUrl(redirectUrl), identifier: identifier)
+    )
+    try await activateIfCompleteAfterRedirect()
+  }
+
+  func createPasskeySignIn() async throws {
+    await loadIfNeeded()
+    _ = try await engine.client.signIn.create(.init(strategy: "passkey"))
+    publish()
+  }
+
+  func authenticateWithPasskey(autofill: Bool) async throws {
+    await loadIfNeeded()
+    let signIn = try await engine.client.signIn.authenticateWithPasskey(
+      AuthenticateWithPasskeyParams(flow: autofill ? .autofill : nil)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func sendMfaPhoneCode(phoneNumberId: String?) async throws {
+    _ = try await engine.client.signIn.prepareSecondFactor(
+      .init(strategy: .phoneCode, phoneNumberId: phoneNumberId)
+    )
+    publish()
+  }
+
+  func sendMfaEmailCode(emailAddressId: String?) async throws {
+    _ = try await engine.client.signIn.prepareSecondFactor(
+      .init(strategy: .emailCode, emailAddressId: emailAddressId)
+    )
+    publish()
+  }
+
+  func verifyMfaCode(_ code: String, type: ClerkKit.SignIn.MfaType) async throws {
+    let signIn = try await engine.client.signIn.attemptSecondFactor(
+      .init(strategy: secondFactorStrategy(type), code: code)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func sendResetPasswordEmailCode(emailAddressId: String?) async throws {
+    _ = try await engine.client.signIn.prepareFirstFactor(
+      .init(strategy: .resetPasswordEmailCode, emailAddressId: emailAddressId)
+    )
+    publish()
+  }
+
+  func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws {
+    _ = try await engine.client.signIn.prepareFirstFactor(
+      .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneNumberId)
+    )
+    publish()
+  }
+
+  func verifyResetPasswordCode(_ code: String, isEmail: Bool) async throws {
+    _ = try await engine.client.signIn.attemptFirstFactor(
+      .init(
+        strategy: isEmail ? .resetPasswordEmailCode : .resetPasswordPhoneCode,
+        code: code
+      )
+    )
+    publish()
+  }
+
+  func resetPassword(password: String, signOutOfOtherSessions: Bool) async throws {
+    let signIn = try await engine.client.signIn.resetPassword(
+      .init(password: password, signOutOfOtherSessions: signOutOfOtherSessions)
+    )
+    try await activateIfComplete(signIn)
+  }
+
+  func updateSignUp(
+    emailAddress: String?,
+    password: String?,
+    firstName: String?,
+    lastName: String?,
+    username: String?,
+    phoneNumber: String?,
+    legalAccepted: Bool?
+  ) async throws {
+    let signUp = try await engine.client.signUp.update(
+      .init(
+        emailAddress: emailAddress,
+        phoneNumber: phoneNumber,
+        username: username,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        legalAccepted: legalAccepted
+      )
+    )
+    try await activateIfComplete(signUp)
+  }
+
   private func loadIfNeeded() async {
     await ClerkRuntimeStore.loadIfNeeded(engine, key: kit.publishableKey, onto: kit)
   }
@@ -162,6 +259,35 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       try await engine.setActive(.init(session: sessionId))
     }
     publish()
+  }
+
+  private func activateIfCompleteAfterRedirect() async throws {
+    if let sessionId = engine.client.signIn.createdSessionId {
+      try await engine.setActive(.init(session: sessionId))
+    } else if let sessionId = engine.client.signUp.createdSessionId {
+      try await engine.setActive(.init(session: sessionId))
+    }
+    publish()
+  }
+
+  private func resolvedRedirectUrl(_ redirectUrl: String) -> String {
+    if redirectUrl.isEmpty {
+      return ClerkJSRuntime.defaultOAuthRedirectURL.absoluteString
+    }
+    return redirectUrl
+  }
+
+  private func secondFactorStrategy(_ type: ClerkKit.SignIn.MfaType) -> ClerkJSCore.Clerk.SignIn.SecondFactorStrategy {
+    switch type {
+    case .phoneCode:
+      .phoneCode
+    case .emailCode:
+      .emailCode
+    case .totp:
+      .totp
+    case .backupCode:
+      .backupCode
+    }
   }
 }
 

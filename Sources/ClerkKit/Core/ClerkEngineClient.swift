@@ -32,6 +32,25 @@ package protocol ClerkEngineClient: AnyObject {
   func sendSignUpPhoneCode() async throws
   func verifySignUpEmailCode(_ code: String) async throws
   func verifySignUpPhoneCode(_ code: String) async throws
+  func authenticateWithRedirect(strategy: String, redirectUrl: String, identifier: String?) async throws
+  func createPasskeySignIn() async throws
+  func authenticateWithPasskey(autofill: Bool) async throws
+  func sendMfaPhoneCode(phoneNumberId: String?) async throws
+  func sendMfaEmailCode(emailAddressId: String?) async throws
+  func verifyMfaCode(_ code: String, type: SignIn.MfaType) async throws
+  func sendResetPasswordEmailCode(emailAddressId: String?) async throws
+  func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws
+  func verifyResetPasswordCode(_ code: String, isEmail: Bool) async throws
+  func resetPassword(password: String, signOutOfOtherSessions: Bool) async throws
+  func updateSignUp(
+    emailAddress: String?,
+    password: String?,
+    firstName: String?,
+    lastName: String?,
+    username: String?,
+    phoneNumber: String?,
+    legalAccepted: Bool?
+  ) async throws
 }
 
 extension Clerk {
@@ -76,6 +95,29 @@ extension Clerk {
       throw ClerkClientError(message: "Sign-up did not produce a client.")
     }
     return signUp
+  }
+
+  @MainActor
+  package static func requireEngineTransferResult() throws -> TransferFlowResult {
+    if let signUp = shared.client?.signUp, signUp.status != .abandoned {
+      return .signUp(signUp)
+    }
+    if let signIn = shared.client?.signIn {
+      return .signIn(signIn)
+    }
+    throw ClerkClientError(message: "OAuth did not produce a client.")
+  }
+
+  @MainActor
+  package static func redirectEngineClient(
+    prefersEphemeralWebBrowserSession: Bool,
+    transferable: Bool,
+    unsafeMetadata: JSON?
+  ) async -> (any ClerkEngineClient)? {
+    guard !prefersEphemeralWebBrowserSession, transferable, unsafeMetadata == nil else {
+      return nil
+    }
+    return await resolvedEngineClient()
   }
 
   @MainActor

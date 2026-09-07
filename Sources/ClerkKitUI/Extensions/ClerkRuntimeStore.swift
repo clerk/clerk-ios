@@ -2,7 +2,6 @@
 
 import ClerkJSCore
 import ClerkKit
-import SwiftUI
 
 @MainActor
 enum ClerkRuntimeStore {
@@ -47,23 +46,6 @@ enum ClerkRuntimeStore {
     guard let data = engine.lastClientJSON else { return }
     let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
     try? kit.applyEngineClientJSON(payload)
-  }
-}
-
-struct ClerkEngineAttachedModifier: ViewModifier {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
-
-  func body(content: Content) -> some View {
-    content.task(id: clerk.publishableKey) {
-      ClerkEngineBootstrap.install()
-      _ = await Clerk.resolvedEngineClient()
-    }
-  }
-}
-
-extension View {
-  func clerkEngineAttached() -> some View {
-    modifier(ClerkEngineAttachedModifier())
   }
 }
 

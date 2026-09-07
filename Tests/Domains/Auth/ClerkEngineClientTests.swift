@@ -99,6 +99,80 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func oauthPasskeyMfaResetAndSignUpUpdateUseEngine() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+    installFailingSignUpService(kitCalls)
+
+    let oauth = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
+    #expect(engine.redirectStrategy == "oauth_google")
+    if case .signIn(let signIn) = oauth {
+      #expect(signIn.id == "sia_engine")
+    } else {
+      Issue.record("Expected a sign-in transfer result")
+    }
+
+    engine.publish(
+      SignIn(id: "sia_engine", status: .needsFirstFactor, identifier: "user@example.com")
+    )
+    let current = try #require(Clerk.shared.auth.currentSignIn)
+    _ = try await current.sendResetPasswordEmailCode(emailAddressId: "idn_email")
+    _ = try await current.sendResetPasswordPhoneCode(phoneNumberId: "idn_phone")
+    engine.publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsNewPassword,
+        identifier: "user@example.com",
+        firstFactorVerification: Verification(status: .verified, strategy: .resetPasswordEmailCode)
+      )
+    )
+    let resetSignIn = try #require(Clerk.shared.auth.currentSignIn)
+    let verifiedReset = try await resetSignIn.verifyCode("424242")
+    #expect(engine.resetEmailAddressId == "idn_email")
+    #expect(engine.resetPhoneNumberId == "idn_phone")
+    #expect(engine.verifiedResetCode == "424242")
+    #expect(verifiedReset.status == .needsNewPassword)
+
+    let reset = try await current.resetPassword(newPassword: "new-pass", signOutOfOtherSessions: true)
+    #expect(engine.resetPassword == "new-pass")
+    #expect(engine.resetSignOutOfOtherSessions == true)
+    #expect(reset.status == .complete)
+
+    engine.publish(
+      SignIn(id: "sia_engine", status: .needsSecondFactor, identifier: "user@example.com")
+    )
+    let mfaSignIn = try #require(Clerk.shared.auth.currentSignIn)
+    _ = try await mfaSignIn.sendMfaEmailCode(emailAddressId: "idn_mfa_email")
+    _ = try await mfaSignIn.sendMfaPhoneCode(phoneNumberId: "idn_mfa_phone")
+    let mfa = try await mfaSignIn.verifyMfaCode("424242", type: .totp)
+    #expect(engine.sentMfaEmailAddressId == "idn_mfa_email")
+    #expect(engine.sentMfaPhoneNumberId == "idn_mfa_phone")
+    #expect(engine.verifiedMfaCode == "424242")
+    #expect(engine.verifiedMfaType == .totp)
+    #expect(mfa.status == .complete)
+
+    let passkey = try await Clerk.shared.auth.signInWithPasskey()
+    #expect(engine.authenticatedPasskey)
+    #expect(passkey.status == .complete)
+
+    engine.publish(SignUp.mock)
+    let signUp = try #require(Clerk.shared.auth.currentSignUp)
+    let updated = try await signUp.update(firstName: "Ada", lastName: "Lovelace")
+    #expect(engine.updatedSignUpFirstName == "Ada")
+    #expect(engine.updatedSignUpLastName == "Lovelace")
+    #expect(updated.firstName == "Ada")
+    #expect(kitCalls.createCount == 0)
+    #expect(kitCalls.prepareCount == 0)
+    #expect(kitCalls.attemptCount == 0)
+    #expect(kitCalls.prepareSecondCount == 0)
+    #expect(kitCalls.attemptSecondCount == 0)
+    #expect(kitCalls.resetPasswordCount == 0)
+    #expect(kitCalls.signUpUpdateCount == 0)
+  }
+
+  @Test
   func configureDoesNotInstallEngineInTests() async {
     #expect(Clerk.makeEngineClient == nil)
     #expect(await Clerk.resolvedEngineClient() == nil)
@@ -298,7 +372,148 @@ private final class RecordingEngineClient: ClerkEngineClient {
     publish(signUp)
   }
 
-  private func publish(_ signIn: SignIn) {
+  var redirectStrategy: String?
+  var resetEmailAddressId: String?
+  var resetPhoneNumberId: String?
+  var verifiedResetCode: String?
+  var resetPassword: String?
+  var resetSignOutOfOtherSessions: Bool?
+  var sentMfaEmailAddressId: String?
+  var sentMfaPhoneNumberId: String?
+  var verifiedMfaCode: String?
+  var verifiedMfaType: SignIn.MfaType?
+  var authenticatedPasskey = false
+  var updatedSignUpFirstName: String?
+  var updatedSignUpLastName: String?
+
+  func authenticateWithRedirect(strategy: String, redirectUrl _: String, identifier _: String?) async throws {
+    redirectStrategy = strategy
+    publish(
+      SignIn(id: "sia_engine", status: .needsFirstFactor, identifier: "user@example.com")
+    )
+  }
+
+  func createPasskeySignIn() async throws {
+    publish(
+      SignIn(id: "sia_engine", status: .needsFirstFactor, identifier: nil)
+    )
+  }
+
+  func authenticateWithPasskey(autofill _: Bool) async throws {
+    authenticatedPasskey = true
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func sendMfaPhoneCode(phoneNumberId: String?) async throws {
+    sentMfaPhoneNumberId = phoneNumberId
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsSecondFactor,
+        identifier: "user@example.com",
+        secondFactorVerification: Verification(status: .unverified, strategy: .phoneCode)
+      )
+    )
+  }
+
+  func sendMfaEmailCode(emailAddressId: String?) async throws {
+    sentMfaEmailAddressId = emailAddressId
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsSecondFactor,
+        identifier: "user@example.com",
+        secondFactorVerification: Verification(status: .unverified, strategy: .emailCode)
+      )
+    )
+  }
+
+  func verifyMfaCode(_ code: String, type: SignIn.MfaType) async throws {
+    verifiedMfaCode = code
+    verifiedMfaType = type
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        identifier: "user@example.com",
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func sendResetPasswordEmailCode(emailAddressId: String?) async throws {
+    resetEmailAddressId = emailAddressId
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: "user@example.com",
+        firstFactorVerification: Verification(status: .unverified, strategy: .resetPasswordEmailCode)
+      )
+    )
+  }
+
+  func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws {
+    resetPhoneNumberId = phoneNumberId
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: "user@example.com",
+        firstFactorVerification: Verification(status: .unverified, strategy: .resetPasswordPhoneCode)
+      )
+    )
+  }
+
+  func verifyResetPasswordCode(_ code: String, isEmail _: Bool) async throws {
+    verifiedResetCode = code
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsNewPassword,
+        identifier: "user@example.com",
+        firstFactorVerification: Verification(status: .verified, strategy: .resetPasswordEmailCode)
+      )
+    )
+  }
+
+  func resetPassword(password: String, signOutOfOtherSessions: Bool) async throws {
+    resetPassword = password
+    resetSignOutOfOtherSessions = signOutOfOtherSessions
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        identifier: "user@example.com",
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func updateSignUp(
+    emailAddress _: String?,
+    password _: String?,
+    firstName: String?,
+    lastName: String?,
+    username _: String?,
+    phoneNumber _: String?,
+    legalAccepted _: Bool?
+  ) async throws {
+    updatedSignUpFirstName = firstName
+    updatedSignUpLastName = lastName
+    var signUp = SignUp.mock
+    signUp.firstName = firstName
+    signUp.lastName = lastName
+    publish(signUp)
+  }
+
+  func publish(_ signIn: SignIn) {
     Clerk.shared.applyResponseClient(
       Client(
         id: "client_engine",
@@ -309,7 +524,7 @@ private final class RecordingEngineClient: ClerkEngineClient {
     )
   }
 
-  private func publish(_ signUp: SignUp) {
+  func publish(_ signUp: SignUp) {
     Clerk.shared.applyResponseClient(
       Client(
         id: "client_engine",
@@ -328,6 +543,10 @@ private final class KitCallCounter {
   var attemptCount = 0
   var setActiveCount = 0
   var fetchTokenCount = 0
+  var prepareSecondCount = 0
+  var attemptSecondCount = 0
+  var resetPasswordCount = 0
+  var signUpUpdateCount = 0
 }
 
 @MainActor
@@ -343,6 +562,18 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
     },
     attemptFirstFactor: { _, _ in
       counts.attemptCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    prepareSecondFactor: { _, _ in
+      counts.prepareSecondCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    attemptSecondFactor: { _, _ in
+      counts.attemptSecondCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    resetPassword: { _, _ in
+      counts.resetPasswordCount += 1
       throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
     }
   )
@@ -371,6 +602,24 @@ private func installFailingSessionService(_ counts: KitCallCounter) {
     apiClient: createMockAPIClient(),
     signInService: Clerk.shared.dependencies.signInService,
     sessionService: service
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingSignUpService(_ counts: KitCallCounter) {
+  let service = MockSignUpService(
+    update: { _, _ in
+      counts.signUpUpdateCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    }
+  )
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    signInService: Clerk.shared.dependencies.signInService,
+    signUpService: service
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager

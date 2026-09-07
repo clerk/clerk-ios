@@ -146,7 +146,19 @@ extension SignUp {
     unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
-    try await signUpService.update(signUpId: id, params: .init(
+    if let engine = await Clerk.resolvedEngineClient(), unsafeMetadata == nil {
+      try await engine.updateSignUp(
+        emailAddress: emailAddress,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+        phoneNumber: phoneNumber,
+        legalAccepted: legalAccepted
+      )
+      return try Clerk.requireEngineSignUp()
+    }
+    return try await signUpService.update(signUpId: id, params: .init(
       emailAddress: emailAddress,
       phoneNumber: phoneNumber,
       password: password,

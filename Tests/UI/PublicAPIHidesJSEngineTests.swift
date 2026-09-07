@@ -51,7 +51,13 @@ import Testing
     while let url = enumerator?.nextObject() as? URL {
       guard url.pathExtension == "swift" else { continue }
       let text = try String(contentsOf: url, encoding: .utf8)
-      if text.contains("import ClerkJSCore") || text.contains("ClerkJSCore.") || text.contains("jsClerk") {
+      if text.contains("import ClerkJSCore")
+        || text.contains("ClerkJSCore.")
+        || text.contains("jsClerk")
+        || text.contains("clerkEngineAttached")
+        || text.contains("ClerkEngineBootstrap")
+        || text.contains("ClerkJS")
+      {
         leaks.append(url.path)
       }
     }

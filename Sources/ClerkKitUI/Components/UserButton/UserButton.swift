@@ -187,7 +187,6 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
     .taskOnce {
       await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
     }
-    .clerkEngineAttached()
   }
 }
 

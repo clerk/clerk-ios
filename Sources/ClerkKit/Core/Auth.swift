@@ -184,6 +184,18 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    if let engine = await Clerk.redirectEngineClient(
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    ) {
+      try await engine.authenticateWithRedirect(
+        strategy: provider.strategy,
+        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+        identifier: nil
+      )
+      return try Clerk.requireEngineTransferResult()
+    }
     let signIn = try await signInService.create(params: .init(
       strategy: .oauth(provider),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
@@ -285,7 +297,11 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in attempt cannot be created.
   @discardableResult
   public func createPasskeySignIn() async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .passkey))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.createPasskeySignIn()
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(strategy: .passkey))
   }
 
   /// Signs in with a passkey.
@@ -297,6 +313,10 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.authenticateWithPasskey(autofill: false)
+      return try Clerk.requireEngineSignIn()
+    }
     let signIn = try await createPasskeySignIn()
     return try await signIn.authenticateWithPasskey()
   }
@@ -377,6 +397,18 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    if let engine = await Clerk.redirectEngineClient(
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    ) {
+      try await engine.authenticateWithRedirect(
+        strategy: FactorStrategy.enterpriseSSO.rawValue,
+        redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+        identifier: emailAddress
+      )
+      return try Clerk.requireEngineTransferResult()
+    }
     let signIn = try await signInService.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
