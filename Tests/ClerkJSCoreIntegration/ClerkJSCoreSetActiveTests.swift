@@ -60,7 +60,7 @@ struct ClerkJSCoreSetActiveTests {
 
     let emailAddressId = factors.first { $0.strategy == "email_code" }?.emailAddressId
     do {
-      try await created.prepareFirstFactor(.init(strategy: .emailCode, emailAddressId: emailAddressId))
+      try await created.prepareFirstFactor(.init(strategy: "email_code", emailAddressId: emailAddressId))
     } catch {
       Issue.record(
         "FAPI \(sanitizedJSError(error)) factors=\(factors.count) emailId=\(emailAddressId != nil)"

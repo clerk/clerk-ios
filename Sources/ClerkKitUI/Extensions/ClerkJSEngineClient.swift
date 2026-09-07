@@ -23,7 +23,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
   func signInWithEmailCode(emailAddress: String) async throws {
     await loadIfNeeded()
     _ = try await engine.client.signIn.create(
-      .init(identifier: emailAddress, strategy: "email_code")
+      .init(strategy: "email_code", identifier: emailAddress)
     )
     publish()
   }
@@ -31,7 +31,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
   func signInWithPhoneCode(phoneNumber: String) async throws {
     await loadIfNeeded()
     _ = try await engine.client.signIn.create(
-      .init(identifier: phoneNumber, strategy: "phone_code")
+      .init(strategy: "phone_code", identifier: phoneNumber)
     )
     publish()
   }
@@ -39,14 +39,14 @@ final class ClerkJSEngineClient: ClerkEngineClient {
   func signInWithPassword(identifier: String, password: String) async throws {
     await loadIfNeeded()
     let signIn = try await engine.client.signIn.create(
-      .init(identifier: identifier, strategy: "password", password: password)
+      .init(strategy: "password", identifier: identifier, password: password)
     )
     try await activateIfComplete(signIn)
   }
 
   func sendEmailCode(emailAddressId: String?) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: .emailCode, emailAddressId: emailAddressId)
+      .init(strategy: "email_code", emailAddressId: emailAddressId)
     )
     publish()
   }
@@ -59,7 +59,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
   ) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
       .init(
-        strategy: .emailLink,
+        strategy: "email_link",
         emailAddressId: emailAddressId,
         redirectUrl: redirectUrl,
         codeChallenge: codeChallenge,
@@ -87,7 +87,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
 
   func sendPhoneCode(phoneNumberId: String?) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: .phoneCode, phoneNumberId: phoneNumberId)
+      .init(strategy: "phone_code", phoneNumberId: phoneNumberId)
     )
     publish()
   }
@@ -198,10 +198,10 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     await loadIfNeeded()
     let resolved = resolvedRedirectUrl(redirectUrl)
     _ = try await engine.client.signIn.create(
-      .init(identifier: emailAddress, strategy: "enterprise_sso", redirectUrl: resolved)
+      .init(strategy: "enterprise_sso", redirectUrl: resolved, identifier: emailAddress)
     )
     _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: .enterpriseSSO, redirectUrl: resolved)
+      .init(strategy: "enterprise_sso", redirectUrl: resolved)
     )
     publish()
   }
@@ -232,7 +232,8 @@ final class ClerkJSEngineClient: ClerkEngineClient {
 
   func authenticateWithIdToken(strategy _: String, token: String) async throws {
     let signIn = try await engine.client.signIn.attemptFirstFactor(
-      .init(strategy: .oauthTokenApple, token: token)
+      strategy: "oauth_token_apple",
+      token: token
     )
     try await activateIfComplete(signIn)
   }
@@ -290,14 +291,14 @@ final class ClerkJSEngineClient: ClerkEngineClient {
 
   func sendResetPasswordEmailCode(emailAddressId: String?) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: .resetPasswordEmailCode, emailAddressId: emailAddressId)
+      .init(strategy: "reset_password_email_code", emailAddressId: emailAddressId)
     )
     publish()
   }
 
   func sendResetPasswordPhoneCode(phoneNumberId: String?) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
-      .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneNumberId)
+      .init(strategy: "reset_password_phone_code", phoneNumberId: phoneNumberId)
     )
     publish()
   }
@@ -727,7 +728,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return redirectUrl
   }
 
-  private func secondFactorStrategy(_ type: ClerkKit.SignIn.MfaType) -> ClerkJSCore.Clerk.SignIn.SecondFactorStrategy {
+  private func secondFactorStrategy(_ type: ClerkKit.SignIn.MfaType) -> AttemptSecondFactorParamsStrategy {
     switch type {
     case .phoneCode:
       .phoneCode

@@ -25,7 +25,7 @@ struct ClerkAPITests {
 
   @Test
   func createParamsEncodeIdentifier() throws {
-    let json = try encodeJSON(Clerk.SignIn.CreateParams(identifier: "user@example.com"))
+    let json = try encodeJSON(SignInCreateParams(identifier: "user@example.com"))
     #expect(json["identifier"] as? String == "user@example.com")
     #expect(json["strategy"] == nil)
     #expect(json["redirectUrl"] == nil)
@@ -35,7 +35,7 @@ struct ClerkAPITests {
   @Test
   func createParamsEncodeOAuthStrategyAndRedirectUrl() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.CreateParams(
+      SignInCreateParams(
         strategy: "oauth_google",
         redirectUrl: "clerk://sso-callback"
       )
@@ -48,13 +48,13 @@ struct ClerkAPITests {
 
   @Test
   func createParamsEncodeTicketAndToken() throws {
-    let ticket = try encodeJSON(Clerk.SignIn.CreateParams(strategy: "ticket", ticket: "tkt_1"))
+    let ticket = try encodeJSON(SignInCreateParams(strategy: "ticket", ticket: "tkt_1"))
     #expect(ticket["strategy"] as? String == "ticket")
     #expect(ticket["ticket"] as? String == "tkt_1")
     #expect(ticket.count == 2)
 
     let token = try encodeJSON(
-      Clerk.SignIn.CreateParams(strategy: "oauth_token_apple", token: "id_token")
+      SignInCreateParams(strategy: "oauth_token_apple", token: "id_token")
     )
     #expect(token["strategy"] as? String == "oauth_token_apple")
     #expect(token["token"] as? String == "id_token")
@@ -63,7 +63,7 @@ struct ClerkAPITests {
 
   @Test
   func createParamsEncodeTransfer() throws {
-    let json = try encodeJSON(Clerk.SignIn.CreateParams(transfer: true))
+    let json = try encodeJSON(SignInCreateParams(transfer: true))
     #expect(json["transfer"] as? Bool == true)
     #expect(json["identifier"] == nil)
     #expect(json.count == 1)
@@ -194,7 +194,7 @@ struct ClerkAPITests {
   @Test
   func prepareFirstFactorParamsEncodeJSNames() throws {
     let withEmail = try encodeJSON(
-      Clerk.SignIn.PrepareFirstFactorParams(strategy: .emailCode, emailAddressId: "idn_1")
+      PrepareFirstFactorParams(strategy: "email_code", emailAddressId: "idn_1")
     )
     #expect(withEmail["strategy"] as? String == "email_code")
     #expect(withEmail["emailAddressId"] as? String == "idn_1")
@@ -202,8 +202,8 @@ struct ClerkAPITests {
     #expect(withEmail.count == 2)
 
     let emailLink = try encodeJSON(
-      Clerk.SignIn.PrepareFirstFactorParams(
-        strategy: .emailLink,
+      PrepareFirstFactorParams(
+        strategy: "email_link",
         emailAddressId: "idn_1",
         redirectUrl: "clerk://sso-callback",
         codeChallenge: "challenge",
@@ -217,7 +217,7 @@ struct ClerkAPITests {
     #expect(emailLink["codeChallengeMethod"] as? String == "S256")
     #expect(emailLink.count == 5)
 
-    let strategyOnly = try encodeJSON(Clerk.SignIn.PrepareFirstFactorParams(strategy: .emailCode))
+    let strategyOnly = try encodeJSON(PrepareFirstFactorParams(strategy: "email_code"))
     #expect(strategyOnly["strategy"] as? String == "email_code")
     #expect(strategyOnly["emailAddressId"] == nil)
     #expect(strategyOnly["phoneNumberId"] == nil)
@@ -225,7 +225,7 @@ struct ClerkAPITests {
     #expect(strategyOnly.count == 1)
 
     let withPhone = try encodeJSON(
-      Clerk.SignIn.PrepareFirstFactorParams(strategy: .phoneCode, phoneNumberId: "idn_phone")
+      PrepareFirstFactorParams(strategy: "phone_code", phoneNumberId: "idn_phone")
     )
     #expect(withPhone["strategy"] as? String == "phone_code")
     #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
@@ -233,8 +233,8 @@ struct ClerkAPITests {
     #expect(withPhone.count == 2)
 
     let resetEmail = try encodeJSON(
-      Clerk.SignIn.PrepareFirstFactorParams(
-        strategy: .resetPasswordEmailCode,
+      PrepareFirstFactorParams(
+        strategy: "reset_password_email_code",
         emailAddressId: "idn_1"
       )
     )
@@ -247,21 +247,21 @@ struct ClerkAPITests {
   @Test
   func attemptFirstFactorParamsEncodeJSNames() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.AttemptFirstFactorParams(strategy: .emailCode, code: "424242")
+      AttemptFirstFactorParams(strategy: .emailCode, code: "424242")
     )
     #expect(json["strategy"] as? String == "email_code")
     #expect(json["code"] as? String == "424242")
     #expect(json.count == 2)
 
     let phone = try encodeJSON(
-      Clerk.SignIn.AttemptFirstFactorParams(strategy: .phoneCode, code: "424242")
+      AttemptFirstFactorParams(strategy: .phoneCode, code: "424242")
     )
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone["code"] as? String == "424242")
     #expect(phone.count == 2)
 
     let password = try encodeJSON(
-      Clerk.SignIn.AttemptFirstFactorParams(strategy: .password, password: "hunter2")
+      AttemptFirstFactorParams(strategy: .password, password: "hunter2")
     )
     #expect(password["strategy"] as? String == "password")
     #expect(password["password"] as? String == "hunter2")
@@ -269,7 +269,7 @@ struct ClerkAPITests {
     #expect(password.count == 2)
 
     let reset = try encodeJSON(
-      Clerk.SignIn.AttemptFirstFactorParams(strategy: .resetPasswordEmailCode, code: "424242")
+      AttemptFirstFactorParams(strategy: .resetPasswordEmailCode, code: "424242")
     )
     #expect(reset["strategy"] as? String == "reset_password_email_code")
     #expect(reset["code"] as? String == "424242")
@@ -280,21 +280,21 @@ struct ClerkAPITests {
   @Test
   func prepareSecondFactorParamsEncodePresentKeysOnly() throws {
     let withEmail = try encodeJSON(
-      Clerk.SignIn.PrepareSecondFactorParams(strategy: .emailCode, emailAddressId: "idn_1")
+      PrepareSecondFactorParams(strategy: .emailCode, emailAddressId: "idn_1")
     )
     #expect(withEmail["strategy"] as? String == "email_code")
     #expect(withEmail["emailAddressId"] as? String == "idn_1")
     #expect(withEmail["phoneNumberId"] == nil)
     #expect(withEmail.count == 2)
 
-    let strategyOnly = try encodeJSON(Clerk.SignIn.PrepareSecondFactorParams(strategy: .phoneCode))
+    let strategyOnly = try encodeJSON(PrepareSecondFactorParams(strategy: .phoneCode))
     #expect(strategyOnly["strategy"] as? String == "phone_code")
     #expect(strategyOnly["emailAddressId"] == nil)
     #expect(strategyOnly["phoneNumberId"] == nil)
     #expect(strategyOnly.count == 1)
 
     let withPhone = try encodeJSON(
-      Clerk.SignIn.PrepareSecondFactorParams(strategy: .phoneCode, phoneNumberId: "idn_phone")
+      PrepareSecondFactorParams(strategy: .phoneCode, phoneNumberId: "idn_phone")
     )
     #expect(withPhone["strategy"] as? String == "phone_code")
     #expect(withPhone["phoneNumberId"] as? String == "idn_phone")
@@ -305,28 +305,28 @@ struct ClerkAPITests {
   @Test
   func attemptSecondFactorParamsEncodeJSNames() throws {
     let email = try encodeJSON(
-      Clerk.SignIn.AttemptSecondFactorParams(strategy: .emailCode, code: "424242")
+      AttemptSecondFactorParams(strategy: .emailCode, code: "424242")
     )
     #expect(email["strategy"] as? String == "email_code")
     #expect(email["code"] as? String == "424242")
     #expect(email.count == 2)
 
     let phone = try encodeJSON(
-      Clerk.SignIn.AttemptSecondFactorParams(strategy: .phoneCode, code: "424242")
+      AttemptSecondFactorParams(strategy: .phoneCode, code: "424242")
     )
     #expect(phone["strategy"] as? String == "phone_code")
     #expect(phone["code"] as? String == "424242")
     #expect(phone.count == 2)
 
     let totp = try encodeJSON(
-      Clerk.SignIn.AttemptSecondFactorParams(strategy: .totp, code: "123456")
+      AttemptSecondFactorParams(strategy: .totp, code: "123456")
     )
     #expect(totp["strategy"] as? String == "totp")
     #expect(totp["code"] as? String == "123456")
     #expect(totp.count == 2)
 
     let backup = try encodeJSON(
-      Clerk.SignIn.AttemptSecondFactorParams(strategy: .backupCode, code: "abcd-efgh")
+      AttemptSecondFactorParams(strategy: .backupCode, code: "abcd-efgh")
     )
     #expect(backup["strategy"] as? String == "backup_code")
     #expect(backup["code"] as? String == "abcd-efgh")
@@ -350,7 +350,7 @@ struct ClerkAPITests {
 
   @Test
   func resetPasswordParamsEncodePasswordOnlyWhenBoolOmitted() throws {
-    let json = try encodeJSON(Clerk.SignIn.ResetPasswordParams(password: "hunter2"))
+    let json = try encodeJSON(ResetPasswordParams(password: "hunter2"))
     #expect(json["password"] as? String == "hunter2")
     #expect(json["signOutOfOtherSessions"] == nil)
     #expect(json.count == 1)
@@ -359,7 +359,7 @@ struct ClerkAPITests {
   @Test
   func resetPasswordParamsEncodeSignOutWhenSet() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.ResetPasswordParams(password: "hunter2", signOutOfOtherSessions: true)
+      ResetPasswordParams(password: "hunter2", signOutOfOtherSessions: true)
     )
     #expect(json["password"] as? String == "hunter2")
     #expect(json["signOutOfOtherSessions"] as? Bool == true)
@@ -389,15 +389,25 @@ struct ClerkAPITests {
   @Test
   func createParamsEncodePassword() throws {
     let json = try encodeJSON(
-      Clerk.SignIn.CreateParams(
-        identifier: "user@example.com",
+      SignInCreateParams(
         strategy: "password",
+        identifier: "user@example.com",
         password: "hunter2"
       )
     )
     #expect(json["identifier"] as? String == "user@example.com")
     #expect(json["strategy"] as? String == "password")
     #expect(json["password"] as? String == "hunter2")
+  }
+
+  @Test
+  @MainActor
+  func signInHandleConformsToGeneratedMethods() {
+    let clerk = Clerk(
+      publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk",
+      tokenCache: .memory()
+    )
+    assertSignInMethods(clerk.client.signIn)
   }
 
   @Test
@@ -692,6 +702,10 @@ struct ClerkAPITests {
     #expect(clerk.client.signUp.status == .complete)
     #expect(clerk.client.signUp.createdSessionId == "sess_1")
   }
+}
+
+private func assertSignInMethods(_ handle: some SignInMethods) {
+  _ = handle
 }
 
 private func encodeJSON(_ value: some Encodable) throws -> [String: Any] {

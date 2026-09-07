@@ -499,7 +499,7 @@ public final class Clerk {
   }
 
   @MainActor
-  public struct SignIn {
+  public struct SignIn: SignInMethods {
     unowned let clerk: Clerk
 
     public var id: String? {
@@ -527,7 +527,7 @@ public final class Clerk {
     }
 
     @discardableResult
-    public func create(_ params: CreateParams) async throws -> SignIn {
+    public func create(_ params: SignInCreateParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.create), params)
       return clerk.client.signIn
     }
@@ -545,6 +545,15 @@ public final class Clerk {
     }
 
     @discardableResult
+    public func attemptFirstFactor(strategy: String, token: String) async throws -> SignIn {
+      try await clerk.callAndPublish(
+        ClerkJSPath.signIn(.attemptFirstFactor),
+        AttemptFirstFactorTokenArgs(strategy: strategy, token: token)
+      )
+      return clerk.client.signIn
+    }
+
+    @discardableResult
     public func prepareSecondFactor(_ params: PrepareSecondFactorParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.prepareSecondFactor), params)
       return clerk.client.signIn
@@ -557,16 +566,29 @@ public final class Clerk {
     }
 
     @discardableResult
-    public func authenticateWithPasskey(
-      _ params: AuthenticateWithPasskeyParams = AuthenticateWithPasskeyParams(flow: nil)
-    ) async throws -> SignIn {
-      try await clerk.callAndPublish(ClerkJSPath.signIn(.authenticateWithPasskey), params)
+    public func authenticateWithPasskey(_ params: AuthenticateWithPasskeyParams?) async throws -> SignIn {
+      try await clerk.callAndPublish(
+        ClerkJSPath.signIn(.authenticateWithPasskey),
+        params ?? AuthenticateWithPasskeyParams(flow: nil)
+      )
       return clerk.client.signIn
     }
 
     @discardableResult
     public func resetPassword(_ params: ResetPasswordParams) async throws -> SignIn {
       try await clerk.callAndPublish(ClerkJSPath.signIn(.resetPassword), params)
+      return clerk.client.signIn
+    }
+
+    @discardableResult
+    public func reload(_ p: ClerkResourceReloadParams?) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.reload), p ?? ClerkResourceReloadParams(rotatingTokenNonce: nil))
+      return clerk.client.signIn
+    }
+
+    @discardableResult
+    public func submitProtectCheck(_ params: SignInSubmitProtectCheckParams) async throws -> SignIn {
+      try await clerk.callAndPublish(ClerkJSPath.signIn(.submitProtectCheck), params)
       return clerk.client.signIn
     }
 
@@ -577,53 +599,9 @@ public final class Clerk {
       )
     }
 
-    public struct CreateParams: Encodable, Sendable {
-      public var identifier: String?
-      public var strategy: String?
-      public var redirectUrl: String?
-      public var password: String?
-      public var ticket: String?
-      public var token: String?
-      public var transfer: Bool?
-
-      public init(
-        identifier: String? = nil,
-        strategy: String? = nil,
-        redirectUrl: String? = nil,
-        password: String? = nil,
-        ticket: String? = nil,
-        token: String? = nil,
-        transfer: Bool? = nil
-      ) {
-        self.identifier = identifier
-        self.strategy = strategy
-        self.redirectUrl = redirectUrl
-        self.password = password
-        self.ticket = ticket
-        self.token = token
-        self.transfer = transfer
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(identifier, forKey: .identifier)
-        try container.encodeIfPresent(strategy, forKey: .strategy)
-        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
-        try container.encodeIfPresent(password, forKey: .password)
-        try container.encodeIfPresent(ticket, forKey: .ticket)
-        try container.encodeIfPresent(token, forKey: .token)
-        try container.encodeIfPresent(transfer, forKey: .transfer)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case identifier
-        case strategy
-        case redirectUrl
-        case password
-        case ticket
-        case token
-        case transfer
-      }
+    private struct AttemptFirstFactorTokenArgs: Encodable {
+      var strategy: String
+      var token: String
     }
 
     public struct AuthenticateWithRedirectParams: Encodable, Sendable {
@@ -648,173 +626,6 @@ public final class Clerk {
         case strategy
         case redirectUrl
         case identifier
-      }
-    }
-
-    public struct PrepareFirstFactorParams: Encodable, Sendable {
-      public var strategy: Strategy
-      public var emailAddressId: String?
-      public var phoneNumberId: String?
-      public var redirectUrl: String?
-      public var codeChallenge: String?
-      public var codeChallengeMethod: String?
-
-      public init(
-        strategy: Strategy,
-        emailAddressId: String? = nil,
-        phoneNumberId: String? = nil,
-        redirectUrl: String? = nil,
-        codeChallenge: String? = nil,
-        codeChallengeMethod: String? = nil
-      ) {
-        self.strategy = strategy
-        self.emailAddressId = emailAddressId
-        self.phoneNumberId = phoneNumberId
-        self.redirectUrl = redirectUrl
-        self.codeChallenge = codeChallenge
-        self.codeChallengeMethod = codeChallengeMethod
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(strategy, forKey: .strategy)
-        try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
-        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
-        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
-        try container.encodeIfPresent(codeChallenge, forKey: .codeChallenge)
-        try container.encodeIfPresent(codeChallengeMethod, forKey: .codeChallengeMethod)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case strategy
-        case emailAddressId
-        case phoneNumberId
-        case redirectUrl
-        case codeChallenge
-        case codeChallengeMethod
-      }
-    }
-
-    public struct AttemptFirstFactorParams: Encodable, Sendable {
-      public var strategy: Strategy
-      public var code: String?
-      public var password: String?
-      public var token: String?
-
-      public init(
-        strategy: Strategy,
-        code: String? = nil,
-        password: String? = nil,
-        token: String? = nil
-      ) {
-        self.strategy = strategy
-        self.code = code
-        self.password = password
-        self.token = token
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(strategy, forKey: .strategy)
-        try container.encodeIfPresent(code, forKey: .code)
-        try container.encodeIfPresent(password, forKey: .password)
-        try container.encodeIfPresent(token, forKey: .token)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case strategy
-        case code
-        case password
-        case token
-      }
-    }
-
-    public enum Strategy: String, Encodable, Sendable {
-      case emailCode = "email_code"
-      case emailLink = "email_link"
-      case phoneCode = "phone_code"
-      case password
-      case resetPasswordEmailCode = "reset_password_email_code"
-      case resetPasswordPhoneCode = "reset_password_phone_code"
-      case oauthTokenApple = "oauth_token_apple"
-      case enterpriseSSO = "enterprise_sso"
-    }
-
-    public enum SecondFactorStrategy: String, Encodable, Sendable {
-      case emailCode = "email_code"
-      case phoneCode = "phone_code"
-      case totp
-      case backupCode = "backup_code"
-    }
-
-    public struct PrepareSecondFactorParams: Encodable, Sendable {
-      public var strategy: SecondFactorStrategy
-      public var emailAddressId: String?
-      public var phoneNumberId: String?
-
-      public init(
-        strategy: SecondFactorStrategy,
-        emailAddressId: String? = nil,
-        phoneNumberId: String? = nil
-      ) {
-        self.strategy = strategy
-        self.emailAddressId = emailAddressId
-        self.phoneNumberId = phoneNumberId
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(strategy, forKey: .strategy)
-        try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
-        try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case strategy
-        case emailAddressId
-        case phoneNumberId
-      }
-    }
-
-    public struct AttemptSecondFactorParams: Encodable, Sendable {
-      public var strategy: SecondFactorStrategy
-      public var code: String
-
-      public init(strategy: SecondFactorStrategy, code: String) {
-        self.strategy = strategy
-        self.code = code
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(strategy, forKey: .strategy)
-        try container.encode(code, forKey: .code)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case strategy
-        case code
-      }
-    }
-
-    public struct ResetPasswordParams: Encodable, Sendable {
-      public var password: String
-      public var signOutOfOtherSessions: Bool?
-
-      public init(password: String, signOutOfOtherSessions: Bool? = nil) {
-        self.password = password
-        self.signOutOfOtherSessions = signOutOfOtherSessions
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(password, forKey: .password)
-        try container.encodeIfPresent(signOutOfOtherSessions, forKey: .signOutOfOtherSessions)
-      }
-
-      private enum CodingKeys: String, CodingKey {
-        case password
-        case signOutOfOtherSessions
       }
     }
 
