@@ -240,6 +240,10 @@ public final class Clerk: ClerkJSBridge {
     runtime.lastFAPIEnvironmentJSON
   }
 
+  package var lastClientToken: String? {
+    runtime.lastClientToken
+  }
+
   public func load() async throws {
     try await runtime.load(publishableKey: publishableKey)
     try publishLastClient()

@@ -82,7 +82,6 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     } catch {
       let nsError = error as NSError
       if nsError.domain == "WCErrorDomain", nsError.code == 7006 || nsError.code == 7001 {
-        ClerkLogger.warning("Watch sync skipped WCError \(nsError.code)")
         return
       }
       ClerkLogger.logError(error, message: "Failed to sync data to watch app")

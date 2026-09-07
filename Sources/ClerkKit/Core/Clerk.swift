@@ -932,7 +932,10 @@ extension Clerk {
     environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
   }
 
-  package func applyEngineClientJSON(_ data: Data) throws {
+  package func applyEngineClientJSON(_ data: Data, deviceToken: String? = nil) throws {
+    if let token = deviceToken.nilIfEmpty {
+      identityController.adoptEngineDeviceToken(token)
+    }
     if let client = ClerkClientSyncResponseMiddleware.decodeClient(from: data) {
       setClientFromIdentityController(client)
       return

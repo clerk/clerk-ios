@@ -1611,6 +1611,41 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func phonePayloadAppliesWhenWatchHasNoLocalIdentity() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    try keychain.set("stale-watch-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try WatchSyncMetadataStore(keychain: keychain).save(WatchSyncMetadataRecord(
+      authState: .set,
+      authVersion: 40,
+      authFingerprint: WatchConnectivityCoordinator.authFingerprint(
+        client: client(id: "stale-watch-client", updatedAt: 40),
+        serverDate: Date(timeIntervalSince1970: 40)
+      ),
+      authSource: .watch
+    ))
+    let phonePayload = WatchSyncPayload(
+      deviceTokenUpdate: .tokenSet(
+        token: "phone-token",
+        version: WatchSyncVersion.initial
+      ),
+      clientUpdate: .snapshot(
+        client: client(id: "phone-client", updatedAt: 1000, lastActiveSessionId: "session-phone"),
+        serverFetchDate: nil,
+        version: WatchSyncVersion.initial
+      ),
+      environment: nil
+    )
+
+    apply(phonePayload, from: .phone, to: clerk, keychain: keychain)
+
+    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.client?.id == "phone-client")
+    #expect(clerk.client?.lastActiveSessionId == "session-phone")
+  }
+
+  @Test
   func authoritativePhonePayloadResetsStaleUnknownWatchWatermark() throws {
     configureClerkForTesting()
     let clerk = Clerk()

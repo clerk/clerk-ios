@@ -1,7 +1,7 @@
 #if os(iOS) || os(macOS)
 
 import ClerkJSCore
-import ClerkKit
+@_spi(FrameworkIntegration) import ClerkKit
 import Testing
 
 @MainActor
@@ -9,9 +9,10 @@ import Testing
   let clerk = Clerk()
   let data = try ClerkJSCore.Clerk.snapshotSignedInClient()
   let payload = try FAPIJSON.normalizeClientJSON(data)
-  try clerk.applyEngineClientJSON(payload)
+  try clerk.applyEngineClientJSON(payload, deviceToken: "js-client-jwt")
   #expect(clerk.user?.id == "user_fixture")
   #expect(clerk.session?.id == "sess_fixture")
+  #expect(clerk.deviceToken == "js-client-jwt")
 }
 
 @MainActor

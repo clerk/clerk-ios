@@ -320,11 +320,13 @@ package struct WatchSyncPayload {
     switch state {
     case .set:
       guard let clientData, !clientData.isEmpty else { return .notIncluded }
-      guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
+      do {
+        let decoded = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
+        return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: version)
+      } catch {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
         return .notIncluded
       }
-      return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: version)
     case .cleared:
       return .cleared(serverFetchDate: clientServerFetchDate, version: version)
     default:
@@ -334,11 +336,13 @@ package struct WatchSyncPayload {
         }
         return .notIncluded
       }
-      guard let decoded = try? JSONDecoder.clerkDecoder.decode(Client.self, from: clientData) else {
+      do {
+        let decoded = try JSONDecoder.clerkDecoder.decode(Client.self, from: clientData)
+        return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: nil)
+      } catch {
         ClerkLogger.warning("Failed to decode Client from watch sync payload. Dropping payload.")
         return .notIncluded
       }
-      return .snapshot(client: decoded, serverFetchDate: clientServerFetchDate, version: nil)
     }
   }
 

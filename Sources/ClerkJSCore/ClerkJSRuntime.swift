@@ -58,6 +58,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     nil
   }
 
+  public var lastClientToken: String? {
+    nil
+  }
+
   public func load(publishableKey _: String) async throws {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -160,7 +164,12 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime.lastEnvironmentJSON
   }
 
+  public var lastClientToken: String? {
+    runtime.lastClientToken
+  }
+
   public func load(publishableKey: String) async throws {
+    await runtime.hydrateClientToken()
     let pk = try Self.jsonString(publishableKey)
     let version = try Self.jsonString(sdkVersion)
     let allowedProtocol = try Self.jsonString(Self.oauthAllowedRedirectProtocol(from: oauthRedirectURL))

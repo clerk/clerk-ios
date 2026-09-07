@@ -406,6 +406,12 @@ extension WatchConnectivityCoordinator {
     source: WatchSyncSource,
     clerk: Clerk
   ) -> Bool {
+    if source.incomingDeviceIsAuthoritative,
+       clerk.user == nil,
+       payload.clientUpdate.client?.lastActiveSessionId != nil
+    {
+      return true
+    }
     let incomingTokenFingerprint: String = switch payload.deviceTokenUpdate {
     case .notIncluded:
       Self.deviceTokenFingerprint(clerk.deviceToken)

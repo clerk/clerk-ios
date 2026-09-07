@@ -48,7 +48,7 @@ enum ClerkRuntimeStore {
     }
     guard let data = engine.lastClientJSON else { return }
     let payload = (try? FAPIJSON.normalizeClientJSON(data)) ?? data
-    try? kit.applyEngineClientJSON(payload)
+    try? kit.applyEngineClientJSON(payload, deviceToken: engine.lastClientToken)
   }
 }
 

@@ -554,11 +554,10 @@ extension WatchConnectivityCoordinator {
       client: client,
       serverDate: serverDate
     )
-    let encoder = JSONEncoder()
-    encoder.keyEncodingStrategy = .convertToSnakeCase
-    encoder.dateEncodingStrategy = .millisecondsSince1970
-    encoder.outputFormatting = .sortedKeys
-    return try fingerprint(encoder.encode(payload))
+    if let data = try? JSONEncoder.clerkEncoder.encode(payload) {
+      return fingerprint(data)
+    }
+    return fingerprint(Data("unencoded\u{0}\(client?.id ?? "")\u{0}\(serverDate?.timeIntervalSince1970 ?? 0)".utf8))
   }
 
   private static func fingerprint(_ data: Data) -> String {

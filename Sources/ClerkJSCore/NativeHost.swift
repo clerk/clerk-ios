@@ -21,6 +21,7 @@ final class NativeHost: @unchecked Sendable {
   private var callbacks: [UInt64: JSValue] = [:]
   private(set) var lastClientJSON: Data?
   private(set) var lastEnvironmentJSON: Data?
+  private(set) var lastClientToken: String?
 
   init(tokenCache: ClerkJSTokenCache) {
     self.tokenCache = tokenCache
@@ -35,6 +36,13 @@ final class NativeHost: @unchecked Sendable {
   func install(on context: JSContext) {
     installBridges(on: context)
     context.evaluateScript(Self.polyfillSource)
+  }
+
+  func hydrateClientToken() async {
+    let token = await tokenCache.getToken()
+    if !token.isEmpty {
+      lastClientToken = token
+    }
   }
 
   func abortFetches(for callID: UInt64) {
@@ -127,6 +135,9 @@ final class NativeHost: @unchecked Sendable {
       let callbackID = retainCallback(callback)
       Task {
         let token = await self.tokenCache.getToken()
+        if !token.isEmpty {
+          self.lastClientToken = token
+        }
         runtime.queue.async {
           self.takeCallback(callbackID)?.call(withArguments: [NSNull(), token])
         }
@@ -138,6 +149,7 @@ final class NativeHost: @unchecked Sendable {
       guard let self, let runtime else { return }
       let callbackID = retainCallback(callback)
       Task {
+        self.lastClientToken = token
         await self.tokenCache.saveToken(token)
         runtime.queue.async {
           self.takeCallback(callbackID)?.call(withArguments: [NSNull()])

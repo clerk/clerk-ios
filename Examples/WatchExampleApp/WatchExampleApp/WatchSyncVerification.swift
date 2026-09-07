@@ -1,7 +1,7 @@
 #if os(iOS)
 import WatchConnectivity
 #endif
-import ClerkKit
+@_spi(FrameworkIntegration) import ClerkKit
 import Foundation
 import os
 
@@ -39,13 +39,13 @@ enum WatchSyncVerification {
         signUp = try await signUp.verifyPhoneCode("424242")
       }
       log.notice(
-        "clerk-watch-sync phone user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public) signup=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missingFields), privacy: .public) unverified=\(fieldList(signUp.unverifiedFields), privacy: .public)"
+        "clerk-watch-sync phone user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public) signup=\(signUp.status.rawValue, privacy: .public) missing=\(fieldList(signUp.missingFields), privacy: .public) unverified=\(fieldList(signUp.unverifiedFields), privacy: .public)"
       )
       logSession()
     } catch {
       if Clerk.shared.user != nil || Clerk.shared.session != nil {
         log.notice(
-          "clerk-watch-sync phone existing user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public)"
+          "clerk-watch-sync phone existing user=\(Clerk.shared.user?.id ?? "nil", privacy: .public) session=\(Clerk.shared.session?.id ?? "nil", privacy: .public) deviceToken=\(Clerk.shared.deviceToken == nil ? "nil" : "set", privacy: .public)"
         )
       } else {
         log.error("clerk-watch-sync phone error=\(String(describing: error), privacy: .public)")
