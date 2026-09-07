@@ -17,8 +17,6 @@ let package = Package(
   products: [
     .library(name: "ClerkKit", targets: ["ClerkKit"]),
     .library(name: "ClerkKitUI", targets: ["ClerkKitUI"]),
-    .library(name: "ClerkJSCore", targets: ["ClerkJSCore"]),
-    .library(name: "ClerkSnapshots", targets: ["ClerkSnapshots"]),
     .library(name: "ClerkWatchCompanion", targets: ["ClerkWatchCompanion"]),
   ],
   dependencies: [

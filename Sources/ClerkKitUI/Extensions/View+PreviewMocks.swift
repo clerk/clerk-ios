@@ -16,7 +16,7 @@ extension View {
   ///
   /// This modifier injects mock versions of all Clerk environment observables:
   /// - `ClerkKit.Clerk.preview` for `@Environment(Clerk.self)`
-  /// - `ClerkJSCore.Clerk` with a snapshot Environment for `@Environment(ClerkJSCore.Clerk.self)`
+  /// - A snapshot-backed runtime for ClerkKitUI auth views
   /// - `AuthState()` for `@Environment(AuthState.self)`
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
@@ -36,17 +36,18 @@ extension View {
   /// }
   /// ```
   @MainActor
-  package func clerkPreview(isSignedIn: Bool = true) -> some View {
+  public func clerkPreview(isSignedIn: Bool = true) -> some View {
     if EnvironmentDetection.isRunningInPreviews {
       // Configure Clerk.shared so views that access it directly don't fail
       let clerk = ClerkKit.Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
       }
-      let jsClerk = jsCorePreviewClerk(isSignedIn: isSignedIn)
+      let runtime = jsCorePreviewClerk(isSignedIn: isSignedIn)
+      ClerkRuntimeStore.register(runtime, for: clerk.publishableKey, alreadyLoaded: true)
 
       return AnyView(
         environment(clerk)
-          .environment(jsClerk)
+          .environment(runtime)
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
           .environment(AuthState())

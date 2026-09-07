@@ -54,7 +54,6 @@ import SwiftUI
 /// ```
 public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: View>: View {
   @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
-  @SwiftUI.Environment(ClerkJSCore.Clerk.self) private var jsClerk
   @SwiftUI.Environment(\.clerkTheme) private var theme
 
   @State private var presentedSheet: PresentedSheet?
@@ -126,6 +125,12 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   }
 
   public var body: some View {
+    ClerkRuntimeContainer { jsClerk in
+      userButtonCanvas(jsClerk: jsClerk)
+    }
+  }
+
+  private func userButtonCanvas(jsClerk: ClerkJSCore.Clerk) -> some View {
     ZStack {
       if let user = jsClerk.user {
         Button {

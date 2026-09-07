@@ -3,7 +3,6 @@
 //  Quickstart
 //
 
-import ClerkJSCore
 import ClerkKit
 import ClerkKitUI
 import SwiftUI
@@ -55,14 +54,10 @@ struct ContentView: View {
 
 #Preview("Signed Out") {
   ContentView()
-    .environment(ClerkKit.Clerk.preview { preview in
-      preview.isSignedIn = false
-    })
-    .environment(ClerkJSCore.Clerk(publishableKey: "pk_test_preview"))
+    .clerkPreview(isSignedIn: false)
 }
 
 #Preview("Signed In") {
   ContentView()
-    .environment(ClerkKit.Clerk.preview())
-    .environment(ClerkJSCore.Clerk(publishableKey: "pk_test_preview"))
+    .clerkPreview()
 }
