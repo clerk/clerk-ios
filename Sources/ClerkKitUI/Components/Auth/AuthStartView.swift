@@ -181,7 +181,7 @@ struct AuthStartView: View {
   private var titleString: LocalizedStringKey {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      if let appName = clerk.environment?.displayConfig.applicationName {
+      if let appName = jsClerk.environment?.displayConfig.applicationName {
         "Continue to \(appName)"
       } else {
         "Continue"
