@@ -1,5 +1,4 @@
 @testable import ClerkKit
-import ConcurrencyExtras
 import Testing
 
 @MainActor
@@ -10,40 +9,25 @@ struct OrganizationsTests {
   }
 
   @Test
-  func createUsesOrganizationServiceCreateOrganization() async throws {
-    let captured = LockIsolated<(String, String?)?>(nil)
-    let service = MockOrganizationService(createOrganization: { name, slug in
-      captured.setValue((name, slug))
-      return .mock
-    })
+  func createUsesEngineCreateOrganization() async throws {
+    let engine = RecordingEngineClient()
+    Clerk.engineClient = engine
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      organizationService: service
-    )
+    let organization = try await Clerk.shared.organizations.create(name: "My Org", slug: nil)
 
-    _ = try await Clerk.shared.organizations.create(name: "My Org", slug: nil)
-
-    let params = try #require(captured.value)
-    #expect(params.0 == "My Org")
-    #expect(params.1 == nil)
+    #expect(engine.createdOrganizationName == "My Org")
+    #expect(engine.createdOrganizationSlug == nil)
+    #expect(organization.id == Organization.mock.id)
   }
 
   @Test
-  func getUsesOrganizationServiceGetOrganization() async throws {
-    let capturedId = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(getOrganization: { organizationId in
-      capturedId.setValue(organizationId)
-      return .mock
-    })
+  func getUsesEngineGetOrganization() async throws {
+    let engine = RecordingEngineClient()
+    Clerk.engineClient = engine
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      organizationService: service
-    )
+    let organization = try await Clerk.shared.organizations.get(id: "org_123")
 
-    _ = try await Clerk.shared.organizations.get(id: "org_123")
-
-    #expect(capturedId.value == "org_123")
+    #expect(engine.fetchedOrganizationId == "org_123")
+    #expect(organization.id == Organization.mock.id)
   }
 }

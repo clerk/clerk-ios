@@ -218,7 +218,11 @@ extension User {
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
   public func reload() async throws -> User {
-    try await userService.reload()
+    try await Clerk.requireEngineClient().reloadUser()
+    guard let user = Clerk.shared.user else {
+      throw ClerkClientError(message: "User reload did not produce a user.")
+    }
+    return user
   }
 
   /// Updates the user's attributes. Use this method to save information you collected about the user.
@@ -235,39 +239,19 @@ extension User {
   ///   Prefer ``updateMetadata(unsafeMetadata:)`` for metadata updates.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    let service = userService
-
-    guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
-      let engine = try await Clerk.requireEngineClient()
-      try await engine.updateUser(
-        username: params.username,
-        firstName: params.firstName,
-        lastName: params.lastName,
-        primaryEmailAddressId: params.primaryEmailAddressId,
-        primaryPhoneNumberId: params.primaryPhoneNumberId
-      )
-      guard let user = Clerk.shared.user else {
-        throw ClerkClientError(message: "User update did not produce a user.")
-      }
-      return user
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.updateUser(
+      username: params.username,
+      firstName: params.firstName,
+      lastName: params.lastName,
+      primaryEmailAddressId: params.primaryEmailAddressId,
+      primaryPhoneNumberId: params.primaryPhoneNumberId,
+      unsafeMetadata: params.deprecatedUnsafeMetadata
+    )
+    guard let user = Clerk.shared.user else {
+      throw ClerkClientError(message: "User update did not produce a user.")
     }
-
-    let paramsWithoutUnsafeMetadata = params.withoutUnsafeMetadata
-    let hasProfileUpdates = paramsWithoutUnsafeMetadata.hasAnyField
-    let userAfterProfileUpdate: User =
-      if hasProfileUpdates {
-        try await service.update(params: paramsWithoutUnsafeMetadata)
-      } else {
-        try await service.reload()
-      }
-
-    let currentUnsafeMetadata = userAfterProfileUpdate.unsafeMetadata ?? .object([:])
-    let patch = currentUnsafeMetadata.mergePatch(against: desiredUnsafeMetadata)
-    if case let .object(patchObject) = patch, patchObject.isEmpty {
-      return userAfterProfileUpdate
-    }
-
-    return try await service.updateMetadata(params: .init(unsafeMetadata: patch))
+    return user
   }
 
   /// Updates the user's unsafe metadata.
@@ -275,7 +259,11 @@ extension User {
   /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
   @discardableResult @MainActor
   public func updateMetadata(_ params: User.UpdateMetadataParams) async throws -> User {
-    try await userService.updateMetadata(params: params)
+    try await Clerk.requireEngineClient().updateUserMetadata(unsafeMetadata: params.unsafeMetadata)
+    guard let user = Clerk.shared.user else {
+      throw ClerkClientError(message: "User metadata update did not produce a user.")
+    }
+    return user
   }
 
   /// Updates the user's unsafe metadata.
@@ -291,7 +279,11 @@ extension User {
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    try await userService.createBackupCodes()
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      BackupCodeResource.self,
+      from: engine.createBackupCodes()
+    )
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
@@ -333,11 +325,12 @@ extension User {
     additionalScopes: [String]? = nil,
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
-    try await userService.createExternalAccount(
-      provider: provider,
-      redirectUrl: redirectUrl,
+    try await Clerk.requireEngineClient().createExternalAccount(
+      strategy: provider.strategy,
+      redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
       additionalScopes: additionalScopes ?? [],
-      oidcPrompts: oidcPrompts
+      oidcPrompt: oidcPrompts.serializedPrompt,
+      token: nil
     )
   }
 
@@ -349,7 +342,13 @@ extension User {
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    try await userService.createExternalAccountToken(provider: provider, idToken: idToken)
+    try await Clerk.requireEngineClient().createExternalAccount(
+      strategy: provider.strategy,
+      redirectUrl: nil,
+      additionalScopes: [],
+      oidcPrompt: nil,
+      token: idToken
+    )
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -382,7 +381,7 @@ extension User {
   /// - Returns: ``Passkey``
   @discardableResult @MainActor
   public func createPasskey() async throws -> Passkey {
-    try await userService.createPasskey()
+    try await Clerk.requireEngineClient().createPasskey()
   }
   #endif
 
@@ -409,7 +408,8 @@ extension User {
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    try await userService.disableTotp()
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(DeletedObject.self, from: engine.disableTOTP())
   }
 
   /// Retrieves a list of organization invitations for the user.

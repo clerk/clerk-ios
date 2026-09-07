@@ -272,7 +272,67 @@ struct ClerkEngineClientTests {
     let deleted = try await user.delete()
     #expect(engine.deletedUser)
     #expect(deleted.deleted == true)
+
+    _ = try await user.reload()
+    #expect(engine.reloadedUser)
+
+    _ = try await user.updateMetadata(unsafeMetadata: ["plan": "pro"])
+    #expect(engine.updatedMetadata == ["plan": "pro"])
+
+    let backupCodes = try await user.createBackupCodes()
+    #expect(engine.createdBackupCodes)
+    #expect(backupCodes.codes == ["abcd"])
+
+    let disabled = try await user.disableTOTP()
+    #expect(engine.disabledTOTP)
+    #expect(disabled.deleted == true)
+
+    let oauth = try await user.createExternalAccount(
+      provider: .google,
+      redirectUrl: "myapp://callback",
+      additionalScopes: ["email"],
+      oidcPrompts: [.consent]
+    )
+    #expect(engine.createdExternalAccountStrategy == OAuthProvider.google.strategy)
+    #expect(engine.createdExternalAccountRedirectUrl == "myapp://callback")
+    #expect(engine.createdExternalAccountScopes == ["email"])
+    #expect(engine.createdExternalAccountPrompt == OIDCPrompt.consent.value)
+    #expect(oauth.id == ExternalAccount.mockVerified.id)
+
+    let apple = try await user.createExternalAccount(provider: .apple, idToken: "id-token")
+    #expect(engine.createdExternalAccountStrategy == IDTokenProvider.apple.strategy)
+    #expect(engine.createdExternalAccountToken == "id-token")
+    #expect(apple.id == ExternalAccount.mockVerified.id)
+
+    #if canImport(AuthenticationServices) && !os(watchOS)
+    let passkey = try await user.createPasskey()
+    #expect(engine.createdPasskey)
+    #expect(passkey.id == Passkey.mock.id)
+    #endif
+
+    let createdOrg = try await Clerk.shared.organizations.create(name: "Acme", slug: "acme")
+    #expect(engine.createdOrganizationName == "Acme")
+    #expect(engine.createdOrganizationSlug == "acme")
+    #expect(createdOrg.id == Organization.mock.id)
+
+    let fetchedOrg = try await Clerk.shared.organizations.get(id: "org_123")
+    #expect(engine.fetchedOrganizationId == "org_123")
+    #expect(fetchedOrg.id == Organization.mock.id)
+
     #expect(kitCalls.userServiceCount == 0)
+  }
+
+  @Test
+  @available(*, deprecated)
+  func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
+    let engine = RecordingEngineClient()
+    Clerk.engineClient = engine
+    engine.publish(User.mock)
+    let user = try #require(Clerk.shared.user)
+
+    _ = try await user.update(.init(firstName: "Ada", unsafeMetadata: ["theme": "dark"]))
+    #expect(engine.updatedFirstName == "Ada")
+    #expect(engine.updatedUnsafeMetadata == ["theme": "dark"])
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -933,6 +993,7 @@ final class RecordingEngineClient: ClerkEngineClient {
   var updatedLastName: String?
   var updatedPrimaryEmailAddressId: String?
   var updatedPrimaryPhoneNumberId: String?
+  var updatedUnsafeMetadata: JSON?
   var updatedPasswordCurrent: String?
   var updatedPasswordNew: String?
   var updatedPasswordSignOutOfOtherSessions: Bool?
@@ -946,19 +1007,24 @@ final class RecordingEngineClient: ClerkEngineClient {
     firstName: String?,
     lastName: String?,
     primaryEmailAddressId: String?,
-    primaryPhoneNumberId: String?
+    primaryPhoneNumberId: String?,
+    unsafeMetadata: JSON?
   ) async throws {
     updatedUsername = username
     updatedFirstName = firstName
     updatedLastName = lastName
     updatedPrimaryEmailAddressId = primaryEmailAddressId
     updatedPrimaryPhoneNumberId = primaryPhoneNumberId
+    updatedUnsafeMetadata = unsafeMetadata
     var user = currentUser
     user.firstName = firstName ?? user.firstName
     user.lastName = lastName ?? user.lastName
     user.username = username ?? user.username
     user.primaryEmailAddressId = primaryEmailAddressId ?? user.primaryEmailAddressId
     user.primaryPhoneNumberId = primaryPhoneNumberId ?? user.primaryPhoneNumberId
+    if let unsafeMetadata {
+      user.unsafeMetadata = unsafeMetadata
+    }
     publish(user)
   }
 
@@ -1002,6 +1068,73 @@ final class RecordingEngineClient: ClerkEngineClient {
   func deleteUser() async throws -> Data {
     deletedUser = true
     return Data(#"{"object":"user","id":"1","deleted":true}"#.utf8)
+  }
+
+  var reloadedUser = false
+  var updatedMetadata: JSON?
+  var createdBackupCodes = false
+  var disabledTOTP = false
+  var createdExternalAccountStrategy: String?
+  var createdExternalAccountRedirectUrl: String?
+  var createdExternalAccountScopes: [String]?
+  var createdExternalAccountPrompt: String?
+  var createdExternalAccountToken: String?
+  var createdPasskey = false
+  var createdOrganizationName: String?
+  var createdOrganizationSlug: String?
+  var fetchedOrganizationId: String?
+
+  func reloadUser() async throws {
+    reloadedUser = true
+    publish(currentUser)
+  }
+
+  func updateUserMetadata(unsafeMetadata: JSON) async throws {
+    updatedMetadata = unsafeMetadata
+    var user = currentUser
+    user.unsafeMetadata = unsafeMetadata
+    publish(user)
+  }
+
+  func createBackupCodes() async throws -> Data {
+    createdBackupCodes = true
+    return Data(#"{"id":"1","codes":["abcd"],"created_at":0,"updated_at":0}"#.utf8)
+  }
+
+  func disableTOTP() async throws -> Data {
+    disabledTOTP = true
+    return Data(#"{"object":"totp","id":"1","deleted":true}"#.utf8)
+  }
+
+  func createExternalAccount(
+    strategy: String,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompt: String?,
+    token: String?
+  ) async throws -> ExternalAccount {
+    createdExternalAccountStrategy = strategy
+    createdExternalAccountRedirectUrl = redirectUrl
+    createdExternalAccountScopes = additionalScopes
+    createdExternalAccountPrompt = oidcPrompt
+    createdExternalAccountToken = token
+    return .mockVerified
+  }
+
+  func createPasskey() async throws -> Passkey {
+    createdPasskey = true
+    return .mock
+  }
+
+  func createOrganization(name: String, slug: String?) async throws -> Organization {
+    createdOrganizationName = name
+    createdOrganizationSlug = slug
+    return .mock
+  }
+
+  func getOrganization(id: String) async throws -> Organization {
+    fetchedOrganizationId = id
+    return .mock
   }
 
   var transferredToSignUpMetadata: JSON?
@@ -1251,11 +1384,17 @@ private func installFailingUserService(_ counts: KitCallCounter) {
     return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
   }
   let service = MockUserService(
+    reload: { throw fail() },
     update: { _ in throw fail() },
+    updateMetadata: { _ in throw fail() },
+    createBackupCodes: { throw fail() },
     createEmailAddress: { _ in throw fail() },
     createPhoneNumber: { _ in throw fail() },
+    createExternalAccount: { _, _, _, _ in throw fail() },
+    createExternalAccountToken: { _, _ in throw fail() },
     createTotp: { throw fail() },
     verifyTotp: { _ in throw fail() },
+    disableTotp: { throw fail() },
     updatePassword: { _ in throw fail() },
     delete: { throw fail() }
   )

@@ -347,7 +347,8 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     firstName: String?,
     lastName: String?,
     primaryEmailAddressId: String?,
-    primaryPhoneNumberId: String?
+    primaryPhoneNumberId: String?,
+    unsafeMetadata: JSON?
   ) async throws {
     await loadIfNeeded()
     _ = try await engine.user.update(
@@ -358,7 +359,7 @@ final class ClerkJSEngineClient: ClerkEngineClient {
         primaryEmailAddressId: primaryEmailAddressId,
         primaryPhoneNumberId: primaryPhoneNumberId,
         primaryWeb3WalletId: nil,
-        unsafeMetadata: nil
+        unsafeMetadata: jsonValue(unsafeMetadata)
       )
     )
     publish()
@@ -407,6 +408,84 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     let data = try await engine.user.delete()
     publish()
     return data
+  }
+
+  func reloadUser() async throws {
+    await loadIfNeeded()
+    try await engine.user.reload()
+    publish()
+  }
+
+  func updateUserMetadata(unsafeMetadata: JSON) async throws {
+    await loadIfNeeded()
+    try await engine.user.updateMetadata(
+      UpdateUserMetadataParams(unsafeMetadata: jsonValue(unsafeMetadata))
+    )
+    publish()
+  }
+
+  func createBackupCodes() async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.createBackupCode()
+    publish()
+    return data
+  }
+
+  func disableTOTP() async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.disableTOTP()
+    publish()
+    return data
+  }
+
+  func createExternalAccount(
+    strategy: String,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompt: String?,
+    token: String?
+  ) async throws -> ClerkKit.ExternalAccount {
+    await loadIfNeeded()
+    try await engine.user.createExternalAccount(
+      .init(
+        strategy: strategy,
+        redirectUrl: redirectUrl,
+        additionalScopes: additionalScopes.isEmpty ? nil : additionalScopes,
+        oidcPrompt: oidcPrompt,
+        token: token
+      )
+    )
+    publish()
+    if let account = kit.user?.externalAccounts.last(where: { account in
+      account.provider == strategy || account.provider == providerName(from: strategy)
+    }) {
+      return account
+    }
+    throw ClerkClientError(message: "External account was not created.")
+  }
+
+  func createPasskey() async throws -> ClerkKit.Passkey {
+    await loadIfNeeded()
+    try await engine.user.createPasskey()
+    publish()
+    guard let passkey = kit.user?.passkeys.last else {
+      throw ClerkClientError(message: "Passkey was not created.")
+    }
+    return passkey
+  }
+
+  func createOrganization(name: String, slug: String?) async throws -> Organization {
+    await loadIfNeeded()
+    let data = try await engine.createOrganization(CreateOrganizationParams(name: name, slug: slug))
+    publish()
+    return try decodeOrganization(data)
+  }
+
+  func getOrganization(id: String) async throws -> Organization {
+    await loadIfNeeded()
+    let data = try await engine.getOrganization(id)
+    publish()
+    return try decodeOrganization(data)
   }
 
   func transferToSignUp(unsafeMetadata: JSON?) async throws {
@@ -500,6 +579,25 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     let data = try await engine.session.verifyWithPasskey()
     publish()
     return try decodeSessionVerification(data)
+  }
+
+  private func jsonValue(_ json: JSON?) throws -> JSONValue? {
+    guard let json else { return nil }
+    return try jsonValue(json)
+  }
+
+  private func jsonValue(_ json: JSON) throws -> JSONValue {
+    try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(json))
+  }
+
+  private func providerName(from strategy: String) -> String {
+    strategy
+      .replacingOccurrences(of: "oauth_token_", with: "")
+      .replacingOccurrences(of: "oauth_", with: "")
+  }
+
+  private func decodeOrganization(_ data: Data) throws -> Organization {
+    try JSONDecoder().decode(Organization.self, from: data)
   }
 
   private func loadIfNeeded() async {

@@ -65,13 +65,27 @@ package protocol ClerkEngineClient: AnyObject {
     phoneNumber: String?,
     legalAccepted: Bool?
   ) async throws
-  func updateUser(username: String?, firstName: String?, lastName: String?, primaryEmailAddressId: String?, primaryPhoneNumberId: String?) async throws
+  func updateUser(username: String?, firstName: String?, lastName: String?, primaryEmailAddressId: String?, primaryPhoneNumberId: String?, unsafeMetadata: JSON?) async throws
   func updatePassword(currentPassword: String?, newPassword: String, signOutOfOtherSessions: Bool) async throws
   func createEmailAddress(_ emailAddress: String) async throws
   func createPhoneNumber(_ phoneNumber: String) async throws
   func createTOTP() async throws -> Data
   func verifyTOTP(code: String) async throws -> Data
   func deleteUser() async throws -> Data
+  func reloadUser() async throws
+  func updateUserMetadata(unsafeMetadata: JSON) async throws
+  func createBackupCodes() async throws -> Data
+  func disableTOTP() async throws -> Data
+  func createExternalAccount(
+    strategy: String,
+    redirectUrl: String?,
+    additionalScopes: [String],
+    oidcPrompt: String?,
+    token: String?
+  ) async throws -> ExternalAccount
+  func createPasskey() async throws -> Passkey
+  func createOrganization(name: String, slug: String?) async throws -> Organization
+  func getOrganization(id: String) async throws -> Organization
   func transferToSignUp(unsafeMetadata: JSON?) async throws
   func transferToSignIn() async throws
   func startSessionVerification(level: String) async throws -> SessionVerification

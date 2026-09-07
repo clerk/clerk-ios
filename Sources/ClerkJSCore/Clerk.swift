@@ -26,6 +26,10 @@ package enum ClerkJSUserJSON {
     return (try? JSONSerialization.data(withJSONObject: object)) ?? data
   }
 
+  static func backupCodesForKit(_ data: Data) -> Data {
+    totpForKit(data)
+  }
+
   private static func unixMilliseconds(_ value: Any?) -> Double? {
     switch value {
     case let number as NSNumber:
@@ -206,6 +210,14 @@ public final class Clerk {
     }
     try publishLastClient()
     publishLastEnvironment()
+  }
+
+  public func createOrganization(_ params: CreateOrganizationParams) async throws -> Data {
+    try await callReturningAndPublish(ClerkJSPath.clerk(.createOrganization), params)
+  }
+
+  public func getOrganization(_ organizationId: String) async throws -> Data {
+    try await callReturningAndPublish(ClerkJSPath.clerk(.getOrganization), organizationId)
   }
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
@@ -1124,6 +1136,70 @@ public final class Clerk {
 
     public func delete() async throws -> Data {
       try await clerk.callReturningAndPublish(ClerkJSPath.user(.delete), EmptyArgs())
+    }
+
+    public func reload() async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.reload), EmptyArgs())
+    }
+
+    public func updateMetadata(_ params: UpdateUserMetadataParams) async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.updateMetadata), params)
+    }
+
+    public func createBackupCode() async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.createBackupCode), EmptyArgs())
+      return ClerkJSUserJSON.backupCodesForKit(data)
+    }
+
+    public func disableTOTP() async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.user(.disableTOTP), EmptyArgs())
+    }
+
+    public func createExternalAccount(_ params: ExternalAccountParams) async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.createExternalAccount), params)
+    }
+
+    public func createPasskey() async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.createPasskey), EmptyArgs())
+    }
+
+    public struct ExternalAccountParams: Encodable, Sendable {
+      public var strategy: String?
+      public var redirectUrl: String?
+      public var additionalScopes: [String]?
+      public var oidcPrompt: String?
+      public var token: String?
+
+      public init(
+        strategy: String? = nil,
+        redirectUrl: String? = nil,
+        additionalScopes: [String]? = nil,
+        oidcPrompt: String? = nil,
+        token: String? = nil
+      ) {
+        self.strategy = strategy
+        self.redirectUrl = redirectUrl
+        self.additionalScopes = additionalScopes
+        self.oidcPrompt = oidcPrompt
+        self.token = token
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(strategy, forKey: .strategy)
+        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(additionalScopes, forKey: .additionalScopes)
+        try container.encodeIfPresent(oidcPrompt, forKey: .oidcPrompt)
+        try container.encodeIfPresent(token, forKey: .token)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case strategy
+        case redirectUrl
+        case additionalScopes
+        case oidcPrompt
+        case token
+      }
     }
   }
 

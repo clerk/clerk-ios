@@ -10,6 +10,7 @@ public struct CreateExternalAccountParams: Codable, Equatable, Sendable {
   public var additionalScopes: [String]?
   public var oidcPrompt: String?
   public var oidcLoginHint: String?
+  public var token: String?
 
   public init(
     strategy: String?,
@@ -17,7 +18,8 @@ public struct CreateExternalAccountParams: Codable, Equatable, Sendable {
     redirectUrl: String?,
     additionalScopes: [String]?,
     oidcPrompt: String?,
-    oidcLoginHint: String?
+    oidcLoginHint: String?,
+    token: String?
   ) {
     self.strategy = strategy
     self.enterpriseConnectionId = enterpriseConnectionId
@@ -25,6 +27,7 @@ public struct CreateExternalAccountParams: Codable, Equatable, Sendable {
     self.additionalScopes = additionalScopes
     self.oidcPrompt = oidcPrompt
     self.oidcLoginHint = oidcLoginHint
+    self.token = token
   }
 
   public enum CodingKeys: String, CodingKey {
@@ -34,6 +37,7 @@ public struct CreateExternalAccountParams: Codable, Equatable, Sendable {
     case additionalScopes
     case oidcPrompt
     case oidcLoginHint
+    case token
   }
 
   public init(from decoder: Decoder) throws {
@@ -44,5 +48,6 @@ public struct CreateExternalAccountParams: Codable, Equatable, Sendable {
     self.additionalScopes = try container.decodeIfPresentFlexible([String].self, snake: "additionalScopes", camel: "additionalScopes")
     self.oidcPrompt = try container.decodeIfPresentFlexible(String.self, snake: "oidcPrompt", camel: "oidcPrompt")
     self.oidcLoginHint = try container.decodeIfPresentFlexible(String.self, snake: "oidcLoginHint", camel: "oidcLoginHint")
+    self.token = try container.decodeIfPresentFlexible(String.self, snake: "token", camel: "token")
   }
 }
