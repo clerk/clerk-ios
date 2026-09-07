@@ -142,6 +142,7 @@ let package = Package(
       name: "ClerkJSCoreIntegrationTests",
       dependencies: [
         "ClerkJSCore",
+        "ClerkWatchCompanion",
       ],
       path: "Tests/ClerkJSCoreIntegration",
       swiftSettings: [

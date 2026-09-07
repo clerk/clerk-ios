@@ -1,5 +1,6 @@
 #if !os(watchOS)
 @testable import ClerkJSCore
+import ClerkWatchCompanion
 import Foundation
 import Testing
 
@@ -101,6 +102,10 @@ struct ClerkJSCoreSetActiveTests {
         return
       }
       #expect(jwt.count > 4)
+      var replica = WatchCompanion()
+      try await replica.apply(clerk.watchCompanion.encode())
+      #expect(replica.client?.id.hasPrefix("client_") == true)
+      #expect(replica.client?.lastActiveSessionId == sessionId)
     } catch {
       Issue.record("setActive \(sanitizedJSError(error))")
       throw error
