@@ -427,17 +427,23 @@ public final class Clerk {
       public var emailAddressId: String?
       public var phoneNumberId: String?
       public var redirectUrl: String?
+      public var codeChallenge: String?
+      public var codeChallengeMethod: String?
 
       public init(
         strategy: Strategy,
         emailAddressId: String? = nil,
         phoneNumberId: String? = nil,
-        redirectUrl: String? = nil
+        redirectUrl: String? = nil,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
       ) {
         self.strategy = strategy
         self.emailAddressId = emailAddressId
         self.phoneNumberId = phoneNumberId
         self.redirectUrl = redirectUrl
+        self.codeChallenge = codeChallenge
+        self.codeChallengeMethod = codeChallengeMethod
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -446,6 +452,8 @@ public final class Clerk {
         try container.encodeIfPresent(emailAddressId, forKey: .emailAddressId)
         try container.encodeIfPresent(phoneNumberId, forKey: .phoneNumberId)
         try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(codeChallenge, forKey: .codeChallenge)
+        try container.encodeIfPresent(codeChallengeMethod, forKey: .codeChallengeMethod)
       }
 
       private enum CodingKeys: String, CodingKey {
@@ -453,6 +461,8 @@ public final class Clerk {
         case emailAddressId
         case phoneNumberId
         case redirectUrl
+        case codeChallenge
+        case codeChallengeMethod
       }
     }
 
@@ -773,18 +783,35 @@ public final class Clerk {
 
     public struct PrepareVerificationParams: Encodable, Sendable {
       public var strategy: Strategy
+      public var redirectUrl: String?
+      public var codeChallenge: String?
+      public var codeChallengeMethod: String?
 
-      public init(strategy: Strategy) {
+      public init(
+        strategy: Strategy,
+        redirectUrl: String? = nil,
+        codeChallenge: String? = nil,
+        codeChallengeMethod: String? = nil
+      ) {
         self.strategy = strategy
+        self.redirectUrl = redirectUrl
+        self.codeChallenge = codeChallenge
+        self.codeChallengeMethod = codeChallengeMethod
       }
 
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(strategy, forKey: .strategy)
+        try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(codeChallenge, forKey: .codeChallenge)
+        try container.encodeIfPresent(codeChallengeMethod, forKey: .codeChallengeMethod)
       }
 
       private enum CodingKeys: String, CodingKey {
         case strategy
+        case redirectUrl
+        case codeChallenge
+        case codeChallengeMethod
       }
     }
 

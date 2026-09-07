@@ -145,16 +145,14 @@ extension SignIn {
       authFlowOwnerId: AuthFlowRequestScope.ownerId
     )
 
-    return try await signInService.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .emailLink,
-        emailAddressId: emailId,
-        redirectUri: resolvedRedirectUri,
-        codeChallenge: pkcePair.challenge,
-        codeChallengeMethod: PKCE.codeChallengeMethod
-      )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendEmailLink(
+      emailAddressId: emailId,
+      redirectUrl: resolvedRedirectUri,
+      codeChallenge: pkcePair.challenge,
+      codeChallengeMethod: PKCE.codeChallengeMethod
     )
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Sends a verification code to the specified phone number.

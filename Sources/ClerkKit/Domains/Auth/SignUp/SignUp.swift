@@ -182,16 +182,13 @@ extension SignUp {
       authFlowOwnerId: AuthFlowRequestScope.ownerId
     )
 
-    return try await signUpService.prepareVerification(
-      signUpId: id,
-      params: .init(
-        strategy: .emailLink,
-        emailAddressId: nil,
-        redirectUri: resolvedRedirectUri,
-        codeChallenge: pkcePair.challenge,
-        codeChallengeMethod: PKCE.codeChallengeMethod
-      )
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.sendSignUpEmailLink(
+      redirectUrl: resolvedRedirectUri,
+      codeChallenge: pkcePair.challenge,
+      codeChallengeMethod: PKCE.codeChallengeMethod
     )
+    return try Clerk.requireEngineSignUp()
   }
 
   /// Sends a verification code to the email address.

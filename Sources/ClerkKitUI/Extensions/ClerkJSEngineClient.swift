@@ -51,6 +51,40 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     publish()
   }
 
+  func sendEmailLink(
+    emailAddressId: String?,
+    redirectUrl: String,
+    codeChallenge: String,
+    codeChallengeMethod: String
+  ) async throws {
+    _ = try await engine.client.signIn.prepareFirstFactor(
+      .init(
+        strategy: .emailLink,
+        emailAddressId: emailAddressId,
+        redirectUrl: redirectUrl,
+        codeChallenge: codeChallenge,
+        codeChallengeMethod: codeChallengeMethod
+      )
+    )
+    publish()
+  }
+
+  func sendSignUpEmailLink(
+    redirectUrl: String,
+    codeChallenge: String,
+    codeChallengeMethod: String
+  ) async throws {
+    _ = try await engine.client.signUp.prepareVerification(
+      .init(
+        strategy: .emailLink,
+        redirectUrl: redirectUrl,
+        codeChallenge: codeChallenge,
+        codeChallengeMethod: codeChallengeMethod
+      )
+    )
+    publish()
+  }
+
   func sendPhoneCode(phoneNumberId: String?) async throws {
     _ = try await engine.client.signIn.prepareFirstFactor(
       .init(strategy: .phoneCode, phoneNumberId: phoneNumberId)

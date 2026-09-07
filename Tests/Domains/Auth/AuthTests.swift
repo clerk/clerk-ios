@@ -166,51 +166,6 @@ struct AuthTests {
   }
 
   @Test
-  func signInWithEmailLinkCreatesAndPreparesFirstFactor() async throws {
-    let keychain = InMemoryKeychain()
-    let createParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let prepareParams = LockIsolated<SignIn.PrepareFirstFactorParams?>(nil)
-
-    var signIn = SignIn.mock
-    signIn.identifier = "test@example.com"
-    signIn.supportedFirstFactors = [
-      Factor(
-        strategy: .emailLink,
-        emailAddressId: "ema_123",
-        safeIdentifier: "test@example.com"
-      ),
-    ]
-
-    let signInService = MockSignInService(
-      create: { params in
-        createParams.setValue(params)
-        return signIn
-      },
-      prepareFirstFactor: { _, params in
-        prepareParams.setValue(params)
-        return signIn
-      }
-    )
-
-    configureDependencies(signInService: signInService, keychain: keychain)
-
-    _ = try await Clerk.shared.auth.signInWithEmailLink(emailAddress: " test@example.com ")
-
-    let capturedCreateParams = try #require(createParams.value)
-    #expect(capturedCreateParams.identifier == "test@example.com")
-
-    let capturedPrepareParams = try #require(prepareParams.value)
-    #expect(capturedPrepareParams.strategy == .emailLink)
-    #expect(capturedPrepareParams.emailAddressId == "ema_123")
-    #expect(capturedPrepareParams.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(capturedPrepareParams.codeChallengeMethod == PKCE.codeChallengeMethod)
-    #expect(capturedPrepareParams.codeChallenge?.isEmpty == false)
-
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
-    #expect(Clerk.shared.dependencies.magicLinkStore.load()?.flowId == signIn.id)
-  }
-
-  @Test
   func completeMagicLinkWithCallbackURLCompletesPendingFlowAndActivatesSession() async throws {
     let keychain = InMemoryKeychain()
     let completeParams = LockIsolated<MagicLinkCompleteParams?>(nil)

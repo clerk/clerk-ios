@@ -140,8 +140,9 @@ public struct Auth {
       throw ClerkClientError(message: "Email address is required.", localizationBundle: .module)
     }
 
-    let signIn = try await signInService.create(params: .init(identifier: identifier))
-    return try await signIn.sendEmailLink()
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.signIn(identifier: identifier)
+    return try await Clerk.requireEngineSignIn().sendEmailLink()
   }
 
   /// Signs in with OTP (One-Time Password) using a phone number.

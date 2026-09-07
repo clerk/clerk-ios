@@ -7,6 +7,17 @@ package protocol ClerkEngineClient: AnyObject {
   func signInWithPhoneCode(phoneNumber: String) async throws
   func signInWithPassword(identifier: String, password: String) async throws
   func sendEmailCode(emailAddressId: String?) async throws
+  func sendEmailLink(
+    emailAddressId: String?,
+    redirectUrl: String,
+    codeChallenge: String,
+    codeChallengeMethod: String
+  ) async throws
+  func sendSignUpEmailLink(
+    redirectUrl: String,
+    codeChallenge: String,
+    codeChallengeMethod: String
+  ) async throws
   func sendPhoneCode(phoneNumberId: String?) async throws
   func verifyEmailCode(_ code: String) async throws
   func verifyPhoneCode(_ code: String) async throws

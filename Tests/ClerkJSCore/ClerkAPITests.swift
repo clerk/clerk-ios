@@ -183,13 +183,17 @@ struct ClerkAPITests {
       Clerk.SignIn.PrepareFirstFactorParams(
         strategy: .emailLink,
         emailAddressId: "idn_1",
-        redirectUrl: "clerk://sso-callback"
+        redirectUrl: "clerk://sso-callback",
+        codeChallenge: "challenge",
+        codeChallengeMethod: "S256"
       )
     )
     #expect(emailLink["strategy"] as? String == "email_link")
     #expect(emailLink["emailAddressId"] as? String == "idn_1")
     #expect(emailLink["redirectUrl"] as? String == "clerk://sso-callback")
-    #expect(emailLink.count == 3)
+    #expect(emailLink["codeChallenge"] as? String == "challenge")
+    #expect(emailLink["codeChallengeMethod"] as? String == "S256")
+    #expect(emailLink.count == 5)
 
     let strategyOnly = try encodeJSON(Clerk.SignIn.PrepareFirstFactorParams(strategy: .emailCode))
     #expect(strategyOnly["strategy"] as? String == "email_code")
