@@ -88,6 +88,19 @@ struct ClerkJSCoreSetActiveTests {
       try await clerk.setActive(.init(session: sessionId))
       let token = try await clerk.session.getToken()
       #expect((token ?? "").count > 4)
+      let skipped = try await clerk.session.getToken(.init(skipCache: true))
+      #expect((skipped ?? "").count > 4)
+      let invoked = try await clerk.invoke(
+        ClerkJSInvocation(
+          .session(id: ClerkJSResourceID(sessionId)),
+          SessionJSCall.getToken(GetTokenOptions(skipCache: true))
+        )
+      )
+      guard case .string(let jwt) = invoked else {
+        Issue.record("invoke skipCache getToken did not return a string")
+        return
+      }
+      #expect(jwt.count > 4)
     } catch {
       Issue.record("setActive \(sanitizedJSError(error))")
       throw error
