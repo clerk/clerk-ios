@@ -319,6 +319,39 @@ struct ClerkEngineClientTests {
     #expect(engine.fetchedOrganizationId == "org_123")
     #expect(fetchedOrg.id == Organization.mock.id)
 
+    let invitations = try await user.getOrganizationInvitations(
+      page: 2,
+      pageSize: 10,
+      status: ["pending", "accepted"]
+    )
+    #expect(engine.fetchedInvitationPage == 2)
+    #expect(engine.fetchedInvitationPageSize == 10)
+    #expect(engine.fetchedInvitationStatus == ["pending", "accepted"])
+    #expect(invitations.data.first?.id == UserOrganizationInvitation.mock.id)
+
+    let memberships = try await user.getOrganizationMemberships(page: 3, pageSize: 10)
+    #expect(engine.fetchedMembershipPage == 3)
+    #expect(engine.fetchedMembershipPageSize == 10)
+    #expect(memberships.data.first?.id == OrganizationMembership.mockWithUserData.id)
+
+    let suggestions = try await user.getOrganizationSuggestions(page: 2, pageSize: 10, status: ["pending"])
+    #expect(engine.fetchedSuggestionPage == 2)
+    #expect(engine.fetchedSuggestionStatus == ["pending"])
+    #expect(suggestions.data.first?.id == OrganizationSuggestion.mock.id)
+
+    let sessions = try await user.getSessions()
+    #expect(engine.fetchedSessions)
+    #expect(sessions.first?.id == Session.mock.id)
+    #expect(Clerk.shared.sessionsByUserId[user.id]?.first?.id == Session.mock.id)
+
+    let left = try await user.leaveOrganization(organizationId: "org_123")
+    #expect(engine.leftOrganizationId == "org_123")
+    #expect(left.deleted == true)
+
+    let defaults = try await user.getOrganizationCreationDefaults()
+    #expect(engine.fetchedCreationDefaults)
+    #expect(defaults.form?.name == "Acme")
+
     #expect(kitCalls.userServiceCount == 0)
   }
 
@@ -1137,6 +1170,59 @@ final class RecordingEngineClient: ClerkEngineClient {
     return .mock
   }
 
+  var fetchedInvitationPage: Int?
+  var fetchedInvitationPageSize: Int?
+  var fetchedInvitationStatus: [String]?
+  var fetchedMembershipPage: Int?
+  var fetchedMembershipPageSize: Int?
+  var fetchedSuggestionPage: Int?
+  var fetchedSuggestionPageSize: Int?
+  var fetchedSuggestionStatus: [String]?
+  var fetchedSessions = false
+  var leftOrganizationId: String?
+  var fetchedCreationDefaults = false
+
+  func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data {
+    fetchedInvitationPage = page
+    fetchedInvitationPageSize = pageSize
+    fetchedInvitationStatus = status
+    return try JSONEncoder.clerkEncoder.encode(
+      ClerkPaginatedResponse(data: [UserOrganizationInvitation.mock], totalCount: 1)
+    )
+  }
+
+  func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data {
+    fetchedMembershipPage = page
+    fetchedMembershipPageSize = pageSize
+    return try JSONEncoder.clerkEncoder.encode(
+      ClerkPaginatedResponse(data: [OrganizationMembership.mockWithUserData], totalCount: 1)
+    )
+  }
+
+  func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data {
+    fetchedSuggestionPage = page
+    fetchedSuggestionPageSize = pageSize
+    fetchedSuggestionStatus = status
+    return try JSONEncoder.clerkEncoder.encode(
+      ClerkPaginatedResponse(data: [OrganizationSuggestion.mock], totalCount: 1)
+    )
+  }
+
+  func getSessions() async throws -> Data {
+    fetchedSessions = true
+    return try JSONEncoder.clerkEncoder.encode([Session.mock])
+  }
+
+  func leaveOrganization(organizationId: String) async throws -> Data {
+    leftOrganizationId = organizationId
+    return Data(#"{"object":"organization_membership","id":"1","deleted":true}"#.utf8)
+  }
+
+  func getOrganizationCreationDefaults() async throws -> Data {
+    fetchedCreationDefaults = true
+    return Data(#"{"form":{"name":"Acme","slug":"acme"}}"#.utf8)
+  }
+
   var transferredToSignUpMetadata: JSON?
   var transferredToSignIn = false
 
@@ -1384,6 +1470,7 @@ private func installFailingUserService(_ counts: KitCallCounter) {
     return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
   }
   let service = MockUserService(
+    getSessions: { _ in throw fail() },
     reload: { throw fail() },
     update: { _ in throw fail() },
     updateMetadata: { _ in throw fail() },
@@ -1395,6 +1482,11 @@ private func installFailingUserService(_ counts: KitCallCounter) {
     createTotp: { throw fail() },
     verifyTotp: { _ in throw fail() },
     disableTotp: { throw fail() },
+    getOrganizationInvitations: { _, _, _ in throw fail() },
+    getOrganizationMemberships: { _, _ in throw fail() },
+    leaveOrganization: { _ in throw fail() },
+    getOrganizationSuggestions: { _, _, _ in throw fail() },
+    getOrganizationCreationDefaults: { throw fail() },
     updatePassword: { _ in throw fail() },
     delete: { throw fail() }
   )

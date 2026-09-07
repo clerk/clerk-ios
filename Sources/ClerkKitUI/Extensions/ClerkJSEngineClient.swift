@@ -488,6 +488,44 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return try decodeOrganization(data)
   }
 
+  func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data {
+    await loadIfNeeded()
+    return try await engine.user.getOrganizationInvitations(
+      .init(initialPage: page, pageSize: pageSize, status: status)
+    )
+  }
+
+  func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data {
+    await loadIfNeeded()
+    return try await engine.user.getOrganizationMemberships(
+      .init(initialPage: page, pageSize: pageSize)
+    )
+  }
+
+  func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data {
+    await loadIfNeeded()
+    return try await engine.user.getOrganizationSuggestions(
+      .init(initialPage: page, pageSize: pageSize, status: status)
+    )
+  }
+
+  func getSessions() async throws -> Data {
+    await loadIfNeeded()
+    return try await engine.user.getSessions()
+  }
+
+  func leaveOrganization(organizationId: String) async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.leaveOrganization(organizationId)
+    publish()
+    return data
+  }
+
+  func getOrganizationCreationDefaults() async throws -> Data {
+    await loadIfNeeded()
+    return try await engine.user.getOrganizationCreationDefaults()
+  }
+
   func transferToSignUp(unsafeMetadata: JSON?) async throws {
     await loadIfNeeded()
     let converted = try unsafeMetadata.map {

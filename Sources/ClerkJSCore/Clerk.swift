@@ -30,6 +30,40 @@ package enum ClerkJSUserJSON {
     totpForKit(data)
   }
 
+  static func resourceJSONForKit(_ data: Data) -> Data {
+    guard let object = try? JSONSerialization.jsonObject(with: data) else {
+      return data
+    }
+    return (try? JSONSerialization.data(withJSONObject: normalizeResourceJSON(object))) ?? data
+  }
+
+  private static func normalizeResourceJSON(_ value: Any) -> Any {
+    if var object = value as? [String: Any] {
+      for key in ["createdAt", "created_at", "updatedAt", "updated_at", "expireAt", "expire_at", "abandonAt", "abandon_at", "lastActiveAt", "last_active_at"] {
+        if let millis = unixMilliseconds(object[key]) {
+          object[key] = millis
+        }
+      }
+      if object["created_at"] == nil, object["createdAt"] == nil {
+        if let millis = unixMilliseconds(object["last_active_at"] ?? object["lastActiveAt"]) {
+          object["created_at"] = millis
+          object["updated_at"] = millis
+        }
+      }
+      if object["total_count"] == nil, let total = object["totalCount"] {
+        object["total_count"] = total
+      }
+      for (key, nested) in object {
+        object[key] = normalizeResourceJSON(nested)
+      }
+      return object
+    }
+    if let array = value as? [Any] {
+      return array.map(normalizeResourceJSON)
+    }
+    return value
+  }
+
   private static func unixMilliseconds(_ value: Any?) -> Double? {
     switch value {
     case let number as NSNumber:
@@ -1161,6 +1195,65 @@ public final class Clerk {
 
     public func createPasskey() async throws {
       try await clerk.callAndPublish(ClerkJSPath.user(.createPasskey), EmptyArgs())
+    }
+
+    public func getOrganizationInvitations(_ params: PageParams) async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.getOrganizationInvitations), params)
+      return ClerkJSUserJSON.resourceJSONForKit(data)
+    }
+
+    public func getOrganizationMemberships(_ params: PageParams) async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.getOrganizationMemberships), params)
+      return ClerkJSUserJSON.resourceJSONForKit(data)
+    }
+
+    public func getOrganizationSuggestions(_ params: PageParams) async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.getOrganizationSuggestions), params)
+      return ClerkJSUserJSON.resourceJSONForKit(data)
+    }
+
+    public func getSessions() async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.getSessions), EmptyArgs())
+      return ClerkJSUserJSON.resourceJSONForKit(data)
+    }
+
+    public func leaveOrganization(_ organizationId: String) async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.user(.leaveOrganization), organizationId)
+    }
+
+    public func getOrganizationCreationDefaults() async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.user(.getOrganizationCreationDefaults), EmptyArgs())
+    }
+
+    public struct PageParams: Encodable, Sendable {
+      public var initialPage: Int
+      public var pageSize: Int
+      public var status: [String]?
+
+      public init(initialPage: Int, pageSize: Int, status: [String]? = nil) {
+        self.initialPage = initialPage
+        self.pageSize = pageSize
+        self.status = status
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(initialPage, forKey: .initialPage)
+        try container.encode(pageSize, forKey: .pageSize)
+        if let status, !status.isEmpty {
+          if status.count == 1 {
+            try container.encode(status[0], forKey: .status)
+          } else {
+            try container.encode(status, forKey: .status)
+          }
+        }
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case initialPage
+        case pageSize
+        case status
+      }
     }
 
     public struct ExternalAccountParams: Encodable, Sendable {

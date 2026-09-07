@@ -424,11 +424,7 @@ extension User {
     pageSize: Int = 20,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await getOrganizationInvitations(
-      offset: offset(forPage: page, pageSize: pageSize),
-      pageSize: pageSize,
-      status: status
-    )
+    try await organizationInvitations(page: page, pageSize: pageSize, status: status)
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -443,7 +439,11 @@ extension User {
     pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)
+    try await organizationInvitations(
+      page: page(fromOffset: offset, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -456,10 +456,7 @@ extension User {
     page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await getOrganizationMemberships(
-      offset: offset(forPage: page, pageSize: pageSize),
-      pageSize: pageSize
-    )
+    try await organizationMemberships(page: page, pageSize: pageSize)
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -472,7 +469,10 @@ extension User {
     offset: Int = 0,
     pageSize: Int = 10
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await userService.getOrganizationMemberships(offset: offset, pageSize: pageSize)
+    try await organizationMemberships(
+      page: page(fromOffset: offset, pageSize: pageSize),
+      pageSize: pageSize
+    )
   }
 
   /// Leaves the organization with the provided id.
@@ -480,7 +480,11 @@ extension User {
   /// - Returns: A ``DeletedObject`` response.
   @discardableResult @MainActor
   public func leaveOrganization(organizationId: String) async throws -> DeletedObject {
-    try await userService.leaveOrganization(organizationId: organizationId)
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      DeletedObject.self,
+      from: engine.leaveOrganization(organizationId: organizationId)
+    )
   }
 
   /// Retrieves a list of organization suggestions for the user.
@@ -495,11 +499,7 @@ extension User {
     pageSize: Int = 20,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await getOrganizationSuggestions(
-      offset: offset(forPage: page, pageSize: pageSize),
-      pageSize: pageSize,
-      status: status
-    )
+    try await organizationSuggestions(page: page, pageSize: pageSize, status: status)
   }
 
   /// Retrieves a list of organization suggestions for the user.
@@ -514,11 +514,54 @@ extension User {
     pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await userService.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)
+    try await organizationSuggestions(
+      page: page(fromOffset: offset, pageSize: pageSize),
+      pageSize: pageSize,
+      status: status
+    )
   }
 
-  private func offset(forPage page: Int, pageSize: Int) -> Int {
-    max(page - 1, 0) * pageSize
+  private func page(fromOffset offset: Int, pageSize: Int) -> Int {
+    guard pageSize > 0 else { return 1 }
+    return offset / pageSize + 1
+  }
+
+  @MainActor
+  private func organizationInvitations(
+    page: Int,
+    pageSize: Int,
+    status: [String]
+  ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      ClerkPaginatedResponse<UserOrganizationInvitation>.self,
+      from: engine.getOrganizationInvitations(page: page, pageSize: pageSize, status: status)
+    )
+  }
+
+  @MainActor
+  private func organizationMemberships(
+    page: Int,
+    pageSize: Int
+  ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      ClerkPaginatedResponse<OrganizationMembership>.self,
+      from: engine.getOrganizationMemberships(page: page, pageSize: pageSize)
+    )
+  }
+
+  @MainActor
+  private func organizationSuggestions(
+    page: Int,
+    pageSize: Int,
+    status: [String]
+  ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      ClerkPaginatedResponse<OrganizationSuggestion>.self,
+      from: engine.getOrganizationSuggestions(page: page, pageSize: pageSize, status: status)
+    )
   }
 
   /// Retrieves the organization creation defaults for this user.
@@ -527,7 +570,11 @@ extension User {
   /// - Returns: An ``OrganizationCreationDefaults`` object.
   @discardableResult @MainActor
   public func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
-    try await userService.getOrganizationCreationDefaults()
+    let engine = try await Clerk.requireEngineClient()
+    return try await JSONDecoder.clerkDecoder.decode(
+      OrganizationCreationDefaults.self,
+      from: engine.getOrganizationCreationDefaults()
+    )
   }
 
   /// Retrieves all active sessions for this user.
@@ -535,7 +582,10 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    try await userService.getSessions(user: self)
+    let engine = try await Clerk.requireEngineClient()
+    let sessions = try await JSONDecoder.clerkDecoder.decode([Session].self, from: engine.getSessions())
+    Clerk.shared.sessionsByUserId[id] = sessions
+    return sessions
   }
 
   @discardableResult @MainActor
