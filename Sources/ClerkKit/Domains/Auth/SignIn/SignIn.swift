@@ -100,6 +100,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.sendEmailCode(emailAddressId: emailAddressId)
+      return try Clerk.requireEngineSignIn()
+    }
     let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -190,6 +194,11 @@ extension SignIn {
 
     guard resolvedStrategy.canAttemptFirstFactorCode else {
       throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
+    }
+
+    if let engine = await Clerk.resolvedEngineClient(), resolvedStrategy == .emailCode {
+      try await engine.verifyEmailCode(code)
+      return try Clerk.requireEngineSignIn()
     }
 
     return try await signInService.attemptFirstFactor(

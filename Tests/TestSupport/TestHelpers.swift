@@ -33,6 +33,9 @@ extension Clerk {
 /// This function should be called at the start of each test suite or test to ensure proper isolation.
 @MainActor
 func configureClerkForTesting() {
+  Clerk.engineClient = nil
+  Clerk.makeEngineClient = nil
+
   // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
 

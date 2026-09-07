@@ -571,6 +571,7 @@ extension Clerk {
     }
 
     _shared = clerk
+    installLinkedEngineFactoryIfAvailable()
     return clerk
   }
 
@@ -720,6 +721,8 @@ extension Clerk {
     await shared.cleanupManagersAndDrainCache()
     await SessionTokenFetcher.shared.reset()
     await SessionTokensCache.shared.clear()
+    engineClient = nil
+    makeEngineClient = nil
     _shared = nil
   }
 

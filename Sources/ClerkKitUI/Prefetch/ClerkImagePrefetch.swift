@@ -68,7 +68,8 @@ extension View {
   ///
   /// - Returns: A view that prefetches Clerk images when it appears.
   public func prefetchClerkImages() -> some View {
-    modifier(ClerkImagePrefetchModifier())
+    ClerkEngineBootstrap.install()
+    return modifier(ClerkImagePrefetchModifier())
   }
 }
 

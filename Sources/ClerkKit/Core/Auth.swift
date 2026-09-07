@@ -116,7 +116,11 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithEmailCode(emailAddress: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signInWithEmailCode(emailAddress: emailAddress)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
   }
 
   /// Starts a native magic-link sign-in flow for an email address.

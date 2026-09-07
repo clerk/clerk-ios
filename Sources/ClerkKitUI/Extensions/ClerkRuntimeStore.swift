@@ -56,6 +56,7 @@ struct ClerkRuntimeContainer<Content: View>: View {
   private let content: (ClerkJSCore.Clerk) -> Content
 
   init(@ViewBuilder content: @escaping (ClerkJSCore.Clerk) -> Content) {
+    ClerkEngineBootstrap.install()
     self.content = content
   }
 
