@@ -288,6 +288,73 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signUp)
   }
 
+  func updateUser(
+    username: String?,
+    firstName: String?,
+    lastName: String?,
+    primaryEmailAddressId: String?,
+    primaryPhoneNumberId: String?
+  ) async throws {
+    await loadIfNeeded()
+    _ = try await engine.user.update(
+      UpdateUserParams(
+        username: username,
+        firstName: firstName,
+        lastName: lastName,
+        primaryEmailAddressId: primaryEmailAddressId,
+        primaryPhoneNumberId: primaryPhoneNumberId,
+        primaryWeb3WalletId: nil,
+        unsafeMetadata: nil
+      )
+    )
+    publish()
+  }
+
+  func updatePassword(currentPassword: String?, newPassword: String, signOutOfOtherSessions: Bool) async throws {
+    await loadIfNeeded()
+    try await engine.user.updatePassword(
+      UpdateUserPasswordParams(
+        newPassword: newPassword,
+        currentPassword: currentPassword,
+        signOutOfOtherSessions: signOutOfOtherSessions
+      )
+    )
+    publish()
+  }
+
+  func createEmailAddress(_ emailAddress: String) async throws {
+    await loadIfNeeded()
+    try await engine.user.createEmailAddress(CreateEmailAddressParams(email: emailAddress))
+    publish()
+  }
+
+  func createPhoneNumber(_ phoneNumber: String) async throws {
+    await loadIfNeeded()
+    try await engine.user.createPhoneNumber(CreatePhoneNumberParams(phoneNumber: phoneNumber))
+    publish()
+  }
+
+  func createTOTP() async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.createTOTP()
+    publish()
+    return data
+  }
+
+  func verifyTOTP(code: String) async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.verifyTOTP(VerifyTOTPParams(code: code))
+    publish()
+    return data
+  }
+
+  func deleteUser() async throws -> Data {
+    await loadIfNeeded()
+    let data = try await engine.user.delete()
+    publish()
+    return data
+  }
+
   private func loadIfNeeded() async {
     await ClerkRuntimeStore.loadIfNeeded(engine, key: kit.publishableKey, onto: kit)
   }

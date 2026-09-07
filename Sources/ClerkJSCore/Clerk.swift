@@ -9,6 +9,38 @@ private typealias FAPISignUp = SignUp
 
 private struct EmptyArgs: Encodable {}
 
+package enum ClerkJSUserJSON {
+  static func totpForKit(_ data: Data) -> Data {
+    guard var object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+      return data
+    }
+    object["created_at"] = unixMilliseconds(object["created_at"] ?? object["createdAt"]) ?? 0
+    object["updated_at"] = unixMilliseconds(object["updated_at"] ?? object["updatedAt"]) ?? 0
+    if object["backup_codes"] == nil, let codes = object["backupCodes"] {
+      object["backup_codes"] = codes
+    }
+    object["createdAt"] = nil
+    object["updatedAt"] = nil
+    object["backupCodes"] = nil
+    object["pathRoot"] = nil
+    return (try? JSONSerialization.data(withJSONObject: object)) ?? data
+  }
+
+  private static func unixMilliseconds(_ value: Any?) -> Double? {
+    switch value {
+    case let number as NSNumber:
+      return number.doubleValue
+    case let string as String:
+      let withFractional = ISO8601DateFormatter()
+      withFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      let date = withFractional.date(from: string) ?? ISO8601DateFormatter().date(from: string)
+      return date.map { $0.timeIntervalSince1970 * 1000 }
+    default:
+      return nil
+    }
+  }
+}
+
 package enum ClerkJSPath {
   private static let instance = "__clerkInstance"
 
@@ -30,6 +62,10 @@ package enum ClerkJSPath {
 
   static func session(_ method: SessionJSMethod) -> String {
     "\(instance).session.\(method.rawValue)"
+  }
+
+  static func user(_ method: UserJSMethod) -> String {
+    "\(instance).user.\(method.rawValue)"
   }
 }
 
@@ -134,8 +170,8 @@ public final class Clerk {
     ActiveSession(clerk: self)
   }
 
-  public var user: User? {
-    session.user
+  public var user: User {
+    User(clerk: self)
   }
 
   package var lastClientJSON: Data? {
@@ -753,7 +789,7 @@ public final class Clerk {
       lastActiveSession?.status
     }
 
-    public var user: User? {
+    public var user: ClerkSnapshots.User? {
       lastActiveSession?.user
     }
 
@@ -796,6 +832,43 @@ public final class Clerk {
     }
   }
 
+  @MainActor
+  public struct User {
+    unowned let clerk: Clerk
+
+    @discardableResult
+    public func update(_ params: UpdateUserParams) async throws -> ClerkSnapshots.User? {
+      try await clerk.callAndPublish(ClerkJSPath.user(.update), params)
+      return clerk.session.user
+    }
+
+    public func updatePassword(_ params: UpdateUserPasswordParams) async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.updatePassword), params)
+    }
+
+    public func createEmailAddress(_ params: CreateEmailAddressParams) async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.createEmailAddress), params)
+    }
+
+    public func createPhoneNumber(_ params: CreatePhoneNumberParams) async throws {
+      try await clerk.callAndPublish(ClerkJSPath.user(.createPhoneNumber), params)
+    }
+
+    public func createTOTP() async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.createTOTP), EmptyArgs())
+      return ClerkJSUserJSON.totpForKit(data)
+    }
+
+    public func verifyTOTP(_ params: VerifyTOTPParams) async throws -> Data {
+      let data = try await clerk.callReturningAndPublish(ClerkJSPath.user(.verifyTOTP), params)
+      return ClerkJSUserJSON.totpForKit(data)
+    }
+
+    public func delete() async throws -> Data {
+      try await clerk.callReturningAndPublish(ClerkJSPath.user(.delete), EmptyArgs())
+    }
+  }
+
   private func callAndPublish(_ methodPath: String, _ args: some Encodable & Sendable) async throws {
     do {
       _ = try await runtime.call(methodPath: methodPath, args: args)
@@ -806,6 +879,20 @@ public final class Clerk {
     }
     try publishLastClient()
     publishLastEnvironment()
+  }
+
+  private func callReturningAndPublish(_ methodPath: String, _ args: some Encodable & Sendable) async throws -> Data {
+    let json: String
+    do {
+      json = try await runtime.callReturning(methodPath: methodPath, args: args)
+    } catch {
+      try? publishLastClient()
+      publishLastEnvironment()
+      throw error
+    }
+    try publishLastClient()
+    publishLastEnvironment()
+    return Data(json.utf8)
   }
 
   private func publishLastClient() throws {

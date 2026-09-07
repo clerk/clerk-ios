@@ -238,6 +238,19 @@ extension User {
     let service = userService
 
     guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
+      if let engine = await Clerk.resolvedEngineClient() {
+        try await engine.updateUser(
+          username: params.username,
+          firstName: params.firstName,
+          lastName: params.lastName,
+          primaryEmailAddressId: params.primaryEmailAddressId,
+          primaryPhoneNumberId: params.primaryPhoneNumberId
+        )
+        guard let user = Clerk.shared.user else {
+          throw ClerkClientError(message: "User update did not produce a user.")
+        }
+        return user
+      }
       return try await service.update(params: params)
     }
 
@@ -287,14 +300,28 @@ extension User {
   /// - Parameter email: The value of the email address.
   @discardableResult @MainActor
   public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
-    try await userService.createEmailAddress(emailAddress: emailAddress)
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.createEmailAddress(emailAddress)
+      guard let address = Clerk.shared.user?.emailAddresses.first(where: { $0.emailAddress == emailAddress }) else {
+        throw ClerkClientError(message: "Email address was not created.")
+      }
+      return address
+    }
+    return try await userService.createEmailAddress(emailAddress: emailAddress)
   }
 
   /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
   /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
   @discardableResult @MainActor
   public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await userService.createPhoneNumber(phoneNumber: phoneNumber)
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.createPhoneNumber(phoneNumber)
+      guard let number = Clerk.shared.user?.phoneNumbers.first(where: { $0.phoneNumber == phoneNumber }) else {
+        throw ClerkClientError(message: "Phone number was not created.")
+      }
+      return number
+    }
+    return try await userService.createPhoneNumber(phoneNumber: phoneNumber)
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -370,7 +397,10 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    try await userService.createTotp()
+    if let engine = await Clerk.resolvedEngineClient() {
+      return try await JSONDecoder.clerkDecoder.decode(TOTPResource.self, from: engine.createTOTP())
+    }
+    return try await userService.createTotp()
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -380,7 +410,10 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    try await userService.verifyTotp(code: code)
+    if let engine = await Clerk.resolvedEngineClient() {
+      return try await JSONDecoder.clerkDecoder.decode(TOTPResource.self, from: engine.verifyTOTP(code: code))
+    }
+    return try await userService.verifyTotp(code: code)
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
@@ -523,7 +556,18 @@ extension User {
   /// Updates the user's password. Passwords must be at least 8 characters long.
   @discardableResult @MainActor
   public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-    try await userService.updatePassword(params: params)
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.updatePassword(
+        currentPassword: params.currentPassword,
+        newPassword: params.newPassword,
+        signOutOfOtherSessions: params.signOutOfOtherSessions
+      )
+      guard let user = Clerk.shared.user else {
+        throw ClerkClientError(message: "Password update did not produce a user.")
+      }
+      return user
+    }
+    return try await userService.updatePassword(params: params)
   }
 
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -543,6 +587,11 @@ extension User {
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await userService.delete()
+    if let engine = await Clerk.resolvedEngineClient() {
+      let deleted = try await JSONDecoder.clerkDecoder.decode(DeletedObject.self, from: engine.deleteUser())
+      Clerk.shared.auth.send(.accountDeleted)
+      return deleted
+    }
+    return try await userService.delete()
   }
 }

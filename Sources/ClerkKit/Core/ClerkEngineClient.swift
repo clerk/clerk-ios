@@ -57,6 +57,13 @@ package protocol ClerkEngineClient: AnyObject {
     phoneNumber: String?,
     legalAccepted: Bool?
   ) async throws
+  func updateUser(username: String?, firstName: String?, lastName: String?, primaryEmailAddressId: String?, primaryPhoneNumberId: String?) async throws
+  func updatePassword(currentPassword: String?, newPassword: String, signOutOfOtherSessions: Bool) async throws
+  func createEmailAddress(_ emailAddress: String) async throws
+  func createPhoneNumber(_ phoneNumber: String) async throws
+  func createTOTP() async throws -> Data
+  func verifyTOTP(code: String) async throws -> Data
+  func deleteUser() async throws -> Data
 }
 
 extension Clerk {

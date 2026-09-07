@@ -231,6 +231,51 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func userMutationsUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingUserService(kitCalls)
+    engine.publish(User.mock)
+    let user = try #require(Clerk.shared.user)
+
+    let updated = try await user.update(.init(firstName: "Ada", lastName: "Lovelace"))
+    #expect(engine.updatedUsername == nil)
+    #expect(engine.updatedFirstName == "Ada")
+    #expect(engine.updatedLastName == "Lovelace")
+    #expect(updated.firstName == "Ada")
+    #expect(updated.lastName == "Lovelace")
+
+    _ = try await user.updatePassword(
+      .init(currentPassword: "old-pass", newPassword: "new-pass", signOutOfOtherSessions: true)
+    )
+    #expect(engine.updatedPasswordCurrent == "old-pass")
+    #expect(engine.updatedPasswordNew == "new-pass")
+    #expect(engine.updatedPasswordSignOutOfOtherSessions == true)
+
+    let email = try await user.createEmailAddress("added@example.com")
+    #expect(engine.createdEmail == "added@example.com")
+    #expect(email.emailAddress == "added@example.com")
+
+    let phone = try await user.createPhoneNumber("+15555550999")
+    #expect(engine.createdPhone == "+15555550999")
+    #expect(phone.phoneNumber == "+15555550999")
+
+    let totp = try await user.createTOTP()
+    #expect(totp.id == "totp_engine")
+    #expect(totp.verified == false)
+
+    let verified = try await user.verifyTOTP(code: "424242")
+    #expect(engine.verifiedTotpCode == "424242")
+    #expect(verified.id == "totp_engine")
+
+    let deleted = try await user.delete()
+    #expect(engine.deletedUser)
+    #expect(deleted.deleted == true)
+    #expect(kitCalls.userServiceCount == 0)
+  }
+
+  @Test
   func configureDoesNotInstallEngineInTests() async {
     #expect(Clerk.makeEngineClient == nil)
     #expect(await Clerk.resolvedEngineClient() == nil)
@@ -629,6 +674,86 @@ private final class RecordingEngineClient: ClerkEngineClient {
     publish(signUp)
   }
 
+  var updatedUsername: String?
+  var updatedFirstName: String?
+  var updatedLastName: String?
+  var updatedPrimaryEmailAddressId: String?
+  var updatedPrimaryPhoneNumberId: String?
+  var updatedPasswordCurrent: String?
+  var updatedPasswordNew: String?
+  var updatedPasswordSignOutOfOtherSessions: Bool?
+  var createdEmail: String?
+  var createdPhone: String?
+  var verifiedTotpCode: String?
+  var deletedUser = false
+
+  func updateUser(
+    username: String?,
+    firstName: String?,
+    lastName: String?,
+    primaryEmailAddressId: String?,
+    primaryPhoneNumberId: String?
+  ) async throws {
+    updatedUsername = username
+    updatedFirstName = firstName
+    updatedLastName = lastName
+    updatedPrimaryEmailAddressId = primaryEmailAddressId
+    updatedPrimaryPhoneNumberId = primaryPhoneNumberId
+    var user = currentUser
+    user.firstName = firstName ?? user.firstName
+    user.lastName = lastName ?? user.lastName
+    user.username = username ?? user.username
+    user.primaryEmailAddressId = primaryEmailAddressId ?? user.primaryEmailAddressId
+    user.primaryPhoneNumberId = primaryPhoneNumberId ?? user.primaryPhoneNumberId
+    publish(user)
+  }
+
+  func updatePassword(currentPassword: String?, newPassword: String, signOutOfOtherSessions: Bool) async throws {
+    updatedPasswordCurrent = currentPassword
+    updatedPasswordNew = newPassword
+    updatedPasswordSignOutOfOtherSessions = signOutOfOtherSessions
+    publish(currentUser)
+  }
+
+  func createEmailAddress(_ emailAddress: String) async throws {
+    createdEmail = emailAddress
+    var user = currentUser
+    user.emailAddresses.append(EmailAddress(id: "idn_added", emailAddress: emailAddress))
+    publish(user)
+  }
+
+  func createPhoneNumber(_ phoneNumber: String) async throws {
+    createdPhone = phoneNumber
+    var user = currentUser
+    user.phoneNumbers.append(
+      PhoneNumber(
+        id: "idn_phone_added",
+        phoneNumber: phoneNumber,
+        reservedForSecondFactor: false,
+        defaultSecondFactor: false
+      )
+    )
+    publish(user)
+  }
+
+  func createTOTP() async throws -> Data {
+    Data(#"{"id":"totp_engine","verified":false,"created_at":0,"updated_at":0}"#.utf8)
+  }
+
+  func verifyTOTP(code: String) async throws -> Data {
+    verifiedTotpCode = code
+    return Data(#"{"id":"totp_engine","verified":true,"created_at":0,"updated_at":0}"#.utf8)
+  }
+
+  func deleteUser() async throws -> Data {
+    deletedUser = true
+    return Data(#"{"object":"user","id":"1","deleted":true}"#.utf8)
+  }
+
+  private var currentUser: User {
+    Clerk.shared.user ?? .mock
+  }
+
   func publish(_ signIn: SignIn) {
     Clerk.shared.applyResponseClient(
       Client(
@@ -650,6 +775,19 @@ private final class RecordingEngineClient: ClerkEngineClient {
       )
     )
   }
+
+  func publish(_ user: User) {
+    var session = Session.mock
+    session.user = user
+    Clerk.shared.applyResponseClient(
+      Client(
+        id: "client_engine",
+        sessions: [session],
+        lastActiveSessionId: session.id,
+        updatedAt: Date()
+      )
+    )
+  }
 }
 
 @MainActor
@@ -666,6 +804,7 @@ private final class KitCallCounter {
   var attemptSecondCount = 0
   var resetPasswordCount = 0
   var signUpUpdateCount = 0
+  var userServiceCount = 0
 }
 
 @MainActor
@@ -743,6 +882,30 @@ private func installFailingSignUpService(_ counts: KitCallCounter) {
     apiClient: createMockAPIClient(),
     signInService: Clerk.shared.dependencies.signInService,
     signUpService: service
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingUserService(_ counts: KitCallCounter) {
+  let fail: () -> ClerkClientError = {
+    counts.userServiceCount += 1
+    return ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+  }
+  let service = MockUserService(
+    update: { _ in throw fail() },
+    createEmailAddress: { _ in throw fail() },
+    createPhoneNumber: { _ in throw fail() },
+    createTotp: { throw fail() },
+    verifyTotp: { _ in throw fail() },
+    updatePassword: { _ in throw fail() },
+    delete: { throw fail() }
+  )
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    userService: service
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager

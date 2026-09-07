@@ -70,6 +70,10 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     throw ClerkJSCoreError.unsupportedPlatform
   }
 
+  public func callReturning(methodPath _: String, args _: some Encodable) async throws -> String {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -237,6 +241,71 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           return result === undefined ? true : result;
         }
         return true;
+      })()
+      """
+    do {
+      let result = try await runtime.evaluateJSON(script)
+      _ = try? await applyLastFAPIClientJSON()
+      return result
+    } catch {
+      _ = try? await applyLastFAPIClientJSON()
+      throw error
+    }
+  }
+
+  public func callReturning(methodPath: String, args: some Encodable) async throws -> String {
+    let data = try JSONEncoder().encode(args)
+    guard let argsJSON = String(data: data, encoding: .utf8) else {
+      throw ClerkJSCoreError.invalidArgument("args")
+    }
+    let path = try Self.jsonString(methodPath)
+    let script = """
+      (function() {
+        var parts = \(path).split('.');
+        var receiver = globalThis;
+        var fn = globalThis;
+        for (var i = 0; i < parts.length; i++) {
+          receiver = fn;
+          fn = fn[parts[i]];
+        }
+        if (typeof fn !== 'function') {
+          throw new Error('Not a function: ' + \(path));
+        }
+        function rejectReason(error) {
+          var first = error && Array.isArray(error.errors) ? error.errors[0] : null;
+          var code = first && first.code
+            ? String(first.code)
+            : (error && error.code ? String(error.code) : '');
+          var message = first && (first.long_message || first.message)
+            ? String(first.long_message || first.message)
+            : (error && error.message ? String(error.message) : '');
+          var name = error && error.name ? String(error.name) : 'js_error';
+          var text = code || message || name;
+          if (code && message && message.indexOf(code) === -1) {
+            text = code + ': ' + message;
+          }
+          return new Error(text);
+        }
+        function serialize(value) {
+          if (value === undefined) {
+            return null;
+          }
+          if (value === null || typeof value !== 'object') {
+            return value;
+          }
+          try {
+            return JSON.parse(JSON.stringify(value));
+          } catch (error) {
+            throw rejectReason(error);
+          }
+        }
+        var result = fn.call(receiver, \(argsJSON));
+        if (result && typeof result.then === 'function') {
+          return result.then(serialize, function(error) {
+            throw rejectReason(error);
+          });
+        }
+        return serialize(result);
       })()
       """
     do {

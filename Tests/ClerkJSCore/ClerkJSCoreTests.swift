@@ -518,6 +518,67 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callReturningStringifiesObjectResults() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__returningProbe = {
+          createTOTP: function() {
+            return { id: 'totp_1', secret: 's3cret', uri: 'otpauth://totp/x' };
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callReturning(
+      methodPath: "__returningProbe.createTOTP",
+      args: EmptyCallArgs()
+    )
+    let object = try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+    #expect(object["id"] as? String == "totp_1")
+    #expect(object["secret"] as? String == "s3cret")
+    #expect(object["uri"] as? String == "otpauth://totp/x")
+  }
+
+  @Test
+  func totpJSONForKitConvertsStringifiedResourceDates() throws {
+    let input = Data(
+      """
+      {
+        "id": "totp_1",
+        "secret": "s3cret",
+        "uri": "otpauth://totp/x",
+        "verified": false,
+        "backupCodes": ["a1"],
+        "createdAt": "2023-11-14T22:13:20.000Z",
+        "updatedAt": "2023-11-14T22:13:20.000Z",
+        "pathRoot": "/me"
+      }
+      """.utf8
+    )
+    let data = ClerkJSUserJSON.totpForKit(input)
+    let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    #expect(object["id"] as? String == "totp_1")
+    #expect(object["secret"] as? String == "s3cret")
+    #expect((object["created_at"] as? NSNumber)?.doubleValue == 1_700_000_000_000)
+    #expect((object["updated_at"] as? NSNumber)?.doubleValue == 1_700_000_000_000)
+    #expect(object["backup_codes"] as? [String] == ["a1"])
+    #expect(object["createdAt"] == nil)
+    #expect(object["pathRoot"] == nil)
+
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    decoder.dateDecodingStrategy = .millisecondsSince1970
+    let totp = try decoder.decode(KitTOTPResource.self, from: data)
+    #expect(totp.id == "totp_1")
+    #expect(totp.secret == "s3cret")
+    #expect(totp.verified == false)
+    #expect(totp.createdAt.timeIntervalSince1970 == 1_700_000_000)
+  }
+
+  @Test
   func resourceCacheHostPersistsSnapshots() async throws {
     let cache = ClerkJSResourceCache.memory()
     let runtime = ClerkJSRuntime(resourceCache: cache)
@@ -541,6 +602,18 @@ struct ClerkJSCoreTests {
     #expect(stored.environment != nil)
   }
 }
+
+private struct KitTOTPResource: Decodable {
+  var id: String
+  var secret: String?
+  var uri: String?
+  var verified: Bool
+  var backupCodes: [String]?
+  var createdAt: Date
+  var updatedAt: Date
+}
+
+private struct EmptyCallArgs: Encodable {}
 
 private func decodeJSONString(_ json: String) throws -> String {
   try JSONDecoder().decode(String.self, from: Data(json.utf8))

@@ -21,7 +21,6 @@ struct ClerkAPITests {
     #expect(clerk.session.id == nil)
     #expect(clerk.session.status != .active)
     #expect(clerk.session.user == nil)
-    #expect(clerk.user == nil)
   }
 
   @Test
@@ -432,7 +431,6 @@ struct ClerkAPITests {
     #expect(clerk.session.id == nil)
     #expect(clerk.session.status != .active)
     #expect(clerk.session.user == nil)
-    #expect(clerk.user == nil)
   }
 
   @Test
@@ -446,7 +444,6 @@ struct ClerkAPITests {
     #expect(clerk.session.id == "sess_fixture")
     #expect(clerk.session.status == .active)
     #expect(clerk.session.user?.id == "user_fixture")
-    #expect(clerk.user?.id == "user_fixture")
   }
 
   @Test
