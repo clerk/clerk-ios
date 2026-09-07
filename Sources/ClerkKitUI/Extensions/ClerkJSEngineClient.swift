@@ -123,12 +123,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signIn)
   }
 
-  func setActive(sessionId: String, organizationId: String?) async throws {
-    await loadIfNeeded()
-    try await engine.setActive(.init(session: sessionId, organization: organizationId))
-    publish()
-  }
-
   func signOut(sessionId: String?) async throws {
     await loadIfNeeded()
     if let sessionId {
@@ -137,13 +131,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
       try await engine.signOut()
     }
     publish()
-  }
-
-  func getToken(template: String?, skipCache: Bool) async throws -> String? {
-    await loadIfNeeded()
-    return try await engine.session.getToken(
-      .init(template: template, skipCache: skipCache)
-    )
   }
 
   func signUp(
@@ -353,138 +340,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfComplete(signUp)
   }
 
-  func updateUser(
-    username: String?,
-    firstName: String?,
-    lastName: String?,
-    primaryEmailAddressId: String?,
-    primaryPhoneNumberId: String?,
-    unsafeMetadata: JSON?
-  ) async throws {
-    await loadIfNeeded()
-    _ = try await engine.user.update(
-      UpdateUserParams(
-        username: username,
-        firstName: firstName,
-        lastName: lastName,
-        primaryEmailAddressId: primaryEmailAddressId,
-        primaryPhoneNumberId: primaryPhoneNumberId,
-        primaryWeb3WalletId: nil,
-        unsafeMetadata: jsonValue(unsafeMetadata)
-      )
-    )
-    publish()
-  }
-
-  func updatePassword(currentPassword: String?, newPassword: String, signOutOfOtherSessions: Bool) async throws {
-    await loadIfNeeded()
-    try await engine.user.updatePassword(
-      UpdateUserPasswordParams(
-        newPassword: newPassword,
-        currentPassword: currentPassword,
-        signOutOfOtherSessions: signOutOfOtherSessions
-      )
-    )
-    publish()
-  }
-
-  func createEmailAddress(_ emailAddress: String) async throws {
-    await loadIfNeeded()
-    try await engine.user.createEmailAddress(CreateEmailAddressParams(email: emailAddress))
-    publish()
-  }
-
-  func createPhoneNumber(_ phoneNumber: String) async throws {
-    await loadIfNeeded()
-    try await engine.user.createPhoneNumber(CreatePhoneNumberParams(phoneNumber: phoneNumber))
-    publish()
-  }
-
-  func createTOTP() async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.createTOTP()
-    publish()
-    return data
-  }
-
-  func verifyTOTP(code: String) async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.verifyTOTP(VerifyTOTPParams(code: code))
-    publish()
-    return data
-  }
-
-  func deleteUser() async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.delete()
-    publish()
-    return data
-  }
-
-  func reloadUser() async throws {
-    await loadIfNeeded()
-    try await engine.user.reload()
-    publish()
-  }
-
-  func updateUserMetadata(unsafeMetadata: JSON) async throws {
-    await loadIfNeeded()
-    try await engine.user.updateMetadata(
-      UpdateUserMetadataParams(unsafeMetadata: jsonValue(unsafeMetadata))
-    )
-    publish()
-  }
-
-  func createBackupCodes() async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.createBackupCode()
-    publish()
-    return data
-  }
-
-  func disableTOTP() async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.disableTOTP()
-    publish()
-    return data
-  }
-
-  func createExternalAccount(
-    strategy: String,
-    redirectUrl: String?,
-    additionalScopes: [String],
-    oidcPrompt: String?,
-    token: String?
-  ) async throws -> ClerkKit.ExternalAccount {
-    await loadIfNeeded()
-    try await engine.user.createExternalAccount(
-      .init(
-        strategy: strategy,
-        redirectUrl: redirectUrl,
-        additionalScopes: additionalScopes.isEmpty ? nil : additionalScopes,
-        oidcPrompt: oidcPrompt,
-        token: token
-      )
-    )
-    publish()
-    if let account = kit.user?.externalAccounts.last(where: { account in
-      account.provider == strategy || account.provider == providerName(from: strategy)
-    }) {
-      return account
-    }
-    throw ClerkClientError(message: "External account was not created.")
-  }
-
-  func createPasskey() async throws -> ClerkKit.Passkey {
-    await loadIfNeeded()
-    try await engine.user.createPasskey()
-    publish()
-    guard let passkey = kit.user?.passkeys.last else {
-      throw ClerkClientError(message: "Passkey was not created.")
-    }
-    return passkey
-  }
-
   func createOrganization(name: String, slug: String?) async throws -> Organization {
     await loadIfNeeded()
     let data = try await engine.createOrganization(CreateOrganizationParams(name: name, slug: slug))
@@ -504,44 +359,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     let data = try await engine.callInstanceMethod(root: root, method: method, args: args)
     publish()
     return data
-  }
-
-  func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data {
-    await loadIfNeeded()
-    return try await engine.user.getOrganizationInvitations(
-      .init(initialPage: page, pageSize: pageSize, status: status)
-    )
-  }
-
-  func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data {
-    await loadIfNeeded()
-    return try await engine.user.getOrganizationMemberships(
-      .init(initialPage: page, pageSize: pageSize)
-    )
-  }
-
-  func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data {
-    await loadIfNeeded()
-    return try await engine.user.getOrganizationSuggestions(
-      .init(initialPage: page, pageSize: pageSize, status: status)
-    )
-  }
-
-  func getSessions() async throws -> Data {
-    await loadIfNeeded()
-    return try await engine.user.getSessions()
-  }
-
-  func leaveOrganization(organizationId: String) async throws -> Data {
-    await loadIfNeeded()
-    let data = try await engine.user.leaveOrganization(organizationId)
-    publish()
-    return data
-  }
-
-  func getOrganizationCreationDefaults() async throws -> Data {
-    await loadIfNeeded()
-    return try await engine.user.getOrganizationCreationDefaults()
   }
 
   func transferToSignUp(unsafeMetadata: JSON?) async throws {
@@ -635,21 +452,6 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     let data = try await engine.session.verifyWithPasskey()
     publish()
     return try decodeSessionVerification(data)
-  }
-
-  private func jsonValue(_ json: JSON?) throws -> JSONValue? {
-    guard let json else { return nil }
-    return try jsonValue(json)
-  }
-
-  private func jsonValue(_ json: JSON) throws -> JSONValue {
-    try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(json))
-  }
-
-  private func providerName(from strategy: String) -> String {
-    strategy
-      .replacingOccurrences(of: "oauth_token_", with: "")
-      .replacingOccurrences(of: "oauth_", with: "")
   }
 
   private func decodeOrganization(_ data: Data) throws -> Organization {
