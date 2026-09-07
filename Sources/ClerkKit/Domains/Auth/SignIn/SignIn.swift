@@ -171,6 +171,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.sendPhoneCode(phoneNumberId: phoneNumberId)
+      return try Clerk.requireEngineSignIn()
+    }
     let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
     return try await signInService.prepareFirstFactor(
       signInId: id,
@@ -196,9 +200,17 @@ extension SignIn {
       throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
 
-    if let engine = await Clerk.resolvedEngineClient(), resolvedStrategy == .emailCode {
-      try await engine.verifyEmailCode(code)
-      return try Clerk.requireEngineSignIn()
+    if let engine = await Clerk.resolvedEngineClient() {
+      switch resolvedStrategy {
+      case .emailCode:
+        try await engine.verifyEmailCode(code)
+        return try Clerk.requireEngineSignIn()
+      case .phoneCode:
+        try await engine.verifyPhoneCode(code)
+        return try Clerk.requireEngineSignIn()
+      default:
+        break
+      }
     }
 
     return try await signInService.attemptFirstFactor(
@@ -215,7 +227,11 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.authenticateWithPassword(password)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .password, password: password)
     )

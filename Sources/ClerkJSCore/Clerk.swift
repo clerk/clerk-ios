@@ -172,9 +172,22 @@ public final class Clerk {
 
   public struct SetActiveParams: Encodable, Sendable {
     public var session: String?
+    public var organization: String?
 
-    public init(session: String?) {
+    public init(session: String?, organization: String? = nil) {
       self.session = session
+      self.organization = organization
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encodeIfPresent(session, forKey: .session)
+      try container.encodeIfPresent(organization, forKey: .organization)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+      case session
+      case organization
     }
   }
 
@@ -286,15 +299,18 @@ public final class Clerk {
       public var identifier: String?
       public var strategy: String?
       public var redirectUrl: String?
+      public var password: String?
 
       public init(
         identifier: String? = nil,
         strategy: String? = nil,
-        redirectUrl: String? = nil
+        redirectUrl: String? = nil,
+        password: String? = nil
       ) {
         self.identifier = identifier
         self.strategy = strategy
         self.redirectUrl = redirectUrl
+        self.password = password
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -302,12 +318,14 @@ public final class Clerk {
         try container.encodeIfPresent(identifier, forKey: .identifier)
         try container.encodeIfPresent(strategy, forKey: .strategy)
         try container.encodeIfPresent(redirectUrl, forKey: .redirectUrl)
+        try container.encodeIfPresent(password, forKey: .password)
       }
 
       private enum CodingKeys: String, CodingKey {
         case identifier
         case strategy
         case redirectUrl
+        case password
       }
     }
 
@@ -687,12 +705,36 @@ public final class Clerk {
       return client.sessions.first { $0.id == sessionId }
     }
 
-    public func getToken() async throws -> String {
+    public func getToken(_ params: GetTokenParams = .init()) async throws -> String? {
       let json = try await clerk.runtime.call(
         methodPath: ClerkJSPath.session(.getToken),
-        args: EmptyArgs()
+        args: params
       )
+      if json == "null" {
+        return nil
+      }
       return try JSONDecoder().decode(String.self, from: Data(json.utf8))
+    }
+
+    public struct GetTokenParams: Encodable, Sendable {
+      public var template: String?
+      public var skipCache: Bool?
+
+      public init(template: String? = nil, skipCache: Bool? = nil) {
+        self.template = template
+        self.skipCache = skipCache
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(template, forKey: .template)
+        try container.encodeIfPresent(skipCache, forKey: .skipCache)
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case template
+        case skipCache
+      }
     }
   }
 

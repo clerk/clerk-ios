@@ -340,6 +340,27 @@ struct ClerkAPITests {
   }
 
   @Test
+  func setActiveParamsEncodeOrganization() throws {
+    let json = try encodeJSON(Clerk.SetActiveParams(session: "sess_1", organization: "org_1"))
+    #expect(json["session"] as? String == "sess_1")
+    #expect(json["organization"] as? String == "org_1")
+  }
+
+  @Test
+  func createParamsEncodePassword() throws {
+    let json = try encodeJSON(
+      Clerk.SignIn.CreateParams(
+        identifier: "user@example.com",
+        strategy: "password",
+        password: "hunter2"
+      )
+    )
+    #expect(json["identifier"] as? String == "user@example.com")
+    #expect(json["strategy"] as? String == "password")
+    #expect(json["password"] as? String == "hunter2")
+  }
+
+  @Test
   func generatedJSMethodRawValuesAreJSNames() {
     #expect(SignInJSMethod.create.rawValue == "create")
     #expect(SignInJSMethod.prepareFirstFactor.rawValue == "prepareFirstFactor")

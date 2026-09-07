@@ -87,7 +87,7 @@ struct ClerkJSCoreSetActiveTests {
     do {
       try await clerk.setActive(.init(session: sessionId))
       let token = try await clerk.session.getToken()
-      #expect(token.count > 4)
+      #expect((token ?? "").count > 4)
     } catch {
       Issue.record("setActive \(sanitizedJSError(error))")
       throw error

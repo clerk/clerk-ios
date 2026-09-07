@@ -92,7 +92,11 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation fails.
   @discardableResult
   public func signIn(_ identifier: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: identifier))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signIn(identifier: identifier)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(identifier: identifier))
   }
 
   /// Signs in with an identifier and password.
@@ -104,7 +108,11 @@ public struct Auth {
   /// - Throws: An error if the sign-in fails.
   @discardableResult
   public func signInWithPassword(identifier: String, password: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: identifier, password: password))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signInWithPassword(identifier: identifier, password: password)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(identifier: identifier, password: password))
   }
 
   /// Signs in with OTP (One-Time Password) using an email address.
@@ -151,7 +159,11 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithPhoneCode(phoneNumber: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.signInWithPhoneCode(phoneNumber: phoneNumber)
+      return try Clerk.requireEngineSignIn()
+    }
+    return try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
   }
 
   // Signs in with OAuth using the specified provider.
@@ -606,6 +618,10 @@ extension Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
+    if let engine = await Clerk.resolvedEngineClient() {
+      try await engine.setActive(sessionId: sessionId, organizationId: organizationId)
+      return
+    }
     try await sessionService.setActive(
       sessionId: sessionId,
       organizationId: organizationId
@@ -622,6 +638,9 @@ extension Auth {
   /// - Throws: An error if token retrieval fails.
   @discardableResult
   public func getToken(_ options: Session.GetTokenOptions = .init()) async throws -> String? {
+    if let engine = await Clerk.resolvedEngineClient() {
+      return try await engine.getToken(template: options.template, skipCache: options.skipCache)
+    }
     guard let session = Clerk.shared.session else {
       return nil
     }

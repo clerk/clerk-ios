@@ -31,7 +31,8 @@ struct ClerkEngineClientTests {
     installFailingSignInService(kitCalls)
 
     _ = try await Clerk.shared.auth.signInWithEmailCode(emailAddress: "user@example.com")
-    let prepared = try try await #require(Clerk.shared.auth.currentSignIn?.sendEmailCode(emailAddressId: "idn_email"))
+    let current = try #require(Clerk.shared.auth.currentSignIn)
+    let prepared = try await current.sendEmailCode(emailAddressId: "idn_email")
     #expect(engine.sentEmailAddressId == "idn_email")
     #expect(prepared.firstFactorVerification?.strategy == .emailCode)
 
@@ -41,6 +42,42 @@ struct ClerkEngineClientTests {
     #expect(verified.createdSessionId == "sess_engine")
     #expect(kitCalls.prepareCount == 0)
     #expect(kitCalls.attemptCount == 0)
+  }
+
+  @Test
+  func passwordPhoneSetActiveAndGetTokenUseEngine() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+    installFailingSessionService(kitCalls)
+
+    let password = try await Clerk.shared.auth.signInWithPassword(
+      identifier: "user@example.com",
+      password: "hunter2"
+    )
+    #expect(engine.passwordIdentifier == "user@example.com")
+    #expect(engine.password == "hunter2")
+    #expect(password.status == .complete)
+
+    _ = try await Clerk.shared.auth.signInWithPhoneCode(phoneNumber: "+15555550100")
+    let phoneSignIn = try #require(Clerk.shared.auth.currentSignIn)
+    _ = try await phoneSignIn.sendPhoneCode(phoneNumberId: "idn_phone")
+    let verifiedPhone = try await phoneSignIn.verifyCode("424242")
+    #expect(engine.signedInPhone == "+15555550100")
+    #expect(engine.sentPhoneNumberId == "idn_phone")
+    #expect(engine.verifiedPhoneCode == "424242")
+    #expect(verifiedPhone.status == .complete)
+
+    try await Clerk.shared.auth.setActive(sessionId: "sess_engine", organizationId: "org_1")
+    #expect(engine.activeSessionId == "sess_engine")
+    #expect(engine.activeOrganizationId == "org_1")
+
+    let token = try await Clerk.shared.auth.getToken()
+    #expect(token == "jwt_engine")
+    #expect(kitCalls.createCount == 0)
+    #expect(kitCalls.setActiveCount == 0)
+    #expect(kitCalls.fetchTokenCount == 0)
   }
 
   @Test
@@ -68,9 +105,24 @@ struct ClerkEngineClientTests {
 
 @MainActor
 private final class RecordingEngineClient: ClerkEngineClient {
+  var signedInIdentifier: String?
   var signedInEmail: String?
+  var signedInPhone: String?
+  var passwordIdentifier: String?
+  var password: String?
   var sentEmailAddressId: String?
+  var sentPhoneNumberId: String?
   var verifiedCode: String?
+  var verifiedPhoneCode: String?
+  var activeSessionId: String?
+  var activeOrganizationId: String?
+
+  func signIn(identifier: String) async throws {
+    signedInIdentifier = identifier
+    publish(
+      SignIn(id: "sia_engine", status: .needsFirstFactor, identifier: identifier)
+    )
+  }
 
   func signInWithEmailCode(emailAddress: String) async throws {
     signedInEmail = emailAddress
@@ -80,6 +132,31 @@ private final class RecordingEngineClient: ClerkEngineClient {
         status: .needsFirstFactor,
         identifier: emailAddress,
         firstFactorVerification: Verification(status: .unverified, strategy: .emailCode)
+      )
+    )
+  }
+
+  func signInWithPhoneCode(phoneNumber: String) async throws {
+    signedInPhone = phoneNumber
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: phoneNumber,
+        firstFactorVerification: Verification(status: .unverified, strategy: .phoneCode)
+      )
+    )
+  }
+
+  func signInWithPassword(identifier: String, password: String) async throws {
+    passwordIdentifier = identifier
+    self.password = password
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        identifier: identifier,
+        createdSessionId: "sess_engine"
       )
     )
   }
@@ -96,6 +173,18 @@ private final class RecordingEngineClient: ClerkEngineClient {
     )
   }
 
+  func sendPhoneCode(phoneNumberId: String?) async throws {
+    sentPhoneNumberId = phoneNumberId
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: "+15555550100",
+        firstFactorVerification: Verification(status: .unverified, strategy: .phoneCode)
+      )
+    )
+  }
+
   func verifyEmailCode(_ code: String) async throws {
     verifiedCode = code
     publish(
@@ -107,6 +196,40 @@ private final class RecordingEngineClient: ClerkEngineClient {
         createdSessionId: "sess_engine"
       )
     )
+  }
+
+  func verifyPhoneCode(_ code: String) async throws {
+    verifiedPhoneCode = code
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        identifier: "+15555550100",
+        firstFactorVerification: Verification(status: .verified, strategy: .phoneCode),
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func authenticateWithPassword(_ password: String) async throws {
+    self.password = password
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .complete,
+        identifier: "user@example.com",
+        createdSessionId: "sess_engine"
+      )
+    )
+  }
+
+  func setActive(sessionId: String, organizationId: String?) async throws {
+    activeSessionId = sessionId
+    activeOrganizationId = organizationId
+  }
+
+  func getToken(template _: String?, skipCache _: Bool) async throws -> String? {
+    "jwt_engine"
   }
 
   private func publish(_ signIn: SignIn) {
@@ -126,6 +249,8 @@ private final class KitCallCounter {
   var createCount = 0
   var prepareCount = 0
   var attemptCount = 0
+  var setActiveCount = 0
+  var fetchTokenCount = 0
 }
 
 @MainActor
@@ -147,6 +272,28 @@ private func installFailingSignInService(_ counts: KitCallCounter) {
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
     signInService: service
+  )
+  try! (Clerk.shared.dependencies as! MockDependencyContainer)
+    .configurationManager
+    .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+@MainActor
+private func installFailingSessionService(_ counts: KitCallCounter) {
+  let service = MockSessionService(
+    setActive: { _, _ in
+      counts.setActiveCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    },
+    fetchToken: { _, _, _ in
+      counts.fetchTokenCount += 1
+      throw ClerkClientError(message: "Kit FAPI must not run when the JS engine is registered.")
+    }
+  )
+  Clerk.shared.dependencies = MockDependencyContainer(
+    apiClient: createMockAPIClient(),
+    signInService: Clerk.shared.dependencies.signInService,
+    sessionService: service
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager

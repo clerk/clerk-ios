@@ -336,7 +336,12 @@ extension Session {
    */
   @discardableResult
   public func getToken(_ options: GetTokenOptions = .init()) async throws -> String? {
-    try await SessionTokenFetcher.shared.getToken(self, options: options)?.jwt
+    switch try await Clerk.engineGetToken(template: options.template, skipCache: options.skipCache) {
+    case .unavailable:
+      try await SessionTokenFetcher.shared.getToken(self, options: options)?.jwt
+    case .token(let jwt):
+      jwt
+    }
   }
 
   /// Options that can be passed as parameters to the `getToken()` function.
