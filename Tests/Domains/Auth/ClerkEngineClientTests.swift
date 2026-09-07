@@ -25,7 +25,7 @@ struct ClerkEngineClientTests {
   }
 
   @Test
-  func sendAndVerifyEmailCodeUseEngine() async throws {
+  func sendEmailCodeUsesEngine() async throws {
     let engine = RecordingEngineClient()
     let kitCalls = KitCallCounter()
     Clerk.engineClient = engine
@@ -37,10 +37,6 @@ struct ClerkEngineClientTests {
     #expect(engine.sentEmailAddressId == "idn_email")
     #expect(prepared.firstFactorVerification?.factorStrategy == .emailCode)
 
-    let verified = try await prepared.verifyCode("424242")
-    #expect(engine.verifiedCode == "424242")
-    #expect(verified.status == .complete)
-    #expect(verified.createdSessionId == "sess_engine")
     #expect(kitCalls.prepareCount == 0)
     #expect(kitCalls.attemptCount == 0)
   }
@@ -64,11 +60,8 @@ struct ClerkEngineClientTests {
     _ = try await Clerk.shared.auth.signInWithPhoneCode(phoneNumber: "+15555550100")
     let phoneSignIn = try #require(Clerk.shared.auth.currentSignIn)
     _ = try await phoneSignIn.sendPhoneCode(phoneNumberId: "idn_phone")
-    let verifiedPhone = try await phoneSignIn.verifyCode("424242")
     #expect(engine.signedInPhone == "+15555550100")
     #expect(engine.sentPhoneNumberId == "idn_phone")
-    #expect(engine.verifiedPhoneCode == "424242")
-    #expect(verifiedPhone.status == .complete)
 
     try await Clerk.shared.auth.setActive(sessionId: "sess_engine", organizationId: "org_1")
     #expect(engine.activeSessionId == "sess_engine")
@@ -132,12 +125,8 @@ struct ClerkEngineClientTests {
         firstFactorVerification: Verification(status: .verified, strategy: .resetPasswordEmailCode)
       )
     )
-    let resetSignIn = try #require(Clerk.shared.auth.currentSignIn)
-    let verifiedReset = try await resetSignIn.verifyCode("424242")
     #expect(engine.resetEmailAddressId == "idn_email")
     #expect(engine.resetPhoneNumberId == "idn_phone")
-    #expect(engine.verifiedResetCode == "424242")
-    #expect(verifiedReset.status == .needsNewPassword)
 
     let reset = try await current.resetPassword(newPassword: "new-pass", signOutOfOtherSessions: true)
     #expect(engine.resetPassword == "new-pass")
@@ -815,12 +804,6 @@ struct ClerkEngineClientTests {
     #expect(engine.sessionSecondFactorStrategy == "passkey")
     #expect(engine.sessionSecondFactorPublicKeyCredential == "credential")
     #expect(passkeySecond.status == .complete)
-
-    #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-    let passkeyFirst = try await session.verifyWithPasskey(level: .firstFactor)
-    #expect(engine.verifiedSessionWithPasskey)
-    #expect(passkeyFirst.status == .complete)
-    #endif
 
     #expect(kitCalls.sessionVerificationCount == 0)
   }

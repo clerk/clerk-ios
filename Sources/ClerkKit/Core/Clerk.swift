@@ -832,10 +832,6 @@ extension Clerk {
     environment = nil
     sessionsByUserId = [:]
     WebAuthentication.cancelCurrentSession()
-
-    #if canImport(AuthenticationServices) && !os(watchOS)
-    PasskeyHelper.cancelCurrentAuthorization()
-    #endif
   }
 }
 

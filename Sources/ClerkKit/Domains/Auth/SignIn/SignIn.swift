@@ -204,36 +204,9 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    if let nonce = ExternalAuthUtils.nonceFromCallbackUrl(url: url) {
-      let updatedSignIn = try await reload(rotatingTokenNonce: nonce)
-      if let error = updatedSignIn.firstFactorVerification?.kitError {
-        throw error
-      }
-      return .signIn(updatedSignIn)
-    } else {
-      // transfer flow
-      let signIn = try await reload()
-      let result = try await signIn.handleTransferFlow(
-        transferable: transferable,
-        unsafeMetadata: unsafeMetadata
-      )
-      switch result {
-      case .signIn(let signIn):
-        if let error = signIn.firstFactorVerification?.kitError {
-          throw error
-        }
-      case .signUp(let signUp):
-        if let error = signUp.verificationByAttribute["external_account"]??.kitError {
-          throw error
-        }
-      }
-      return result
-    }
-  }
-
-  /// Helper to determine if the SignIn needs to be transferred to a SignUp
-  var needsTransferToSignUp: Bool {
-    firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+    try await Clerk.completeNativeRedirectCallback(
+      flow: "signIn", expectedId: id, callbackUrl: url, transferable: transferable, unsafeMetadata: unsafeMetadata
+    )
   }
 
   /// The first factor matching the specified strategy string.

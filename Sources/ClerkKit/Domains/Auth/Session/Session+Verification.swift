@@ -119,65 +119,10 @@ extension Session {
     preferImmediatelyAvailableCredentials: Bool = true,
     level: PasskeyVerificationLevel
   ) async throws -> SessionVerification {
-    if level == .firstFactor {
-      return try await jsVerifyWithPasskey()
-    }
-
-    let prepared = try await prepareSecondFactorVerification(strategy: .passkey)
-    let credentialString = try await passkeyCredential(
-      for: prepared.secondFactorVerification,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
+    try await jsVerifyWithPasskey(
+      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials,
+      level: level
     )
-    return try await attemptSecondFactorVerification(
-      strategy: .passkey,
-      publicKeyCredential: credentialString
-    )
-  }
-
-  @MainActor
-  private func passkeyCredential(
-    for verification: Verification?,
-    preferImmediatelyAvailableCredentials: Bool
-  ) async throws -> String {
-    guard
-      let nonceJSON = verification?.nonce?.toJSON(),
-      let challengeString = nonceJSON["challenge"]?.stringValue,
-      let challenge = challengeString.dataFromBase64URL()
-    else {
-      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
-    }
-
-    let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
-    let allowedCredentialIDs = nonceJSON.webAuthnAssertionAllowedCredentialIDs
-    let manager = PasskeyHelper()
-    let authorization = try await manager.signIn(
-      challenge: challenge,
-      relyingPartyIdentifier: relyingPartyIdentifier,
-      allowedCredentialIDs: allowedCredentialIDs,
-      preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-    )
-
-    guard
-      let credentialAssertion = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion,
-      let authenticatorData = credentialAssertion.rawAuthenticatorData
-    else {
-      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
-    }
-
-    let publicKeyCredential: [String: Any] = [
-      "id": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "rawId": credentialAssertion.credentialID.base64EncodedString().base64URLFromBase64String(),
-      "type": "public-key",
-      "response": [
-        "authenticatorData": authenticatorData.base64EncodedString().base64URLFromBase64String(),
-        "clientDataJSON": credentialAssertion.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
-        "signature": credentialAssertion.signature.base64EncodedString().base64URLFromBase64String(),
-        "userHandle": credentialAssertion.userID.base64EncodedString().base64URLFromBase64String(),
-      ],
-    ]
-
-    let jsonData = try JSONSerialization.data(withJSONObject: publicKeyCredential, options: [])
-    return String(data: jsonData, encoding: .utf8) ?? ""
   }
   #endif
 

@@ -113,35 +113,11 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyCode(_ code: String) async throws -> SignIn {
-    guard let resolvedStrategy = firstFactorVerification?.factorStrategy else {
-      throw ClerkClientError(message: "Unable to verify code because no first factor strategy is set.", localizationBundle: .module)
-    }
-
-    guard resolvedStrategy.canAttemptFirstFactorCode else {
-      throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
-    }
-
-    let strategy: ClerkSnapshots.AttemptFirstFactorParamsStrategy =
-      switch resolvedStrategy {
-      case .emailCode:
-        .emailCode
-      case .phoneCode:
-        .phoneCode
-      case .resetPasswordEmailCode:
-        .resetPasswordEmailCode
-      case .resetPasswordPhoneCode:
-        .resetPasswordPhoneCode
-      default:
-        throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
-      }
-
     try await Clerk.js(
-      .signIn,
-      SignInJSCall.attemptFirstFactor(
-        ClerkSnapshots.AttemptFirstFactorParams(strategy: strategy, code: code)
-      )
+      .clerk,
+      JSRawCall("verifyNativeSignInCode", .object(["expectedId": .string(id), "code": .string(code)]))
     )
-    return try await Clerk.finishedSignIn()
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Authenticates with the user's password.

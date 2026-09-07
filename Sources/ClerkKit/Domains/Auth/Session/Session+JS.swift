@@ -126,8 +126,21 @@ extension Session {
   }
 
   @MainActor
-  func jsVerifyWithPasskey() async throws -> SessionVerification {
-    try await invokeVerification(SessionJSCall.verifyWithPasskey)
+  func jsVerifyWithPasskey(
+    preferImmediatelyAvailableCredentials: Bool,
+    level: PasskeyVerificationLevel
+  ) async throws -> SessionVerification {
+    var verification = try await Clerk.js(
+      .clerk,
+      JSRawCall("verifyNativeSessionPasskey", .object([
+        "sessionId": .string(id),
+        "level": .string(level == .secondFactor ? "second_factor" : "first_factor"),
+        "preferImmediatelyAvailableCredentials": .bool(preferImmediatelyAvailableCredentials),
+      ])),
+      as: SessionVerification.self
+    )
+    verification.session = self
+    return verification
   }
 
   @MainActor

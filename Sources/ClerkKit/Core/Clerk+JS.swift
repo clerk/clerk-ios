@@ -63,6 +63,25 @@ extension Clerk {
   }
 
   @MainActor
+  static func completeNativeRedirectCallback(
+    flow: String,
+    expectedId: String,
+    callbackUrl: URL,
+    transferable: Bool = true,
+    unsafeMetadata: JSON? = nil
+  ) async throws -> TransferFlowResult {
+    let result = try await js(
+      .clerk,
+      JSRawCall("completeNativeRedirectCallback", JSONValue(encoding: NativeAuthCompletionArgs(
+        flow: flow, expectedId: expectedId, transferable: transferable, unsafeMetadata: unsafeMetadata?.jsonValue,
+        callbackUrl: callbackUrl.absoluteString
+      ))),
+      as: NativeAuthResult.self
+    )
+    return try result.transferResult()
+  }
+
+  @MainActor
   static var oauthRedirectURL: String {
     let configured = shared.options.redirectConfig.redirectUrl
     if !configured.isEmpty {
@@ -162,6 +181,7 @@ private struct NativeAuthCompletionArgs: Encodable {
   var expectedId: String?
   var transferable: Bool
   var unsafeMetadata: JSONValue?
+  var callbackUrl: String?
 }
 
 struct NativeAuthResult: Decodable {
