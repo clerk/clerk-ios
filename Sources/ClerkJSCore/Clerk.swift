@@ -109,6 +109,10 @@ package enum ClerkJSPath {
   static func user(_ method: UserJSMethod) -> String {
     "\(instance).user.\(method.rawValue)"
   }
+
+  static var userRoot: String {
+    "\(instance).user"
+  }
 }
 
 @MainActor
@@ -278,6 +282,18 @@ public final class Clerk {
       }
       return ClerkJSUserJSON.resourceJSONForKit(Data(json.utf8))
     }
+
+    public func callSteps(_ steps: Data) async throws -> Data {
+      try await clerk.callSteps(
+        receiverPath: ClerkJSPath.clerk(.getOrganization),
+        receiverArg: id,
+        steps: steps
+      )
+    }
+  }
+
+  public func callUserSteps(_ steps: Data) async throws -> Data {
+    try await callSteps(receiverPath: ClerkJSPath.userRoot, receiverArg: nil, steps: steps)
   }
 
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
@@ -1346,6 +1362,45 @@ public final class Clerk {
     try publishLastClient()
     publishLastEnvironment()
     return Data(json.utf8)
+  }
+
+  private func callSteps(
+    receiverPath: String,
+    receiverArg: String?,
+    steps: Data
+  ) async throws -> Data {
+    guard let stepsJSON = String(data: steps, encoding: .utf8) else {
+      throw ClerkJSCoreError.invalidArgument("steps")
+    }
+    let receiverArgJSON: String
+    if let receiverArg {
+      let data = try JSONEncoder().encode(receiverArg)
+      guard let encoded = String(data: data, encoding: .utf8) else {
+        throw ClerkJSCoreError.invalidArgument("receiverArg")
+      }
+      receiverArgJSON = encoded
+    } else {
+      receiverArgJSON = "null"
+    }
+    let json: String
+    do {
+      json = try await runtime.callOnResourceSteps(
+        receiverPath: receiverPath,
+        receiverArgJSON: receiverArgJSON,
+        stepsJSON: stepsJSON
+      )
+    } catch {
+      try? publishLastClient()
+      publishLastEnvironment()
+      throw error
+    }
+    try publishLastClient()
+    publishLastEnvironment()
+    if json == "null" || json == "true" {
+      let id = receiverArg ?? ""
+      return try JSONSerialization.data(withJSONObject: ["id": id, "deleted": true])
+    }
+    return ClerkJSUserJSON.resourceJSONForKit(Data(json.utf8))
   }
 
   private func callOnResourceReturningAndPublish(

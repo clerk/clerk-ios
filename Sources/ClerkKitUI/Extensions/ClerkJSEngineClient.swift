@@ -495,6 +495,18 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     return data
   }
 
+  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
+    await loadIfNeeded()
+    let data: Data = switch receiver {
+    case .organization(let id):
+      try await engine.organization(id).callSteps(steps)
+    case .user:
+      try await engine.callUserSteps(steps)
+    }
+    publish()
+    return data
+  }
+
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data {
     await loadIfNeeded()
     return try await engine.user.getOrganizationInvitations(

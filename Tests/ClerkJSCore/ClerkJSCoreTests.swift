@@ -189,6 +189,40 @@ struct ClerkJSCoreTests {
   }
 
   @Test
+  func callOnResourceStepsFindsListedChildThenInvokesMethod() async throws {
+    let runtime = ClerkJSRuntime()
+    _ = try await runtime.evaluateJSON(
+      """
+      (function() {
+        globalThis.__clerkInstance = {
+          getOrganization: function(id) {
+            return Promise.resolve({
+              getInvitations: function() {
+                return Promise.resolve({
+                  data: [
+                    { id: 'inv_1', revoke: function() { return Promise.resolve({ id: 'inv_1', status: 'revoked' }); } },
+                    { id: 'inv_2', revoke: function() { return Promise.resolve({ id: 'inv_2', status: 'revoked' }); } }
+                  ]
+                });
+              }
+            });
+          }
+        };
+        return true;
+      })()
+      """
+    )
+    let json = try await runtime.callOnResourceSteps(
+      receiverPath: "__clerkInstance.getOrganization",
+      receiverArgJSON: #""org_1""#,
+      stepsJSON: #"[{"method":"getInvitations","args":{"pageSize":100},"findId":"inv_2"},{"method":"revoke","args":{}}]"#
+    )
+    let payload = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any]
+    #expect(payload?["id"] as? String == "inv_2")
+    #expect(payload?["status"] as? String == "revoked")
+  }
+
+  @Test
   func applyFAPIClientJSONHydratesJSSessions() async throws {
     let runtime = ClerkJSRuntime()
     _ = try await runtime.evaluateJSON(

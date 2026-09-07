@@ -435,6 +435,59 @@ struct ClerkEngineClientTests {
   }
 
   @Test
+  func nestedOrganizationResourcesUseEngineAndSkipKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingOrganizationService(kitCalls)
+
+    let membership = OrganizationMembership.mockWithUserData
+    _ = try await membership.update(role: "org:admin")
+    #expect(engine.organizationMethodName == "updateMember")
+    #expect(jsonObject(engine.organizationMethodArgs)["role"] as? String == "org:admin")
+
+    _ = try await membership.destroy()
+    #expect(engine.organizationMethodName == "removeMember")
+
+    let invitation = OrganizationInvitation.mock
+    let revoked = try await invitation.revoke()
+    #expect(engine.resourceReceiver == .organization(invitation.organizationId))
+    #expect(stepMethods(engine.resourceSteps) == ["getInvitations", "revoke"])
+    #expect(revoked.id == OrganizationInvitation.mock.id)
+
+    let domain = OrganizationDomain.mock
+    let deleted = try await domain.delete()
+    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "delete"])
+    #expect(deleted.deleted == true)
+
+    _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "ada@example.com")
+    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "prepareAffiliationVerification"])
+
+    _ = try await domain.attemptAffiliationVerification(code: "424242")
+    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "attemptAffiliationVerification"])
+
+    _ = try await domain.updateEnrollmentMode(.automaticInvitation, deletePending: true)
+    #expect(stepMethods(engine.resourceSteps) == ["getDomain", "updateEnrollmentMode"])
+
+    let userInvite = UserOrganizationInvitation.mock
+    _ = try await userInvite.accept()
+    #expect(engine.resourceReceiver == .user)
+    #expect(stepMethods(engine.resourceSteps) == ["getOrganizationInvitations", "accept"])
+
+    let suggestion = OrganizationSuggestion.mock
+    _ = try await suggestion.accept()
+    #expect(stepMethods(engine.resourceSteps) == ["getOrganizationSuggestions", "accept"])
+
+    let request = OrganizationMembershipRequest.mock
+    _ = try await request.accept()
+    #expect(stepMethods(engine.resourceSteps) == ["getMembershipRequests", "accept"])
+    _ = try await request.reject()
+    #expect(stepMethods(engine.resourceSteps) == ["getMembershipRequests", "reject"])
+
+    #expect(kitCalls.organizationServiceCount == 0)
+  }
+
+  @Test
   @available(*, deprecated)
   func deprecatedUserUpdateSendsUnsafeMetadataThroughEngine() async throws {
     let engine = RecordingEngineClient()
@@ -1293,6 +1346,41 @@ final class RecordingEngineClient: ClerkEngineClient {
     }
   }
 
+  var resourceReceiver: ClerkResourceReceiver?
+  var resourceSteps: Data?
+
+  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data {
+    resourceReceiver = receiver
+    resourceSteps = steps
+    let methods = stepMethods(steps)
+    if methods.contains("revoke") {
+      return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
+    }
+    if methods.contains("delete") {
+      return Data(#"{"id":"1","deleted":true}"#.utf8)
+    }
+    if methods.contains("getDomain") {
+      return try JSONEncoder.clerkEncoder.encode(OrganizationDomain.mock)
+    }
+    if methods.contains("getOrganizationInvitations") {
+      return try JSONEncoder.clerkEncoder.encode(UserOrganizationInvitation.mock)
+    }
+    if methods.contains("getOrganizationSuggestions") {
+      return try JSONEncoder.clerkEncoder.encode(OrganizationSuggestion.mock)
+    }
+    if methods.contains("getMembershipRequests") {
+      return try JSONEncoder.clerkEncoder.encode(OrganizationMembershipRequest.mock)
+    }
+    throw ClerkClientError(message: "Unexpected resource steps \(methods)")
+  }
+
+  private func stepMethods(_ data: Data) -> [String] {
+    guard let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+      return []
+    }
+    return steps.compactMap { $0["method"] as? String }
+  }
+
   var fetchedInvitationPage: Int?
   var fetchedInvitationPageSize: Int?
   var fetchedInvitationStatus: [String]?
@@ -1643,7 +1731,17 @@ private func installFailingOrganizationService(_ counts: KitCallCounter) {
     createOrganizationDomain: { _, _ in throw fail() },
     getOrganizationDomains: { _, _, _, _ in throw fail() },
     getOrganizationDomain: { _, _ in throw fail() },
-    getOrganizationMembershipRequests: { _, _, _, _ in throw fail() }
+    getOrganizationMembershipRequests: { _, _, _, _ in throw fail() },
+    deleteOrganizationDomain: { _, _ in throw fail() },
+    prepareOrganizationDomainAffiliationVerification: { _, _, _ in throw fail() },
+    attemptOrganizationDomainAffiliationVerification: { _, _, _ in throw fail() },
+    updateOrganizationDomainEnrollmentMode: { _, _, _, _ in throw fail() },
+    revokeOrganizationInvitation: { _, _ in throw fail() },
+    destroyOrganizationMembership: { _, _ in throw fail() },
+    acceptUserOrganizationInvitation: { _ in throw fail() },
+    acceptOrganizationSuggestion: { _ in throw fail() },
+    acceptOrganizationMembershipRequest: { _, _ in throw fail() },
+    rejectOrganizationMembershipRequest: { _, _ in throw fail() }
   )
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
@@ -1652,6 +1750,15 @@ private func installFailingOrganizationService(_ counts: KitCallCounter) {
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager
     .configure(publishableKey: testPublishableKey, options: .init())
+}
+
+private func stepMethods(_ data: Data?) -> [String] {
+  guard let data,
+        let steps = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+  else {
+    return []
+  }
+  return steps.compactMap { $0["method"] as? String }
 }
 
 private func jsonObject(_ data: Data?) -> [String: Any] {

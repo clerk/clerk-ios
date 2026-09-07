@@ -83,6 +83,14 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     throw ClerkJSCoreError.unsupportedPlatform
   }
 
+  public func callOnResourceSteps(
+    receiverPath _: String,
+    receiverArgJSON _: String,
+    stepsJSON _: String
+  ) async throws -> String {
+    throw ClerkJSCoreError.unsupportedPlatform
+  }
+
   public func startAppleAuthentication() async throws -> AppleIdentityToken {
     throw ClerkJSCoreError.unsupportedPlatform
   }
@@ -396,6 +404,111 @@ public final class ClerkJSRuntime: @unchecked Sendable {
           });
         }
         return invoke(resource);
+      })()
+      """
+    do {
+      let result = try await runtime.evaluateJSON(script)
+      _ = try? await applyLastFAPIClientJSON()
+      return result
+    } catch {
+      _ = try? await applyLastFAPIClientJSON()
+      throw error
+    }
+  }
+
+  public func callOnResourceSteps(
+    receiverPath: String,
+    receiverArgJSON: String,
+    stepsJSON: String
+  ) async throws -> String {
+    let path = try Self.jsonString(receiverPath)
+    let script = """
+      (function() {
+        var parts = \(path).split('.');
+        var receiver = globalThis;
+        var fn = globalThis;
+        for (var i = 0; i < parts.length; i++) {
+          receiver = fn;
+          fn = fn[parts[i]];
+        }
+        function rejectReason(error) {
+          var first = error && Array.isArray(error.errors) ? error.errors[0] : null;
+          var code = first && first.code
+            ? String(first.code)
+            : (error && error.code ? String(error.code) : '');
+          var message = first && (first.long_message || first.message)
+            ? String(first.long_message || first.message)
+            : (error && error.message ? String(error.message) : '');
+          var name = error && error.name ? String(error.name) : 'js_error';
+          var text = code || message || name;
+          if (code && message && message.indexOf(code) === -1) {
+            text = code + ': ' + message;
+          }
+          return new Error(text);
+        }
+        function serialize(value) {
+          if (value === undefined) {
+            return null;
+          }
+          if (value === null || typeof value !== 'object') {
+            return value;
+          }
+          try {
+            return JSON.parse(JSON.stringify(value));
+          } catch (error) {
+            throw rejectReason(error);
+          }
+        }
+        function applySteps(resource, stepIndex, steps) {
+          if (stepIndex >= steps.length) {
+            return serialize(resource);
+          }
+          var step = steps[stepIndex];
+          if (!resource || typeof resource[step.method] !== 'function') {
+            throw new Error('Not a function: ' + step.method);
+          }
+          var result = resource[step.method](step.args);
+          function next(value) {
+            var nextResource = value;
+            if (step.findId) {
+              var items = value && value.data ? value.data : [];
+              nextResource = null;
+              for (var i = 0; i < items.length; i++) {
+                if (items[i] && items[i].id === step.findId) {
+                  nextResource = items[i];
+                  break;
+                }
+              }
+              if (!nextResource) {
+                throw new Error('Resource not found: ' + step.findId);
+              }
+            }
+            return applySteps(nextResource, stepIndex + 1, steps);
+          }
+          if (result && typeof result.then === 'function') {
+            return result.then(next, function(error) {
+              throw rejectReason(error);
+            });
+          }
+          return next(result);
+        }
+        var steps = \(stepsJSON);
+        var start;
+        if (typeof fn === 'function') {
+          start = fn.call(receiver, \(receiverArgJSON));
+        } else if (fn === undefined || fn === null) {
+          throw new Error('Not a function: ' + \(path));
+        } else {
+          start = fn;
+        }
+        if (start && typeof start.then === 'function') {
+          return start.then(function(resource) {
+            return applySteps(resource, 0, steps);
+          }, function(error) {
+            throw rejectReason(error);
+          });
+        }
+        return applySteps(start, 0, steps);
       })()
       """
     do {

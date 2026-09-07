@@ -1,5 +1,10 @@
 import Foundation
 
+package enum ClerkResourceReceiver: Equatable {
+  case organization(String)
+  case user
+}
+
 @MainActor
 package protocol ClerkEngineClient: AnyObject {
   func signIn(identifier: String) async throws
@@ -87,6 +92,7 @@ package protocol ClerkEngineClient: AnyObject {
   func createOrganization(name: String, slug: String?) async throws -> Organization
   func getOrganization(id: String) async throws -> Organization
   func callOrganizationMethod(id: String, method: String, args: Data) async throws -> Data
+  func callResourceSteps(receiver: ClerkResourceReceiver, steps: Data) async throws -> Data
   func getOrganizationInvitations(page: Int, pageSize: Int, status: [String]) async throws -> Data
   func getOrganizationMemberships(page: Int, pageSize: Int) async throws -> Data
   func getOrganizationSuggestions(page: Int, pageSize: Int, status: [String]) async throws -> Data
@@ -136,6 +142,20 @@ extension Clerk {
     let created = await makeEngineClient(shared)
     engineClient = created
     return created
+  }
+
+  @MainActor
+  package static func callResourceSteps<T: Decodable>(
+    _ receiver: ClerkResourceReceiver,
+    _ steps: [[String: Any]],
+    as _: T.Type
+  ) async throws -> T {
+    let engine = try await requireEngineClient()
+    let data = try await engine.callResourceSteps(
+      receiver: receiver,
+      steps: JSONSerialization.data(withJSONObject: steps)
+    )
+    return try JSONDecoder.clerkDecoder.decode(T.self, from: data)
   }
 
   @MainActor
