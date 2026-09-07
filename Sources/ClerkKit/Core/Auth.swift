@@ -347,18 +347,12 @@ public struct Auth {
     redirectUrl: String? = nil
   ) async throws -> SignIn {
     let resolvedRedirectUrl = redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
-    let signIn = try await signInService.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
+    let engine = try await Clerk.requireEngineClient()
+    try await engine.startEnterpriseSSO(
+      emailAddress: emailAddress,
       redirectUrl: resolvedRedirectUrl
-    ))
-    return try await signInService.prepareFirstFactor(
-      signInId: signIn.id,
-      params: .init(
-        strategy: .enterpriseSSO,
-        redirectUrl: resolvedRedirectUrl
-      )
     )
+    return try Clerk.requireEngineSignIn()
   }
 
   /// Signs in with Enterprise SSO using an email address.

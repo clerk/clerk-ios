@@ -160,6 +160,18 @@ final class ClerkJSEngineClient: ClerkEngineClient {
     try await activateIfCompleteAfterRedirect()
   }
 
+  func startEnterpriseSSO(emailAddress: String, redirectUrl: String) async throws {
+    await loadIfNeeded()
+    let resolved = resolvedRedirectUrl(redirectUrl)
+    _ = try await engine.client.signIn.create(
+      .init(identifier: emailAddress, strategy: "enterprise_sso", redirectUrl: resolved)
+    )
+    _ = try await engine.client.signIn.prepareFirstFactor(
+      .init(strategy: .enterpriseSSO, redirectUrl: resolved)
+    )
+    publish()
+  }
+
   func signInWithTicket(_ ticket: String) async throws {
     await loadIfNeeded()
     let signIn = try await engine.client.signIn.create(

@@ -275,6 +275,28 @@ struct ClerkEngineClientTests {
     #expect(kitCalls.userServiceCount == 0)
   }
 
+  #if !os(tvOS) && !os(watchOS)
+  @Test
+  func startEnterpriseSSOUsesEngineAndSkipsKitFAPI() async throws {
+    let engine = RecordingEngineClient()
+    let kitCalls = KitCallCounter()
+    Clerk.engineClient = engine
+    installFailingSignInService(kitCalls)
+
+    let signIn = try await Clerk.shared.auth.startEnterpriseSSO(
+      emailAddress: "user@enterprise.com",
+      redirectUrl: "myapp://callback"
+    )
+
+    #expect(engine.startedEnterpriseSSOEmail == "user@enterprise.com")
+    #expect(engine.startedEnterpriseSSORedirectUrl == "myapp://callback")
+    #expect(signIn.id == "sia_engine")
+    #expect(signIn.firstFactorVerification?.strategy == .enterpriseSSO)
+    #expect(kitCalls.createCount == 0)
+    #expect(kitCalls.prepareCount == 0)
+  }
+  #endif
+
   @Test
   func signInWithEmailCodeThrowsWhenEngineIsUnavailable() async {
     #expect(Clerk.engineClient == nil)
@@ -543,6 +565,8 @@ private final class RecordingEngineClient: ClerkEngineClient {
   }
 
   var redirectStrategy: String?
+  var startedEnterpriseSSOEmail: String?
+  var startedEnterpriseSSORedirectUrl: String?
   var resetEmailAddressId: String?
   var resetPhoneNumberId: String?
   var verifiedResetCode: String?
@@ -560,6 +584,23 @@ private final class RecordingEngineClient: ClerkEngineClient {
     redirectStrategy = strategy
     publish(
       SignIn(id: "sia_engine", status: .needsFirstFactor, identifier: "user@example.com")
+    )
+  }
+
+  func startEnterpriseSSO(emailAddress: String, redirectUrl: String) async throws {
+    startedEnterpriseSSOEmail = emailAddress
+    startedEnterpriseSSORedirectUrl = redirectUrl
+    publish(
+      SignIn(
+        id: "sia_engine",
+        status: .needsFirstFactor,
+        identifier: emailAddress,
+        firstFactorVerification: Verification(
+          status: .unverified,
+          strategy: .enterpriseSSO,
+          externalVerificationRedirectUrl: "https://sso.example.com"
+        )
+      )
     )
   }
 

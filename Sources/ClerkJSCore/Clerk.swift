@@ -494,6 +494,7 @@ public final class Clerk {
       case resetPasswordEmailCode = "reset_password_email_code"
       case resetPasswordPhoneCode = "reset_password_phone_code"
       case oauthTokenApple = "oauth_token_apple"
+      case enterpriseSSO = "enterprise_sso"
     }
 
     public enum SecondFactorStrategy: String, Encodable, Sendable {
