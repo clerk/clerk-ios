@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Reject new ClerkKit HTTP request writers while tracking the remaining migration."""
+"""Reject ClerkKit HTTP request writers outside generic transport infrastructure."""
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 KIT = ROOT / "Sources" / "ClerkKit"
 ALLOWED = {
-    "AppAttestHelper.swift",
     "APIRequest.swift",
     "ClientResponse.swift",
     "ClerkAPIClient.swift",
@@ -22,11 +21,6 @@ def main() -> int:
         if "Request<" not in text:
             continue
         leftover.append(path.relative_to(ROOT))
-    pending = [path.relative_to(ROOT) for path in KIT.rglob("*.swift")
-               if path.name in {"AppAttestHelper.swift"} and "Request<" in path.read_text()]
-    print(f"Pending migration: {len(pending)}")
-    for path in pending:
-        print(path)
     print(f"Unexpected request writers: {len(leftover)}")
     for path in leftover:
         print(path)
