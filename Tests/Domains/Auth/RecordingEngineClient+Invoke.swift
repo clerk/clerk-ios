@@ -5,6 +5,7 @@ import Foundation
 extension RecordingEngineClient {
   func invoke(_ invocation: ClerkJSInvocation) async throws -> JSONValue {
     lastJSMethod = invocation.method
+    lastJSReceiver = invocation.receiver
     if case .userResource(let collection, let id) = invocation.receiver {
       let data = try await callUserChild(
         pick: collection.rawValue,
@@ -14,15 +15,8 @@ extension RecordingEngineClient {
       )
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
-    if case .listed(let kind, let id) = invocation.receiver {
-      let data = try await callListedChild(
-        organizationId: nil,
-        locate: listedLocateName(kind),
-        locateArgs: Data(),
-        findId: id.rawValue,
-        method: invocation.method,
-        args: Data()
-      )
+    if case .listed(let kind, _) = invocation.receiver {
+      let data = try listedFixture(kind: kind, method: invocation.method)
       return try JSONDecoder().decode(JSONValue.self, from: data)
     }
     if case .organization(let id) = invocation.receiver {
@@ -201,8 +195,6 @@ extension RecordingEngineClient {
       try await setActive(sessionId: sessionId, organizationId: organizationId)
       return .null
     case "revoke":
-      listedLocate = "getSessions"
-      listedMethod = "revoke"
       return try encodeKit(ClerkKit.Session.mock)
     case "getToken":
       return .string("jwt_engine")
@@ -428,8 +420,6 @@ extension RecordingEngineClient {
     case "getToken":
       return .string("jwt_engine")
     case "revoke":
-      listedLocate = "getSessions"
-      listedMethod = "revoke"
       return try encodeKit(ClerkKit.Session.mock)
     case "startVerification":
       let params = try decodeInvocation(SessionVerifyCreateParams.self, invocation)
@@ -524,29 +514,6 @@ extension RecordingEngineClient {
       [raw]
     case nil:
       []
-    }
-  }
-
-  private func listedLocateName(_ kind: ClerkJSReceiver.ListedKind) -> String {
-    switch kind {
-    case .organizationDomain:
-      "getDomain"
-    case .organizationInvitation:
-      "getInvitations"
-    case .organizationMembershipRequest:
-      "getMembershipRequests"
-    case .organizationSuggestion:
-      "getOrganizationSuggestions"
-    case .userOrganizationInvitation:
-      "getOrganizationInvitations"
-    case .sessionWithActivities:
-      "getSessions"
-    case .organizationMembership:
-      "getMemberships"
-    case .organizationEnterpriseConnection:
-      "getEnterpriseConnections"
-    case .billingPaymentMethod:
-      "getPaymentMethods"
     }
   }
 

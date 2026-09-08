@@ -525,9 +525,6 @@ final class RecordingEngineClient: ClerkEngineClient {
   var userChildPick: String?
   var userChildId: String?
   var userChildMethod: String?
-  var listedOrganizationId: String?
-  var listedLocate: String?
-  var listedMethod: String?
   var fetchedInvitationPage: Int?
   var fetchedInvitationPageSize: Int?
   var fetchedInvitationStatus: [String]?
@@ -627,6 +624,7 @@ final class RecordingEngineClient: ClerkEngineClient {
     return .mockComplete
   }
 
+  var lastJSReceiver: ClerkJSReceiver?
   var lastJSMethod: String?
 
   var currentUser: User {

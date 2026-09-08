@@ -14,6 +14,10 @@ State publications carry a protocol version, runtime generation, and increasing 
 
 Snapshot operations carry the resource ID they were called on. JavaScript rejects retained sign-in, sign-up, and user snapshots when that ID no longer matches the current resource. Creating an authentication attempt is a runtime command and returns its new snapshot. Receiver kinds, required IDs, collection names, and invocation envelopes are validated before dispatch; resource methods retain their own argument validation.
 
+`@clerk/shared/internal/clerk-js/nativeResourceRoutes` defines the resource lookup catalog. JavaScript derives accepted collection and retained-resource kinds from it, and the Swift binding generator emits `ClerkJSReceiver.UserCollection` and `ListedKind` from the same definitions. Generation checks every callable shared resource interface for a route or a documented exclusion and requires a route for every Swift method root.
+
+Live resources resolve through the current Clerk owner, user collections, or session/organization lookup. Other callable resources retain their JavaScript instances when returned, including resources nested inside a parent snapshot, so later operations preserve their request context. Changing the user or disposing the runtime clears retained instances. A data snapshot does not need a retained receiver solely because it inherits the generic `reload` declaration; signal controllers, local accessors, and lifecycle objects have explicit exclusions in the catalog.
+
 Forwarding through a paired device and an external runtime can add multiple identity envelopes. The dispatcher unwraps them at the input boundary, checks every client/session requirement against the current owner, and executes the resource operation once.
 
 Custom `Clerk.Options.middleware` hooks wrap the embedded host HTTP transport. Request hooks receive the final JavaScript request; response hooks validate the bytes before JavaScript processes them. Disposing the runtime cancels transport and suspended middleware work. JavaScript owns retry policy and resource updates. In Expo, the existing JavaScript owner supplies transport.

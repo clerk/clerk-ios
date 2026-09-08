@@ -193,35 +193,25 @@ extension RecordingEngineClient {
     }
   }
 
-  func callListedChild(
-    organizationId: String?,
-    locate: String,
-    locateArgs _: Data,
-    findId _: String?,
-    method: String,
-    args _: Data
-  ) async throws -> Data {
-    listedOrganizationId = organizationId
-    listedLocate = locate
-    listedMethod = method
+  func listedFixture(kind: ClerkJSReceiver.ListedKind, method: String) throws -> Data {
     if method == "delete" || method == "destroy" {
       return Data(#"{"object":"deleted","id":"1","deleted":true}"#.utf8)
     }
-    switch locate {
-    case "getInvitations":
+    switch kind {
+    case .organizationInvitation:
       return try JSONEncoder.clerkEncoder.encode(OrganizationInvitation.mock)
-    case "getDomain":
+    case .organizationDomain:
       return try JSONEncoder.clerkEncoder.encode(OrganizationDomain.mock)
-    case "getOrganizationInvitations":
+    case .userOrganizationInvitation:
       return try JSONEncoder.clerkEncoder.encode(UserOrganizationInvitation.mock)
-    case "getOrganizationSuggestions":
+    case .organizationSuggestion:
       return try JSONEncoder.clerkEncoder.encode(OrganizationSuggestion.mock)
-    case "getMembershipRequests":
+    case .organizationMembershipRequest:
       return try JSONEncoder.clerkEncoder.encode(OrganizationMembershipRequest.mock)
-    case "getSessions":
+    case .sessionWithActivities:
       return try JSONEncoder.clerkEncoder.encode(Session.mock)
     default:
-      throw ClerkClientError(message: "Unexpected listed child \(locate)")
+      throw ClerkClientError(message: "No listed fixture for \(kind)")
     }
   }
 

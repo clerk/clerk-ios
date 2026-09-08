@@ -33,27 +33,6 @@ public enum ClerkJSReceiver: Hashable, Sendable, Encodable {
   case organization(id: ClerkJSResourceID)
   case listed(ListedKind, id: ClerkJSResourceID)
 
-  public enum UserCollection: String, Sendable, Encodable {
-    case emailAddresses
-    case phoneNumbers
-    case passkeys
-    case externalAccounts
-    case web3Wallets
-    case enterpriseAccounts
-  }
-
-  public enum ListedKind: String, Sendable, Encodable {
-    case userOrganizationInvitation
-    case organizationSuggestion
-    case organizationInvitation
-    case organizationMembership
-    case organizationMembershipRequest
-    case organizationDomain
-    case organizationEnterpriseConnection
-    case billingPaymentMethod
-    case sessionWithActivities
-  }
-
   public enum CodingKeys: String, CodingKey {
     case kind
     case id

@@ -423,41 +423,41 @@ struct ClerkEngineClientTests {
 
     let invitation = OrganizationInvitation.mock
     let revoked = try await invitation.revoke()
-    #expect(engine.listedLocate == "getInvitations")
-    #expect(engine.listedMethod == "revoke")
+    #expect(engine.lastJSReceiver == .listed(.organizationInvitation, id: .init(invitation.id)))
+    #expect(engine.lastJSMethod == "revoke")
     #expect(revoked.id == OrganizationInvitation.mock.id)
 
     let domain = OrganizationDomain.mock
     let deleted = try await domain.delete()
-    #expect(engine.listedLocate == "getDomain")
-    #expect(engine.listedMethod == "delete")
+    #expect(engine.lastJSReceiver == .listed(.organizationDomain, id: .init(domain.id)))
+    #expect(engine.lastJSMethod == "delete")
     #expect(deleted.deleted == true)
 
     _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "ada@example.com")
-    #expect(engine.listedMethod == "prepareAffiliationVerification")
+    #expect(engine.lastJSMethod == "prepareAffiliationVerification")
 
     _ = try await domain.attemptAffiliationVerification(code: "424242")
-    #expect(engine.listedMethod == "attemptAffiliationVerification")
+    #expect(engine.lastJSMethod == "attemptAffiliationVerification")
 
     _ = try await domain.updateEnrollmentMode(.automaticInvitation, deletePending: true)
-    #expect(engine.listedMethod == "updateEnrollmentMode")
+    #expect(engine.lastJSMethod == "updateEnrollmentMode")
 
     let userInvite = UserOrganizationInvitation.mock
     _ = try await userInvite.accept()
-    #expect(engine.listedLocate == "getOrganizationInvitations")
-    #expect(engine.listedMethod == "accept")
+    #expect(engine.lastJSReceiver == .listed(.userOrganizationInvitation, id: .init(userInvite.id)))
+    #expect(engine.lastJSMethod == "accept")
 
     let suggestion = OrganizationSuggestion.mock
     _ = try await suggestion.accept()
-    #expect(engine.listedLocate == "getOrganizationSuggestions")
-    #expect(engine.listedMethod == "accept")
+    #expect(engine.lastJSReceiver == .listed(.organizationSuggestion, id: .init(suggestion.id)))
+    #expect(engine.lastJSMethod == "accept")
 
     let request = OrganizationMembershipRequest.mock
     _ = try await request.accept()
-    #expect(engine.listedLocate == "getMembershipRequests")
-    #expect(engine.listedMethod == "accept")
+    #expect(engine.lastJSReceiver == .listed(.organizationMembershipRequest, id: .init(request.id)))
+    #expect(engine.lastJSMethod == "accept")
     _ = try await request.reject()
-    #expect(engine.listedMethod == "reject")
+    #expect(engine.lastJSMethod == "reject")
 
     #expect(kitCalls.organizationServiceCount == 0)
   }
@@ -521,13 +521,13 @@ struct ClerkEngineClientTests {
     installFailingSessionService(kitCalls)
 
     let revoked = try await Session.mock.revoke()
-    #expect(engine.listedLocate == "getSessions")
-    #expect(engine.listedMethod == "revoke")
+    #expect(engine.lastJSReceiver == .session(id: .init(Session.mock.id)))
+    #expect(engine.lastJSMethod == "revoke")
     #expect(revoked.id == Session.mock.id)
 
     _ = try await Clerk.shared.auth.revokeSession(.mock)
-    #expect(engine.listedLocate == "getSessions")
-    #expect(engine.listedMethod == "revoke")
+    #expect(engine.lastJSReceiver == .session(id: .init(Session.mock.id)))
+    #expect(engine.lastJSMethod == "revoke")
     #expect(kitCalls.sessionRevokeCount == 0)
   }
 
