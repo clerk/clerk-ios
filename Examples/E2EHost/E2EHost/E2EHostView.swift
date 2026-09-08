@@ -8,7 +8,7 @@ import ClerkKitUI
 import SwiftUI
 
 struct E2EHostView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @Environment(Clerk.self) private var clerk
 
   let configuration: E2EConfiguration
 

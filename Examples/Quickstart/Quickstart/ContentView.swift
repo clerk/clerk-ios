@@ -8,7 +8,7 @@ import ClerkKitUI
 import SwiftUI
 
 struct ContentView: View {
-  @SwiftUI.Environment(ClerkKit.Clerk.self) private var clerk
+  @Environment(Clerk.self) private var clerk
   @State private var authViewIsPresented = false
 
   var body: some View {
