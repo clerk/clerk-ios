@@ -29,9 +29,6 @@ struct WatchExampleApp: App {
         .prefetchClerkImages()
         .environment(Clerk.shared)
         .atlantisProxy()
-        .task {
-          await WatchSyncVerification.runIfNeeded()
-        }
     }
   }
 }

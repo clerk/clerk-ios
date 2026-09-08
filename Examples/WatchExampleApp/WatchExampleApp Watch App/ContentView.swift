@@ -6,10 +6,7 @@
 //
 
 import ClerkKit
-import os
 import SwiftUI
-
-private let watchSyncLog = Logger(subsystem: "com.clerk.WatchExampleApp", category: "watch-sync")
 
 struct ContentView: View {
   @Environment(Clerk.self) private var clerk
@@ -93,16 +90,6 @@ struct ContentView: View {
         }
       }
     }
-    .onAppear {
-      logWatchUser(clerk.userId)
-    }
-    .onChange(of: clerk.userId) { _, id in
-      logWatchUser(id)
-    }
-  }
-
-  private func logWatchUser(_ id: String?) {
-    watchSyncLog.notice("clerk-watch-sync watch user=\(id ?? "nil", privacy: .public)")
   }
 }
 
