@@ -75,7 +75,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation fails.
   @discardableResult
   public func signIn(_ identifier: String) async throws -> SignIn {
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(identifier: identifier)), as: SignIn.self)
+    try await Clerk.js(.clerk, NativeAuthJSCall.createSignIn(.init(identifier: identifier)), as: SignIn.self)
   }
 
   /// Signs in with an identifier and password.
@@ -87,11 +87,12 @@ public struct Auth {
   /// - Throws: An error if the sign-in fails.
   @discardableResult
   public func signInWithPassword(identifier: String, password: String) async throws -> SignIn {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(.init(strategy: "password", identifier: identifier, password: password))
+    let signIn = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignIn(.init(strategy: "password", identifier: identifier, password: password)),
+      as: SignIn.self
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: signIn.id)
   }
 
   /// Signs in with OTP (One-Time Password) using an email address.
@@ -104,8 +105,8 @@ public struct Auth {
   @discardableResult
   public func signInWithEmailCode(emailAddress: String) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(.init(strategy: "email_code", identifier: emailAddress)),
+      .clerk,
+      NativeAuthJSCall.createSignIn(.init(strategy: "email_code", identifier: emailAddress)),
       as: SignIn.self
     )
   }
@@ -137,8 +138,8 @@ public struct Auth {
   @discardableResult
   public func signInWithPhoneCode(phoneNumber: String) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(.init(strategy: "phone_code", identifier: phoneNumber)),
+      .clerk,
+      NativeAuthJSCall.createSignIn(.init(strategy: "phone_code", identifier: phoneNumber)),
       as: SignIn.self
     )
   }
@@ -188,22 +189,24 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(.init(strategy: provider.strategy, token: idToken))
+    let signIn = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignIn(.init(strategy: provider.strategy, token: idToken)),
+      as: SignIn.self
     )
-    return try await Clerk.completeNativeAuth(flow: "signIn", transferable: transferable, unsafeMetadata: unsafeMetadata)
+    return try await Clerk.completeNativeAuth(flow: "signIn", expectedId: signIn.id, transferable: transferable, unsafeMetadata: unsafeMetadata)
   }
 
   func createSignInWithIdToken(
     _ idToken: String,
     provider: IDTokenProvider
   ) async throws -> SignIn {
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(.init(strategy: provider.strategy, token: idToken))
+    let signIn = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignIn(.init(strategy: provider.strategy, token: idToken)),
+      as: SignIn.self
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: signIn.id)
   }
   #endif
 
@@ -258,7 +261,7 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in attempt cannot be created.
   @discardableResult
   public func createPasskeySignIn() async throws -> SignIn {
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(strategy: "passkey")), as: SignIn.self)
+    try await Clerk.js(.clerk, NativeAuthJSCall.createSignIn(.init(strategy: "passkey")), as: SignIn.self)
   }
 
   /// Signs in with a passkey.
@@ -319,14 +322,15 @@ public struct Auth {
     redirectUrl: String? = nil
   ) async throws -> SignIn {
     let resolvedRedirectUrl = redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
-    try await Clerk.js(
-      .signIn,
-      SignInJSCall.create(
+    let signIn = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignIn(
         .init(strategy: "enterprise_sso", redirectUrl: resolvedRedirectUrl, identifier: emailAddress)
-      )
+      ),
+      as: SignIn.self
     )
     return try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(signIn.id)),
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "enterprise_sso", redirectUrl: resolvedRedirectUrl)
       ),
@@ -371,8 +375,8 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-in fails.
   @discardableResult
   public func signInWithTicket(_ ticket: String) async throws -> SignIn {
-    try await Clerk.js(.signIn, SignInJSCall.create(.init(strategy: "ticket", ticket: ticket)))
-    return try await Clerk.finishedSignIn()
+    let signIn = try await Clerk.js(.clerk, NativeAuthJSCall.createSignIn(.init(strategy: "ticket", ticket: ticket)), as: SignIn.self)
+    return try await Clerk.finishedSignIn(expectedId: signIn.id)
   }
 
   // MARK: - Sign Up Entry Points
@@ -403,9 +407,9 @@ public struct Auth {
     legalAccepted: Bool? = nil,
     transfer: Bool = false
   ) async throws -> SignUp {
-    try await Clerk.js(
-      .signUp,
-      SignUpJSCall.create(
+    let signUp = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignUp(
         .init(
           transfer: transfer ? true : nil,
           unsafeMetadata: unsafeMetadata?.jsonValue,
@@ -417,9 +421,10 @@ public struct Auth {
           emailAddress: emailAddress,
           phoneNumber: phoneNumber
         )
-      )
+      ),
+      as: SignUp.self
     )
-    return try await Clerk.finishedSignUp()
+    return try await Clerk.finishedSignUp(expectedId: signUp.id)
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -496,9 +501,9 @@ public struct Auth {
     lastName: String? = nil,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    try await Clerk.js(
-      .signUp,
-      SignUpJSCall.create(
+    let signUp = try await Clerk.js(
+      .clerk,
+      NativeAuthJSCall.createSignUp(
         .init(
           strategy: provider.strategy,
           unsafeMetadata: unsafeMetadata?.jsonValue,
@@ -506,9 +511,10 @@ public struct Auth {
           firstName: firstName,
           lastName: lastName
         )
-      )
+      ),
+      as: SignUp.self
     )
-    return try await Clerk.completeNativeAuth(flow: "signUp", unsafeMetadata: unsafeMetadata)
+    return try await Clerk.completeNativeAuth(flow: "signUp", expectedId: signUp.id, unsafeMetadata: unsafeMetadata)
   }
   #endif
 
@@ -545,8 +551,8 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
   public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
-    try await Clerk.js(.signUp, SignUpJSCall.create(.init(strategy: "ticket", unsafeMetadata: unsafeMetadata?.jsonValue, ticket: ticket)))
-    return try await Clerk.finishedSignUp()
+    let signUp = try await Clerk.js(.clerk, NativeAuthJSCall.createSignUp(.init(strategy: "ticket", unsafeMetadata: unsafeMetadata?.jsonValue, ticket: ticket)), as: SignUp.self)
+    return try await Clerk.finishedSignUp(expectedId: signUp.id)
   }
 }
 

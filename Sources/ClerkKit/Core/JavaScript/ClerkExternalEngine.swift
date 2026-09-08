@@ -30,8 +30,14 @@ final class ClerkExternalEngine: ClerkEngineClient {
   }
 
   func validate() throws {
-    guard !disposed, try scope.requireCurrentClerk().clientResponseGeneration == expectedIdentityGeneration else {
-      throw CancellationError()
+    guard !disposed else { throw CancellationError() }
+    do {
+      guard try scope.requireCurrentClerk().clientResponseGeneration == expectedIdentityGeneration else {
+        throw CancellationError()
+      }
+    } catch {
+      invalidate()
+      throw error
     }
   }
 
@@ -40,7 +46,8 @@ final class ClerkExternalEngine: ClerkEngineClient {
     guard state.protocolVersion == 1, state.generation == runtimeID else { throw CancellationError() }
     let previous = publication
     let task = Task { @MainActor in
-      try await previous?.value
+      // A rejected snapshot must not poison later publications from a valid owner.
+      _ = await previous?.result
       try validate()
       guard state.revision > revision else { return }
       let kit = try scope.requireCurrentClerk()

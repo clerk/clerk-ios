@@ -53,6 +53,14 @@ extension RecordingEngineClient {
       return try await dispatchSession(invocation)
     }
     switch invocation.method {
+    case "createNativeSignIn", "createNativeSignUp":
+      let call = ClerkJSInvocation(receiver: .clerk, method: "create", arguments: invocation.arguments)
+      if invocation.method == "createNativeSignIn" {
+        try await dispatchSignIn(call)
+        return try encodeKit(Clerk.requireEngineSignIn())
+      }
+      try await dispatchSignUp(call)
+      return try encodeKit(Clerk.requireEngineSignUp())
     case "completeNativeAppleSignIn":
       nativeAppleArguments = invocation.arguments.first
       if let nativeCompletionError { throw nativeCompletionError }
@@ -70,7 +78,7 @@ extension RecordingEngineClient {
       return try nativeResult(args.flow == "signIn" ? .signIn(Clerk.requireEngineSignIn()) : .signUp(Clerk.requireEngineSignUp()))
     case "authenticateNativeWithRedirect":
       let args = try decodeInvocation(NativeRedirectArgs.self, invocation)
-      let call = ClerkJSInvocation(receiver: args.flow == "signIn" ? .signIn : .signUp, method: "authenticateWithRedirect", arguments: [args.params])
+      let call = ClerkJSInvocation(receiver: .clerk, method: "authenticateWithRedirect", arguments: [args.params])
       if args.flow == "signIn" { try await dispatchSignIn(call) } else { try await dispatchSignUp(call) }
       return try nativeResult(args.flow == "signIn" ? .signIn(Clerk.requireEngineSignIn()) : .signUp(Clerk.requireEngineSignUp()))
     case "update":

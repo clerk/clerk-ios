@@ -58,6 +58,61 @@ struct ClerkExternalRuntimeTests {
   }
 
   @Test
+  func rejectedSnapshotDoesNotPreventALaterValidPublication() async throws {
+    let host = try await configureEmbeddedClerkForTesting()
+    let kit = Clerk.shared
+    let initial = try state(kit, revision: 1)
+    await Clerk.disposeEngine()
+    let engine = ClerkExternalEngine(kit: kit, runtimeID: "external", invoke: { _ in Data("{\"result\":null}".utf8) })
+    Clerk.engineClient = engine
+    defer { engine.invalidate() }
+    try await engine.publish(initial)
+    var rejected = try #require(JSONSerialization.jsonObject(with: state(kit, revision: 2)) as? [String: Any])
+    rejected["clientToken"] = ""
+    await #expect(throws: Error.self) {
+      try await engine.publish(JSONSerialization.data(withJSONObject: rejected))
+    }
+    #expect(kit.session?.id == "sess_fixture")
+    var client = try #require(kit.client)
+    client.sessions = []
+    client.lastActiveSessionId = nil
+    try await engine.publish(state(kit, revision: 3, client: client))
+    #expect(kit.user == nil)
+    #expect(kit.session == nil)
+    await Clerk.disposeEngine()
+    await host.dispose()
+  }
+
+  @Test
+  func aFailedPublicationCannotRestoreAnIdentityClearedOutsideTheRuntime() async throws {
+    let host = try await configureEmbeddedClerkForTesting()
+    let kit = Clerk.shared
+    let initial = try state(kit, revision: 1)
+    let later = try state(kit, revision: 3)
+    await Clerk.disposeEngine()
+    let engine = ClerkExternalEngine(kit: kit, runtimeID: "external", invoke: { _ in
+      Issue.record("An invalidated owner must not receive another operation")
+      return Data("{\"result\":null}".utf8)
+    })
+    Clerk.engineClient = engine
+    try await engine.publish(initial)
+    var rejected = try #require(JSONSerialization.jsonObject(with: state(kit, revision: 2)) as? [String: Any])
+    rejected["clientToken"] = ""
+    await #expect(throws: Error.self) {
+      try await engine.publish(JSONSerialization.data(withJSONObject: rejected))
+    }
+    _ = try await kit.identityController.updateDeviceToken(to: "replacement-device-token")
+    await #expect(throws: CancellationError.self) { try await engine.publish(later) }
+    await #expect(throws: CancellationError.self) {
+      _ = try await engine.invoke(.init(receiver: .clerk, method: "refreshClient", arguments: []))
+    }
+    #expect(kit.user == nil)
+    #expect(kit.identityController.currentDeviceToken == "replacement-device-token")
+    await Clerk.disposeEngine()
+    await host.dispose()
+  }
+
+  @Test
   func invalidationCancelsAnOperationWaitingForJavaScript() async throws {
     let host = try await configureEmbeddedClerkForTesting()
     let kit = Clerk.shared

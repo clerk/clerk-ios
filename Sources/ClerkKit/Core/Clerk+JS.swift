@@ -43,13 +43,13 @@ extension Clerk {
   }
 
   @MainActor
-  static func finishedSignIn() async throws -> SignIn {
-    try await js(.clerk, JSRawCall("finishNativeSignIn"), as: SignIn.self)
+  static func finishedSignIn(expectedId: String) async throws -> SignIn {
+    try await js(.clerk, JSRawCall("finishNativeSignIn", .string(expectedId)), as: SignIn.self)
   }
 
   @MainActor
-  static func finishedSignUp() async throws -> SignUp {
-    try await js(.clerk, JSRawCall("finishNativeSignUp"), as: SignUp.self)
+  static func finishedSignUp(expectedId: String) async throws -> SignUp {
+    try await js(.clerk, JSRawCall("finishNativeSignUp", .string(expectedId)), as: SignUp.self)
   }
 
   @MainActor

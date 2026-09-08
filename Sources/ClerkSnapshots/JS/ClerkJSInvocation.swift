@@ -37,6 +37,25 @@ public struct JSRawCall: ClerkJSCallable {
   }
 }
 
+public enum NativeAuthJSCall: ClerkJSCallable {
+  case createSignIn(SignInCreateParams)
+  case createSignUp(SignUpCreateParams)
+
+  public var jsMethod: String {
+    switch self {
+    case .createSignIn: "createNativeSignIn"
+    case .createSignUp: "createNativeSignUp"
+    }
+  }
+
+  public func jsArguments() throws -> [JSONValue] {
+    switch self {
+    case .createSignIn(let params): try [JSONValue(encoding: params)]
+    case .createSignUp(let params): try [JSONValue(encoding: params)]
+    }
+  }
+}
+
 extension JSONValue {
   public init(encoding value: some Encodable) throws {
     let data = try JSONEncoder().encode(value)

@@ -12,6 +12,8 @@ ClerkKit adapts the public Swift API to one Clerk.js resource tree. The generate
 
 State publications carry a protocol version, runtime generation, and increasing revision. ClerkKit commits identity and credentials through its identity controller before exposing the state or emitting a token refresh event. A discarded runtime cannot publish into a replacement configuration. Swift does not interpret HTTP response bodies as a second mutable Clerk resource tree.
 
+Snapshot operations carry the resource ID they were called on. JavaScript rejects retained sign-in, sign-up, and user snapshots when that ID no longer matches the current resource. Creating an authentication attempt is a runtime command and returns its new snapshot. Receiver kinds, required IDs, collection names, and invocation envelopes are validated before dispatch; resource methods retain their own argument validation.
+
 Custom `Clerk.Options.middleware` hooks wrap the embedded host HTTP transport. Request hooks receive the final JavaScript request; response hooks validate the bytes before JavaScript processes them. Disposing the runtime cancels transport and suspended middleware work. JavaScript owns retry policy and resource updates. In Expo, the existing JavaScript owner supplies transport.
 
 ## External runtimes
@@ -21,6 +23,8 @@ The `ClerkExpo` SPI configures an external engine with an initial snapshot and a
 Native callbacks may supply secure storage, random bytes, SHA-256, WebAuthn ceremonies, Apple credentials, biometric credentials, and App Attest. These capabilities do not allocate a Clerk JavaScript runtime. Synchronous authorization uses the separately bundled shared authorization functions and does not instantiate a second Clerk client.
 
 Disposing a connection cancels pending native waits and OS ceremonies. The external JS owner retains its resources, credential cache, and application lifecycle. Reconnecting requires a new runtime ID and authoritative initial state.
+
+A rejected state publication leaves its revision uncommitted and does not block later valid publications. Each queued publication revalidates the runtime and committed identity after its predecessor settles. A replaced configuration or independently changed identity invalidates the connection, which must reconnect before publishing again.
 
 ## Verification
 

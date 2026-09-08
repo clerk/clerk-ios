@@ -6,7 +6,7 @@ extension SignIn {
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.reload(
         rotatingTokenNonce.map { ClerkResourceReloadParams(rotatingTokenNonce: $0) }
       ),
@@ -23,7 +23,7 @@ extension SignIn {
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "email_code", emailAddressId: emailAddressId)
       ),
@@ -66,7 +66,7 @@ extension SignIn {
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(strategy: "phone_code", phoneNumberId: phoneNumberId)
       ),
@@ -100,12 +100,12 @@ extension SignIn {
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.attemptFirstFactor(
         ClerkSnapshots.AttemptFirstFactorParams(strategy: .password, password: password)
       )
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: id)
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -124,13 +124,13 @@ extension SignIn {
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       JSRawCall(
         "attemptFirstFactor",
         JSONValue(encoding: IdTokenAttemptArgs(strategy: provider.strategy, token: idToken))
       )
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: id)
   }
   #endif
 
@@ -143,7 +143,7 @@ extension SignIn {
   @MainActor
   public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareSecondFactor(
         ClerkSnapshots.PrepareSecondFactorParams(strategy: .phoneCode, phoneNumberId: phoneNumberId)
       ),
@@ -160,7 +160,7 @@ extension SignIn {
   @MainActor
   public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareSecondFactor(
         ClerkSnapshots.PrepareSecondFactorParams(strategy: .emailCode, emailAddressId: emailAddressId)
       ),
@@ -179,12 +179,12 @@ extension SignIn {
   @MainActor
   public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.attemptSecondFactor(
         ClerkSnapshots.AttemptSecondFactorParams(strategy: type.attemptStrategy, code: code)
       )
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: id)
   }
 
   /// Sends a password reset code to the specified email address.
@@ -196,7 +196,7 @@ extension SignIn {
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(
           strategy: "reset_password_email_code",
@@ -216,7 +216,7 @@ extension SignIn {
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.prepareFirstFactor(
         ClerkSnapshots.PrepareFirstFactorParams(
           strategy: "reset_password_phone_code",
@@ -238,12 +238,12 @@ extension SignIn {
   @MainActor
   public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
     try await Clerk.js(
-      .signIn,
+      .signIn(id: .init(id)),
       SignInJSCall.resetPassword(
         ClerkSnapshots.ResetPasswordParams(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
       )
     )
-    return try await Clerk.finishedSignIn()
+    return try await Clerk.finishedSignIn(expectedId: id)
   }
 
   @MainActor

@@ -8,7 +8,7 @@ extension User {
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
   public func reload() async throws -> User {
-    try await Clerk.js(.user, UserJSCall.reload(nil))
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.reload(nil))
     return try Clerk.requireUser()
   }
 
@@ -27,7 +27,7 @@ extension User {
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.update(
         UpdateUserParams(
           username: params.username,
@@ -49,7 +49,7 @@ extension User {
   @discardableResult @MainActor
   public func updateMetadata(_ params: User.UpdateMetadataParams) async throws -> User {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.updateMetadata(UpdateUserMetadataParams(unsafeMetadata: params.unsafeMetadata.jsonValue))
     )
     return try Clerk.requireUser()
@@ -68,7 +68,7 @@ extension User {
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    try await Clerk.js(.user, UserJSCall.createBackupCode, as: BackupCodeResource.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.createBackupCode, as: BackupCodeResource.self)
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
@@ -76,7 +76,7 @@ extension User {
   @discardableResult @MainActor
   public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.createEmailAddress(CreateEmailAddressParams(email: emailAddress)),
       as: EmailAddress.self
     )
@@ -87,7 +87,7 @@ extension User {
   @discardableResult @MainActor
   public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.createPhoneNumber(CreatePhoneNumberParams(phoneNumber: phoneNumber)),
       as: PhoneNumber.self
     )
@@ -109,7 +109,7 @@ extension User {
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.createExternalAccount(
         CreateExternalAccountParams(
           strategy: provider.strategy,
@@ -131,7 +131,7 @@ extension User {
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.createExternalAccount(
         CreateExternalAccountParams(strategy: provider.strategy, token: idToken)
       ),
@@ -145,7 +145,7 @@ extension User {
   /// - Returns: ``Passkey``
   @discardableResult @MainActor
   public func createPasskey() async throws -> Passkey {
-    try await Clerk.js(.user, UserJSCall.createPasskey, as: Passkey.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.createPasskey, as: Passkey.self)
   }
   #endif
 
@@ -154,7 +154,7 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    try await Clerk.js(.user, UserJSCall.createTOTP, as: TOTPResource.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.createTOTP, as: TOTPResource.self)
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -164,13 +164,13 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    try await Clerk.js(.user, UserJSCall.verifyTOTP(VerifyTOTPParams(code: code)), as: TOTPResource.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.verifyTOTP(VerifyTOTPParams(code: code)), as: TOTPResource.self)
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    try await Clerk.js(.user, UserJSCall.disableTOTP, as: DeletedObject.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.disableTOTP, as: DeletedObject.self)
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -186,7 +186,7 @@ extension User {
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.getOrganizationInvitations(
         GetUserOrganizationInvitationsParams(
           initialPage: page,
@@ -222,7 +222,7 @@ extension User {
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.getOrganizationMemberships(
         GetUserOrganizationMembershipParams(initialPage: page, pageSize: pageSize)
       ),
@@ -247,7 +247,7 @@ extension User {
   @discardableResult @MainActor
   public func leaveOrganization(organizationId: String) async throws -> DeletedObject {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.leaveOrganization(organizationId: organizationId),
       as: DeletedObject.self
     )
@@ -266,7 +266,7 @@ extension User {
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.getOrganizationSuggestions(
         GetUserOrganizationSuggestionsParams(
           initialPage: page,
@@ -297,7 +297,7 @@ extension User {
   /// - Returns: An ``OrganizationCreationDefaults`` object.
   @discardableResult @MainActor
   public func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
-    try await Clerk.js(.user, UserJSCall.getOrganizationCreationDefaults, as: OrganizationCreationDefaults.self)
+    try await Clerk.js(.user(id: .init(id)), UserJSCall.getOrganizationCreationDefaults, as: OrganizationCreationDefaults.self)
   }
 
   /// Retrieves all active sessions for this user.
@@ -305,7 +305,7 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    let sessions = try await Clerk.js(.user, UserJSCall.getSessions, as: [Session].self)
+    let sessions = try await Clerk.js(.user(id: .init(id)), UserJSCall.getSessions, as: [Session].self)
     Clerk.shared.sessionsByUserId[id] = sessions
     return sessions
   }
@@ -314,7 +314,7 @@ extension User {
   @discardableResult @MainActor
   public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.updatePassword(
         UpdateUserPasswordParams(
           newPassword: params.newPassword,
@@ -329,7 +329,7 @@ extension User {
   @discardableResult @MainActor
   public func getPaymentMethods(params: ClerkKit.GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
     try await Clerk.js(
-      .user,
+      .user(id: .init(id)),
       UserJSCall.getPaymentMethods(
         params.map {
           ClerkSnapshots.GetPaymentMethodsParams(initialPage: $0.initialPage, pageSize: $0.pageSize)
@@ -342,7 +342,7 @@ extension User {
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    let deleted = try await Clerk.js(.user, UserJSCall.delete, as: DeletedObject.self)
+    let deleted = try await Clerk.js(.user(id: .init(id)), UserJSCall.delete, as: DeletedObject.self)
     Clerk.shared.auth.send(.accountDeleted)
     return deleted
   }

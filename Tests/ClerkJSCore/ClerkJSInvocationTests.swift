@@ -4,14 +4,14 @@ import Testing
 
 struct ClerkJSInvocationTests {
   @Test
-  func listedReceiverEncodesKindScopeAndId() throws {
+  func listedReceiverEncodesKindAndIdWithoutDuplicatedScope() throws {
     let receiver = ClerkJSReceiver.listed(.userOrganizationInvitation, id: ClerkJSResourceID("inv_1"))
     let data = try JSONEncoder().encode(receiver)
     let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     #expect(object["kind"] as? String == "listed")
     #expect(object["listedKind"] as? String == "userOrganizationInvitation")
     #expect(object["id"] as? String == "inv_1")
-    #expect(object["scope"] as? String == "userOrganizationInvitation")
+    #expect(object["scope"] == nil)
   }
 
   @Test
@@ -28,8 +28,8 @@ struct ClerkJSInvocationTests {
 
   @Test
   func invocationCarriesReceiverAndCall() throws {
-    let invocation = try ClerkJSInvocation(.user, UserJSCall.createTOTP)
-    #expect(invocation.receiver == .user)
+    let invocation = try ClerkJSInvocation(.user(id: .init("user_1")), UserJSCall.createTOTP)
+    #expect(invocation.receiver == .user(id: .init("user_1")))
     #expect(invocation.method == "createTOTP")
     #expect(invocation.arguments.isEmpty)
   }

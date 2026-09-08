@@ -60,6 +60,26 @@ struct NativeContinuationTests {
     await Clerk.disposeEngine()
   }
 
+  @Test(arguments: ["signIn", "signUp", "user"])
+  func retainedSnapshotCannotMutateTheCurrentResource(kind: String) async throws {
+    let host = try await continuationHarness(flow: kind == "signUp" ? "signUp" : "signIn", strategy: "email_code")
+    if kind == "signIn" {
+      let retained = try Clerk.requireEngineSignIn()
+      _ = try await host.runtime.evaluateJSON("(__clerkInstance.client.signIn.id = 'sia_new', true)")
+      await #expect(throws: ClerkClientError.self) { try await retained.sendEmailCode() }
+    } else if kind == "signUp" {
+      let retained = try Clerk.requireEngineSignUp()
+      _ = try await host.runtime.evaluateJSON("(__clerkInstance.client.signUp.id = 'sua_new', true)")
+      await #expect(throws: ClerkClientError.self) { try await retained.sendEmailCode() }
+    } else {
+      let retained = try #require(Clerk.shared.user)
+      _ = try await host.runtime.evaluateJSON("(__clerkInstance.user.id = 'user_new', true)")
+      await #expect(throws: ClerkClientError.self) { try await retained.update(.init(firstName: "Changed")) }
+    }
+    #expect(try await continuationRequests(host).count == 1)
+    await Clerk.disposeEngine()
+  }
+
   @Test(arguments: ["signIn", "signUp"], ["nonce%2Bvalue", ""])
   func callbackReloadsNonceWithoutTransferring(flow: String, nonce: String) async throws {
     let host = try await continuationHarness(flow: flow, verificationStatus: "transferable")
@@ -167,7 +187,7 @@ private func continuationHarness(flow: String = "signIn", strategy: String = "oa
       return true;
     })()
     """)
-  _ = try await host.invoke(.init(receiver: flow == "signIn" ? .signIn : .signUp, method: "create", arguments: [.object(["emailAddress": .string("ada@example.com")])]))
+  _ = try await host.invoke(.init(receiver: .clerk, method: flow == "signIn" ? "createNativeSignIn" : "createNativeSignUp", arguments: [.object(["emailAddress": .string("ada@example.com")])]))
   return host
 }
 #endif

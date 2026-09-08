@@ -382,7 +382,7 @@ private func magicHarness(flow: String = "signIn", scenario: String = "success",
     })()
     """)
   if create {
-    _ = try await host.invoke(.init(receiver: flow == "signIn" ? .signIn : .signUp, method: "create", arguments: [.object(["identifier": .string("ada@example.com")])]))
+    _ = try await host.invoke(.init(receiver: .clerk, method: flow == "signIn" ? "createNativeSignIn" : "createNativeSignUp", arguments: [.object(["identifier": .string("ada@example.com")])]))
   }
   return host
 }

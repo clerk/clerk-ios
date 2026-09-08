@@ -6,7 +6,7 @@ extension SignUp {
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.reload(
         rotatingTokenNonce.map { ClerkResourceReloadParams(rotatingTokenNonce: $0) }
       ),
@@ -44,7 +44,7 @@ extension SignUp {
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.update(
         SignUpCreateParams(
           unsafeMetadata: unsafeMetadata?.jsonValue,
@@ -58,7 +58,7 @@ extension SignUp {
         )
       )
     )
-    return try await Clerk.finishedSignUp()
+    return try await Clerk.finishedSignUp(expectedId: id)
   }
 
   /// Sends a native magic link to the email address for verification.
@@ -87,7 +87,7 @@ extension SignUp {
   @MainActor
   public func sendEmailCode() async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "email_code")),
       as: SignUp.self
     )
@@ -101,7 +101,7 @@ extension SignUp {
   @MainActor
   public func sendPhoneCode() async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.prepareVerification(ClerkSnapshots.PrepareVerificationParams(strategy: "phone_code")),
       as: SignUp.self
     )
@@ -116,12 +116,12 @@ extension SignUp {
   @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.attemptVerification(
         ClerkSnapshots.AttemptVerificationParams(strategy: .emailCode, code: code)
       )
     )
-    return try await Clerk.finishedSignUp()
+    return try await Clerk.finishedSignUp(expectedId: id)
   }
 
   /// Verifies the phone code entered by the user.
@@ -133,12 +133,12 @@ extension SignUp {
   @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
     try await Clerk.js(
-      .signUp,
+      .signUp(id: .init(id)),
       SignUpJSCall.attemptVerification(
         ClerkSnapshots.AttemptVerificationParams(strategy: .phoneCode, code: code)
       )
     )
-    return try await Clerk.finishedSignUp()
+    return try await Clerk.finishedSignUp(expectedId: id)
   }
 
   @MainActor

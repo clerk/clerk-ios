@@ -227,7 +227,7 @@ struct ClerkEmbeddedLifecycleTests {
       })()
       """)
     do {
-      _ = try await host.invoke(.init(receiver: .signIn, method: "create", arguments: [.object(["identifier": .string("missing@example.com")])]))
+      _ = try await host.invoke(.init(.clerk, NativeAuthJSCall.createSignIn(.init(identifier: "missing@example.com"))))
       Issue.record("Expected sign-in to fail")
     } catch let error as ClerkJSError {
       #expect(error.kind == .api)

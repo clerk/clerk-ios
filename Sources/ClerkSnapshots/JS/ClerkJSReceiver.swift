@@ -24,10 +24,10 @@ public struct ClerkJSResourceID: Hashable, Sendable, Codable, RawRepresentable {
 
 public enum ClerkJSReceiver: Hashable, Sendable, Encodable {
   case clerk
-  case signIn
-  case signUp
+  case signIn(id: ClerkJSResourceID)
+  case signUp(id: ClerkJSResourceID)
   case billing
-  case user
+  case user(id: ClerkJSResourceID)
   case session(id: ClerkJSResourceID)
   case userResource(UserCollection, id: ClerkJSResourceID)
   case organization(id: ClerkJSResourceID)
@@ -59,7 +59,6 @@ public enum ClerkJSReceiver: Hashable, Sendable, Encodable {
     case id
     case collection
     case listedKind
-    case scope
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -67,32 +66,31 @@ public enum ClerkJSReceiver: Hashable, Sendable, Encodable {
     switch self {
     case .clerk:
       try container.encode("clerk", forKey: .kind)
-    case .signIn:
+    case .signIn(let id):
       try container.encode("signIn", forKey: .kind)
-    case .signUp:
+      try container.encode(id, forKey: .id)
+    case .signUp(let id):
       try container.encode("signUp", forKey: .kind)
+      try container.encode(id, forKey: .id)
     case .billing:
       try container.encode("billing", forKey: .kind)
-    case .user:
+    case .user(let id):
       try container.encode("user", forKey: .kind)
+      try container.encode(id, forKey: .id)
     case .session(let id):
       try container.encode("session", forKey: .kind)
       try container.encode(id, forKey: .id)
-      try container.encode("client", forKey: .scope)
     case .userResource(let collection, let id):
       try container.encode("userResource", forKey: .kind)
       try container.encode(collection, forKey: .collection)
       try container.encode(id, forKey: .id)
-      try container.encode("user", forKey: .scope)
     case .organization(let id):
       try container.encode("organization", forKey: .kind)
       try container.encode(id, forKey: .id)
-      try container.encode("organization", forKey: .scope)
     case .listed(let listedKind, let id):
       try container.encode("listed", forKey: .kind)
       try container.encode(listedKind, forKey: .listedKind)
       try container.encode(id, forKey: .id)
-      try container.encode(listedKind.rawValue, forKey: .scope)
     }
   }
 }

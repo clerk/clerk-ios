@@ -224,8 +224,7 @@ extension Clerk {
     try scope.validateStableRuntime()
     // Loading publishes provisional snapshots before a client credential exists.
     guard state.status == "ready" || state.status == "degraded" else { return }
-    let client = try state.client.map { try JSONDecoder.clerkDecoder.decode(Client.self, from: JSONEncoder().encode($0)) }
-    let environment = try state.environment.map { try JSONDecoder.clerkDecoder.decode(Environment.self, from: JSONEncoder().encode($0)) }
+    let client = state.client
     let token = Optional(state.clientToken).nilIfEmpty
     if client != nil, token == nil {
       throw ClerkClientError(message: "The JS client snapshot has no device credential.")
@@ -247,7 +246,7 @@ extension Clerk {
     guard self.client == client, identityController.currentDeviceToken == token else {
       throw CancellationError()
     }
-    self.environment = environment
+    environment = state.environment
   }
 }
 
