@@ -323,7 +323,7 @@ extension BiometricCredentials {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
         let request = try decoder.decode(BiometricCapabilityRequest.self, from: JSONEncoder().encode(request))
-        if request.operation != "deleteKey", request.operation != "dispose" {
+        if request.requiresCurrentIdentity {
           _ = try scope.requireCurrentClerk()
           try validateIdentity()
         }
@@ -332,27 +332,23 @@ extension BiometricCredentials {
         func encoded(_ value: some Encodable) throws -> JSONValue {
           try JSONDecoder().decode(JSONValue.self, from: encoder.encode(value))
         }
-        func required<T>(_ value: T?) throws -> T {
-          guard let value else { throw ClerkClientError(message: "Missing biometric capability argument.") }
-          return value
-        }
-        switch request.operation {
-        case "context":
+        switch request {
+        case .context:
           return .object([
             "appIdentifier": appIdentifierProvider().map(JSONValue.string) ?? .null,
             "platform": .string("ios"),
           ])
-        case "candidates":
-          switch try localCredentialCandidates(id: request.id, identifierHint: request.identifierHint, userID: request.userID, checkFeature: false) {
+        case let .candidates(id, identifierHint, userID):
+          switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID, checkFeature: false) {
           case let .available(credentials):
             return try .object(["credentials": encoded(credentials)])
           case let .unavailable(reason):
             return .object(["reason": .string(reason.rawValue)])
           }
-        case "records":
+        case .records:
           return try encoded(storedLocalCredentialsForCurrentApp())
-        case "createKey":
-          let key = try keyManager.createKey(policy: required(request.policy))
+        case .createKey(let policy):
+          let key = try keyManager.createKey(policy: policy)
           pendingKeys.ids.insert(key.localKeyId)
           return .object([
             "localKeyId": .string(key.localKeyId),
@@ -360,60 +356,39 @@ extension BiometricCredentials {
             "algorithm": .string(key.algorithm.rawValue),
             "policy": .string(key.policy.rawValue),
           ])
-        case "sign":
-          let signature = try keyManager.sign(
-            clientData: required(request.clientData),
-            localKeyId: required(request.localKeyId),
-            localizedReason: request.reason
-          )
+        case let .sign(clientData, localKeyId, reason):
+          let signature = try keyManager.sign(clientData: clientData, localKeyId: localKeyId, localizedReason: reason)
           try validateIdentity()
           return .object([
             "clientData": .string(signature.clientData),
             "signature": .string(signature.signature),
             "algorithm": .string(signature.algorithm.rawValue),
           ])
-        case "save":
-          let credential = try required(request.credential)
+        case .save(let credential):
           try credentialStore.save(credential, deleteReplacedLocalKey: {
             try keyManager.deleteKey(localKeyId: $0)
           })
           pendingKeys.ids.remove(credential.localKeyId)
-        case "remove":
-          let expected = try required(request.credential)
+        case .remove(let expected):
           if try credentialStore.credential(id: expected.id) == expected {
             try deleteLocalCredential(expected)
           }
-        case "removeById":
-          if let credential = try credentialStore.credential(id: required(request.id)) {
+        case .removeById(let id):
+          if let credential = try credentialStore.credential(id: id) {
             try deleteLocalCredential(credential)
           }
-        case "deleteKey":
-          let id = try required(request.localKeyId)
+        case .deleteKey(let id):
           try keyManager.deleteKey(localKeyId: id)
           pendingKeys.ids.remove(id)
-        case "dispose":
+        case .dispose:
           for id in pendingKeys.ids {
             if (try? keyManager.deleteKey(localKeyId: id)) != nil { pendingKeys.ids.remove(id) }
           }
-        default:
-          throw ClerkClientError(message: "Unknown biometric capability operation.")
         }
         return .null
       }
     }
   }
-}
-
-private struct BiometricCapabilityRequest: Decodable {
-  let operation: String
-  let id: String?
-  let identifierHint: String?
-  let userID: String?
-  let localKeyId: String?
-  let clientData: String?
-  let reason: String?
-  let policy: BiometricCredentialPolicy?
-  let credential: BiometricCredentialLocalRecord?
 }
 
 @MainActor

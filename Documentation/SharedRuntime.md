@@ -14,13 +14,15 @@ State publications carry a protocol version, runtime generation, and increasing 
 
 Snapshot operations carry the resource ID they were called on. JavaScript rejects retained sign-in, sign-up, and user snapshots when that ID no longer matches the current resource. Creating an authentication attempt is a runtime command and returns its new snapshot. Receiver kinds, required IDs, collection names, and invocation envelopes are validated before dispatch; resource methods retain their own argument validation.
 
+Forwarding through a paired device and an external runtime can add multiple identity envelopes. The dispatcher unwraps them at the input boundary, checks every client/session requirement against the current owner, and executes the resource operation once.
+
 Custom `Clerk.Options.middleware` hooks wrap the embedded host HTTP transport. Request hooks receive the final JavaScript request; response hooks validate the bytes before JavaScript processes them. Disposing the runtime cancels transport and suspended middleware work. JavaScript owns retry policy and resource updates. In Expo, the existing JavaScript owner supplies transport.
 
 ## External runtimes
 
 The `ClerkExpo` SPI configures an external engine with an initial snapshot and an asynchronous JSON invocation channel. The factory is installed before native configuration, so initialization cannot create an embedded Clerk client. Native operations carry expected client and session IDs; the JS owner rejects operations from stale native screens before mutation. External snapshots use the same identity commit path as embedded snapshots.
 
-Native callbacks may supply secure storage, random bytes, SHA-256, WebAuthn ceremonies, Apple credentials, biometric credentials, and App Attest. These capabilities do not allocate a Clerk JavaScript runtime. Synchronous authorization uses the separately bundled shared authorization functions and does not instantiate a second Clerk client.
+Native callbacks may supply secure storage, random bytes, SHA-256, WebAuthn ceremonies, Apple credentials, biometric credentials, and App Attest. These capabilities do not allocate a Clerk JavaScript runtime. Biometric capability commands have operation-specific argument and result types. Swift decodes each command into its required payload before accessing keys or local credential records. Cleanup commands remain available after identity invalidation. Synchronous authorization uses the separately bundled shared authorization functions and does not instantiate a second Clerk client.
 
 Disposing a connection cancels pending native waits and OS ceremonies. The external JS owner retains its resources, credential cache, and application lifecycle. Reconnecting requires a new runtime ID and authoritative initial state.
 
