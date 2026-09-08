@@ -2,13 +2,13 @@ import CryptoKit
 import Foundation
 import Security
 
-/// Operating-system ceremonies for hosts that already own a JavaScript runtime.
+/// Operating-system ceremonies shared by embedded and external JavaScript hosts.
 public final class ClerkJSPlatformCapabilities: @unchecked Sendable {
   #if !os(watchOS)
   private let passkeys = ClerkJSPasskeyCeremony()
-  private let apple = ClerkJSAppleCeremony()
-  private let biometrics = ClerkJSBiometricCeremony()
-  private let appAttest = ClerkJSAppAttestCeremony()
+  let apple = ClerkJSAppleCeremony()
+  let biometrics = ClerkJSBiometricCeremony()
+  let appAttest = ClerkJSAppAttestCeremony()
   #endif
 
   public init() {}

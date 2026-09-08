@@ -1,26 +1,22 @@
 #if os(iOS) || os(macOS)
 
-import ClerkJSCore
 @_spi(FrameworkIntegration) import ClerkKit
 import Testing
 
 @MainActor
-@Test func applyEngineClientJSONPublishesKitUser() throws {
+@Test func signedInPreviewPublishesKitUser() {
   let clerk = Clerk()
-  let data = try ClerkJSHost.snapshotSignedInClient()
-  let payload = try FAPIJSON.normalizeClientJSON(data)
-  try clerk.applyEngineClientJSON(payload, deviceToken: "js-client-jwt")
+  ClerkJSHostStore.registerPreview(isSignedIn: true, publishableKey: "", onto: clerk)
   #expect(clerk.user?.id == "user_fixture")
   #expect(clerk.session?.id == "sess_fixture")
-  #expect(clerk.deviceToken == "js-client-jwt")
 }
 
 @MainActor
-@Test func applyEngineEnvironmentJSONPublishesKitEnvironment() throws {
+@Test func signedOutPreviewPublishesEnvironmentWithoutAUser() {
   let clerk = Clerk()
-  let data = try ClerkJSHost.snapshotEnvironmentJSON()
-  try clerk.applyEngineEnvironmentJSON(data)
+  ClerkJSHostStore.registerPreview(isSignedIn: false, publishableKey: "", onto: clerk)
   #expect(clerk.environment?.displayConfig.applicationName == "JSCore Cache")
+  #expect(clerk.user == nil)
 }
 
 #endif

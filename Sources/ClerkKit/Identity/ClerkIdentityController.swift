@@ -290,23 +290,6 @@ extension ClerkIdentityController {
     }
   }
 
-  func adoptEngineDeviceToken(_ deviceToken: String) {
-    guard let token = Optional(deviceToken).nilIfEmpty else { return }
-    let previous = currentDeviceToken
-    localDeviceToken = token
-    guard let clerk else { return }
-    do {
-      try clerk.dependencies.identityKeychain.set(
-        token,
-        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-      )
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to persist JS client token")
-    }
-    guard previous != token else { return }
-    clerk.emitInternalStateChange(.deviceTokenDidChange(previous: previous, current: token))
-  }
-
   func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {
     guard let clerk else { throw CancellationError() }
 

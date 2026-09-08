@@ -529,31 +529,6 @@ private func decodePasskeyHookProbe(_ json: String) throws -> PasskeyHookProbe {
   try JSONDecoder().decode(PasskeyHookProbe.self, from: Data(json.utf8))
 }
 
-struct NativeHostEnvironmentJSONTests {
-  @Test
-  func fapiEnvironmentWithoutObjectKeyIsCaptured() throws {
-    let data = Data(#"{"user_settings":{"sign_up":{"mode":"public"}},"display_config":{"application_name":"Acme"}}"#.utf8)
-    let captured = try #require(NativeHost.environmentJSON(fromFAPIBody: data))
-    let object = try #require(JSONSerialization.jsonObject(with: captured) as? [String: Any])
-    #expect(object["display_config"] != nil)
-    #expect(object["user_settings"] != nil)
-  }
-
-  @Test
-  func wrappedFAPIResponseWithoutObjectKeyIsCaptured() throws {
-    let data = Data(#"{"response":{"user_settings":{"sign_up":{"mode":"public"}},"display_config":{"application_name":"Acme"}}}"#.utf8)
-    let captured = try #require(NativeHost.environmentJSON(fromFAPIBody: data))
-    let object = try #require(JSONSerialization.jsonObject(with: captured) as? [String: Any])
-    #expect(object["display_config"] != nil)
-  }
-
-  @Test
-  func clientJSONIsNotCapturedAsEnvironment() {
-    let data = Data(#"{"object":"client","id":"client_1"}"#.utf8)
-    #expect(NativeHost.environmentJSON(fromFAPIBody: data) == nil)
-  }
-}
-
 private func decodePasskeyThrown(_ json: String) throws -> PasskeyThrown {
   try JSONDecoder().decode(PasskeyThrown.self, from: Data(json.utf8))
 }

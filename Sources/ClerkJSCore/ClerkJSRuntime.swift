@@ -136,7 +136,7 @@ public final class ClerkJSRuntime: @unchecked Sendable {
     runtime.host.secureStorage = secureStorage
     runtime.host.biometricCredential = biometricCredential
     runtime.host.oauth.redirectURL = oauthRedirectURL
-    runtime.host.appAttest.keyIdStore = appAttestKeyIdStore
+    runtime.host.capabilities.appAttest.keyIdStore = appAttestKeyIdStore
   }
 
   var oauthSession: ClerkJSOAuthSession {
@@ -144,15 +144,15 @@ public final class ClerkJSRuntime: @unchecked Sendable {
   }
 
   var appleCeremony: ClerkJSAppleCeremony {
-    runtime.host.apple
+    runtime.host.capabilities.apple
   }
 
   var biometricCeremony: ClerkJSBiometricCeremony {
-    runtime.host.biometrics
+    runtime.host.capabilities.biometrics
   }
 
   var appAttestCeremony: ClerkJSAppAttestCeremony {
-    runtime.host.appAttest
+    runtime.host.capabilities.appAttest
   }
 
   public var lastFAPIClientJSON: Data? {

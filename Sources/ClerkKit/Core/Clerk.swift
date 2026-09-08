@@ -218,8 +218,6 @@ public final class Clerk {
   /// Manages caching of client and environment data.
   var cacheManager: CacheManager?
 
-  // Manages periodic polling of session tokens to keep them refreshed.
-
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
@@ -847,22 +845,6 @@ extension Clerk: LifecycleEventHandling {
 }
 
 extension Clerk {
-  package func applyEngineEnvironmentJSON(_ data: Data) throws {
-    environment = try JSONDecoder.clerkDecoder.decode(Environment.self, from: data)
-  }
-
-  package func applyEngineClientJSON(_ data: Data, deviceToken: String? = nil) throws {
-    if let token = deviceToken.nilIfEmpty {
-      identityController.adoptEngineDeviceToken(token)
-    }
-    if let client = ClerkClientSyncResponseMiddleware.decodeClient(from: data) {
-      setClientFromIdentityController(client)
-      return
-    }
-    let client = try JSONDecoder.clerkDecoder.decode(Client.self, from: data)
-    setClientFromIdentityController(client)
-  }
-
   /// Applies a client value after the identity controller has established its mutation boundary.
   func setClientFromIdentityController(
     _ client: Client?,

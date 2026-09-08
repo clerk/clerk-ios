@@ -40,7 +40,7 @@ public final class ClerkJSHost: ClerkJSBridge {
     )
     runtime.setStateCommitHandler { [weak self] data in
       guard let self else { throw ClerkJSCoreError.disposed }
-      try await commitPublishedState(data)
+      try await enqueueState(data).value
     }
     runtime.observeState { [weak self] data in
       Task { @MainActor [weak self] in
@@ -87,10 +87,6 @@ public final class ClerkJSHost: ClerkJSBridge {
     return try Data(contentsOf: url)
   }
 
-  package static func snapshotEnvironment() throws -> ClerkEnvironment {
-    try JSONDecoder().decode(ClerkEnvironment.self, from: snapshotEnvironmentJSON())
-  }
-
   package static func snapshotSignedInClient() throws -> Data {
     guard let url = Bundle.module.url(forResource: "signed-in-client", withExtension: "json") else {
       throw ClerkJSCoreError.missingBundle
@@ -116,10 +112,6 @@ public final class ClerkJSHost: ClerkJSBridge {
 
   package var lastClientToken: String? {
     runtime.lastClientToken
-  }
-
-  private func commitPublishedState(_ data: Data) async throws {
-    try await enqueueState(data).value
   }
 
   public func load() async throws {

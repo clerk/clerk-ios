@@ -1,3 +1,4 @@
+import ClerkSnapshots
 import Foundation
 
 public struct ClerkJSSecureStorage: Sendable {
@@ -13,6 +14,28 @@ public struct ClerkJSSecureStorage: Sendable {
     self.read = read
     self.write = write
     self.compareAndSwap = compareAndSwap
+  }
+
+  package func perform(_ payload: Data) async throws -> Data {
+    struct Request: Decodable {
+      enum Operation: String, Decodable { case read, write, compareAndSwap }
+      let operation: Operation
+      let key: String
+      let value: String?
+      let expected: String?
+    }
+    let request = try JSONDecoder().decode(Request.self, from: payload)
+    let result: JSONValue
+    switch request.operation {
+    case .read:
+      result = try await read(request.key).map(JSONValue.string) ?? .null
+    case .write:
+      try await write(request.key, request.value)
+      result = .null
+    case .compareAndSwap:
+      result = try await .bool(compareAndSwap(request.key, request.expected, request.value))
+    }
+    return try JSONEncoder().encode(result)
   }
 
   public static func memory() -> ClerkJSSecureStorage {

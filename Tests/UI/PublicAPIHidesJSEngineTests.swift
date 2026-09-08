@@ -48,7 +48,7 @@ import Testing
   )
   while let url = enumerator?.nextObject() as? URL {
     guard url.pathExtension == "swift" else { continue }
-    if url.lastPathComponent == "ClerkJSHostEngine.swift" {
+    if url.deletingLastPathComponent().path == sources.appendingPathComponent("Core/JavaScript").path {
       continue
     }
     let text = try String(contentsOf: url, encoding: .utf8)
