@@ -24113,7 +24113,9 @@ isDevOrStagingUrl: (url) => {
 				return {
 					signIn: this.client.signIn.__internal_future,
 					signUp: this.client.signUp.__internal_future,
-					environment: this.environment
+					environment: this.environment,
+					sessions: this.client.sessions,
+					lastAuthenticationStrategy: this.client.lastAuthenticationStrategy
 				};
 			};
 			this.__internal_setEnvironment = async (env) => {
@@ -24695,6 +24697,12 @@ isDevOrStagingUrl: (url) => {
 	}
 	function publicCore(clerk, beforeSignOut) {
 		return {
+			get sessions() {
+				return mobileResources(clerk).sessions;
+			},
+			get lastAuthenticationStrategy() {
+				return mobileResources(clerk).lastAuthenticationStrategy;
+			},
 			get environment() {
 				return mobileResources(clerk).environment;
 			},
@@ -26931,6 +26939,45 @@ isDevOrStagingUrl: (url) => {
 			},
 			invoke: (target, args) => target["reload"](...args)
 		},
+		"EnvironmentResource.isSingleSession": {
+			type: "EnvironmentResource",
+			parameters: [],
+			result: { "kind": "boolean" },
+			invoke: (target, args) => target["isSingleSession"](...args)
+		},
+		"EnvironmentResource.isProduction": {
+			type: "EnvironmentResource",
+			parameters: [],
+			result: { "kind": "boolean" },
+			invoke: (target, args) => target["isProduction"](...args)
+		},
+		"EnvironmentResource.isDevelopmentOrStaging": {
+			type: "EnvironmentResource",
+			parameters: [],
+			result: { "kind": "boolean" },
+			invoke: (target, args) => target["isDevelopmentOrStaging"](...args)
+		},
+		"EnvironmentResource.reload": {
+			type: "EnvironmentResource",
+			parameters: [{
+				"name": "p",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "ClerkResourceReloadParams"
+					}
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "EnvironmentResource"
+			},
+			invoke: (target, args) => target["reload"](...args)
+		},
 		"SignIn.create": {
 			type: "SignIn",
 			parameters: [{
@@ -27848,6 +27895,30 @@ isDevOrStagingUrl: (url) => {
 					"type": { "kind": "boolean" }
 				},
 				{
+					"name": "sessions",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "Session"
+						}
+					}
+				},
+				{
+					"name": "lastAuthenticationStrategy",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": {
+							"kind": "ref",
+							"name": "LastAuthenticationStrategy"
+						}
+					}
+				},
+				{
 					"name": "environment",
 					"optional": false,
 					"type": {
@@ -28327,8 +28398,8 @@ isDevOrStagingUrl: (url) => {
 			"properties": [],
 			"values": [
 				"expired",
-				"pending",
 				"accepted",
+				"pending",
 				"revoked"
 			],
 			"open": false,
@@ -28767,10 +28838,10 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"expired",
-				"failed",
 				"unverified",
-				"verified"
+				"verified",
+				"failed",
+				"expired"
 			],
 			"open": false,
 			"patterns": []
@@ -28852,9 +28923,9 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"expired",
 				"unverified",
-				"verified"
+				"verified",
+				"expired"
 			],
 			"open": false,
 			"patterns": []
@@ -29950,8 +30021,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"pending",
 				"failed",
+				"pending",
 				"success"
 			],
 			"open": false,
@@ -30426,8 +30497,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"active",
 				"expired",
+				"active",
 				"disconnected"
 			],
 			"open": false,
@@ -30488,1376 +30559,6 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": { "kind": "number" }
 			}]
-		},
-		"EnvironmentResource": {
-			"name": "EnvironmentResource",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "organizationSettings",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OrganizationSettings"
-					}
-				},
-				{
-					"name": "authConfig",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "AuthConfig"
-					}
-				},
-				{
-					"name": "displayConfig",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayConfig"
-					}
-				},
-				{
-					"name": "maintenanceMode",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "userSettings",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "UserSettings"
-					}
-				}
-			]
-		},
-		"OrganizationSettings": {
-			"name": "OrganizationSettings",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "maxAllowedMemberships",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "forceOrganizationSelection",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "actions",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OrganizationSettingsActions"
-					}
-				},
-				{
-					"name": "domains",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OrganizationSettingsDomains"
-					}
-				},
-				{
-					"name": "slug",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OrganizationSettingsSlug"
-					}
-				},
-				{
-					"name": "organizationCreationDefaults",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OrganizationSettingsOrganizationCreationDefaults"
-					}
-				},
-				{
-					"name": "id",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				}
-			]
-		},
-		"OrganizationSettingsActions": {
-			"name": "OrganizationSettingsActions",
-			"kind": "object",
-			"properties": [{
-				"name": "adminDelete",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"OrganizationSettingsDomains": {
-			"name": "OrganizationSettingsDomains",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "enrollmentModes",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "OrganizationEnrollmentMode"
-						}
-					}
-				},
-				{
-					"name": "defaultRole",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": { "kind": "string" }
-					}
-				}
-			]
-		},
-		"OrganizationSettingsSlug": {
-			"name": "OrganizationSettingsSlug",
-			"kind": "object",
-			"properties": [{
-				"name": "disabled",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"OrganizationSettingsOrganizationCreationDefaults": {
-			"name": "OrganizationSettingsOrganizationCreationDefaults",
-			"kind": "object",
-			"properties": [{
-				"name": "enabled",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"AuthConfig": {
-			"name": "AuthConfig",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "singleSessionMode",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "claimedAt",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": { "kind": "date" }
-					}
-				},
-				{
-					"name": "reverification",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "preferredChannels",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": {
-							"kind": "dictionary",
-							"value": {
-								"kind": "ref",
-								"name": "PhoneCodeChannel"
-							},
-							"keys": {
-								"values": [],
-								"patterns": [],
-								"open": true
-							},
-							"requiredKeys": []
-						}
-					}
-				},
-				{
-					"name": "sessionMinter",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "id",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				}
-			]
-		},
-		"PhoneCodeChannel": {
-			"name": "PhoneCodeChannel",
-			"kind": "enum",
-			"properties": [],
-			"values": ["sms", "whatsapp"],
-			"open": false,
-			"patterns": []
-		},
-		"DisplayConfig": {
-			"name": "DisplayConfig",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "id",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterSignInUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterSignOutAllUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterSignOutOneUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterSignUpUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterSwitchSessionUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "applicationName",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "backendHost",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "branded",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "captchaPublicKey",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "captchaWidgetType",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": {
-							"kind": "ref",
-							"name": "DisplayConfigCaptchaWidgetType"
-						}
-					}
-				},
-				{
-					"name": "captchaProvider",
-					"optional": false,
-					"type": {
-						"kind": "literal",
-						"value": "turnstile"
-					}
-				},
-				{
-					"name": "captchaPublicKeyInvisible",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "captchaOauthBypass",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "OAuthStrategy"
-						}
-					}
-				},
-				{
-					"name": "captchaHeartbeat",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "captchaHeartbeatIntervalMs",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "number" }
-					}
-				},
-				{
-					"name": "homeUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "instanceEnvironmentType",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "logoImageUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "faviconImageUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "preferredSignInStrategy",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "PreferredSignInStrategy"
-					}
-				},
-				{
-					"name": "signInUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "signUpUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "supportEmail",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "theme",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayThemeJSON"
-					}
-				},
-				{
-					"name": "userProfileUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "clerkJSVersion",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "organizationProfileUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "createOrganizationUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterLeaveOrganizationUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterCreateOrganizationUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "googleOneTapClientId",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "showDevModeWarning",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "termsUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "privacyPolicyUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "waitlistUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "afterJoinWaitlistUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				}
-			]
-		},
-		"DisplayConfigCaptchaWidgetType": {
-			"name": "DisplayConfigCaptchaWidgetType",
-			"kind": "enum",
-			"properties": [],
-			"values": ["smart", "invisible"],
-			"open": false,
-			"patterns": []
-		},
-		"OAuthStrategy": {
-			"name": "OAuthStrategy",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"oauth_facebook",
-				"oauth_google",
-				"oauth_hubspot",
-				"oauth_github",
-				"oauth_tiktok",
-				"oauth_gitlab",
-				"oauth_discord",
-				"oauth_twitter",
-				"oauth_twitch",
-				"oauth_linkedin",
-				"oauth_linkedin_oidc",
-				"oauth_dropbox",
-				"oauth_atlassian",
-				"oauth_bitbucket",
-				"oauth_microsoft",
-				"oauth_notion",
-				"oauth_apple",
-				"oauth_line",
-				"oauth_instagram",
-				"oauth_coinbase",
-				"oauth_spotify",
-				"oauth_xero",
-				"oauth_box",
-				"oauth_slack",
-				"oauth_linear",
-				"oauth_x",
-				"oauth_enstall",
-				"oauth_huggingface",
-				"oauth_vercel"
-			],
-			"open": false,
-			"patterns": ["^oauth_custom_.*$"]
-		},
-		"PreferredSignInStrategy": {
-			"name": "PreferredSignInStrategy",
-			"kind": "enum",
-			"properties": [],
-			"values": ["password", "otp"],
-			"open": false,
-			"patterns": []
-		},
-		"DisplayThemeJSON": {
-			"name": "DisplayThemeJSON",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "general",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayThemeJSONGeneral"
-					}
-				},
-				{
-					"name": "buttons",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayThemeJSONButtons"
-					}
-				},
-				{
-					"name": "accounts",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayThemeJSONAccounts"
-					}
-				}
-			]
-		},
-		"DisplayThemeJSONGeneral": {
-			"name": "DisplayThemeJSONGeneral",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "color",
-					"optional": false,
-					"type": {
-						"kind": "string",
-						"pattern": "^#.*$"
-					}
-				},
-				{
-					"name": "background_color",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "DisplayThemeColor"
-					}
-				},
-				{
-					"name": "font_family",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "font_color",
-					"optional": false,
-					"type": {
-						"kind": "string",
-						"pattern": "^#.*$"
-					}
-				},
-				{
-					"name": "label_font_weight",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "padding",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "border_radius",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "box_shadow",
-					"optional": false,
-					"type": { "kind": "string" }
-				}
-			]
-		},
-		"DisplayThemeColor": {
-			"name": "DisplayThemeColor",
-			"kind": "union",
-			"properties": [],
-			"variants": [
-				{ "kind": "string" },
-				{
-					"kind": "ref",
-					"name": "HslaColor"
-				},
-				{
-					"kind": "ref",
-					"name": "RgbaColor"
-				}
-			]
-		},
-		"HslaColor": {
-			"name": "HslaColor",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "h",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "s",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "l",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "a",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "number" }
-					}
-				}
-			]
-		},
-		"RgbaColor": {
-			"name": "RgbaColor",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "r",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "g",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "b",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "a",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "number" }
-					}
-				}
-			]
-		},
-		"DisplayThemeJSONButtons": {
-			"name": "DisplayThemeJSONButtons",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "font_color",
-					"optional": false,
-					"type": {
-						"kind": "string",
-						"pattern": "^#.*$"
-					}
-				},
-				{
-					"name": "font_family",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "font_weight",
-					"optional": false,
-					"type": { "kind": "string" }
-				}
-			]
-		},
-		"DisplayThemeJSONAccounts": {
-			"name": "DisplayThemeJSONAccounts",
-			"kind": "object",
-			"properties": [{
-				"name": "background_color",
-				"optional": false,
-				"type": {
-					"kind": "ref",
-					"name": "DisplayThemeColor"
-				}
-			}]
-		},
-		"UserSettings": {
-			"name": "UserSettings",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "id",
-					"optional": true,
-					"type": { "kind": "undefined" }
-				},
-				{
-					"name": "enterpriseSSO",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "EnterpriseSSOSettings"
-					}
-				},
-				{
-					"name": "attributes",
-					"optional": false,
-					"type": {
-						"kind": "dictionary",
-						"value": {
-							"kind": "ref",
-							"name": "AttributeData"
-						},
-						"keys": {
-							"values": [
-								"passkey",
-								"password",
-								"backup_code",
-								"email_address",
-								"phone_number",
-								"username",
-								"first_name",
-								"last_name",
-								"web3_wallet",
-								"authenticator_app"
-							],
-							"patterns": [],
-							"open": false
-						},
-						"requiredKeys": [
-							"passkey",
-							"password",
-							"backup_code",
-							"email_address",
-							"phone_number",
-							"username",
-							"first_name",
-							"last_name",
-							"web3_wallet",
-							"authenticator_app"
-						]
-					}
-				},
-				{
-					"name": "actions",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "Actions"
-					}
-				},
-				{
-					"name": "signIn",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "SignInData"
-					}
-				},
-				{
-					"name": "signUp",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "SignUpData"
-					}
-				},
-				{
-					"name": "passwordSettings",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "PasswordSettingsData"
-					}
-				},
-				{
-					"name": "usernameSettings",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "UsernameSettingsData"
-					}
-				},
-				{
-					"name": "attackProtection",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "AttackProtectionData"
-					}
-				},
-				{
-					"name": "passkeySettings",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "PasskeySettingsData"
-					}
-				},
-				{
-					"name": "socialProviderStrategies",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "OAuthStrategy"
-						}
-					}
-				},
-				{
-					"name": "authenticatableSocialStrategies",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "OAuthStrategy"
-						}
-					}
-				},
-				{
-					"name": "web3FirstFactors",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "UserSettingsWeb3FirstFactorsElement"
-						}
-					}
-				},
-				{
-					"name": "alternativePhoneCodeChannels",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "PhoneCodeChannel"
-						}
-					}
-				},
-				{
-					"name": "enabledFirstFactorIdentifiers",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "Attribute"
-						}
-					}
-				},
-				{
-					"name": "instanceIsPasswordBased",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "hasValidAuthFactor",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "social",
-					"optional": false,
-					"type": {
-						"kind": "dictionary",
-						"value": {
-							"kind": "optional",
-							"nullable": false,
-							"omittable": true,
-							"value": {
-								"kind": "ref",
-								"name": "OAuthProviderSettings"
-							}
-						},
-						"keys": {
-							"values": [
-								"oauth_facebook",
-								"oauth_google",
-								"oauth_hubspot",
-								"oauth_github",
-								"oauth_tiktok",
-								"oauth_gitlab",
-								"oauth_discord",
-								"oauth_twitter",
-								"oauth_twitch",
-								"oauth_linkedin",
-								"oauth_linkedin_oidc",
-								"oauth_dropbox",
-								"oauth_atlassian",
-								"oauth_bitbucket",
-								"oauth_microsoft",
-								"oauth_notion",
-								"oauth_apple",
-								"oauth_line",
-								"oauth_instagram",
-								"oauth_coinbase",
-								"oauth_spotify",
-								"oauth_xero",
-								"oauth_box",
-								"oauth_slack",
-								"oauth_linear",
-								"oauth_x",
-								"oauth_enstall",
-								"oauth_huggingface",
-								"oauth_vercel"
-							],
-							"patterns": ["^oauth_custom_.*$"],
-							"open": false
-						},
-						"requiredKeys": []
-					}
-				}
-			]
-		},
-		"EnterpriseSSOSettings": {
-			"name": "EnterpriseSSOSettings",
-			"kind": "object",
-			"properties": [{
-				"name": "enabled",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}, {
-				"name": "self_serve_sso",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"AttributeData": {
-			"name": "AttributeData",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "required",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "immutable",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "boolean" }
-					}
-				},
-				{
-					"name": "verifications",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "VerificationStrategy"
-						}
-					}
-				},
-				{
-					"name": "used_for_first_factor",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "first_factors",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "VerificationStrategy"
-						}
-					}
-				},
-				{
-					"name": "used_for_second_factor",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "second_factors",
-					"optional": false,
-					"type": {
-						"kind": "array",
-						"element": {
-							"kind": "ref",
-							"name": "VerificationStrategy"
-						}
-					}
-				},
-				{
-					"name": "verify_at_sign_up",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "channels",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": {
-							"kind": "array",
-							"element": {
-								"kind": "ref",
-								"name": "PhoneCodeChannel"
-							}
-						}
-					}
-				},
-				{
-					"name": "name",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "Attribute"
-					}
-				}
-			]
-		},
-		"VerificationStrategy": {
-			"name": "VerificationStrategy",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"phone_code",
-				"email_code",
-				"email_link",
-				"totp",
-				"backup_code"
-			],
-			"open": false,
-			"patterns": []
-		},
-		"Attribute": {
-			"name": "Attribute",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"passkey",
-				"password",
-				"backup_code",
-				"email_address",
-				"phone_number",
-				"username",
-				"first_name",
-				"last_name",
-				"web3_wallet",
-				"authenticator_app"
-			],
-			"open": false,
-			"patterns": []
-		},
-		"Actions": {
-			"name": "Actions",
-			"kind": "object",
-			"properties": [{
-				"name": "delete_self",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}, {
-				"name": "create_organization",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"SignInData": {
-			"name": "SignInData",
-			"kind": "object",
-			"properties": [{
-				"name": "second_factor",
-				"optional": false,
-				"type": {
-					"kind": "ref",
-					"name": "SignInDataSecond_factor"
-				}
-			}]
-		},
-		"SignInDataSecond_factor": {
-			"name": "SignInDataSecond_factor",
-			"kind": "object",
-			"properties": [{
-				"name": "required",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}, {
-				"name": "enabled",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"SignUpData": {
-			"name": "SignUpData",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "allowlist_only",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "progressive",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "captcha_enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "mode",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "SignUpModes"
-					}
-				},
-				{
-					"name": "legal_consent_enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "mfa",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": {
-							"kind": "ref",
-							"name": "SignUpDataMfa"
-						}
-					}
-				}
-			]
-		},
-		"SignUpModes": {
-			"name": "SignUpModes",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"public",
-				"restricted",
-				"waitlist"
-			],
-			"open": false,
-			"patterns": []
-		},
-		"SignUpDataMfa": {
-			"name": "SignUpDataMfa",
-			"kind": "object",
-			"properties": [{
-				"name": "required",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"PasswordSettingsData": {
-			"name": "PasswordSettingsData",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "allowed_special_characters",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "disable_hibp",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "min_length",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "max_length",
-					"optional": false,
-					"type": { "kind": "number" }
-				},
-				{
-					"name": "require_special_char",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "require_numbers",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "require_uppercase",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "require_lowercase",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "show_zxcvbn",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "min_zxcvbn_strength",
-					"optional": false,
-					"type": { "kind": "number" }
-				}
-			]
-		},
-		"UsernameSettingsData": {
-			"name": "UsernameSettingsData",
-			"kind": "object",
-			"properties": [{
-				"name": "min_length",
-				"optional": false,
-				"type": { "kind": "number" }
-			}, {
-				"name": "max_length",
-				"optional": false,
-				"type": { "kind": "number" }
-			}]
-		},
-		"AttackProtectionData": {
-			"name": "AttackProtectionData",
-			"kind": "object",
-			"properties": [{
-				"name": "enumeration_protection",
-				"optional": false,
-				"type": {
-					"kind": "ref",
-					"name": "AttackProtectionDataEnumeration_protection"
-				}
-			}]
-		},
-		"AttackProtectionDataEnumeration_protection": {
-			"name": "AttackProtectionDataEnumeration_protection",
-			"kind": "object",
-			"properties": [{
-				"name": "enabled",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"PasskeySettingsData": {
-			"name": "PasskeySettingsData",
-			"kind": "object",
-			"properties": [{
-				"name": "allow_autofill",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}, {
-				"name": "show_sign_in_button",
-				"optional": false,
-				"type": { "kind": "boolean" }
-			}]
-		},
-		"UserSettingsWeb3FirstFactorsElement": {
-			"name": "UserSettingsWeb3FirstFactorsElement",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"web3_solana_signature",
-				"web3_metamask_signature",
-				"web3_coinbase_wallet_signature",
-				"web3_okx_wallet_signature",
-				"web3_base_signature"
-			],
-			"open": false,
-			"patterns": []
-		},
-		"OAuthProviderSettings": {
-			"name": "OAuthProviderSettings",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "enabled",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "required",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "authenticatable",
-					"optional": false,
-					"type": { "kind": "boolean" }
-				},
-				{
-					"name": "strategy",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "OAuthStrategy"
-					}
-				},
-				{
-					"name": "name",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "logo_url",
-					"optional": false,
-					"type": {
-						"kind": "optional",
-						"nullable": true,
-						"omittable": false,
-						"value": { "kind": "string" }
-					}
-				}
-			]
 		},
 		"Session": {
 			"name": "Session",
@@ -32001,11 +30702,11 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"expired",
+				"abandoned",
 				"active",
 				"ended",
-				"expired",
 				"pending",
-				"abandoned",
 				"revoked",
 				"removed",
 				"replaced"
@@ -32746,12 +31447,20 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"expired",
-				"failed",
 				"unverified",
 				"verified",
+				"failed",
+				"expired",
 				"transferable"
 			],
+			"open": false,
+			"patterns": []
+		},
+		"PhoneCodeChannel": {
+			"name": "PhoneCodeChannel",
+			"kind": "enum",
+			"properties": [],
+			"values": ["sms", "whatsapp"],
 			"open": false,
 			"patterns": []
 		},
@@ -32948,9 +31657,23 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": {
 					"kind": "ref",
-					"name": "UserSettingsWeb3FirstFactorsElement"
+					"name": "PrepareWeb3WalletVerificationParamsStrategy"
 				}
 			}]
+		},
+		"PrepareWeb3WalletVerificationParamsStrategy": {
+			"name": "PrepareWeb3WalletVerificationParamsStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"web3_solana_signature",
+				"web3_metamask_signature",
+				"web3_coinbase_wallet_signature",
+				"web3_okx_wallet_signature",
+				"web3_base_signature"
+			],
+			"open": false,
+			"patterns": []
 		},
 		"AttemptWeb3WalletVerificationParams": {
 			"name": "AttemptWeb3WalletVerificationParams",
@@ -32968,7 +31691,7 @@ isDevOrStagingUrl: (url) => {
 					"omittable": true,
 					"value": {
 						"kind": "ref",
-						"name": "UserSettingsWeb3FirstFactorsElement"
+						"name": "PrepareWeb3WalletVerificationParamsStrategy"
 					}
 				}
 			}]
@@ -34044,6 +32767,44 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
+		"OAuthStrategy": {
+			"name": "OAuthStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"oauth_facebook",
+				"oauth_google",
+				"oauth_hubspot",
+				"oauth_github",
+				"oauth_tiktok",
+				"oauth_gitlab",
+				"oauth_discord",
+				"oauth_twitter",
+				"oauth_twitch",
+				"oauth_linkedin",
+				"oauth_linkedin_oidc",
+				"oauth_dropbox",
+				"oauth_atlassian",
+				"oauth_bitbucket",
+				"oauth_microsoft",
+				"oauth_notion",
+				"oauth_apple",
+				"oauth_line",
+				"oauth_instagram",
+				"oauth_coinbase",
+				"oauth_spotify",
+				"oauth_xero",
+				"oauth_box",
+				"oauth_slack",
+				"oauth_linear",
+				"oauth_x",
+				"oauth_enstall",
+				"oauth_huggingface",
+				"oauth_vercel"
+			],
+			"open": false,
+			"patterns": ["^oauth_custom_.*$"]
+		},
 		"GetUserOrganizationMembershipParams": {
 			"name": "GetUserOrganizationMembershipParams",
 			"kind": "object",
@@ -34259,11 +33020,11 @@ isDevOrStagingUrl: (url) => {
 			"variants": [
 				{
 					"kind": "literal",
-					"value": "pending"
+					"value": "accepted"
 				},
 				{
 					"kind": "literal",
-					"value": "accepted"
+					"value": "pending"
 				},
 				{
 					"kind": "array",
@@ -34278,7 +33039,7 @@ isDevOrStagingUrl: (url) => {
 			"name": "OrganizationSuggestionStatus",
 			"kind": "enum",
 			"properties": [],
-			"values": ["pending", "accepted"],
+			"values": ["accepted", "pending"],
 			"open": false,
 			"patterns": []
 		},
@@ -35668,6 +34429,1677 @@ isDevOrStagingUrl: (url) => {
 				"type": { "kind": "string" }
 			}]
 		},
+		"LastAuthenticationStrategy": {
+			"name": "LastAuthenticationStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"password",
+				"phone_code",
+				"email_code",
+				"email_link",
+				"oauth_facebook",
+				"oauth_google",
+				"oauth_hubspot",
+				"oauth_github",
+				"oauth_tiktok",
+				"oauth_gitlab",
+				"oauth_discord",
+				"oauth_twitter",
+				"oauth_twitch",
+				"oauth_linkedin",
+				"oauth_linkedin_oidc",
+				"oauth_dropbox",
+				"oauth_atlassian",
+				"oauth_bitbucket",
+				"oauth_microsoft",
+				"oauth_notion",
+				"oauth_apple",
+				"oauth_line",
+				"oauth_instagram",
+				"oauth_coinbase",
+				"oauth_spotify",
+				"oauth_xero",
+				"oauth_box",
+				"oauth_slack",
+				"oauth_linear",
+				"oauth_x",
+				"oauth_enstall",
+				"oauth_huggingface",
+				"oauth_vercel",
+				"web3_solana_signature",
+				"web3_metamask_signature",
+				"web3_coinbase_wallet_signature",
+				"web3_okx_wallet_signature",
+				"web3_base_signature",
+				"email_address",
+				"username"
+			],
+			"open": false,
+			"patterns": ["^oauth_custom_.*$"]
+		},
+		"EnvironmentResource": {
+			"name": "EnvironmentResource",
+			"kind": "resource",
+			"properties": [
+				{
+					"name": "userSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "UserSettings"
+					}
+				},
+				{
+					"name": "organizationSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OrganizationSettings"
+					}
+				},
+				{
+					"name": "authConfig",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "AuthConfig"
+					}
+				},
+				{
+					"name": "displayConfig",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayConfig"
+					}
+				},
+				{
+					"name": "commerceSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "CommerceSettings"
+					}
+				},
+				{
+					"name": "apiKeysSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "APIKeysSettings"
+					}
+				},
+				{
+					"name": "protectConfig",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "ProtectConfig"
+					}
+				},
+				{
+					"name": "maintenanceMode",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "clientDebugMode",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "partitionedCookies",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"UserSettings": {
+			"name": "UserSettings",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": true,
+					"type": { "kind": "undefined" }
+				},
+				{
+					"name": "social",
+					"optional": false,
+					"type": {
+						"kind": "dictionary",
+						"value": {
+							"kind": "ref",
+							"name": "OAuthProviderSettings"
+						},
+						"keys": {
+							"values": [
+								"oauth_facebook",
+								"oauth_google",
+								"oauth_hubspot",
+								"oauth_github",
+								"oauth_tiktok",
+								"oauth_gitlab",
+								"oauth_discord",
+								"oauth_twitter",
+								"oauth_twitch",
+								"oauth_linkedin",
+								"oauth_linkedin_oidc",
+								"oauth_dropbox",
+								"oauth_atlassian",
+								"oauth_bitbucket",
+								"oauth_microsoft",
+								"oauth_notion",
+								"oauth_apple",
+								"oauth_line",
+								"oauth_instagram",
+								"oauth_coinbase",
+								"oauth_spotify",
+								"oauth_xero",
+								"oauth_box",
+								"oauth_slack",
+								"oauth_linear",
+								"oauth_x",
+								"oauth_enstall",
+								"oauth_huggingface",
+								"oauth_vercel"
+							],
+							"patterns": ["^oauth_custom_.*$"],
+							"open": false
+						},
+						"requiredKeys": []
+					}
+				},
+				{
+					"name": "enterpriseSSO",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "EnterpriseSSOSettings"
+					}
+				},
+				{
+					"name": "attributes",
+					"optional": false,
+					"type": {
+						"kind": "dictionary",
+						"value": {
+							"kind": "ref",
+							"name": "AttributeData"
+						},
+						"keys": {
+							"values": [
+								"passkey",
+								"password",
+								"backup_code",
+								"email_address",
+								"phone_number",
+								"username",
+								"first_name",
+								"last_name",
+								"web3_wallet",
+								"authenticator_app"
+							],
+							"patterns": [],
+							"open": false
+						},
+						"requiredKeys": [
+							"passkey",
+							"password",
+							"backup_code",
+							"email_address",
+							"phone_number",
+							"username",
+							"first_name",
+							"last_name",
+							"web3_wallet",
+							"authenticator_app"
+						]
+					}
+				},
+				{
+					"name": "actions",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "Actions"
+					}
+				},
+				{
+					"name": "signIn",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "SignInData"
+					}
+				},
+				{
+					"name": "signUp",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "SignUpData"
+					}
+				},
+				{
+					"name": "passwordSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "PasswordSettingsData"
+					}
+				},
+				{
+					"name": "usernameSettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "UsernameSettingsData"
+					}
+				},
+				{
+					"name": "attackProtection",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "AttackProtectionData"
+					}
+				},
+				{
+					"name": "passkeySettings",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "PasskeySettingsData"
+					}
+				},
+				{
+					"name": "socialProviderStrategies",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "OAuthStrategy"
+						}
+					}
+				},
+				{
+					"name": "authenticatableSocialStrategies",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "OAuthStrategy"
+						}
+					}
+				},
+				{
+					"name": "web3FirstFactors",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "PrepareWeb3WalletVerificationParamsStrategy"
+						}
+					}
+				},
+				{
+					"name": "alternativePhoneCodeChannels",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "PhoneCodeChannel"
+						}
+					}
+				},
+				{
+					"name": "enabledFirstFactorIdentifiers",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "Attribute"
+						}
+					}
+				},
+				{
+					"name": "instanceIsPasswordBased",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "hasValidAuthFactor",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				}
+			]
+		},
+		"OAuthProviderSettings": {
+			"name": "OAuthProviderSettings",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "required",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "authenticatable",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OAuthStrategy"
+					}
+				},
+				{
+					"name": "name",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "logo_url",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"EnterpriseSSOSettings": {
+			"name": "EnterpriseSSOSettings",
+			"kind": "object",
+			"properties": [{
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "self_serve_sso",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"AttributeData": {
+			"name": "AttributeData",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "required",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "immutable",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
+				},
+				{
+					"name": "verifications",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "VerificationStrategy"
+						}
+					}
+				},
+				{
+					"name": "used_for_first_factor",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "first_factors",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "VerificationStrategy"
+						}
+					}
+				},
+				{
+					"name": "used_for_second_factor",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "second_factors",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "VerificationStrategy"
+						}
+					}
+				},
+				{
+					"name": "verify_at_sign_up",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "channels",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "array",
+							"element": {
+								"kind": "ref",
+								"name": "PhoneCodeChannel"
+							}
+						}
+					}
+				},
+				{
+					"name": "name",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "Attribute"
+					}
+				}
+			]
+		},
+		"VerificationStrategy": {
+			"name": "VerificationStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"phone_code",
+				"email_code",
+				"email_link",
+				"totp",
+				"backup_code"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"Attribute": {
+			"name": "Attribute",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"passkey",
+				"password",
+				"backup_code",
+				"email_address",
+				"phone_number",
+				"username",
+				"first_name",
+				"last_name",
+				"web3_wallet",
+				"authenticator_app"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"Actions": {
+			"name": "Actions",
+			"kind": "object",
+			"properties": [{
+				"name": "delete_self",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "create_organization",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"SignInData": {
+			"name": "SignInData",
+			"kind": "object",
+			"properties": [{
+				"name": "second_factor",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "SignInDataSecond_factor"
+				}
+			}]
+		},
+		"SignInDataSecond_factor": {
+			"name": "SignInDataSecond_factor",
+			"kind": "object",
+			"properties": [{
+				"name": "required",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"SignUpData": {
+			"name": "SignUpData",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "allowlist_only",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "progressive",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "captcha_enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "mode",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "SignUpModes"
+					}
+				},
+				{
+					"name": "legal_consent_enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "mfa",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "ref",
+							"name": "SignUpDataMfa"
+						}
+					}
+				}
+			]
+		},
+		"SignUpModes": {
+			"name": "SignUpModes",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"public",
+				"restricted",
+				"waitlist"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"SignUpDataMfa": {
+			"name": "SignUpDataMfa",
+			"kind": "object",
+			"properties": [{
+				"name": "required",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"PasswordSettingsData": {
+			"name": "PasswordSettingsData",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "allowed_special_characters",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "disable_hibp",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "min_length",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "max_length",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "require_special_char",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "require_numbers",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "require_uppercase",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "require_lowercase",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "show_zxcvbn",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "min_zxcvbn_strength",
+					"optional": false,
+					"type": { "kind": "number" }
+				}
+			]
+		},
+		"UsernameSettingsData": {
+			"name": "UsernameSettingsData",
+			"kind": "object",
+			"properties": [{
+				"name": "min_length",
+				"optional": false,
+				"type": { "kind": "number" }
+			}, {
+				"name": "max_length",
+				"optional": false,
+				"type": { "kind": "number" }
+			}]
+		},
+		"AttackProtectionData": {
+			"name": "AttackProtectionData",
+			"kind": "object",
+			"properties": [{
+				"name": "enumeration_protection",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "AttackProtectionDataEnumeration_protection"
+				}
+			}]
+		},
+		"AttackProtectionDataEnumeration_protection": {
+			"name": "AttackProtectionDataEnumeration_protection",
+			"kind": "object",
+			"properties": [{
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"PasskeySettingsData": {
+			"name": "PasskeySettingsData",
+			"kind": "object",
+			"properties": [{
+				"name": "allow_autofill",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "show_sign_in_button",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"OrganizationSettings": {
+			"name": "OrganizationSettings",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "maxAllowedMemberships",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "forceOrganizationSelection",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "actions",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OrganizationSettingsActions"
+					}
+				},
+				{
+					"name": "domains",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OrganizationSettingsDomains"
+					}
+				},
+				{
+					"name": "slug",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OrganizationSettingsSlug"
+					}
+				},
+				{
+					"name": "organizationCreationDefaults",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "OrganizationSettingsOrganizationCreationDefaults"
+					}
+				},
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"OrganizationSettingsActions": {
+			"name": "OrganizationSettingsActions",
+			"kind": "object",
+			"properties": [{
+				"name": "adminDelete",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"OrganizationSettingsDomains": {
+			"name": "OrganizationSettingsDomains",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "enrollmentModes",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "OrganizationEnrollmentMode"
+						}
+					}
+				},
+				{
+					"name": "defaultRole",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"OrganizationSettingsSlug": {
+			"name": "OrganizationSettingsSlug",
+			"kind": "object",
+			"properties": [{
+				"name": "disabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"OrganizationSettingsOrganizationCreationDefaults": {
+			"name": "OrganizationSettingsOrganizationCreationDefaults",
+			"kind": "object",
+			"properties": [{
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"AuthConfig": {
+			"name": "AuthConfig",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "singleSessionMode",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "claimedAt",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "date" }
+					}
+				},
+				{
+					"name": "reverification",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "preferredChannels",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": {
+							"kind": "dictionary",
+							"value": {
+								"kind": "ref",
+								"name": "PhoneCodeChannel"
+							},
+							"keys": {
+								"values": [],
+								"patterns": [],
+								"open": true
+							},
+							"requiredKeys": []
+						}
+					}
+				},
+				{
+					"name": "sessionMinter",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"DisplayConfig": {
+			"name": "DisplayConfig",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterSignInUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterSignOutAllUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterSignOutOneUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterSignUpUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterSwitchSessionUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "applicationName",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "backendHost",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "branded",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "captchaPublicKey",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "captchaWidgetType",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": {
+							"kind": "ref",
+							"name": "DisplayConfigCaptchaWidgetType"
+						}
+					}
+				},
+				{
+					"name": "captchaProvider",
+					"optional": false,
+					"type": {
+						"kind": "literal",
+						"value": "turnstile"
+					}
+				},
+				{
+					"name": "captchaPublicKeyInvisible",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "captchaOauthBypass",
+					"optional": false,
+					"type": {
+						"kind": "array",
+						"element": {
+							"kind": "ref",
+							"name": "OAuthStrategy"
+						}
+					}
+				},
+				{
+					"name": "captchaHeartbeat",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "captchaHeartbeatIntervalMs",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				},
+				{
+					"name": "homeUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "instanceEnvironmentType",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "logoImageUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "faviconImageUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "preferredSignInStrategy",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "PreferredSignInStrategy"
+					}
+				},
+				{
+					"name": "signInUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "signUpUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "supportEmail",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "theme",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayThemeJSON"
+					}
+				},
+				{
+					"name": "userProfileUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "clerkJSVersion",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "organizationProfileUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "createOrganizationUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterLeaveOrganizationUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterCreateOrganizationUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "googleOneTapClientId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "showDevModeWarning",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "termsUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "privacyPolicyUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "waitlistUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "afterJoinWaitlistUrl",
+					"optional": false,
+					"type": { "kind": "string" }
+				}
+			]
+		},
+		"DisplayConfigCaptchaWidgetType": {
+			"name": "DisplayConfigCaptchaWidgetType",
+			"kind": "enum",
+			"properties": [],
+			"values": ["smart", "invisible"],
+			"open": false,
+			"patterns": []
+		},
+		"PreferredSignInStrategy": {
+			"name": "PreferredSignInStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": ["password", "otp"],
+			"open": false,
+			"patterns": []
+		},
+		"DisplayThemeJSON": {
+			"name": "DisplayThemeJSON",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "general",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayThemeJSONGeneral"
+					}
+				},
+				{
+					"name": "buttons",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayThemeJSONButtons"
+					}
+				},
+				{
+					"name": "accounts",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayThemeJSONAccounts"
+					}
+				}
+			]
+		},
+		"DisplayThemeJSONGeneral": {
+			"name": "DisplayThemeJSONGeneral",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "color",
+					"optional": false,
+					"type": {
+						"kind": "string",
+						"pattern": "^#.*$"
+					}
+				},
+				{
+					"name": "background_color",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "DisplayThemeColor"
+					}
+				},
+				{
+					"name": "font_family",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "font_color",
+					"optional": false,
+					"type": {
+						"kind": "string",
+						"pattern": "^#.*$"
+					}
+				},
+				{
+					"name": "label_font_weight",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "padding",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "border_radius",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "box_shadow",
+					"optional": false,
+					"type": { "kind": "string" }
+				}
+			]
+		},
+		"DisplayThemeColor": {
+			"name": "DisplayThemeColor",
+			"kind": "union",
+			"properties": [],
+			"variants": [
+				{ "kind": "string" },
+				{
+					"kind": "ref",
+					"name": "HslaColor"
+				},
+				{
+					"kind": "ref",
+					"name": "RgbaColor"
+				}
+			]
+		},
+		"HslaColor": {
+			"name": "HslaColor",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "h",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "s",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "l",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "a",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				}
+			]
+		},
+		"RgbaColor": {
+			"name": "RgbaColor",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "r",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "g",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "b",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "a",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				}
+			]
+		},
+		"DisplayThemeJSONButtons": {
+			"name": "DisplayThemeJSONButtons",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "font_color",
+					"optional": false,
+					"type": {
+						"kind": "string",
+						"pattern": "^#.*$"
+					}
+				},
+				{
+					"name": "font_family",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "font_weight",
+					"optional": false,
+					"type": { "kind": "string" }
+				}
+			]
+		},
+		"DisplayThemeJSONAccounts": {
+			"name": "DisplayThemeJSONAccounts",
+			"kind": "object",
+			"properties": [{
+				"name": "background_color",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "DisplayThemeColor"
+				}
+			}]
+		},
+		"CommerceSettings": {
+			"name": "CommerceSettings",
+			"kind": "object",
+			"properties": [{
+				"name": "billing",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "CommerceSettingsBilling"
+				}
+			}, {
+				"name": "id",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
+				}
+			}]
+		},
+		"CommerceSettingsBilling": {
+			"name": "CommerceSettingsBilling",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "stripePublishableKey",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "organization",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "CommerceSettingsBillingOrganization"
+					}
+				},
+				{
+					"name": "user",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "CommerceSettingsBillingUser"
+					}
+				}
+			]
+		},
+		"CommerceSettingsBillingOrganization": {
+			"name": "CommerceSettingsBillingOrganization",
+			"kind": "object",
+			"properties": [{
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "hasPaidPlans",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"CommerceSettingsBillingUser": {
+			"name": "CommerceSettingsBillingUser",
+			"kind": "object",
+			"properties": [{
+				"name": "enabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "hasPaidPlans",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"APIKeysSettings": {
+			"name": "APIKeysSettings",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "user_api_keys_enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "orgs_api_keys_enabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"ProtectConfig": {
+			"name": "ProtectConfig",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "loaders",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "array",
+							"element": {
+								"kind": "ref",
+								"name": "ProtectLoader"
+							}
+						}
+					}
+				},
+				{
+					"name": "tokens_invalid_before",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				},
+				{
+					"name": "challenge_load_timeout_ms",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				}
+			]
+		},
+		"ProtectLoader": {
+			"name": "ProtectLoader",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "rollout",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				},
+				{
+					"name": "target",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "ProtectLoaderTarget"
+					}
+				},
+				{
+					"name": "type",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "attributes",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "dictionary",
+							"value": {
+								"kind": "ref",
+								"name": "ProtectLoaderAttributesValue"
+							},
+							"keys": {
+								"values": [],
+								"patterns": [],
+								"open": true
+							},
+							"requiredKeys": []
+						}
+					}
+				},
+				{
+					"name": "text_content",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "token_url",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "token_timeout_ms",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				},
+				{
+					"name": "challenge_load_timeout_ms",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				}
+			]
+		},
+		"ProtectLoaderTarget": {
+			"name": "ProtectLoaderTarget",
+			"kind": "enum",
+			"properties": [],
+			"values": ["head", "body"],
+			"open": false,
+			"patterns": ["^#.*$"]
+		},
+		"ProtectLoaderAttributesValue": {
+			"name": "ProtectLoaderAttributesValue",
+			"kind": "union",
+			"properties": [],
+			"variants": [
+				{ "kind": "string" },
+				{ "kind": "number" },
+				{
+					"kind": "literal",
+					"value": false
+				},
+				{
+					"kind": "literal",
+					"value": true
+				}
+			]
+		},
 		"SignIn": {
 			"name": "SignIn",
 			"kind": "resource",
@@ -35932,7 +36364,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "UserSettingsWeb3FirstFactorsElement"
+						"name": "PrepareWeb3WalletVerificationParamsStrategy"
 					}
 				},
 				{
@@ -36617,9 +37049,9 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"expired",
-				"failed",
 				"verified",
+				"failed",
+				"expired",
 				"client_mismatch"
 			],
 			"open": false,
@@ -38663,7 +39095,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "a720a6456db3de69194e9f7cc5fce3b619074d43ca0cf4a02ede68e3f9c70db4",
+		"contractHash": "91341bb20490c21fabf544da51ead3dfdda0dd21c07c43fb59dc0995a66400e5",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
