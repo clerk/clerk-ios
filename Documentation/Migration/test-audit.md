@@ -71,6 +71,12 @@ Background/foreground notifications delegate reload and token policy to TypeScri
 
 ## Core state, request ownership and races
 
+The [identity controller assertion audit](identity-controller-test-audit.md)
+records all twelve controller declarations, new embedded persistence checks,
+and unresolved tokenless-client/credential-rotation differences. The old
+controller file remains retained. It also maps the two organization collection
+entry-point tests to current generated HTTP/resource outcomes.
+
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/{protocol,attached-core,magic-link,biometrics}.test.mjs and clerk-js resource/request tests; native CoreRuntime and host integration.
 
 The old sequence gates, mutable singleton, middleware pipeline and activation coordinator are not retained as a second state machine. Preserve public race/error outcomes in core tests. Late finalization, reset, sign-out, canceled host effects, shared-owner detach and stale resource handles are tested through the new protocol. This is not a one-for-one replacement of every old race test.
