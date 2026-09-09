@@ -33,7 +33,7 @@ final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Sendable {
   private let appleIdentity: Presentation?
   private let passkeyAutofill: Bool
   public var supported: [String] {
-    ["http", "storage", "timer", "random", "crypto.sha256"] + (biometrics == nil ? [] : ["biometrics"]) + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
+    ["http", "storage", "timer", "random", "crypto.sha256"] + (biometrics == nil ? [] : ["biometrics", "biometrics.installation"]) + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
   public convenience init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil) throws {

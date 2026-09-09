@@ -6,12 +6,18 @@ import Foundation
   private let credentials: any CredentialStorage
   private let cleanup: any CredentialStorage
   private let keys = AppleBiometricKeyManager()
+  private let installation: AppleBiometricInstallation
 
-  public init(publishableKey: String, appIdentifier: String = Bundle.main.bundleIdentifier ?? "", credentials: any CredentialStorage, cleanup: any CredentialStorage) {
+  public convenience init(publishableKey: String, appIdentifier: String = Bundle.main.bundleIdentifier ?? "", credentials: any CredentialStorage, cleanup: any CredentialStorage, legacyKeychain: LegacyKeychainConfiguration = .init()) {
+    self.init(publishableKey: publishableKey, appIdentifier: appIdentifier, credentials: credentials, cleanup: cleanup, legacyKeychain: legacyKeychain, defaults: .standard)
+  }
+
+  init(publishableKey: String, appIdentifier: String, credentials: any CredentialStorage, cleanup: any CredentialStorage, legacyKeychain: LegacyKeychainConfiguration = .init(), defaults: UserDefaults) {
     self.publishableKey = publishableKey
     self.appIdentifier = appIdentifier
     self.credentials = credentials
     self.cleanup = cleanup
+    installation = AppleBiometricInstallation(defaults: defaults, publishableKey: publishableKey, appIdentifier: appIdentifier, legacy: legacyKeychain)
   }
 
   func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
@@ -25,6 +31,11 @@ import Foundation
     }
     do {
       switch capability {
+      case "biometrics.installation.isCurrent", "biometrics.installation.markCurrent":
+        guard args["scope"] == .string(publishableKey) else { throw CoreError(code: "invalid_storage_scope") }
+        if capability == "biometrics.installation.isCurrent" { return .bool(installation.isCurrent()) }
+        installation.markCurrent()
+        return .null
       case "biometrics.appIdentifier": return .string(appIdentifier)
       case "biometrics.storage.read", "biometrics.storage.write":
         guard args["scope"] == .string(publishableKey) else { throw CoreError(code: "invalid_storage_scope") }

@@ -17256,6 +17256,8 @@ isDevOrStagingUrl: (url) => {
 	var NativeBiometricCredentials = class {
 		#generation = 0;
 		#writes = Promise.resolve();
+		#installationReady = false;
+		#installationPromise;
 		constructor(clerk, host) {
 			this.clerk = clerk;
 			this.host = host;
@@ -17332,6 +17334,7 @@ isDevOrStagingUrl: (url) => {
 			}
 		}
 		async enroll(params = {}) {
+			await this.ensureInstallation();
 			const session = this.clerk.session;
 			if (!session || !["active", "pending"].includes(session.status) || !session.user?.id) throw fail$1("biometric_session_required");
 			const reason = this.featureReason();
@@ -17418,6 +17421,7 @@ isDevOrStagingUrl: (url) => {
 			return records.length ? this.revoke({ id: records[0].id }) : null;
 		}
 		async forgetLocalCredentials({ userId }) {
+			await this.ensureInstallation();
 			const appIdentifier = await this.requireHost().appIdentifier();
 			await this.updateCleanup((users) => [...new Set([...users, userId])]);
 			const records = (await this.records()).filter((record) => record.userId === userId && record.appIdentifier === appIdentifier);
@@ -17427,6 +17431,7 @@ isDevOrStagingUrl: (url) => {
 		}
 		async retryPendingCleanup() {
 			if (!this.host) return;
+			await this.ensureInstallation();
 			for (const userId of await this.cleanupUsers()) await this.forgetLocalCredentials({ userId }).catch(() => void 0);
 		}
 		async authenticate(params, prepare, attempt) {
@@ -17531,7 +17536,37 @@ isDevOrStagingUrl: (url) => {
 				reason: reason ?? "serverCredentialMissing"
 			};
 		}
+		async ensureInstallation() {
+			const host = this.host;
+			if (!host?.installation || this.#installationReady) return;
+			if (!this.#installationPromise) {
+				const installation = host.installation;
+				this.#installationPromise = this.serialized(async () => {
+					if (!await installation.isCurrent()) {
+						const appIdentifier = await host.appIdentifier();
+						if (!appIdentifier) throw fail$1("missing_app_identifier");
+						const raw = await host.storage.read();
+						let records;
+						try {
+							records = raw ? JSON.parse(raw) : [];
+						} catch {
+							throw fail$1("invalid_biometric_metadata");
+						}
+						if (!Array.isArray(records)) throw fail$1("invalid_biometric_metadata");
+						const belongsToApp = (record) => !!record && typeof record === "object" && "appIdentifier" in record && record.appIdentifier === appIdentifier;
+						for (const record of records) if (belongsToApp(record) && typeof record.localKeyId === "string" && record.localKeyId) await host.deleteKey(record.localKeyId);
+						await host.storage.write(JSON.stringify(records.filter((record) => !belongsToApp(record))));
+					}
+					await installation.markCurrent();
+					this.#installationReady = true;
+				}).finally(() => {
+					this.#installationPromise = void 0;
+				});
+			}
+			await this.#installationPromise;
+		}
 		async records() {
+			await this.ensureInstallation();
 			const raw = await this.requireHost().storage.read();
 			if (!raw) return [];
 			let values;
@@ -17929,6 +17964,10 @@ isDevOrStagingUrl: (url) => {
 			appIdentifier: () => request("biometrics.appIdentifier", {}),
 			storage: storage("credentials"),
 			cleanupStorage: storage("cleanup"),
+			installation: supports("biometrics.installation") ? {
+				isCurrent: () => request("biometrics.installation.isCurrent", { scope }),
+				markCurrent: () => request("biometrics.installation.markCurrent", { scope })
+			} : void 0,
 			supports: (policy) => request("biometrics.supports", { policy }),
 			hasKey: (localKeyId) => request("biometrics.hasKey", { localKeyId }),
 			createKey: (policy) => request("biometrics.createKey", { policy }),

@@ -6,7 +6,9 @@ public struct LegacyKeychainConfiguration: Sendable {
   public let service: String?
   public let accessGroup: String?
   public let publishableKey: String?
+  let installationAccessGroup: String?
   public init(service: String? = nil, accessGroup: String? = nil, publishableKey: String? = nil) {
+    installationAccessGroup = accessGroup
     let group = accessGroup?.trimmingCharacters(in: .whitespacesAndNewlines)
     self.service = service
     self.accessGroup = group?.isEmpty == false ? group : nil

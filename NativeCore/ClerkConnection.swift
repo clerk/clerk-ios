@@ -26,7 +26,8 @@ extension Clerk {
     let biometrics = biometrics ?? AppleBiometricCapabilities(
       publishableKey: configuration.publishableKey,
       credentials: KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain, purpose: .biometricCredentials),
-      cleanup: KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain, purpose: .biometricCleanup)
+      cleanup: KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain, purpose: .biometricCleanup),
+      legacyKeychain: configuration.legacyKeychain
     )
     let capabilities = try AppleCapabilities(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, storage: storage, browser: browser, passkeys: passkeys, appleIdentity: appleIdentity, passkeyAutofill: passkeyAutofill, authStorage: authStorage, biometrics: biometrics)
     return try await connect(configuration: configuration, capabilities: capabilities)

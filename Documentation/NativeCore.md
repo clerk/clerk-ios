@@ -71,3 +71,5 @@ Release performance limits and outstanding measurements are recorded in [the per
 Packaging also regenerates the eight shared UI preview fixtures against the current protocol. The fixture generator uses a fixed clock and deterministic entropy; run `node scripts/generate-preview-fixtures.mjs JAVASCRIPT_REPOSITORY ANDROID_REPOSITORY` from the iOS repository to refresh them independently. The Swift proof can decode all eight with `swift run NativeCoreProof --preview-fixtures Sources/ClerkKitUI/Resources/Preview`.
 
 Standalone owners now observe OS connectivity and recover through the shared core. See [connectivity and lifecycle recovery](Migration/connectivity.md).
+
+Apple [biometric installation continuity](Migration/biometric-installation.md) recognizes authorized old markers and reconciles surviving keys through the shared core when the app-container marker is missing. Physical upgrade/reinstall validation remains a release gate.
