@@ -108,7 +108,7 @@ struct AuthStartView: View {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
     return passkeySignInIsAvailable(environment: environment) &&
-      environment.userSettings.passkeySettings?.allowAutofill == true
+      environment.userSettings.passkeySettings.allowAutofill == true
     #else
     false
     #endif
