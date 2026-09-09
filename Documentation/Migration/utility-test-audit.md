@@ -29,6 +29,7 @@ every application behavior it previously supported has been validated.
 | `RetryingOperationTests` | The four attempt/delay-policy assertions target a removed independent Swift retry algorithm. Retry decisions now belong to the core. Retire the helper's exact counter and clamp policy; platform cancellation and token-retry behavior remain in their separate audits. |
 | `SessionUtilsTests` | The five current-session selection and eleven identity/status/date-change cases belong to the core state/observation audit. Existing active/pending adoption and projection tests are relevant, but this utility review does not claim all those old transitions have been checked. |
 | `SessionStatusLoggerTests` | All twelve tests decide when a removed native logger should emit a pending-session message, including nil/empty task normalization. That logger is intentionally absent. Native UI must still enforce pending tasks, which is checked through the core/UI completion contract rather than logging decisions. |
+| `JWTDecoderTests` | All sixteen parser/claim assertions are mapped in the [JWT audit](jwt-test-audit.md), with eight shared decoder and four embedded token-result checks. The separate Swift Claim/expiration conveniences are not retained. |
 | `ProxyConfigurationTests` | The sixteen URL validation and prefix cases describe an explicitly unavailable prerelease feature. They remain evidence of that limitation, not passing replacement coverage. |
 | `JSONWebAuthnTests`, `WebAuthenticationTests` | See the separate [passkey](passkey-test-audit.md) and [browser](browser-test-audit.md) assertion maps. |
 
@@ -46,6 +47,6 @@ current native contract suites pass 46 tests on macOS and 43 on iOS; the separat
 HTTP and lifecycle audits document their additional execution checks.
 
 `ExternalAuthUtilsTests` is also retired after the separate callback audit.
-`JWTDecoderTests`, `SessionUtilsTests`, and `ProxyConfigurationTests` remain retained for their separate assertion/feature
-audits. This retirement does not claim JWT, callback, session-transition or proxy
+`JWTDecoderTests` is retired after its separate assertion audit and passing shared-core checks.
+`SessionUtilsTests` and `ProxyConfigurationTests` remain retained for their separate assertion/feature audits. This retirement does not claim JWT, callback, session-transition or proxy
 coverage from the utility tests.
