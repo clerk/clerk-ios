@@ -1,0 +1,56 @@
+{
+  "baseline": {
+    "fixtureSHA256": "171fec9df9f9aea3bbc0c3887a94802bad0caa0a96a03bd50efb0c92315a1e2d",
+    "ipaBytes": 27516,
+    "ipaSHA256": "2b6acf957c35ea5dca92307e37467263b70f49bb95a00d11ea6a3c05e822a85c",
+    "matchingDescriptors": [
+      {
+        "device": "iPhone18,4",
+        "os-version": "26.0"
+      }
+    ],
+    "sizeCompressedApp": 27516,
+    "sizeCompressedODR": 0,
+    "sizeUncompressedApp": 129620,
+    "sizeUncompressedODR": 0,
+    "thinningReportSHA256": "c34dc9f541fe587386c1b2f249c8e57f55855947a5f6ce4deb8bc71043d79e62"
+  },
+  "compressedBudgetBytes": 5242880,
+  "compressedWithinBudgetForThisExportEstimate": true,
+  "delta": {
+    "sizeCompressedApp": 1651319,
+    "sizeUncompressedApp": 5364077
+  },
+  "embedded": {
+    "core": {
+      "bundleBytes": 1314690,
+      "bundleSHA256": "85fd61ac8a7d5ca95c5be7c8bbfa17d2004eb13c280f587ebc8d24d50f9aa52c",
+      "contractHash": "779dedc726a5c587629061d6e3ad89ef835e3f1f92566e8d19706c1cf5f14a33",
+      "coreRevision": "617418e19cd985de98333a5df3c8ab3b2d360190"
+    },
+    "fixtureSHA256": "171fec9df9f9aea3bbc0c3887a94802bad0caa0a96a03bd50efb0c92315a1e2d",
+    "ipaBytes": 1678835,
+    "ipaSHA256": "2fbfe7e7c4804ba4544839952df69984b568454384ec9a987e25b8cf5ae4e15a",
+    "matchingDescriptors": [
+      {
+        "device": "iPhone18,4",
+        "os-version": "26.0"
+      }
+    ],
+    "sizeCompressedApp": 1678835,
+    "sizeCompressedODR": 0,
+    "sizeUncompressedApp": 5493697,
+    "sizeUncompressedODR": 0,
+    "thinningReportSHA256": "e4e2e05eea59b32a9fb5f7a5a038d1b23c7ad0b5a32c004327cbc8ce1b19520d"
+  },
+  "limitations": [
+    "Xcode app-thinning estimate, not observed App Store download traffic",
+    "Development-signed export; distribution encryption and signing can change sizes",
+    "Uncompressed estimate is not measured physical-device filesystem allocation",
+    "Only the requested model variant is compared; native UI and explicit authentication presenters are excluded"
+  ],
+  "method": "Xcode local debugging export; model-specific thinning; existing development signing; Swift symbols stripped",
+  "model": "iPhone18,4",
+  "nativeRevision": "5b678843a61e1a0df827222f1aee0c0bcbacad95",
+  "schemaVersion": 1
+}

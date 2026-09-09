@@ -1,0 +1,153 @@
+{
+  "baseline": {
+    "architecture": "arm64",
+    "bundleIdentifier": "com.clerk.nativecore.footprint.baseline",
+    "deterministicZIPBytes": 29556,
+    "deterministicZIPSHA256": "10465374c8cd115b36c42d1d367e75bec47f4b3f3873dad4eb2b1a1062c78d90",
+    "executableBytes": 114784,
+    "files": [
+      {
+        "bytes": 114784,
+        "path": "Baseline",
+        "sha256": "9867479d573e7d1dc4834816bd0596d1ce4c5f1f5dfa2c8e4d5a22450fcccccd"
+      },
+      {
+        "bytes": 1137,
+        "path": "Info.plist",
+        "sha256": "543c934684c709aef564113847022429ba72979fd6349b2458adee5f7a40e65a"
+      },
+      {
+        "bytes": 8,
+        "path": "PkgInfo",
+        "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0"
+      },
+      {
+        "bytes": 2315,
+        "path": "_CodeSignature/CodeResources",
+        "sha256": "e3d1b37874b403c6a91870ecce8865788c4c25f3bee39e0934fe3a707b67ca14"
+      },
+      {
+        "bytes": 12752,
+        "path": "embedded.mobileprovision",
+        "sha256": "6745ab2b8f67987cf467292fb4058b2d26e61dbe230a7b5f98a39771115818fb"
+      },
+      {
+        "bytes": 13551,
+        "path": "fapi.json",
+        "sha256": "171fec9df9f9aea3bbc0c3887a94802bad0caa0a96a03bd50efb0c92315a1e2d"
+      }
+    ],
+    "logicalFileBytes": 144547,
+    "minimumOSVersion": "17.0"
+  },
+  "build": "Release, Swift -O wholemodule, dead stripping, arm64, development signed",
+  "core": {
+    "bytes": 1314690,
+    "contractHash": "779dedc726a5c587629061d6e3ad89ef835e3f1f92566e8d19706c1cf5f14a33",
+    "gzipLevel9Bytes": 234247,
+    "revision": "617418e19cd985de98333a5df3c8ab3b2d360190",
+    "sha256": "85fd61ac8a7d5ca95c5be7c8bbfa17d2004eb13c280f587ebc8d24d50f9aa52c"
+  },
+  "delta": {
+    "deterministicZIPBytes": 2115175,
+    "executableBytes": 7167632,
+    "logicalFileBytes": 8582749
+  },
+  "embedded": {
+    "architecture": "arm64",
+    "bundleIdentifier": "com.clerk.nativecore.footprint.embedded",
+    "deterministicZIPBytes": 2144731,
+    "deterministicZIPSHA256": "47748f7a4b46666d0a386edcb1a0187311c6ff0979adc144d7df1b26dada29e8",
+    "executableBytes": 7282416,
+    "files": [
+      {
+        "bytes": 673,
+        "path": "Clerk_ClerkKit.bundle/Info.plist",
+        "sha256": "1ab16861822bda3ccee55fbb3131966f7c1f1a9d8ec254e0c05417eaaa5f85d2"
+      },
+      {
+        "bytes": 471,
+        "path": "Clerk_ClerkKit.bundle/PrivacyInfo.xcprivacy",
+        "sha256": "6c94b156192068ee023506ad72c3f9ba70355fe815ed2069b80e322f0cdfc5e2"
+      },
+      {
+        "bytes": 84196,
+        "path": "Clerk_ClerkKit.bundle/THIRD_PARTY_NOTICES.txt",
+        "sha256": "e4223a282e22ea86b1215013d7e6c5f4e6f02be8d14ca2ce357ed14ba319e1e9"
+      },
+      {
+        "bytes": 220,
+        "path": "Clerk_ClerkKit.bundle/_CodeSignature/CodeDirectory",
+        "sha256": "f4327555dbca7c47ea6f5e89f7e7d9750ece867aa41f85c43b0a8940aca82442"
+      },
+      {
+        "bytes": 192,
+        "path": "Clerk_ClerkKit.bundle/_CodeSignature/CodeRequirements",
+        "sha256": "39b1db4f81bf20231140b8fbcdac3ce0f15b4caf73a475b1f95cf5417191c191"
+      },
+      {
+        "bytes": 2626,
+        "path": "Clerk_ClerkKit.bundle/_CodeSignature/CodeResources",
+        "sha256": "0f2fe8d58525232071373dd2dee5cdd1b51a0ec6d0fbb3dfdca806a4dafef4a1"
+      },
+      {
+        "bytes": 4798,
+        "path": "Clerk_ClerkKit.bundle/_CodeSignature/CodeSignature",
+        "sha256": "e98be204fa83bff96ea40f6c261654905a96af6887db39033f70f67c8c9f63d6"
+      },
+      {
+        "bytes": 1314690,
+        "path": "Clerk_ClerkKit.bundle/clerk-core.js",
+        "sha256": "85fd61ac8a7d5ca95c5be7c8bbfa17d2004eb13c280f587ebc8d24d50f9aa52c"
+      },
+      {
+        "bytes": 4781,
+        "path": "Clerk_ClerkKit.bundle/core-manifest.json",
+        "sha256": "481acc2fa3bfd7e80392c3d2a7413a549d5c6962578d11a471fa8361b36ba31a"
+      },
+      {
+        "bytes": 7282416,
+        "path": "Embedded",
+        "sha256": "1f9450b64996f4ab54386923b92feed3053fde132c78fa3358d69c14d17f707c"
+      },
+      {
+        "bytes": 1137,
+        "path": "Info.plist",
+        "sha256": "79a4a2342f7492153a5881b0c4156e828d844f5a7a530f68e8aff16e137b3f02"
+      },
+      {
+        "bytes": 8,
+        "path": "PkgInfo",
+        "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0"
+      },
+      {
+        "bytes": 4785,
+        "path": "_CodeSignature/CodeResources",
+        "sha256": "47d1c4c92c2030b399bc7392a11dacc392073ab5fb7d24056ece15a3daa629a8"
+      },
+      {
+        "bytes": 12752,
+        "path": "embedded.mobileprovision",
+        "sha256": "6745ab2b8f67987cf467292fb4058b2d26e61dbe230a7b5f98a39771115818fb"
+      },
+      {
+        "bytes": 13551,
+        "path": "fapi.json",
+        "sha256": "171fec9df9f9aea3bbc0c3887a94802bad0caa0a96a03bd50efb0c92315a1e2d"
+      }
+    ],
+    "logicalFileBytes": 8727296,
+    "minimumOSVersion": "17.0"
+  },
+  "limitations": [
+    "Logical app-file bytes are not device filesystem allocation or Settings storage usage",
+    "Deterministic ZIP is a diagnostic, not App Store compressed delivery or thinning estimate",
+    "Development signatures and provisioning profiles are included; distribution signing differs",
+    "Core API and default platform factory are linked; ClerkKitUI and explicit platform presenters are not exercised",
+    "System JavaScriptCore is supplied by iOS and is not copied into either app",
+    "Does not close installed-size or App Store download release gates"
+  ],
+  "nativeRevision": "5b678843a61e1a0df827222f1aee0c0bcbacad95",
+  "schemaVersion": 1,
+  "xcode": "Xcode 26.5\nBuild version 17F42"
+}

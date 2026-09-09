@@ -1,0 +1,327 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"828D338A9B04221C9CBE286F" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "CoreFootprintApp.swift";
+			"sourceTree" = "<group>";
+		};
+		"51CFF3C1F0BC59F6187E7040" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json";
+			"name" = "fapi.json";
+			"path" = "../../NativeCoreTests/Fixtures/fapi.json";
+			"sourceTree" = "<group>";
+		};
+		"582681C2EAE02B3F3D399C0C" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "../..";
+		};
+		"3AFF8D1EEAF2E573C00D52AD" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "Baseline.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"B85781425746F5F798C184D6" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "828D338A9B04221C9CBE286F";
+		};
+		"8599F9DA1E8D5056EF121572" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "51CFF3C1F0BC59F6187E7040";
+		};
+		"F7546461FC0B42051CCC5B4D" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"B85781425746F5F798C184D6",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"1AA323D2DCB49428644EEE4D" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"E5380403F20B9449C06B5665" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"8599F9DA1E8D5056EF121572",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"3E24BC538C43A50F6718EB6B" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.footprint.baseline";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Footprint";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"DEAD_CODE_STRIPPING" = "YES";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+			};
+			"name" = "Debug";
+		};
+		"B941A0157188FBC857AEA99C" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.footprint.baseline";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Footprint";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"DEAD_CODE_STRIPPING" = "YES";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+			};
+			"name" = "Release";
+		};
+		"1B0762C29A48C1E533A004E6" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"3E24BC538C43A50F6718EB6B",
+				"B941A0157188FBC857AEA99C",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"E6AB7982FA5D5E8FCEB52C9B" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "1B0762C29A48C1E533A004E6";
+			"buildPhases" = (
+				"F7546461FC0B42051CCC5B4D",
+				"1AA323D2DCB49428644EEE4D",
+				"E5380403F20B9449C06B5665",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "Baseline";
+			"packageProductDependencies" = (
+			);
+			"productName" = "Baseline";
+			"productReference" = "3AFF8D1EEAF2E573C00D52AD";
+			"productType" = "com.apple.product-type.application";
+		};
+		"5E78BB16BEAE2FB03883DB6B" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "Embedded.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"7E1930055422CD01024209E3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "828D338A9B04221C9CBE286F";
+		};
+		"9C432DF08F59A9A497B22767" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "51CFF3C1F0BC59F6187E7040";
+		};
+		"C7585FBADD89FD5B06C2FFE6" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"7E1930055422CD01024209E3",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"85CB15ADD202344A0135911C" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "582681C2EAE02B3F3D399C0C";
+			"productName" = "ClerkKit";
+		};
+		"E0CE5388CABA4429810EEC99" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "85CB15ADD202344A0135911C";
+		};
+		"912A34ECCEA971CB2CE25C9E" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"E0CE5388CABA4429810EEC99",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"CB39D481A17F5181A3C082F3" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"9C432DF08F59A9A497B22767",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"C94D8E3C28355E539C2B2C0D" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.footprint.embedded";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Footprint";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"DEAD_CODE_STRIPPING" = "YES";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "EMBEDDED_CORE";
+			};
+			"name" = "Debug";
+		};
+		"912225E62020E37D7AF40F03" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.footprint.embedded";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Footprint";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"DEAD_CODE_STRIPPING" = "YES";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "EMBEDDED_CORE";
+			};
+			"name" = "Release";
+		};
+		"F2562BF4F766F9E9D4491BF5" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"C94D8E3C28355E539C2B2C0D",
+				"912225E62020E37D7AF40F03",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"0FD17B94C9576216EE0A4700" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "F2562BF4F766F9E9D4491BF5";
+			"buildPhases" = (
+				"C7585FBADD89FD5B06C2FFE6",
+				"912A34ECCEA971CB2CE25C9E",
+				"CB39D481A17F5181A3C082F3",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "Embedded";
+			"packageProductDependencies" = (
+				"85CB15ADD202344A0135911C",
+			);
+			"productName" = "Embedded";
+			"productReference" = "5E78BB16BEAE2FB03883DB6B";
+			"productType" = "com.apple.product-type.application";
+		};
+		"FBDC4F23F93125BBEEAE800C" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"3AFF8D1EEAF2E573C00D52AD",
+				"5E78BB16BEAE2FB03883DB6B",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"B28B7AF69320201D1CF206EB" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"828D338A9B04221C9CBE286F",
+				"51CFF3C1F0BC59F6187E7040",
+				"FBDC4F23F93125BBEEAE800C",
+			);
+			"sourceTree" = "<group>";
+		};
+		"89E1FD6268CC0F221A2BE178" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "iphoneos";
+				"CLANG_ENABLE_MODULES" = "YES";
+			};
+			"name" = "Debug";
+		};
+		"E6DE6C99132752C914FEF632" = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "iphoneos";
+				"CLANG_ENABLE_MODULES" = "YES";
+			};
+			"name" = "Release";
+		};
+		"862894B703A6DEDF96A9DD6C" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"89E1FD6268CC0F221A2BE178",
+				"E6DE6C99132752C914FEF632",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"98F54143AB4E86B28C3AFEE0" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "2600";
+			};
+			"buildConfigurationList" = "862894B703A6DEDF96A9DD6C";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "B28B7AF69320201D1CF206EB";
+			"packageReferences" = (
+				"582681C2EAE02B3F3D399C0C",
+			);
+			"productRefGroup" = "FBDC4F23F93125BBEEAE800C";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"E6AB7982FA5D5E8FCEB52C9B",
+				"0FD17B94C9576216EE0A4700",
+			);
+		};
+	};
+	"rootObject" = "98F54143AB4E86B28C3AFEE0";
+}

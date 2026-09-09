@@ -34,3 +34,7 @@ The 2026-09-09 bundle at TypeScript revision `5e2b30ccdecf9bc031bcf5506f7faedc0a
 Android's repeated release-engine run accumulated managed garbage before collection: process PSS rose from 14,202 KiB to 210,843 KiB and returned to 33,010 KiB after close. This is a stress-run sample, not a passing single-owner startup-peak or isolated-engine-memory result. The macOS process peak RSS likewise includes the harness and system libraries.
 
 Physical-device startup/latency, single-owner steady/peak memory, Expo overhead, and matched application download/installed-size gates remain unverified. Do not infer release approval from the fixture timing or bundle-size results.
+
+## Matched iOS arm64 application exports
+
+The [2026-09-09 iPhone Air export comparison](Measurements/ios-arm64-release-footprint.md) measures a matched API-only SwiftUI harness with and without ClerkKit. Xcode's local app-thinning report estimates an incremental 1,651,319 compressed bytes (1.57 MiB) and 5,364,077 uncompressed bytes (5.12 MiB), within the respective budgets for this development export. This is not observed App Store traffic or a physical filesystem-allocation measurement. Native UI, other target variants, device latency and memory release gates remain separate.
