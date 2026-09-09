@@ -32,8 +32,8 @@ struct BiometricSignInButtonTests {
 
   @Test
   func biometricCredentialCancellationIsTreatedAsUserCancellation() {
-    #expect(BiometricCredentialKeyManagerError.biometricAuthenticationCanceled.isUserCancelledError)
-    #expect(!BiometricCredentialKeyManagerError.biometricAuthenticationFailed.isUserCancelledError)
+    #expect(CoreError(code: "user_cancelled").isUserCancelledError)
+    #expect(!CoreError(code: "biometric_authentication_failed").isUserCancelledError)
   }
 
   @Test

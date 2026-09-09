@@ -278,7 +278,7 @@ struct AuthStateConfigurationTests {
   func configurationStoresUnsafeMetadata() {
     let defaults = makeUserDefaults()
     let authState = AuthState(userDefaults: defaults)
-    let metadata: JSON = ["plan": "pro"]
+    let metadata: JSONValue = .object(["plan": .string("pro")])
 
     authState.configure(AuthConfig(unsafeMetadata: metadata))
 
@@ -291,7 +291,7 @@ struct AuthStateConfigurationTests {
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)
     defaults.set("15555550100", forKey: AuthState.phoneNumberStorageKey)
     LastUsedAuth.storeIdentifierType(.phone, userDefaults: defaults)
-    let metadata: JSON = ["plan": "pro"]
+    let metadata: JSONValue = .object(["plan": .string("pro")])
 
     let authState = AuthState(
       config: AuthConfig(

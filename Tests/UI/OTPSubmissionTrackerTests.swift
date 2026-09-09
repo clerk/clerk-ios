@@ -297,13 +297,7 @@ struct OTPSubmissionDispositionTests {
     ]
   )
   func incorrectCodeAllowsPendingSubmission(code: String) {
-    let error = ClerkAPIError(
-      code: code,
-      message: nil,
-      longMessage: nil,
-      meta: nil,
-      clerkTraceId: nil
-    )
+    let error = CoreError(code: code, errors: [ClerkAPIError(code: code, message: "Invalid code")])
 
     #expect(error.otpSubmissionDisposition == .submitPendingCode)
   }
@@ -317,13 +311,7 @@ struct OTPSubmissionDispositionTests {
     ]
   )
   func apiErrorStopsPendingSubmission(code: String) {
-    let error = ClerkAPIError(
-      code: code,
-      message: nil,
-      longMessage: nil,
-      meta: nil,
-      clerkTraceId: nil
-    )
+    let error = CoreError(code: code, errors: [ClerkAPIError(code: code, message: "Invalid code")])
 
     #expect(error.otpSubmissionDisposition == .stop)
   }

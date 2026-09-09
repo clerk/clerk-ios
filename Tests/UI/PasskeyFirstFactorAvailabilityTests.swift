@@ -4,22 +4,21 @@ import Testing
 
 @MainActor
 struct PasskeyFirstFactorAvailabilityTests {
+  private let clerk = Clerk.preview(.signedOut)
+
   private func environment(
     passkeyEnabled: Bool,
     usedForFirstFactor: Bool
-  ) -> Clerk.Environment {
-    var environment = Clerk.Environment.mock
-    environment.userSettings.attributes["passkey"] = .init(
-      enabled: passkeyEnabled,
-      required: false,
-      usedForFirstFactor: usedForFirstFactor,
-      firstFactors: usedForFirstFactor ? ["passkey"] : [],
-      usedForSecondFactor: false,
-      secondFactors: [],
-      verifications: ["passkey"],
-      verifyAtSignUp: false
-    )
-    return environment
+  ) -> EnvironmentResource {
+    setTestEnvironment(clerk, ["userSettings", "attributes", "passkey"], .object([
+      "enabled": .bool(passkeyEnabled), "required": .bool(false),
+      "used_for_first_factor": .bool(usedForFirstFactor),
+      "first_factors": .array(usedForFirstFactor ? [.string("passkey")] : []),
+      "used_for_second_factor": .bool(false), "second_factors": .array([]),
+      "verifications": .array([.string("passkey")]), "verify_at_sign_up": .bool(false),
+      "name": .string("passkey"),
+    ]))
+    return clerk.environment
   }
 
   @Test
@@ -56,6 +55,6 @@ struct PasskeyFirstFactorAvailabilityTests {
 
   @Test
   func passkeyFirstFactorIsDisabledWhenPasskeyAttributeIsAbsent() {
-    #expect(!Clerk.Environment.mock.passkeyFirstFactorIsEnabled)
+    #expect(!Clerk.preview(.signedOut).environment.passkeyFirstFactorIsEnabled)
   }
 }

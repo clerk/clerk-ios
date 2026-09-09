@@ -4,7 +4,8 @@ import LocalAuthentication
 import Testing
 
 @MainActor
-struct AuthNavigationTests {
+final class AuthNavigationTests {
+  private var owners: [Clerk] = []
   @Test
   func biometricCredentialEnrollmentPrecedesPendingSessionTasks() {
     #expect(AuthView.postAuthStepOrder == [
@@ -28,7 +29,7 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func backendTaskChangesDoNotDismissThePresentedScreen() {
+  func backendTaskChangesDoNotDismissThePresentedScreen() throws {
     let navigation = AuthNavigation()
     var session = session(pendingTasks: [.setupMfa])
     let token = presentationToken(sessionId: session.id)
@@ -41,8 +42,11 @@ struct AuthNavigationTests {
     )))
     let presentedPath = navigation.path
 
-    session.status = .active
-    session.tasks = []
+    var state = try session.state.encode().object()
+    state["status"] = .string("active")
+    state["tasks"] = .array([])
+    state["currentTask"] = .null
+    setTestResourceState(session, encoded: .object(state), path: [], value: .object(state))
 
     #expect(navigation.routeToSessionTaskStart(session: session, token: token))
     #expect(navigation.path == presentedPath)
@@ -52,10 +56,8 @@ struct AuthNavigationTests {
   @Test
   func aNewPresentationTokenReplacesOnlyThePostAuthSuffix() {
     let navigation = AuthNavigation()
-    var sessionA = session(pendingTasks: [.setupMfa])
-    sessionA.id = "session-a"
-    var sessionB = session(pendingTasks: [.chooseOrganization])
-    sessionB.id = "session-b"
+    let sessionA = session(pendingTasks: [.setupMfa], id: "session-a")
+    let sessionB = session(pendingTasks: [.chooseOrganization], id: "session-b")
     let tokenA = presentationToken(sessionId: sessionA.id)
     let tokenB = presentationToken(sessionId: sessionB.id)
     navigation.path = [.signUpCompleteProfile]
@@ -190,9 +192,11 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func signInNeedsNewPasswordRoutesWithoutAnAuthFlowToken() {
+  func signInNeedsNewPasswordRoutesWithoutAnAuthFlowToken() throws {
     let navigation = AuthNavigation()
-    let signIn = SignIn(id: "sign_in_123", status: .needsNewPassword)
+    let clerk = Clerk.preview(.signedOut)
+    let signIn = clerk.signIn
+    try setTestResourceState(signIn, encoded: signIn.state.encode(), path: ["status"], value: .string("needs_new_password"))
 
     navigation.setToStepForStatus(signIn: signIn)
 
@@ -205,7 +209,7 @@ struct AuthNavigationTests {
     let signUp = signUp(
       missingFields: [.password],
       unverifiedFields: [.emailAddress],
-      verifications: ["email_address": Verification(status: .unverified, strategy: .emailLink)]
+      emailStrategy: "email_link"
     )
 
     navigation.setToStepForStatus(signUp: signUp)
@@ -219,7 +223,7 @@ struct AuthNavigationTests {
     let signUp = signUp(
       missingFields: [.password],
       unverifiedFields: [.emailAddress],
-      verifications: ["email_address": Verification(status: .unverified, strategy: .emailCode)]
+      emailStrategy: "email_code"
     )
 
     navigation.setToStepForStatus(signUp: signUp)
@@ -233,7 +237,7 @@ struct AuthNavigationTests {
     let signUp = signUp(
       missingFields: [.legalAccepted],
       unverifiedFields: [],
-      verifications: [:]
+      emailStrategy: nil
     )
 
     navigation.setToStepForStatus(signUp: signUp)
@@ -247,7 +251,7 @@ struct AuthNavigationTests {
     let signUp = signUp(
       missingFields: [.firstName, .legalAccepted, .username],
       unverifiedFields: [],
-      verifications: [:]
+      emailStrategy: nil
     )
 
     navigation.setToStepForStatus(signUp: signUp)
@@ -255,10 +259,16 @@ struct AuthNavigationTests {
     #expect(navigation.path == [.signUpCollectField(.username)])
   }
 
-  private func session(pendingTasks: [Session.Task]) -> Session {
-    var session = Session.mock
-    session.status = .pending
-    session.tasks = pendingTasks
+  private func session(pendingTasks: [SessionTaskKey], id: String = "sess_123") -> Session {
+    let clerk = Clerk.preview()
+    owners.append(clerk)
+    let session = clerk.session!
+    var state = try! session.state.encode().object()
+    state["id"] = .string(id)
+    state["status"] = .string("pending")
+    state["tasks"] = .array(pendingTasks.map { .object(["key": .string($0.rawValue)]) })
+    state["currentTask"] = pendingTasks.first.map { .object(["key": .string($0.rawValue)]) } ?? .null
+    setTestResourceState(session, encoded: .object(state), path: [], value: .object(state))
     return session
   }
 
@@ -288,21 +298,23 @@ struct AuthNavigationTests {
   }
 
   private func signUp(
-    missingFields: [SignUp.Field],
-    unverifiedFields: [SignUp.Field],
-    verifications: [String: Verification?]
+    missingFields: [SignUpField],
+    unverifiedFields: [SignUpField],
+    emailStrategy: String?
   ) -> SignUp {
-    SignUp(
-      id: "sign_up_123",
-      status: .missingRequirements,
-      requiredFields: [.emailAddress, .password],
-      optionalFields: [],
-      missingFields: missingFields,
-      unverifiedFields: unverifiedFields,
-      verifications: verifications,
-      emailAddress: "test@example.com",
-      passwordEnabled: false,
-      abandonAt: .distantFuture
-    )
+    let clerk = Clerk.preview(.signedOut)
+    owners.append(clerk)
+    let signUp = clerk.signUp
+    var state = try! signUp.state.encode().object()
+    state["id"] = .string("sign_up_123")
+    state["status"] = .string("missing_requirements")
+    state["requiredFields"] = .array([.string("email_address"), .string("password")])
+    state["missingFields"] = .array(missingFields.map { .string($0.rawValue) })
+    state["unverifiedFields"] = .array(unverifiedFields.map { .string($0.rawValue) })
+    state["emailAddress"] = .string("test@example.com")
+    setTestResourceState(signUp, encoded: .object(state), path: [], value: .object(state))
+    let verification = signUp.verifications.emailAddress
+    setTestResourceState(verification, encoded: try! verification.state.encode(), path: ["strategy"], value: emailStrategy.map(JSONValue.string) ?? .null)
+    return signUp
   }
 }

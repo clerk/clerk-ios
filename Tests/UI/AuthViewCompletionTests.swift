@@ -30,7 +30,7 @@ struct AuthViewCompletionTests {
     .initialLastName("Last")
     .lockPrefilledFields()
     .persistsIdentifiers(false)
-    .unsafeMetadata(["source": "test"])
+    .unsafeMetadata(.object(["source": .string("test")]))
 
     #expect(authView.authState.mode == .signUp)
     #expect(authView.isDismissible == false)

@@ -1,92 +1,37 @@
-#if os(iOS)
-
-@testable import ClerkKit
+#if os(iOS) || os(macOS)
+import ClerkKit
 @testable import ClerkKitUI
 import Testing
 
-@MainActor
-struct SignUpEmailVerificationStrategyTests {
-  init() {
-    configureClerkForTesting()
+@MainActor struct SignUpEmailVerificationStrategyTests {
+  private let clerk = Clerk.preview(.signedOut)
+
+  private func setStrategy(_ strategy: String?) {
+    let verification = clerk.signUp.verifications.emailAddress
+    setTestResourceState(verification, encoded: try! verification.state.encode(),
+                         path: ["strategy"], value: strategy.map(JSONValue.string) ?? .null)
   }
 
-  @Test
-  func returnsEmailLinkWhenVerificationHasEmailLinkStrategy() {
-    let signUp = SignUp(
-      id: "sign_up_123",
-      status: .missingRequirements,
-      requiredFields: [.emailAddress],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [.emailAddress],
-      verifications: ["email_address": Verification(status: .unverified, strategy: .emailLink)],
-      emailAddress: "test@example.com",
-      passwordEnabled: false,
-      abandonAt: .distantFuture
-    )
-
-    #expect(signUp.emailVerificationStrategy == .emailLink)
+  @Test func returnsEmailLinkWhenVerificationHasEmailLinkStrategy() {
+    setStrategy("email_link")
+    #expect(clerk.signUp.emailVerificationStrategy == .emailLink)
   }
 
-  @Test
-  func returnsEmailCodeWhenVerificationHasEmailCodeStrategy() {
-    let signUp = SignUp(
-      id: "sign_up_123",
-      status: .missingRequirements,
-      requiredFields: [.emailAddress],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [.emailAddress],
-      verifications: ["email_address": Verification(status: .unverified, strategy: .emailCode)],
-      emailAddress: "test@example.com",
-      passwordEnabled: false,
-      abandonAt: .distantFuture
-    )
-
-    #expect(signUp.emailVerificationStrategy == .emailCode)
+  @Test func returnsEmailCodeWhenVerificationHasEmailCodeStrategy() {
+    setStrategy("email_code")
+    #expect(clerk.signUp.emailVerificationStrategy == .emailCode)
   }
 
-  @Test
-  func returnsEmailLinkWhenEnvironmentHasEmailLinkVerification() {
-    var environment = Clerk.Environment.mock
-    environment.userSettings.attributes["email_address"]?.verifications = ["email_link"]
-    Clerk.shared.environment = environment
-
-    let signUp = SignUp(
-      id: "sign_up_123",
-      status: .missingRequirements,
-      requiredFields: [.emailAddress],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [.emailAddress],
-      verifications: [:],
-      emailAddress: "test@example.com",
-      passwordEnabled: false,
-      abandonAt: .distantFuture
-    )
-
-    #expect(signUp.emailVerificationStrategy == .emailLink)
+  @Test func returnsEmailLinkWhenEnvironmentHasEmailLinkVerification() {
+    setStrategy(nil)
+    setTestEnvironment(clerk, ["userSettings", "attributes", "email_address", "verifications"], .array([.string("email_link")]))
+    #expect(clerk.signUp.emailVerificationStrategy == .emailLink)
   }
 
-  @Test
-  func defaultsToEmailCodeWhenNoVerificationInfo() {
-    Clerk.shared.environment = .mock
-
-    let signUp = SignUp(
-      id: "sign_up_123",
-      status: .missingRequirements,
-      requiredFields: [.emailAddress],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [.emailAddress],
-      verifications: [:],
-      emailAddress: "test@example.com",
-      passwordEnabled: false,
-      abandonAt: .distantFuture
-    )
-
-    #expect(signUp.emailVerificationStrategy == .emailCode)
+  @Test func defaultsToEmailCodeWhenNoVerificationInfo() {
+    setStrategy(nil)
+    setTestEnvironment(clerk, ["userSettings", "attributes", "email_address", "verifications"], .array([]))
+    #expect(clerk.signUp.emailVerificationStrategy == .emailCode)
   }
 }
-
 #endif

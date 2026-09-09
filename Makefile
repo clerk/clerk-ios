@@ -102,7 +102,8 @@ install-xcode-template-macros:
 		echo "❌ Missing Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist"; \
 		exit 1; \
 	fi
-	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
+	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata .swiftpm/xcode/xcshareddata/xcschemes
+	@cp scripts/ClerkKitUITests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/ClerkKitUITests.xcscheme
 	@cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist
 	@echo "✅ Xcode file header macros configured"
 
@@ -186,7 +187,8 @@ smoke-macos:
 # Run ClerkKitUI tests on iOS Simulator
 test-ui:
 	@echo "Running ClerkKitUI tests on iOS Simulator..."
-	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
+	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata .swiftpm/xcode/xcshareddata/xcschemes
+	@cp scripts/ClerkKitUITests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/ClerkKitUITests.xcscheme
 	@printf '%s\n' \
 		'<?xml version="1.0" encoding="UTF-8"?>' \
 		'<Workspace' \
@@ -213,7 +215,7 @@ test-ui:
 		exit 1; \
 	fi; \
 	echo "Using simulator destination: $$destination"; \
-	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme ClerkKitUITests -destination "$$destination"
 	@echo "✅ ClerkKitUI tests completed!"
 
 # Run an E2EHost Maestro flow on iOS Simulator.

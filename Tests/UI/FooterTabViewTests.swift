@@ -12,8 +12,9 @@ import UIKit
 struct FooterTabViewTests {
   @Test(arguments: [true, false])
   func developmentLabelStaysAboveTheTabBar(isAuth: Bool) async throws {
-    let clerk = Clerk.mockSignedOut
-    clerk.environment?.displayConfig.showDevmodeWarning = true
+    let clerk = Clerk.preview(.signedOut)
+    setTestEnvironment(clerk, ["displayConfig", "showDevModeWarning"], .bool(true))
+    setTestEnvironment(clerk, ["displayConfig", "instanceEnvironmentType"], .string("development"))
     let bottomInset: CGFloat = 34
     let content = TabView {
       Group {

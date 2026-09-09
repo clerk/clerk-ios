@@ -5,7 +5,9 @@
 import Foundation
 import Testing
 
+@MainActor
 struct BiometricCredentialEnrollmentPromptTests {
+  private let clerk = Clerk.preview(.signedOut)
   @Test
   func signInPromptIsSuppressedAfterItHasBeenSeen() throws {
     let (store, suiteName) = try makePromptStore()
@@ -94,38 +96,31 @@ struct BiometricCredentialEnrollmentPromptTests {
   private func nativeSettings(
     promptAfterSignIn: Bool = false,
     promptAfterSignUp: Bool = false
-  ) -> Clerk.Environment.AuthConfig.NativeSettings {
+  ) -> NativeAuthSettings {
     .init(
       apiEnabled: true,
-      biometricSignInEnabled: true,
-      biometricCredentialPromptAfterSignInEnabled: promptAfterSignIn,
-      biometricCredentialPromptAfterSignUpEnabled: promptAfterSignUp
+      trustedDeviceSignInEnabled: true,
+      trustedDeviceEnrollmentPromptAfterSignInEnabled: promptAfterSignIn,
+      trustedDeviceEnrollmentPromptAfterSignUpEnabled: promptAfterSignUp
     )
   }
 
   private func completedSignInResult() -> TransferFlowResult {
-    .signIn(SignIn(
-      id: "sign_in_123",
-      status: .complete,
-      createdSessionId: "sess_123"
-    ))
+    var state = try! clerk.signIn.state.encode().object()
+    state["id"] = .string("sign_in_123")
+    state["status"] = .string("complete")
+    state["createdSessionId"] = .string("sess_123")
+    setTestResourceState(clerk.signIn, encoded: .object(state), path: [], value: .object(state))
+    return .signIn(clerk.signIn)
   }
 
   private func completedSignUpResult() -> TransferFlowResult {
-    .signUp(SignUp(
-      id: "sign_up_123",
-      status: .complete,
-      requiredFields: [],
-      optionalFields: [],
-      missingFields: [],
-      unverifiedFields: [],
-      verifications: [:],
-      passwordEnabled: false,
-      createdSessionId: "sess_123",
-      createdUserId: "user_123",
-      abandonAt: .distantFuture
-    ))
+    var state = try! clerk.signUp.state.encode().object()
+    state["id"] = .string("sign_up_123")
+    state["status"] = .string("complete")
+    state["createdSessionId"] = .string("sess_123")
+    setTestResourceState(clerk.signUp, encoded: .object(state), path: [], value: .object(state))
+    return .signUp(clerk.signUp)
   }
 }
-
 #endif

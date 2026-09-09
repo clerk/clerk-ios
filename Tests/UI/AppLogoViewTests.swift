@@ -9,7 +9,7 @@ struct AppLogoViewTests {
   func customAppIconViewOwnsItsLayout() {
     let renderer = ImageRenderer(
       content: AppLogoView()
-        .environment(Clerk.mock)
+        .environment(Clerk.preview())
         .clerkAppIcon(Image(systemName: "app.badge"))
         .clerkAppIcon(maxHeight: 20)
         .clerkAppIconView {

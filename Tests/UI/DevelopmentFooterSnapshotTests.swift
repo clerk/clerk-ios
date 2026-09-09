@@ -11,8 +11,9 @@ import UIKit
 struct DevelopmentFooterSnapshotTests {
   @Test
   func developmentFooterRemainsVisibleWhenTheHostConsumesTheSafeArea() {
-    let clerk = Clerk.mockSignedOut
-    clerk.environment?.displayConfig.showDevmodeWarning = true
+    let clerk = Clerk.preview(.signedOut)
+    setTestEnvironment(clerk, ["displayConfig", "showDevModeWarning"], .bool(true))
+    setTestEnvironment(clerk, ["displayConfig", "instanceEnvironmentType"], .string("development"))
     let content = Color.white
       .authFooter()
       .environment(clerk)

@@ -102,12 +102,17 @@ extension SignIn {
   }
 
   var resetPasswordFactor: Factor? {
+    if let identifier,
+       let matching = availableFirstFactors.first(where: { $0.isResetFactor && $0.safeIdentifier == identifier })
+    {
+      return matching
+    }
     if let resetPasswordEmailFactor = identifyingFirstFactor(for: "reset_password_email_code") {
-      resetPasswordEmailFactor
+      return resetPasswordEmailFactor
     } else if let resetPasswordPhoneFactor = identifyingFirstFactor(for: "reset_password_phone_code") {
-      resetPasswordPhoneFactor
+      return resetPasswordPhoneFactor
     } else {
-      availableFirstFactors.first(where: \.isResetFactor)
+      return availableFirstFactors.first(where: \.isResetFactor)
     }
   }
 }

@@ -1,55 +1,32 @@
 #if os(iOS) || os(macOS)
-
-@testable import ClerkKit
+import ClerkKit
 @testable import ClerkKitUI
 import Testing
 
-@MainActor
-@Suite(.serialized)
-struct LastUsedAuthTests {
-  @Test
-  func biometricCredentialStrategyShowsBadgeWhenAnotherMethodIsVisible() {
-    configureBiometricCredentialLastAuth()
-    defer { Clerk.shared.client = .mock }
-    var environment = Clerk.Environment.mock
-    environment.userSettings.social = [:]
-    for key in environment.userSettings.attributes.keys where key != "email_address" {
-      environment.userSettings.attributes[key]?.usedForFirstFactor = false
+@MainActor struct LastUsedAuthTests {
+  private let clerk = Clerk.preview(.signedOut)
+
+  private func configureBiometricCredentialLastAuth(emailEnabled: Bool) {
+    setTestResourceState(clerk, encoded: try! clerk.state.encode(),
+                         path: ["lastAuthenticationStrategy"], value: .string("trusted_device"))
+    setTestEnvironment(clerk, ["userSettings", "social"], .object([:]))
+    setTestEnvironment(clerk, ["userSettings", "attributes", "email_address", "enabled"], .bool(emailEnabled))
+    for key in clerk.environment.userSettings.attributes.keys {
+      setTestEnvironment(clerk, ["userSettings", "attributes", key, "used_for_first_factor"],
+                         .bool(key == "email_address" && emailEnabled))
     }
+  }
 
-    let lastUsedAuth = LastUsedAuth(
-      environment: environment,
-      biometricSignInIsVisible: true
-    )
-
+  @Test func biometricCredentialStrategyShowsBadgeWhenAnotherMethodIsVisible() {
+    configureBiometricCredentialLastAuth(emailEnabled: true)
+    let lastUsedAuth = LastUsedAuth(clerk: clerk, biometricSignInIsVisible: true)
     #expect(lastUsedAuth == .biometricCredential)
     #expect(lastUsedAuth?.showsBiometricCredentialBadge == true)
   }
 
-  @Test
-  func biometricCredentialStrategyDoesNotShowBadgeWhenItIsTheOnlyVisibleMethod() {
-    configureBiometricCredentialLastAuth()
-    defer { Clerk.shared.client = .mock }
-    var environment = Clerk.Environment.mock
-    environment.userSettings.social = [:]
-    for key in environment.userSettings.attributes.keys {
-      environment.userSettings.attributes[key]?.usedForFirstFactor = false
-    }
-
-    let lastUsedAuth = LastUsedAuth(
-      environment: environment,
-      biometricSignInIsVisible: true
-    )
-
-    #expect(lastUsedAuth == nil)
-  }
-
-  private func configureBiometricCredentialLastAuth() {
-    Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
-    var client = Client.mock
-    client.lastAuthenticationStrategy = .biometricCredential
-    Clerk.shared.client = client
+  @Test func biometricCredentialStrategyDoesNotShowBadgeWhenItIsTheOnlyVisibleMethod() {
+    configureBiometricCredentialLastAuth(emailEnabled: false)
+    #expect(LastUsedAuth(clerk: clerk, biometricSignInIsVisible: true) == nil)
   }
 }
-
 #endif
