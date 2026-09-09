@@ -9,6 +9,9 @@ import Foundation
     if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--preview-fixtures" {
       try PreviewFixtureProof.run(directory: CommandLine.arguments[2]); return
     }
+    if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--benchmark" {
+      try await BenchmarkProof.run(output: CommandLine.arguments[2]); return
+    }
     try await run()
   }
 

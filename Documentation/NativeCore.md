@@ -49,3 +49,11 @@ The pre-existing `ClerkKitTests` target is still present during migration and is
 ## Previous native API
 
 The [separate migration guide](Migration/README.md) records the audited main baseline, old public declarations, call changes, unavailable features, and the legacy-test coverage audit. The old native test trees remain pending their explicit assertion-level migration.
+
+## Performance measurements
+
+Run `scripts/benchmark-native-core.sh OUTPUT_JSON` to collect raw fresh-engine startup and generated local-reset timings against the packaged deterministic fixture. The reset check verifies invalidation and the absence of HTTP. The first startup sample is separate from subsequent fresh engines in the same warm process. These are not cold-app or live-network timings.
+
+The Swift script builds the release proof executable and uses `/usr/bin/time -l` to report process-wide peak resident memory. That total includes the harness and system libraries.
+
+Record the OS/device, build mode, core revision/hash and packaged artifact sizes with each run. Agree release startup, memory, size and call-overhead budgets before treating measurements as a go/no-go gate.
