@@ -99,6 +99,14 @@ Methods with the same name still require a parameter/result review. For example,
 
 A source migration and a credential migration are separate. The new Keychain adapter imports matching, accepted prior-format identity records and preserves durable clears. Configure the previous keychain service/access group and matching publishable key through `LegacyKeychainConfiguration` when required. Never copy a token out of another instance or keep both old and new SDK owners active. See [credential continuity](../NativeCore.md#credential-continuity) for current proofs and limitations.
 
+On macOS, access-group import checks the previous SDK's Data Protection backend
+before its legacy backend and does not fall back after a read/entitlement error.
+A pending old-version clear for this instance prevents credential import; the new
+owner starts signed out and requires fresh authentication. The old recovery
+journal is retained for the previous major's shared-slot cleanup. A malformed
+journal reports an error. See the [Keychain assertion audit](keychain-test-audit.md)
+for the persisted formats, verified behavior and remaining device gates.
+
 The selected prerelease profile does **not** provide these old surfaces:
 
 - `startHostedAuth` and its hosted-portal redemption protocol. Browser OAuth/enterprise SSO is available through the future `sso` methods; it is a different contract.

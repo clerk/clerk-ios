@@ -16,6 +16,8 @@ separates retained presentation/serialization/PKCE/packaging assertions from
 removed helper APIs and unresolved callback/state behavior.
 The [configuration assertion audit](configuration-test-audit.md) records exact
 key-validation replacements and intentionally removed configuration options.
+The [Keychain assertion audit](keychain-test-audit.md) records actual persisted
+formats, backend precedence, durable clears and unresolved shared-session gates.
 
 ## Configuration validation
 
