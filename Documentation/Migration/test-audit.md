@@ -11,7 +11,9 @@ presentation test to the current adapter, records the changed cancellation scope
 and includes a verified regression test for stale callbacks. The
 [passkey assertion audit](passkey-test-audit.md) covers request restrictions and
 explicit malformed-input rejection. Other categories below still require their
-own assertion-level review.
+own assertion-level review. The [utility assertion audit](utility-test-audit.md)
+separates retained presentation/serialization/PKCE/packaging assertions from
+removed helper APIs and unresolved callback/state behavior.
 
 ## Configuration validation
 
