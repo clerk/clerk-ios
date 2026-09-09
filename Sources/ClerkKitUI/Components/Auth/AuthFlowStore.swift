@@ -36,14 +36,17 @@ import Observation
     case .awaiting(let target), .presenting(let target, _): target
     }
     guard let session = clerk.session, session.isViableForPostAuth else {
-      if current != nil { coordinator.reset(ownerId: ownerId) }
+      if current != nil || coordinator.completedSessionId != nil { coordinator.reset(ownerId: ownerId) }
       return
     }
     if let current, current.sessionId != session.id {
+      coordinator.completedSessionId = nil
       coordinator.phase = .awaiting(coordinator.externalTarget(for: session))
       coordinator.advanceRevision()
-    } else if current == nil, session.status == .pending {
-      coordinator.adoptPendingSession(ownerId: ownerId, session: session)
+    } else if current == nil, session.status == .pending || coordinator.completedSessionId != session.id {
+      coordinator.completedSessionId = nil
+      coordinator.phase = .awaiting(coordinator.externalTarget(for: session))
+      coordinator.advanceRevision()
     }
   }
 
@@ -53,9 +56,23 @@ import Observation
     let ownerId = AuthFlowRequestScope.ownerId
     if let ownerId, coordinator.ownerId != ownerId { throw CancellationError() }
     let completionId = UUID()
+    var introducedWork = false
     if let ownerId, let sessionId = result.createdSessionId {
       pendingCompletion = completionId
-      coordinator.phase = .awaiting(.init(id: completionId, sessionId: sessionId, origin: .completed(result)))
+      switch coordinator.phase {
+      case .presenting(var target, let token) where target.sessionId == sessionId:
+        // A repeated completion must not replace a screen the user is finishing.
+        if target.completion == nil {
+          target.origin = .completed(result)
+          coordinator.phase = .presenting(target: target, token: token)
+        }
+      case .awaiting(let target) where target.sessionId == sessionId && target.flowId == result.flowId:
+        break
+      default:
+        introducedWork = true
+        coordinator.completedSessionId = nil
+        coordinator.phase = .awaiting(.init(id: completionId, sessionId: sessionId, origin: .completed(result)))
+      }
       coordinator.advanceRevision()
       guard coordinator.ownerId == ownerId else { throw CancellationError() }
     }
@@ -84,7 +101,10 @@ import Observation
     } catch {
       if pendingCompletion == completionId {
         pendingCompletion = nil
-        if let ownerId, coordinator.ownerId == ownerId { coordinator.reset(ownerId: ownerId) }
+        if let ownerId, coordinator.ownerId == ownerId {
+          if introducedWork { coordinator.reset(ownerId: ownerId) }
+          reconcile()
+        }
       }
       throw error
     }
@@ -138,7 +158,7 @@ extension Clerk {
   }
 
   func completeAuthFlow(_ work: AuthFlowWork) -> Bool {
-    guard session?.id == work.sessionId, session?.status == .active else { return false }
+    guard user != nil, session?.id == work.sessionId, session?.status == .active else { return false }
     return authFlowStore.coordinator.complete(work: work)
   }
 

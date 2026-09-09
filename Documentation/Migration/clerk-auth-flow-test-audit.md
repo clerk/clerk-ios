@@ -1,0 +1,61 @@
+# Clerk auth presentation and readiness assertion audit
+
+Reviewed the remaining 61 declarations and all assertion bodies in baseline
+`02f98f89a19b6c079517c9aae07df7edd0e600e5`'s `Tests/Core/ClerkTests.swift`,
+from `isLoadedReturnsFalseWhenBothNil` through `userReturnsUserForPendingSession`.
+Together with the [startup/storage audit](clerk-storage-test-audit.md), all 92
+declarations now have a disposition. This is not a claim of complete replacement
+coverage. The old file remains retained while the explicit gaps below remain.
+
+Authentication and session activation belong to the packaged TypeScript core.
+The Swift coordinator owns only root/dismissible presentation, screen tokens,
+enrollment sequencing and completion callback delivery.
+
+| Baseline declarations | Disposition and evidence limits |
+| --- | --- |
+| `isLoadedReturnsFalseWhenBothNil`, `isLoadedReturnsFalseWhenOnlyEnvironmentSet`, `isLoadedReturnsFalseWhenOnlyClientSet`, `isLoadedReturnsTrueWhenBothSet`, `isLoadedBecomesTrue` | Removed mutable singleton readiness checks. `Clerk.connect` returns a connected owner asynchronously or throws; assigning client/environment independently is unavailable. Packaged connection checks exercise the replacement, not the five old nil-assignment combinations. |
+| `isAuthFlowCompleteReturnsFalseWhenSignedOut`, `isAuthFlowCompleteReturnsFalseWhenSessionIsPending`, `isAuthFlowCompleteReturnsTrueWhenUserHasActiveSession`, `completedAuthenticationDoesNotGateWithoutRootRegistration` | The presentation gate still requires an active session and user. `AuthFlowCoreTests` exercises signed-out, pending and active states through packaged core HTTP; the dismissible case verifies signed-in content remains available. The no-registration branch is source-reviewed, not separately asserted in this suite. |
+| `isAuthFlowCompleteReturnsFalseWhenActiveSessionHasNoUser` | The user guard remains in `isAuthFlowComplete` and now also guards callback acceptance. The old public assignment of an active session with no user is unavailable. A malformed HTTP fixture did not reproduce that state, so this exact case is not claimed as replacement coverage. The sign-out test independently proves queued work cannot complete after identity loss. |
+| `registerAuthFlowDoesNotRegisterAnExistingActiveSession`, `authFlowRegistrationIsExclusive`, `rejectedSecondRegistrationDoesNotStealInFlightWork` | Registration exclusivity and rejection of an already-active root remain in `AuthFlowCoordinator.register`. These source-reviewed conditions still need direct packaged-core assertions; the old snapshot revision equality is not a public API contract. |
+| `requestsAreOwnedOnlyByTheirExplicitAuthFlowOperation` | Native request-identity capture is removed. Task-local ownership remains only around UI finalization. `aRetiredRegistrationCannotFinalizeForItsReplacement` verifies a retired owner cannot issue HTTP or activate a session and cannot cancel its replacement. It does not reproduce every old nested task-local identity assertion. |
+| `dismissibleAuthFlowCompletionDoesNotGateSignedInContent`, `externalActiveSessionHoldsRootUntilAuthViewCompletes`, `acceptedCompletionBlocksRootUntilItsExactWorkCompletes` | The external activation and dismissible tests verify root blocking before reconciliation, retained completion work, callback acceptance once, and available signed-in content for dismissible presentation. This reproduced the root gate bypass and missing external active-session work before the fix. |
+| `ownedHostedActivationHoldsRootUntilAuthViewCompletes`, `hostedActivationRetainsItsTargetWhileAnotherSessionIsCurrent`, `hostedActivationPromotesPresentedExternalWorkWithoutReplacingItsToken`, `hostedActivationForAnotherSessionInvalidatesPresentedWork`, `staleHostedActivationCannotMutateANewerRegistration` | Hosted portal activation is unavailable in this prerelease. Its begin/finish activation markers, target retention and stale-hosted callbacks have no passing replacement proof. Keep these assertions as evidence of the unsupported feature. |
+| `supersededCompletionPreservesCurrentSessionWork`, `completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation`, `authoritativeIdentityChangeSupersedesOwnedCompletionWhenOldSessionRemains`, `staleSameFlowRejectionPreservesAcceptedAwaitingWork`, `sameFlowRejectionYieldsToAuthoritativeIdentityChange`, `failedSessionActivationAdoptsTheAuthoritativeCurrentSession`, `finishedCompletedActivationAdoptsANewerAuthoritativeSession`, `acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected`, `semanticRejectionIsAcceptedWhenTheCreatedSessionIsAuthoritative`, `supersededCompletionAdoptsAuthoritativeSessionForDismissal` | The old identity-update enum, semantic rejection resolver and native activation markers are removed. Generated finalization owns session activation; UI work is held during that operation and reconciled to the actual current viable session afterward. The full competing-session, rejected-activation and intermediate refresh matrix remains unverified. A source mapping is not a passing race test. |
+| `presentationRetainsExactWorkAcrossRefreshAndLaterCompletion`, `finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion`, `completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment` | `repeatedCompletionPreservesAnAlreadyPresentedEnrollment` verifies the same presentation token and work survive repeated generated completion, remain root-blocking, finish once and deliver completion once. It reproduced replacement of the active presentation before the fix. A distinct later attempt ID and intervening refresh are not both reproduced by this test. |
+| `replayedCompletionPreservesResolvedPostAuthWork` | The awaiting same-session/same-flow branch preserves resolved enrollment work. The current repeated-completion test replays while the screen is presenting; replay after finishing the screen remains a separate assertion gap. |
+| `acceptedCompletionForAnotherSessionReplacesPresentedWork`, `newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks` | Different-session or different-awaiting-flow finalization creates new work; presentation APIs reject mismatched work/token ownership. The exact two-completion replacement scenarios remain unverified with packaged core. |
+| `sessionTaskPresentationRemainsUntilItsTokenFinishes` | `sessionTaskScreenKeepsOwnershipAfterTheCoreSessionBecomesActive` connects with a pending session, presents tasks, reloads through core HTTP to active, retains the token, rejects premature completion and accepts completion after the screen finishes. |
+| `completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow` | Both external-activation and retired-registration tests verify callback acceptance only once for ordinary completion. Reconciliation after accepted external completion does not offer the same session again. |
+| `finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering`, `taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish`, `acceptedCompletionDoesNotOfferEnrollmentAfterSessionTasksBegin` | Enrollment resolution remains presentation-owned; the first presented post-auth screen marks enrollment resolved. Existing `AuthNavigationTests` checks route ordering and token persistence. Pending sign-up completion, a new task appearing during enrollment, and completion arriving after tasks began still need packaged-core store assertions. |
+| `staleCompletedActivationCannotMutateANewerRegistration`, `staleRegistrationCannotMutateANewerAuthFlow` | The retired-registration packaged test verifies stale finalization throws cancellation before HTTP and that cancelling the old registration again cannot affect the replacement. Exact old activation-handle and cross-registration start/reset combinations are not all reproduced. |
+| `completedRootWorkCanReleaseOwnershipAndRearmAfterSignOut`, `terminalCurrentSessionClearsPresentedPostAuthWork` | `signOutInvalidatesACompletionWaitingForPresentation` uses generated sign-out, proves session/user are absent and rejects old completion and presentation work before and after reconciliation. Completed-work rearming with a fresh owner and terminal-session transition while a screen is already presented remain separate gaps. |
+| `unownedCompletionDoesNotAttachToALaterAuthView` | Unowned generated activation is adopted as external work without enrollment provenance, as exercised by the external-activation test. The old forged ownership update object is removed. |
+| `authFlowGateIsObservableWhenOwnedWorkBegins` | `AuthFlowStore` is observable and coordinator revisions drive the view. The old test directly installed an active client after registering a signed-out root; that mutable API is removed. The new root deliberately stays blocked before reconciliation. Observation notification for the new transition still needs a direct assertion. |
+| `releasingAuthFlowRegistrationClearsPendingHold` | `AuthFlowRegistration` still releases ownership on cancellation/deinitialization. Explicit stale cancellation is exercised; asynchronous deinitialization release is not a new packaged-core proof. |
+| `handleReturnsFalseForUnrecognizedURL`, `handleReturnsTrueForMagicLinkCallback`, `handleDeduplicatesConcurrentMagicLinkCallbacks`, `handleReturnsFalseForMismatchedMagicLinkCallbackOrigin` | See the [callback audit](callback-test-audit.md) for origin matching, persisted verifier redemption, concurrent deduplication and ticket handling. Callback processing is navigation-free; callers explicitly finalize completed attempts. The old implicit session activation and native service-call counts are intentionally changed. |
+| `shouldShowDevelopmentModeWarningReturnsFalseWhenEnvironmentIsMissing`, `shouldShowDevelopmentModeWarningReturnsFalseWhenFlagIsDisabled`, `shouldShowDevelopmentModeWarningReturnsFalseForProductionEnvironment`, `shouldShowDevelopmentModeWarningReturnsTrueForDevelopmentEnvironment`, `shouldShowDevelopmentModeWarningReturnsTrueForUnknownNonProductionEnvironment` | See the [environment audit](environment-test-audit.md) for development-warning configuration, production/unknown instance modes and partial settings. Public mutable environment assignment is removed; current UI reads the projected settings. |
+| `sessionReturnsPendingSession`, `userReturnsUserForPendingSession` | Pending sessions and their users remain available through the generated core. The packaged task-screen test starts from that pending client and advances it to active; the [session-selection audit](session-utility-test-audit.md) records canonical selection and terminal-state limits. |
+
+## Reproduced regressions and current proof
+
+The new `Tests/UI/AuthFlowCoreTests.swift` uses the real packaged JavaScriptCore
+bundle and generated `Clerk.connect`, SSO, finalization, reload and sign-out
+operations. Only OS/HTTP/storage capabilities are fixtures. It does not assign
+public resource state or emulate authentication in Swift.
+
+The first run reproduced three failures: externally activated root content could
+become complete before callback delivery; external active sessions did not create
+presentation work; replayed completion replaced an enrollment screen's token.
+The coordinator now retains a presentation completion marker for the delivered
+session, adopts external active sessions, and preserves current same-session
+presentation work across repeated finalization. Losing the viable session resets
+the marker. Generated finalization still executes on every call.
+
+Six packaged-core presentation tests and both complete UI targets passed:
+iOS has 145 tests in 26 suites; macOS has 134 tests in 22 suites. The macOS
+run logged contacts persistence XPC error 4097 and `Failed to create NSXPCConnection`;
+the iOS run logged `clip: empty path` and unbalanced appearance transitions in
+the existing footer tests. These diagnostics did not fail the targets.
+These tests do not prove live SSO, system prompts, physical
+upgrade continuity, or every retained legacy race. The old non-UI target still
+contains tests against the removed API; this change does not hide or delete it.

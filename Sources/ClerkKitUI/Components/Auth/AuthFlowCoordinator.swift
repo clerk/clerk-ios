@@ -105,6 +105,7 @@ struct AuthFlowSnapshot {
   var registration: Registration?
   var phase = Phase.observing
   var revision: UInt64 = 0
+  var completedSessionId: String?
 
   var ownerId: UUID? {
     registration?.id
@@ -114,7 +115,7 @@ struct AuthFlowSnapshot {
     guard registration?.role == .root else { return false }
     switch phase {
     case .observing:
-      return false
+      return completedSessionId == nil
     case .awaiting, .presenting:
       return true
     }
@@ -129,6 +130,7 @@ struct AuthFlowSnapshot {
 
     let id = UUID()
     registration = Registration(id: id, role: role)
+    completedSessionId = nil
     phase = .observing
     advanceRevision()
     return id
@@ -137,6 +139,7 @@ struct AuthFlowSnapshot {
   mutating func unregister(ownerId: UUID) {
     guard registration?.id == ownerId else { return }
     registration = nil
+    completedSessionId = nil
     phase = .observing
     advanceRevision()
   }
@@ -172,6 +175,7 @@ struct AuthFlowSnapshot {
 
     switch phase {
     case .observing:
+      completedSessionId = nil
       phase = .awaiting(externalTarget(for: session))
       advanceRevision()
     case .awaiting, .presenting:
@@ -239,6 +243,7 @@ struct AuthFlowSnapshot {
     else {
       return false
     }
+    completedSessionId = work.sessionId
     phase = .observing
     advanceRevision()
     return true
@@ -246,6 +251,7 @@ struct AuthFlowSnapshot {
 
   mutating func reset(ownerId: UUID) {
     guard registration?.id == ownerId else { return }
+    completedSessionId = nil
     phase = .observing
     advanceRevision()
   }

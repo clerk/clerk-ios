@@ -266,3 +266,5 @@ Hosted portal authentication, live shared-session/watch replication, proxy confi
 | [Tests/Utils/ProxyConfigurationTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Utils/ProxyConfigurationTests.swift) | 16 |
 
 The [Clerk startup and storage audit](clerk-storage-test-audit.md) reviews the first 31 declarations in `ClerkTests.swift`, records removed global-clear/shared-owner contracts, and links the Apple biometric installation-marker regression proofs and remaining physical-upgrade gates. The complete file remains retained.
+
+The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and six packaged-core checks, and preserves the remaining race and hosted-auth gaps. The old file remains retained.

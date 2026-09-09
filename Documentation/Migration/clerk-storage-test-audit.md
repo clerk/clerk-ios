@@ -4,7 +4,8 @@ Reviewed the first 31 test declarations in baseline
 `02f98f89a19b6c079517c9aae07df7edd0e600e5`'s `Tests/Core/ClerkTests.swift`,
 through `biometricCredentialInstallationMarkerPreservesConfigurationBoundaries`.
 All assertion bodies in this range were read. The remaining 61 declarations,
-starting with `isLoadedReturnsFalseWhenBothNil`, still require their own audit.
+starting with `isLoadedReturnsFalseWhenBothNil`, are mapped in the
+[auth presentation and readiness audit](clerk-auth-flow-test-audit.md).
 The file remains retained; this document does not authorize deleting it.
 
 | Baseline test or group | Disposition and limits |

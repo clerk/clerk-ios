@@ -89,6 +89,7 @@ let package = Package(
     .testTarget(
       name: "ClerkKitUITests",
       dependencies: [
+        "NativeCoreProof",
         "ClerkKit",
         "ClerkKitUI",
         .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
