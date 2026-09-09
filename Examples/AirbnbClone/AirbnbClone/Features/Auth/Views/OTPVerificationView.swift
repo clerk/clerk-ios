@@ -4,12 +4,14 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import PhoneNumberKit
 import SwiftUI
 
 struct OTPVerificationView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(Clerk.self) private var clerk
+  @Environment(AirbnbAuthFeedback.self) private var feedback
 
   let loginMode: LoginMode
 
@@ -22,11 +24,11 @@ struct OTPVerificationView: View {
   @State private var isVerifying = false
 
   private var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn
   }
 
   private var signUp: SignUp? {
-    clerk.auth.currentSignUp
+    clerk.signUp
   }
 
   private var formattedIdentifier: String {
@@ -154,12 +156,19 @@ struct OTPVerificationView: View {
         if case .signUp = loginMode, let signUp {
           switch loginMode.method {
           case .email:
-            try await signUp.verifyEmailCode(code)
+            try await signUp.verifications.verifyEmailCode(.init(code: code))
           case .phone:
-            try await signUp.verifyPhoneCode(code)
+            try await signUp.verifications.verifyPhoneCode(.init(code: code))
           }
+          if signUp.status == .complete { try await signUp.finalize() }
+          else { feedback.continuation = .signUp }
         } else if let signIn {
-          try await signIn.verifyCode(code)
+          switch loginMode.method {
+          case .email: try await signIn.emailCode.verifyCode(.init(code: code))
+          case .phone: try await signIn.phoneCode.verifyCode(.init(code: code))
+          }
+          if signIn.status == .complete { try await signIn.finalize() }
+          else { feedback.continuation = .signIn }
         }
       } catch {
         errorMessage = error.localizedDescription
@@ -178,16 +187,16 @@ struct OTPVerificationView: View {
         if case .signUp = loginMode, let signUp {
           switch loginMode.method {
           case .email:
-            try await signUp.sendEmailCode()
+            try await signUp.verifications.sendEmailCode()
           case .phone:
-            try await signUp.sendPhoneCode()
+            try await signUp.verifications.sendPhoneCode()
           }
         } else if let signIn {
           switch loginMode.method {
           case .email:
-            try await signIn.sendEmailCode()
+            try await signIn.emailCode.sendCode()
           case .phone:
-            try await signIn.sendPhoneCode()
+            try await signIn.phoneCode.sendCode()
           }
         }
         resendCountdown = 30
@@ -393,5 +402,5 @@ private struct OTPContinueButton: View {
   NavigationStack {
     OTPVerificationView(loginMode: .signIn(method: .phone))
   }
-  .environment(Clerk.preview())
+  .environment(Clerk.preview()).environment(AirbnbAuthFeedback())
 }

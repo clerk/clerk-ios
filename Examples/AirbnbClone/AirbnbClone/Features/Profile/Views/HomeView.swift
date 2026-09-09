@@ -4,9 +4,11 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct HomeView: View {
+  @State private var errorMessage: String?
   @Environment(Clerk.self) private var clerk
   @Environment(\.colorScheme) private var colorScheme
 
@@ -38,14 +40,17 @@ struct HomeView: View {
       .padding(.horizontal, 24)
     }
     .background(pageBackground.ignoresSafeArea())
+    .alert("Unable to sign out", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+      Button("OK") { errorMessage = nil }
+    } message: { Text(errorMessage ?? "") }
   }
 
   private func signOut() {
     Task {
       do {
-        try await clerk.auth.signOut()
+        try await clerk.signOut()
       } catch {
-        print("Sign out error: \(error.localizedDescription)")
+        errorMessage = error.localizedDescription
       }
     }
   }

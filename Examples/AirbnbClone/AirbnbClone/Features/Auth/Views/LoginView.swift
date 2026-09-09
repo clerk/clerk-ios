@@ -5,6 +5,7 @@
 
 import AuthenticationServices
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 extension EnvironmentValues {
@@ -14,10 +15,11 @@ extension EnvironmentValues {
 struct LoginView: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(Clerk.self) private var clerk
+  @Environment(AirbnbAuthFeedback.self) private var feedback
   @Environment(Router.self) private var router
 
   @State private var loginMode: LoginMode.Method = .phone
-  @State private var loadingSocialProvider: OAuthProvider?
+  @State private var loadingSocialProvider: SignInSSOParamsStrategy?
   @State private var errorMessage: String?
   @State private var otpLoginMode: LoginMode?
 
@@ -77,17 +79,6 @@ struct LoginView: View {
     }
     .tint(Color(.label))
     .animation(.default, value: errorMessage)
-    .task {
-      for await event in clerk.auth.events {
-        switch event {
-        case .signInCompleted, .signUpCompleted:
-          dismiss()
-          return
-        default:
-          break
-        }
-      }
-    }
     .sheet(isPresented: $router.showOTPVerification, onDismiss: {
       otpLoginMode = nil
     }) {
@@ -113,15 +104,26 @@ extension LoginView {
     }
   }
 
+  private func completeSSO(strategy: SignInSSOParamsStrategy) async throws {
+    let result = try await clerk.authenticateWithSSO(.init(strategy: strategy, start: .signIn, transferable: true))
+    switch result {
+    case .case1(let value):
+      if value.signIn.status == .complete { try await value.signIn.finalize() }
+      else { feedback.continuation = .signIn }
+    case .case2(let value):
+      if value.signUp.status == .complete { try await value.signUp.finalize() }
+      else { feedback.continuation = .signUp }
+    }
+  }
+
   private func signInWithApple() {
     Task {
       dismissKeyboard()
       errorMessage = nil
-      loadingSocialProvider = .apple
+      loadingSocialProvider = .oauthApple
       defer { loadingSocialProvider = nil }
       do {
-        try await clerk.auth.signInWithApple()
-        dismiss()
+        try await completeSSO(strategy: .oauthTokenApple)
       } catch {
         if !error.isUserCancellation {
           errorMessage = error.localizedDescription
@@ -130,15 +132,14 @@ extension LoginView {
     }
   }
 
-  private func signInWithOAuth(_ provider: OAuthProvider) {
+  private func signInWithOAuth(_ provider: SignInSSOParamsStrategy) {
     Task {
       dismissKeyboard()
       errorMessage = nil
       loadingSocialProvider = provider
       defer { loadingSocialProvider = nil }
       do {
-        try await clerk.auth.signUpWithOAuth(provider: provider)
-        dismiss()
+        try await completeSSO(strategy: provider)
       } catch {
         if !error.isUserCancellation {
           errorMessage = error.localizedDescription
@@ -172,10 +173,10 @@ private struct LoginDivider: View {
 
 private struct SocialLoginButtons: View {
   let loginMode: LoginMode.Method
-  let loadingSocialProvider: OAuthProvider?
+  let loadingSocialProvider: SignInSSOParamsStrategy?
   let onToggleLoginMode: () -> Void
   let onAppleSignIn: () -> Void
-  let onOAuthSignIn: (OAuthProvider) -> Void
+  let onOAuthSignIn: (SignInSSOParamsStrategy) -> Void
 
   var body: some View {
     VStack(spacing: 16) {
@@ -186,24 +187,24 @@ private struct SocialLoginButtons: View {
       )
 
       AuthOptionButton(
-        provider: .apple,
-        isLoading: loadingSocialProvider == .apple,
+        provider: .oauthApple,
+        isLoading: loadingSocialProvider == .oauthApple,
         title: "Continue with Apple",
         action: onAppleSignIn
       )
 
       AuthOptionButton(
-        provider: .google,
-        isLoading: loadingSocialProvider == .google,
+        provider: .oauthGoogle,
+        isLoading: loadingSocialProvider == .oauthGoogle,
         title: "Continue with Google",
-        action: { onOAuthSignIn(.google) }
+        action: { onOAuthSignIn(.oauthGoogle) }
       )
 
       AuthOptionButton(
-        provider: .facebook,
-        isLoading: loadingSocialProvider == .facebook,
+        provider: .oauthFacebook,
+        isLoading: loadingSocialProvider == .oauthFacebook,
         title: "Continue with Facebook",
-        action: { onOAuthSignIn(.facebook) }
+        action: { onOAuthSignIn(.oauthFacebook) }
       )
     }
   }
@@ -213,8 +214,6 @@ private struct SocialLoginButtons: View {
 
 #Preview {
   LoginView()
-    .environment(Clerk.preview { preview in
-      preview.isSignedIn = false
-    })
+    .environment(Clerk.preview(.signedOut)).environment(AirbnbAuthFeedback())
     .environment(Router())
 }

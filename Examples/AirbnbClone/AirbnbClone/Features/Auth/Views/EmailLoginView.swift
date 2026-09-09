@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EmailLoginView: View {
@@ -71,7 +72,11 @@ struct EmailLoginView: View {
 
       do {
         // Try sign up first
-        try await clerk.auth.signUp(emailAddress: email)
+        try await clerk.signUp.create(.init(emailAddress: email))
+        if clerk.signUp.status == .complete {
+          try await clerk.signUp.finalize()
+          return
+        }
         router.authPath.append(
           AuthDestination.finishSigningUp(
             identifierValue: email,
@@ -79,9 +84,13 @@ struct EmailLoginView: View {
           )
         )
       } catch {
-        // If sign up fails, try sign in
+        // Existing identifiers can use sign-in; other failures remain visible.
+        guard let failure = error as? CoreError, failure.errors.contains(where: { $0.code == "form_identifier_exists" }) else {
+          errorMessage = error.localizedDescription
+          return
+        }
         do {
-          try await clerk.auth.signInWithEmailCode(emailAddress: email)
+          try await clerk.signIn.emailCode.sendCode(.case1(.init(emailAddress: email)))
           otpLoginMode.wrappedValue = .signIn(method: .email)
           router.showOTPVerification = true
         } catch {

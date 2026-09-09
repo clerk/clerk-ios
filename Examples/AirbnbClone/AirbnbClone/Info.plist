@@ -10,5 +10,14 @@
 	</array>
 	<key>UIDesignRequiresCompatibility</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.clerk.AirbnbClone</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

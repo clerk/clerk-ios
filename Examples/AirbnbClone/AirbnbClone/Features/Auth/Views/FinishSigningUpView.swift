@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct FinishSigningUpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(AirbnbAuthFeedback.self) private var feedback
   @Environment(Router.self) private var router
   @Environment(\.otpLoginMode) private var otpLoginMode
 
@@ -29,7 +31,7 @@ struct FinishSigningUpView: View {
   @State private var errorMessage: String?
 
   private var signUp: SignUp? {
-    clerk.auth.currentSignUp
+    clerk.signUp
   }
 
   private var canContinue: Bool {
@@ -106,17 +108,21 @@ struct FinishSigningUpView: View {
       defer { isLoading = false }
 
       do {
-        let updated = try await signUp.update(
+        try await signUp.update(.init(
           firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
           lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
           legalAccepted: true
-        )
+        ))
+        if signUp.status == .complete {
+          try await signUp.finalize()
+          return
+        }
 
         switch loginMode.method {
         case .email:
-          try await updated.sendEmailCode()
+          try await signUp.verifications.sendEmailCode()
         case .phone:
-          try await updated.sendPhoneCode()
+          try await signUp.verifications.sendPhoneCode()
         }
 
         otpLoginMode.wrappedValue = loginMode
@@ -216,6 +222,6 @@ private struct AgreeAndContinueButton: View {
       loginMode: .signUp(method: .email)
     )
   }
-  .environment(Clerk.preview())
+  .environment(Clerk.preview()).environment(AirbnbAuthFeedback())
   .environment(Router())
 }

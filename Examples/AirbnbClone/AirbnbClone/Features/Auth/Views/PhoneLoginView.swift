@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import PhoneNumberKit
 import PhoneNumberKitUI
 import SwiftUI
@@ -124,7 +125,11 @@ extension PhoneLoginView {
 
       do {
         // Try sign up first
-        try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
+        try await clerk.signUp.create(.init(phoneNumber: e164PhoneNumber))
+        if clerk.signUp.status == .complete {
+          try await clerk.signUp.finalize()
+          return
+        }
         router.authPath.append(
           AuthDestination.finishSigningUp(
             identifierValue: e164PhoneNumber,
@@ -132,9 +137,14 @@ extension PhoneLoginView {
           )
         )
       } catch {
-        // If sign up fails, try sign in
+        // Existing identifiers can use sign-in; other failures remain visible.
+        guard let failure = error as? CoreError, failure.errors.contains(where: { $0.code == "form_identifier_exists" }) else {
+          errorMessage = error.localizedDescription
+          return
+        }
         do {
-          try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
+          try await clerk.signIn.create(.init(identifier: e164PhoneNumber))
+          try await clerk.signIn.phoneCode.sendCode()
           otpLoginMode.wrappedValue = .signIn(method: .phone)
           router.showOTPVerification = true
         } catch {

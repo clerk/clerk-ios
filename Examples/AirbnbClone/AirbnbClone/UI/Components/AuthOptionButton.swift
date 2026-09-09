@@ -4,12 +4,14 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct AuthOptionButton: View {
+  @Environment(Clerk.self) private var clerk
   var icon: String?
   var iconURL: URL?
-  var provider: OAuthProvider?
+  var provider: SignInSSOParamsStrategy?
   var isLoading: Bool = false
   let title: String
   let action: () -> Void
@@ -19,7 +21,7 @@ struct AuthOptionButton: View {
       return iconURL
     }
     if let provider {
-      return provider.iconImageUrl
+      return clerk.environment.userSettings.social[provider.rawValue]?.logoUrl.flatMap(URL.init(string:))
     }
     return nil
   }
@@ -84,8 +86,8 @@ struct AuthOptionButton: View {
   VStack(spacing: 16) {
     AuthOptionButton(icon: "envelope", title: "Continue with email") {}
     AuthOptionButton(icon: "apple.logo", title: "Continue with Apple") {}
-    AuthOptionButton(provider: .google, title: "Continue with Google") {}
-    AuthOptionButton(provider: .facebook, title: "Continue with Facebook") {}
+    AuthOptionButton(provider: .oauthGoogle, title: "Continue with Google") {}
+    AuthOptionButton(provider: .oauthFacebook, title: "Continue with Facebook") {}
   }
   .padding()
   .environment(Clerk.preview())

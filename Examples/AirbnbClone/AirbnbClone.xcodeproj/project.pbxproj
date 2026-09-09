@@ -11,6 +11,7 @@
 		8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */; };
 		8F506B022EF1000000BB4E4E /* PhoneNumberKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8F506B012EF1000000BB4E4E /* PhoneNumberKitUI */; };
 		8FATLANTIS004E3A648E00831B13 /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = 8FATLANTIS005E3A648E00831B13 /* Atlantis */; };
+		8FCOREUI0000000000000001 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8FCOREUI0000000000000002 /* ClerkKitUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FCOREUI0000000000000001 /* ClerkKitUI in Frameworks */,
 				8F000001E3A648E00831B13 /* ClerkKit in Frameworks */,
 				8F3946222EF0B22F00BB4E4E /* PhoneNumberKit in Frameworks */,
 				8F506B022EF1000000BB4E4E /* PhoneNumberKitUI in Frameworks */,
@@ -89,6 +91,7 @@
 			);
 			name = AirbnbClone;
 			packageProductDependencies = (
+				8FCOREUI0000000000000002 /* ClerkKitUI */,
 				8F000002E3A648E00831B13 /* ClerkKit */,
 				8F3946212EF0B22F00BB4E4E /* PhoneNumberKit */,
 				8F506B012EF1000000BB4E4E /* PhoneNumberKitUI */,
@@ -429,6 +432,7 @@
 			package = 8FATLANTIS006E3A648E00831B13 /* XCRemoteSwiftPackageReference "atlantis" */;
 			productName = Atlantis;
 		};
+		8FCOREUI0000000000000002 /* ClerkKitUI */ = {isa = XCSwiftPackageProductDependency; productName = ClerkKitUI; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8F00000CE3A5C32001E5953 /* Project object */;
