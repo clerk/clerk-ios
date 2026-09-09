@@ -234,6 +234,32 @@ import Testing
     }
   }
 
+  @Test func missingAndPartialOrganizationSettingsDoNotPreventStartup() async throws {
+    let cases: [JSONValue?] = [nil, .object([:]), .object(["enabled": .bool(true)]), .object(["enabled": .bool(true), "force_organization_selection": .bool(true)])]
+    for settings in cases {
+      let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+      var environment = try #require(capabilities.fixtures["environment"]).object()
+      environment["organization_settings"] = settings
+      capabilities.environmentResponse = .object(environment)
+      let clerk = try await connect(capabilities)
+      defer { clerk.close() }
+      let values = clerk.environment.organizationSettings
+      let expected = try settings?.object()
+      #expect(values.enabled == (expected?["enabled"] == .bool(true)))
+      #expect(values.forceOrganizationSelection == (expected?["force_organization_selection"] == .bool(true)))
+      #expect(values.domains.enabled == false)
+      #expect(values.domains.defaultRole == nil)
+      #expect(values.maxAllowedMemberships == 1)
+      let original = clerk.environment
+      environment["organization_settings"] = .object(["enabled": .bool(true), "force_organization_selection": .bool(true)])
+      capabilities.environmentResponse = .object(environment)
+      let refreshed = try await original.reload()
+      #expect(refreshed === original)
+      #expect(clerk.environment.organizationSettings.forceOrganizationSelection == true)
+      #expect(clerk.session == nil)
+    }
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

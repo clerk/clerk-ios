@@ -12079,6 +12079,7 @@ isDevOrStagingUrl: (url) => {
 			this.organizationCreationDefaults = { enabled: false };
 			this.enabled = false;
 			this.maxAllowedMemberships = 1;
+			this.forceOrganizationSelection = false;
 			this.fromJSON(data);
 		}
 		fromJSON(data) {

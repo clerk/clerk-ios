@@ -17,6 +17,7 @@ import ClerkKit
   var appleIdentityCount = 0
   var clientReads = 0
   var signedOut = false
+  var environmentResponse: JSONValue?
   var clientResponse: JSONValue?
   var sessionReloadResponse: JSONValue?
   var signInFirstFactors: JSONValue?
@@ -86,7 +87,7 @@ import ClerkKit
       signUp["created_session_id"] = .string("sess_native")
       response = .object(signUp)
     } else if url.path.hasSuffix("/environment") {
-      var environment = try fixtures["environment"]!.object()
+      var environment = try (environmentResponse ?? fixtures["environment"]!).object()
       var auth = try environment["auth_config"]!.object()
       auth["native_settings"] = .object(["api_enabled": .bool(true), "trusted_device_sign_in_enabled": .bool(true)])
       environment["auth_config"] = .object(auth)

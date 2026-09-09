@@ -32,6 +32,11 @@ DTO checks to structured native failures and explicit new-major API changes.
 The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
 provider presentation and instance-mode values, including the corrected union projection.
 
+The [JWT assertion audit](jwt-test-audit.md) maps the removed native parser to shared decoding and generated token-result checks.
+The [session selection audit](session-utility-test-audit.md) checks canonical selection and readable resource results after expiry.
+The [environment assertion audit](environment-test-audit.md) maps all 24 old environment tests, partial-setting defaults, and generated reload behavior.
+The [removed proxy/logging audit](removed-utility-test-audit.md) records unavailable configuration and removed private helper semantics.
+
 ## Configuration validation
 
 Replacement owner / evidence: NativeCoreContractTests/ClerkConfigurationTests.swift (iOS); NativeCoreTests/Unit/ClerkConfigurationTest.kt (Android).
