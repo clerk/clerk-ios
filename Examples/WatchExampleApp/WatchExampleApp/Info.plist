@@ -8,6 +8,14 @@
 	<array>
 		<string>_Proxyman._tcp</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.clerk.WatchExampleApp</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
-

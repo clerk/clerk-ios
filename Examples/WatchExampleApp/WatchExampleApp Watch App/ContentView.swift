@@ -9,6 +9,7 @@ import ClerkKit
 import SwiftUI
 
 struct ContentView: View {
+  @State private var errorMessage: String?
   @Environment(Clerk.self) private var clerk
 
   var fullName: String? {
@@ -23,7 +24,7 @@ struct ContentView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 16) {
-        if let user = clerk.user {
+        if let user = clerk.user, clerk.session?.status == .active, clerk.session?.currentTask == nil {
           VStack(spacing: 8) {
             AsyncImage(url: URL(string: user.imageUrl)) { phase in
               switch phase {
@@ -62,7 +63,8 @@ struct ContentView: View {
 
           Button {
             Task {
-              try? await clerk.auth.signOut(sessionId: clerk.session?.id)
+              do { try await clerk.signOut() }
+              catch { errorMessage = error.localizedDescription }
             }
           } label: {
             Text("Sign Out")
@@ -75,7 +77,7 @@ struct ContentView: View {
               .font(.caption)
               .fontWeight(.semibold)
 
-            Text("Sign in on your iPhone to sync your authentication state to your Apple Watch.")
+            Text("Phone-to-watch authentication synchronization is unavailable in this prerelease.")
               .font(.caption2)
               .foregroundColor(.secondary)
               .lineLimit(3)
@@ -84,19 +86,8 @@ struct ContentView: View {
         }
       }
     }
+    .alert("Unable to sign out", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+      Button("OK") { errorMessage = nil }
+    } message: { Text(errorMessage ?? "") }
   }
-}
-
-#Preview("Signed Out") {
-  ContentView()
-    .environment(
-      Clerk.preview { preview in
-        preview.isSignedIn = false
-      }
-    )
-}
-
-#Preview("Signed In") {
-  ContentView()
-    .environment(Clerk.preview())
 }

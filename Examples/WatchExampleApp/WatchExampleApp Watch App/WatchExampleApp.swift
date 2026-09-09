@@ -1,32 +1,40 @@
-//
-//  WatchExampleApp.swift
-//  WatchExampleApp Watch App
-//
-//  Created on 2025-01-27.
-//
-
 import ClerkKit
 import SwiftUI
 
 @main
 struct WatchExampleAppWatchApp: App {
-  init() {
-    // Configure Clerk with Watch Connectivity sync enabled
-    let options = Clerk.Options(
-      watchConnectivityEnabled: true
-    )
-
-    Clerk.configure(
-      publishableKey: WatchExampleLocalSecrets.load().publishableKey ?? "",
-      options: options
-    )
-  }
+  @State private var clerk: Clerk?
+  @State private var connectionError: String?
 
   var body: some Scene {
     WindowGroup {
-      ContentView()
-        .environment(Clerk.shared)
-        .atlantisProxy()
+      Group {
+        if let clerk {
+          ContentView().environment(clerk)
+        } else if let connectionError {
+          VStack(spacing: 12) {
+            Image(systemName: "applewatch.slash")
+            Text("Authentication unavailable").font(.headline)
+            Text(connectionError).font(.caption)
+          }.padding()
+        } else {
+          ProgressView("Connecting…")
+        }
+      }
+      .task {
+        guard clerk == nil, connectionError == nil else { return }
+        do {
+          let configuration = try ClerkConfiguration(
+            publishableKey: WatchExampleLocalSecrets.load().publishableKey ?? "",
+            callbackURL: URL(string: "com.clerk.WatchExample.watch://oauth/callback")!
+          )
+          clerk = try await Clerk.connect(configuration: configuration)
+        } catch let error as CoreError where error.code == "capability_unavailable:embedded_engine" {
+          connectionError = "This prerelease has no authentication runtime on Apple Watch. Phone-to-watch sign-in synchronization is unavailable."
+        } catch {
+          connectionError = error.localizedDescription
+        }
+      }
     }
   }
 }
