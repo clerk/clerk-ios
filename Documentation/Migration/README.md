@@ -115,3 +115,7 @@ Applications using these features must remain on the previous major until an exp
 [The audit](test-audit.md) identifies the replacement owner and unresolved proof for each old test category. Existing SwiftUI tests remain in `Tests/UI`; preserve their presentation assertions. The packaged-core contract suite and platform tests are the executable tests for the generated API. An old test of a removed service mock is not a test of the new owner and must not be reported as passing unchanged.
 
 Before a general release, validate an actual old-major app upgrade with a real signed-in account; platform browser/passkey/biometric prompts on physical devices; supported Apple targets; Expo native-to-JavaScript and JavaScript-to-native changes; and startup, memory, artifact size, and call-overhead measurements against agreed budgets. Generated signature support alone does not establish that a platform capability is available. Publish an explicit supported-profile decision and a bounded previous-major maintenance policy with the prerelease.
+
+## Removed implementation
+
+The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. Legacy test files remain for the unfinished assertion-level audit and are not claimed to run against the new API.
