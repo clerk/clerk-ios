@@ -11,17 +11,17 @@ import Foundation
 extension SignIn {
   @MainActor
   var startingFirstFactor: Factor? {
-    let preferredSignInStrategy = Clerk.shared.environment?.displayConfig.preferredSignInStrategy
+    let preferredSignInStrategy = coreOwner?.environment.displayConfig.preferredSignInStrategy
     return preferredSignInStrategy == .password
       ? factorWhenPasswordIsPreferred
       : factorWhenOtpIsPreferred
   }
 
   var availableFirstFactors: [Factor] {
-    supportedFirstFactors?.filter { factor in
+    supportedFirstFactors.map(Factor.init).filter { factor in
       if case .unknown = factor.strategy { return false }
       return true
-    } ?? []
+    }
   }
 
   var factorWhenPasswordIsPreferred: Factor? {
@@ -64,37 +64,41 @@ extension SignIn {
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
     // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
-    let firstFactors = supportedFirstFactors?.filter { factor in
+    let firstFactors = supportedFirstFactors.map(Factor.init).filter { factor in
       if case .oauth = factor.strategy { return false }
       return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml
     }
 
-    return (firstFactors ?? []).sorted(using: Factor.allStrategiesButtonsComparator)
+    return firstFactors.sorted(using: Factor.allStrategiesButtonsComparator)
   }
 
   var startingSecondFactor: Factor? {
-    if let passkey = supportedSecondFactors?.first(where: { $0.strategy == .passkey }) {
+    if let passkey = supportedSecondFactors.map(Factor.init).first(where: { $0.strategy == .passkey }) {
       return passkey
     }
 
-    if let totp = supportedSecondFactors?.first(where: { $0.strategy == .totp }) {
+    if let totp = supportedSecondFactors.map(Factor.init).first(where: { $0.strategy == .totp }) {
       return totp
     }
 
-    if let phoneCode = supportedSecondFactors?.first(where: { $0.strategy == .phoneCode }) {
+    if let phoneCode = supportedSecondFactors.map(Factor.init).first(where: { $0.strategy == .phoneCode }) {
       return phoneCode
     }
 
-    if let emailCode = supportedSecondFactors?.first(where: { $0.strategy == .emailCode }) {
+    if let emailCode = supportedSecondFactors.map(Factor.init).first(where: { $0.strategy == .emailCode }) {
       return emailCode
     }
 
-    return supportedSecondFactors?.first
+    return supportedSecondFactors.map(Factor.init).first
   }
 
   func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
-    (supportedSecondFactors?.filter { $0 != currentFactor } ?? [])
+    supportedSecondFactors.map(Factor.init).filter { $0 != currentFactor }
       .sorted(using: Factor.backupCodePrefComparator)
+  }
+
+  func identifyingFirstFactor(for strategy: String) -> Factor? {
+    availableFirstFactors.first { $0.strategy.rawValue == strategy }
   }
 
   var resetPasswordFactor: Factor? {
@@ -103,7 +107,7 @@ extension SignIn {
     } else if let resetPasswordPhoneFactor = identifyingFirstFactor(for: "reset_password_phone_code") {
       resetPasswordPhoneFactor
     } else {
-      supportedFirstFactors?.first(where: \.isResetFactor)
+      availableFirstFactors.first(where: \.isResetFactor)
     }
   }
 }

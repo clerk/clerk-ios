@@ -49,17 +49,17 @@ extension OAuthProvider {
     }
   }
 
-  func name(in environment: EnvironmentResource) -> String {
+  @MainActor func name(in environment: EnvironmentResource) -> String {
     if case .unrecognized = self { return settings(in: environment)?.name ?? builtInName }
     return builtInName
   }
 
-  func iconImageUrl(in environment: EnvironmentResource) -> URL? {
+  @MainActor func iconImageUrl(in environment: EnvironmentResource) -> URL? {
     guard let url = settings(in: environment)?.logoUrl, !url.isEmptyTrimmed else { return nil }
     return URL(string: url)
   }
 
-  private func settings(in environment: EnvironmentResource) -> OAuthProviderSettings? {
+  @MainActor private func settings(in environment: EnvironmentResource) -> OAuthProviderSettings? {
     environment.userSettings.social.compactMapValues { $0 }.values.first { $0.strategy.rawValue == strategy }
   }
 

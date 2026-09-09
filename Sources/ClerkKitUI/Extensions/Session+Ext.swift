@@ -12,9 +12,8 @@ extension Session {
     status == .pending && pendingTasks.contains(.setupMfa)
   }
 
-  @MainActor
-  var isThisDevice: Bool {
-    id == Clerk.shared.session?.id
+  var pendingTasks: [SessionTaskKey] {
+    tasks?.map(\.key) ?? []
   }
 }
 

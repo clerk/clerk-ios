@@ -52,7 +52,7 @@ extension User {
 
   @MainActor
   var usernameForPasswordKeeper: String {
-    guard let environment = Clerk.shared.environment else { return "" }
+    guard let environment = coreOwner?.environment else { return "" }
     let userSettings = environment.userSettings
 
     if userSettings.attributes.contains(where: { $0 == "username" && $1.enabled && $1.usedForFirstFactor }),
@@ -78,7 +78,7 @@ extension User {
 
   @MainActor
   var unconnectedProviders: [OAuthProvider] {
-    guard let environment = Clerk.shared.environment else { return [] }
+    guard let environment = coreOwner?.environment else { return [] }
     let socialProviders = environment.allSocialProviders
     let verifiedExternalProviders = verifiedExternalAccounts.compactMap { $0.oauthProvider }
     return socialProviders.filter { !verifiedExternalProviders.contains($0) }
@@ -89,7 +89,7 @@ extension User {
   }
 
   var phoneNumbersReservedForMfa: [PhoneNumber] {
-    phoneNumbers.filter { $0.verification?.status == .verified && $0.reservedForSecondFactor }
+    phoneNumbers.filter { $0.verification.status == .verified && $0.reservedForSecondFactor }
   }
 }
 

@@ -17,14 +17,16 @@ enum LastUsedAuth: Equatable {
   case social(OAuthProvider)
 
   init?(
-    environment: Clerk.Environment?,
+    clerk: Clerk,
     biometricSignInIsVisible: Bool = false
   ) {
-    guard let lastAuth = Clerk.shared.client?.lastAuthenticationStrategy else {
+    let environment = clerk.environment
+    guard let strategy = clerk.lastAuthenticationStrategy else {
       return nil
     }
 
-    let visibleMethodCount = (environment?.totalEnabledFirstFactorMethods ?? 0) +
+    let lastAuth = FactorStrategy(rawValue: strategy.rawValue)
+    let visibleMethodCount = environment.totalEnabledFirstFactorMethods +
       (biometricSignInIsVisible ? 1 : 0)
     guard visibleMethodCount > 1 else {
       return nil
@@ -35,7 +37,7 @@ enum LastUsedAuth: Equatable {
       return
     }
 
-    let providers = environment?.authenticatableSocialProviders ?? []
+    let providers = environment.authenticatableSocialProviders
     if let provider = providers.first(where: {
       Self.shouldShowBadge(for: [.oauth($0)], lastAuth: lastAuth, environment: environment)
     }) {
@@ -130,7 +132,7 @@ extension LastUsedAuth {
   fileprivate static func shouldShowBadge(
     for strategies: [FactorStrategy],
     lastAuth: FactorStrategy,
-    environment: Clerk.Environment?
+    environment: EnvironmentResource?
   ) -> Bool {
     if lastAuth == .password, let storedIdentifier = retrieveStoredIdentifierType() {
       return storedIdentifier.matches(strategies)
@@ -157,7 +159,7 @@ extension LastUsedAuth {
     }
   }
 
-  fileprivate static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
+  fileprivate static func canShowLastUsedBadge(in environment: EnvironmentResource?) -> Bool {
     let hasEmail = environment?.userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled && value.usedForFirstFactor
     } ?? false

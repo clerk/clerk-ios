@@ -9,22 +9,22 @@ import ClerkKit
 import Foundation
 
 extension SignUp {
-  static let fieldPriority: [SignUp.Field] = [.emailAddress, .phoneNumber, .username, .password]
-  static let individuallyCollectableFields: Set<SignUp.Field> = [.emailAddress, .phoneNumber, .username, .password]
-  static let completeProfileFields: Set<SignUp.Field> = [.firstName, .lastName, .legalAccepted]
+  static let fieldPriority: [SignUpField] = [.emailAddress, .phoneNumber, .username, .password]
+  static let individuallyCollectableFields: Set<SignUpField> = [.emailAddress, .phoneNumber, .username, .password]
+  static let completeProfileFields: Set<SignUpField> = [.firstName, .lastName, .legalAccepted]
 
-  var emailVerification: Verification? {
-    verifications["email_address"] ?? nil
+  var emailVerification: SignUpVerification? {
+    verifications.emailAddress
   }
 
   @MainActor
   var emailVerificationStrategy: FactorStrategy {
     if let strategy = emailVerification?.strategy {
-      return strategy
+      return FactorStrategy(rawValue: strategy)
     }
 
-    if let verifications = Clerk.shared.environment?.userSettings.attributes["email_address"]?.verifications,
-       verifications.contains(FactorStrategy.emailLink.rawValue)
+    if let verifications = coreOwner?.environment.userSettings.attributes["email_address"]?.verifications,
+       verifications.contains(.emailLink)
     {
       return .emailLink
     }
@@ -32,24 +32,28 @@ extension SignUp {
     return .emailCode
   }
 
-  var firstFieldToCollect: SignUp.Field? {
+  var firstFieldToCollect: SignUpField? {
     missingFields.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  var firstFieldToVerify: SignUp.Field? {
-    unverifiedFields.sortedByPriority(SignUp.fieldPriority).first
+  var firstFieldToVerify: SignUpField? {
+    unverifiedFields.map { SignUpField(rawValue: $0.rawValue) }.sortedByPriority(SignUp.fieldPriority).first
   }
 
-  func fieldIsRequired(field: SignUp.Field) -> Bool {
+  func fieldIsRequired(field: SignUpField) -> Bool {
     requiredFields.contains(field)
   }
 
-  var firstVerification: Verification? {
+  var firstVerification: SignUpVerification? {
     guard let firstFieldToVerify else { return nil }
-    return verifications.first(where: { $0.key == firstFieldToVerify.rawValue })?.value
+    switch firstFieldToVerify {
+    case .emailAddress: return verifications.emailAddress
+    case .phoneNumber: return verifications.phoneNumber
+    default: return nil
+    }
   }
 
-  func fieldWasCollected(field: SignUp.Field) -> Bool {
+  func fieldWasCollected(field: SignUpField) -> Bool {
     switch field {
     case .emailAddress:
       emailAddress != nil
@@ -58,7 +62,7 @@ extension SignUp {
     case .username:
       username != nil
     case .password:
-      passwordEnabled
+      hasPassword
     case .firstName:
       firstName != nil
     case .lastName:

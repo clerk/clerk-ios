@@ -8,7 +8,7 @@ import Foundation
 
 extension ExternalAccount {
   var oauthProvider: OAuthProvider {
-    .init(strategy: provider)
+    provider
   }
 
   var displayName: String {
