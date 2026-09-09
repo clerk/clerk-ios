@@ -22,6 +22,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
 
 @MainActor public final class AppleCapabilities: NativeCapabilities {
   public typealias Presentation = @MainActor (String, JSONValue) async throws -> JSONValue
+  private let authStorage: (any CredentialStorage)?
   private let storage: any CredentialStorage
   private let publishableKey: String
   private let origin: URL
@@ -31,10 +32,11 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
   private let appleIdentity: Presentation?
   private let passkeyAutofill: Bool
   public var supported: [String] {
-    ["http", "storage", "timer", "random"] + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
+    ["http", "storage", "timer", "random", "crypto.sha256"] + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
-  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false) throws {
+  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil) throws {
+    self.authStorage = authStorage
     guard frontendAPI.scheme == "https", frontendAPI.host != nil, frontendAPI.user == nil, frontendAPI.password == nil else { throw CoreError(code: "invalid_frontend_api") }
     self.publishableKey = publishableKey
     origin = frontendAPI
@@ -68,6 +70,16 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
       if capability == "storage.write" { try await storage.write((args["value"] ?? .undefined).string()) }
       else { try await storage.remove() }
       return .null
+    case "authStorage.read", "authStorage.write", "authStorage.remove":
+      guard args["scope"] == .string(publishableKey), args["key"] == .string("magicLink") else { throw CoreError(code: "invalid_storage_scope") }
+      guard let authStorage else { throw CoreError(code: "capability_unavailable") }
+      if capability == "authStorage.read" { return try await authStorage.read().map(JSONValue.string) ?? .null }
+      if capability == "authStorage.write" { try await authStorage.write((args["value"] ?? .undefined).string()) }
+      else { try await authStorage.remove() }
+      return .null
+    case "crypto.sha256":
+      let value = try (args["value"] ?? .undefined).string()
+      return .string(Data(SHA256.hash(data: Data(value.utf8))).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: ""))
     case "http": return try await http(args)
     default: throw CoreError(code: "capability_unavailable")
     }

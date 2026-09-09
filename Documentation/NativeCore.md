@@ -28,6 +28,12 @@ The adapter never substitutes a development key when secure storage fails. If ol
 
 Run `scripts/test-native-core.sh` on macOS. The proof executes the packaged bundle, generated SSO, local reset, explicit finalization, token retrieval and sign-out with deterministic HTTP fixtures. It also seeds an isolated prior-format Keychain identity, restores it from separate process launches, clears it and verifies that it remains cleared. It does not read the developer's credentials. A physical-device upgrade from a released app with a real signed-in user remains a release gate.
 
+## Native email links
+
+Email-link preparation uses the configured callback URL and saves its PKCE verifier in a separate secure record scoped to the instance. The TypeScript core validates the saved record, expiration and callback before completing it. Forward incoming URLs to `clerk.handleAuthCallback`. It returns the generated sign-in or sign-up resource without activating a session; custom interfaces must explicitly finalize a complete result. The callback also remains available as `clerk.authCallback` until `clearAuthCallback(id)` consumes it. `AuthView` consumes this record and finalizes as part of its existing presentation flow.
+
+Pending links survive process restart. The previous iOS pending-link record requires a matching `LegacyKeychainConfiguration.publishableKey`; Android uses the matching cached publishable key or explicit `legacyPublishableKey`. Clearing a pending link leaves the client credential intact. Android callers can supply `magicLinkAttestation` when their instance requires an attestation provider.
+
 ## Bundle updates
 
 From the clean JavaScript repository, run `node packages/mobile-runtime/pack.mjs IOS_REPOSITORY ANDROID_REPOSITORY`. Packaging verifies generated contracts, rebuilds the bundle, pins the source commit and SHA-256, and copies the canonical generated API. Commit these resources together. Do not manually modify generated Swift or remotely replace executable code. Review `NativeCore/public-api.txt` for native source compatibility on every update.

@@ -217,23 +217,21 @@ public struct AuthView: View {
     .onAppear {
       registerAuthFlowIfNeeded()
       adoptPendingSessionIfNeeded(clerk.session)
-      if let callbackContinuation = clerk.callbackContinuation {
-        resumeAuth(callbackContinuation)
-      }
     }
     .task {
-      let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
-      _ = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint)
+      _ = try? await authState.refreshedEnvironment(for: clerk)
     }
-    .task {
-      for await event in clerk.auth.events {
-        switch event {
-        case .signInNeedsContinuation(let signIn):
-          resumeAuth(.signIn(signIn))
-        case .signUpNeedsContinuation(let signUp):
-          resumeAuth(.signUp(signUp))
-        default:
-          break
+    .task(id: clerk.authCallback?.id) {
+      guard let callback = clerk.authCallback else { return }
+      await AuthFlowRequestScope.withOwner(authFlowRegistration?.id) {
+        do {
+          let result = TransferFlowResult(callback.result)
+          try await clerk.finalizeForPresentation(result)
+          resumeAuth(result)
+          try await clerk.clearAuthCallback(callback.id)
+        } catch is CancellationError {
+        } catch {
+          self.error = error
         }
       }
     }
@@ -259,14 +257,14 @@ public struct AuthView: View {
     .onOpenURL { url in
       Task {
         do {
-          try await clerk.handle(url)
+          _ = try await clerk.handleAuthCallback(url)
         } catch {
           self.error = error
         }
       }
     }
     .taskOnce {
-      await clerk.telemetry.record(
+      try? await clerk.telemetry?.record(
         TelemetryEvents.viewDidAppear(
           "AuthView",
           payload: [
@@ -349,7 +347,7 @@ extension AuthView {
   ///
   /// - Parameter metadata: The unsafe metadata to attach to created users.
   /// - Returns: A view with the unsafe metadata configured.
-  public func unsafeMetadata(_ metadata: JSON?) -> AuthView {
+  public func unsafeMetadata(_ metadata: JSONValue?) -> AuthView {
     var config = config
     config.unsafeMetadata = metadata
     return configured(with: config)

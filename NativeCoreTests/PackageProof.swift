@@ -36,6 +36,17 @@ import Foundation
     } catch let error as CoreError {
       precondition(error.passkeyStage == "preparingFirstFactor" && error.errors.first?.code == "passkey_verification_failed")
     }
+    try await clerk.signUp.create(.init(emailAddress: "test@example.com"))
+    try await clerk.signUp.verifications.sendEmailLink(.init())
+    precondition(capabilities.authRecord != nil)
+    let emailResult = try await clerk.handleAuthCallback(URL(string: "clerk-test://sso-callback?flow_id=sua_native&approval_token=fixture_approval")!)
+    guard case .case2(let emailFlow) = emailResult else { preconditionFailure("Expected sign-up callback") }
+    precondition(emailFlow.signUp === clerk.signUp && clerk.signUp.status == .complete && clerk.session == nil)
+    precondition(capabilities.authRecord == nil)
+    let callbackId = clerk.authCallback!.id
+    try await clerk.clearAuthCallback(callbackId)
+    precondition(clerk.authCallback == nil)
+    try await clerk.signUp.reset()
     try await clerk.signIn.sso(.init(strategy: .oauthTokenApple))
     precondition(clerk.signIn.status == .complete && clerk.session == nil)
     try await clerk.signUp.sso(.init(strategy: "oauth_token_apple"))

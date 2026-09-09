@@ -4557,291 +4557,6 @@ var ClerkCore = (function(exports) {
 		trace() {}
 	};
 	//#endregion
-	//#region ../shared/src/browser.ts
-	/**
-	* Checks if the window object is defined. You can also use this to check if something is happening on the client side.
-	*
-	* @returns
-	*/
-	function inBrowser$1() {
-		return typeof window !== "undefined";
-	}
-	const botAgentRegex = new RegExp([
-		"bot",
-		"spider",
-		"crawl",
-		"APIs-Google",
-		"AdsBot",
-		"Googlebot",
-		"mediapartners",
-		"Google Favicon",
-		"FeedFetcher",
-		"Google-Read-Aloud",
-		"DuplexWeb-Google",
-		"googleweblight",
-		"bing",
-		"yandex",
-		"baidu",
-		"duckduck",
-		"yahoo",
-		"ecosia",
-		"ia_archiver",
-		"facebook",
-		"instagram",
-		"pinterest",
-		"reddit",
-		"slack",
-		"twitter",
-		"whatsapp",
-		"youtube",
-		"semrush"
-	].join("|"), "i");
-	/**
-	* Checks if the user agent is a bot.
-	*
-	* @param userAgent - Any user agent string
-	* @returns
-	*/
-	function userAgentIsRobot(userAgent) {
-		return !userAgent ? false : botAgentRegex.test(userAgent);
-	}
-	/**
-	* Server-side runtimes with worker-like globals self-identify in `navigator.userAgent`
-	* (`Cloudflare-Workers`, `Node.js/24`, `Deno/2.5.0`, `Bun/1.3.9`). Today workerd's `self`
-	* does not satisfy `instanceof WorkerGlobalScope` (even though it exposes the constructor),
-	* so the scope gate alone happens to exclude it, but that is an implementation detail of
-	* workerd's prototype chain, not a guarantee. Excluding self-identified server runtimes by
-	* user agent keeps these heuristics server-false even if such a runtime becomes fully
-	* spec-compliant about its worker scope.
-	*/
-	const serverRuntimeUserAgentRegex = /^(Cloudflare-Workers|Node\.js|Deno|Bun)\b/i;
-	/**
-	* Resolves the `Navigator` object from either the DOM `window` (standard browsers)
-	* or a Web/Service Worker global scope. An MV3 extension background service worker
-	* has no `window`, but runs inside a `WorkerGlobalScope` that exposes a
-	* `WorkerNavigator` as `self.navigator` with the `onLine`/`userAgent` properties
-	* our heuristics rely on.
-	*
-	* We intentionally gate the worker fallback on a real `WorkerGlobalScope` rather than
-	* accepting any global `navigator`. Modern Node exposes `globalThis.navigator`, so a
-	* blanket global-navigator check would make Node SSR look like a browser; requiring a
-	* `WorkerGlobalScope` keeps SSR returning `null`.
-	*
-	* @returns
-	*/
-	function getNavigator() {
-		if (typeof window !== "undefined" && window.navigator) return window.navigator;
-		const workerScope = globalThis;
-		if (typeof workerScope.WorkerGlobalScope === "function" && workerScope.self instanceof workerScope.WorkerGlobalScope && workerScope.self.navigator && !serverRuntimeUserAgentRegex.test(workerScope.self.navigator.userAgent ?? "")) return workerScope.self.navigator;
-		return null;
-	}
-	/**
-	* Checks if the current environment is a browser and the user agent is not a bot.
-	*
-	* @returns
-	*/
-	function isValidBrowser() {
-		const navigator = getNavigator();
-		if (!navigator) return false;
-		return !userAgentIsRobot(navigator?.userAgent) && !navigator?.webdriver;
-	}
-	/**
-	* Checks if the current environment is a browser and if the navigator is online.
-	*
-	* @returns
-	*/
-	function isBrowserOnline() {
-		const navigator = getNavigator();
-		if (!navigator) return false;
-		if (typeof navigator.onLine !== "boolean") return true;
-		return !!navigator.onLine;
-	}
-	/**
-	* Runs `isBrowserOnline` and `isValidBrowser` to check if the current environment is a valid browser and if the navigator is online.
-	*
-	* @returns
-	*/
-	function isValidBrowserOnline() {
-		return isBrowserOnline() && isValidBrowser();
-	}
-	//#endregion
-	//#region ../shared/src/network.ts
-	let nativeNetwork;
-	/** Internal mobile host integration. Unknown connectivity should attempt HTTP. */
-	function setNativeNetworkEnvironment(environment) {
-		nativeNetwork = environment;
-		return () => {
-			if (nativeNetwork === environment) nativeNetwork = void 0;
-		};
-	}
-	function isNetworkOnline() {
-		return nativeNetwork ? nativeNetwork.isOnline() : isBrowserOnline();
-	}
-	function isValidNetworkEnvironment() {
-		return nativeNetwork ? nativeNetwork.isOnline() : isValidBrowserOnline();
-	}
-	/** Undefined preserves browser and non-mobile behavior. */
-	function isNativeApplicationActive() {
-		return nativeNetwork?.isActive?.();
-	}
-	//#endregion
-	//#region ../shared/src/mobile.ts
-	function installMobileCredentialTransport(core, storage, headers = {}, options = {}) {
-		let generation = 0;
-		let disposed = false;
-		let writes = Promise.resolve();
-		const requests = /* @__PURE__ */ new WeakMap();
-		const assertCurrent = (expected) => {
-			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
-		};
-		core.__internal_onBeforeRequest(async (request) => {
-			const current = generation;
-			requests.set(request, current);
-			await writes;
-			assertCurrent(current);
-			const credential = await storage.read();
-			assertCurrent(current);
-			request.credentials = "omit";
-			request.url?.searchParams.set("_is_native", "1");
-			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
-			requestHeaders.set("authorization", credential || "");
-			if (options.native !== false) requestHeaders.set("x-mobile", "1");
-			for (const [key, value] of Object.entries(headers)) requestHeaders.set(key, value);
-			request.headers = requestHeaders;
-		});
-		core.__internal_onAfterResponse(async (request, response) => {
-			if (!response) return;
-			const current = requests.get(request);
-			if (current === void 0) throw new Error("Missing mobile request generation.");
-			assertCurrent(current);
-			const credential = response.headers.get("authorization");
-			if (credential) {
-				const write = writes.then(async () => {
-					assertCurrent(current);
-					await storage.write(credential);
-				});
-				writes = write.catch(() => void 0);
-				await write;
-			}
-			assertCurrent(current);
-		});
-		return {
-			async invalidate({ clearCredential = false } = {}) {
-				++generation;
-				if (clearCredential) {
-					const remove = writes.then(() => storage.remove());
-					writes = remove.catch(() => void 0);
-					await remove;
-				} else await writes;
-			},
-			dispose() {
-				disposed = true;
-				++generation;
-			}
-		};
-	}
-	//#endregion
-	//#region ../shared/src/eventBus.ts
-	/**
-	* @internal
-	*/
-	const _on = (eventToHandlersMap, latestPayloadMap, event, handler, opts) => {
-		const { notify } = opts || {};
-		let handlers = eventToHandlersMap.get(event);
-		if (!handlers) {
-			handlers = [];
-			eventToHandlersMap.set(event, handlers);
-		}
-		handlers.push(handler);
-		if (notify && latestPayloadMap.has(event)) handler(latestPayloadMap.get(event));
-	};
-	/**
-	* @internal
-	*/
-	const _dispatch = (eventToHandlersMap, event, payload) => (eventToHandlersMap.get(event) || []).map((h) => h(payload));
-	/**
-	* @internal
-	*/
-	const _off = (eventToHandlersMap, event, handler) => {
-		const handlers = eventToHandlersMap.get(event);
-		if (handlers) if (handler) handlers.splice(handlers.indexOf(handler) >>> 0, 1);
-		else eventToHandlersMap.set(event, []);
-	};
-	/**
-	* A ES6/2015 compatible 300 byte event bus
-	*
-	* Creates a strongly-typed event bus that enables publish/subscribe communication between components.
-	*
-	* @template Events - A record type that maps event names to their payload types
-	*
-	* @returns An EventBus instance with the following methods:
-	* - `on`: Subscribe to an event
-	* - `onPreDispatch`: Subscribe to an event, triggered before regular subscribers
-	* - `emit`: Publish an event with payload
-	* - `off`: Unsubscribe from an event
-	* - `offPreDispatch`: Unsubscribe from a pre-dispatch event
-	*
-	* @example
-	* // Define event types
-	* const eventBus = createEventBus<{
-	*   'user-login': { userId: string; timestamp: number };
-	*   'data-updated': { records: any[] };
-	*   'error': Error;
-	* }>();
-	*
-	* // Subscribe to events
-	* eventBus.on('user-login', ({ userId, timestamp }) => {
-	*   console.log(`User ${userId} logged in at ${timestamp}`);
-	* });
-	*
-	* // Subscribe with immediate notification if event was already dispatched
-	* eventBus.on('user-login', (payload) => {
-	*   // This will be called immediately if 'user-login' was previously dispatched
-	* }, { notify: true });
-	*
-	* // Publish an event
-	* eventBus.emit('user-login', { userId: 'abc123', timestamp: Date.now() });
-	*
-	* // Unsubscribe from event
-	* const handler = (payload) => console.log(payload);
-	* eventBus.on('error', handler);
-	* // Later...
-	* eventBus.off('error', handler);
-	*
-	* // Unsubscribe all handlers for an event
-	* eventBus.off('data-updated');
-	*/
-	const createEventBus = () => {
-		const eventToHandlersMap = /* @__PURE__ */ new Map();
-		const latestPayloadMap = /* @__PURE__ */ new Map();
-		const eventToPredispatchHandlersMap = /* @__PURE__ */ new Map();
-		const emit = (event, payload) => {
-			latestPayloadMap.set(event, payload);
-			_dispatch(eventToPredispatchHandlersMap, event, payload);
-			_dispatch(eventToHandlersMap, event, payload);
-		};
-		return {
-			on: (...args) => _on(eventToHandlersMap, latestPayloadMap, ...args),
-			prioritizedOn: (...args) => _on(eventToPredispatchHandlersMap, latestPayloadMap, ...args),
-			emit,
-			off: (...args) => _off(eventToHandlersMap, ...args),
-			prioritizedOff: (...args) => _off(eventToPredispatchHandlersMap, ...args),
-			internal: { retrieveListeners: (event) => eventToHandlersMap.get(event) || [] }
-		};
-	};
-	//#endregion
-	//#region ../clerk-js/src/core/events.ts
-	const events = {
-		TokenUpdate: "token:update",
-		UserSignOut: "user:signOut",
-		EnvironmentUpdate: "environment:update",
-		SessionTokenResolved: "session:tokenResolved",
-		ResourceUpdate: "resource:update",
-		ResourceError: "resource:error",
-		ResourceFetch: "resource:fetch"
-	};
-	const eventBus = createEventBus();
-	//#endregion
 	//#region ../shared/src/errors/createErrorTypeGuard.ts
 	/**
 	* Creates a type guard function for any error class.
@@ -5320,6 +5035,134 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		};
 		for (const [name, fn] of Object.entries(predicates)) Object.assign(error, { [name]: fn });
 		return error;
+	}
+	//#endregion
+	//#region ../shared/src/browser.ts
+	/**
+	* Checks if the window object is defined. You can also use this to check if something is happening on the client side.
+	*
+	* @returns
+	*/
+	function inBrowser$1() {
+		return typeof window !== "undefined";
+	}
+	const botAgentRegex = new RegExp([
+		"bot",
+		"spider",
+		"crawl",
+		"APIs-Google",
+		"AdsBot",
+		"Googlebot",
+		"mediapartners",
+		"Google Favicon",
+		"FeedFetcher",
+		"Google-Read-Aloud",
+		"DuplexWeb-Google",
+		"googleweblight",
+		"bing",
+		"yandex",
+		"baidu",
+		"duckduck",
+		"yahoo",
+		"ecosia",
+		"ia_archiver",
+		"facebook",
+		"instagram",
+		"pinterest",
+		"reddit",
+		"slack",
+		"twitter",
+		"whatsapp",
+		"youtube",
+		"semrush"
+	].join("|"), "i");
+	/**
+	* Checks if the user agent is a bot.
+	*
+	* @param userAgent - Any user agent string
+	* @returns
+	*/
+	function userAgentIsRobot(userAgent) {
+		return !userAgent ? false : botAgentRegex.test(userAgent);
+	}
+	/**
+	* Server-side runtimes with worker-like globals self-identify in `navigator.userAgent`
+	* (`Cloudflare-Workers`, `Node.js/24`, `Deno/2.5.0`, `Bun/1.3.9`). Today workerd's `self`
+	* does not satisfy `instanceof WorkerGlobalScope` (even though it exposes the constructor),
+	* so the scope gate alone happens to exclude it, but that is an implementation detail of
+	* workerd's prototype chain, not a guarantee. Excluding self-identified server runtimes by
+	* user agent keeps these heuristics server-false even if such a runtime becomes fully
+	* spec-compliant about its worker scope.
+	*/
+	const serverRuntimeUserAgentRegex = /^(Cloudflare-Workers|Node\.js|Deno|Bun)\b/i;
+	/**
+	* Resolves the `Navigator` object from either the DOM `window` (standard browsers)
+	* or a Web/Service Worker global scope. An MV3 extension background service worker
+	* has no `window`, but runs inside a `WorkerGlobalScope` that exposes a
+	* `WorkerNavigator` as `self.navigator` with the `onLine`/`userAgent` properties
+	* our heuristics rely on.
+	*
+	* We intentionally gate the worker fallback on a real `WorkerGlobalScope` rather than
+	* accepting any global `navigator`. Modern Node exposes `globalThis.navigator`, so a
+	* blanket global-navigator check would make Node SSR look like a browser; requiring a
+	* `WorkerGlobalScope` keeps SSR returning `null`.
+	*
+	* @returns
+	*/
+	function getNavigator() {
+		if (typeof window !== "undefined" && window.navigator) return window.navigator;
+		const workerScope = globalThis;
+		if (typeof workerScope.WorkerGlobalScope === "function" && workerScope.self instanceof workerScope.WorkerGlobalScope && workerScope.self.navigator && !serverRuntimeUserAgentRegex.test(workerScope.self.navigator.userAgent ?? "")) return workerScope.self.navigator;
+		return null;
+	}
+	/**
+	* Checks if the current environment is a browser and the user agent is not a bot.
+	*
+	* @returns
+	*/
+	function isValidBrowser() {
+		const navigator = getNavigator();
+		if (!navigator) return false;
+		return !userAgentIsRobot(navigator?.userAgent) && !navigator?.webdriver;
+	}
+	/**
+	* Checks if the current environment is a browser and if the navigator is online.
+	*
+	* @returns
+	*/
+	function isBrowserOnline() {
+		const navigator = getNavigator();
+		if (!navigator) return false;
+		if (typeof navigator.onLine !== "boolean") return true;
+		return !!navigator.onLine;
+	}
+	/**
+	* Runs `isBrowserOnline` and `isValidBrowser` to check if the current environment is a valid browser and if the navigator is online.
+	*
+	* @returns
+	*/
+	function isValidBrowserOnline() {
+		return isBrowserOnline() && isValidBrowser();
+	}
+	//#endregion
+	//#region ../shared/src/network.ts
+	let nativeNetwork;
+	/** Internal mobile host integration. Unknown connectivity should attempt HTTP. */
+	function setNativeNetworkEnvironment(environment) {
+		nativeNetwork = environment;
+		return () => {
+			if (nativeNetwork === environment) nativeNetwork = void 0;
+		};
+	}
+	function isNetworkOnline() {
+		return nativeNetwork ? nativeNetwork.isOnline() : isBrowserOnline();
+	}
+	function isValidNetworkEnvironment() {
+		return nativeNetwork ? nativeNetwork.isOnline() : isValidBrowserOnline();
+	}
+	/** Undefined preserves browser and non-mobile behavior. */
+	function isNativeApplicationActive() {
+		return nativeNetwork?.isActive?.();
 	}
 	//#endregion
 	//#region ../shared/src/constants.ts
@@ -9873,6 +9716,107 @@ isDevOrStagingUrl: (url) => {
 			return new DeletedObject(json);
 		}
 	};
+	//#endregion
+	//#region ../shared/src/eventBus.ts
+	/**
+	* @internal
+	*/
+	const _on = (eventToHandlersMap, latestPayloadMap, event, handler, opts) => {
+		const { notify } = opts || {};
+		let handlers = eventToHandlersMap.get(event);
+		if (!handlers) {
+			handlers = [];
+			eventToHandlersMap.set(event, handlers);
+		}
+		handlers.push(handler);
+		if (notify && latestPayloadMap.has(event)) handler(latestPayloadMap.get(event));
+	};
+	/**
+	* @internal
+	*/
+	const _dispatch = (eventToHandlersMap, event, payload) => (eventToHandlersMap.get(event) || []).map((h) => h(payload));
+	/**
+	* @internal
+	*/
+	const _off = (eventToHandlersMap, event, handler) => {
+		const handlers = eventToHandlersMap.get(event);
+		if (handlers) if (handler) handlers.splice(handlers.indexOf(handler) >>> 0, 1);
+		else eventToHandlersMap.set(event, []);
+	};
+	/**
+	* A ES6/2015 compatible 300 byte event bus
+	*
+	* Creates a strongly-typed event bus that enables publish/subscribe communication between components.
+	*
+	* @template Events - A record type that maps event names to their payload types
+	*
+	* @returns An EventBus instance with the following methods:
+	* - `on`: Subscribe to an event
+	* - `onPreDispatch`: Subscribe to an event, triggered before regular subscribers
+	* - `emit`: Publish an event with payload
+	* - `off`: Unsubscribe from an event
+	* - `offPreDispatch`: Unsubscribe from a pre-dispatch event
+	*
+	* @example
+	* // Define event types
+	* const eventBus = createEventBus<{
+	*   'user-login': { userId: string; timestamp: number };
+	*   'data-updated': { records: any[] };
+	*   'error': Error;
+	* }>();
+	*
+	* // Subscribe to events
+	* eventBus.on('user-login', ({ userId, timestamp }) => {
+	*   console.log(`User ${userId} logged in at ${timestamp}`);
+	* });
+	*
+	* // Subscribe with immediate notification if event was already dispatched
+	* eventBus.on('user-login', (payload) => {
+	*   // This will be called immediately if 'user-login' was previously dispatched
+	* }, { notify: true });
+	*
+	* // Publish an event
+	* eventBus.emit('user-login', { userId: 'abc123', timestamp: Date.now() });
+	*
+	* // Unsubscribe from event
+	* const handler = (payload) => console.log(payload);
+	* eventBus.on('error', handler);
+	* // Later...
+	* eventBus.off('error', handler);
+	*
+	* // Unsubscribe all handlers for an event
+	* eventBus.off('data-updated');
+	*/
+	const createEventBus = () => {
+		const eventToHandlersMap = /* @__PURE__ */ new Map();
+		const latestPayloadMap = /* @__PURE__ */ new Map();
+		const eventToPredispatchHandlersMap = /* @__PURE__ */ new Map();
+		const emit = (event, payload) => {
+			latestPayloadMap.set(event, payload);
+			_dispatch(eventToPredispatchHandlersMap, event, payload);
+			_dispatch(eventToHandlersMap, event, payload);
+		};
+		return {
+			on: (...args) => _on(eventToHandlersMap, latestPayloadMap, ...args),
+			prioritizedOn: (...args) => _on(eventToPredispatchHandlersMap, latestPayloadMap, ...args),
+			emit,
+			off: (...args) => _off(eventToHandlersMap, ...args),
+			prioritizedOff: (...args) => _off(eventToPredispatchHandlersMap, ...args),
+			internal: { retrieveListeners: (event) => eventToHandlersMap.get(event) || [] }
+		};
+	};
+	//#endregion
+	//#region ../clerk-js/src/core/events.ts
+	const events = {
+		TokenUpdate: "token:update",
+		UserSignOut: "user:signOut",
+		EnvironmentUpdate: "environment:update",
+		SessionTokenResolved: "session:tokenResolved",
+		ResourceUpdate: "resource:update",
+		ResourceError: "resource:error",
+		ResourceFetch: "resource:fetch"
+	};
+	const eventBus = createEventBus();
 	//#endregion
 	//#region ../shared/src/workerTimers/workerTimers.built.ts
 	/**
@@ -14946,8 +14890,9 @@ isDevOrStagingUrl: (url) => {
 					emailAddressId
 				});
 				if (!emailLinkFactor) throw new ClerkRuntimeError("Email link factor not found", { code: "factor_not_found" });
+				const nativeParams = await SignIn.clerk.__internal_nativeMagicLink?.prepare("signIn", this.#resource.id);
 				let absoluteVerificationUrl = verificationUrl;
-				try {
+				if (!nativeParams) try {
 					new URL(verificationUrl);
 				} catch {
 					absoluteVerificationUrl = window.location.origin + verificationUrl;
@@ -14955,7 +14900,7 @@ isDevOrStagingUrl: (url) => {
 				await this.#resource.__internal_basePost({
 					body: {
 						emailAddressId: emailLinkFactor.emailAddressId,
-						redirectUrl: absoluteVerificationUrl,
+						...nativeParams ?? { redirectUrl: absoluteVerificationUrl },
 						strategy: "email_link"
 					},
 					action: "prepare_first_factor",
@@ -16019,8 +15964,9 @@ isDevOrStagingUrl: (url) => {
 		async sendEmailLink(params) {
 			const { verificationUrl } = params;
 			return runAsyncResourceTask(this.#resource, async () => {
+				const nativeParams = await SignUp.clerk.__internal_nativeMagicLink?.prepare("signUp", this.#resource.id);
 				let absoluteVerificationUrl = verificationUrl;
-				try {
+				if (!nativeParams) try {
 					new URL(verificationUrl);
 				} catch {
 					absoluteVerificationUrl = window.location.origin + verificationUrl;
@@ -16028,7 +15974,7 @@ isDevOrStagingUrl: (url) => {
 				await this.#resource.__internal_basePost({
 					body: {
 						strategy: "email_link",
-						redirectUrl: absoluteVerificationUrl
+						...nativeParams ?? { redirectUrl: absoluteVerificationUrl }
 					},
 					action: "prepare_verification",
 					coalesce: true
@@ -17118,6 +17064,238 @@ isDevOrStagingUrl: (url) => {
 			}));
 		}
 	};
+	//#endregion
+	//#region ../clerk-js/src/utils/NativeMagicLink.ts
+	const terminalCodes = new Set([
+		"approval_token_consumed",
+		"approval_token_expired",
+		"approval_token_invalid",
+		"pkce_verification_failed",
+		"flow_not_approved"
+	]);
+	const fail = (code) => new ClerkRuntimeError("The email link could not be completed.", { code });
+	var NativeMagicLink = class {
+		#generation;
+		#callbackSequence;
+		#writes;
+		#callbacks;
+		constructor(clerk, callbackUrl, storage, digest, attestation) {
+			this.clerk = clerk;
+			this.callbackUrl = callbackUrl;
+			this.storage = storage;
+			this.digest = digest;
+			this.attestation = attestation;
+			this.authCallback = null;
+			this.#generation = 0;
+			this.#callbackSequence = 0;
+			this.#writes = Promise.resolve();
+			this.#callbacks = /* @__PURE__ */ new Map();
+		}
+		async prepare(kind, flowId) {
+			if (!this.storage) throw fail("capability_unavailable:authStorage");
+			if (!flowId) throw fail("missing_email_link_attempt");
+			const generation = ++this.#generation;
+			this.authCallback = null;
+			const bytes = crypto.getRandomValues(new Uint8Array(32));
+			const verifier = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+			const challenge = await this.digest(verifier);
+			this.assertCurrent(generation);
+			if (!/^[A-Za-z0-9_-]{43}$/.test(challenge)) throw fail("invalid_digest_result");
+			const createdAt = Date.now();
+			const flow = {
+				schemaVersion: 1,
+				kind,
+				flowId,
+				codeVerifier: verifier,
+				createdAt,
+				expiresAt: createdAt + 6e5
+			};
+			await this.serialized(async () => {
+				this.assertCurrent(generation);
+				await this.requireStorage().write(JSON.stringify(flow));
+			});
+			this.assertCurrent(generation);
+			return {
+				redirect_uri: this.callbackUrl,
+				code_challenge: challenge,
+				code_challenge_method: "S256"
+			};
+		}
+		async handle(url) {
+			const expected = new URL(this.callbackUrl);
+			if (url.protocol !== expected.protocol || url.host !== expected.host || url.pathname !== expected.pathname || url.username !== expected.username || url.password !== expected.password || Array.from(expected.searchParams).some(([key, value]) => url.searchParams.get(key) !== value)) return null;
+			if (!url.searchParams.has("flow_id") || !url.searchParams.has("approval_token")) return null;
+			const flowId = url.searchParams.get("flow_id")?.trim();
+			const approvalToken = url.searchParams.get("approval_token")?.trim();
+			if (!flowId || !approvalToken) throw fail("invalid_email_link_callback");
+			const key = JSON.stringify([flowId, approvalToken]);
+			const existing = this.#callbacks.get(key);
+			if (existing) return existing;
+			const pending = this.complete(flowId, approvalToken);
+			this.#callbacks.set(key, pending);
+			try {
+				return await pending;
+			} finally {
+				if (this.#callbacks.get(key) === pending) this.#callbacks.delete(key);
+			}
+		}
+		clearCallback(id) {
+			if (this.authCallback?.id === id) this.authCallback = null;
+		}
+		async reset() {
+			++this.#generation;
+			this.authCallback = null;
+			if (this.storage) await this.serialized(() => this.requireStorage().remove());
+		}
+		async complete(flowId, approvalToken) {
+			if (!this.storage) throw fail("capability_unavailable:authStorage");
+			const generation = this.#generation;
+			const flow = await this.serialized(() => this.read());
+			this.assertCurrent(generation);
+			if (!flow) throw fail("no_pending_email_link");
+			if (flow.flowId !== flowId) throw fail("email_link_flow_mismatch");
+			let response;
+			try {
+				const attestation = await this.attestation?.();
+				this.assertCurrent(generation);
+				response = (await BaseResource._fetch({
+					method: "POST",
+					path: "/client/magic_links/complete",
+					body: {
+						flow_id: flowId,
+						approval_token: approvalToken,
+						code_verifier: flow.codeVerifier,
+						...attestation ? { attestation } : {}
+					}
+				}))?.response;
+			} catch (error) {
+				if (isClerkAPIResponseError(error) && error.errors.some(({ code, meta }) => terminalCodes.has(code) || code === "form_param_value_invalid" && meta?.paramName === "flow_id")) await this.clearStored(flow);
+				throw error;
+			}
+			this.assertCurrent(generation);
+			await this.clearStored(flow);
+			this.assertCurrent(generation);
+			if (!response || typeof response !== "object") throw fail("invalid_email_link_response");
+			let result;
+			if (flow.kind === "signIn") {
+				if (!("ticket" in response) || typeof response.ticket !== "string" || !response.ticket) throw fail("invalid_email_link_response");
+				const signIn = this.clerk.client?.signIn.__internal_future;
+				if (!signIn) throw fail("clerk_not_loaded");
+				const { error } = await signIn.ticket({ ticket: response.ticket });
+				if (error) throw error;
+				result = {
+					kind: "signIn",
+					signIn
+				};
+			} else {
+				if (!("object" in response) || response.object !== "sign_up" || response.id !== flow.flowId) throw fail("invalid_email_link_response");
+				const signUp = this.clerk.client?.signUp;
+				if (!(signUp instanceof SignUp)) throw fail("clerk_not_loaded");
+				signUp.__internal_updateFromJSON(response);
+				result = {
+					kind: "signUp",
+					signUp: signUp.__internal_future
+				};
+			}
+			this.assertCurrent(generation);
+			this.authCallback = {
+				id: ++this.#callbackSequence,
+				result
+			};
+			return result;
+		}
+		async read() {
+			const raw = await this.requireStorage().read();
+			if (!raw) return;
+			try {
+				const value = JSON.parse(raw);
+				const flow = {
+					schemaVersion: 1,
+					kind: value.kind ?? (value.state === "SIGN_UP" ? "signUp" : "signIn"),
+					flowId: value.flowId ?? value.flow_id,
+					codeVerifier: value.codeVerifier ?? value.code_verifier,
+					createdAt: value.createdAt ?? value.created_at ?? value.createdAtEpochMs,
+					expiresAt: value.expiresAt ?? value.expires_at ?? value.expiresAtEpochMs
+				};
+				if ((value.schemaVersion === void 0 || value.schemaVersion === 1) && ["signIn", "signUp"].includes(flow.kind) && typeof flow.flowId === "string" && flow.flowId && typeof flow.codeVerifier === "string" && /^[A-Za-z0-9_-]{43,128}$/.test(flow.codeVerifier) && Number.isFinite(flow.createdAt) && Number.isFinite(flow.expiresAt) && flow.expiresAt > Date.now()) return flow;
+			} catch {}
+			await this.requireStorage().remove();
+		}
+		async clearStored(flow) {
+			await this.serialized(async () => {
+				const current = await this.read();
+				if (current?.codeVerifier === flow.codeVerifier && current.flowId === flow.flowId) await this.requireStorage().remove();
+			});
+		}
+		requireStorage() {
+			if (!this.storage) throw fail("capability_unavailable:authStorage");
+			return this.storage;
+		}
+		serialized(operation) {
+			const result = this.#writes.then(operation);
+			this.#writes = result.catch(() => void 0);
+			return result;
+		}
+		assertCurrent(generation) {
+			if (generation !== this.#generation) throw fail("stale_authentication_attempt");
+		}
+	};
+	//#endregion
+	//#region ../shared/src/mobile.ts
+	function installMobileCredentialTransport(core, storage, headers = {}, options = {}) {
+		let generation = 0;
+		let disposed = false;
+		let writes = Promise.resolve();
+		const requests = /* @__PURE__ */ new WeakMap();
+		const assertCurrent = (expected) => {
+			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
+		};
+		core.__internal_onBeforeRequest(async (request) => {
+			const current = generation;
+			requests.set(request, current);
+			await writes;
+			assertCurrent(current);
+			const credential = await storage.read();
+			assertCurrent(current);
+			request.credentials = "omit";
+			request.url?.searchParams.set("_is_native", "1");
+			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
+			requestHeaders.set("authorization", credential || "");
+			if (options.native !== false) requestHeaders.set("x-mobile", "1");
+			for (const [key, value] of Object.entries(headers)) requestHeaders.set(key, value);
+			request.headers = requestHeaders;
+		});
+		core.__internal_onAfterResponse(async (request, response) => {
+			if (!response) return;
+			const current = requests.get(request);
+			if (current === void 0) throw new Error("Missing mobile request generation.");
+			assertCurrent(current);
+			const credential = response.headers.get("authorization");
+			if (credential) {
+				const write = writes.then(async () => {
+					assertCurrent(current);
+					await storage.write(credential);
+				});
+				writes = write.catch(() => void 0);
+				await write;
+			}
+			assertCurrent(current);
+		});
+		return {
+			async invalidate({ clearCredential = false } = {}) {
+				++generation;
+				if (clearCredential) {
+					const remove = writes.then(() => storage.remove());
+					writes = remove.catch(() => void 0);
+					await remove;
+				} else await writes;
+			},
+			dispose() {
+				disposed = true;
+				++generation;
+			}
+		};
+	}
 	//#endregion
 	//#region ../clerk-js/src/utils/authenticateWithMobileSSO.ts
 	async function authenticateWithMobileSSO(clerk, params) {
@@ -24333,6 +24511,14 @@ isDevOrStagingUrl: (url) => {
 			this.__internal_getMobileResources = () => {
 				if (!this.client || !this.environment) throw new Error("Clerk must be loaded before attaching native resources.");
 				return {
+					authCallback: this.__internal_nativeMagicLink?.authCallback ?? null,
+					handleAuthCallback: async (url) => {
+						if (!this.__internal_nativeMagicLink) throw new ClerkRuntimeError("Native email links are unavailable.", { code: "capability_unavailable" });
+						return this.__internal_nativeMagicLink.handle(url);
+					},
+					clearAuthCallback: async (id) => {
+						this.__internal_nativeMagicLink?.clearCallback(id);
+					},
 					authenticateWithSSO: (params) => authenticateWithMobileSSO(this, params),
 					signIn: this.client.signIn.__internal_future,
 					signUp: this.client.signUp.__internal_future,
@@ -24921,6 +25107,11 @@ isDevOrStagingUrl: (url) => {
 	}
 	function publicCore(clerk, beforeSignOut) {
 		return {
+			get authCallback() {
+				return mobileResources(clerk).authCallback;
+			},
+			handleAuthCallback: (url) => mobileResources(clerk).handleAuthCallback(url),
+			clearAuthCallback: (id) => mobileResources(clerk).clearAuthCallback(id),
 			get telemetry() {
 				return mobileResources(clerk).telemetry;
 			},
@@ -24996,6 +25187,34 @@ isDevOrStagingUrl: (url) => {
 				"name": "Organization"
 			},
 			invoke: (target, args) => target["getOrganization"](...args)
+		},
+		"Clerk.handleAuthCallback": {
+			type: "Clerk",
+			parameters: [{
+				"name": "url",
+				"optional": false,
+				"type": { "kind": "url" }
+			}],
+			result: {
+				"kind": "optional",
+				"nullable": true,
+				"omittable": false,
+				"value": {
+					"kind": "ref",
+					"name": "MobileAuthenticationResult"
+				}
+			},
+			invoke: (target, args) => target["handleAuthCallback"](...args)
+		},
+		"Clerk.clearAuthCallback": {
+			type: "Clerk",
+			parameters: [{
+				"name": "id",
+				"optional": false,
+				"type": { "kind": "number" }
+			}],
+			result: { "kind": "void" },
+			invoke: (target, args) => target["clearAuthCallback"](...args)
 		},
 		"Clerk.authenticateWithSSO": {
 			type: "Clerk",
@@ -28245,6 +28464,19 @@ isDevOrStagingUrl: (url) => {
 						"value": {
 							"kind": "ref",
 							"name": "Organization"
+						}
+					}
+				},
+				{
+					"name": "authCallback",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": {
+							"kind": "ref",
+							"name": "MobileAuthCallback"
 						}
 					}
 				},
@@ -36608,164 +36840,21 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"MobileSSOParams": {
-			"name": "MobileSSOParams",
+		"MobileAuthCallback": {
+			"name": "MobileAuthCallback",
 			"kind": "object",
-			"properties": [
-				{
-					"name": "strategy",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "MobileSSOParamsStrategy"
-					}
-				},
-				{
-					"name": "identifier",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "enterpriseConnectionId",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "oidcPrompt",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "legalAccepted",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "boolean" }
-					}
-				},
-				{
-					"name": "firstName",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "lastName",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "locale",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "unsafeMetadata",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "jsonObject" }
-					}
-				},
-				{
-					"name": "start",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "MobileSSOParamsStart"
-					}
-				},
-				{
-					"name": "transferable",
-					"optional": false,
-					"type": { "kind": "boolean" }
+			"properties": [{
+				"name": "id",
+				"optional": false,
+				"type": { "kind": "number" }
+			}, {
+				"name": "result",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "MobileAuthenticationResult"
 				}
-			]
-		},
-		"MobileSSOParamsStrategy": {
-			"name": "MobileSSOParamsStrategy",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"oauth_token_apple",
-				"enterprise_sso",
-				"oauth_facebook",
-				"oauth_google",
-				"oauth_hubspot",
-				"oauth_github",
-				"oauth_tiktok",
-				"oauth_gitlab",
-				"oauth_discord",
-				"oauth_twitter",
-				"oauth_twitch",
-				"oauth_linkedin",
-				"oauth_linkedin_oidc",
-				"oauth_dropbox",
-				"oauth_atlassian",
-				"oauth_bitbucket",
-				"oauth_microsoft",
-				"oauth_notion",
-				"oauth_apple",
-				"oauth_line",
-				"oauth_instagram",
-				"oauth_coinbase",
-				"oauth_spotify",
-				"oauth_xero",
-				"oauth_box",
-				"oauth_slack",
-				"oauth_linear",
-				"oauth_x",
-				"oauth_enstall",
-				"oauth_huggingface",
-				"oauth_vercel"
-			],
-			"open": false,
-			"patterns": ["^oauth_custom_.*$"]
-		},
-		"MobileSSOParamsStart": {
-			"name": "MobileSSOParamsStart",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"signUp",
-				"signIn",
-				"auto"
-			],
-			"open": false,
-			"patterns": []
+			}]
 		},
 		"MobileAuthenticationResult": {
 			"name": "MobileAuthenticationResult",
@@ -36773,14 +36862,14 @@ isDevOrStagingUrl: (url) => {
 			"properties": [],
 			"variants": [{
 				"kind": "ref",
-				"name": "ClerkAuthenticateWithSSOResultCase1"
+				"name": "MobileAuthCallbackResultCase1"
 			}, {
 				"kind": "ref",
-				"name": "ClerkAuthenticateWithSSOResultCase2"
+				"name": "MobileAuthCallbackResultCase2"
 			}]
 		},
-		"ClerkAuthenticateWithSSOResultCase1": {
-			"name": "ClerkAuthenticateWithSSOResultCase1",
+		"MobileAuthCallbackResultCase1": {
+			"name": "MobileAuthCallbackResultCase1",
 			"kind": "object",
 			"properties": [{
 				"name": "kind",
@@ -37684,54 +37773,38 @@ isDevOrStagingUrl: (url) => {
 		"SignInEmailLinkSendLinkParamsCase1": {
 			"name": "SignInEmailLinkSendLinkParamsCase1",
 			"kind": "object",
-			"properties": [
-				{
-					"name": "verificationUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "emailAddress",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "emailAddressId",
-					"optional": true,
-					"type": { "kind": "undefined" }
+			"properties": [{
+				"name": "emailAddress",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
 				}
-			]
+			}, {
+				"name": "emailAddressId",
+				"optional": true,
+				"type": { "kind": "undefined" }
+			}]
 		},
 		"SignInEmailLinkSendLinkParamsCase2": {
 			"name": "SignInEmailLinkSendLinkParamsCase2",
 			"kind": "object",
-			"properties": [
-				{
-					"name": "verificationUrl",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "emailAddressId",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "emailAddress",
-					"optional": true,
-					"type": { "kind": "undefined" }
+			"properties": [{
+				"name": "emailAddressId",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
 				}
-			]
+			}, {
+				"name": "emailAddress",
+				"optional": true,
+				"type": { "kind": "undefined" }
+			}]
 		},
 		"SignInEmailLinkVerification": {
 			"name": "SignInEmailLinkVerification",
@@ -37919,7 +37992,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "MobileSSOParamsStrategy"
+						"name": "SignInSSOParamsStrategy"
 					}
 				},
 				{
@@ -37953,6 +38026,46 @@ isDevOrStagingUrl: (url) => {
 					}
 				}
 			]
+		},
+		"SignInSSOParamsStrategy": {
+			"name": "SignInSSOParamsStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"oauth_token_apple",
+				"enterprise_sso",
+				"oauth_facebook",
+				"oauth_google",
+				"oauth_hubspot",
+				"oauth_github",
+				"oauth_tiktok",
+				"oauth_gitlab",
+				"oauth_discord",
+				"oauth_twitter",
+				"oauth_twitch",
+				"oauth_linkedin",
+				"oauth_linkedin_oidc",
+				"oauth_dropbox",
+				"oauth_atlassian",
+				"oauth_bitbucket",
+				"oauth_microsoft",
+				"oauth_notion",
+				"oauth_apple",
+				"oauth_line",
+				"oauth_instagram",
+				"oauth_coinbase",
+				"oauth_spotify",
+				"oauth_xero",
+				"oauth_box",
+				"oauth_slack",
+				"oauth_linear",
+				"oauth_x",
+				"oauth_enstall",
+				"oauth_huggingface",
+				"oauth_vercel"
+			],
+			"open": false,
+			"patterns": ["^oauth_custom_.*$"]
 		},
 		"SignInMfa": {
 			"name": "SignInMfa",
@@ -38047,8 +38160,8 @@ isDevOrStagingUrl: (url) => {
 				"type": { "kind": "string" }
 			}]
 		},
-		"ClerkAuthenticateWithSSOResultCase2": {
-			"name": "ClerkAuthenticateWithSSOResultCase2",
+		"MobileAuthCallbackResultCase2": {
+			"name": "MobileAuthCallbackResultCase2",
 			"kind": "object",
 			"properties": [{
 				"name": "kind",
@@ -38885,11 +38998,7 @@ isDevOrStagingUrl: (url) => {
 		"SignUpEmailLinkSendParams": {
 			"name": "SignUpEmailLinkSendParams",
 			"kind": "object",
-			"properties": [{
-				"name": "verificationUrl",
-				"optional": false,
-				"type": { "kind": "string" }
-			}]
+			"properties": []
 		},
 		"SignUpPhoneCodeSendParams": {
 			"name": "SignUpPhoneCodeSendParams",
@@ -39450,6 +39559,125 @@ isDevOrStagingUrl: (url) => {
 				"type": { "kind": "string" }
 			}]
 		},
+		"MobileSSOParams": {
+			"name": "MobileSSOParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "SignInSSOParamsStrategy"
+					}
+				},
+				{
+					"name": "identifier",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "enterpriseConnectionId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "oidcPrompt",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "legalAccepted",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
+				},
+				{
+					"name": "firstName",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "lastName",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "locale",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "unsafeMetadata",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "jsonObject" }
+					}
+				},
+				{
+					"name": "start",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "MobileSSOParamsStart"
+					}
+				},
+				{
+					"name": "transferable",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				}
+			]
+		},
+		"MobileSSOParamsStart": {
+			"name": "MobileSSOParamsStart",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"signUp",
+				"signIn",
+				"auto"
+			],
+			"open": false,
+			"patterns": []
+		},
 		"MobileSetActiveParams": {
 			"name": "MobileSetActiveParams",
 			"kind": "object",
@@ -39807,7 +40035,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "e390d86fcaf1054ac1a42aeeab9c1f8c6333d143b9b407de301b6037e7c77e4f",
+		"contractHash": "de318d17179d3c133b56f634c981ac2f7f090c3bb6a53051a195ca7a446f4268",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -40338,6 +40566,18 @@ isDevOrStagingUrl: (url) => {
 			if (!configuration.capabilities.includes("appleIdentity")) return Promise.reject(bridgeError("capability_unavailable"));
 			return hostRequest("appleIdentity", options);
 		};
+		const authStorageArgs = {
+			scope: configuration.publishableKey,
+			key: "magicLink"
+		};
+		clerk.__internal_nativeMagicLink = new NativeMagicLink(clerk, configuration.callbackUrl, configuration.capabilities.includes("authStorage") ? {
+			read: () => hostRequest("authStorage.read", authStorageArgs),
+			write: (value) => hostRequest("authStorage.write", {
+				...authStorageArgs,
+				value
+			}),
+			remove: () => hostRequest("authStorage.remove", authStorageArgs)
+		} : void 0, (value) => configuration.capabilities.includes("crypto.sha256") ? hostRequest("crypto.sha256", { value }) : Promise.reject(bridgeError("capability_unavailable:crypto.sha256")), configuration.capabilities.includes("magicLink.attestation") ? () => hostRequest("magicLink.attestation", {}) : void 0);
 		clerk.__internal_isWebAuthnSupported = () => configuration.capabilities.includes("passkeys");
 		clerk.__internal_isWebAuthnAutofillSupported = async () => configuration.capabilities.includes("passkeys.autofill");
 		clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = async () => configuration.capabilities.includes("passkeys");
@@ -40372,6 +40612,7 @@ isDevOrStagingUrl: (url) => {
 			]);
 			runtime?.invalidate("Clerk.signOut");
 			await mobile?.invalidate();
+			await clerk.__internal_nativeMagicLink?.reset();
 		});
 		runtime = new ResourceRuntime({
 			roots: () => ({
@@ -40391,6 +40632,7 @@ isDevOrStagingUrl: (url) => {
 						"appleIdentity"
 					]);
 					await mobile?.invalidate();
+					await clerk.__internal_nativeMagicLink?.reset();
 				}
 			}
 		});

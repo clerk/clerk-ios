@@ -26,7 +26,7 @@ struct EmailLinkVerificationView: View {
     case .signIn(let factor):
       factor.safeIdentifier
     case .signUp:
-      clerk.auth.currentSignUp?.emailAddress
+      clerk.signUp.emailAddress
     }
   }
 
@@ -89,7 +89,7 @@ extension EmailLinkVerificationView {
   }
 
   private var subtitleString: LocalizedStringKey {
-    if let appName = clerk.environment?.displayConfig.applicationName {
+    if case let appName = clerk.environment.displayConfig.applicationName, !appName.isEmpty {
       "to continue to \(appName)"
     } else {
       "to continue"
@@ -192,11 +192,11 @@ extension EmailLinkVerificationView {
   private func sendInitialLinkIfNeeded() async {
     let alreadySent: Bool = switch mode {
     case .signIn:
-      clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
-        && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
+      clerk.signIn.firstFactorVerification.strategy == "email_link"
+        && clerk.signIn.firstFactorVerification.status == .unverified
     case .signUp:
-      clerk.auth.currentSignUp?.emailVerification?.strategy == .emailLink
-        && clerk.auth.currentSignUp?.emailVerification?.status == .unverified
+      clerk.signUp.verifications.emailAddress.strategy == "email_link"
+        && clerk.signUp.verifications.emailAddress.status == .unverified
     }
 
     guard !alreadySent else {
@@ -214,20 +214,22 @@ extension EmailLinkVerificationView {
     do {
       switch mode {
       case .signIn(let factor):
-        guard let signIn = clerk.auth.currentSignIn else {
+        let signIn = clerk.signIn
+        guard signIn.id != nil else {
           deliveryState = .idle
           navigation.path = []
           return
         }
-        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        try await signIn.emailLink.sendLink(.case2(.init(emailAddressId: factor.emailAddressId)))
 
       case .signUp:
-        guard let signUp = clerk.auth.currentSignUp else {
+        let signUp = clerk.signUp
+        guard signUp.id != nil else {
           deliveryState = .idle
           navigation.path = []
           return
         }
-        try await signUp.sendEmailLink()
+        try await signUp.verifications.sendEmailLink(.init())
       }
       deliveryState = .sent
     } catch {
@@ -240,14 +242,14 @@ extension EmailLinkVerificationView {
   @MainActor
   private func openEmailApp() {
     guard let url = URL(string: "mailto:") else {
-      error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
+      error = PresentationError(message: "No email app is available on this device.", localizationBundle: .module)
       return
     }
 
     openURL(url) { accepted in
       if !accepted {
         Task { @MainActor in
-          error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
+          error = PresentationError(message: "No email app is available on this device.", localizationBundle: .module)
         }
       }
     }

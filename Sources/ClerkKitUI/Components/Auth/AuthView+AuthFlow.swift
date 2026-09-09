@@ -25,8 +25,8 @@ extension AuthView {
     let coordinatorOwnerId: UUID?
     let revision: UInt64?
     let sessionId: String?
-    let sessionStatus: Session.SessionStatus?
-    let pendingSessionTasks: [Session.Task]
+    let sessionStatus: SessionStatus?
+    let pendingSessionTasks: [SessionTaskKey]
   }
 
   var authFlowSnapshot: AuthFlowSnapshot? {
@@ -63,10 +63,8 @@ extension AuthView {
     switch result {
     case .signIn(let signIn):
       navigation.setToStepForStatus(signIn: signIn)
-      clerk.setCallbackContinuation(nil)
     case .signUp(let signUp):
       navigation.setToStepForStatus(signUp: signUp)
-      clerk.setCallbackContinuation(nil)
     }
   }
 
@@ -105,6 +103,7 @@ extension AuthView {
   }
 
   func reconcileAuthFlow() async {
+    clerk.reconcileAuthFlowPresentation()
     guard let owner = authFlowRegistration,
           let snapshot = clerk.authFlowSnapshot(for: owner)
     else {
@@ -168,8 +167,7 @@ extension AuthView {
       switch step {
       case .biometricCredentialEnrollment:
         guard let completion else { continue }
-        let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
-        _ = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint)
+        _ = try? await authState.refreshedEnvironment(for: clerk)
         guard !Task.isCancelled else { return }
 
         if await presentBiometricCredentialEnrollmentIfNeeded(
@@ -290,10 +288,10 @@ extension AuthView {
     after result: TransferFlowResult,
     sessionId: String
   ) -> BiometricCredentialEnrollmentContext? {
-    guard clerk.callbackContinuation == nil,
-          let nativeSettings = clerk.environment?.authConfig.nativeSettings,
+    guard clerk.authCallback.map({ !TransferFlowResult($0.result).needsContinuation }) ?? true,
+          let nativeSettings = clerk.environment.authConfig.nativeSettings,
           nativeSettings.apiEnabled,
-          nativeSettings.biometricSignInEnabled,
+          nativeSettings.trustedDeviceSignInEnabled,
           let session = clerk.session,
           session.id == sessionId,
           session.status.allowsBiometricCredentialEnrollment,

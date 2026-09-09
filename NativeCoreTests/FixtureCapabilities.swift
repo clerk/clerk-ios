@@ -1,11 +1,13 @@
+import CryptoKit
 import Foundation
 #if SWIFT_PACKAGE
 import ClerkKit
 #endif
 
 @MainActor final class FixtureCapabilities: NativeCapabilities {
-  let supported = ["http", "storage", "timer", "random", "browser", "appleIdentity", "passkeys"]
+  let supported = ["http", "storage", "timer", "random", "browser", "appleIdentity", "passkeys", "authStorage", "crypto.sha256"]
   let fixtures: [String: JSONValue]
+  var authRecord: String?
   var credential: String?
   var requests: [[String: JSONValue]] = []
   var browserCount = 0
@@ -23,6 +25,12 @@ import ClerkKit
 
   func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
     let args = try arguments.object()
+    if capability == "authStorage.read" { return authRecord.map(JSONValue.string) ?? .null }
+    if capability == "authStorage.write" { authRecord = try (args["value"] ?? .undefined).string(); return .null }
+    if capability == "authStorage.remove" { authRecord = nil; return .null }
+    if capability == "crypto.sha256" {
+      return try .string(Data(SHA256.hash(data: Data((args["value"] ?? .undefined).string().utf8))).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: ""))
+    }
     if capability == "storage.read" { return credential.map(JSONValue.string) ?? .null }
     if capability == "storage.write" { credential = try (args["value"] ?? .undefined).string(); return .null }
     if capability == "storage.remove" { credential = nil; return .null }
@@ -45,7 +53,12 @@ import ClerkKit
       return .object(["status": .number(422), "headers": .object([:]), "body": .string(body)])
     }
     var response: JSONValue
-    if url.path.hasSuffix("/environment") { response = fixtures["environment"]! }
+    if url.path.hasSuffix("/magic_links/complete") {
+      var signUp = try fixtures["signUp"]!.object()
+      signUp["status"] = .string("complete")
+      signUp["created_session_id"] = .string("sess_native")
+      response = .object(signUp)
+    } else if url.path.hasSuffix("/environment") { response = fixtures["environment"]! }
     else if url.path.hasSuffix("/client") {
       clientReads += 1
       response = fixtures[clientReads > 1 && !signedOut ? "authenticatedClient" : "client"]!

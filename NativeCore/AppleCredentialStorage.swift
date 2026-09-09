@@ -12,13 +12,16 @@ public struct LegacyKeychainConfiguration: Sendable {
 }
 
 public actor KeychainCredentialStorage: CredentialStorage {
+  public enum Purpose: String, Sendable { case client, magicLink }
+  private let purpose: Purpose
   private struct Record: Codable { let schemaVersion: Int; let credential: String? }
   private let service: String
   private let applicationIdentifier: String
   private let publishableKey: String
   private let frontendAPI: URL
   private let legacy: LegacyKeychainConfiguration
-  public init(publishableKey: String, frontendAPI: URL, applicationIdentifier: String = Bundle.main.bundleIdentifier ?? "Clerk", legacy: LegacyKeychainConfiguration = .init()) {
+  public init(publishableKey: String, frontendAPI: URL, applicationIdentifier: String = Bundle.main.bundleIdentifier ?? "Clerk", legacy: LegacyKeychainConfiguration = .init(), purpose: Purpose = .client) {
+    self.purpose = purpose
     self.publishableKey = publishableKey
     self.frontendAPI = frontendAPI
     self.applicationIdentifier = applicationIdentifier
@@ -28,7 +31,7 @@ public actor KeychainCredentialStorage: CredentialStorage {
 
   public func read() throws -> String? {
     try Task.checkCancellation()
-    if let data = try readItem(service: service, account: "client") {
+    if let data = try readItem(service: service, account: purpose.rawValue) {
       let record = try JSONDecoder().decode(Record.self, from: data)
       guard record.schemaVersion == 1 else { throw CoreError(code: "unsupported_credential_record") }
       return record.credential
@@ -50,7 +53,7 @@ public actor KeychainCredentialStorage: CredentialStorage {
 
   private func save(_ value: String?) throws {
     let data = try JSONEncoder().encode(Record(schemaVersion: 1, credential: value))
-    let query = itemQuery(service: service, account: "client")
+    let query = itemQuery(service: service, account: purpose.rawValue)
     var insertion = query
     insertion[kSecValueData as String] = data
     insertion[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -61,6 +64,13 @@ public actor KeychainCredentialStorage: CredentialStorage {
   }
 
   private func migrateLegacy() throws -> String? {
+    if purpose == .magicLink {
+      guard legacy.publishableKey == publishableKey else { return nil }
+      let service = legacy.service ?? applicationIdentifier
+      let data = try readItem(service: service, account: "pendingMagicLinkFlow")
+        ?? readItem(service: service, account: "pendingMagicLinkFlow", accessGroup: legacy.accessGroup)
+      return data.flatMap { String(data: $0, encoding: .utf8) }
+    }
     var origin = frontendAPI.absoluteString.trimmingCharacters(in: .whitespacesAndNewlines)
     while origin.hasSuffix("/") {
       origin.removeLast()
