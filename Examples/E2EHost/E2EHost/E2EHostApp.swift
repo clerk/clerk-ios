@@ -11,18 +11,28 @@ import SwiftUI
 struct E2EHostApp: App {
   private let configuration = E2EConfiguration()
 
-  init() {
-    Clerk.configure(
-      publishableKey: configuration.publishableKey,
-      options: configuration.clerkOptions
-    )
-  }
+  @State private var clerk: Clerk?
+  @State private var error: String?
 
   var body: some Scene {
     WindowGroup {
-      E2EHostView(configuration: configuration)
-        .prefetchClerkImages()
-        .environment(Clerk.shared)
+      Group {
+        if let clerk {
+          E2EHostView(configuration: configuration)
+            .prefetchClerkImages()
+            .environment(clerk)
+        } else if let error {
+          Text(error).accessibilityIdentifier("connection_error")
+        } else {
+          ProgressView("Connecting…")
+        }
+      }
+      .task {
+        guard clerk == nil else { return }
+        do { clerk = try await configuration.connect() }
+        catch is CancellationError { return }
+        catch { self.error = error.localizedDescription }
+      }
     }
   }
 }

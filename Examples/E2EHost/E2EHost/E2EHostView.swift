@@ -29,6 +29,15 @@ struct E2EHostView: View {
 
       e2eControls
     }
+    .onChange(of: clerk.authCallback?.id, initial: true) { _, id in
+      if id != nil { authViewIsPresented = true }
+    }
+    .onChange(of: clerk.session?.currentTask?.key, initial: true) { _, key in
+      if key != nil { authViewIsPresented = true }
+    }
+    .onOpenURL { url in
+      Task { _ = try? await clerk.handleAuthCallback(url) }
+    }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView(mode: configuration.authMode)
         .persistsIdentifiers(false)
@@ -81,7 +90,7 @@ struct E2EHostView: View {
 
       let tasks = session.tasks ?? []
       if !tasks.isEmpty {
-        Text(tasks.map(\.rawValue).joined(separator: ","))
+        Text(tasks.map(\.key.rawValue).joined(separator: ","))
           .accessibilityIdentifier(E2EIdentifiers.Auth.pendingTasks)
       }
     }
@@ -89,7 +98,7 @@ struct E2EHostView: View {
 
   private func signOut() {
     Task {
-      try? await clerk.auth.signOut()
+      try? await clerk.signOut()
       authViewIsPresented = false
     }
   }
@@ -108,16 +117,14 @@ struct E2EHostView: View {
     }
 
     try await user.delete()
-    try? await clerk.auth.signOut()
+    try? await clerk.signOut()
     authViewIsPresented = false
   }
 }
 
 #Preview("Signed Out") {
   E2EHostView(configuration: .mock)
-    .environment(Clerk.preview { preview in
-      preview.isSignedIn = false
-    })
+    .environment(Clerk.preview(.signedOut))
 }
 
 #Preview("Signed In") {

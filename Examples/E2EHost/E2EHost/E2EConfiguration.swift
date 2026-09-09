@@ -32,13 +32,26 @@ struct E2EConfiguration {
     keychainService = Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
   }
 
-  var clerkOptions: Clerk.Options {
-    guard let keychainService else {
-      return Clerk.Options()
+  @MainActor
+  func connect() async throws -> Clerk {
+    let configuration = try ClerkConfiguration(
+      publishableKey: publishableKey,
+      callbackURL: URL(string: "com.clerk.E2EHost://oauth/callback")!,
+      legacyKeychain: .init(service: keychainService, publishableKey: publishableKey)
+    )
+    let namespace = keychainService ?? Bundle.main.bundleIdentifier ?? "com.clerk.E2EHost"
+    func storage(_ purpose: KeychainCredentialStorage.Purpose) -> KeychainCredentialStorage {
+      KeychainCredentialStorage(
+        publishableKey: publishableKey, frontendAPI: configuration.frontendAPI,
+        applicationIdentifier: namespace, legacy: configuration.legacyKeychain, purpose: purpose
+      )
     }
-
-    return Clerk.Options(
-      keychainConfig: .init(service: keychainService)
+    return try await Clerk.connect(
+      configuration: configuration, storage: storage(.client), authStorage: storage(.magicLink),
+      biometrics: AppleBiometricCapabilities(
+        publishableKey: publishableKey, appIdentifier: namespace,
+        credentials: storage(.biometricCredentials), cleanup: storage(.biometricCleanup)
+      )
     )
   }
 

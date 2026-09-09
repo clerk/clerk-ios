@@ -21,27 +21,11 @@ struct ContentView: View {
 
       OrganizationSwitcher()
     }
-    .onOpenURL { url in
-      Task {
-        do {
-          try await clerk.handle(url)
-        } catch {
-          print("Failed to handle Clerk URL: \(error.localizedDescription)")
-        }
-      }
+    .onChange(of: clerk.authCallback?.id, initial: true) { _, id in
+      if id != nil { authViewIsPresented = true }
     }
-    .task {
-      for await event in clerk.auth.events {
-        switch event {
-        case .signInNeedsContinuation, .signUpNeedsContinuation:
-          authViewIsPresented = true
-        default:
-          break
-        }
-      }
-    }
-    .onChange(of: clerk.session?.tasks, initial: true) { _, newValue in
-      if newValue?.isEmpty == false {
+    .onChange(of: clerk.session?.currentTask?.key, initial: true) { _, newValue in
+      if newValue != nil {
         authViewIsPresented = true
       }
     }
@@ -54,9 +38,7 @@ struct ContentView: View {
 
 #Preview("Signed Out") {
   ContentView()
-    .environment(Clerk.preview { preview in
-      preview.isSignedIn = false
-    })
+    .environment(Clerk.preview(.signedOut))
 }
 
 #Preview("Signed In") {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleURLTypes</key>
+  <array><dict>
+    <key>CFBundleURLSchemes</key><array><string>com.clerk.E2EHost</string></array>
+    <key>CFBundleURLName</key><string>com.clerk.E2EHost.callback</string>
+  </dict></array>
+  <key>NSFaceIDUsageDescription</key><string>E2EHost uses Face ID to sign you in.</string>
+</dict>
+</plist>

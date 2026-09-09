@@ -38,7 +38,7 @@ private final class PreviewTransport: CoreTransport {
   }
 }
 
-enum ClerkPreviewVariant: String {
+public enum ClerkPreviewVariant: String {
   case `default`, signedOut, profile, members, domains, enrollment, completeProfile, longOrganizationName
 }
 
@@ -89,7 +89,8 @@ private final class PreviewFixture {
 }
 
 extension Clerk {
-  @MainActor static func preview(_ variant: ClerkPreviewVariant = .default, delay: Duration? = nil) -> Clerk {
+  /// Supplies source-generated, read-only fixture data for application previews.
+  @MainActor public static func preview(_ variant: ClerkPreviewVariant = .default, delay: Duration? = nil) -> Clerk {
     PreviewFixture(variant, delay: delay).clerk
   }
 }
