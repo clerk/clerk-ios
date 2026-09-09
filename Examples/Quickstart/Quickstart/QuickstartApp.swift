@@ -49,6 +49,12 @@ struct QuickstartApp: App {
 private final class QuickstartConnection {
   private(set) var clerk: Clerk?
   private(set) var error: String?
+  private let authentication = AppleAuthentication {
+    UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+      .filter { $0.activationState == .foregroundActive }
+      .flatMap(\.windows).first(where: \.isKeyWindow) ?? UIWindow()
+  }
+
   private var isConnecting = false
   var callbackError: String?
   private var pendingURLs: [URL] = []
@@ -80,7 +86,12 @@ private final class QuickstartConnection {
         publishableKey: QuickstartLocalSecrets.load().publishableKey ?? "",
         callbackURL: URL(string: "com.clerk.Quickstart://oauth/callback")!
       )
-      clerk = try await Clerk.connect(configuration: configuration)
+      clerk = try await Clerk.connect(
+        configuration: configuration,
+        browser: authentication.openBrowser,
+        passkeys: authentication.credential,
+        appleIdentity: authentication.appleIdentity
+      )
       await drainCallbacks()
     } catch is CancellationError {
       return
