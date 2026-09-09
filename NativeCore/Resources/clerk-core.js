@@ -12176,8 +12176,106 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
+	//#region ../clerk-js/src/utils/authenticateWithTransport.ts
+	const NATIVE_OAUTH_FAILED_STATUS = "failed";
+	const NATIVE_OAUTH_ERROR_FALLBACK_CODE = "oauth_callback_failed";
+	const NATIVE_OAUTH_TRANSFER_SIGNAL_CODES = new Set([ERROR_CODES.EXTERNAL_ACCOUNT_NOT_FOUND, ERROR_CODES.EXTERNAL_ACCOUNT_EXISTS]);
+	const NATIVE_OAUTH_ERROR_MESSAGES = { [ERROR_CODES.OAUTH_ACCESS_DENIED]: "You did not grant access to your account." };
+	function getNativeOAuthCallbackFailure(callbackUrl) {
+		const searchParams = new URL(callbackUrl).searchParams;
+		if (searchParams.get("__clerk_status") !== NATIVE_OAUTH_FAILED_STATUS) return null;
+		const unsafeCode = searchParams.get("__clerk_error_code") || NATIVE_OAUTH_ERROR_FALLBACK_CODE;
+		if (NATIVE_OAUTH_TRANSFER_SIGNAL_CODES.has(unsafeCode)) return null;
+		const code = NATIVE_OAUTH_ERROR_MESSAGES[unsafeCode] ? unsafeCode : NATIVE_OAUTH_ERROR_FALLBACK_CODE;
+		return {
+			code,
+			message: NATIVE_OAUTH_ERROR_MESSAGES[code] || "OAuth callback failed."
+		};
+	}
+	async function resetFailedAttempt(resource) {
+		try {
+			await resource.create({});
+		} catch {}
+	}
+	async function getOAuthTransportRedirectUrl(transport) {
+		const url = new URL(String(await transport.getRedirectUrl()));
+		if ([
+			"javascript:",
+			"data:",
+			"file:",
+			"about:"
+		].includes(url.protocol)) throw new ClerkRuntimeError("OAuth transport callback URL is not supported.", { code: "oauth_transport_invalid_callback_url" });
+		return url.toString();
+	}
+	async function openAndReconcileOAuthTransport(opts) {
+		const resourceId = opts.resource.id;
+		const assertCurrent = () => {
+			if (opts.resource.id !== resourceId || opts.isCurrent?.() === false) throw new ClerkRuntimeError("The authentication attempt changed before OAuth completed.", { code: "oauth_transport_stale_attempt" });
+		};
+		assertCurrent();
+		const { callbackUrl } = await opts.transport.open(new URL(opts.verificationUrl.toString()));
+		assertCurrent();
+		const callback = new URL(callbackUrl);
+		const expected = new URL(opts.redirectUrl);
+		if (callback.protocol !== expected.protocol || callback.host !== expected.host || callback.pathname !== expected.pathname || callback.username !== expected.username || callback.password !== expected.password || Array.from(expected.searchParams).some(([key, value]) => callback.searchParams.get(key) !== value)) throw new ClerkRuntimeError("OAuth transport received an unexpected callback URL.", { code: "oauth_transport_callback_mismatch" });
+		const failure = getNativeOAuthCallbackFailure(callbackUrl);
+		if (failure && opts.onCallbackFailure) await opts.onCallbackFailure();
+		else {
+			const nonce = callback.searchParams.get("rotating_token_nonce");
+			if (nonce) await opts.resource.reload({ rotatingTokenNonce: nonce });
+			else await opts.resource.reload();
+		}
+		if (failure) throw new ClerkRuntimeError(failure.message, { code: failure.code });
+	}
+	async function _authenticateWithTransport(opts) {
+		const redirectUrl = await getOAuthTransportRedirectUrl(opts.transport);
+		let verificationUrl;
+		await opts.authenticateMethod({
+			...opts.params,
+			redirectUrl,
+			redirectUrlComplete: redirectUrl
+		}, (url) => {
+			verificationUrl = url;
+		});
+		if (!verificationUrl) throw new ClerkRuntimeError("OAuth transport did not receive a verification URL.", { code: "oauth_transport_missing_verification_url" });
+		await openAndReconcileOAuthTransport({
+			transport: opts.transport,
+			resource: opts.resource,
+			verificationUrl,
+			redirectUrl,
+			onCallbackFailure: () => resetFailedAttempt(opts.resource)
+		});
+		await opts.clerk.__internal_handleResourceCallback(opts.resource, opts.callbackParams);
+	}
+	//#endregion
+	//#region ../clerk-js/src/utils/completeExternalAccountWithTransport.ts
+	async function completeExternalAccountWithTransport(clerk, account, userId, redirectUrl) {
+		const transport = clerk.__internal_oauthTransport;
+		const client = clerk.client;
+		const sessionId = clerk.session?.id;
+		const isCurrent = () => clerk.user?.id === userId && clerk.client?.id === client?.id && clerk.session?.id === sessionId;
+		if (!client || !isCurrent()) throw new ClerkRuntimeError("The current user changed.", { code: "oauth_transport_stale_attempt" });
+		if (redirectUrl && transport) {
+			const verificationUrl = account.verification?.externalVerificationRedirectURL;
+			if (!verificationUrl) throw new ClerkRuntimeError("The external account has no authorization URL.", { code: "external_account_missing_redirect" });
+			await openAndReconcileOAuthTransport({
+				transport,
+				resource: client,
+				verificationUrl,
+				redirectUrl,
+				isCurrent
+			});
+		} else await client.reload();
+		if (!isCurrent()) throw new ClerkRuntimeError("The current user changed.", { code: "oauth_transport_stale_attempt" });
+		clerk.updateClient(client);
+		if (!isCurrent()) throw new ClerkRuntimeError("The current user changed.", { code: "oauth_transport_stale_attempt" });
+		const connected = clerk.user?.externalAccounts.find((candidate) => candidate.id === account.id);
+		if (!connected) throw new ClerkRuntimeError("The external account was not found after authorization.", { code: "external_account_not_found" });
+		return connected;
+	}
+	//#endregion
 	//#region ../clerk-js/src/core/resources/ExternalAccount.ts
-	var ExternalAccount = class extends BaseResource {
+	var ExternalAccount = class ExternalAccount extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
 			this.providerUserId = "";
@@ -12191,17 +12289,34 @@ isDevOrStagingUrl: (url) => {
 			this.publicMetadata = {};
 			this.label = "";
 			this.verification = null;
-			this.reauthorize = (params) => {
+			this.reauthorize = async (params) => {
 				const { additionalScopes, redirectUrl, oidcPrompt, oidcLoginHint } = params || {};
-				return this._basePatch({
+				const transport = ExternalAccount.clerk?.__internal_oauthTransport;
+				const owner = ExternalAccount.clerk?.user;
+				const ownerId = owner?.id;
+				if (transport && owner && this.verification?.error) {
+					const approved = new Set((this.approvedScopes || "").split(" "));
+					if (!(additionalScopes?.some((scope) => !approved.has(scope)) ?? false)) {
+						const strategy = `oauth_${this.provider}`;
+						return owner.createExternalAccount({
+							strategy,
+							additionalScopes,
+							oidcPrompt,
+							oidcLoginHint
+						});
+					}
+				}
+				const callback = transport ? await getOAuthTransportRedirectUrl(transport) : redirectUrl;
+				const account = await this._basePatch({
 					action: "reauthorize",
 					body: {
 						additional_scope: additionalScopes,
-						redirect_url: redirectUrl,
+						redirect_url: callback,
 						oidc_prompt: oidcPrompt,
 						oidc_login_hint: oidcLoginHint
 					}
 				});
+				return transport ? completeExternalAccountWithTransport(ExternalAccount.clerk, account, ownerId || "", callback) : account;
 			};
 			this.destroy = () => this._baseDelete();
 			this.pathRoot = pathRoot;
@@ -14023,78 +14138,6 @@ isDevOrStagingUrl: (url) => {
 			window.addEventListener("message", messageHandler);
 			params.popup.location.href = params.externalVerificationRedirectURL.toString();
 		});
-	}
-	//#endregion
-	//#region ../clerk-js/src/utils/authenticateWithTransport.ts
-	const NATIVE_OAUTH_FAILED_STATUS = "failed";
-	const NATIVE_OAUTH_ERROR_FALLBACK_CODE = "oauth_callback_failed";
-	const NATIVE_OAUTH_TRANSFER_SIGNAL_CODES = new Set([ERROR_CODES.EXTERNAL_ACCOUNT_NOT_FOUND, ERROR_CODES.EXTERNAL_ACCOUNT_EXISTS]);
-	const NATIVE_OAUTH_ERROR_MESSAGES = { [ERROR_CODES.OAUTH_ACCESS_DENIED]: "You did not grant access to your account." };
-	function getNativeOAuthCallbackFailure(callbackUrl) {
-		const searchParams = new URL(callbackUrl).searchParams;
-		if (searchParams.get("__clerk_status") !== NATIVE_OAUTH_FAILED_STATUS) return null;
-		const unsafeCode = searchParams.get("__clerk_error_code") || NATIVE_OAUTH_ERROR_FALLBACK_CODE;
-		if (NATIVE_OAUTH_TRANSFER_SIGNAL_CODES.has(unsafeCode)) return null;
-		const code = NATIVE_OAUTH_ERROR_MESSAGES[unsafeCode] ? unsafeCode : NATIVE_OAUTH_ERROR_FALLBACK_CODE;
-		return {
-			code,
-			message: NATIVE_OAUTH_ERROR_MESSAGES[code] || "OAuth callback failed."
-		};
-	}
-	async function resetFailedAttempt(resource) {
-		try {
-			await resource.create({});
-		} catch {}
-	}
-	async function getOAuthTransportRedirectUrl(transport) {
-		const url = new URL(String(await transport.getRedirectUrl()));
-		if ([
-			"javascript:",
-			"data:",
-			"file:",
-			"about:"
-		].includes(url.protocol)) throw new ClerkRuntimeError("OAuth transport callback URL is not supported.", { code: "oauth_transport_invalid_callback_url" });
-		return url.toString();
-	}
-	async function openAndReconcileOAuthTransport(opts) {
-		const resourceId = opts.resource.id;
-		const assertCurrent = () => {
-			if (opts.resource.id !== resourceId || opts.isCurrent?.() === false) throw new ClerkRuntimeError("The authentication attempt changed before OAuth completed.", { code: "oauth_transport_stale_attempt" });
-		};
-		assertCurrent();
-		const { callbackUrl } = await opts.transport.open(new URL(opts.verificationUrl.toString()));
-		assertCurrent();
-		const callback = new URL(callbackUrl);
-		const expected = new URL(opts.redirectUrl);
-		if (callback.protocol !== expected.protocol || callback.host !== expected.host || callback.pathname !== expected.pathname || callback.username !== expected.username || callback.password !== expected.password || Array.from(expected.searchParams).some(([key, value]) => callback.searchParams.get(key) !== value)) throw new ClerkRuntimeError("OAuth transport received an unexpected callback URL.", { code: "oauth_transport_callback_mismatch" });
-		const failure = getNativeOAuthCallbackFailure(callbackUrl);
-		if (failure && opts.onCallbackFailure) await opts.onCallbackFailure();
-		else {
-			const nonce = callback.searchParams.get("rotating_token_nonce");
-			if (nonce) await opts.resource.reload({ rotatingTokenNonce: nonce });
-			else await opts.resource.reload();
-		}
-		if (failure) throw new ClerkRuntimeError(failure.message, { code: failure.code });
-	}
-	async function _authenticateWithTransport(opts) {
-		const redirectUrl = await getOAuthTransportRedirectUrl(opts.transport);
-		let verificationUrl;
-		await opts.authenticateMethod({
-			...opts.params,
-			redirectUrl,
-			redirectUrlComplete: redirectUrl
-		}, (url) => {
-			verificationUrl = url;
-		});
-		if (!verificationUrl) throw new ClerkRuntimeError("OAuth transport did not receive a verification URL.", { code: "oauth_transport_missing_verification_url" });
-		await openAndReconcileOAuthTransport({
-			transport: opts.transport,
-			resource: opts.resource,
-			verificationUrl,
-			redirectUrl,
-			onCallbackFailure: () => resetFailedAttempt(opts.resource)
-		});
-		await opts.clerk.__internal_handleResourceCallback(opts.resource, opts.callbackParams);
 	}
 	//#endregion
 	//#region ../clerk-js/src/utils/nativeAppleIdentity.ts
@@ -16527,19 +16570,25 @@ isDevOrStagingUrl: (url) => {
 			};
 			this.createExternalAccount = async (params) => {
 				const { strategy, redirectUrl, additionalScopes, enterpriseConnectionId, oidcPrompt, oidcLoginHint } = params || {};
+				const transport = User.clerk?.__internal_oauthTransport;
+				const apple = strategy === "oauth_token_apple";
+				const token = apple ? params.token ?? (await getNativeAppleIdentity(User.clerk)).token : void 0;
+				const callback = transport && !apple ? await getOAuthTransportRedirectUrl(transport) : redirectUrl;
 				const json = (await BaseResource._fetch({
 					path: "/me/external_accounts",
 					method: "POST",
 					body: {
 						strategy,
-						redirect_url: redirectUrl,
+						...token === void 0 ? {} : { token },
+						redirect_url: callback,
 						additional_scope: additionalScopes,
 						enterprise_connection_id: enterpriseConnectionId,
 						oidc_prompt: oidcPrompt,
 						oidc_login_hint: oidcLoginHint
 					}
 				}))?.response;
-				return new ExternalAccount(json, this.path() + "/external_accounts");
+				const account = new ExternalAccount(json, this.path() + "/external_accounts");
+				return transport ? completeExternalAccountWithTransport(User.clerk, account, this.id, apple ? void 0 : callback) : account;
 			};
 			this.createTOTP = async () => {
 				const json = (await BaseResource._fetch({
@@ -32254,16 +32303,6 @@ isDevOrStagingUrl: (url) => {
 					}
 				},
 				{
-					"name": "redirectUrl",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				},
-				{
 					"name": "oidcPrompt",
 					"optional": true,
 					"type": {
@@ -33099,12 +33138,12 @@ isDevOrStagingUrl: (url) => {
 						"omittable": true,
 						"value": {
 							"kind": "ref",
-							"name": "OAuthStrategy"
+							"name": "CreateExternalAccountParamsStrategy"
 						}
 					}
 				},
 				{
-					"name": "enterpriseConnectionId",
+					"name": "token",
 					"optional": true,
 					"type": {
 						"kind": "optional",
@@ -33114,7 +33153,7 @@ isDevOrStagingUrl: (url) => {
 					}
 				},
 				{
-					"name": "redirectUrl",
+					"name": "enterpriseConnectionId",
 					"optional": true,
 					"type": {
 						"kind": "optional",
@@ -33158,11 +33197,12 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"OAuthStrategy": {
-			"name": "OAuthStrategy",
+		"CreateExternalAccountParamsStrategy": {
+			"name": "CreateExternalAccountParamsStrategy",
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"oauth_token_apple",
 				"oauth_facebook",
 				"oauth_google",
 				"oauth_hubspot",
@@ -35225,6 +35265,44 @@ isDevOrStagingUrl: (url) => {
 					}
 				}
 			]
+		},
+		"OAuthStrategy": {
+			"name": "OAuthStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"oauth_facebook",
+				"oauth_google",
+				"oauth_hubspot",
+				"oauth_github",
+				"oauth_tiktok",
+				"oauth_gitlab",
+				"oauth_discord",
+				"oauth_twitter",
+				"oauth_twitch",
+				"oauth_linkedin",
+				"oauth_linkedin_oidc",
+				"oauth_dropbox",
+				"oauth_atlassian",
+				"oauth_bitbucket",
+				"oauth_microsoft",
+				"oauth_notion",
+				"oauth_apple",
+				"oauth_line",
+				"oauth_instagram",
+				"oauth_coinbase",
+				"oauth_spotify",
+				"oauth_xero",
+				"oauth_box",
+				"oauth_slack",
+				"oauth_linear",
+				"oauth_x",
+				"oauth_enstall",
+				"oauth_huggingface",
+				"oauth_vercel"
+			],
+			"open": false,
+			"patterns": ["^oauth_custom_.*$"]
 		},
 		"EnterpriseSSOSettings": {
 			"name": "EnterpriseSSOSettings",
@@ -39729,7 +39807,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "003c8b215d8623697ce170a41bfbdc1a7400b7d456109a881df6cbc020f8b17f",
+		"contractHash": "e390d86fcaf1054ac1a42aeeab9c1f8c6333d143b9b407de301b6037e7c77e4f",
 		"roots": {
 			"clerk": {
 				"kind": "ref",

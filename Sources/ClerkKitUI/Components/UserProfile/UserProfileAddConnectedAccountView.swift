@@ -99,16 +99,12 @@ extension UserProfileAddConnectedAccountView {
     guard let user else { return }
 
     do {
-      if provider == .apple {
-        try await user.connectAppleAccount()
-      } else {
-        let newExternalAccount = try await user.createExternalAccount(
-          provider: provider,
-          additionalScopes: oauthConfig.additionalScopes(for: provider),
-          oidcPrompts: oauthConfig.prompts(for: provider)
-        )
-        try await newExternalAccount.reauthorize()
-      }
+      let prompts = oauthConfig.prompts(for: provider)
+      _ = try await user.createExternalAccount(.init(
+        strategy: .init(rawValue: provider == .apple ? "oauth_token_apple" : provider.strategy),
+        additionalScopes: oauthConfig.additionalScopes(for: provider),
+        oidcPrompt: prompts.isEmpty ? nil : prompts.joined(separator: " ")
+      ))
 
       dismiss()
     } catch {

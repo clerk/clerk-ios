@@ -32,7 +32,7 @@ struct UserProfileExternalAccountRow: View {
       VStack(alignment: .leading, spacing: 4) {
         WrappingHStack(alignment: .leading) {
           HStack(spacing: 8) {
-            LazyImage(url: externalAccount.oauthProvider.iconImageUrl(colorScheme: colorScheme)) { state in
+            LazyImage(url: externalAccount.oauthProvider.iconImageUrl(colorScheme: colorScheme, environment: clerk.environment)) { state in
               if let image = state.image {
                 ProviderIconView(
                   provider: externalAccount.oauthProvider,
@@ -49,7 +49,7 @@ struct UserProfileExternalAccountRow: View {
             .frame(width: 20, height: 20)
             .transition(.opacity.animation(.easeInOut(duration: 0.25)))
 
-            Text(externalAccount.oauthProvider.name)
+            Text(externalAccount.oauthProvider.name(in: clerk.environment))
               .font(theme.fonts.subheadline)
               .foregroundStyle(theme.colors.mutedForeground)
               .lineLimit(1)
@@ -152,36 +152,21 @@ extension UserProfileExternalAccountRow {
       return Text("This account has been disconnected.", bundle: .module)
     }
 
-    return Text(verbatim: error.localizedDescription)
+    return Text(verbatim: error.longMessage ?? error.message)
   }
 
   private func reconnect() async {
-    guard let user else { return }
+    guard user != nil else { return }
 
     let provider = externalAccount.oauthProvider
     let scopes = oauthConfig.additionalScopes(for: provider)
     let prompts = oauthConfig.prompts(for: provider)
 
     do {
-      // Use prepareReauthorization when additional scopes are needed, even if
-      // there is a verification error — reauthorization preserves the existing
-      // account while upserting scopes. Only create a fresh external account
-      // when there is a verification error and no scope reauthorization is required.
-      let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
-                                        externalAccount.verification?.error != nil
-      {
-        try await user.createExternalAccount(
-          provider: provider,
-          additionalScopes: scopes,
-          oidcPrompts: prompts
-        )
-      } else {
-        try await externalAccount.prepareReauthorization(
-          additionalScopes: scopes,
-          oidcPrompts: prompts
-        )
-      }
-      try await account.reauthorize()
+      _ = try await externalAccount.reauthorize(.init(
+        additionalScopes: scopes,
+        oidcPrompt: prompts.isEmpty ? nil : prompts.joined(separator: " ")
+      ))
     } catch {
       if error.isUserCancelledError { return }
       self.error = error

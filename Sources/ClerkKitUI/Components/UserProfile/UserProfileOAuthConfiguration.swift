@@ -7,9 +7,9 @@ import SwiftUI
 public struct OAuthProviderConfig: Sendable, Hashable {
   public let provider: OAuthProvider
   public let additionalScopes: [String]
-  public let prompts: [OIDCPrompt]
+  public let prompts: [String]
 
-  public init(provider: OAuthProvider, additionalScopes: [String] = [], prompts: [OIDCPrompt] = []) {
+  public init(provider: OAuthProvider, additionalScopes: [String] = [], prompts: [String] = []) {
     self.provider = provider
     self.additionalScopes = additionalScopes
     self.prompts = prompts
@@ -28,15 +28,15 @@ struct UserProfileOAuthConfiguration: Equatable {
     Array(Set(configs.filter { $0.provider == provider }.flatMap(\.additionalScopes)))
   }
 
-  func prompts(for provider: OAuthProvider) -> [OIDCPrompt] {
+  func prompts(for provider: OAuthProvider) -> [String] {
     Array(Set(configs.filter { $0.provider == provider }.flatMap(\.prompts)))
   }
 
-  func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
+  @MainActor func shouldOfferReconnect(for account: ExternalAccount) -> Bool {
     requiresReauthorization(for: account) || !prompts(for: account.oauthProvider).isEmpty
   }
 
-  func requiresReauthorization(for account: ExternalAccount) -> Bool {
+  @MainActor func requiresReauthorization(for account: ExternalAccount) -> Bool {
     let configuredScopes = Set(additionalScopes(for: account.oauthProvider))
     guard !configuredScopes.isEmpty else { return false }
 
