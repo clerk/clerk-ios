@@ -59,5 +59,7 @@ The new storage suite contains 13 declarations on macOS and 10 on iOS; parameter
 cases are not a coverage percentage. Real process fixtures verify the supported
 snake-case import and a pending-clear fallback. This remains a storage-format and
 platform-adapter proof, not an actual released-app upgrade with a signed-in user.
-The old storage test files remain retained until their reviewed retirements are
-recorded; shared-session feature tests are not retired by this audit.
+`SystemKeychainTests`, `MigratingKeychainStorageTests`, `ClerkKeychainKeyTests`,
+and `KeychainConfigTests` are retired after the passing replacement checks.
+`DependencyContainerKeychainTests` and shared-session feature tests remain retained
+for their unresolved topology, convergence and cache assertions.
