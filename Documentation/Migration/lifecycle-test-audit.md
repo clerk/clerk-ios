@@ -37,4 +37,4 @@ existing Vite configuration/plugin deprecations.
 | Initial counter zero; failure increments; success resets | Removed Swift backoff state. These are internal algorithm assertions, not a public behavior contract. |
 | Base interval; doubling; maximum cap; +/-20% jitter; reset to base; 60-second default; custom maximum; full expected progression | Removed Swift retry/timer policy. The TypeScript implementation remains the owner; old numeric defaults and jitter are not reproduced in Swift. |
 
-After passing the replacement checks, the three reviewed lifecycle test files can be retired with their deleted implementations. This does not authorize retirement of the separate session-token or identity suites, and does not claim those release gates are complete.
+After passing the replacement checks, the three reviewed lifecycle test files were retired with their deleted implementations. This does not authorize retirement of the separate session-token or identity suites, and does not claim those release gates are complete.
