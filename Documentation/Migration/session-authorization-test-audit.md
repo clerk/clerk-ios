@@ -41,7 +41,7 @@ Native cases check generated criteria, local evaluation without HTTP, factor age
 | `authorizesStrictMfaViaGracefulDowngradeWhenNoSecondFactorIsEnrolled` | Embedded and native [0, -1] cases pass. |
 | `failsPermissionPlusReverificationWhenNoFactorsAreEnrolled` | Embedded and native [-1, -1] cases deny. |
 | `failsReverificationWhenConfigObjectIsIncompleteOrOutOfRange` | Embedded zero/negative maximum age cases deny; canonical source tests pass. Unknown input level throws invalid_bridge_value on all hosts. Generated custom configuration requires both fields. |
-| `failsClosedWithoutUserId` | Unresolved: old mutable Session allowed removal of its user. Audit canonical resource readiness and invalid-user handling before retirement. |
+| `failsClosedWithoutUserId` | Embedded session-revocation test supplies null user, matching feature/plan claims and fresh factors. Canonical User hydrates an empty id; all three authorization checks deny. The native wrapper shape differs from the old manually assigned nil user. |
 | `splitsFeaturesByScopeIncludingMergedOuAndUo` | Canonical split helper tests pass. Embedded and native checks cover both scopes for ou and uo. |
 | `splitByScopeThrowsWhenClaimElementIsMissingAColon` | Canonical helper throw test passes; public embedded authorization denies malformed feature claims. |
 | `unscopedFeatureMatchesMergedUserAndOrgIds` | Embedded and native checks authorize both unscoped feature names; embedded missing feature denies. |
@@ -50,4 +50,4 @@ Native cases check generated criteria, local evaluation without HTTP, factor age
 | `readsFeaAndPlaFromLastActiveToken` | Embedded and native fixtures use actual JWT claims and check present/missing features and plans. |
 | `hasOnCachedTokenStaysUnderOneMillisecond` | Unresolved: old synchronous timing does not measure asynchronous native calls. Physical-device acceptance remains in Documentation/Performance.md. |
 
-The missing-user assertion and physical-device timing remain unresolved. Retain the legacy file while those gaps are investigated. Session verification service and factor-strategy assertions live in separate legacy files and are outside this authorization inventory.
+The missing-user assertion is covered by the follow-up embedded test; physical-device timing remains unresolved. Retain the legacy file while that acceptance gate is investigated. Session verification service and factor-strategy assertions live in separate legacy files and are outside this authorization inventory.
