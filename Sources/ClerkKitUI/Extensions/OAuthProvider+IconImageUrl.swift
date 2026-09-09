@@ -11,8 +11,8 @@ import SwiftUI
 
 extension OAuthProvider {
   @MainActor
-  func iconImageUrl(colorScheme: ColorScheme) -> URL? {
-    guard let iconImageUrl else { return nil }
+  func iconImageUrl(colorScheme: ColorScheme, environment: EnvironmentResource) -> URL? {
+    guard let iconImageUrl = iconImageUrl(in: environment) else { return nil }
 
     guard colorScheme == .dark else {
       return iconImageUrl
@@ -22,8 +22,8 @@ extension OAuthProvider {
   }
 
   @MainActor
-  var iconImageUrlsForPrefetch: Set<URL> {
-    guard let iconImageUrl else { return [] }
+  func iconImageUrlsForPrefetch(environment: EnvironmentResource) -> Set<URL> {
+    guard let iconImageUrl = iconImageUrl(in: environment) else { return [] }
 
     var urls = Set([iconImageUrl])
 
@@ -42,7 +42,7 @@ extension OAuthProvider {
     }
 
     let darkImageFileName: String? = switch self {
-    case .custom:
+    case .unrecognized:
       nil
     case .linkedinOidc:
       "linkedin-dark.png"

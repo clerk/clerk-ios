@@ -8,23 +8,23 @@
 import ClerkKit
 import Foundation
 
-extension Clerk.Environment {
+extension EnvironmentResource {
   var authenticatableSocialProviders: [OAuthProvider] {
-    let authenticatables = userSettings.social.filter { _, value in
+    let authenticatables = userSettings.social.compactMapValues { $0 }.filter { _, value in
       value.authenticatable && value.enabled
     }
 
     return authenticatables.map {
-      OAuthProvider(strategy: $0.value.strategy)
-    }.sorted()
+      OAuthProvider(strategy: $0.value.strategy.rawValue)
+    }.sorted { $0.sortName < $1.sortName }
   }
 
   var allSocialProviders: [OAuthProvider] {
-    let enabledProviders = userSettings.social.filter { $0.value.enabled }
+    let enabledProviders = userSettings.social.compactMapValues { $0 }.filter { $0.value.enabled }
 
     return enabledProviders.map {
-      OAuthProvider(strategy: $0.value.strategy)
-    }.sorted()
+      OAuthProvider(strategy: $0.value.strategy.rawValue)
+    }.sorted { $0.sortName < $1.sortName }
   }
 
   var enabledFirstFactorAttributes: [String] {
