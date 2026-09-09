@@ -18,8 +18,8 @@ struct ClerkConfigurationTests {
   }
 
   @Test func invalidPublishableKeysProduceStructuredErrors() throws {
-    let malformed = ["", "invalid", "pk_test_!!!"] + [
-      "", "clerk.example.com", "user@clerk.example.com$", "clerk.example.com/path$",
+    let malformed = ["", "   ", "invalid", "pk_invalid_something", "pk_test_!!!", Data("clerk.example.com$".utf8).base64EncodedString()] + [
+      "", "x", "clerk.example.com", "clerk.example.comx", "user@clerk.example.com$", "clerk.example.com/path$",
       "clerk.example.com?query$", "clerk.example.com#fragment$", "bad host$", "[broken$",
     ].map { key($0) }
     let callback = try #require(URL(string: "app.clerk://oauth/callback"))

@@ -14,6 +14,8 @@ explicit malformed-input rejection. Other categories below still require their
 own assertion-level review. The [utility assertion audit](utility-test-audit.md)
 separates retained presentation/serialization/PKCE/packaging assertions from
 removed helper APIs and unresolved callback/state behavior.
+The [configuration assertion audit](configuration-test-audit.md) records exact
+key-validation replacements and intentionally removed configuration options.
 
 ## Configuration validation
 
