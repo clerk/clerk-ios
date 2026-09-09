@@ -1,7 +1,7 @@
 {
   "protocolVersion": 1,
   "hostCapabilityVersion": 1,
-  "contractHash": "1e4efdbbf7882dd957b0ca1bc502cd28ee090f8c2e22fd752eb14743b7981d6a",
+  "contractHash": "6ddbd6b9ae47c552373f1959973d24eeb1e24d979342c240962cf85a68d023bd",
   "roots": {
     "clerk": {
       "kind": "ref",
@@ -30,9 +30,9 @@
   },
   "namingPolicy": "Remove Future and trailing Resource; fail collisions.",
   "errorPolicy": "Approved authentication error-only envelopes throw after state is applied.",
-  "coreRevision": "3071ee8c74140d20665716d00d6e93ff25703fcc",
-  "bundleSHA256": "8fe1d1ac17640637df1cb5dfe4ba024de95ce330be14bc984f3d5973c73f9e9d",
-  "bundleBytes": 1296086,
+  "coreRevision": "5a1745b8f5f66c8d4b608d487e24b16ed8d40ec3",
+  "bundleSHA256": "e371c3f18b859cc89b6a8cc07ff4cc2c0efef36bbd5b4dd27f6d85bde7035eff",
+  "bundleBytes": 1298294,
   "runtime": {
     "apple": "JavaScriptCore (system)",
     "android": "quickjs-ng v0.15.1 fd0a0210b7be00957751871e7e01b8291268fc29"

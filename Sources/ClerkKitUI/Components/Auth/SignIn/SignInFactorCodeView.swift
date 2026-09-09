@@ -232,23 +232,23 @@ extension SignInFactorCodeView {
       switch factor.strategy {
       case .emailCode:
         if mode.usesSecondFactorAPI {
-          try await signIn.mfa.sendEmailCode()
+          try await signIn.mfa.sendEmailCode(.init(emailAddressId: factor.emailAddressId))
         } else {
           try await signIn.emailCode.sendCode(.case2(.init(emailAddressId: factor.emailAddressId)))
         }
 
       case .phoneCode:
         if mode.usesSecondFactorAPI {
-          try await signIn.mfa.sendPhoneCode()
+          try await signIn.mfa.sendPhoneCode(.init(phoneNumberId: factor.phoneNumberId))
         } else {
           try await signIn.phoneCode.sendCode(factor.phoneNumberId.map { .case2(.init(phoneNumberId: $0)) })
         }
 
       case .resetPasswordEmailCode:
-        try await signIn.resetPasswordEmailCode.sendCode()
+        try await signIn.resetPasswordEmailCode.sendCode(.init(emailAddressId: factor.emailAddressId))
 
       case .resetPasswordPhoneCode:
-        try await signIn.resetPasswordPhoneCode.sendCode()
+        try await signIn.resetPasswordPhoneCode.sendCode(.init(phoneNumberId: factor.phoneNumberId))
 
       default:
         break

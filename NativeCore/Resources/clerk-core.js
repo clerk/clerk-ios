@@ -14707,10 +14707,10 @@ isDevOrStagingUrl: (url) => {
 		get canBeDiscarded() {
 			return this.#canBeDiscarded;
 		}
-		async sendResetPasswordEmailCode() {
+		async sendResetPasswordEmailCode(params = {}) {
 			if (!this.#resource.id) throw new Error("Cannot reset password without a sign in.");
 			return runAsyncResourceTask(this.#resource, async () => {
-				const resetPasswordEmailCodeFactor = this.#resource.supportedFirstFactors?.find((f) => f.strategy === "reset_password_email_code");
+				const resetPasswordEmailCodeFactor = this.#resource.supportedFirstFactors?.find((f) => f.strategy === "reset_password_email_code" && (params.emailAddressId === void 0 || f.emailAddressId === params.emailAddressId));
 				if (!resetPasswordEmailCodeFactor) throw new ClerkRuntimeError("Reset password email code factor not found", { code: "factor_not_found" });
 				const { emailAddressId } = resetPasswordEmailCodeFactor;
 				await this.#resource.__internal_basePost({
@@ -14740,7 +14740,7 @@ isDevOrStagingUrl: (url) => {
 			if (!this.#resource.id && !phoneNumber) throw new Error("signIn.resetPasswordPhoneCode.sendCode() cannot be called without a phoneNumber if an existing signIn does not exist.");
 			return runAsyncResourceTask(this.#resource, async () => {
 				if (phoneNumber) await this._create({ identifier: phoneNumber });
-				const resetPasswordPhoneCodeFactor = this.#resource.supportedFirstFactors?.find((f) => f.strategy === "reset_password_phone_code");
+				const resetPasswordPhoneCodeFactor = this.#resource.supportedFirstFactors?.find((f) => f.strategy === "reset_password_phone_code" && (params.phoneNumberId === void 0 || f.phoneNumberId === params.phoneNumberId));
 				if (!resetPasswordPhoneCodeFactor) throw new ClerkRuntimeError("Reset password phone code factor not found", { code: "factor_not_found" });
 				const { phoneNumberId } = resetPasswordPhoneCodeFactor;
 				await this.#resource.__internal_basePost({
@@ -15186,9 +15186,9 @@ isDevOrStagingUrl: (url) => {
 				}
 			});
 		}
-		async sendMFAPhoneCode() {
+		async sendMFAPhoneCode(params = {}) {
 			return runAsyncResourceTask(this.#resource, async () => {
-				const phoneCodeFactor = this.#resource.supportedSecondFactors?.find((f) => f.strategy === "phone_code");
+				const phoneCodeFactor = this.#resource.supportedSecondFactors?.find((f) => f.strategy === "phone_code" && (params.phoneNumberId === void 0 || f.phoneNumberId === params.phoneNumberId));
 				if (!phoneCodeFactor) throw new ClerkRuntimeError("Phone code factor not found", { code: "factor_not_found" });
 				const { phoneNumberId } = phoneCodeFactor;
 				await this.#resource.__internal_basePost({
@@ -15213,9 +15213,9 @@ isDevOrStagingUrl: (url) => {
 				});
 			});
 		}
-		async sendMFAEmailCode() {
+		async sendMFAEmailCode(params = {}) {
 			return runAsyncResourceTask(this.#resource, async () => {
-				const emailCodeFactor = this.#resource.supportedSecondFactors?.find((f) => f.strategy === "email_code");
+				const emailCodeFactor = this.#resource.supportedSecondFactors?.find((f) => f.strategy === "email_code" && (params.emailAddressId === void 0 || f.emailAddressId === params.emailAddressId));
 				if (!emailCodeFactor) throw new ClerkRuntimeError("Email code factor not found", { code: "factor_not_found" });
 				const { emailAddressId } = emailCodeFactor;
 				await this.#resource.__internal_basePost({
@@ -28306,7 +28306,19 @@ isDevOrStagingUrl: (url) => {
 		},
 		"SignInResetPasswordEmailCode.sendCode": {
 			type: "SignInResetPasswordEmailCode",
-			parameters: [],
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "SignInResetPasswordEmailCodeSendParams"
+					}
+				}
+			}],
 			result: { "kind": "errorResult" },
 			invoke: (target, args) => target["sendCode"](...args)
 		},
@@ -28382,7 +28394,19 @@ isDevOrStagingUrl: (url) => {
 		},
 		"SignInMfa.sendPhoneCode": {
 			type: "SignInMfa",
-			parameters: [],
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "SignInMFAPhoneCodeSendParams"
+					}
+				}
+			}],
 			result: { "kind": "errorResult" },
 			invoke: (target, args) => target["sendPhoneCode"](...args)
 		},
@@ -28401,7 +28425,19 @@ isDevOrStagingUrl: (url) => {
 		},
 		"SignInMfa.sendEmailCode": {
 			type: "SignInMfa",
-			parameters: [],
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "SignInMFAEmailCodeSendParams"
+					}
+				}
+			}],
 			result: { "kind": "errorResult" },
 			invoke: (target, args) => target["sendEmailCode"](...args)
 		},
@@ -38957,6 +38993,20 @@ isDevOrStagingUrl: (url) => {
 			"kind": "resource",
 			"properties": []
 		},
+		"SignInResetPasswordEmailCodeSendParams": {
+			"name": "SignInResetPasswordEmailCodeSendParams",
+			"kind": "object",
+			"properties": [{
+				"name": "emailAddressId",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
+				}
+			}]
+		},
 		"SignInResetPasswordSubmitParams": {
 			"name": "SignInResetPasswordSubmitParams",
 			"kind": "object",
@@ -38984,6 +39034,15 @@ isDevOrStagingUrl: (url) => {
 			"name": "SignInResetPasswordPhoneCodeSendParams",
 			"kind": "object",
 			"properties": [{
+				"name": "phoneNumberId",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
+				}
+			}, {
 				"name": "phoneNumber",
 				"optional": true,
 				"type": {
@@ -39138,6 +39197,20 @@ isDevOrStagingUrl: (url) => {
 			"kind": "resource",
 			"properties": []
 		},
+		"SignInMFAPhoneCodeSendParams": {
+			"name": "SignInMFAPhoneCodeSendParams",
+			"kind": "object",
+			"properties": [{
+				"name": "phoneNumberId",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
+				}
+			}]
+		},
 		"SignInMFAPhoneCodeVerifyParams": {
 			"name": "SignInMFAPhoneCodeVerifyParams",
 			"kind": "object",
@@ -39145,6 +39218,20 @@ isDevOrStagingUrl: (url) => {
 				"name": "code",
 				"optional": false,
 				"type": { "kind": "string" }
+			}]
+		},
+		"SignInMFAEmailCodeSendParams": {
+			"name": "SignInMFAEmailCodeSendParams",
+			"kind": "object",
+			"properties": [{
+				"name": "emailAddressId",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": { "kind": "string" }
+				}
 			}]
 		},
 		"SignInMFAEmailCodeVerifyParams": {
@@ -41172,7 +41259,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "1e4efdbbf7882dd957b0ca1bc502cd28ee090f8c2e22fd752eb14743b7981d6a",
+		"contractHash": "6ddbd6b9ae47c552373f1959973d24eeb1e24d979342c240962cf85a68d023bd",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
