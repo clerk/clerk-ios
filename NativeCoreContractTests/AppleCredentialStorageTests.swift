@@ -59,6 +59,23 @@ struct AppleCredentialStorageTests {
     }
   }
 
+  @Test func legacyBiometricMetadataRequiresMatchingInstanceAndSurvivesReconstruction() async throws {
+    // BiometricCredentialLocalStore uses its own camelCase/millisecond encoder,
+    // not the general Clerk snake_case encoder (baseline 02f98f89).
+    let raw = #"[{"id":"td_legacy","localKeyId":"tdlk_legacy","userId":"user_legacy","appIdentifier":"com.clerk.storage-contract","policy":"biometry_current_set","createdAt":1700000000000,"updatedAt":1700000000001}]"#
+    for legacyKey in [String?.none, "pk_test_other", key] {
+      let probe = SecurityItemProbe()
+      probe.seed(service: legacyService, account: "trustedDeviceCredentials", value: Data(raw.utf8))
+      let legacy = LegacyKeychainConfiguration(service: legacyService, publishableKey: legacyKey)
+      let current = storage(probe, legacy: legacy, purpose: .biometricCredentials)
+      #expect(try await current.read() == (legacyKey == key ? raw : nil))
+      #expect(try await storage(probe, legacy: legacy, purpose: .biometricCredentials).read() == (legacyKey == key ? raw : nil))
+      try await current.remove()
+      #expect(try await storage(probe, legacy: legacy, purpose: .biometricCredentials).read() == nil)
+      #expect(probe.value(service: legacyService, account: "trustedDeviceCredentials") == Data(raw.utf8))
+    }
+  }
+
   @Test func newRecordReadErrorsDoNotImportAnOlderCredential() async throws {
     let probe = SecurityItemProbe()
     probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("old".utf8))

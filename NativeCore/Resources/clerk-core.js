@@ -17541,7 +17541,19 @@ isDevOrStagingUrl: (url) => {
 				return [];
 			}
 			if (!Array.isArray(values)) return [];
-			return values.filter((record) => record !== null && typeof record === "object" && [
+			return values.map((record) => {
+				if (this.host?.platform !== "android" || !record || typeof record !== "object" || "localKeyId" in record || !("local_key_id" in record)) return record;
+				return {
+					id: record.id,
+					localKeyId: record.local_key_id,
+					userId: record.user_id,
+					appIdentifier: record.app_identifier,
+					identifierHint: record.identifier_hint,
+					policy: record.policy === void 0 ? "biometry_or_device_passcode" : record.policy,
+					createdAt: record.created_at,
+					updatedAt: record.updated_at
+				};
+			}).filter((record) => record !== null && typeof record === "object" && [
 				"id",
 				"localKeyId",
 				"userId",
