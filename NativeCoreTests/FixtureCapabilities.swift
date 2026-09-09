@@ -17,6 +17,7 @@ import ClerkKit
   var appleIdentityCount = 0
   var clientReads = 0
   var signedOut = false
+  var signInFirstFactors: JSONValue?
   var nextAuthError: JSONValue?
   var nextAuthErrorStatus = 422
   var nextAuthErrorHeaders: [String: JSONValue] = [:]
@@ -106,6 +107,7 @@ import ClerkKit
       response = .object(phone)
     } else {
       var resource = try fixtures[url.path.contains("sign_ins") ? "signIn" : "signUp"]!.object()
+      if url.path.contains("sign_ins"), let signInFirstFactors { resource["supported_first_factors"] = signInFirstFactors }
       if args["method"] == .string("GET") {
         precondition(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.contains(where: { $0.name == "rotating_token_nonce" && $0.value == "native_nonce" }) == true)
         resource["status"] = .string("complete")

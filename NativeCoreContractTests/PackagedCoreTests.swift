@@ -147,6 +147,30 @@ import Testing
     }
   }
 
+  @Test func factorDiscriminantsPreserveDeviceAndRecoveryFields() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    capabilities.signInFirstFactors = try JSONDecoder().decode(JSONValue.self, from: Data(#"[{"strategy":"phone_code","phone_number_id":"idn_phone","safe_identifier":"+15555550123","primary":true,"default":true},{"strategy":"trusted_device","trusted_device_id":"tdc_123","safe_identifier":"Test device"},{"strategy":"reset_password_phone_code","phone_number_id":"idn_reset","safe_identifier":"reset-phone"},{"strategy":"enterprise_sso","enterprise_connection_id":"ec_123","enterprise_connection_name":"Acme"},{"strategy":"oauth_future_provider"}]"#.utf8))
+    try await clerk.signIn.create(.init(identifier: "test@example.com"))
+    let factors = clerk.signIn.supportedFirstFactors
+    let device = try #require(factors.first { $0.strategy == "trusted_device" })
+    guard case .case11(let credential) = device else { Issue.record("Expected trusted-device factor"); return }
+    #expect(credential.trustedDeviceId == .value("tdc_123"))
+    #expect(credential.safeIdentifier == .value("Test device"))
+    let reset = try #require(factors.first { $0.strategy == "reset_password_phone_code" })
+    guard case .case9(let recovery) = reset else { Issue.record("Expected phone recovery factor"); return }
+    #expect(recovery.phoneNumberId == "idn_reset")
+    let phone = try #require(factors.first { $0.strategy == "phone_code" })
+    guard case .case3(let value) = phone else { Issue.record("Expected phone factor"); return }
+    #expect(value.default == true && value.primary == true)
+    let enterprise = try #require(factors.first { $0.strategy == "enterprise_sso" })
+    guard case .case8(let connection) = enterprise else { Issue.record("Expected enterprise factor"); return }
+    #expect(connection.enterpriseConnectionId == "ec_123")
+    #expect(factors.contains { $0.strategy == "oauth_future_provider" })
+    #expect(clerk.session == nil)
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

@@ -38382,6 +38382,10 @@ isDevOrStagingUrl: (url) => {
 				{
 					"kind": "ref",
 					"name": "ResetPasswordEmailCodeFactor"
+				},
+				{
+					"kind": "ref",
+					"name": "TrustedDeviceFactor"
 				}
 			]
 		},
@@ -38534,6 +38538,40 @@ isDevOrStagingUrl: (url) => {
 						"nullable": false,
 						"omittable": true,
 						"value": { "kind": "boolean" }
+					}
+				}
+			]
+		},
+		"TrustedDeviceFactor": {
+			"name": "TrustedDeviceFactor",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "literal",
+						"value": "trusted_device"
+					}
+				},
+				{
+					"name": "trustedDeviceId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "safeIdentifier",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": true,
+						"value": { "kind": "string" }
 					}
 				}
 			]
@@ -41491,7 +41529,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "c93c04e868659c2ce38c509c54cc61ea2da62533f5f4caaf5f19a9afe7be5bdf",
+		"contractHash": "779dedc726a5c587629061d6e3ad89ef835e3f1f92566e8d19706c1cf5f14a33",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -41558,6 +41596,33 @@ isDevOrStagingUrl: (url) => {
 			default: return false;
 		}
 	}
+	function dereference(shape, depth = 0) {
+		if (depth > 64) invalid();
+		return shape.kind === "ref" ? dereference(schema[shape.name], depth + 1) : shape;
+	}
+	function stringDiscriminator(shape) {
+		const resolved = dereference(shape);
+		return resolved.kind === "string" || resolved.kind === "enum" || resolved.kind === "literal" && typeof resolved.value === "string";
+	}
+	function knownDiscriminator(shape, value) {
+		const resolved = dereference(shape);
+		if (resolved.kind === "literal") return value === resolved.value;
+		return resolved.kind === "enum" && typeof value === "string" && (resolved.values.includes(value) || resolved.patterns?.some((pattern) => new RegExp(pattern).test(value)));
+	}
+	function unionVariant(shape, value) {
+		if (isObject(value)) {
+			const properties = shape.variants.map((variant) => dereference(variant).properties ?? []);
+			const keys = properties[0].filter((property) => !property.optional && stringDiscriminator(property.type) && properties.every((members) => members.some((member) => member.name === property.name && !member.optional && stringDiscriminator(member.type)))).map((property) => property.name);
+			const scores = properties.map((members) => keys.filter((key) => knownDiscriminator(members.find((member) => member.name === key).type, value[key])).length);
+			const best = Math.max(...scores);
+			if (best > 0) {
+				const index = shape.variants.findIndex((variant, i) => scores[i] === best && matches(variant, value));
+				if (index < 0) invalid();
+				return index;
+			}
+		}
+		return shape.variants.findIndex((variant) => matches(variant, value));
+	}
 	function json(value, depth = 0) {
 		if (depth > 64) invalid();
 		if (value === null || typeof value === "string" || typeof value === "boolean") return value;
@@ -41584,7 +41649,7 @@ isDevOrStagingUrl: (url) => {
 			case "array": return value.map((v) => encode(shape.element, v, resources, depth + 1));
 			case "tuple": return value.map((v, i) => encode(shape.elements[i], v, resources, depth + 1));
 			case "union": {
-				const index = shape.variants.findIndex((s) => matches(s, value));
+				const index = unionVariant(shape, value);
 				return {
 					$case: index,
 					value: encode(shape.variants[index], value, resources, depth + 1)

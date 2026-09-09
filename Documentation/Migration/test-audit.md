@@ -29,6 +29,8 @@ The [authentication service assertion audit](auth-service-test-audit.md) maps al
 behavior, request continuity tests, or explicitly removed private startup markers.
 The [error assertion audit](error-test-audit.md) maps the old constructors and
 DTO checks to structured native failures and explicit new-major API changes.
+The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
+provider presentation and instance-mode values, including the corrected union projection.
 
 ## Configuration validation
 

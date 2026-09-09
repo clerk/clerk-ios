@@ -20,7 +20,8 @@ extension SignIn {
   var availableFirstFactors: [Factor] {
     supportedFirstFactors.map(Factor.init).filter { factor in
       if case .unknown = factor.strategy { return false }
-      return true
+      // The dedicated biometric entry checks the local key and OS capability.
+      return factor.strategy != .biometricCredential
     }
   }
 
@@ -66,7 +67,7 @@ extension SignIn {
     // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
     let firstFactors = supportedFirstFactors.map(Factor.init).filter { factor in
       if case .oauth = factor.strategy { return false }
-      return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml
+      return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml && factor.strategy != .biometricCredential
     }
 
     return firstFactors.sorted(using: Factor.allStrategiesButtonsComparator)

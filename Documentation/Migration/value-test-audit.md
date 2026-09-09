@@ -1,0 +1,14 @@
+# Factor, provider and environment value assertion audit
+
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This review covers all assertions in `FactorTests.swift` (3 tests), `OIDCPromptTests.swift` (6), `OAuthProviderTests.swift` (4), and `InstanceEnvironmentTypeTests.swift` (6).
+
+| Old assertions | Disposition and evidence |
+| --- | --- |
+| Phone Factor JSON/default round trip: phone ID, safe identifier, primary/default booleans and equality | The old generic Codable Factor is replaced by source-derived discriminated values. Actual packaged-core tests on both engines assert phone ID/default/primary projection; the TypeScript protocol test also asserts safe identifier and the exact projected shape. Native JSON/Field contract tests cover generic transport serialization. |
+| Biometric FactorStrategy raw `trusted_device`; Factor credential ID/safe identifier Codable/equality | The generated `TrustedDeviceFactor` preserves the strategy and optional/nullable identifier fields. Its actual native decoding is tested on both engines. This audit found and fixed the lost-field bug described in [factor continuity](factors.md). The old raw FactorStrategy Codable API is removed. |
+| Empty OIDC array to nil; none/single values; joined values; deduplication; none with other prompts | The array helper is removed in favor of the source string parameter. Both generated SSO paths preserve omitted/single/combined/raw duplicate strings. [OIDC prompt continuity](oidc-prompt.md) documents the deliberate deduplication API change and the fixed sign-in forwarding omission. |
+| Provider tint allowlist, X strategy round trip | Moved to `Tests/UI/OAuthProviderIconImageUrlTests.swift`, next to the maintained presentation extensions. The assertions cover the same Apple/GitHub/Vercel/X allowlist, exclusions and X strategy. |
+| Built-in configured logo and custom-provider configured logo | The existing UI provider tests verify configured URLs, no rewriting of tintable/custom logos, dark variants and prefetch behavior through generated environment state. All fourteen provider tests pass. The old global `Clerk.shared.environment` fixture is removed. |
+| Instance mode raw production/development/unknown/custom values; encoding/decoding; invalid-to-unknown; equality | `DisplayConfig.instanceEnvironmentType` is a generated String, not the deleted native enum. A new actual core protocol test asserts preservation of production, development, unknown and future server strings. Native String equality/Codable behavior is not reimplemented or separately tested. |
+
+The four reviewed value test files can retire with the removed APIs and moved presentation assertions. This does not retire state/identity, token, configuration or shared-session suites, and does not replace their unresolved outcome checks.

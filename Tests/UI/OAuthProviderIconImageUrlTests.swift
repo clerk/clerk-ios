@@ -6,6 +6,21 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct OAuthProviderIconImageUrlTests {
+  @Test func tintedIconMaskUsesTheMaintainedProviderAllowlist() {
+    #expect(OAuthProvider.apple.supportsTintedIconMask)
+    #expect(OAuthProvider.github.supportsTintedIconMask)
+    #expect(OAuthProvider.vercel.supportsTintedIconMask)
+    #expect(OAuthProvider.x.supportsTintedIconMask)
+    #expect(!OAuthProvider.google.supportsTintedIconMask)
+    #expect(!OAuthProvider.twitter.supportsTintedIconMask)
+    #expect(!OAuthProvider.unrecognized("custom_acme").supportsTintedIconMask)
+  }
+
+  @Test func xProviderUsesTheOAuthXStrategy() {
+    #expect(OAuthProvider.x.strategy == "oauth_x")
+    #expect(OAuthProvider(strategy: "oauth_x") == .x)
+  }
+
   @Test
   func darkSchemeUsesDarkPngVariantForNonTintableClerkStaticProvider() throws {
     try withEnvironment(makeEnvironmentWithProviderLogos()) { environment in

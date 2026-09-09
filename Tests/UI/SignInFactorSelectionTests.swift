@@ -23,6 +23,15 @@ struct SignInFactorSelectionTests {
     return clerk.signIn
   }
 
+  @Test func deviceFactorsUseTheDedicatedBiometricEntry() {
+    let signIn = signIn(factors: [
+      .case11(.init(trustedDeviceId: .value("tdc_other_device"), safeIdentifier: .value("Another device"))),
+      .case3(.init(phoneNumberId: "idn_phone", safeIdentifier: "+15555550123")),
+    ])
+    #expect(signIn.startingFirstFactor?.strategy == .phoneCode)
+    #expect(signIn.alternativeFirstFactors(currentFactor: nil).map(\.strategy) == [.phoneCode])
+  }
+
   @Test
   func startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() throws {
     let signIn = signIn(factors: [
