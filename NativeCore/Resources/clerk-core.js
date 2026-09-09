@@ -9601,6 +9601,12 @@ isDevOrStagingUrl: (url) => {
 			this.singleSessionMode = false;
 			this.preferredChannels = null;
 			this.sessionMinter = false;
+			this.nativeSettings = {
+				apiEnabled: false,
+				trustedDeviceSignInEnabled: false,
+				trustedDeviceEnrollmentPromptAfterSignInEnabled: false,
+				trustedDeviceEnrollmentPromptAfterSignUpEnabled: false
+			};
 			this.fromJSON(data);
 		}
 		fromJSON(data) {
@@ -9610,6 +9616,12 @@ isDevOrStagingUrl: (url) => {
 			this.singleSessionMode = this.withDefault(data.single_session_mode, this.singleSessionMode);
 			this.preferredChannels = this.withDefault(data.preferred_channels, this.preferredChannels);
 			this.sessionMinter = this.withDefault(data.session_minter, this.sessionMinter);
+			this.nativeSettings = {
+				apiEnabled: data.native_settings?.api_enabled ?? false,
+				trustedDeviceSignInEnabled: data.native_settings?.trusted_device_sign_in_enabled ?? false,
+				trustedDeviceEnrollmentPromptAfterSignInEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_in_enabled ?? false,
+				trustedDeviceEnrollmentPromptAfterSignUpEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_up_enabled ?? false
+			};
 			return this;
 		}
 		__internal_toSnapshot() {
@@ -9619,7 +9631,13 @@ isDevOrStagingUrl: (url) => {
 				object: "auth_config",
 				reverification: this.reverification,
 				single_session_mode: this.singleSessionMode,
-				session_minter: this.sessionMinter
+				session_minter: this.sessionMinter,
+				native_settings: {
+					api_enabled: this.nativeSettings.apiEnabled,
+					trusted_device_sign_in_enabled: this.nativeSettings.trustedDeviceSignInEnabled,
+					trusted_device_enrollment_prompt_after_sign_in_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignInEnabled,
+					trusted_device_enrollment_prompt_after_sign_up_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignUpEnabled
+				}
 			};
 		}
 	};
@@ -12227,6 +12245,7 @@ isDevOrStagingUrl: (url) => {
 		fromJSON(data) {
 			if (!data) return this;
 			this.id = data.id;
+			this.createdAt = data.created_at == null ? void 0 : new Date(data.created_at);
 			this.emailAddress = data.email_address;
 			this.verification = new Verification(data.verification);
 			this.matchesSsoConnection = data.matches_sso_connection;
@@ -12237,6 +12256,7 @@ isDevOrStagingUrl: (url) => {
 			return {
 				object: "email_address",
 				id: this.id,
+				created_at: this.createdAt?.getTime(),
 				email_address: this.emailAddress,
 				verification: this.verification.__internal_toSnapshot(),
 				linked_to: this.linkedTo.map((link) => link.__internal_toSnapshot()),
@@ -13030,6 +13050,7 @@ isDevOrStagingUrl: (url) => {
 		fromJSON(data) {
 			if (!data) return this;
 			this.id = data.id;
+			this.createdAt = data.created_at == null ? void 0 : new Date(data.created_at);
 			this.identificationId = data.identification_id;
 			this.providerUserId = data.provider_user_id;
 			this.approvedScopes = data.approved_scopes;
@@ -13049,6 +13070,7 @@ isDevOrStagingUrl: (url) => {
 			return {
 				object: "external_account",
 				id: this.id,
+				created_at: this.createdAt?.getTime(),
 				identification_id: this.identificationId,
 				provider: this.provider,
 				provider_user_id: this.providerUserId,
@@ -13963,6 +13985,7 @@ isDevOrStagingUrl: (url) => {
 		fromJSON(data) {
 			if (!data) return this;
 			this.id = data.id;
+			this.createdAt = data.created_at == null ? void 0 : new Date(data.created_at);
 			this.phoneNumber = data.phone_number;
 			this.reservedForSecondFactor = data.reserved_for_second_factor;
 			this.defaultSecondFactor = data.default_second_factor;
@@ -31098,6 +31121,16 @@ isDevOrStagingUrl: (url) => {
 					"type": { "kind": "string" }
 				},
 				{
+					"name": "createdAt",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "date" }
+					}
+				},
+				{
 					"name": "emailAddress",
 					"optional": false,
 					"type": { "kind": "string" }
@@ -31572,6 +31605,16 @@ isDevOrStagingUrl: (url) => {
 					"type": { "kind": "string" }
 				},
 				{
+					"name": "createdAt",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "date" }
+					}
+				},
+				{
 					"name": "phoneNumber",
 					"optional": false,
 					"type": { "kind": "string" }
@@ -31704,6 +31747,16 @@ isDevOrStagingUrl: (url) => {
 					"name": "id",
 					"optional": false,
 					"type": { "kind": "string" }
+				},
+				{
+					"name": "createdAt",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "date" }
+					}
 				},
 				{
 					"name": "identificationId",
@@ -35362,6 +35415,19 @@ isDevOrStagingUrl: (url) => {
 					"type": { "kind": "boolean" }
 				},
 				{
+					"name": "nativeSettings",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "ref",
+							"name": "NativeAuthSettings"
+						}
+					}
+				},
+				{
 					"name": "id",
 					"optional": true,
 					"type": {
@@ -35370,6 +35436,32 @@ isDevOrStagingUrl: (url) => {
 						"omittable": true,
 						"value": { "kind": "string" }
 					}
+				}
+			]
+		},
+		"NativeAuthSettings": {
+			"name": "NativeAuthSettings",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "apiEnabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "trustedDeviceSignInEnabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "trustedDeviceEnrollmentPromptAfterSignInEnabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "trustedDeviceEnrollmentPromptAfterSignUpEnabled",
+					"optional": false,
+					"type": { "kind": "boolean" }
 				}
 			]
 		},
@@ -39095,7 +39187,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "91341bb20490c21fabf544da51ead3dfdda0dd21c07c43fb59dc0995a66400e5",
+		"contractHash": "bbc6f79351299de62809361ca0f66fd4b488bcbd7639c5c2e10bfb108fee1f28",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
