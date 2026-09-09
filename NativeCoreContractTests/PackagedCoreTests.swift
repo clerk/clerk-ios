@@ -205,6 +205,35 @@ import Testing
     #expect(capabilities.clientReads == after)
   }
 
+  @Test func sessionReloadReturnsReadableStateAfterTheOwnerStopsSelectingIt() async throws {
+    for status in ["active", "pending", "expired"] {
+      let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+      capabilities.clientResponse = capabilities.fixtures["authenticatedClient"]
+      let clerk = try await connect(capabilities)
+      defer { clerk.close() }
+      let original = try #require(clerk.session)
+      var session = try #require(capabilities.fixtures["session"]).object()
+      session["status"] = .string(status)
+      session["tasks"] = status == "pending" ? .array([.object(["key": .string("choose-organization")])]) : .array([])
+      var client = try #require(capabilities.fixtures["authenticatedClient"]).object()
+      client["sessions"] = .array([.object(session)])
+      capabilities.sessionReloadResponse = .object(["response": .object(session), "client": .object(client)])
+      let returned = try await original.reload()
+      #expect(returned.id == "sess_native")
+      #expect(returned.status.rawValue == status)
+      #expect(!returned.isInvalidated)
+      if status == "expired" {
+        #expect(clerk.session == nil)
+        #expect(original.isInvalidated)
+        #expect(original !== returned)
+      } else {
+        #expect(clerk.session === original)
+        #expect(returned === original)
+        if status == "pending" { #expect(returned.currentTask?.key.rawValue == "choose-organization") }
+      }
+    }
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

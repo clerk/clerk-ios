@@ -41857,10 +41857,7 @@ isDevOrStagingUrl: (url) => {
 				this.#invalidate(entry, false);
 			}
 		}
-		snapshot(settledTarget) {
-			if (this.#disposed) throw bridgeError$1("runtime_disposed");
-			this.#projectionParent = void 0;
-			this.#projectionEdge = void 0;
+		#reconcileRoots(settledTarget) {
 			const roots$1 = {};
 			const currentRoots = this.#options.roots();
 			for (const [key, descriptor] of Object.entries(roots)) {
@@ -41885,6 +41882,13 @@ isDevOrStagingUrl: (url) => {
 				this.#rootEntries.set(key, this.#entries.get(handle.id));
 				roots$1[key] = handle;
 			}
+			return roots$1;
+		}
+		snapshot(settledTarget) {
+			if (this.#disposed) throw bridgeError$1("runtime_disposed");
+			this.#projectionParent = void 0;
+			this.#projectionEdge = void 0;
+			const roots = this.#reconcileRoots(settledTarget);
 			const resources = [];
 			for (const entry of this.#entries.values()) {
 				if (!entry.active) continue;
@@ -41912,7 +41916,7 @@ isDevOrStagingUrl: (url) => {
 			return {
 				epoch: this.#epoch,
 				revision: ++this.#revision,
-				roots: roots$1,
+				roots,
 				resources,
 				invalidated
 			};
@@ -41947,6 +41951,7 @@ isDevOrStagingUrl: (url) => {
 				await this.#options.beforeInvoke?.(call.operation);
 				const target = this.resolve(call.target, operation.type);
 				const output = await operation.invoke(target, args);
+				this.#reconcileRoots(call.target.id);
 				if (operation.result.kind === "errorResult") {
 					if (!output || typeof output !== "object" || !("error" in output)) throw bridgeError$1("invalid_error_result");
 					result = { error: output.error === null ? null : failure(output.error, "clerk") };

@@ -17,6 +17,8 @@ import ClerkKit
   var appleIdentityCount = 0
   var clientReads = 0
   var signedOut = false
+  var clientResponse: JSONValue?
+  var sessionReloadResponse: JSONValue?
   var signInFirstFactors: JSONValue?
   var nextAuthError: JSONValue?
   var nextAuthErrorStatus = 422
@@ -73,6 +75,10 @@ import ClerkKit
       let body = try String(data: JSONEncoder().encode(error), encoding: .utf8)!
       return .object(["status": .number(Double(nextAuthErrorStatus)), "headers": .object(nextAuthErrorHeaders), "body": .string(body)])
     }
+    if url.path.hasSuffix("/sessions/sess_native"), let sessionReloadResponse {
+      let body = try String(data: JSONEncoder().encode(sessionReloadResponse), encoding: .utf8)!
+      return .object(["status": .number(200), "headers": .object([:]), "body": .string(body)])
+    }
     var response: JSONValue
     if url.path.hasSuffix("/magic_links/complete") {
       var signUp = try fixtures["signUp"]!.object()
@@ -90,7 +96,7 @@ import ClerkKit
       response = .object(["id": .string("td_native"), "object": .string("trusted_device"), "platform": .string("ios"), "app_identifier": .string("com.example.native"), "name": .null, "algorithm": .string("ES256"), "status": .string("active"), "created_at": .number(Date().timeIntervalSince1970 * 1000), "updated_at": .number(Date().timeIntervalSince1970 * 1000), "last_used_at": .null, "revoked_at": .null])
     } else if url.path.hasSuffix("/client") {
       clientReads += 1
-      response = fixtures[clientReads > 1 && !signedOut ? "authenticatedClient" : "client"]!
+      response = clientResponse ?? fixtures[clientReads > 1 && !signedOut ? "authenticatedClient" : "client"]!
     } else if url.path.hasSuffix("/sessions") { signedOut = true; response = fixtures["client"]! }
     else if url.path.hasSuffix("/tokens") {
       return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(data: JSONEncoder().encode(fixtures["token"]!), encoding: .utf8)!)])
