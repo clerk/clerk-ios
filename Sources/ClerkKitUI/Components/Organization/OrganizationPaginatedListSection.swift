@@ -4,9 +4,10 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkKit
 import SwiftUI
 
-struct OrganizationPaginatedListSection<Item: Identifiable, Content: View>: View {
+struct OrganizationPaginatedListSection<Item: CoreResource, Content: View>: View {
   let items: [Item]
   let hasNextPage: Bool
   let onLoadMore: () async -> Void
@@ -25,10 +26,10 @@ struct OrganizationPaginatedListSection<Item: Identifiable, Content: View>: View
   }
 
   var body: some View {
-    ForEach(items) { item in
+    ForEach(items, id: \.handle) { item in
       content(item)
         .onAppear {
-          guard hasNextPage, item.id == items.last?.id else { return }
+          guard hasNextPage, item.handle == items.last?.handle else { return }
           Task { await onLoadMore() }
         }
       Divider()

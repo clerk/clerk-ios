@@ -71,11 +71,11 @@ public struct OrganizationListView: View {
   }
 
   private var forceOrganizationSelection: Bool {
-    clerk.environment?.organizationSettings.forceOrganizationSelection == true
+    clerk.environment.organizationSettings.forceOrganizationSelection == true
   }
 
   private var organizationsEnabled: Bool {
-    clerk.environment?.organizationSettings.enabled == true
+    clerk.environment.organizationSettings.enabled == true
   }
 
   private var shouldShowPersonalAccount: Bool {
@@ -271,7 +271,7 @@ extension OrganizationListView {
     defer { isSelectingAccount = false }
 
     do {
-      try await clerk.auth.setActive(sessionId: session.id, organizationId: nil)
+      try await clerk.setActive(.init(organization: .null, session: .value(.case1(session.id))))
       dismissIfNeeded()
     } catch {
       accountList.error = error
@@ -285,7 +285,7 @@ extension OrganizationListView {
     defer { isSelectingAccount = false }
 
     do {
-      try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
+      try await clerk.setActive(.init(organization: .value(.case1(id)), session: .value(.case1(session.id))))
       dismissIfNeeded()
     } catch {
       accountList.error = organizationError(from: error)
@@ -325,10 +325,10 @@ extension OrganizationListView {
   }
 
   private func organizationError(from error: Error) -> Error {
-    if let clerkError = error as? ClerkAPIError,
+    if let clerkError = (error as? CoreError)?.errors.first,
        ["organization_not_found_or_unauthorized", "not_a_member_in_organization"].contains(clerkError.code)
     {
-      return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
+      return PresentationError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
     }
     return error
   }

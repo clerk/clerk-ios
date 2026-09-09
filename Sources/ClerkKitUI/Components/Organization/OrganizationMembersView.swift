@@ -32,7 +32,7 @@ struct OrganizationMembersView: View {
   }
 
   private var canManageMembershipRequests: Bool {
-    canManageMemberships && clerk.environment?.organizationSettings.domains.enabled == true
+    canManageMemberships && clerk.environment.organizationSettings.domains.enabled == true
   }
 
   private var availableTabs: [OrganizationMembersTab] {
@@ -227,7 +227,7 @@ private enum OrganizationMembersTab: Hashable, Identifiable {
         client.lastActiveSessionId = session.id
 
         preview.client = client
-        var environment = Clerk.Environment.mock
+        var environment = EnvironmentResource.mock
         environment.organizationSettings.domains.enabled = true
         preview.environment = environment
       })

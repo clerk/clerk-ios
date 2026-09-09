@@ -125,7 +125,7 @@ struct OrganizationDomainVerifyCodeView: View {
     verificationState = .default
 
     do {
-      currentDomain = try await currentDomain.sendEmailCode(affiliationEmailAddress: emailAddress)
+      currentDomain = try await currentDomain.prepareAffiliationVerification(.init(affiliationEmailAddress: emailAddress))
       codeLimiter.recordCodeSent(for: emailAddress)
     } catch {
       otpFieldIsFocused = false
@@ -139,7 +139,7 @@ struct OrganizationDomainVerifyCodeView: View {
     verificationState = .verifying
 
     do {
-      try await currentDomain.verifyCode(code)
+      _ = try await currentDomain.attemptAffiliationVerification(.init(code: code))
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
@@ -158,8 +158,8 @@ struct OrganizationDomainVerifyCodeView: View {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
-        self.error = clerkError
+      if let clerkError = (error as? CoreError)?.errors.first, clerkError.meta?.paramName == nil {
+        self.error = error
         otpFieldIsFocused = false
       }
 

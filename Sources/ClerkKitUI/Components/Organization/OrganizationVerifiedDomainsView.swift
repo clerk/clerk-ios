@@ -209,15 +209,15 @@ private struct OrganizationDomainEnrollmentBadge: View {
 
   var body: some View {
     if domain.isVerified {
-      switch domain.enrollmentModeType {
+      switch domain.enrollmentMode {
       case .manualInvitation:
         Badge(key: "No automatic enrollment", style: .secondary)
       case .automaticInvitation:
         Badge(key: "Automatic invitations", style: .positive)
       case .automaticSuggestion:
         Badge(key: "Automatic suggestions", style: .positive)
-      case .unknown:
-        Badge(string: domain.enrollmentMode, style: .secondary)
+      case .enterpriseSso, .unrecognized:
+        Badge(string: domain.enrollmentMode.rawValue, style: .secondary)
       }
     } else {
       Badge(key: "Unverified", style: .warning)
@@ -273,8 +273,8 @@ extension OrganizationVerifiedDomainsView {
     defer { isLoadingDomains = false }
 
     do {
-      let page = try await organization.getDomains(page: page, pageSize: pageSize)
-      domainsPager.replace(with: page)
+      let page = try await organization.getDomains(.init(initialPage: Double(page), pageSize: Double(pageSize)))
+      domainsPager.replace(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -298,16 +298,16 @@ extension OrganizationVerifiedDomainsView {
 
     do {
       let pages = try await withThrowingTaskGroup(
-        of: (index: Int, page: ClerkPaginatedResponse<OrganizationDomain>).self
+        of: (index: Int, page: ClerkPaginatedResponseOrganizationDomain).self
       ) { group in
         for (index, offset) in offsets.enumerated() {
           group.addTask {
-            let page = try await organization.getDomains(offset: offset, pageSize: pageSize)
+            let page = try await organization.getDomains(.init(initialPage: Double(offset / pageSize + 1), pageSize: Double(pageSize)))
             return (index, page)
           }
         }
 
-        var indexedPages: [(index: Int, page: ClerkPaginatedResponse<OrganizationDomain>)] = []
+        var indexedPages: [(index: Int, page: ClerkPaginatedResponseOrganizationDomain)] = []
         for try await indexedPage in group {
           indexedPages.append(indexedPage)
         }
@@ -316,7 +316,7 @@ extension OrganizationVerifiedDomainsView {
           .sorted { $0.index < $1.index }
           .map { $0.page }
       }
-      domainsPager.replace(with: pages)
+      domainsPager.replace(pages: pages.map { (data: $0.data, totalCount: $0.totalCount) })
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -333,8 +333,8 @@ extension OrganizationVerifiedDomainsView {
     defer { domainsPager.isLoadingMore = false }
 
     do {
-      let page = try await organization.getDomains(offset: domainsPager.offset, pageSize: pageSize)
-      domainsPager.append(page)
+      let page = try await organization.getDomains(.init(initialPage: Double(domainsPager.nextPage), pageSize: Double(pageSize)))
+      domainsPager.append(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -435,7 +435,7 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
         client.sessions = [session]
         client.lastActiveSessionId = session.id
 
-        var environment = Clerk.Environment.mock
+        var environment = EnvironmentResource.mock
         environment.organizationSettings.domains.enabled = true
 
         preview.client = client

@@ -26,7 +26,7 @@ struct OrganizationProfileFormView: View {
   @State private var organizationName: String
   @State private var slug: String
   @State private var error: Error?
-  @State private var slugValidationError: ClerkClientError?
+  @State private var slugValidationError: PresentationError?
   @State private var photosPickerIsPresented = false
   @State private var fileImporterIsPresented = false
   @State private var photosPickerItem: PhotosPickerItem?
@@ -37,7 +37,7 @@ struct OrganizationProfileFormView: View {
   @State private var isPreloadedLogoLoading = false
 
   private var slugEnabled: Bool {
-    clerk.environment?.organizationSettings.slug.disabled == false
+    clerk.environment.organizationSettings.slug.disabled == false
   }
 
   private var imageIsLoading: Bool {
@@ -80,8 +80,8 @@ struct OrganizationProfileFormView: View {
     mode = .create(createPresentation)
     self.creationDefaults = creationDefaults
     self.onComplete = onComplete
-    _organizationName = State(initialValue: creationDefaults?.form?.name ?? "")
-    _slug = State(initialValue: creationDefaults?.form?.slug ?? "")
+    _organizationName = State(initialValue: creationDefaults?.form.name ?? "")
+    _slug = State(initialValue: creationDefaults?.form.slug ?? "")
   }
 
   init(
@@ -377,7 +377,7 @@ extension OrganizationProfileFormView {
     guard !name.isEmpty else { return }
 
     guard !slugEnabled || isValidSlug(trimmedSlug) else {
-      slugValidationError = ClerkClientError(message: "Enter a slug using lowercase letters, numbers, and hyphens.", localizationBundle: .module)
+      slugValidationError = PresentationError(message: "Enter a slug using lowercase letters, numbers, and hyphens.", localizationBundle: .module)
       return
     }
 
@@ -400,18 +400,18 @@ extension OrganizationProfileFormView {
     name: String,
     slug: String?
   ) async throws -> Organization {
-    var organization = try await clerk.organizations.create(name: name, slug: slug)
+    var organization = try await clerk.createOrganization(.init(name: name, slug: slug))
 
     if let logoData = await organizationLogoDataForUpload() {
       do {
-        organization = try await organization.setLogo(imageData: logoData)
+        organization = try await organization.setLogo(.init(file: .case2(.init(name: "logo.jpg", contentType: "image/jpeg", data: logoData))))
       } catch {
         ClerkLogger.error("Failed to set organization logo", error: error)
       }
     }
 
     if let session = clerk.session {
-      try await clerk.auth.setActive(sessionId: session.id, organizationId: organization.id)
+      try await clerk.setActive(.init(organization: .value(.case1(organization.id)), session: .value(.case1(session.id))))
     }
 
     return organization
@@ -422,10 +422,10 @@ extension OrganizationProfileFormView {
     slug: String?
   ) async throws -> Organization {
     guard let organization else {
-      throw ClerkClientError(message: "Unable to update organization without an active organization.", localizationBundle: .module)
+      throw PresentationError(message: "Unable to update organization without an active organization.", localizationBundle: .module)
     }
 
-    let updatedOrganization = try await organization.update(name: name, slug: slug)
+    let updatedOrganization = try await organization.update(.init(name: name, slug: slug))
     self.organization = updatedOrganization
 
     return updatedOrganization
@@ -456,7 +456,7 @@ extension OrganizationProfileFormView {
           let data = try await item.loadTransferable(type: Data.self),
           let resizedData = processImageData(data)
         else {
-          throw ClerkClientError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
+          throw PresentationError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
         }
         guard !Task.isCancelled else { return }
         if mode.isUpdate {
@@ -488,7 +488,7 @@ extension OrganizationProfileFormView {
         let url = try result.get()
         let data = try await Self.readSecurityScopedFileData(from: url)
         guard let resizedData = processImageData(data) else {
-          throw ClerkClientError(message: "There was an error loading the selected image file.", localizationBundle: .module)
+          throw PresentationError(message: "There was an error loading the selected image file.", localizationBundle: .module)
         }
         guard !Task.isCancelled else { return }
         photosPickerItem = nil
@@ -523,7 +523,7 @@ extension OrganizationProfileFormView {
   private func setOrganizationLogo(imageData: Data) async throws {
     guard let organization else { return }
 
-    self.organization = try await organization.setLogo(imageData: imageData)
+    self.organization = try await organization.setLogo(.init(file: .case2(.init(name: "logo.jpg", contentType: "image/jpeg", data: imageData))))
     selectedImageData = imageData
   }
 
@@ -540,9 +540,9 @@ extension OrganizationProfileFormView {
       defer { isPickerImageLoading = false }
 
       do {
-        try await organization.deleteLogo()
+        _ = try await organization.setLogo(.init(file: nil))
         clearSelectedLogo()
-        self.organization = try await clerk.organizations.get(id: organization.id)
+        self.organization = try await clerk.getOrganization(organization.id)
       } catch {
         self.error = error
         ClerkLogger.error("Failed to delete organization logo", error: error)
@@ -556,7 +556,7 @@ extension OrganizationProfileFormView {
 // MARK: - Helpers
 
 extension OrganizationProfileFormView {
-  private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
+  private func advisoryMessage(for advisory: OrganizationCreationDefaultsAdvisory) -> String? {
     switch advisory.code {
     case "organization_already_exists":
       let orgName = advisory.meta["organization_name"] ?? ""
@@ -568,7 +568,7 @@ extension OrganizationProfileFormView {
   }
 
   private func loadDefaultLogo() {
-    guard let logoUrl = creationDefaults?.form?.logo, let url = URL(string: logoUrl) else { return }
+    guard let logoUrl = creationDefaults?.form.logo, let url = URL(string: logoUrl) else { return }
 
     preloadedLogoTask = Task {
       isPreloadedLogoLoading = true

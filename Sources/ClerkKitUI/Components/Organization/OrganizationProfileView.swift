@@ -117,7 +117,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
       rows.append(.members)
     }
 
-    if clerk.environment?.organizationSettings.domains.enabled == true,
+    if clerk.environment.organizationSettings.domains.enabled == true,
        organizationMembership?.canReadDomains == true || organizationMembership?.canManageDomains == true
     {
       rows.append(.verifiedDomains)
@@ -133,7 +133,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
       rows.append(.leaveOrganization)
     }
 
-    if clerk.environment?.organizationSettings.actions.adminDelete == true,
+    if clerk.environment.organizationSettings.actions.adminDelete == true,
        organization?.adminDeleteEnabled == true,
        organizationMembership?.canDeleteOrganization == true
     {
@@ -233,10 +233,10 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
           )
         }
         .task {
-          _ = try? await clerk.refreshEnvironment()
+          _ = try? await clerk.environment.reload()
         }
         .task {
-          _ = try? await clerk.refreshClient()
+          _ = try? await clerk.user?.reload()
         }
         .environment(
           OrganizationProfileBuiltInRouter(
@@ -590,7 +590,7 @@ private enum OrganizationProfileListRowID<Route: Hashable>: Hashable {
       client.sessions = [session]
       client.lastActiveSessionId = session.id
 
-      var environment = Clerk.Environment.mock
+      var environment = EnvironmentResource.mock
       environment.organizationSettings.domains.enabled = true
       preview.client = client
       preview.environment = environment

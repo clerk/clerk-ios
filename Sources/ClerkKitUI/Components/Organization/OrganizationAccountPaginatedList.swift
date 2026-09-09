@@ -7,7 +7,7 @@
 import ClerkKit
 import SwiftUI
 
-struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable, Row: View, EmptyState: View>: View {
+struct OrganizationAccountPaginatedList<Item: CoreResource, Row: View, EmptyState: View>: View {
   let pager: OrganizationAccountListPager<Item>
   let isLoading: Bool
   let emptyState: (() -> EmptyState)?

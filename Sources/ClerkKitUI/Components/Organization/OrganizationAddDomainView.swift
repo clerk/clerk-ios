@@ -127,7 +127,7 @@ struct OrganizationAddDomainView: View {
     guard let organization, canSubmit else { return }
 
     do {
-      let domain = try await organization.createDomain(domainName: trimmedDomainName)
+      let domain = try await organization.createDomain(trimmedDomainName)
       onDomainChanged()
 
       if domain.isVerified {

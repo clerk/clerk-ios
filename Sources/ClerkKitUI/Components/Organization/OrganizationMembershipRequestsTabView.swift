@@ -29,7 +29,7 @@ struct OrganizationMembershipRequestsTabView: View {
   }
 
   private var canManageMembershipRequests: Bool {
-    canManageMemberships && clerk.environment?.organizationSettings.domains.enabled == true
+    canManageMemberships && clerk.environment.organizationSettings.domains.enabled == true
   }
 
   var body: some View {

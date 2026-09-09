@@ -92,7 +92,7 @@ struct OrganizationDomainEmailAddressView: View {
     guard canSubmit else { return }
 
     do {
-      let preparedDomain = try await domain.sendEmailCode(affiliationEmailAddress: affiliationEmailAddress)
+      let preparedDomain = try await domain.prepareAffiliationVerification(.init(affiliationEmailAddress: affiliationEmailAddress))
       onCodeSent(preparedDomain, affiliationEmailAddress)
     } catch {
       guard !error.isCancellationError else { return }

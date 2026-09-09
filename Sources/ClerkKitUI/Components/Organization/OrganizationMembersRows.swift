@@ -15,12 +15,12 @@ struct OrganizationMemberRow: View {
 
   let membership: OrganizationMembership
   let roleName: String
-  let roles: [RoleResource]
+  let roles: [Role]
   let isCurrentUser: Bool
   let canManageMemberships: Bool
   let hasRoleSetMigration: Bool
   let isMutating: Bool
-  let onUpdateRole: (RoleResource) async -> Void
+  let onUpdateRole: (Role) async -> Void
   let onRemove: () async -> Void
 
   private var publicUserData: PublicUserData? {
@@ -110,7 +110,7 @@ struct OrganizationMemberRow: View {
   private var memberMenu: some View {
     Menu {
       Menu {
-        ForEach(roles) { role in
+        ForEach(roles, id: \.id) { role in
           AsyncButton {
             await onUpdateRole(role)
           } label: { _ in

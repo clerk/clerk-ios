@@ -16,7 +16,7 @@ struct OrganizationInviteMembersView: View {
   private let cancellationPlacement: ToolbarItemPlacement
   private let onComplete: ((OrganizationInviteMembersCompletion) async -> Void)?
 
-  @State private var roleOptions: [RoleResource] = []
+  @State private var roleOptions: [Role] = []
   @State private var emailAddresses: [String] = []
   @State private var selectedRoleKey = ""
   @State private var isLoadingRoles = true
@@ -150,7 +150,7 @@ struct OrganizationInviteMembersView: View {
           .foregroundStyle(theme.colors.mutedForeground)
 
         Menu {
-          ForEach(roleOptions) { role in
+          ForEach(roleOptions, id: \.id) { role in
             Button {
               selectedRoleKey = role.key
             } label: {
@@ -211,7 +211,7 @@ struct OrganizationInviteMembersView: View {
     defer { isLoadingRoles = false }
 
     do {
-      let rolesPage = try await organization.getRoles(page: 1, pageSize: 20)
+      let rolesPage = try await organization.getRoles(.init(initialPage: 1, pageSize: 20))
       let roles = rolesPage.data
       if !roles.contains(where: { $0.key == selectedRoleKey }) {
         selectedRoleKey = ""
@@ -236,12 +236,12 @@ struct OrganizationInviteMembersView: View {
     let submittedEmailAddresses = emailAddresses
     guard !submittedEmailAddresses.isEmpty, roleOptions.contains(where: { $0.key == selectedRoleKey }) else { return }
     guard let organization = clerk.organization else {
-      error = ClerkClientError(message: "Unable to send invitations without an active organization.", localizationBundle: .module)
+      error = PresentationError(message: "Unable to send invitations without an active organization.", localizationBundle: .module)
       return
     }
 
     do {
-      try await organization.inviteMembers(emailAddresses: submittedEmailAddresses, role: selectedRoleKey)
+      _ = try await organization.inviteMembers(.init(emailAddresses: submittedEmailAddresses, role: selectedRoleKey))
       await complete(.sentInvitations)
     } catch {
       self.error = error
@@ -260,7 +260,7 @@ struct OrganizationInviteMembersView: View {
   private func selectDefaultRoleIfNeeded() {
     guard selectedRoleKey.isEmpty else { return }
 
-    let defaultRoleKey = clerk.environment?.organizationSettings.domains.defaultRole
+    let defaultRoleKey = clerk.environment.organizationSettings.domains.defaultRole
     if let defaultRoleKey, roleOptions.contains(where: { $0.key == defaultRoleKey }) {
       selectedRoleKey = defaultRoleKey
     } else if roleOptions.count == 1, let role = roleOptions.first {

@@ -69,11 +69,11 @@ public struct OrganizationSwitcher<Route: Hashable, LabelContent: View, Destinat
   }
 
   private var forceOrganizationSelection: Bool {
-    clerk.environment?.organizationSettings.forceOrganizationSelection == true
+    clerk.environment.organizationSettings.forceOrganizationSelection == true
   }
 
   private var organizationsEnabled: Bool {
-    clerk.environment?.organizationSettings.enabled == true
+    clerk.environment.organizationSettings.enabled == true
   }
 
   private var shouldShowPersonalAccount: Bool {

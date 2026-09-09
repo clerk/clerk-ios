@@ -112,9 +112,9 @@ extension OrganizationProfileActionConfirmationView {
       switch action {
       case .leave:
         guard let user = clerk.user else { return }
-        try await user.leaveOrganization(organizationId: organization.id)
+        _ = try await user.leaveOrganization(organization.id)
       case .delete:
-        try await organization.destroy()
+        _ = try await organization.destroy()
       }
 
       if clerk.organization == nil {

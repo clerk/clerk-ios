@@ -15,7 +15,7 @@ struct OrganizationDomainEnrollmentModeView: View {
   let onDomainChanged: @MainActor () -> Void
 
   @State private var domain: OrganizationDomain
-  @State private var selectedMode: OrganizationDomain.EnrollmentMode
+  @State private var selectedMode: OrganizationEnrollmentMode
   @State private var deletePending = false
   @State private var error: Error?
 
@@ -24,13 +24,13 @@ struct OrganizationDomainEnrollmentModeView: View {
     onDomainChanged: @escaping @MainActor () -> Void
   ) {
     _domain = State(initialValue: domain)
-    _selectedMode = State(initialValue: domain.enrollmentModeType)
+    _selectedMode = State(initialValue: domain.enrollmentMode)
     self.onDomainChanged = onDomainChanged
   }
 
   private var enrollmentModeOptions: [OrganizationDomainEnrollmentModeOption] {
     OrganizationDomainEnrollmentModeOption.options(
-      for: clerk.environment?.organizationSettings.domains.enrollmentModes ?? []
+      for: clerk.environment.organizationSettings.domains.enrollmentModes
     )
   }
 
@@ -131,7 +131,7 @@ private struct OrganizationDomainEnrollmentModeRow: View {
   @Environment(\.clerkTheme) private var theme
 
   let option: OrganizationDomainEnrollmentModeOption
-  @Binding var selectedMode: OrganizationDomain.EnrollmentMode
+  @Binding var selectedMode: OrganizationEnrollmentMode
 
   private var isSelected: Bool {
     selectedMode == option.mode
@@ -186,10 +186,10 @@ extension OrganizationDomainEnrollmentModeView {
   @MainActor
   private func save() async {
     do {
-      domain = try await domain.updateEnrollmentMode(
-        selectedMode,
+      domain = try await domain.updateEnrollmentMode(.init(
+        enrollmentMode: selectedMode,
         deletePending: deletePending
-      )
+      ))
       onDomainChanged()
       dismiss()
     } catch {
@@ -204,7 +204,7 @@ extension OrganizationDomainEnrollmentModeView {
 // MARK: - Types
 
 private struct OrganizationDomainEnrollmentModeOption: Identifiable {
-  let mode: OrganizationDomain.EnrollmentMode
+  let mode: OrganizationEnrollmentMode
   let title: LocalizedStringKey
   let description: LocalizedStringKey
 
@@ -212,9 +212,9 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
     mode.rawValue
   }
 
-  static func options(for rawEnrollmentModes: [String]) -> [Self] {
+  static func options(for rawEnrollmentModes: [OrganizationEnrollmentMode]) -> [Self] {
     allOptions.filter { option in
-      rawEnrollmentModes.contains(option.mode.rawValue)
+      rawEnrollmentModes.contains(option.mode)
     }
   }
 
@@ -244,18 +244,18 @@ private struct OrganizationDomainEnrollmentModeOption: Identifiable {
     domain: {
       var domain = OrganizationDomain.mock
       domain.name = "clerky.com"
-      domain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
+      domain.enrollmentMode = OrganizationEnrollmentMode.manualInvitation.rawValue
       domain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
       return domain
     }()
   ) {}
     .environment(
       Clerk.preview { preview in
-        var environment = Clerk.Environment.mock
+        var environment = EnvironmentResource.mock
         environment.organizationSettings.domains.enrollmentModes = [
-          OrganizationDomain.EnrollmentMode.manualInvitation.rawValue,
-          OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue,
-          OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue,
+          OrganizationEnrollmentMode.manualInvitation.rawValue,
+          OrganizationEnrollmentMode.automaticInvitation.rawValue,
+          OrganizationEnrollmentMode.automaticSuggestion.rawValue,
         ]
         preview.environment = environment
       }
