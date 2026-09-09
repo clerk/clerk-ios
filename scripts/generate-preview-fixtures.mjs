@@ -298,6 +298,10 @@ for (const variant of [
           data: [client.sessions[0].user.organization_memberships[0]],
           total_count: 1,
         });
+      if (url.pathname.endsWith("/organization_suggestions"))
+        return response({ data: [{ object: "organization_suggestion", id: "sug_preview", status: "pending",
+          public_organization_data: { id: "org_suggested", has_image: false, image_url: "", name: "Suggested Labs", slug: "suggested" },
+          created_at: now, updated_at: now }], total_count: 1 });
       if (
         url.pathname.endsWith("/invitations") ||
         url.pathname.endsWith("/membership_requests") ||
@@ -319,6 +323,7 @@ for (const variant of [
     await call(f.group("clerk", "environment"), "EnvironmentResource.reload");
     if (variant !== "signedOut") {
       await call(f.state.roots.user, "User.getSessions");
+      await call(f.state.roots.user, "User.getOrganizationSuggestions");
       const orgRef = f.resource(f.state.roots.user).organizationMemberships[0]
         .$ref;
       const org = f.resource(orgRef).organization.$ref;
