@@ -22,6 +22,13 @@ while still rejecting old-generation requests. No native ordering gate is
 retained. Missing/invalid dates cannot prove that an older request has newer
 state. Resource-only responses without a client snapshot are outside this rule.
 
+Credential changes have a separate, stronger fence: after a changed credential
+is persisted, replies issued with the previous credential cannot commit a client
+snapshot or credential, even with a newer sequence/date. See the
+[identity controller audit](identity-controller-test-audit.md). The date-ordering
+fixtures repeat the existing credential so they exercise timestamp/sequence
+ordering independently of rotation.
+
 The embedded ordering tests cover direct client refresh, both `client` and
 `meta.client` piggybacks, date/version precedence, missing/invalid dates, reset,
 preserved tasks and credentials, and a usable resource after rejection. Shared

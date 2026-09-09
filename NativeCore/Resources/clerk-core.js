@@ -4701,21 +4701,34 @@ var ClerkCore = (function(exports) {
 		let disposed = false;
 		let writes = Promise.resolve();
 		let sequence = 0;
+		let credentialRevision = 0;
 		let acceptedClient;
 		const requests = /* @__PURE__ */ new WeakMap();
 		const assertCurrent = (expected) => {
 			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
 		};
+		const assertCredentialCurrent = (expected) => {
+			if (expected !== credentialRevision) throw Object.assign(/* @__PURE__ */ new Error("The client credential changed while the request was in flight."), { code: "stale_client_request" });
+		};
 		core.__internal_onBeforeRequest(async (request) => {
 			const current = generation;
+			let credential;
+			let revision;
+			let pendingWrites;
+			do {
+				pendingWrites = writes;
+				await pendingWrites;
+				assertCurrent(current);
+				revision = credentialRevision;
+				credential = await storage.read();
+				assertCurrent(current);
+			} while (pendingWrites !== writes || revision !== credentialRevision);
 			requests.set(request, {
 				generation: current,
-				sequence: ++sequence
+				sequence: ++sequence,
+				credentialRevision: revision,
+				credential
 			});
-			await writes;
-			assertCurrent(current);
-			const credential = await storage.read();
-			assertCurrent(current);
 			request.credentials = "omit";
 			request.url?.searchParams.set("_is_native", "1");
 			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
@@ -4736,6 +4749,7 @@ var ClerkCore = (function(exports) {
 			const serverDate = Number.isFinite(parsedDate) ? parsedDate : void 0;
 			const commit = writes.then(async () => {
 				assertCurrent(issued.generation);
+				assertCredentialCurrent(issued.credentialRevision);
 				if (client && options.native !== false && !credential && !await storage.read()) throw Object.assign(/* @__PURE__ */ new Error("The native client response has no client credential."), { code: "missing_client_credential" });
 				assertCurrent(issued.generation);
 				if (client && acceptedClient && issued.sequence <= acceptedClient.sequence) {
@@ -4743,6 +4757,7 @@ var ClerkCore = (function(exports) {
 				}
 				if (credential) await storage.write(credential);
 				assertCurrent(issued.generation);
+				if (credential && credential !== issued.credential) ++credentialRevision;
 				if (client) acceptedClient = {
 					sequence: Math.max(acceptedClient?.sequence ?? issued.sequence, issued.sequence),
 					serverDate: serverDate === void 0 ? acceptedClient?.serverDate : Math.max(acceptedClient?.serverDate ?? serverDate, serverDate),

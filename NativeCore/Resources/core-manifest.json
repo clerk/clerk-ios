@@ -30,9 +30,9 @@
   },
   "namingPolicy": "Remove Future and trailing Resource; fail collisions.",
   "errorPolicy": "Approved authentication error-only envelopes throw after state is applied.",
-  "coreRevision": "2122fc015f9fe4af562928fd16e3f7b745d1bdba",
-  "bundleSHA256": "65a3786fc5172dad6c5e64c3796c6ca75f711023998dfb8b07d7049a080ad859",
-  "bundleBytes": 1310206,
+  "coreRevision": "f64a85d7acc02fc7253a930c9b59186d6a371bea",
+  "bundleSHA256": "3a37d56c83fb50595438ff64b377ae6984442da8f5d8d185d262c179819a4379",
+  "bundleBytes": 1310871,
   "thirdPartyNoticesSHA256": "e4223a282e22ea86b1215013d7e6c5f4e6f02be8d14ca2ce357ed14ba319e1e9",
   "bundledDependencies": [
     {

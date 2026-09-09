@@ -365,7 +365,7 @@ import Testing
     #expect(clerk.session === session)
     #expect(session.status == .pending)
     #expect(session.currentTask?.key.rawValue == "choose-organization")
-    #expect(capabilities.base.credential == "newer-response-credential")
+    #expect(capabilities.base.credential == "fixture-client-credential")
     _ = try await session.reload()
     #expect(session.status == .pending)
   }
@@ -390,6 +390,76 @@ import Testing
       }
       #expect(capabilities.base.credential == credential)
     }
+  }
+
+  @Test func credentialRotationRejectsResponsesIssuedWithThePreviousCredential() async throws {
+    let capabilities = try RotatingClientResponseCapabilities()
+    let clerk = try await connect(capabilities)
+    defer { capabilities.release(0); capabilities.release(1); clerk.close() }
+    let session = try #require(clerk.session)
+    let first = Task { try await session.reload() }
+    try await eventually { capabilities.waiting == 1 }
+    let second = Task { try await session.reload() }
+    try await eventually { capabilities.waiting == 2 }
+    capabilities.release(0)
+    _ = try await first.value
+    #expect(session.status == .pending)
+    capabilities.release(1)
+    do {
+      _ = try await second.value
+      Issue.record("Expected the previous credential's response to be rejected")
+    } catch let error as CoreError {
+      #expect(error.code == "stale_client_request")
+    }
+    #expect(clerk.session === session)
+    #expect(session.currentTask?.key.rawValue == "choose-organization")
+    #expect(capabilities.base.credential == "rotated-client-credential")
+    _ = try await session.reload()
+    #expect(session.status == .pending)
+  }
+}
+
+@MainActor private final class RotatingClientResponseCapabilities: NativeCapabilities {
+  let base: FixtureCapabilities
+  var supported: [String] {
+    base.supported
+  }
+
+  var waiting = 0
+  private var count = 0
+  private var continuations: [CheckedContinuation<Void, Never>?] = [nil, nil]
+
+  init() throws {
+    base = try FixtureCapabilities(data: PackageProof.fixtureData())
+    base.clientResponse = try #require(base.fixtures["authenticatedClient"])
+  }
+
+  func release(_ index: Int) {
+    continuations[index]?.resume()
+    continuations[index] = nil
+  }
+
+  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    if try capability != "http" || arguments.object()["url"]?.url().path.hasSuffix("/sessions/sess_native") != true {
+      return try await base.perform(capability, arguments: arguments)
+    }
+    let index = count
+    count += 1
+    if index < 2 {
+      waiting += 1
+      await withCheckedContinuation { continuations[index] = $0 }
+    }
+    var session = try #require(base.fixtures["session"]).object()
+    if index != 1 {
+      session["status"] = .string("pending")
+      session["tasks"] = .array([.object(["key": .string("choose-organization")])])
+    }
+    var client = try #require(base.clientResponse).object()
+    client["sessions"] = .array([.object(session)])
+    let body = JSONValue.object(["response": .object(session), "client": .object(client)])
+    var headers: [String: JSONValue] = ["date": .string(index == 0 ? "Wed, 09 Sep 2026 16:00:01 GMT" : "Wed, 09 Sep 2026 16:00:02 GMT")]
+    if index == 0 { headers["authorization"] = .string("rotated-client-credential") }
+    return try .object(["status": .number(200), "headers": .object(headers), "body": .string(String(decoding: JSONEncoder().encode(body), as: UTF8.self))])
   }
 }
 
@@ -483,7 +553,7 @@ import Testing
       "status": .number(200),
       "headers": .object([
         "date": .string(older ? "Wed, 09 Sep 2026 16:00:00 GMT" : "Wed, 09 Sep 2026 16:00:01 GMT"),
-        "authorization": .string(older ? "older-response-credential" : "newer-response-credential"),
+        "authorization": .string(older ? "older-response-credential" : "fixture-client-credential"),
       ]),
       "body": .string(String(decoding: JSONEncoder().encode(payload), as: UTF8.self)),
     ])

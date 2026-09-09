@@ -139,7 +139,8 @@ import ClerkKit
       response = .object(resource)
     }
     let body = try String(data: JSONEncoder().encode(JSONValue.object(["response": response])), encoding: .utf8)!
-    return .object(["status": .number(200), "headers": .object(["authorization": .string("fixture-client-credential")]), "body": .string(body)])
+    let headers: [String: JSONValue] = url.path.hasSuffix("/environment") ? [:] : ["authorization": .string("fixture-client-credential")]
+    return .object(["status": .number(200), "headers": .object(headers), "body": .string(body)])
   }
 
   private var biometricChallenge: JSONValue {
