@@ -13,7 +13,7 @@ struct SecuredByClerkView: View {
   @Environment(\.clerkTheme) private var theme
 
   var body: some View {
-    if clerk.environment?.displayConfig.branded == true {
+    if clerk.environment.displayConfig.branded == true {
       HStack(spacing: 6) {
         Text("Secured by", bundle: .module)
         Image("clerk-logo", bundle: .module)
@@ -163,7 +163,7 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
 
 extension Clerk {
   fileprivate var shouldShowSecuredByClerkFooter: Bool {
-    shouldShowDevelopmentModeWarning || environment?.displayConfig.branded == true
+    shouldShowDevelopmentModeWarning || environment.displayConfig.branded == true
   }
 }
 

@@ -56,7 +56,7 @@ struct SessionTaskMfaVerifyTotpView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified" {
+        if let clerkApiError = (error as? CoreError)?.errors.first, clerkApiError.code == "verification_already_verified" {
           return .init(text: "Continue") {
             verificationState = .verifying
             handleSuccessfulVerification()
@@ -86,7 +86,7 @@ struct SessionTaskMfaVerifyTotpView: View {
     verificationState = .verifying
 
     do {
-      let totp = try await user.verifyTOTP(code: code)
+      let totp = try await user.verifyTOTP(.init(code: code))
       guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
       guard !Task.isCancelled else {
         otpFieldState = .default
@@ -105,8 +105,8 @@ struct SessionTaskMfaVerifyTotpView: View {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
-        self.error = clerkError
+      if let clerkError = (error as? CoreError)?.errors.first, clerkError.meta?.paramName == nil {
+        self.error = error
         otpFieldIsFocused = false
       }
 

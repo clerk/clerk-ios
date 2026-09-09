@@ -60,7 +60,7 @@ struct UserButtonSignOutView: View {
   private func signOut() async {
     guard let sessionId = clerk.session?.id else { return }
     do {
-      try await clerk.auth.signOut(sessionId: sessionId)
+      try await clerk.signOut(.init(sessionId: sessionId))
       dismiss()
     } catch {
       self.error = error

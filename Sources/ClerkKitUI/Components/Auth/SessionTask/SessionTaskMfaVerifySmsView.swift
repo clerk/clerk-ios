@@ -110,7 +110,7 @@ struct SessionTaskMfaVerifySmsView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified" {
+        if let clerkApiError = (error as? CoreError)?.errors.first, clerkApiError.code == "verification_already_verified" {
           return .init(text: "Continue") {
             Task {
               do {
@@ -142,7 +142,7 @@ struct SessionTaskMfaVerifySmsView: View {
     verificationState = .verifying
 
     do {
-      try await phoneNumber.verifyCode(code)
+      try await phoneNumber.attemptVerification(.init(code: code))
       guard clerk.authFlowPresentationIsCurrent(token) else { return .stop }
       guard !Task.isCancelled else {
         otpFieldState = .default
@@ -160,8 +160,8 @@ struct SessionTaskMfaVerifySmsView: View {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
-        self.error = clerkError
+      if let clerkError = (error as? CoreError)?.errors.first, clerkError.meta?.paramName == nil {
+        self.error = error
         otpFieldIsFocused = false
       }
 
@@ -171,11 +171,12 @@ struct SessionTaskMfaVerifySmsView: View {
 
   private func handleSuccessfulVerification() async throws {
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
-    let reserved = try await phoneNumber.setReservedForSecondFactor()
+    let reserved = try await phoneNumber.setReservedForSecondFactor(.init(reserved: true))
+        let backupCodes = try await reserved.backupCodes()
     guard clerk.authFlowPresentationIsCurrent(token), !Task.isCancelled else { return }
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success
-    if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
+    if let backupCodes, !backupCodes.isEmpty {
       navigation.appendPostAuthDestination(
         .backupCodes(
           backupCodes: backupCodes,
@@ -194,7 +195,7 @@ struct SessionTaskMfaVerifySmsView: View {
     verificationState = .default
 
     do {
-      try await phoneNumber.sendCode()
+      try await phoneNumber.prepareVerification()
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {

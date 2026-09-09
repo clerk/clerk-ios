@@ -121,7 +121,7 @@ struct SessionTaskChooseOrganizationView: View {
   // MARK: - Actions
 
   private func fetchOrganizationResources() async {
-    let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
+    let defaultsEnabled = clerk.environment.organizationSettings.organizationCreationDefaults.enabled == true
     await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
   }
 
@@ -137,7 +137,7 @@ struct SessionTaskChooseOrganizationView: View {
     defer { isSelectingOrganization = false }
 
     do {
-      try await clerk.auth.setActive(sessionId: session.id, organizationId: id)
+      try await clerk.setActive(.init(organization: .value(.case1(id)), session: .value(.case1(session.id))))
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       _ = clerk.finishAuthFlowPresentation(token)
     } catch {
@@ -146,13 +146,13 @@ struct SessionTaskChooseOrganizationView: View {
   }
 
   private func organizationError(from error: Error) -> Error {
-    if let clerkError = error as? ClerkAPIError,
+    if let clerkError = (error as? CoreError)?.errors.first,
        ["organization_not_found_or_unauthorized", "not_a_member_in_organization"].contains(clerkError.code)
     {
       if user?.createOrganizationEnabled == true {
-        return ClerkClientError(message: "You are no longer a member of this organization. Please choose or create another one.", localizationBundle: .module)
+        return PresentationError(message: "You are no longer a member of this organization. Please choose or create another one.", localizationBundle: .module)
       } else {
-        return ClerkClientError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
+        return PresentationError(message: "You are no longer a member of this organization. Please choose another one.", localizationBundle: .module)
       }
     }
     return error

@@ -28,7 +28,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   private var availablePhoneNumbers: [PhoneNumber] {
     (user?.phoneNumbersAvailableForMfa ?? [])
-      .sorted { $0.createdAt < $1.createdAt }
+      .sorted { ($0.createdAt ?? .distantPast) < ($1.createdAt ?? .distantPast) }
   }
 
   var body: some View {
@@ -95,7 +95,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       token: token,
       onPhoneNumberCreated: { newPhoneNumber in
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
-        try await newPhoneNumber.sendCode()
+        _ = try await newPhoneNumber.prepareVerification()
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
         codeLimiter.recordCodeSent(for: newPhoneNumber.phoneNumber)
         navigation.appendPostAuthDestination(
@@ -114,7 +114,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       .padding(.bottom, 32)
 
       VStack(spacing: 12) {
-        ForEach(availablePhoneNumbers) { phoneNumber in
+        ForEach(availablePhoneNumbers, id: \.id) { phoneNumber in
           Button {
             selectedPhoneNumber = phoneNumber
           } label: {
@@ -161,12 +161,13 @@ struct SessionTaskMfaSmsChooseNumberView: View {
 
   private func continueWithPhoneNumber(_ phoneNumber: PhoneNumber) async {
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
-    if phoneNumber.verification?.status == .verified {
+    if phoneNumber.verification.status == .verified {
       isReservingForSecondFactor = true
       do {
-        let reserved = try await phoneNumber.setReservedForSecondFactor()
+        let reserved = try await phoneNumber.setReservedForSecondFactor(.init(reserved: true))
+        let backupCodes = try await reserved.backupCodes()
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
-        if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
+        if let backupCodes, !backupCodes.isEmpty {
           navigation.appendPostAuthDestination(
             .backupCodes(
               backupCodes: backupCodes,
@@ -184,7 +185,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       }
     } else {
       do {
-        try await phoneNumber.sendCode()
+        try await phoneNumber.prepareVerification()
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
         codeLimiter.recordCodeSent(for: phoneNumber.phoneNumber)
         navigation.appendPostAuthDestination(

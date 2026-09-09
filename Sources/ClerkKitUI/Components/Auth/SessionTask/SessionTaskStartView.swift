@@ -8,7 +8,7 @@ import ClerkKit
 import SwiftUI
 
 struct SessionTaskStartView: View {
-  let task: Session.Task
+  let task: SessionTaskKey
   let token: AuthFlowPresentationToken
 
   @ViewBuilder
@@ -27,7 +27,7 @@ struct SessionTaskStartView: View {
       }
     case .chooseOrganization:
       SessionTaskChooseOrganizationView(token: token)
-    case .unknown:
+    case .unrecognized:
       GetHelpView(context: .sessionTask(.generic))
         .navigationBarBackButtonHidden()
         #if os(iOS)

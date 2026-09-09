@@ -18,7 +18,7 @@ struct UserButtonAccountSwitcher: View {
   @State private var error: Error?
 
   private var sessions: [Session] {
-    clerk.auth.sessions
+    clerk.sessions
       .sorted { lhs, rhs in
         if lhs.id == clerk.session?.id {
           true
@@ -33,7 +33,7 @@ struct UserButtonAccountSwitcher: View {
   @MainActor
   private func setActiveSession(_ session: Session) async {
     do {
-      try await clerk.auth.setActive(sessionId: session.id, organizationId: session.lastActiveOrganizationId)
+      try await clerk.setActive(.init(organization: session.lastActiveOrganizationId.map { .value(.case1($0)) } ?? .null, session: .value(.case1(session.id))))
       dismiss()
     } catch {
       self.error = error
@@ -44,7 +44,7 @@ struct UserButtonAccountSwitcher: View {
   @MainActor
   private func signOutOfAllAccounts() async {
     do {
-      try await clerk.auth.signOut()
+      try await clerk.signOut()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to sign out of all accounts", error: error)
@@ -70,7 +70,7 @@ struct UserButtonAccountSwitcher: View {
       VStack(spacing: 0) {
         ScrollView {
           VStack(spacing: 0) {
-            ForEach(sessions) { session in
+            ForEach(sessions, id: \.id) { session in
               if let user = session.user {
                 AsyncButton {
                   await setActiveSession(session)

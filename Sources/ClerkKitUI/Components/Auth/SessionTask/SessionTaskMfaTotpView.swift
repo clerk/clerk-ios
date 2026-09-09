@@ -12,7 +12,7 @@ struct SessionTaskMfaTotpView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  let totp: TOTPResource
+  let totp: TOTP
   let token: AuthFlowPresentationToken
 
   var body: some View {

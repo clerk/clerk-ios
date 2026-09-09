@@ -26,12 +26,12 @@ struct AppLogoView: View {
               .resizable()
               .scaledToFit()
           } else {
-            LazyImage(url: URL(string: clerk.environment?.displayConfig.logoImageUrl ?? "")) { state in
+            LazyImage(url: URL(string: clerk.environment.displayConfig.logoImageUrl)) { state in
               if let image = state.image {
                 image
                   .resizable()
                   .scaledToFit()
-              } else if EnvironmentDetection.isRunningInPreviews {
+              } else if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
                 Image(systemName: "circle.square.fill")
                   .resizable()
                   .scaledToFit()

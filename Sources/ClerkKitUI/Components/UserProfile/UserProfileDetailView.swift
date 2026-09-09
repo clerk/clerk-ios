@@ -23,19 +23,19 @@ struct UserProfileDetailView: View {
   }
 
   private var canAddEmailAddress: Bool {
-    clerk.environment?.emailIsImmutable != true
+    clerk.environment.emailIsImmutable != true
   }
 
   private var canAddPhoneNumber: Bool {
-    clerk.environment?.phoneNumberIsImmutable != true
+    clerk.environment.phoneNumberIsImmutable != true
   }
 
   private var showEmailSection: Bool {
-    clerk.environment?.emailIsEnabled == true && (canAddEmailAddress || !sortedEmails.isEmpty)
+    clerk.environment.emailIsEnabled == true && (canAddEmailAddress || !sortedEmails.isEmpty)
   }
 
   private var showPhoneNumberSection: Bool {
-    clerk.environment?.phoneNumberIsEnabled == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
+    clerk.environment.phoneNumberIsEnabled == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
   }
 
   var sortedEmails: [EmailAddress] {
@@ -46,7 +46,7 @@ struct UserProfileDetailView: View {
         } else if rhs == user?.primaryEmailAddress {
           false
         } else {
-          lhs.createdAt < rhs.createdAt
+          (lhs.createdAt ?? .distantPast) < (rhs.createdAt ?? .distantPast)
         }
       }
   }
@@ -59,7 +59,7 @@ struct UserProfileDetailView: View {
         } else if rhs == user?.primaryPhoneNumber {
           false
         } else {
-          lhs.createdAt < rhs.createdAt
+          (lhs.createdAt ?? .distantPast) < (rhs.createdAt ?? .distantPast)
         }
       }
   }
@@ -69,7 +69,7 @@ struct UserProfileDetailView: View {
       $0.verification?.status == .verified || $0.verification?.error != nil
     } ?? [])
       .sorted { lhs, rhs in
-        lhs.createdAt < rhs.createdAt
+        (lhs.createdAt ?? .distantPast) < (rhs.createdAt ?? .distantPast)
       }
   }
 
@@ -81,7 +81,7 @@ struct UserProfileDetailView: View {
             if showEmailSection {
               Section {
                 Group {
-                  ForEach(sortedEmails) { emailAddress in
+                  ForEach(sortedEmails, id: \.id) { emailAddress in
                     UserProfileEmailRow(emailAddress: emailAddress)
                   }
 
@@ -101,7 +101,7 @@ struct UserProfileDetailView: View {
             if showPhoneNumberSection {
               Section {
                 Group {
-                  ForEach(sortedPhoneNumbers) { phoneNumber in
+                  ForEach(sortedPhoneNumbers, id: \.id) { phoneNumber in
                     UserProfilePhoneRow(phoneNumber: phoneNumber)
                   }
 
@@ -117,10 +117,10 @@ struct UserProfileDetailView: View {
               }
             }
 
-            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+            if !clerk.environment.allSocialProviders.isEmpty {
               Section {
                 Group {
-                  ForEach(sortedExternalAccounts) { externalAccount in
+                  ForEach(sortedExternalAccounts, id: \.id) { externalAccount in
                     UserProfileExternalAccountRow(externalAccount: externalAccount)
                   }
 
@@ -175,7 +175,7 @@ struct UserProfileDetailView: View {
       .environment(clerk)
     }
     .task {
-      _ = try? await clerk.refreshClient()
+      _ = try? await clerk.user?.reload()
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620)

@@ -20,7 +20,7 @@ struct SessionTaskMfaSetupView: View {
 
   let token: AuthFlowPresentationToken
 
-  private var environment: Clerk.Environment? {
+  private var environment: EnvironmentResource? {
     clerk.environment
   }
 

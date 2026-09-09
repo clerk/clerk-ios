@@ -19,12 +19,10 @@ extension Clerk {
   /// Example:
   /// ```swift
   /// // After environment is loaded
-  /// Clerk.shared.prefetchImages()
+  /// clerk.prefetchImages()
   /// ```
   @MainActor
   public func prefetchImages() {
-    guard let environment else { return }
-
     var urls = Set<URL>()
 
     // App brand logo
@@ -34,7 +32,7 @@ extension Clerk {
 
     // OAuth provider logos (all enabled providers)
     for provider in environment.allSocialProviders {
-      urls.formUnion(provider.iconImageUrlsForPrefetch)
+      urls.formUnion(provider.iconImageUrlsForPrefetch(environment: environment))
     }
 
     guard !urls.isEmpty else { return }
@@ -77,7 +75,7 @@ private struct ClerkImagePrefetchModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .onChange(of: clerk.environment, initial: true) {
+      .onChange(of: clerk.environment.state, initial: true) {
         clerk.prefetchImages()
       }
   }

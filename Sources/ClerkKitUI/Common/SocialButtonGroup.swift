@@ -29,7 +29,7 @@ struct SocialButtonGroup<Content: View>: View {
 
   var body: some View {
     SocialButtonLayout {
-      ForEach(arrangedProviders) { provider in
+      ForEach(arrangedProviders, id: \.rawValue) { provider in
         let isLastUsed = provider == lastUsedProvider
         content(provider, showsTitle(for: provider), isLastUsed)
           .layoutValue(key: SocialButtonLastUsedLayoutValueKey.self, value: isLastUsed)
