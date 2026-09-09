@@ -73,7 +73,7 @@ Background/foreground notifications delegate reload and token policy to TypeScri
 
 The [identity controller assertion audit](identity-controller-test-audit.md)
 records all twelve controller declarations, new embedded persistence checks,
-and unresolved tokenless-client/credential-rotation differences. The old
+the fixed tokenless-client regression, and unresolved credential-rotation behavior. The old
 controller file remains retained. It also maps the two organization collection
 entry-point tests to current generated HTTP/resource outcomes.
 

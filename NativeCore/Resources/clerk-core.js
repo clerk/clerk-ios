@@ -4736,6 +4736,8 @@ var ClerkCore = (function(exports) {
 			const serverDate = Number.isFinite(parsedDate) ? parsedDate : void 0;
 			const commit = writes.then(async () => {
 				assertCurrent(issued.generation);
+				if (client && options.native !== false && !credential && !await storage.read()) throw Object.assign(/* @__PURE__ */ new Error("The native client response has no client credential."), { code: "missing_client_credential" });
+				assertCurrent(issued.generation);
 				if (client && acceptedClient && issued.sequence <= acceptedClient.sequence) {
 					if (!(serverDate !== void 0 && acceptedClient.serverDate !== void 0 && (serverDate > acceptedClient.serverDate || serverDate === acceptedClient.serverDate && client.updatedAt !== void 0 && acceptedClient.updatedAt !== void 0 && client.updatedAt > acceptedClient.updatedAt))) throw Object.assign(/* @__PURE__ */ new Error("A newer client response has already been accepted."), { code: "stale_client_response" });
 				}

@@ -369,6 +369,48 @@ import Testing
     _ = try await session.reload()
     #expect(session.status == .pending)
   }
+
+  @Test func canonicalClientRequiresANewOrRestoredCredential() async throws {
+    let credentials: [String?] = [nil, "restored-client-credential"]
+    for credential in credentials {
+      let capabilities = try CredentiallessResponseCapabilities()
+      capabilities.base.credential = credential
+      if credential == nil {
+        do {
+          let clerk = try await connect(capabilities)
+          clerk.close()
+          Issue.record("Expected credentialless client initialization to fail")
+        } catch let error as CoreError {
+          #expect(error.code == "missing_client_credential")
+        }
+      } else {
+        let clerk = try await connect(capabilities)
+        #expect(clerk.session?.status == .active)
+        clerk.close()
+      }
+      #expect(capabilities.base.credential == credential)
+    }
+  }
+}
+
+@MainActor private final class CredentiallessResponseCapabilities: NativeCapabilities {
+  let base: FixtureCapabilities
+  var supported: [String] {
+    base.supported
+  }
+
+  init() throws {
+    base = try FixtureCapabilities(data: PackageProof.fixtureData())
+    base.clientResponse = try #require(base.fixtures["authenticatedClient"])
+  }
+
+  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    let result = try await base.perform(capability, arguments: arguments)
+    guard capability == "http" else { return result }
+    var response = try result.object()
+    response["headers"] = .object([:])
+    return .object(response)
+  }
 }
 
 @MainActor private final class LifecycleFailureCapabilities: NativeCapabilities {
