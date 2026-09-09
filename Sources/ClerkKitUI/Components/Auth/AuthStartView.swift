@@ -588,7 +588,8 @@ extension AuthStartView {
 
   private func createPasskeySignIn() async -> SignIn? {
     do {
-      return try await clerk.auth.createPasskeySignIn()
+      try await clerk.signIn.create(.init(strategy: .passkey))
+      return clerk.signIn
     } catch {
       if Task.isCancelled || error.isCancellationError { return nil }
       guard navigation.path.isEmpty else { return nil }
@@ -622,10 +623,12 @@ extension AuthStartView {
     preferImmediatelyAvailableCredentials: Bool
   ) async -> PasskeySignInResult {
     do {
-      let signIn = try await signIn.authenticateWithPasskeyWithFailureContext(
-        autofill: autofill,
+      try await signIn.passkey(.init(
+        flow: autofill ? .autofill : nil,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
-      )
+      ))
+      let signIn = clerk.signIn
+      try await clerk.finalizeForPresentation(.signIn(signIn))
 
       guard !Task.isCancelled else { return .stopped }
       generalError = nil
@@ -633,12 +636,13 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return .completed
     } catch {
-      let underlyingError = error.underlyingError
+      let failure = PasskeyAuthenticationFailure(error)
+      let underlyingError = failure.underlyingError
       if Task.isCancelled || underlyingError.isCancellationError { return .stopped }
       if underlyingError.isUserCancelledError { return .continueWithAutofill }
       guard navigation.path.isEmpty else { return .stopped }
 
-      presentAutomaticPasskeyError(error)
+      presentAutomaticPasskeyError(failure)
       if autofill {
         ClerkLogger.error("Failed to authenticate with passkey autofill", error: underlyingError)
       } else {

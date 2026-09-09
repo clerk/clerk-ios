@@ -4,7 +4,7 @@ import ClerkKit
 #endif
 
 @MainActor final class FixtureCapabilities: NativeCapabilities {
-  let supported = ["http", "storage", "timer", "random", "browser", "appleIdentity"]
+  let supported = ["http", "storage", "timer", "random", "browser", "appleIdentity", "passkeys"]
   let fixtures: [String: JSONValue]
   var credential: String?
   var requests: [[String: JSONValue]] = []

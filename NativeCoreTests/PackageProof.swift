@@ -29,6 +29,13 @@ import Foundation
       precondition(error.localizedDescription == "No account was found for this identifier.")
     }
     precondition(Set([clerk.signIn, clerk.signIn]).count == 1)
+    capabilities.nextAuthError = .object(["errors": .array([.object(["code": .string("passkey_verification_failed"), "message": .string("Credential rejected")])])])
+    do {
+      try await clerk.signIn.passkey(.init(flow: .discoverable))
+      preconditionFailure("Expected passkey preparation failure")
+    } catch let error as CoreError {
+      precondition(error.passkeyStage == "preparingFirstFactor" && error.errors.first?.code == "passkey_verification_failed")
+    }
     try await clerk.signIn.sso(.init(strategy: .oauthTokenApple))
     precondition(clerk.signIn.status == .complete && clerk.session == nil)
     try await clerk.signUp.sso(.init(strategy: "oauth_token_apple"))

@@ -24,9 +24,9 @@ extension Clerk {
     "2.0.0-alpha.0"
   }
 
-  @MainActor public static func connect(configuration: ClerkConfiguration, storage: (any CredentialStorage)? = nil, browser: AppleCapabilities.Presentation? = nil, passkeys: AppleCapabilities.Presentation? = nil, appleIdentity: AppleCapabilities.Presentation? = nil) async throws -> Clerk {
+  @MainActor public static func connect(configuration: ClerkConfiguration, storage: (any CredentialStorage)? = nil, browser: AppleCapabilities.Presentation? = nil, passkeys: AppleCapabilities.Presentation? = nil, appleIdentity: AppleCapabilities.Presentation? = nil, passkeyAutofill: Bool = false) async throws -> Clerk {
     let storage = storage ?? KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain)
-    let capabilities = try AppleCapabilities(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, storage: storage, browser: browser, passkeys: passkeys, appleIdentity: appleIdentity)
+    let capabilities = try AppleCapabilities(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, storage: storage, browser: browser, passkeys: passkeys, appleIdentity: appleIdentity, passkeyAutofill: passkeyAutofill)
     return try await connect(configuration: configuration, capabilities: capabilities)
   }
 

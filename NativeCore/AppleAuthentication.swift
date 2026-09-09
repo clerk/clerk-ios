@@ -94,7 +94,12 @@ import Foundation
       assertion.allowedCredentials = try (args["allowCredentials"] ?? .array([])).array().map { try ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: binary($0.object()["id"] ?? .undefined)) }
       request = assertion
     } else { throw CoreError(code: "capability_unavailable") }
-    return try await authorize(request, failureCode: "passkey_failed")
+    return try await authorize(
+      request,
+      failureCode: "passkey_failed",
+      conditionalUI: args["conditionalUI"] == .bool(true),
+      preferImmediatelyAvailableCredentials: args["preferImmediatelyAvailableCredentials"] == .bool(true)
+    )
   }
 
   public func appleIdentity(_: String, arguments: JSONValue) async throws -> JSONValue {
@@ -105,7 +110,7 @@ import Foundation
     return try await authorize(request, failureCode: "apple_identity_failed")
   }
 
-  private func authorize(_ request: ASAuthorizationRequest, failureCode: String) async throws -> JSONValue {
+  private func authorize(_ request: ASAuthorizationRequest, failureCode: String, conditionalUI: Bool = false, preferImmediatelyAvailableCredentials: Bool = false) async throws -> JSONValue {
     guard credentialController == nil else { throw CoreError(code: "presentation_in_progress") }
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
@@ -116,7 +121,18 @@ import Foundation
         controller.delegate = self
         controller.presentationContextProvider = self
         credentialController = controller
-        controller.performRequests()
+        if conditionalUI {
+          #if os(iOS) && !targetEnvironment(macCatalyst)
+          controller.performAutoFillAssistedRequests()
+          #else
+          credentialCompletion = nil; credentialController = nil
+          continuation.resume(throwing: CoreError(code: "capability_unavailable:passkeys.autofill"))
+          #endif
+        } else if preferImmediatelyAvailableCredentials {
+          controller.performRequests(options: .preferImmediatelyAvailableCredentials)
+        } else {
+          controller.performRequests()
+        }
       }
     } onCancel: { Task { @MainActor [weak self] in self?.cancelCredential() } }
   }

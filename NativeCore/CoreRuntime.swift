@@ -9,19 +9,20 @@ public struct CoreError: Error, LocalizedError, Sendable {
   public let message: String
   public let details: JSONValue?
   public let errors: [ClerkAPIError]
+  public let passkeyStage: String?
   public var errorDescription: String? {
     errors.first?.longMessage ?? errors.first?.message ?? message
   }
 
-  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge, errors: [ClerkAPIError] = []) {
-    self.kind = kind; self.code = code; self.message = message; self.details = details; self.errors = errors
+  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge, errors: [ClerkAPIError] = [], passkeyStage: String? = nil) {
+    self.kind = kind; self.code = code; self.message = message; self.details = details; self.errors = errors; self.passkeyStage = passkeyStage
   }
 
   public static let invalidValue = CoreError(code: "invalid_value")
   public static let invalidResource = CoreError(code: "invalid_resource")
   @MainActor static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> CoreError {
     let v = try value.object()
-    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge, errors: (v["errors"] ?? .array([])).array().map { try ClerkAPIError.decode($0, in: runtime) })
+    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge, errors: (v["errors"] ?? .array([])).array().map { try ClerkAPIError.decode($0, in: runtime) }, passkeyStage: v["passkeyStage"].flatMap { try? $0.string() })
   }
 }
 

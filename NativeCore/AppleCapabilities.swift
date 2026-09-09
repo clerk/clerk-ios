@@ -29,11 +29,12 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
   private let browser: Presentation?
   private let passkeys: Presentation?
   private let appleIdentity: Presentation?
+  private let passkeyAutofill: Bool
   public var supported: [String] {
-    ["http", "storage", "timer", "random"] + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
+    ["http", "storage", "timer", "random"] + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
-  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil) throws {
+  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false) throws {
     guard frontendAPI.scheme == "https", frontendAPI.host != nil, frontendAPI.user == nil, frontendAPI.password == nil else { throw CoreError(code: "invalid_frontend_api") }
     self.publishableKey = publishableKey
     origin = frontendAPI
@@ -41,6 +42,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
     self.browser = browser
     self.passkeys = passkeys
     self.appleIdentity = appleIdentity
+    self.passkeyAutofill = passkeyAutofill
     let configuration = URLSessionConfiguration.ephemeral
     configuration.httpCookieStorage = nil
     configuration.httpShouldSetCookies = false
