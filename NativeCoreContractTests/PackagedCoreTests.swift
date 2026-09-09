@@ -417,6 +417,56 @@ import Testing
     _ = try await session.reload()
     #expect(session.status == .pending)
   }
+
+  @Test func completedSignInSurvivesClientRefreshUntilExplicitFinalization() async throws {
+    let capabilities = try CompletedAttemptCapabilities()
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let attempt = clerk.signIn
+    #expect(attempt.status == .complete)
+    #expect(clerk.session?.id == "sess_previous")
+    _ = try await clerk.session?.reload()
+    #expect(clerk.signIn === attempt)
+    #expect(attempt.status == .complete)
+    #expect(attempt.createdSessionId == "sess_native")
+    #expect(clerk.session?.id == "sess_previous")
+    try await attempt.finalize()
+    #expect(clerk.session?.id == "sess_native")
+  }
+}
+
+@MainActor private final class CompletedAttemptCapabilities: NativeCapabilities {
+  let base: FixtureCapabilities
+  let current: JSONValue
+  var supported: [String] {
+    base.supported
+  }
+
+  init() throws {
+    base = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let created = try #require(base.fixtures["session"])
+    var previous = try created.object()
+    previous["id"] = .string("sess_previous")
+    current = .object(previous)
+    var attempt = try #require(base.fixtures["signIn"]).object()
+    attempt["status"] = .string("complete")
+    attempt["created_session_id"] = .string("sess_native")
+    var client = try #require(base.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([current, created])
+    client["last_active_session_id"] = .string("sess_previous")
+    client["sign_in"] = .object(attempt)
+    base.clientResponse = .object(client)
+  }
+
+  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    if try capability != "http" || arguments.object()["url"]?.url().path.hasSuffix("/sessions/sess_previous") != true {
+      return try await base.perform(capability, arguments: arguments)
+    }
+    var client = try #require(base.clientResponse).object()
+    client["sign_in"] = .null
+    let body = JSONValue.object(["response": current, "client": .object(client)])
+    return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(body), as: UTF8.self))])
+  }
 }
 
 @MainActor private final class RotatingClientResponseCapabilities: NativeCapabilities {

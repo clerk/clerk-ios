@@ -9255,6 +9255,23 @@ isDevOrStagingUrl: (url) => {
 	};
 	//#endregion
 	//#region packages/clerk-js/src/core/signals.ts
+	const retiredAuthResources = /* @__PURE__ */ new WeakSet();
+	function retireAuthResource(resource) {
+		if (resource) retiredAuthResources.add(resource);
+	}
+	function isRetiredAuthResource(resource) {
+		return retiredAuthResources.has(resource);
+	}
+	function resetAuthResourceSignals() {
+		retireAuthResource(signInResourceSignal().resource);
+		retireAuthResource(signUpResourceSignal().resource);
+		signInResourceSignal({ resource: null });
+		signUpResourceSignal({ resource: null });
+		signInErrorSignal({ error: null });
+		signUpErrorSignal({ error: null });
+		signInFetchSignal({ status: "idle" });
+		signUpFetchSignal({ status: "idle" });
+	}
 	const signInResourceSignal = signal({ resource: null });
 	const signInErrorSignal = signal({ error: null });
 	const signInFetchSignal = signal({ status: "idle" });
@@ -11059,6 +11076,7 @@ isDevOrStagingUrl: (url) => {
 		async destroy() {
 			return this._baseDelete({ path: "/client" }).then(() => {
 				SessionTokenCache.clear();
+				resetAuthResourceSignals();
 				this.id = "";
 				this.sessions = [];
 				this.signUp = new SignUp(null);
@@ -11073,6 +11091,7 @@ isDevOrStagingUrl: (url) => {
 		removeSessions() {
 			return this._baseDelete({ path: this.path() + "/sessions" }).then((e) => {
 				SessionTokenCache.clear();
+				resetAuthResourceSignals();
 				return e;
 			});
 		}
@@ -11112,6 +11131,7 @@ isDevOrStagingUrl: (url) => {
 		}
 		fromJSON(data) {
 			if (data) {
+				if (this.id && this.id !== data.id) resetAuthResourceSignals();
 				this.id = data.id;
 				const previousTokens = new Map(this.sessions.map((session) => [session.id, session.lastActiveToken]));
 				this.sessions = (data.sessions || []).map((s) => {
@@ -21753,19 +21773,23 @@ isDevOrStagingUrl: (url) => {
 			this.__internal_effect = effect;
 			this.__internal_computed = computed;
 			this.onResourceError = (payload) => {
+				if (isRetiredAuthResource(payload.resource)) return;
 				if (payload.resource instanceof SignIn) this.signInErrorSignal({ error: payload.error });
 				if (payload.resource instanceof SignUp) this.signUpErrorSignal({ error: payload.error });
 				if (payload.resource instanceof Waitlist) this.waitlistErrorSignal({ error: payload.error });
 			};
 			this.onResourceUpdated = (payload) => {
+				if (isRetiredAuthResource(payload.resource)) return;
 				if (payload.resource instanceof SignIn) {
 					const previousResource = this.signInResourceSignal().resource;
-					if (shouldIgnoreNullUpdate(previousResource, payload.resource)) return;
+					if (shouldIgnoreResourceUpdate(previousResource, payload.resource)) return;
+					if (previousResource !== payload.resource && previousResource?.__internal_future.canBeDiscarded) retireAuthResource(previousResource);
 					this.signInResourceSignal({ resource: payload.resource });
 				}
 				if (payload.resource instanceof SignUp) {
 					const previousResource = this.signUpResourceSignal().resource;
-					if (shouldIgnoreNullUpdate(previousResource, payload.resource)) return;
+					if (shouldIgnoreResourceUpdate(previousResource, payload.resource)) return;
+					if (previousResource !== payload.resource && previousResource?.__internal_future.canBeDiscarded) retireAuthResource(previousResource);
 					this.signUpResourceSignal({ resource: payload.resource });
 				}
 				if (payload.resource instanceof Waitlist) {
@@ -21774,6 +21798,7 @@ isDevOrStagingUrl: (url) => {
 				}
 			};
 			this.onResourceFetch = (payload) => {
+				if (isRetiredAuthResource(payload.resource)) return;
 				if (payload.resource instanceof SignIn) this.signInFetchSignal({ status: payload.status });
 				if (payload.resource instanceof SignUp) this.signUpFetchSignal({ status: payload.status });
 				if (payload.resource instanceof Waitlist) this.waitlistFetchSignal({ status: payload.status });
@@ -21788,7 +21813,8 @@ isDevOrStagingUrl: (url) => {
 			return this._waitlistInstance;
 		}
 	};
-	function shouldIgnoreNullUpdate(previousResource, newResource) {
+	function shouldIgnoreResourceUpdate(previousResource, newResource) {
+		if (previousResource !== newResource && newResource?.__internal_future.canBeDiscarded) return true;
 		return !newResource?.id && previousResource && previousResource.__internal_future?.canBeDiscarded === false;
 	}
 	//#endregion
@@ -25257,6 +25283,8 @@ isDevOrStagingUrl: (url) => {
 			};
 			this.__internal_getMobileResources = () => {
 				if (!this.client || !this.environment) throw new Error("Clerk must be loaded before attaching native resources.");
+				const signIn = this.__internal_state.signInResourceSignal().resource;
+				const signUp = this.__internal_state.signUpResourceSignal().resource;
 				return {
 					clientId: this.client.id ?? null,
 					biometricCredentials: this.__internal_nativeBiometrics,
@@ -25270,8 +25298,8 @@ isDevOrStagingUrl: (url) => {
 					},
 					authenticateWithSSO: (params) => authenticateWithMobileSSO(this, params),
 					startAuthentication: (params) => startMobileAuthentication(this, params),
-					signIn: this.client.signIn.__internal_future,
-					signUp: this.client.signUp.__internal_future,
+					signIn: (signIn?.id ? signIn : this.client.signIn).__internal_future,
+					signUp: (signUp?.id ? signUp : this.client.signUp).__internal_future,
 					environment: this.environment,
 					sessions: this.client.sessions,
 					lastAuthenticationStrategy: this.client.lastAuthenticationStrategy,
