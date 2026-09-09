@@ -24,4 +24,4 @@ The existing persisted-verifier/flow checks, request deduplication, reset fencin
 
 Validation: 26 shared callback tests pass (16 email-link, 10 SSO), and mobile-runtime type checking passes. The newly pinned native package passes 44 tests on iOS Simulator and both Android packaged-core tests. The native callback assertions confirm completion without implicit activation and verifier cleanup. They do not prove delivery by a real mail client, associated-domain registration, or a live old-major app upgrade.
 
-`ExternalAuthUtilsTests`, `MagicLinkTests`, and `MockMagicLinkServiceTests` can be retired after those replacements pass. `MagicLinkServiceTests` remains for its unresolved startup-ownership assertion, along with the larger Auth state suite.
+`ExternalAuthUtilsTests`, `MagicLinkTests`, and `MockMagicLinkServiceTests` are retired after the passing replacement checks. `MagicLinkServiceTests` remains for its unresolved startup-ownership assertion, along with the larger Auth state suite.

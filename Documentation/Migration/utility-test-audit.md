@@ -45,7 +45,7 @@ passing replacement checks. The subsequent reviewed retirement also removes
 current native contract suites pass 46 tests on macOS and 43 on iOS; the separate
 HTTP and lifecycle audits document their additional execution checks.
 
-`JWTDecoderTests`, `ExternalAuthUtilsTests`, `SessionUtilsTests`, and
-`ProxyConfigurationTests` remain retained for their separate assertion/feature
+`ExternalAuthUtilsTests` is also retired after the separate callback audit.
+`JWTDecoderTests`, `SessionUtilsTests`, and `ProxyConfigurationTests` remain retained for their separate assertion/feature
 audits. This retirement does not claim JWT, callback, session-transition or proxy
 coverage from the utility tests.
