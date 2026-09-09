@@ -11025,7 +11025,8 @@ isDevOrStagingUrl: (url) => {
 			close,
 			get,
 			set,
-			size
+			size,
+			getGeneration: () => generation
 		};
 	};
 	const SessionTokenCache = MemoryTokenCache();
@@ -13642,10 +13643,10 @@ isDevOrStagingUrl: (url) => {
 	const focusedRefresh = (onRefresh) => isTabFocused() === false ? {} : { onRefresh };
 	var Session = class Session extends BaseResource {
 		/**
-		* Tracks token IDs with in-flight background refresh requests.
-		* Prevents multiple concurrent background refreshes for the same token.
+		* Tracks token IDs and cache lifetimes with in-flight background refresh requests.
+		* Prevents duplicate refreshes without letting invalidated work block a new lifetime.
 		*/
-		static #backgroundRefreshInProgress = /* @__PURE__ */ new Set();
+		static #backgroundRefreshInProgress = /* @__PURE__ */ new Map();
 		static isSessionResource(resource) {
 			return !!resource && resource instanceof Session;
 		}
@@ -13945,12 +13946,13 @@ isDevOrStagingUrl: (url) => {
 		* This allows concurrent getToken() calls to continue returning the stale cached token
 		* while the refresh is in progress. The cache is only updated after the refresh succeeds.
 		*
-		* Uses a static Set to prevent multiple concurrent background refreshes for the same token.
+		* Tracks each cache lifetime to prevent duplicate refreshes for the same token.
 		*/
 		#refreshTokenInBackground(template, organizationId, tokenId, shouldDispatchTokenUpdate) {
 			if (isNativeApplicationActive() === false) return;
-			if (Session.#backgroundRefreshInProgress.has(tokenId)) return;
-			Session.#backgroundRefreshInProgress.add(tokenId);
+			const cacheGeneration = SessionTokenCache.getGeneration();
+			if (Session.#backgroundRefreshInProgress.get(tokenId) === cacheGeneration) return;
+			Session.#backgroundRefreshInProgress.set(tokenId, cacheGeneration);
 			const isHeadless = (Session.clerk?.__internal_getOption?.("experimental"))?.runtimeEnvironment === "headless";
 			const lastTokenExp = this.lastActiveToken?.jwt?.claims?.exp;
 			if (isHeadless && lastTokenExp && Date.now() / 1e3 > lastTokenExp) {
@@ -13958,6 +13960,7 @@ isDevOrStagingUrl: (url) => {
 				return;
 			}
 			this.#createTokenResolver(template, organizationId, false).then((token) => {
+				if (SessionTokenCache.getGeneration() !== cacheGeneration) return;
 				if (!token.getRawString()) return;
 				SessionTokenCache.set({
 					tokenId,
@@ -13971,7 +13974,7 @@ isDevOrStagingUrl: (url) => {
 					tokenId
 				}, "session");
 			}).finally(() => {
-				Session.#backgroundRefreshInProgress.delete(tokenId);
+				if (Session.#backgroundRefreshInProgress.get(tokenId) === cacheGeneration) Session.#backgroundRefreshInProgress.delete(tokenId);
 			});
 		}
 		get currentTask() {
