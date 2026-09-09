@@ -4,14 +4,33 @@ import Foundation
 
 @MainActor public final class AppleAuthentication: NSObject {
   public typealias Anchor = @MainActor () -> ASPresentationAnchor
+  typealias BrowserFactory = @MainActor (URL, URL, @escaping ASWebAuthenticationSession.CompletionHandler) throws -> ASWebAuthenticationSession
   private let anchor: Anchor
+  private let makeBrowser: BrowserFactory
   private var browser: ASWebAuthenticationSession?
+  private var browserID: UUID?
   private var browserCompletion: CheckedContinuation<JSONValue, any Error>?
   private var credentialFailureCode = "passkey_failed"
   private var credentialController: ASAuthorizationController?
+  private var credentialID: UUID?
   private var credentialCompletion: CheckedContinuation<JSONValue, any Error>?
-  public init(anchor: @escaping Anchor) {
+  public convenience init(anchor: @escaping Anchor) {
+    self.init(anchor: anchor, makeBrowser: Self.makeSystemBrowser)
+  }
+
+  init(anchor: @escaping Anchor, makeBrowser: @escaping BrowserFactory) {
     self.anchor = anchor
+    self.makeBrowser = makeBrowser
+  }
+
+  private static func makeSystemBrowser(url: URL, callback: URL, completion: @escaping ASWebAuthenticationSession.CompletionHandler) throws -> ASWebAuthenticationSession {
+    if callback.scheme?.lowercased() == "https" {
+      guard #available(iOS 17.4, macOS 14.4, visionOS 1.1, *), let host = callback.host else {
+        throw CoreError(code: "capability_unavailable:https_callback")
+      }
+      return ASWebAuthenticationSession(url: url, callback: .https(host: host, path: callback.path), completionHandler: completion)
+    }
+    return ASWebAuthenticationSession(url: url, callbackURLScheme: callback.scheme, completionHandler: completion)
   }
 
   public func openBrowser(_: String, arguments: JSONValue) async throws -> JSONValue {
@@ -20,41 +39,43 @@ import Foundation
     let url = try (args["url"] ?? .undefined).url()
     let callback = try (args["callbackUrl"] ?? .undefined).url()
     guard url.scheme == "https", let scheme = callback.scheme?.lowercased(), !["http", "javascript", "data", "file", "about"].contains(scheme) else { throw CoreError(code: "invalid_callback_url") }
+    let operationID = UUID()
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in
         browserCompletion = continuation
+        browserID = operationID
         let completion: ASWebAuthenticationSession.CompletionHandler = { [weak self] url, error in
           Task { @MainActor in
-            guard let self else { return }
+            guard let self, self.browserID == operationID else { return }
             let continuation = self.browserCompletion
-            self.browserCompletion = nil; self.browser = nil
+            self.browserCompletion = nil; self.browser = nil; self.browserID = nil
             if let url { continuation?.resume(returning: .object(["callbackUrl": .string(url.absoluteString)])) }
             else { continuation?.resume(throwing: CoreError(code: (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin ? "user_cancelled" : "browser_authentication_failed")) }
           }
         }
-        if scheme == "https" {
-          guard #available(iOS 17.4, macOS 14.4, visionOS 1.1, *), let host = callback.host else {
-            browserCompletion = nil; continuation.resume(throwing: CoreError(code: "capability_unavailable:https_callback")); return
-          }
-          browser = ASWebAuthenticationSession(url: url, callback: .https(host: host, path: callback.path), completionHandler: completion)
-        } else {
-          browser = ASWebAuthenticationSession(url: url, callbackURLScheme: scheme, completionHandler: completion)
+        do {
+          browser = try makeBrowser(url, callback, completion)
+        } catch {
+          browserCompletion = nil; browserID = nil
+          continuation.resume(throwing: error); return
         }
         browser?.presentationContextProvider = self
         guard browser?.start() == true else {
-          browser = nil; browserCompletion = nil
+          browser = nil; browserCompletion = nil; browserID = nil
           continuation.resume(throwing: CoreError(code: "browser_presentation_failed")); return
         }
       }
     } onCancel: {
-      Task { @MainActor [weak self] in self?.cancelBrowser() }
+      Task { @MainActor [weak self] in self?.cancelBrowser(operationID) }
     }
   }
 
-  private func cancelBrowser() {
+  private func cancelBrowser(_ operationID: UUID) {
+    guard browserID == operationID else { return }
     let completion = browserCompletion
     browserCompletion = nil
+    browserID = nil
     browser?.cancel(); browser = nil
     completion?.resume(throwing: CancellationError())
   }
@@ -112,10 +133,12 @@ import Foundation
 
   private func authorize(_ request: ASAuthorizationRequest, failureCode: String, conditionalUI: Bool = false, preferImmediatelyAvailableCredentials: Bool = false) async throws -> JSONValue {
     guard credentialController == nil else { throw CoreError(code: "presentation_in_progress") }
+    let operationID = UUID()
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in
         credentialCompletion = continuation
+        credentialID = operationID
         credentialFailureCode = failureCode
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
@@ -125,7 +148,7 @@ import Foundation
           #if os(iOS) && !targetEnvironment(macCatalyst)
           controller.performAutoFillAssistedRequests()
           #else
-          credentialCompletion = nil; credentialController = nil
+          credentialCompletion = nil; credentialController = nil; credentialID = nil
           continuation.resume(throwing: CoreError(code: "capability_unavailable:passkeys.autofill"))
           #endif
         } else if preferImmediatelyAvailableCredentials {
@@ -134,7 +157,7 @@ import Foundation
           controller.performRequests()
         }
       }
-    } onCancel: { Task { @MainActor [weak self] in self?.cancelCredential() } }
+    } onCancel: { Task { @MainActor [weak self] in self?.cancelCredential(operationID) } }
   }
 
   private func preference(_ value: JSONValue?) throws -> ASAuthorizationPublicKeyCredentialUserVerificationPreference {
@@ -154,9 +177,11 @@ import Foundation
     .string(data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: ""))
   }
 
-  private func cancelCredential() {
+  private func cancelCredential(_ operationID: UUID) {
+    guard credentialID == operationID else { return }
     let completion = credentialCompletion
     credentialCompletion = nil
+    credentialID = nil
     credentialController?.cancel(); credentialController = nil
     completion?.resume(throwing: CancellationError())
   }
@@ -176,7 +201,7 @@ extension AppleAuthentication: ASAuthorizationControllerDelegate {
   public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
     guard controller === credentialController else { return }
     let completion = credentialCompletion
-    credentialCompletion = nil; credentialController = nil
+    credentialCompletion = nil; credentialController = nil; credentialID = nil
     if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
       guard let tokenData = credential.identityToken, let token = String(data: tokenData, encoding: .utf8), !token.isEmpty else {
         completion?.resume(throwing: CoreError(code: "invalid_credential_result")); return
@@ -200,7 +225,7 @@ extension AppleAuthentication: ASAuthorizationControllerDelegate {
   public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: any Error) {
     guard controller === credentialController else { return }
     let completion = credentialCompletion
-    credentialCompletion = nil; credentialController = nil
+    credentialCompletion = nil; credentialController = nil; credentialID = nil
     completion?.resume(throwing: CoreError(code: (error as? ASAuthorizationError)?.code == .canceled ? "user_cancelled" : credentialFailureCode))
   }
 }

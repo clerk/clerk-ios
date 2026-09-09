@@ -6,6 +6,11 @@ The old tests are still retained while assertion-level platform and coverage mig
 
 Native UI presentation tests are outside this inventory and remain in their existing test target. The migration changes resource calls and owner injection, not the intended screen layout or interaction behavior.
 
+The [browser assertion audit](browser-test-audit.md) now maps every old browser
+presentation test to the current adapter, records the changed cancellation scope,
+and includes a verified regression test for stale callbacks. Other categories
+below still require their own assertion-level review.
+
 ## Configuration validation
 
 Replacement owner / evidence: NativeCoreContractTests/ClerkConfigurationTests.swift (iOS); NativeCoreTests/Unit/ClerkConfigurationTest.kt (Android).
@@ -221,4 +226,3 @@ Hosted portal authentication, live shared-session/watch replication, proxy confi
 | [Tests/Storage/SharedSessionLocalIdentityStoreTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Storage/SharedSessionLocalIdentityStoreTests.swift) | 10 |
 | [Tests/Storage/SharedSessionOwnerSlotStoreTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Storage/SharedSessionOwnerSlotStoreTests.swift) | 14 |
 | [Tests/Utils/ProxyConfigurationTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Utils/ProxyConfigurationTests.swift) | 16 |
-
