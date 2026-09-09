@@ -164,19 +164,21 @@ extension CoreResource {
     guard let handle = roots[name] else { return nil }; return try resource(handle, as: T.self)
   }
 
-  public func initialize(publishableKey: String, callbackURL: URL, platform: String, capabilities: [String]) async throws {
+  public func initialize(publishableKey: String, callbackURL: URL, platform: String, capabilities: [String], sdkVersion: String? = nil) async throws {
     let id = UUID().uuidString
     _ = try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<JSONValue, any Error>) in
         pending[id] = { continuation.resume(with: $0) }
         do {
-          try transport.send(.object(["kind": .string("init"), "id": .string(id), "configuration": .object([
+          var configuration: [String: JSONValue] = [
             "locale": .string(Locale.preferredLanguages.first ?? Locale.current.identifier.replacingOccurrences(of: "_", with: "-")),
             "publishableKey": .string(publishableKey), "callbackUrl": .string(callbackURL.absoluteString), "platform": .string(platform),
             "protocolVersion": .number(Double(GeneratedBindings.protocolVersion)), "contractHash": .string(GeneratedBindings.contractHash),
             "capabilities": .array(capabilities.map(JSONValue.string)),
-          ])]))
+          ]
+          if let sdkVersion { configuration["sdkVersion"] = .string(sdkVersion) }
+          try transport.send(.object(["kind": .string("init"), "id": .string(id), "configuration": .object(configuration)]))
         } catch { pending.removeValue(forKey: id)?(.failure(error)) }
       }
     } onCancel: { Task { @MainActor [weak self] in self?.close() } }

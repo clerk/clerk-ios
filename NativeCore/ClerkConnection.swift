@@ -44,7 +44,7 @@ extension Clerk {
     let runtime = CoreRuntime(transport: transport)
     do {
       try await transport.start(bundle: bundle, sha256: BundledCore.sha256)
-      try await runtime.initialize(publishableKey: configuration.publishableKey, callbackURL: configuration.callbackURL, platform: "ios", capabilities: capabilities.supported)
+      try await runtime.initialize(publishableKey: configuration.publishableKey, callbackURL: configuration.callbackURL, platform: "ios", capabilities: capabilities.supported, sdkVersion: Clerk.sdkVersion)
       guard let clerk = try runtime.root("clerk", as: Clerk.self) else { throw CoreError(code: "missing_clerk_root") }
       observeApplicationLifecycle(runtime)
       observeConnectivity(runtime)

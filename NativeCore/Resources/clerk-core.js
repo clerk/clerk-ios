@@ -42028,6 +42028,7 @@ isDevOrStagingUrl: (url) => {
 			"file:",
 			"about:"
 		].includes(callback.protocol) || callback.username || callback.password || callback.hash) throw bridgeError$1("invalid_callback_url");
+		if (configuration.sdkVersion !== void 0 && (typeof configuration.sdkVersion !== "string" || !/^[0-9A-Za-z.+-]+$/.test(configuration.sdkVersion))) throw bridgeError$1("invalid_sdk_version");
 		initializing = true;
 		removeNetworkEnvironment = setNativeNetworkEnvironment({
 			isOnline: () => online,
@@ -42050,7 +42051,7 @@ isDevOrStagingUrl: (url) => {
 				scope,
 				key: "client"
 			})
-		}, { [`x-${configuration.platform}-sdk-version`]: "next" });
+		}, configuration.sdkVersion ? { [`x-${configuration.platform}-sdk-version`]: configuration.sdkVersion } : {});
 		removeNativeHost = await clerk.__internal_configureNativeHost({
 			platform: configuration.platform,
 			locale: configuration.locale,

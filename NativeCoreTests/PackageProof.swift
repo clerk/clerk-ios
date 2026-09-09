@@ -29,6 +29,13 @@ import Foundation
     let configuration = try ClerkConfiguration(publishableKey: key, callbackURL: URL(string: "clerk-test://sso-callback")!)
     let clerk = try await Clerk.connect(configuration: configuration, capabilities: capabilities)
     defer { clerk.close() }
+    for request in capabilities.requests {
+      let headers = try request["headers"]?.object()
+      precondition(headers?["x-ios-sdk-version"] == .string(Clerk.sdkVersion))
+      precondition(headers?["x-mobile"] == .string("1"))
+      let requestURL = try request["url"]?.string()
+      precondition(requestURL?.contains("_is_native=1") == true)
+    }
     capabilities.nextAuthError = .object(["errors": .array([.object([
       "code": .string("form_identifier_not_found"), "message": .string("Account not found"),
       "long_message": .string("No account was found for this identifier."),
