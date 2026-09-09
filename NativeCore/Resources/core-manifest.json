@@ -1,7 +1,7 @@
 {
   "protocolVersion": 1,
   "hostCapabilityVersion": 1,
-  "contractHash": "6ddbd6b9ae47c552373f1959973d24eeb1e24d979342c240962cf85a68d023bd",
+  "contractHash": "c93c04e868659c2ce38c509c54cc61ea2da62533f5f4caaf5f19a9afe7be5bdf",
   "roots": {
     "clerk": {
       "kind": "ref",
@@ -30,9 +30,126 @@
   },
   "namingPolicy": "Remove Future and trailing Resource; fail collisions.",
   "errorPolicy": "Approved authentication error-only envelopes throw after state is applied.",
-  "coreRevision": "5a1745b8f5f66c8d4b608d487e24b16ed8d40ec3",
-  "bundleSHA256": "e371c3f18b859cc89b6a8cc07ff4cc2c0efef36bbd5b4dd27f6d85bde7035eff",
-  "bundleBytes": 1298294,
+  "coreRevision": "5e2b30ccdecf9bc031bcf5506f7faedc0a358c92",
+  "bundleSHA256": "cf934e89ced74e9ff581475f03591b9eb063a2292ec0594733141c43f0ef71cf",
+  "bundleBytes": 1303468,
+  "thirdPartyNoticesSHA256": "e4223a282e22ea86b1215013d7e6c5f4e6f02be8d14ca2ce357ed14ba319e1e9",
+  "bundledDependencies": [
+    {
+      "name": "@clerk/clerk-js",
+      "version": "6.31.0",
+      "license": "MIT",
+      "noticeSHA256": "67ad6d13f0d5c1d8cea4143041a6498e24b9bb5a3a931dd4e4da830473935c72"
+    },
+    {
+      "name": "@clerk/mobile-runtime",
+      "version": "0.0.0",
+      "license": "MIT",
+      "noticeSHA256": "bb582cd9530e388e0c8ec87df05756e867197116a9fa2e3bb48db12785776092"
+    },
+    {
+      "name": "@clerk/native-bindings",
+      "version": "0.0.0",
+      "license": "MIT",
+      "noticeSHA256": "bb582cd9530e388e0c8ec87df05756e867197116a9fa2e3bb48db12785776092"
+    },
+    {
+      "name": "@clerk/shared",
+      "version": "4.31.0",
+      "license": "MIT",
+      "noticeSHA256": "bb582cd9530e388e0c8ec87df05756e867197116a9fa2e3bb48db12785776092"
+    },
+    {
+      "name": "@stripe/stripe-js",
+      "version": "5.6.0",
+      "license": "MIT",
+      "noticeSHA256": "6c91cb98ce48d38c68373279e439f230532fb311b321a37ce080c89e2018cc39"
+    },
+    {
+      "name": "@tanstack/query-core",
+      "version": "5.102.8",
+      "license": "MIT",
+      "noticeSHA256": "277d2a8e459713d6c596bab89ef857cb8b2433223fa9edb49ccc403a6ceb08ee"
+    },
+    {
+      "name": "@wallet-standard/app",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "@wallet-standard/base",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "@wallet-standard/core",
+      "version": "1.1.1",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "@wallet-standard/errors",
+      "version": "0.1.1",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "@wallet-standard/features",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "@wallet-standard/wallet",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "noticeSHA256": "283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b"
+    },
+    {
+      "name": "alien-signals",
+      "version": "2.0.6",
+      "license": "MIT",
+      "noticeSHA256": "906251009c3633dc7ad932e279642ef6d376924ef6bbfb1f4e562211b50c7c67"
+    },
+    {
+      "name": "browser-tabs-lock",
+      "version": "1.3.0",
+      "license": "MIT",
+      "noticeSHA256": "d9f86d92023122397b859a28e4d10b626395c1431c00e1d6734d9cd814766004"
+    },
+    {
+      "name": "core-js",
+      "version": "3.47.0",
+      "license": "MIT",
+      "noticeSHA256": "f622755d31e11722cc78d911d1d5828593b6ae013d7738e08f16ee10d5200980"
+    },
+    {
+      "name": "crypto-js",
+      "version": "4.2.0",
+      "license": "MIT",
+      "noticeSHA256": "3bae8eb6da93d9a4e2a218341cedf58b057efc339566421261f89ab03c9ed25d"
+    },
+    {
+      "name": "dequal",
+      "version": "2.0.3",
+      "license": "MIT",
+      "noticeSHA256": "d0a8e5996a99e9ea88093954e45ab673905d5fdc2d243e45622bc5ff1cf35f36"
+    },
+    {
+      "name": "glob-to-regexp",
+      "version": "0.4.1",
+      "license": "BSD-2-Clause",
+      "noticeSHA256": "91c0ac7870145461be8962b9b5ad7c103b52978a5566edfdccdb3680c4818f3f"
+    },
+    {
+      "name": "js-cookie",
+      "version": "3.0.8",
+      "license": "MIT",
+      "noticeSHA256": "c44e6a5c3e88cfd23795e66a27f1bec24cd8ab81b28425ccaaac1bc15eae32a8"
+    }
+  ],
   "runtime": {
     "apple": "JavaScriptCore (system)",
     "android": "quickjs-ng v0.15.1 fd0a0210b7be00957751871e7e01b8291268fc29"

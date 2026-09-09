@@ -33,7 +33,7 @@ var ClerkCore = (function(exports) {
 		enumerable: true
 	}) : target, mod));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/fails.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/fails.js
 	var require_fails = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = function(exec) {
 			try {
@@ -44,7 +44,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-bind-native.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-bind-native.js
 	var require_function_bind_native = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = !require_fails()(function() {
 			var test = (function() {}).bind();
@@ -52,7 +52,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this.js
 	var require_function_uncurry_this = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var NATIVE_BIND = require_function_bind_native();
 		var FunctionPrototype = Function.prototype;
@@ -65,7 +65,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/classof-raw.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/classof-raw.js
 	var require_classof_raw = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var toString = uncurryThis({}.toString);
@@ -75,7 +75,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/indexed-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/indexed-object.js
 	var require_indexed_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var fails = require_fails();
@@ -89,14 +89,14 @@ var ClerkCore = (function(exports) {
 		} : $Object;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-null-or-undefined.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-null-or-undefined.js
 	var require_is_null_or_undefined = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = function(it) {
 			return it === null || it === void 0;
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/require-object-coercible.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/require-object-coercible.js
 	var require_require_object_coercible = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isNullOrUndefined = require_is_null_or_undefined();
 		var $TypeError = TypeError;
@@ -106,7 +106,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-indexed-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-indexed-object.js
 	var require_to_indexed_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var IndexedObject = require_indexed_object();
 		var requireObjectCoercible = require_require_object_coercible();
@@ -115,7 +115,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/global-this.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/global-this.js
 	var require_global_this = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var check = function(it) {
 			return it && it.Math === Math && it;
@@ -125,12 +125,12 @@ var ClerkCore = (function(exports) {
 		})() || Function("return this")();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-pure.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-pure.js
 	var require_is_pure = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = false;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-global-property.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-global-property.js
 	var require_define_global_property = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var defineProperty = Object.defineProperty;
@@ -148,7 +148,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared-store.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared-store.js
 	var require_shared_store = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var IS_PURE = require_is_pure();
 		var globalThis = require_global_this();
@@ -164,7 +164,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared.js
 	var require_shared = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var store = require_shared_store();
 		module.exports = function(key, value) {
@@ -172,7 +172,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-object.js
 	var require_to_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var requireObjectCoercible = require_require_object_coercible();
 		var $Object = Object;
@@ -181,7 +181,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/has-own-property.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/has-own-property.js
 	var require_has_own_property = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var toObject = require_to_object();
@@ -191,7 +191,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/uid.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/uid.js
 	var require_uid = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var id = 0;
@@ -202,14 +202,14 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-user-agent.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-user-agent.js
 	var require_environment_user_agent = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var navigator = require_global_this().navigator;
 		var userAgent = navigator && navigator.userAgent;
 		module.exports = userAgent ? String(userAgent) : "";
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-v8-version.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-v8-version.js
 	var require_environment_v8_version = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var userAgent = require_environment_user_agent();
@@ -232,7 +232,7 @@ var ClerkCore = (function(exports) {
 		module.exports = version;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/symbol-constructor-detection.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/symbol-constructor-detection.js
 	var require_symbol_constructor_detection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var V8_VERSION = require_environment_v8_version();
 		var fails = require_fails();
@@ -243,12 +243,12 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/use-symbol-as-uid.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/use-symbol-as-uid.js
 	var require_use_symbol_as_uid = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_symbol_constructor_detection() && !Symbol.sham && typeof Symbol.iterator == "symbol";
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/well-known-symbol.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/well-known-symbol.js
 	var require_well_known_symbol = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var shared = require_shared();
@@ -265,7 +265,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-callable.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-callable.js
 	var require_is_callable = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var documentAll = typeof document == "object" && document.all;
 		module.exports = typeof documentAll == "undefined" && documentAll !== void 0 ? function(argument) {
@@ -275,7 +275,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-object.js
 	var require_is_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isCallable = require_is_callable();
 		module.exports = function(it) {
@@ -283,7 +283,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/an-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/an-object.js
 	var require_an_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isObject = require_is_object();
 		var $String = String;
@@ -294,7 +294,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/descriptors.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/descriptors.js
 	var require_descriptors = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = !require_fails()(function() {
 			return Object.defineProperty({}, 1, { get: function() {
@@ -303,7 +303,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/v8-prototype-define-bug.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/v8-prototype-define-bug.js
 	var require_v8_prototype_define_bug = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var fails = require_fails();
@@ -315,7 +315,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/document-create-element.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/document-create-element.js
 	var require_document_create_element = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var isObject = require_is_object();
@@ -326,7 +326,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/ie8-dom-define.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/ie8-dom-define.js
 	var require_ie8_dom_define = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var fails = require_fails();
@@ -338,7 +338,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-call.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-call.js
 	var require_function_call = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var NATIVE_BIND = require_function_bind_native();
 		var call = Function.prototype.call;
@@ -347,7 +347,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-built-in.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-built-in.js
 	var require_get_built_in = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var isCallable = require_is_callable();
@@ -359,12 +359,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-is-prototype-of.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-is-prototype-of.js
 	var require_object_is_prototype_of = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_function_uncurry_this()({}.isPrototypeOf);
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-symbol.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-symbol.js
 	var require_is_symbol = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var getBuiltIn = require_get_built_in();
 		var isCallable = require_is_callable();
@@ -379,7 +379,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/try-to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/try-to-string.js
 	var require_try_to_string = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var $String = String;
 		module.exports = function(argument) {
@@ -391,7 +391,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/a-callable.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/a-callable.js
 	var require_a_callable = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isCallable = require_is_callable();
 		var tryToString = require_try_to_string();
@@ -402,7 +402,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-method.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-method.js
 	var require_get_method = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var aCallable = require_a_callable();
 		var isNullOrUndefined = require_is_null_or_undefined();
@@ -412,7 +412,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/ordinary-to-primitive.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/ordinary-to-primitive.js
 	var require_ordinary_to_primitive = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var call = require_function_call();
 		var isCallable = require_is_callable();
@@ -427,7 +427,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-primitive.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-primitive.js
 	var require_to_primitive = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var call = require_function_call();
 		var isObject = require_is_object();
@@ -452,7 +452,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-property-key.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-property-key.js
 	var require_to_property_key = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toPrimitive = require_to_primitive();
 		var isSymbol = require_is_symbol();
@@ -462,7 +462,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-define-property.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-define-property.js
 	var require_object_define_property = /* @__PURE__ */ __commonJSMin(((exports) => {
 		var DESCRIPTORS = require_descriptors();
 		var IE8_DOM_DEFINE = require_ie8_dom_define();
@@ -504,7 +504,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/math-trunc.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/math-trunc.js
 	var require_math_trunc = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var ceil = Math.ceil;
 		var floor = Math.floor;
@@ -514,7 +514,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-integer-or-infinity.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-integer-or-infinity.js
 	var require_to_integer_or_infinity = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var trunc = require_math_trunc();
 		module.exports = function(argument) {
@@ -523,7 +523,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-absolute-index.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-absolute-index.js
 	var require_to_absolute_index = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toIntegerOrInfinity = require_to_integer_or_infinity();
 		var max = Math.max;
@@ -534,7 +534,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-length.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-length.js
 	var require_to_length = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toIntegerOrInfinity = require_to_integer_or_infinity();
 		var min = Math.min;
@@ -544,7 +544,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/length-of-array-like.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/length-of-array-like.js
 	var require_length_of_array_like = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toLength = require_to_length();
 		module.exports = function(obj) {
@@ -552,7 +552,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-includes.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-includes.js
 	var require_array_includes = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toIndexedObject = require_to_indexed_object();
 		var toAbsoluteIndex = require_to_absolute_index();
@@ -578,12 +578,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/hidden-keys.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/hidden-keys.js
 	var require_hidden_keys = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = {};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-keys-internal.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-keys-internal.js
 	var require_object_keys_internal = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var hasOwn = require_has_own_property();
@@ -602,7 +602,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/enum-bug-keys.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/enum-bug-keys.js
 	var require_enum_bug_keys = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = [
 			"constructor",
@@ -615,7 +615,7 @@ var ClerkCore = (function(exports) {
 		];
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-keys.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-keys.js
 	var require_object_keys = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var internalObjectKeys = require_object_keys_internal();
 		var enumBugKeys = require_enum_bug_keys();
@@ -624,7 +624,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-define-properties.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-define-properties.js
 	var require_object_define_properties = /* @__PURE__ */ __commonJSMin(((exports) => {
 		var DESCRIPTORS = require_descriptors();
 		var V8_PROTOTYPE_DEFINE_BUG = require_v8_prototype_define_bug();
@@ -644,12 +644,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/html.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/html.js
 	var require_html = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_get_built_in()("document", "documentElement");
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared-key.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/shared-key.js
 	var require_shared_key = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var shared = require_shared();
 		var uid = require_uid();
@@ -659,7 +659,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-create.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-create.js
 	var require_object_create = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var anObject = require_an_object();
 		var definePropertiesModule = require_object_define_properties();
@@ -720,7 +720,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/add-to-unscopables.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/add-to-unscopables.js
 	var require_add_to_unscopables = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var wellKnownSymbol = require_well_known_symbol();
 		var create = require_object_create();
@@ -736,12 +736,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterators.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterators.js
 	var require_iterators = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = {};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/weak-map-basic-detection.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/weak-map-basic-detection.js
 	var require_weak_map_basic_detection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var isCallable = require_is_callable();
@@ -749,7 +749,7 @@ var ClerkCore = (function(exports) {
 		module.exports = isCallable(WeakMap) && /native code/.test(String(WeakMap));
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-property-descriptor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-property-descriptor.js
 	var require_create_property_descriptor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = function(bitmap, value) {
 			return {
@@ -761,7 +761,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-non-enumerable-property.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-non-enumerable-property.js
 	var require_create_non_enumerable_property = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var definePropertyModule = require_object_define_property();
@@ -774,7 +774,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/internal-state.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/internal-state.js
 	var require_internal_state = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var NATIVE_WEAK_MAP = require_weak_map_basic_detection();
 		var globalThis = require_global_this();
@@ -840,7 +840,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-property-is-enumerable.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-property-is-enumerable.js
 	var require_object_property_is_enumerable = /* @__PURE__ */ __commonJSMin(((exports) => {
 		var $propertyIsEnumerable = {}.propertyIsEnumerable;
 		var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
@@ -850,7 +850,7 @@ var ClerkCore = (function(exports) {
 		} : $propertyIsEnumerable;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-descriptor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-descriptor.js
 	var require_object_get_own_property_descriptor = /* @__PURE__ */ __commonJSMin(((exports) => {
 		var DESCRIPTORS = require_descriptors();
 		var call = require_function_call();
@@ -871,7 +871,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-name.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-name.js
 	var require_function_name = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var hasOwn = require_has_own_property();
@@ -885,7 +885,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/inspect-source.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/inspect-source.js
 	var require_inspect_source = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var isCallable = require_is_callable();
@@ -897,7 +897,7 @@ var ClerkCore = (function(exports) {
 		module.exports = store.inspectSource;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/make-built-in.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/make-built-in.js
 	var require_make_built_in = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var fails = require_fails();
@@ -942,7 +942,7 @@ var ClerkCore = (function(exports) {
 		}, "toString");
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-in.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-in.js
 	var require_define_built_in = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isCallable = require_is_callable();
 		var definePropertyModule = require_object_define_property();
@@ -972,7 +972,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-names.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-names.js
 	var require_object_get_own_property_names = /* @__PURE__ */ __commonJSMin(((exports) => {
 		var internalObjectKeys = require_object_keys_internal();
 		var hiddenKeys = require_enum_bug_keys().concat("length", "prototype");
@@ -981,12 +981,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-symbols.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-own-property-symbols.js
 	var require_object_get_own_property_symbols = /* @__PURE__ */ __commonJSMin(((exports) => {
 		exports.f = Object.getOwnPropertySymbols;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/own-keys.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/own-keys.js
 	var require_own_keys = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var getBuiltIn = require_get_built_in();
 		var uncurryThis = require_function_uncurry_this();
@@ -1001,7 +1001,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/copy-constructor-properties.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/copy-constructor-properties.js
 	var require_copy_constructor_properties = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var hasOwn = require_has_own_property();
 		var ownKeys = require_own_keys();
@@ -1018,7 +1018,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-forced.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-forced.js
 	var require_is_forced = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var fails = require_fails();
 		var isCallable = require_is_callable();
@@ -1036,7 +1036,7 @@ var ClerkCore = (function(exports) {
 		module.exports = isForced;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/export.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/export.js
 	var require_export = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var getOwnPropertyDescriptor = require_object_get_own_property_descriptor().f;
@@ -1070,7 +1070,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/correct-prototype-getter.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/correct-prototype-getter.js
 	var require_correct_prototype_getter = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = !require_fails()(function() {
 			function F() {}
@@ -1079,7 +1079,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-prototype-of.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-get-prototype-of.js
 	var require_object_get_prototype_of = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var hasOwn = require_has_own_property();
 		var isCallable = require_is_callable();
@@ -1098,7 +1098,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterators-core.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterators-core.js
 	var require_iterators_core = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var fails = require_fails();
 		var isCallable = require_is_callable();
@@ -1133,7 +1133,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/set-to-string-tag.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/set-to-string-tag.js
 	var require_set_to_string_tag = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var defineProperty = require_object_define_property().f;
 		var hasOwn = require_has_own_property();
@@ -1147,7 +1147,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-create-constructor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-create-constructor.js
 	var require_iterator_create_constructor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var IteratorPrototype = require_iterators_core().IteratorPrototype;
 		var create = require_object_create();
@@ -1166,7 +1166,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this-accessor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this-accessor.js
 	var require_function_uncurry_this_accessor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var aCallable = require_a_callable();
@@ -1177,7 +1177,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-possible-prototype.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-possible-prototype.js
 	var require_is_possible_prototype = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isObject = require_is_object();
 		module.exports = function(argument) {
@@ -1185,7 +1185,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/a-possible-prototype.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/a-possible-prototype.js
 	var require_a_possible_prototype = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isPossiblePrototype = require_is_possible_prototype();
 		var $String = String;
@@ -1196,7 +1196,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-set-prototype-of.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-set-prototype-of.js
 	var require_object_set_prototype_of = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThisAccessor = require_function_uncurry_this_accessor();
 		var isObject = require_is_object();
@@ -1222,7 +1222,7 @@ var ClerkCore = (function(exports) {
 		}() : void 0);
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-define.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-define.js
 	var require_iterator_define = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var $ = require_export();
 		var call = require_function_call();
@@ -1314,7 +1314,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-iter-result-object.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-iter-result-object.js
 	var require_create_iter_result_object = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = function(value, done) {
 			return {
@@ -1324,7 +1324,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.array.iterator.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.array.iterator.js
 	var require_es_array_iterator = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toIndexedObject = require_to_indexed_object();
 		var addToUnscopables = require_add_to_unscopables();
@@ -1368,7 +1368,7 @@ var ClerkCore = (function(exports) {
 		} catch (error) {}
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.string.from-code-point.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.string.from-code-point.js
 	var require_es_string_from_code_point = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var uncurryThis = require_function_uncurry_this();
@@ -1396,7 +1396,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/safe-get-built-in.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/safe-get-built-in.js
 	var require_safe_get_built_in = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var DESCRIPTORS = require_descriptors();
@@ -1408,7 +1408,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/url-constructor-detection.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/url-constructor-detection.js
 	var require_url_constructor_detection = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var fails = require_fails();
 		var wellKnownSymbol = require_well_known_symbol();
@@ -1431,7 +1431,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-in-accessor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-in-accessor.js
 	var require_define_built_in_accessor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var makeBuiltIn = require_make_built_in();
 		var defineProperty = require_object_define_property();
@@ -1442,7 +1442,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-ins.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/define-built-ins.js
 	var require_define_built_ins = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var defineBuiltIn = require_define_built_in();
 		module.exports = function(target, src, options) {
@@ -1451,7 +1451,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/an-instance.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/an-instance.js
 	var require_an_instance = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isPrototypeOf = require_object_is_prototype_of();
 		var $TypeError = TypeError;
@@ -1461,7 +1461,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this-clause.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-uncurry-this-clause.js
 	var require_function_uncurry_this_clause = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var classofRaw = require_classof_raw();
 		var uncurryThis = require_function_uncurry_this();
@@ -1470,7 +1470,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-bind-context.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/function-bind-context.js
 	var require_function_bind_context = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this_clause();
 		var aCallable = require_a_callable();
@@ -1484,7 +1484,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-string-tag-support.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-string-tag-support.js
 	var require_to_string_tag_support = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var TO_STRING_TAG = require_well_known_symbol()("toStringTag");
 		var test = {};
@@ -1492,7 +1492,7 @@ var ClerkCore = (function(exports) {
 		module.exports = String(test) === "[object z]";
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/classof.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/classof.js
 	var require_classof = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var TO_STRING_TAG_SUPPORT = require_to_string_tag_support();
 		var isCallable = require_is_callable();
@@ -1513,7 +1513,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/to-string.js
 	var require_to_string = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var classof = require_classof();
 		var $String = String;
@@ -1523,7 +1523,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-iterator-method.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-iterator-method.js
 	var require_get_iterator_method = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var classof = require_classof();
 		var getMethod = require_get_method();
@@ -1535,7 +1535,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-iterator.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-iterator.js
 	var require_get_iterator = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var call = require_function_call();
 		var aCallable = require_a_callable();
@@ -1550,7 +1550,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/validate-arguments-length.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/validate-arguments-length.js
 	var require_validate_arguments_length = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var $TypeError = TypeError;
 		module.exports = function(passed, required) {
@@ -1559,12 +1559,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-slice.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-slice.js
 	var require_array_slice = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_function_uncurry_this()([].slice);
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-sort.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-sort.js
 	var require_array_sort = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var arraySlice = require_array_slice();
 		var floor = Math.floor;
@@ -1594,7 +1594,7 @@ var ClerkCore = (function(exports) {
 		module.exports = sort;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.constructor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.constructor.js
 	var require_web_url_search_params_constructor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		require_es_array_iterator();
 		require_es_string_from_code_point();
@@ -2029,12 +2029,12 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.js
 	var require_web_url_search_params = /* @__PURE__ */ __commonJSMin((() => {
 		require_web_url_search_params_constructor();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.delete.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.delete.js
 	var require_web_url_search_params_delete = /* @__PURE__ */ __commonJSMin((() => {
 		var defineBuiltIn = require_define_built_in();
 		var uncurryThis = require_function_uncurry_this();
@@ -2085,7 +2085,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.has.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.has.js
 	var require_web_url_search_params_has = /* @__PURE__ */ __commonJSMin((() => {
 		var defineBuiltIn = require_define_built_in();
 		var uncurryThis = require_function_uncurry_this();
@@ -2112,7 +2112,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.size.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url-search-params.size.js
 	var require_web_url_search_params_size = /* @__PURE__ */ __commonJSMin((() => {
 		var DESCRIPTORS = require_descriptors();
 		var uncurryThis = require_function_uncurry_this();
@@ -2132,12 +2132,12 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/path.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/path.js
 	var require_path = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_global_this();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/web/url-search-params.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/web/url-search-params.js
 	var require_url_search_params$2 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		require_web_url_search_params();
 		require_web_url_search_params_delete();
@@ -2146,7 +2146,7 @@ var ClerkCore = (function(exports) {
 		module.exports = require_path().URLSearchParams;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/string-multibyte.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/string-multibyte.js
 	var require_string_multibyte = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var toIntegerOrInfinity = require_to_integer_or_infinity();
@@ -2172,7 +2172,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.string.iterator.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.string.iterator.js
 	var require_es_string_iterator = /* @__PURE__ */ __commonJSMin((() => {
 		var charAt = require_string_multibyte().charAt;
 		var toString = require_to_string();
@@ -2200,7 +2200,7 @@ var ClerkCore = (function(exports) {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-assign.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-assign.js
 	var require_object_assign = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var uncurryThis = require_function_uncurry_this();
@@ -2254,7 +2254,7 @@ var ClerkCore = (function(exports) {
 		} : $assign;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-close.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/iterator-close.js
 	var require_iterator_close = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var call = require_function_call();
 		var anObject = require_an_object();
@@ -2280,7 +2280,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/call-with-safe-iteration-closing.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/call-with-safe-iteration-closing.js
 	var require_call_with_safe_iteration_closing = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var anObject = require_an_object();
 		var iteratorClose = require_iterator_close();
@@ -2293,7 +2293,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-array-iterator-method.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-array-iterator-method.js
 	var require_is_array_iterator_method = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var wellKnownSymbol = require_well_known_symbol();
 		var Iterators = require_iterators();
@@ -2304,7 +2304,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-constructor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/is-constructor.js
 	var require_is_constructor = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var fails = require_fails();
@@ -2348,7 +2348,7 @@ var ClerkCore = (function(exports) {
 		}) ? isConstructorLegacy : isConstructorModern;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-property.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/create-property.js
 	var require_create_property = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var definePropertyModule = require_object_define_property();
@@ -2359,7 +2359,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-from.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/array-from.js
 	var require_array_from = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var bind = require_function_bind_context();
 		var call = require_function_call();
@@ -2403,7 +2403,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/string-punycode-to-ascii.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/string-punycode-to-ascii.js
 	var require_string_punycode_to_ascii = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var maxInt = 2147483647;
@@ -2540,7 +2540,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.constructor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.constructor.js
 	var require_web_url_constructor = /* @__PURE__ */ __commonJSMin((() => {
 		require_es_string_iterator();
 		var $ = require_export();
@@ -3432,12 +3432,12 @@ var ClerkCore = (function(exports) {
 		}, { URL: URLConstructor });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.js
 	var require_web_url = /* @__PURE__ */ __commonJSMin((() => {
 		require_web_url_constructor();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.can-parse.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.can-parse.js
 	var require_web_url_can_parse = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var getBuiltIn = require_get_built_in();
@@ -3468,7 +3468,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.parse.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.parse.js
 	var require_web_url_parse = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var getBuiltIn = require_get_built_in();
@@ -3492,7 +3492,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.to-json.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.url.to-json.js
 	var require_web_url_to_json = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var call = require_function_call();
@@ -3505,7 +3505,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/web/url.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/web/url.js
 	var require_url$2 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		require_url_search_params$2();
 		require_web_url();
@@ -3515,17 +3515,17 @@ var ClerkCore = (function(exports) {
 		module.exports = require_path().URL;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/url/index.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/url/index.js
 	var require_url$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_url$2();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/url/index.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/url/index.js
 	var require_url = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_url$1();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-iterables.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-iterables.js
 	var require_dom_iterables = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = {
 			CSSRuleList: 0,
@@ -3562,14 +3562,14 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-token-list-prototype.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-token-list-prototype.js
 	var require_dom_token_list_prototype = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var classList = require_document_create_element()("span").classList;
 		var DOMTokenListPrototype = classList && classList.constructor && classList.constructor.prototype;
 		module.exports = DOMTokenListPrototype === Object.prototype ? void 0 : DOMTokenListPrototype;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-collections.iterator.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-collections.iterator.js
 	var require_web_dom_collections_iterator = /* @__PURE__ */ __commonJSMin((() => {
 		var globalThis = require_global_this();
 		var DOMIterables = require_dom_iterables();
@@ -3600,19 +3600,19 @@ var ClerkCore = (function(exports) {
 		handlePrototype(DOMTokenListPrototype, "DOMTokenList");
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/url-search-params/index.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/url-search-params/index.js
 	var require_url_search_params$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var parent = require_url_search_params$2();
 		require_web_dom_collections_iterator();
 		module.exports = parent;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/url-search-params/index.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/url-search-params/index.js
 	var require_url_search_params = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_url_search_params$1();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/normalize-string-argument.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/normalize-string-argument.js
 	var require_normalize_string_argument = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var toString = require_to_string();
 		module.exports = function(argument, $default) {
@@ -3620,7 +3620,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/error-to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/error-to-string.js
 	var require_error_to_string = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var DESCRIPTORS = require_descriptors();
 		var fails = require_fails();
@@ -3646,7 +3646,7 @@ var ClerkCore = (function(exports) {
 		} : nativeErrorToString;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.error.to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.error.to-string.js
 	var require_es_error_to_string = /* @__PURE__ */ __commonJSMin((() => {
 		var defineBuiltIn = require_define_built_in();
 		var errorToString = require_error_to_string();
@@ -3654,7 +3654,7 @@ var ClerkCore = (function(exports) {
 		if (ErrorPrototype.toString !== errorToString) defineBuiltIn(ErrorPrototype, "toString", errorToString);
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/object-to-string.js
 	var require_object_to_string = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var TO_STRING_TAG_SUPPORT = require_to_string_tag_support();
 		var classof = require_classof();
@@ -3663,7 +3663,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.object.to-string.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/es.object.to-string.js
 	var require_es_object_to_string = /* @__PURE__ */ __commonJSMin((() => {
 		var TO_STRING_TAG_SUPPORT = require_to_string_tag_support();
 		var defineBuiltIn = require_define_built_in();
@@ -3671,7 +3671,7 @@ var ClerkCore = (function(exports) {
 		if (!TO_STRING_TAG_SUPPORT) defineBuiltIn(Object.prototype, "toString", toString, { unsafe: true });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/base64-map.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/base64-map.js
 	var require_base64_map = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var commonAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 		var base64Alphabet = commonAlphabet + "+/";
@@ -3690,7 +3690,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.atob.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.atob.js
 	var require_web_atob = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var globalThis = require_global_this();
@@ -3747,7 +3747,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment.js
 	var require_environment = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var userAgent = require_environment_user_agent();
@@ -3768,12 +3768,12 @@ var ClerkCore = (function(exports) {
 		})();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-is-node.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/environment-is-node.js
 	var require_environment_is_node = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_environment() === "NODE";
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-built-in-node-module.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/get-built-in-node-module.js
 	var require_get_built_in_node_module = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var globalThis = require_global_this();
 		var IS_NODE = require_environment_is_node();
@@ -3789,7 +3789,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-exception-constants.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/dom-exception-constants.js
 	var require_dom_exception_constants = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = {
 			IndexSizeError: {
@@ -3920,7 +3920,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/error-stack-clear.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/error-stack-clear.js
 	var require_error_stack_clear = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var uncurryThis = require_function_uncurry_this();
 		var $Error = Error;
@@ -3936,7 +3936,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.constructor.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.constructor.js
 	var require_web_dom_exception_constructor = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var getBuiltIn = require_get_built_in();
@@ -4048,7 +4048,7 @@ var ClerkCore = (function(exports) {
 		}
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/inherit-if-required.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/internals/inherit-if-required.js
 	var require_inherit_if_required = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		var isCallable = require_is_callable();
 		var isObject = require_is_object();
@@ -4060,7 +4060,7 @@ var ClerkCore = (function(exports) {
 		};
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.stack.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.stack.js
 	var require_web_dom_exception_stack = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var globalThis = require_global_this();
@@ -4112,7 +4112,7 @@ var ClerkCore = (function(exports) {
 		}
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.to-string-tag.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.dom-exception.to-string-tag.js
 	var require_web_dom_exception_to_string_tag = /* @__PURE__ */ __commonJSMin((() => {
 		var getBuiltIn = require_get_built_in();
 		var setToStringTag = require_set_to_string_tag();
@@ -4120,7 +4120,7 @@ var ClerkCore = (function(exports) {
 		setToStringTag(getBuiltIn(DOM_EXCEPTION), DOM_EXCEPTION);
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/atob.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/atob.js
 	var require_atob$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		require_es_error_to_string();
 		require_es_object_to_string();
@@ -4131,12 +4131,12 @@ var ClerkCore = (function(exports) {
 		module.exports = require_path().atob;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/atob.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/atob.js
 	var require_atob = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_atob$1();
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.btoa.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/modules/web.btoa.js
 	var require_web_btoa = /* @__PURE__ */ __commonJSMin((() => {
 		var $ = require_export();
 		var globalThis = require_global_this();
@@ -4183,7 +4183,7 @@ var ClerkCore = (function(exports) {
 		} });
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/btoa.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/stable/btoa.js
 	var require_btoa$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		require_es_error_to_string();
 		require_es_object_to_string();
@@ -4194,7 +4194,7 @@ var ClerkCore = (function(exports) {
 		module.exports = require_path().btoa;
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/btoa.js
+	//#region node_modules/.pnpm/core-js@3.47.0/node_modules/core-js/actual/btoa.js
 	var require_btoa = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = require_btoa$1();
 	}));
@@ -4210,7 +4210,7 @@ var ClerkCore = (function(exports) {
 		return error && typeof error === "object" ? stages.get(error) : void 0;
 	}
 	//#endregion
-	//#region src/protocol.ts
+	//#region packages/mobile-runtime/src/protocol.ts
 	const safeMetadata = new Set([
 		"paramName",
 		"sessionId",
@@ -4243,14 +4243,14 @@ var ClerkCore = (function(exports) {
 			...getPasskeyFailureStage(error) ? { passkeyStage: getPasskeyFailureStage(error) } : {}
 		};
 	}
-	function bridgeError(code) {
+	function bridgeError$1(code) {
 		return Object.assign(new Error(code), {
 			code,
 			__clerkBridgeError: true
 		});
 	}
 	//#endregion
-	//#region src/host.ts
+	//#region packages/mobile-runtime/src/host.ts
 	let sequence = 0;
 	let closed = false;
 	const pending = /* @__PURE__ */ new Map();
@@ -4258,7 +4258,7 @@ var ClerkCore = (function(exports) {
 		globalThis.__clerkNativeEmit(JSON.stringify(value));
 	}
 	function hostRequest(capability, args, signal) {
-		if (closed) return Promise.reject(bridgeError("runtime_disposed"));
+		if (closed) return Promise.reject(bridgeError$1("runtime_disposed"));
 		if (signal?.aborted) return Promise.reject(signal.reason);
 		const id = `h${++sequence}`;
 		return new Promise((resolve, reject) => {
@@ -4268,7 +4268,7 @@ var ClerkCore = (function(exports) {
 					kind: "hostCancel",
 					id
 				});
-				reject(signal?.reason || bridgeError("host_cancelled"));
+				reject(signal?.reason || bridgeError$1("host_cancelled"));
 			};
 			const cleanup = () => signal?.removeEventListener("abort", abort);
 			pending.set(id, {
@@ -4295,7 +4295,7 @@ var ClerkCore = (function(exports) {
 		const callback = pending.get(reply.id);
 		if (!callback) return;
 		pending.delete(reply.id);
-		if (reply.error) callback.reject(bridgeError(reply.error.code));
+		if (reply.error) callback.reject(bridgeError$1(reply.error.code));
 		else callback.resolve(reply.result);
 	}
 	function disposeHost() {
@@ -4305,7 +4305,7 @@ var ClerkCore = (function(exports) {
 				kind: "hostCancel",
 				id
 			});
-			callback.reject(bridgeError("runtime_disposed"));
+			callback.reject(bridgeError$1("runtime_disposed"));
 		}
 		pending.clear();
 	}
@@ -4317,11 +4317,11 @@ var ClerkCore = (function(exports) {
 				kind: "hostCancel",
 				id
 			});
-			callback.reject(bridgeError("stale_authentication_attempt"));
+			callback.reject(bridgeError$1("stale_authentication_attempt"));
 		}
 	}
 	//#endregion
-	//#region src/environment.ts
+	//#region packages/mobile-runtime/src/environment.ts
 	var MobileHeaders = class MobileHeaders {
 		#values = /* @__PURE__ */ new Map();
 		constructor(initial) {
@@ -4385,7 +4385,7 @@ var ClerkCore = (function(exports) {
 		constructor() {
 			this.signal = new MobileAbortSignal();
 		}
-		abort(reason = bridgeError("aborted")) {
+		abort(reason = bridgeError$1("aborted")) {
 			this.signal.abort(reason);
 		}
 	};
@@ -4535,7 +4535,7 @@ var ClerkCore = (function(exports) {
 	};
 	globals.fetch = async (input, init = {}) => {
 		const url = new URL(String(input));
-		if (url.protocol !== "https:") throw bridgeError("insecure_http_url");
+		if (url.protocol !== "https:") throw bridgeError$1("insecure_http_url");
 		const body = init.body instanceof MobileFormData ? init.body.toWire() : init.body == null ? null : String(init.body);
 		const result = await hostRequest("http", {
 			url: url.toString(),
@@ -4557,487 +4557,7 @@ var ClerkCore = (function(exports) {
 		trace() {}
 	};
 	//#endregion
-	//#region ../shared/src/errors/createErrorTypeGuard.ts
-	/**
-	* Creates a type guard function for any error class.
-	* The returned function can be called as a standalone function or as a method on an error object.
-	*
-	* @example
-	* ```typescript
-	* class MyError extends Error {}
-	* const isMyError = createErrorTypeGuard(MyError);
-	*
-	* // As a standalone function
-	* if (isMyError(error)) { ... }
-	*
-	* // As a method (when attached to error object)
-	* if (error.isMyError()) { ... }
-	* ```
-	*/
-	function createErrorTypeGuard(ErrorClass) {
-		function typeGuard(error) {
-			const target = error ?? this;
-			if (!target) throw new TypeError(`${ErrorClass.kind || ErrorClass.name} type guard requires an error object`);
-			if (ErrorClass.kind && typeof target === "object" && target !== null && "constructor" in target) {
-				if (target.constructor?.kind === ErrorClass.kind) return true;
-			}
-			return target instanceof ErrorClass;
-		}
-		return typeGuard;
-	}
-	//#endregion
-	//#region ../shared/src/errors/clerkApiError.ts
-	/**
-	* This error contains the specific error message, code, and any additional metadata that was returned by the Clerk API.
-	*/
-	var ClerkAPIError = class {
-		static kind = "ClerkAPIError";
-		code;
-		message;
-		longMessage;
-		meta;
-		constructor(json) {
-			const parsedError = {
-				code: json.code,
-				message: json.message,
-				longMessage: json.long_message,
-				meta: {
-					paramName: json.meta?.param_name,
-					sessionId: json.meta?.session_id,
-					emailAddresses: json.meta?.email_addresses,
-					identifiers: json.meta?.identifiers,
-					zxcvbn: json.meta?.zxcvbn,
-					plan: json.meta?.plan,
-					isPlanUpgradePossible: json.meta?.is_plan_upgrade_possible,
-					seatsQuantityToAdd: json.meta?.seats_quantity_to_add,
-					seatsQuantity: json.meta?.seats_quantity
-				}
-			};
-			this.code = parsedError.code;
-			this.message = parsedError.message;
-			this.longMessage = parsedError.longMessage;
-			this.meta = parsedError.meta;
-		}
-	};
-	//#endregion
-	//#region ../shared/src/errors/parseError.ts
-	/**
-	* Parses an array of ClerkAPIErrorJSON objects into an array of ClerkAPIError objects.
-	*
-	* @internal
-	*/
-	function parseErrors(data = []) {
-		return data.length > 0 ? data.map((e) => new ClerkAPIError(e)) : [];
-	}
-	/**
-	* Converts a ClerkAPIError object into a ClerkAPIErrorJSON object.
-	*
-	* @internal
-	*/
-	function errorToJSON(error) {
-		return {
-			code: error?.code || "",
-			message: error?.message || "",
-			long_message: error?.longMessage,
-			meta: {
-				param_name: error?.meta?.paramName,
-				session_id: error?.meta?.sessionId,
-				email_addresses: error?.meta?.emailAddresses,
-				identifiers: error?.meta?.identifiers,
-				zxcvbn: error?.meta?.zxcvbn,
-				plan: error?.meta?.plan,
-				is_plan_upgrade_possible: error?.meta?.isPlanUpgradePossible,
-				seats_quantity_to_add: error?.meta?.seatsQuantityToAdd,
-				seats_quantity: error?.meta?.seatsQuantity
-			}
-		};
-	}
-	//#endregion
-	//#region ../shared/src/errors/clerkError.ts
-	var ClerkError = class ClerkError extends Error {
-		static kind = "ClerkError";
-		clerkError = true;
-		code;
-		longMessage;
-		docsUrl;
-		cause;
-		get name() {
-			return this.constructor.name;
-		}
-		constructor(opts) {
-			super(new.target.formatMessage(new.target.kind, opts.message, opts.code, opts.docsUrl), { cause: opts.cause });
-			Object.setPrototypeOf(this, ClerkError.prototype);
-			this.code = opts.code;
-			this.docsUrl = opts.docsUrl;
-			this.longMessage = opts.longMessage;
-			this.cause = opts.cause;
-		}
-		toString() {
-			return `[${this.name}]\nMessage:${this.message}`;
-		}
-		static formatMessage(name, msg, code, docsUrl) {
-			const prefix = "Clerk:";
-			const regex = new RegExp(prefix.replace(" ", "\\s*"), "i");
-			msg = msg.replace(regex, "");
-			msg = `${prefix} ${msg.trim()}\n\n(code="${code}")\n\n`;
-			if (docsUrl) msg += `\n\nDocs: ${docsUrl}`;
-			return msg;
-		}
-	};
-	//#endregion
-	//#region ../shared/src/errors/clerkApiResponseError.ts
-	var ClerkAPIResponseError = class ClerkAPIResponseError extends ClerkError {
-		static kind = "ClerkAPIResponseError";
-		status;
-		clerkTraceId;
-		retryAfter;
-		errors;
-		constructor(message, options) {
-			const { data: errorsJson, status, clerkTraceId, retryAfter } = options;
-			super({
-				...options,
-				message,
-				code: "api_response_error"
-			});
-			Object.setPrototypeOf(this, ClerkAPIResponseError.prototype);
-			this.status = status;
-			this.clerkTraceId = clerkTraceId;
-			this.retryAfter = retryAfter;
-			this.errors = (errorsJson || []).map((e) => new ClerkAPIError(e));
-		}
-		toString() {
-			let message = `[${this.name}]\nMessage:${this.message}\nStatus:${this.status}\nSerialized errors: ${this.errors.map((e) => JSON.stringify(e))}`;
-			if (this.clerkTraceId) message += `\nClerk Trace ID: ${this.clerkTraceId}`;
-			return message;
-		}
-		static formatMessage(name, msg, _, __) {
-			return msg;
-		}
-	};
-	/**
-	* Type guard to check if an error is a ClerkAPIResponseError.
-	* Can be called as a standalone function or as a method on an error object.
-	*
-	* @example
-	* // As a standalone function
-	* if (isClerkAPIResponseError(error)) { ... }
-	*
-	* // As a method (when attached to error object)
-	* if (error.isClerkAPIResponseError()) { ... }
-	*/
-	const isClerkAPIResponseError = createErrorTypeGuard(ClerkAPIResponseError);
-	//#endregion
-	//#region ../shared/src/errors/missingExpiredTokenError.ts
-	/**
-	* Error class representing a missing expired token error from the API.
-	* This error occurs when the server requires an expired token to mint a new session token.
-	*
-	* Use the static `is` method to check if a ClerkAPIResponseError matches this error type.
-	*
-	* @example
-	* ```typescript
-	* if (MissingExpiredTokenError.is(error)) {
-	*   // Handle the missing expired token error
-	* }
-	* ```
-	*/
-	var MissingExpiredTokenError = class MissingExpiredTokenError extends ClerkAPIResponseError {
-		static kind = "MissingExpiredTokenError";
-		static ERROR_CODE = "missing_expired_token";
-		static STATUS = 422;
-		/**
-		* Type guard to check if an error is a MissingExpiredTokenError.
-		* This checks the error's properties (status and error code) rather than instanceof,
-		* allowing it to work with ClerkAPIResponseError instances thrown from the API layer.
-		*
-		* @example
-		* ```typescript
-		* try {
-		*   await someApiCall();
-		* } catch (e) {
-		*   if (MissingExpiredTokenError.is(e)) {
-		*     // e is typed as ClerkAPIResponseError with the specific error properties
-		*   }
-		* }
-		* ```
-		*/
-		static is(err) {
-			return isClerkAPIResponseError(err) && err.status === MissingExpiredTokenError.STATUS && err.errors.length > 0 && err.errors[0].code === MissingExpiredTokenError.ERROR_CODE;
-		}
-	};
-	//#endregion
-	//#region ../shared/src/errors/clerkRuntimeError.ts
-	/**
-	* Custom error class for representing Clerk runtime errors.
-	*
-	* @class ClerkRuntimeError
-	*
-	* @example
-	*   throw new ClerkRuntimeError('An error occurred', { code: 'password_invalid' });
-	*/
-	var ClerkRuntimeError = class ClerkRuntimeError extends ClerkError {
-		static kind = "ClerkRuntimeError";
-		/**
-		* @deprecated Use `clerkError` property instead. This property is maintained for backward compatibility.
-		*/
-		clerkRuntimeError = true;
-		constructor(message, options) {
-			super({
-				...options,
-				message
-			});
-			Object.setPrototypeOf(this, ClerkRuntimeError.prototype);
-		}
-	};
-	/**
-	* Type guard to check if an error is a ClerkRuntimeError.
-	* Can be called as a standalone function or as a method on an error object.
-	*
-	* @example
-	* // As a standalone function
-	* if (isClerkRuntimeError(error)) { ... }
-	*
-	* // As a method (when attached to error object)
-	* if (error.isClerkRuntimeError()) { ... }
-	*/
-	const isClerkRuntimeError = createErrorTypeGuard(ClerkRuntimeError);
-	//#endregion
-	//#region ../shared/src/errors/clerkOfflineError.ts
-	/**
-	* Error thrown when a network request fails due to the client being offline.
-	*
-	* This error is thrown instead of returning `null` to make it explicit that
-	* the failure was due to network conditions, not authentication state.
-	*
-	* @example
-	* ```typescript
-	* try {
-	*   const token = await session.getToken();
-	* } catch (error) {
-	*   if (ClerkOfflineError.is(error)) {
-	*     // Handle offline scenario
-	*     showOfflineScreen();
-	*   }
-	* }
-	* ```
-	*/
-	var ClerkOfflineError = class ClerkOfflineError extends ClerkRuntimeError {
-		static kind = "ClerkOfflineError";
-		static ERROR_CODE = "clerk_offline";
-		constructor(message) {
-			super(message, { code: ClerkOfflineError.ERROR_CODE });
-			Object.setPrototypeOf(this, ClerkOfflineError.prototype);
-		}
-		/**
-		* Type guard to check if an error is a ClerkOfflineError.
-		* This checks both instanceof and the error code to support cross-bundle/cross-realm errors
-		*
-		* @example
-		* ```typescript
-		* try {
-		*   const token = await session.getToken();
-		* } catch (error) {
-		*   if (ClerkOfflineError.is(error)) {
-		*     // error is typed as ClerkOfflineError
-		*     console.log('User is offline');
-		*   }
-		* }
-		* ```
-		*/
-		static is(error) {
-			if (error === null || error === void 0) return false;
-			return error instanceof ClerkOfflineError || isClerkRuntimeError(error) && error.code === ClerkOfflineError.ERROR_CODE;
-		}
-	};
-	//#endregion
-	//#region ../shared/src/errors/errorThrower.ts
-	const DefaultMessages = Object.freeze({
-		InvalidProxyUrlErrorMessage: `The proxyUrl passed to Clerk is invalid. The expected value for proxyUrl is an absolute URL or a relative path with a leading '/'. (key={{url}})`,
-		InvalidPublishableKeyErrorMessage: `The publishableKey passed to Clerk is invalid (key={{key}}, expected format: pk_test_... or pk_live_...). To create a Clerk application with valid keys, in your terminal run:
-
-npx clerk@latest init
-
-\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
-
-If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys (\`--instance prod\` for production keys). Or copy its Publishable key from https://dashboard.clerk.com/~/api-keys.`,
-		MissingPublishableKeyErrorMessage: `Missing publishableKey. To set up Clerk for this project, in your terminal run:
-
-npx clerk@latest init
-
-\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
-
-If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys. Or copy them from https://dashboard.clerk.com/~/api-keys. Deploy a production instance by running \`npx clerk@latest deploy\`, or \`npx clerk@latest env pull --instance prod\` to use an existing one.`,
-		MissingSecretKeyErrorMessage: `Missing secretKey. To set up Clerk for this project, in your terminal run:
-
-npx clerk@latest init
-
-\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
-
-If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys. Or copy them from https://dashboard.clerk.com/~/api-keys. Deploy a production instance by running \`npx clerk@latest deploy\`, or \`npx clerk@latest env pull --instance prod\` to use an existing one.`,
-		MissingClerkProvider: `{{source}} can only be used within the <ClerkProvider /> component. Learn more: https://clerk.com/docs/components/clerk-provider`
-	});
-	/**
-	* Builds an error thrower.
-	*
-	* @internal
-	*/
-	function buildErrorThrower({ packageName, customMessages }) {
-		let pkg = packageName;
-		/**
-		* Builds a message from a raw message and replacements.
-		*
-		* @internal
-		*/
-		function buildMessage(rawMessage, replacements) {
-			if (!replacements) return `${pkg}: ${rawMessage}`;
-			let msg = rawMessage;
-			const matches = rawMessage.matchAll(/{{([a-zA-Z0-9-_]+)}}/g);
-			for (const match of matches) {
-				const replacement = (replacements[match[1]] || "").toString();
-				msg = msg.replace(`{{${match[1]}}}`, replacement);
-			}
-			return `${pkg}: ${msg}`;
-		}
-		const messages = {
-			...DefaultMessages,
-			...customMessages
-		};
-		return {
-			setPackageName({ packageName }) {
-				if (typeof packageName === "string") pkg = packageName;
-				return this;
-			},
-			setMessages({ customMessages }) {
-				Object.assign(messages, customMessages || {});
-				return this;
-			},
-			throwInvalidPublishableKeyError(params) {
-				throw new Error(buildMessage(messages.InvalidPublishableKeyErrorMessage, params));
-			},
-			throwInvalidProxyUrl(params) {
-				throw new Error(buildMessage(messages.InvalidProxyUrlErrorMessage, params));
-			},
-			throwMissingPublishableKeyError() {
-				throw new Error(buildMessage(messages.MissingPublishableKeyErrorMessage));
-			},
-			throwMissingSecretKeyError() {
-				throw new Error(buildMessage(messages.MissingSecretKeyErrorMessage));
-			},
-			throwMissingClerkProviderError(params) {
-				throw new Error(buildMessage(messages.MissingClerkProvider, params));
-			},
-			throw(message) {
-				throw new Error(buildMessage(message));
-			}
-		};
-	}
-	//#endregion
-	//#region ../shared/src/errors/emailLinkError.ts
-	var EmailLinkError = class EmailLinkError extends Error {
-		code;
-		constructor(code) {
-			super(code);
-			this.code = code;
-			this.name = "EmailLinkError";
-			Object.setPrototypeOf(this, EmailLinkError.prototype);
-		}
-	};
-	const EmailLinkErrorCodeStatus = {
-		Expired: "expired",
-		Failed: "failed",
-		ClientMismatch: "client_mismatch"
-	};
-	//#endregion
-	//#region ../shared/src/errors/webAuthNError.ts
-	var ClerkWebAuthnError = class extends ClerkRuntimeError {
-		/**
-		* A unique code identifying the error, can be used for localization.
-		*/
-		code;
-		constructor(message, options) {
-			super(message, options);
-			this.code = options.code;
-		}
-	};
-	//#endregion
-	//#region ../shared/src/errors/helpers.ts
-	/**
-	* Checks if the provided error object is a captcha error.
-	*
-	* @internal
-	*/
-	function isCaptchaError(e) {
-		return [
-			"captcha_invalid",
-			"captcha_not_enabled",
-			"captcha_missing_token"
-		].includes(e.errors[0].code);
-	}
-	/**
-	* Checks if the provided error is a 4xx error.
-	*
-	* @internal
-	*/
-	function is4xxError(e) {
-		const status = e?.status;
-		return !!status && status >= 400 && status < 500;
-	}
-	/**
-	* Checks if the provided error is a 429 (Too Many Requests) error.
-	*
-	* @internal
-	*/
-	function is429Error(e) {
-		return e?.status === 429;
-	}
-	const unauthenticated403ErrorCodes = new Set(["user_banned", "user_deactivated"]);
-	/**
-	* Checks if the provided error indicates the user's session is no longer valid
-	* and should trigger the unauthenticated flow (e.g. sign-out / redirect to sign-in).
-	*
-	* Only matches explicit authentication failure status codes:
-	* - 401: session is invalid or expired
-	* - 422: invalid session state (e.g. missing_expired_token)
-	* - 403: terminal user state (e.g. user_banned, user_deactivated)
-	*
-	* 404 is intentionally excluded despite being returned for "session not found",
-	* because it's also returned for unrelated resources (org not found, JWT template
-	* not found) and shares the same `resource_not_found` error code, making it
-	* impossible to distinguish. Session-not-found 401s are already handled directly
-	* by Base._fetch.
-	*
-	* @internal
-	*/
-	function isUnauthenticatedError(e) {
-		const status = e?.status;
-		const hasTerminalUserErrorCode = Array.isArray(e?.errors) && e.errors.some((error) => unauthenticated403ErrorCodes.has(error?.code));
-		return status === 401 || status === 422 || status === 403 && hasTerminalUserErrorCode;
-	}
-	/**
-	* Checks if the provided error is a network error.
-	*
-	* @internal
-	*/
-	function isNetworkError(e) {
-		return (`${e.message}${e.name}` || "").toLowerCase().replace(/\s+/g, "").includes("networkerror");
-	}
-	//#endregion
-	//#region ../shared/src/errors/globalHookError.ts
-	/**
-	* Creates a ClerkGlobalHookError object from a ClerkError instance.
-	* It's a wrapper for all the different instances of Clerk errors that can
-	* be returned when using Clerk hooks.
-	*/
-	function createClerkGlobalHookError(error) {
-		const predicates = {
-			isClerkAPIResponseError,
-			isClerkRuntimeError
-		};
-		for (const [name, fn] of Object.entries(predicates)) Object.assign(error, { [name]: fn });
-		return error;
-	}
-	//#endregion
-	//#region ../shared/src/browser.ts
+	//#region packages/shared/src/browser.ts
 	/**
 	* Checks if the window object is defined. You can also use this to check if something is happening on the client side.
 	*
@@ -5145,7 +4665,7 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		return isBrowserOnline() && isValidBrowser();
 	}
 	//#endregion
-	//#region ../shared/src/network.ts
+	//#region packages/shared/src/network.ts
 	let nativeNetwork;
 	/** Internal mobile host integration. Unknown connectivity should attempt HTTP. */
 	function setNativeNetworkEnvironment(environment) {
@@ -5165,7 +4685,543 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		return nativeNetwork?.isActive?.();
 	}
 	//#endregion
-	//#region ../shared/src/constants.ts
+	//#region packages/shared/src/mobile.ts
+	function installMobileCredentialTransport(core, storage, headers = {}, options = {}) {
+		let generation = 0;
+		let disposed = false;
+		let writes = Promise.resolve();
+		const requests = /* @__PURE__ */ new WeakMap();
+		const assertCurrent = (expected) => {
+			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
+		};
+		core.__internal_onBeforeRequest(async (request) => {
+			const current = generation;
+			requests.set(request, current);
+			await writes;
+			assertCurrent(current);
+			const credential = await storage.read();
+			assertCurrent(current);
+			request.credentials = "omit";
+			request.url?.searchParams.set("_is_native", "1");
+			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
+			requestHeaders.set("authorization", credential || "");
+			if (options.native !== false) requestHeaders.set("x-mobile", "1");
+			for (const [key, value] of Object.entries(headers)) requestHeaders.set(key, value);
+			request.headers = requestHeaders;
+		});
+		core.__internal_onAfterResponse(async (request, response) => {
+			if (!response) return;
+			const current = requests.get(request);
+			if (current === void 0) throw new Error("Missing mobile request generation.");
+			assertCurrent(current);
+			const credential = response.headers.get("authorization");
+			if (credential) {
+				const write = writes.then(async () => {
+					assertCurrent(current);
+					await storage.write(credential);
+				});
+				writes = write.catch(() => void 0);
+				await write;
+			}
+			assertCurrent(current);
+		});
+		return {
+			async invalidate({ clearCredential = false } = {}) {
+				++generation;
+				if (clearCredential) {
+					const remove = writes.then(() => storage.remove());
+					writes = remove.catch(() => void 0);
+					await remove;
+				} else await writes;
+			},
+			dispose() {
+				disposed = true;
+				++generation;
+			}
+		};
+	}
+	//#endregion
+	//#region packages/shared/src/errors/createErrorTypeGuard.ts
+	/**
+	* Creates a type guard function for any error class.
+	* The returned function can be called as a standalone function or as a method on an error object.
+	*
+	* @example
+	* ```typescript
+	* class MyError extends Error {}
+	* const isMyError = createErrorTypeGuard(MyError);
+	*
+	* // As a standalone function
+	* if (isMyError(error)) { ... }
+	*
+	* // As a method (when attached to error object)
+	* if (error.isMyError()) { ... }
+	* ```
+	*/
+	function createErrorTypeGuard(ErrorClass) {
+		function typeGuard(error) {
+			const target = error ?? this;
+			if (!target) throw new TypeError(`${ErrorClass.kind || ErrorClass.name} type guard requires an error object`);
+			if (ErrorClass.kind && typeof target === "object" && target !== null && "constructor" in target) {
+				if (target.constructor?.kind === ErrorClass.kind) return true;
+			}
+			return target instanceof ErrorClass;
+		}
+		return typeGuard;
+	}
+	//#endregion
+	//#region packages/shared/src/errors/clerkApiError.ts
+	/**
+	* This error contains the specific error message, code, and any additional metadata that was returned by the Clerk API.
+	*/
+	var ClerkAPIError = class {
+		static kind = "ClerkAPIError";
+		code;
+		message;
+		longMessage;
+		meta;
+		constructor(json) {
+			const parsedError = {
+				code: json.code,
+				message: json.message,
+				longMessage: json.long_message,
+				meta: {
+					paramName: json.meta?.param_name,
+					sessionId: json.meta?.session_id,
+					emailAddresses: json.meta?.email_addresses,
+					identifiers: json.meta?.identifiers,
+					zxcvbn: json.meta?.zxcvbn,
+					plan: json.meta?.plan,
+					isPlanUpgradePossible: json.meta?.is_plan_upgrade_possible,
+					seatsQuantityToAdd: json.meta?.seats_quantity_to_add,
+					seatsQuantity: json.meta?.seats_quantity
+				}
+			};
+			this.code = parsedError.code;
+			this.message = parsedError.message;
+			this.longMessage = parsedError.longMessage;
+			this.meta = parsedError.meta;
+		}
+	};
+	//#endregion
+	//#region packages/shared/src/errors/parseError.ts
+	/**
+	* Parses an array of ClerkAPIErrorJSON objects into an array of ClerkAPIError objects.
+	*
+	* @internal
+	*/
+	function parseErrors(data = []) {
+		return data.length > 0 ? data.map((e) => new ClerkAPIError(e)) : [];
+	}
+	/**
+	* Converts a ClerkAPIError object into a ClerkAPIErrorJSON object.
+	*
+	* @internal
+	*/
+	function errorToJSON(error) {
+		return {
+			code: error?.code || "",
+			message: error?.message || "",
+			long_message: error?.longMessage,
+			meta: {
+				param_name: error?.meta?.paramName,
+				session_id: error?.meta?.sessionId,
+				email_addresses: error?.meta?.emailAddresses,
+				identifiers: error?.meta?.identifiers,
+				zxcvbn: error?.meta?.zxcvbn,
+				plan: error?.meta?.plan,
+				is_plan_upgrade_possible: error?.meta?.isPlanUpgradePossible,
+				seats_quantity_to_add: error?.meta?.seatsQuantityToAdd,
+				seats_quantity: error?.meta?.seatsQuantity
+			}
+		};
+	}
+	//#endregion
+	//#region packages/shared/src/errors/clerkError.ts
+	var ClerkError = class ClerkError extends Error {
+		static kind = "ClerkError";
+		clerkError = true;
+		code;
+		longMessage;
+		docsUrl;
+		cause;
+		get name() {
+			return this.constructor.name;
+		}
+		constructor(opts) {
+			super(new.target.formatMessage(new.target.kind, opts.message, opts.code, opts.docsUrl), { cause: opts.cause });
+			Object.setPrototypeOf(this, ClerkError.prototype);
+			this.code = opts.code;
+			this.docsUrl = opts.docsUrl;
+			this.longMessage = opts.longMessage;
+			this.cause = opts.cause;
+		}
+		toString() {
+			return `[${this.name}]\nMessage:${this.message}`;
+		}
+		static formatMessage(name, msg, code, docsUrl) {
+			const prefix = "Clerk:";
+			const regex = new RegExp(prefix.replace(" ", "\\s*"), "i");
+			msg = msg.replace(regex, "");
+			msg = `${prefix} ${msg.trim()}\n\n(code="${code}")\n\n`;
+			if (docsUrl) msg += `\n\nDocs: ${docsUrl}`;
+			return msg;
+		}
+	};
+	//#endregion
+	//#region packages/shared/src/errors/clerkApiResponseError.ts
+	var ClerkAPIResponseError = class ClerkAPIResponseError extends ClerkError {
+		static kind = "ClerkAPIResponseError";
+		status;
+		clerkTraceId;
+		retryAfter;
+		errors;
+		constructor(message, options) {
+			const { data: errorsJson, status, clerkTraceId, retryAfter } = options;
+			super({
+				...options,
+				message,
+				code: "api_response_error"
+			});
+			Object.setPrototypeOf(this, ClerkAPIResponseError.prototype);
+			this.status = status;
+			this.clerkTraceId = clerkTraceId;
+			this.retryAfter = retryAfter;
+			this.errors = (errorsJson || []).map((e) => new ClerkAPIError(e));
+		}
+		toString() {
+			let message = `[${this.name}]\nMessage:${this.message}\nStatus:${this.status}\nSerialized errors: ${this.errors.map((e) => JSON.stringify(e))}`;
+			if (this.clerkTraceId) message += `\nClerk Trace ID: ${this.clerkTraceId}`;
+			return message;
+		}
+		static formatMessage(name, msg, _, __) {
+			return msg;
+		}
+	};
+	/**
+	* Type guard to check if an error is a ClerkAPIResponseError.
+	* Can be called as a standalone function or as a method on an error object.
+	*
+	* @example
+	* // As a standalone function
+	* if (isClerkAPIResponseError(error)) { ... }
+	*
+	* // As a method (when attached to error object)
+	* if (error.isClerkAPIResponseError()) { ... }
+	*/
+	const isClerkAPIResponseError = createErrorTypeGuard(ClerkAPIResponseError);
+	//#endregion
+	//#region packages/shared/src/errors/missingExpiredTokenError.ts
+	/**
+	* Error class representing a missing expired token error from the API.
+	* This error occurs when the server requires an expired token to mint a new session token.
+	*
+	* Use the static `is` method to check if a ClerkAPIResponseError matches this error type.
+	*
+	* @example
+	* ```typescript
+	* if (MissingExpiredTokenError.is(error)) {
+	*   // Handle the missing expired token error
+	* }
+	* ```
+	*/
+	var MissingExpiredTokenError = class MissingExpiredTokenError extends ClerkAPIResponseError {
+		static kind = "MissingExpiredTokenError";
+		static ERROR_CODE = "missing_expired_token";
+		static STATUS = 422;
+		/**
+		* Type guard to check if an error is a MissingExpiredTokenError.
+		* This checks the error's properties (status and error code) rather than instanceof,
+		* allowing it to work with ClerkAPIResponseError instances thrown from the API layer.
+		*
+		* @example
+		* ```typescript
+		* try {
+		*   await someApiCall();
+		* } catch (e) {
+		*   if (MissingExpiredTokenError.is(e)) {
+		*     // e is typed as ClerkAPIResponseError with the specific error properties
+		*   }
+		* }
+		* ```
+		*/
+		static is(err) {
+			return isClerkAPIResponseError(err) && err.status === MissingExpiredTokenError.STATUS && err.errors.length > 0 && err.errors[0].code === MissingExpiredTokenError.ERROR_CODE;
+		}
+	};
+	//#endregion
+	//#region packages/shared/src/errors/clerkRuntimeError.ts
+	/**
+	* Custom error class for representing Clerk runtime errors.
+	*
+	* @class ClerkRuntimeError
+	*
+	* @example
+	*   throw new ClerkRuntimeError('An error occurred', { code: 'password_invalid' });
+	*/
+	var ClerkRuntimeError = class ClerkRuntimeError extends ClerkError {
+		static kind = "ClerkRuntimeError";
+		/**
+		* @deprecated Use `clerkError` property instead. This property is maintained for backward compatibility.
+		*/
+		clerkRuntimeError = true;
+		constructor(message, options) {
+			super({
+				...options,
+				message
+			});
+			Object.setPrototypeOf(this, ClerkRuntimeError.prototype);
+		}
+	};
+	/**
+	* Type guard to check if an error is a ClerkRuntimeError.
+	* Can be called as a standalone function or as a method on an error object.
+	*
+	* @example
+	* // As a standalone function
+	* if (isClerkRuntimeError(error)) { ... }
+	*
+	* // As a method (when attached to error object)
+	* if (error.isClerkRuntimeError()) { ... }
+	*/
+	const isClerkRuntimeError = createErrorTypeGuard(ClerkRuntimeError);
+	//#endregion
+	//#region packages/shared/src/errors/clerkOfflineError.ts
+	/**
+	* Error thrown when a network request fails due to the client being offline.
+	*
+	* This error is thrown instead of returning `null` to make it explicit that
+	* the failure was due to network conditions, not authentication state.
+	*
+	* @example
+	* ```typescript
+	* try {
+	*   const token = await session.getToken();
+	* } catch (error) {
+	*   if (ClerkOfflineError.is(error)) {
+	*     // Handle offline scenario
+	*     showOfflineScreen();
+	*   }
+	* }
+	* ```
+	*/
+	var ClerkOfflineError = class ClerkOfflineError extends ClerkRuntimeError {
+		static kind = "ClerkOfflineError";
+		static ERROR_CODE = "clerk_offline";
+		constructor(message) {
+			super(message, { code: ClerkOfflineError.ERROR_CODE });
+			Object.setPrototypeOf(this, ClerkOfflineError.prototype);
+		}
+		/**
+		* Type guard to check if an error is a ClerkOfflineError.
+		* This checks both instanceof and the error code to support cross-bundle/cross-realm errors
+		*
+		* @example
+		* ```typescript
+		* try {
+		*   const token = await session.getToken();
+		* } catch (error) {
+		*   if (ClerkOfflineError.is(error)) {
+		*     // error is typed as ClerkOfflineError
+		*     console.log('User is offline');
+		*   }
+		* }
+		* ```
+		*/
+		static is(error) {
+			if (error === null || error === void 0) return false;
+			return error instanceof ClerkOfflineError || isClerkRuntimeError(error) && error.code === ClerkOfflineError.ERROR_CODE;
+		}
+	};
+	//#endregion
+	//#region packages/shared/src/errors/errorThrower.ts
+	const DefaultMessages = Object.freeze({
+		InvalidProxyUrlErrorMessage: `The proxyUrl passed to Clerk is invalid. The expected value for proxyUrl is an absolute URL or a relative path with a leading '/'. (key={{url}})`,
+		InvalidPublishableKeyErrorMessage: `The publishableKey passed to Clerk is invalid (key={{key}}, expected format: pk_test_... or pk_live_...). To create a Clerk application with valid keys, in your terminal run:
+
+npx clerk@latest init
+
+\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
+
+If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys (\`--instance prod\` for production keys). Or copy its Publishable key from https://dashboard.clerk.com/~/api-keys.`,
+		MissingPublishableKeyErrorMessage: `Missing publishableKey. To set up Clerk for this project, in your terminal run:
+
+npx clerk@latest init
+
+\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
+
+If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys. Or copy them from https://dashboard.clerk.com/~/api-keys. Deploy a production instance by running \`npx clerk@latest deploy\`, or \`npx clerk@latest env pull --instance prod\` to use an existing one.`,
+		MissingSecretKeyErrorMessage: `Missing secretKey. To set up Clerk for this project, in your terminal run:
+
+npx clerk@latest init
+
+\`npx clerk@latest init\` creates a Clerk application and writes keys to your .env file. No Clerk account or login required and the command is non-interactive.
+
+If you have a Clerk application, run \`npx clerk@latest env pull\` to write the keys. Or copy them from https://dashboard.clerk.com/~/api-keys. Deploy a production instance by running \`npx clerk@latest deploy\`, or \`npx clerk@latest env pull --instance prod\` to use an existing one.`,
+		MissingClerkProvider: `{{source}} can only be used within the <ClerkProvider /> component. Learn more: https://clerk.com/docs/components/clerk-provider`
+	});
+	/**
+	* Builds an error thrower.
+	*
+	* @internal
+	*/
+	function buildErrorThrower({ packageName, customMessages }) {
+		let pkg = packageName;
+		/**
+		* Builds a message from a raw message and replacements.
+		*
+		* @internal
+		*/
+		function buildMessage(rawMessage, replacements) {
+			if (!replacements) return `${pkg}: ${rawMessage}`;
+			let msg = rawMessage;
+			const matches = rawMessage.matchAll(/{{([a-zA-Z0-9-_]+)}}/g);
+			for (const match of matches) {
+				const replacement = (replacements[match[1]] || "").toString();
+				msg = msg.replace(`{{${match[1]}}}`, replacement);
+			}
+			return `${pkg}: ${msg}`;
+		}
+		const messages = {
+			...DefaultMessages,
+			...customMessages
+		};
+		return {
+			setPackageName({ packageName }) {
+				if (typeof packageName === "string") pkg = packageName;
+				return this;
+			},
+			setMessages({ customMessages }) {
+				Object.assign(messages, customMessages || {});
+				return this;
+			},
+			throwInvalidPublishableKeyError(params) {
+				throw new Error(buildMessage(messages.InvalidPublishableKeyErrorMessage, params));
+			},
+			throwInvalidProxyUrl(params) {
+				throw new Error(buildMessage(messages.InvalidProxyUrlErrorMessage, params));
+			},
+			throwMissingPublishableKeyError() {
+				throw new Error(buildMessage(messages.MissingPublishableKeyErrorMessage));
+			},
+			throwMissingSecretKeyError() {
+				throw new Error(buildMessage(messages.MissingSecretKeyErrorMessage));
+			},
+			throwMissingClerkProviderError(params) {
+				throw new Error(buildMessage(messages.MissingClerkProvider, params));
+			},
+			throw(message) {
+				throw new Error(buildMessage(message));
+			}
+		};
+	}
+	//#endregion
+	//#region packages/shared/src/errors/emailLinkError.ts
+	var EmailLinkError = class EmailLinkError extends Error {
+		code;
+		constructor(code) {
+			super(code);
+			this.code = code;
+			this.name = "EmailLinkError";
+			Object.setPrototypeOf(this, EmailLinkError.prototype);
+		}
+	};
+	const EmailLinkErrorCodeStatus = {
+		Expired: "expired",
+		Failed: "failed",
+		ClientMismatch: "client_mismatch"
+	};
+	//#endregion
+	//#region packages/shared/src/errors/webAuthNError.ts
+	var ClerkWebAuthnError = class extends ClerkRuntimeError {
+		/**
+		* A unique code identifying the error, can be used for localization.
+		*/
+		code;
+		constructor(message, options) {
+			super(message, options);
+			this.code = options.code;
+		}
+	};
+	//#endregion
+	//#region packages/shared/src/errors/helpers.ts
+	/**
+	* Checks if the provided error object is a captcha error.
+	*
+	* @internal
+	*/
+	function isCaptchaError(e) {
+		return [
+			"captcha_invalid",
+			"captcha_not_enabled",
+			"captcha_missing_token"
+		].includes(e.errors[0].code);
+	}
+	/**
+	* Checks if the provided error is a 4xx error.
+	*
+	* @internal
+	*/
+	function is4xxError(e) {
+		const status = e?.status;
+		return !!status && status >= 400 && status < 500;
+	}
+	/**
+	* Checks if the provided error is a 429 (Too Many Requests) error.
+	*
+	* @internal
+	*/
+	function is429Error(e) {
+		return e?.status === 429;
+	}
+	const unauthenticated403ErrorCodes = new Set(["user_banned", "user_deactivated"]);
+	/**
+	* Checks if the provided error indicates the user's session is no longer valid
+	* and should trigger the unauthenticated flow (e.g. sign-out / redirect to sign-in).
+	*
+	* Only matches explicit authentication failure status codes:
+	* - 401: session is invalid or expired
+	* - 422: invalid session state (e.g. missing_expired_token)
+	* - 403: terminal user state (e.g. user_banned, user_deactivated)
+	*
+	* 404 is intentionally excluded despite being returned for "session not found",
+	* because it's also returned for unrelated resources (org not found, JWT template
+	* not found) and shares the same `resource_not_found` error code, making it
+	* impossible to distinguish. Session-not-found 401s are already handled directly
+	* by Base._fetch.
+	*
+	* @internal
+	*/
+	function isUnauthenticatedError(e) {
+		const status = e?.status;
+		const hasTerminalUserErrorCode = Array.isArray(e?.errors) && e.errors.some((error) => unauthenticated403ErrorCodes.has(error?.code));
+		return status === 401 || status === 422 || status === 403 && hasTerminalUserErrorCode;
+	}
+	/**
+	* Checks if the provided error is a network error.
+	*
+	* @internal
+	*/
+	function isNetworkError(e) {
+		return (`${e.message}${e.name}` || "").toLowerCase().replace(/\s+/g, "").includes("networkerror");
+	}
+	//#endregion
+	//#region packages/shared/src/errors/globalHookError.ts
+	/**
+	* Creates a ClerkGlobalHookError object from a ClerkError instance.
+	* It's a wrapper for all the different instances of Clerk errors that can
+	* be returned when using Clerk hooks.
+	*/
+	function createClerkGlobalHookError(error) {
+		const predicates = {
+			isClerkAPIResponseError,
+			isClerkRuntimeError
+		};
+		for (const [name, fn] of Object.entries(predicates)) Object.assign(error, { [name]: fn });
+		return error;
+	}
+	//#endregion
+	//#region packages/shared/src/constants.ts
 	const LEGACY_DEV_INSTANCE_SUFFIXES = [
 		".lcl.dev",
 		".lclstage.dev",
@@ -5188,7 +5244,7 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		"accounts.dev"
 	];
 	//#endregion
-	//#region ../shared/src/isomorphicAtob.ts
+	//#region packages/shared/src/isomorphicAtob.ts
 	/**
 	* A function that decodes a string of data which has been encoded using base-64 encoding.
 	* Uses `atob` if available, otherwise uses `Buffer` from `globalThis`. If neither are available, returns the data as-is.
@@ -5199,14 +5255,14 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		return data;
 	};
 	//#endregion
-	//#region ../shared/src/isomorphicBtoa.ts
+	//#region packages/shared/src/isomorphicBtoa.ts
 	const isomorphicBtoa = (data) => {
 		if (typeof btoa !== "undefined" && typeof btoa === "function") return btoa(data);
 		else if (typeof globalThis.Buffer !== "undefined") return globalThis.Buffer.from(data).toString("base64");
 		return data;
 	};
 	//#endregion
-	//#region ../shared/src/keys.ts
+	//#region packages/shared/src/keys.ts
 	/** Prefix used for production publishable keys */
 	const PUBLISHABLE_KEY_LIVE_PREFIX = "pk_live_";
 	/** Prefix used for development publishable keys */
@@ -5360,16 +5416,16 @@ isDevOrStagingUrl: (url) => {
 		return `${cookieName}_${cookieSuffix}`;
 	};
 	//#endregion
-	//#region ../shared/src/utils/noop.ts
+	//#region packages/shared/src/utils/noop.ts
 	var noop$1;
 	var init_noop = __esmMin(() => {
 		noop$1 = (..._args) => {};
 	});
 	//#endregion
-	//#region ../shared/src/utils/createDeferredPromise.ts
+	//#region packages/shared/src/utils/createDeferredPromise.ts
 	var init_createDeferredPromise = __esmMin(() => {});
 	//#endregion
-	//#region ../shared/src/utils/allSettled.ts
+	//#region packages/shared/src/utils/allSettled.ts
 	/**
 	* A ES6 compatible utility that implements `Promise.allSettled`
 	*
@@ -5387,7 +5443,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	var init_allSettled = __esmMin(() => {});
 	//#endregion
-	//#region ../shared/src/utils/runtimeEnvironment.ts
+	//#region packages/shared/src/utils/runtimeEnvironment.ts
 	var automatedEnvironmentVariables, isProductionEnvironment;
 	var init_runtimeEnvironment = __esmMin(() => {
 		automatedEnvironmentVariables = [
@@ -5416,7 +5472,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../shared/src/utils/handleValueOrFn.ts
+	//#region packages/shared/src/utils/handleValueOrFn.ts
 	/**
 	*
 	*/
@@ -5427,7 +5483,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	var init_handleValueOrFn = __esmMin(() => {});
 	//#endregion
-	//#region ../shared/src/utils/timeLimit.ts
+	//#region packages/shared/src/utils/timeLimit.ts
 	function timeLimit(value, ms, abortController) {
 		let timeoutId;
 		const timeoutPromise = new Promise((_, reject) => {
@@ -5444,7 +5500,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	var init_timeLimit = __esmMin(() => {});
 	//#endregion
-	//#region ../shared/src/utils/index.ts
+	//#region packages/shared/src/utils/index.ts
 	var init_utils$1 = __esmMin(() => {
 		init_createDeferredPromise();
 		init_allSettled();
@@ -5455,7 +5511,7 @@ isDevOrStagingUrl: (url) => {
 		init_timeLimit();
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/modules/debug/logger.ts
+	//#region packages/clerk-js/src/core/modules/debug/logger.ts
 	var DEFAULT_LOG_LEVEL$1, DebugLogger;
 	var init_logger = __esmMin(() => {
 		DEFAULT_LOG_LEVEL$1 = "debug";
@@ -5536,7 +5592,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/modules/debug/transports/composite.ts
+	//#region packages/clerk-js/src/core/modules/debug/transports/composite.ts
 	var CompositeTransport;
 	var init_composite = __esmMin(() => {
 		CompositeTransport = class {
@@ -5563,7 +5619,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/modules/debug/transports/console.ts
+	//#region packages/clerk-js/src/core/modules/debug/transports/console.ts
 	var ConsoleTransport;
 	var init_console = __esmMin(() => {
 		ConsoleTransport = class {
@@ -5599,7 +5655,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/modules/debug/transports/telemetry.ts
+	//#region packages/clerk-js/src/core/modules/debug/transports/telemetry.ts
 	var TelemetryTransport;
 	var init_telemetry = __esmMin(() => {
 		TelemetryTransport = class {
@@ -5633,7 +5689,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/modules/debug/index.ts
+	//#region packages/clerk-js/src/core/modules/debug/index.ts
 	var debug_exports = /* @__PURE__ */ __exportAll({
 		__internal_resetDebugLogger: () => __internal_resetDebugLogger,
 		createCompositeLogger: () => createCompositeLogger,
@@ -5800,7 +5856,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../clerk-js/src/utils/debug.ts
+	//#region packages/clerk-js/src/utils/debug.ts
 	let isEnabled = false;
 	let realLogger = null;
 	let initializationAttempted = false;
@@ -5932,7 +5988,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/errors.ts
+	//#region packages/shared/src/internal/clerk-js/errors.ts
 	const errorPrefix = "ClerkJS:";
 	/**
 	*
@@ -6049,7 +6105,7 @@ isDevOrStagingUrl: (url) => {
 		throw new Error(`${errorPrefix} Missing publicKey. When calling 'navigator.credentials.${name}()' it is required to pass a publicKey object.`);
 	}
 	//#endregion
-	//#region ../shared/src/dom/waitForElement.ts
+	//#region packages/shared/src/dom/waitForElement.ts
 	/**
 	* Uses a MutationObserver to wait for an element to be added to the DOM.
 	*/
@@ -6069,7 +6125,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/constants.ts
+	//#region packages/shared/src/internal/clerk-js/constants.ts
 	const CLERK_SYNCED = "__clerk_synced";
 	const CLERK_SYNCED_STATUS = {
 		/** Not synced - satellite needs handshake after returning from primary sign-in */
@@ -6115,7 +6171,7 @@ isDevOrStagingUrl: (url) => {
 	const CAPTCHA_ELEMENT_ID = "clerk-captcha";
 	const CAPTCHA_INVISIBLE_CLASSNAME = "clerk-invisible-captcha";
 	//#endregion
-	//#region ../shared/src/retry.ts
+	//#region packages/shared/src/retry.ts
 	const defaultOptions$1 = {
 		initialDelay: 125,
 		maxDelayBetweenRetries: 0,
@@ -6170,7 +6226,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/loadScript.ts
+	//#region packages/shared/src/loadScript.ts
 	const NO_DOCUMENT_ERROR = "loadScript cannot be called when document does not exist";
 	const NO_SRC_ERROR = "loadScript cannot be called without a src";
 	/**
@@ -6205,7 +6261,7 @@ isDevOrStagingUrl: (url) => {
 		} });
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/captcha/turnstile.ts
+	//#region packages/clerk-js/src/utils/captcha/turnstile.ts
 	const CLOUDFLARE_TURNSTILE_ORIGINAL_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 	const shouldRetryTurnstileErrorCode = (errorCode) => {
 		return !![
@@ -6400,12 +6456,12 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/captcha/getCaptchaToken.ts
+	//#region packages/clerk-js/src/utils/captcha/getCaptchaToken.ts
 	const getCaptchaToken = (opts) => {
 		return getTurnstileToken(opts);
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/captcha/retrieveCaptchaInfo.ts
+	//#region packages/clerk-js/src/utils/captcha/retrieveCaptchaInfo.ts
 	const retrieveCaptchaInfo = (clerk) => {
 		const _environment = clerk.__internal_environment;
 		const captchaProvider = _environment ? _environment.displayConfig.captchaProvider : "turnstile";
@@ -6420,7 +6476,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/captcha/CaptchaChallenge.ts
+	//#region packages/clerk-js/src/utils/captcha/CaptchaChallenge.ts
 	var CaptchaChallenge = class {
 		constructor(clerk) {
 			this.clerk = clerk;
@@ -6499,7 +6555,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/fraudProtection.ts
+	//#region packages/clerk-js/src/core/fraudProtection.ts
 	var FraudProtection = class FraudProtection {
 		static getInstance() {
 			if (!FraudProtection.instance) FraudProtection.instance = new FraudProtection(Client, CaptchaChallenge);
@@ -6551,7 +6607,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Base.ts
+	//#region packages/clerk-js/src/core/resources/Base.ts
 	const COALESCED_POST_TTL_MS = 3e4;
 	function assertProductionKeysOnDev(statusCode, payloadErrors) {
 		if (!payloadErrors) return;
@@ -6741,7 +6797,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/date.ts
+	//#region packages/clerk-js/src/utils/date.ts
 	function isValidDate(d) {
 		return d instanceof Date && !isNaN(d.getTime());
 	}
@@ -6750,7 +6806,7 @@ isDevOrStagingUrl: (url) => {
 		return isValidDate(date) ? date : /* @__PURE__ */ new Date();
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/APIKey.ts
+	//#region packages/clerk-js/src/core/resources/APIKey.ts
 	var APIKey = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -6799,7 +6855,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/AuthConfig.ts
+	//#region packages/clerk-js/src/core/resources/AuthConfig.ts
 	var AuthConfig = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -6849,7 +6905,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/system.mjs
+	//#region node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/system.mjs
 	var ReactiveFlags;
 	(function(ReactiveFlags) {
 		ReactiveFlags[ReactiveFlags["None"] = 0] = "None";
@@ -7051,7 +7107,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/index.mjs
+	//#region node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/index.mjs
 	const queuedEffects = [];
 	const { link, unlink, propagate, checkDirty, endTracking, startTracking, shallowPropagate } = createReactiveSystem({
 		update(signal) {
@@ -7219,7 +7275,7 @@ isDevOrStagingUrl: (url) => {
 		this.flags = 0;
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/windowNavigate.ts
+	//#region packages/shared/src/internal/clerk-js/windowNavigate.ts
 	const CLERK_BEFORE_UNLOAD_EVENT = "clerk:beforeunload";
 	/**
 	* Additional protocols can be provided using the `allowedRedirectProtocols` Clerk option.
@@ -7277,7 +7333,7 @@ isDevOrStagingUrl: (url) => {
 		window.location.href = toURL.href;
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/beforeUnloadTracker.ts
+	//#region packages/clerk-js/src/utils/beforeUnloadTracker.ts
 	/**
 	* Tracks beforeUnload events.
 	*
@@ -7334,7 +7390,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/billing.ts
+	//#region packages/clerk-js/src/utils/billing.ts
 	const billingMoneyAmountFromJSON = (data) => {
 		return {
 			amount: data.amount,
@@ -7487,7 +7543,7 @@ isDevOrStagingUrl: (url) => {
 		return totals;
 	};
 	//#endregion
-	//#region ../shared/src/netlifyCacheHandler.ts
+	//#region packages/shared/src/netlifyCacheHandler.ts
 	/**
 	* Cache busting parameter for Netlify to prevent cached responses
 	* during handshake flows with Clerk development instances.
@@ -7498,7 +7554,7 @@ isDevOrStagingUrl: (url) => {
 	*/
 	const CLERK_NETLIFY_CACHE_BUST_PARAM = "__clerk_netlify_cache_bust";
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/queryParams.ts
+	//#region packages/shared/src/internal/clerk-js/queryParams.ts
 	const _ClerkQueryParams = [
 		"__clerk_status",
 		"__clerk_created_session",
@@ -7517,6 +7573,7 @@ isDevOrStagingUrl: (url) => {
 	*
 	*/
 	function getClerkQueryParam(param) {
+		if (typeof window === "undefined" || !window.location?.href) return null;
 		const val = new URL(window.location.href).searchParams.get(param);
 		return val ? val : null;
 	}
@@ -7547,7 +7604,7 @@ isDevOrStagingUrl: (url) => {
 		return newParams;
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/completeSignUpFlow.ts
+	//#region packages/shared/src/internal/clerk-js/completeSignUpFlow.ts
 	const completeSignUpFlow = ({ signUp, verifyEmailPath, verifyPhonePath, protectCheckPath, continuePath, navigate, handleComplete, redirectUrl, redirectUrlComplete, oidcPrompt }) => {
 		if (signUp.status === "complete") {
 			removeClerkQueryParam("__clerk_ticket");
@@ -7572,7 +7629,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/navigateToNextStepSignUp.ts
+	//#region packages/shared/src/internal/clerk-js/navigateToNextStepSignUp.ts
 	/**
 	* Routes a sign-up that's still in `missing_requirements` to the appropriate
 	* next step:
@@ -7600,12 +7657,12 @@ isDevOrStagingUrl: (url) => {
 		});
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/email.ts
+	//#region packages/shared/src/internal/clerk-js/email.ts
 	function buildEmailAddress({ localPart, frontendApi }) {
 		return `${localPart}@${frontendApi ? frontendApi.replace("clerk.", "") : "clerk.com"}`;
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/encoders.ts
+	//#region packages/shared/src/internal/clerk-js/encoders.ts
 	function decodeB64(input) {
 		return decodeURIComponent(globalThis.atob(input).split("").map((c) => {
 			return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
@@ -7615,15 +7672,15 @@ isDevOrStagingUrl: (url) => {
 		return decodeB64(input.replace(/_/g, "/").replace(/-/g, "+"));
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/errors.ts
+	//#region packages/clerk-js/src/utils/errors.ts
 	function isError(err, code = "") {
 		return err.errors && !!err.errors.find((e) => e.code === code);
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/errorThrower.ts
+	//#region packages/clerk-js/src/utils/errorThrower.ts
 	const errorThrower = buildErrorThrower({ packageName: "@clerk/clerk-js" });
 	//#endregion
-	//#region ../clerk-js/src/utils/filterUndefinedValues.ts
+	//#region packages/clerk-js/src/utils/filterUndefinedValues.ts
 	/**
 	* Filters out undefined values from the first level of an object.
 	* Preserves all other falsy values (null, false, 0, empty string).
@@ -7637,7 +7694,7 @@ isDevOrStagingUrl: (url) => {
 		return filtered;
 	}
 	//#endregion
-	//#region ../shared/src/globs.ts
+	//#region packages/shared/src/globs.ts
 	var import_glob_to_regexp = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
 		module.exports = function(glob, opts) {
 			if (typeof glob !== "string") throw new TypeError("Expected a string");
@@ -7718,7 +7775,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	} };
 	//#endregion
-	//#region ../shared/src/logger.ts
+	//#region packages/shared/src/logger.ts
 	const loggedMessages = /* @__PURE__ */ new Set();
 	const logger = {
 		/**
@@ -7737,7 +7794,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/underscore.ts
+	//#region packages/shared/src/underscore.ts
 	/**
 	* Converts the first character of a string to uppercase.
 	*
@@ -7829,7 +7886,7 @@ isDevOrStagingUrl: (url) => {
 		}, {});
 	}
 	//#endregion
-	//#region ../shared/src/url.ts
+	//#region packages/shared/src/url.ts
 	/**
 	*
 	*/
@@ -7866,14 +7923,14 @@ isDevOrStagingUrl: (url) => {
 	const ABSOLUTE_URL_REGEX = /^[a-zA-Z][a-zA-Z\d+\-.]*?:/;
 	const isAbsoluteUrl = (url) => ABSOLUTE_URL_REGEX.test(url);
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/path.ts
+	//#region packages/shared/src/internal/clerk-js/path.ts
 	const SEPARATOR = "/";
 	const MULTIPLE_SEPARATOR_REGEX = /* @__PURE__ */ new RegExp("/{1,}", "g");
 	function joinPaths(a, b) {
 		return [a, b].filter((p) => p).join(SEPARATOR).replace(MULTIPLE_SEPARATOR_REGEX, SEPARATOR);
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/querystring.ts
+	//#region packages/shared/src/internal/clerk-js/querystring.ts
 	const getQueryParams = (queryString) => {
 		const queryParamsObject = {};
 		new URLSearchParams(queryString).forEach((value, key) => {
@@ -7900,7 +7957,7 @@ isDevOrStagingUrl: (url) => {
 		return queryParams.toString();
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/url.ts
+	//#region packages/shared/src/internal/clerk-js/url.ts
 	const DUMMY_URL_BASE = "http://clerk-dummy";
 	const BANNED_URI_PROTOCOLS = ["javascript:"];
 	const { isDevOrStagingUrl } = createDevOrStagingUrlCache();
@@ -8065,7 +8122,7 @@ isDevOrStagingUrl: (url) => {
 		return origins;
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/jwt.ts
+	//#region packages/clerk-js/src/utils/jwt.ts
 	function decode$1(token) {
 		const parts = (token || "").split(".");
 		const [header, payload, signature] = parts;
@@ -8086,7 +8143,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/locale.ts
+	//#region packages/clerk-js/src/utils/locale.ts
 	const DEFAULT_LOCALE = null;
 	/**
 	* Detects the user's preferred locale from the browser.
@@ -8105,7 +8162,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/organization.ts
+	//#region packages/shared/src/internal/clerk-js/organization.ts
 	/**
 	* Checks and assumes a string is an Organization ID if it starts with 'org_', specifically for
 	* disambiguating with slugs. `_` is a disallowed character in slug names, so slugs cannot
@@ -8115,7 +8172,7 @@ isDevOrStagingUrl: (url) => {
 		return typeof id === "string" && id.startsWith("org_");
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/pageLifecycle.ts
+	//#region packages/clerk-js/src/utils/pageLifecycle.ts
 	init_utils$1();
 	/**
 	* Abstracts native browser event listener registration.
@@ -8139,7 +8196,7 @@ isDevOrStagingUrl: (url) => {
 		return { onPageFocus };
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/runtime.ts
+	//#region packages/shared/src/internal/clerk-js/runtime.ts
 	function inBrowser() {
 		return typeof globalThis.document !== "undefined";
 	}
@@ -8164,7 +8221,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/tokenId.ts
+	//#region packages/clerk-js/src/utils/tokenId.ts
 	/**
 	* Utility for building and parsing token identifiers.
 	* Token IDs follow the format: sessionId[-template][-organizationId]
@@ -8230,12 +8287,12 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/hex.ts
+	//#region packages/shared/src/internal/clerk-js/hex.ts
 	function toHex(stringToConvert) {
 		return stringToConvert.split("").map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("");
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/injectedWeb3EthProviders.ts
+	//#region packages/shared/src/internal/clerk-js/injectedWeb3EthProviders.ts
 	var InjectedWeb3EthProviders = class InjectedWeb3EthProviders {
 		#providers = [];
 		#providerIdMap = {
@@ -8264,7 +8321,7 @@ isDevOrStagingUrl: (url) => {
 	};
 	const getInjectedWeb3EthProviders = () => InjectedWeb3EthProviders.getInstance();
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+app@1.1.0/node_modules/@wallet-standard/app/lib/esm/wallets.js
+	//#region node_modules/.pnpm/@wallet-standard+app@1.1.0/node_modules/@wallet-standard/app/lib/esm/wallets.js
 	function addRegisteredWallet(wallet) {
 		cachedWalletsArray = void 0;
 		registeredWalletsSet.add(wallet);
@@ -8413,24 +8470,24 @@ isDevOrStagingUrl: (url) => {
 		_AppReadyEvent_detail = /* @__PURE__ */ new WeakMap();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+app@1.1.0/node_modules/@wallet-standard/app/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+app@1.1.0/node_modules/@wallet-standard/app/lib/esm/index.js
 	var init_esm$5 = __esmMin(() => {
 		init_wallets();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/bytes.js
+	//#region node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/bytes.js
 	var init_bytes = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/identifier.js
+	//#region node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/identifier.js
 	var init_identifier = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/wallet.js
+	//#region node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/wallet.js
 	var init_wallet = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/window.js
+	//#region node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/window.js
 	var init_window = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+base@1.1.0/node_modules/@wallet-standard/base/lib/esm/index.js
 	var init_esm$4 = __esmMin(() => {
 		init_bytes();
 		init_identifier();
@@ -8438,7 +8495,7 @@ isDevOrStagingUrl: (url) => {
 		init_window();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/codes.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/codes.js
 	var WALLET_STANDARD_ERROR__REGISTRY__WALLET_NOT_FOUND, WALLET_STANDARD_ERROR__REGISTRY__WALLET_ACCOUNT_NOT_FOUND, WALLET_STANDARD_ERROR__USER__REQUEST_REJECTED, WALLET_STANDARD_ERROR__FEATURES__WALLET_ACCOUNT_CHAIN_UNSUPPORTED, WALLET_STANDARD_ERROR__FEATURES__WALLET_ACCOUNT_FEATURE_UNIMPLEMENTED, WALLET_STANDARD_ERROR__FEATURES__WALLET_FEATURE_UNIMPLEMENTED;
 	var init_codes = __esmMin(() => {
 		WALLET_STANDARD_ERROR__REGISTRY__WALLET_NOT_FOUND = 3834e3;
@@ -8449,7 +8506,7 @@ isDevOrStagingUrl: (url) => {
 		WALLET_STANDARD_ERROR__FEATURES__WALLET_FEATURE_UNIMPLEMENTED = 6160002;
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/context.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/context.js
 	function encodeValue(value) {
 		if (Array.isArray(value)) return "%5B" + value.map(encodeValue).join("%2C%20") + "%5D";
 		else if (typeof value === "bigint") return `${value}n`;
@@ -8464,7 +8521,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	var init_context = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/message-formatter.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/message-formatter.js
 	function getErrorMessage(code, context = {}) {
 		{
 			let decodingAdviceMessage = `Wallet Standard error #${code}; Decode this error by running \`npx @wallet-standard/errors decode -- ${code}`;
@@ -8488,7 +8545,7 @@ isDevOrStagingUrl: (url) => {
 		})(StateType || (StateType = {}));
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/error.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/error.js
 	function isWalletStandardError(e, code) {
 		if (e instanceof Error && e.name === "WalletStandardError") {
 			if (code !== void 0) return e.context.__code === code;
@@ -8519,48 +8576,48 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/stack-trace.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/stack-trace.js
 	function safeCaptureStackTrace(...args) {
 		if ("captureStackTrace" in Error && typeof Error.captureStackTrace === "function") Error.captureStackTrace(...args);
 	}
 	var init_stack_trace = __esmMin(() => {});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+errors@0.1.1/node_modules/@wallet-standard/errors/lib/esm/index.js
 	var init_esm$3 = __esmMin(() => {
 		init_codes();
 		init_error();
 		init_stack_trace();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/connect.js
+	//#region node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/connect.js
 	var StandardConnect$1, Connect;
 	var init_connect = __esmMin(() => {
 		StandardConnect$1 = "standard:connect";
 		Connect = StandardConnect$1;
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/disconnect.js
+	//#region node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/disconnect.js
 	var StandardDisconnect, Disconnect;
 	var init_disconnect = __esmMin(() => {
 		StandardDisconnect = "standard:disconnect";
 		Disconnect = StandardDisconnect;
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/events.js
+	//#region node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/events.js
 	var StandardEvents, Events;
 	var init_events = __esmMin(() => {
 		StandardEvents = "standard:events";
 		Events = StandardEvents;
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+features@1.1.0/node_modules/@wallet-standard/features/lib/esm/index.js
 	var init_esm$2 = __esmMin(() => {
 		init_connect();
 		init_disconnect();
 		init_events();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/register.js
+	//#region node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/register.js
 	/**
 	* Register a {@link "@wallet-standard/base".Wallet} as a Standard Wallet with the app.
 	*
@@ -8649,7 +8706,7 @@ isDevOrStagingUrl: (url) => {
 		_RegisterWalletEvent_detail = /* @__PURE__ */ new WeakMap();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/util.js
+	//#region node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/util.js
 	/**
 	* Efficiently compare {@link Indexed} arrays (e.g. `Array` and `Uint8Array`).
 	*
@@ -8788,13 +8845,13 @@ isDevOrStagingUrl: (url) => {
 		_ReadonlyWalletAccount_address = /* @__PURE__ */ new WeakMap(), _ReadonlyWalletAccount_publicKey = /* @__PURE__ */ new WeakMap(), _ReadonlyWalletAccount_chains = /* @__PURE__ */ new WeakMap(), _ReadonlyWalletAccount_features = /* @__PURE__ */ new WeakMap(), _ReadonlyWalletAccount_label = /* @__PURE__ */ new WeakMap(), _ReadonlyWalletAccount_icon = /* @__PURE__ */ new WeakMap();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+wallet@1.1.0/node_modules/@wallet-standard/wallet/lib/esm/index.js
 	var init_esm$1 = __esmMin(() => {
 		init_register();
 		init_util();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@wallet-standard+core@1.1.1/node_modules/@wallet-standard/core/lib/esm/index.js
+	//#region node_modules/.pnpm/@wallet-standard+core@1.1.1/node_modules/@wallet-standard/core/lib/esm/index.js
 	var esm_exports = /* @__PURE__ */ __exportAll({
 		Connect: () => Connect,
 		DEPRECATED_getWallets: () => DEPRECATED_getWallets,
@@ -8830,7 +8887,7 @@ isDevOrStagingUrl: (url) => {
 		init_esm$1();
 	});
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/injectedWeb3SolanaProviders.ts
+	//#region packages/shared/src/internal/clerk-js/injectedWeb3SolanaProviders.ts
 	var InjectedWeb3SolanaProviders = class InjectedWeb3SolanaProviders {
 		#wallets = void 0;
 		#initialized = false;
@@ -8869,7 +8926,7 @@ isDevOrStagingUrl: (url) => {
 	};
 	const getInjectedWeb3SolanaProviders = () => InjectedWeb3SolanaProviders.getInstance();
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/web3.ts
+	//#region packages/shared/src/internal/clerk-js/web3.ts
 	const StandardConnect = `standard:connect`;
 	const SolanaSignMessage = `solana:signMessage`;
 	function createWeb3(moduleManager) {
@@ -9002,7 +9059,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region src/moduleManager.ts
+	//#region packages/mobile-runtime/src/moduleManager.ts
 	var ModuleManager = class {
 		async import(module) {
 			throw Object.assign(/* @__PURE__ */ new Error("This module requires an unavailable platform capability."), {
@@ -9012,10 +9069,10 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/web3.ts
+	//#region packages/clerk-js/src/utils/web3.ts
 	const web3 = () => createWeb3(new ModuleManager());
 	//#endregion
-	//#region ../clerk-js/src/utils/convertPageToOffsetSearchParams.ts
+	//#region packages/clerk-js/src/utils/convertPageToOffsetSearchParams.ts
 	function convertPageToOffsetSearchParams(pageParams) {
 		const { pageSize, initialPage, ...restParams } = pageParams || {};
 		const _pageSize = pageSize ?? 10;
@@ -9028,7 +9085,7 @@ isDevOrStagingUrl: (url) => {
 		return new URLSearchParams(obj);
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/modules/billing/namespace.ts
+	//#region packages/clerk-js/src/core/modules/billing/namespace.ts
 	var Billing = class Billing {
 		constructor() {
 			this.getPlans = async (params) => {
@@ -9148,7 +9205,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/signals.ts
+	//#region packages/clerk-js/src/core/signals.ts
 	const signInResourceSignal = signal({ resource: null });
 	const signInErrorSignal = signal({ error: null });
 	const signInFetchSignal = signal({ status: "idle" });
@@ -9246,7 +9303,7 @@ isDevOrStagingUrl: (url) => {
 		return errorsToParsedErrors(error, { emailAddress: null });
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingPayer.ts
+	//#region packages/clerk-js/src/core/resources/BillingPayer.ts
 	var BillingPayer = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9270,7 +9327,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingCheckout.ts
+	//#region packages/clerk-js/src/core/resources/BillingCheckout.ts
 	var BillingCheckout = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -9447,14 +9504,14 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingCreditBalance.ts
+	//#region packages/clerk-js/src/core/resources/BillingCreditBalance.ts
 	var BillingCreditBalance = class {
 		constructor(data) {
 			this.balance = data.balance ? billingMoneyAmountFromJSON(data.balance) : null;
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingCreditLedger.ts
+	//#region packages/clerk-js/src/core/resources/BillingCreditLedger.ts
 	var BillingCreditLedger = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9471,7 +9528,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingPayment.ts
+	//#region packages/clerk-js/src/core/resources/BillingPayment.ts
 	var BillingPayment = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9497,7 +9554,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/modules/billing/payment-source-methods.ts
+	//#region packages/clerk-js/src/core/modules/billing/payment-source-methods.ts
 	const PAYMENT_METHODS_PATH = "/payment_methods";
 	const initializePaymentMethod = async (params) => {
 		const { orgId, ...rest } = params;
@@ -9532,7 +9589,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingPaymentMethod.ts
+	//#region packages/clerk-js/src/core/resources/BillingPaymentMethod.ts
 	var BillingPaymentMethod = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9588,7 +9645,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingPlan.ts
+	//#region packages/clerk-js/src/core/resources/BillingPlan.ts
 	var BillingPlan = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9629,7 +9686,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingStatement.ts
+	//#region packages/clerk-js/src/core/resources/BillingStatement.ts
 	var BillingStatement = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9658,7 +9715,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BillingSubscription.ts
+	//#region packages/clerk-js/src/core/resources/BillingSubscription.ts
 	var BillingSubscription = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -9717,7 +9774,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/eventBus.ts
+	//#region packages/shared/src/eventBus.ts
 	/**
 	* @internal
 	*/
@@ -9806,7 +9863,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/events.ts
+	//#region packages/clerk-js/src/core/events.ts
 	const events = {
 		TokenUpdate: "token:update",
 		UserSignOut: "user:signOut",
@@ -9818,7 +9875,7 @@ isDevOrStagingUrl: (url) => {
 	};
 	const eventBus = createEventBus();
 	//#endregion
-	//#region ../shared/src/workerTimers/workerTimers.built.ts
+	//#region packages/shared/src/workerTimers/workerTimers.built.ts
 	/**
 	*
 	* This is the minified string output of transforming workerTimers.worker.ts
@@ -9840,7 +9897,7 @@ isDevOrStagingUrl: (url) => {
 	*/
 	var workerTimers_built_default = "const respond=r=>{self.postMessage(r)},workerToTabIds={};self.addEventListener(\"message\",r=>{const e=r.data;switch(e.type){case\"setTimeout\":workerToTabIds[e.id]=setTimeout(()=>{respond({id:e.id}),delete workerToTabIds[e.id]},e.ms);break;case\"clearTimeout\":workerToTabIds[e.id]&&(clearTimeout(workerToTabIds[e.id]),delete workerToTabIds[e.id]);break;case\"setInterval\":workerToTabIds[e.id]=setInterval(()=>{respond({id:e.id})},e.ms);break;case\"clearInterval\":workerToTabIds[e.id]&&(clearInterval(workerToTabIds[e.id]),delete workerToTabIds[e.id]);break}});\n";
 	//#endregion
-	//#region ../shared/src/workerTimers/createWorkerTimers.ts
+	//#region packages/shared/src/workerTimers/createWorkerTimers.ts
 	init_noop();
 	const createWebWorker = (source, opts = {}) => {
 		if (typeof Worker === "undefined") return null;
@@ -9936,7 +9993,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/isTabFocused.ts
+	//#region packages/clerk-js/src/utils/isTabFocused.ts
 	function isTabFocused() {
 		const active = isNativeApplicationActive();
 		if (active !== void 0) return active;
@@ -9960,7 +10017,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../../node_modules/.pnpm/browser-tabs-lock@1.3.0/node_modules/browser-tabs-lock/processLock.js
+	//#region node_modules/.pnpm/browser-tabs-lock@1.3.0/node_modules/browser-tabs-lock/processLock.js
 	var require_processLock = /* @__PURE__ */ __commonJSMin(((exports) => {
 		Object.defineProperty(exports, "__esModule", { value: true });
 		var ProcessLocking = function() {
@@ -10011,7 +10068,7 @@ isDevOrStagingUrl: (url) => {
 		exports.default = getLock;
 	}));
 	//#endregion
-	//#region ../clerk-js/src/core/auth/safeLock.ts
+	//#region packages/clerk-js/src/core/auth/safeLock.ts
 	var import_browser_tabs_lock = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports) => {
 		var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
 			return new (P || (P = Promise))(function(resolve, reject) {
@@ -10502,7 +10559,7 @@ isDevOrStagingUrl: (url) => {
 		return { acquireLockAndRun };
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/SessionCookiePoller.ts
+	//#region packages/clerk-js/src/core/auth/SessionCookiePoller.ts
 	const REFRESH_SESSION_TOKEN_LOCK_KEY = "clerk.lock.refreshSessionToken";
 	const POLLER_INTERVAL_IN_MS = 5 * 1e3;
 	const FOCUSED_POLLER_INTERVAL_IN_MS = 1500;
@@ -10532,7 +10589,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/keyResolver.ts
+	//#region packages/clerk-js/src/core/keyResolver.ts
 	/**
 	* Derives the opaque string keys used to address entries in the token store,
 	* keeping key construction out of the storage layer.
@@ -10553,7 +10610,7 @@ isDevOrStagingUrl: (url) => {
 		audience || ""
 	].join(DELIMITER) });
 	//#endregion
-	//#region ../clerk-js/src/core/tokenFreshness.ts
+	//#region packages/clerk-js/src/core/tokenFreshness.ts
 	function asJwt(input) {
 		return "getRawString" in input ? input.jwt : input;
 	}
@@ -10605,7 +10662,7 @@ isDevOrStagingUrl: (url) => {
 		return pickFreshestJwt(current, incoming) !== incoming;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/tokenStore.ts
+	//#region packages/clerk-js/src/core/tokenStore.ts
 	/**
 	* Creates an empty in-memory {@link TokenStore} backed by a Map.
 	*/
@@ -10629,7 +10686,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/tokenCache.ts
+	//#region packages/clerk-js/src/core/tokenCache.ts
 	/**
 	* Default seconds before token expiration to trigger background refresh.
 	* This threshold accounts for timer jitter, SafeLock contention (~5s), network latency,
@@ -10901,7 +10958,7 @@ isDevOrStagingUrl: (url) => {
 	};
 	const SessionTokenCache = MemoryTokenCache();
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Client.ts
+	//#region packages/clerk-js/src/core/resources/Client.ts
 	function getClientResourceFromPayload(responseJSON) {
 		if (!responseJSON) return;
 		const clientJSON = responseJSON.client || responseJSON.meta?.client;
@@ -11047,7 +11104,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/CommerceSettings.ts
+	//#region packages/clerk-js/src/core/resources/CommerceSettings.ts
 	/**
 	* @internal
 	*/
@@ -11091,7 +11148,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/DeletedObject.ts
+	//#region packages/clerk-js/src/core/resources/DeletedObject.ts
 	var DeletedObject = class {
 		constructor(data) {
 			this.object = "";
@@ -11108,7 +11165,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/DisplayConfig.ts
+	//#region packages/clerk-js/src/core/resources/DisplayConfig.ts
 	var DisplayConfig = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -11236,7 +11293,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/poller.ts
+	//#region packages/shared/src/poller.ts
 	/**
 	*
 	*/
@@ -11265,7 +11322,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/EmailAddress.ts
+	//#region packages/clerk-js/src/core/resources/EmailAddress.ts
 	var EmailAddress = class extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
@@ -11369,7 +11426,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/passkeys.ts
+	//#region packages/shared/src/internal/clerk-js/passkeys.ts
 	var Base64Converter = class {
 		static encode(buffer) {
 			return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -11533,7 +11590,7 @@ isDevOrStagingUrl: (url) => {
 	const bufferToBase64Url = Base64Converter.encode.bind(Base64Converter);
 	const base64UrlToBuffer = Base64Converter.decode.bind(Base64Converter);
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Verification.ts
+	//#region packages/clerk-js/src/core/resources/Verification.ts
 	var Verification = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -11644,7 +11701,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/EnterpriseAccount.ts
+	//#region packages/clerk-js/src/core/resources/EnterpriseAccount.ts
 	var EnterpriseAccount = class extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
@@ -11745,7 +11802,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/EnterpriseConnection.ts
+	//#region packages/clerk-js/src/core/resources/EnterpriseConnection.ts
 	function samlNestedFromJSON(data) {
 		return {
 			id: data.id,
@@ -11874,7 +11931,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/EnterpriseConnectionTestRun.ts
+	//#region packages/clerk-js/src/core/resources/EnterpriseConnectionTestRun.ts
 	var EnterpriseConnectionTestRun = class {
 		constructor(data) {
 			this.pathRoot = "/me";
@@ -11975,7 +12032,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/APIKeySettings.ts
+	//#region packages/clerk-js/src/core/resources/APIKeySettings.ts
 	/**
 	* @internal
 	*/
@@ -12000,7 +12057,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationSettings.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationSettings.ts
 	var OrganizationSettings = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -12045,7 +12102,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Environment.ts
+	//#region packages/clerk-js/src/core/resources/Environment.ts
 	var Environment = class Environment extends BaseResource {
 		static getInstance() {
 			if (!Environment.instance) Environment.instance = new Environment();
@@ -12122,7 +12179,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/authenticateWithTransport.ts
+	//#region packages/clerk-js/src/utils/authenticateWithTransport.ts
 	const NATIVE_OAUTH_FAILED_STATUS = "failed";
 	const NATIVE_OAUTH_ERROR_FALLBACK_CODE = "oauth_callback_failed";
 	const NATIVE_OAUTH_TRANSFER_SIGNAL_CODES = new Set([ERROR_CODES.EXTERNAL_ACCOUNT_NOT_FOUND, ERROR_CODES.EXTERNAL_ACCOUNT_EXISTS]);
@@ -12194,7 +12251,7 @@ isDevOrStagingUrl: (url) => {
 		await opts.clerk.__internal_handleResourceCallback(opts.resource, opts.callbackParams);
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/completeExternalAccountWithTransport.ts
+	//#region packages/clerk-js/src/utils/completeExternalAccountWithTransport.ts
 	async function completeExternalAccountWithTransport(clerk, account, userId, redirectUrl) {
 		const transport = clerk.__internal_oauthTransport;
 		const client = clerk.client;
@@ -12220,7 +12277,7 @@ isDevOrStagingUrl: (url) => {
 		return connected;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/ExternalAccount.ts
+	//#region packages/clerk-js/src/core/resources/ExternalAccount.ts
 	var ExternalAccount = class ExternalAccount extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
@@ -12318,7 +12375,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Feature.ts
+	//#region packages/clerk-js/src/core/resources/Feature.ts
 	var Feature = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -12337,7 +12394,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/IdentificationLink.ts
+	//#region packages/clerk-js/src/core/resources/IdentificationLink.ts
 	var IdentificationLink = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -12358,7 +12415,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Image.ts
+	//#region packages/clerk-js/src/core/resources/Image.ts
 	var Image = class Image extends BaseResource {
 		static async create(path, body = {}) {
 			let fd = body;
@@ -12400,7 +12457,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/enterpriseConnection.ts
+	//#region packages/clerk-js/src/utils/enterpriseConnection.ts
 	/**
 	* Serializes `CreateOrganizationEnterpriseConnectionParams` /
 	* `UpdateOrganizationEnterpriseConnectionParams` for the enterprise
@@ -12456,7 +12513,7 @@ isDevOrStagingUrl: (url) => {
 		if (value !== void 0) target[key] = value;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationDomain.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationDomain.ts
 	var OrganizationDomain = class OrganizationDomain extends BaseResource {
 		constructor(data) {
 			super();
@@ -12536,7 +12593,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationMembershipRequest.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationMembershipRequest.ts
 	var OrganizationMembershipRequest = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -12561,7 +12618,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Permission.ts
+	//#region packages/clerk-js/src/core/resources/Permission.ts
 	var Permission = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -12580,7 +12637,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Role.ts
+	//#region packages/clerk-js/src/core/resources/Role.ts
 	var Role = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -12600,7 +12657,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Organization.ts
+	//#region packages/clerk-js/src/core/resources/Organization.ts
 	var Organization = class Organization extends BaseResource {
 		constructor(data) {
 			super();
@@ -12902,7 +12959,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationInvitation.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationInvitation.ts
 	var OrganizationInvitation = class OrganizationInvitation extends BaseResource {
 		static async create(organizationId, { emailAddress, role }) {
 			const json = (await BaseResource._fetch({
@@ -12950,7 +13007,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationMembership.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationMembership.ts
 	var OrganizationMembership = class OrganizationMembership extends BaseResource {
 		constructor(data) {
 			super();
@@ -13017,7 +13074,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationSuggestion.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationSuggestion.ts
 	var OrganizationSuggestion = class OrganizationSuggestion extends BaseResource {
 		constructor(data) {
 			super();
@@ -13057,7 +13114,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/webauthn.ts
+	//#region packages/shared/src/webauthn.ts
 	/**
 	*
 	*/
@@ -13085,7 +13142,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Passkey.ts
+	//#region packages/clerk-js/src/core/resources/Passkey.ts
 	var Passkey = class Passkey extends BaseResource {
 		constructor(data) {
 			super();
@@ -13166,7 +13223,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/PhoneNumber.ts
+	//#region packages/clerk-js/src/core/resources/PhoneNumber.ts
 	var PhoneNumber = class extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
@@ -13231,7 +13288,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/ProtectConfig.ts
+	//#region packages/clerk-js/src/core/resources/ProtectConfig.ts
 	var ProtectConfig = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -13257,7 +13314,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/PublicUserData.ts
+	//#region packages/clerk-js/src/core/resources/PublicUserData.ts
 	var PublicUserData = class {
 		constructor(data) {
 			this.fromJSON(data);
@@ -13291,7 +13348,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/authorization.ts
+	//#region packages/shared/src/authorization.ts
 	const TYPES_TO_OBJECTS = {
 		strict_mfa: {
 			afterMinutes: 10,
@@ -13479,7 +13536,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/SessionVerification.ts
+	//#region packages/clerk-js/src/core/resources/SessionVerification.ts
 	var SessionVerification = class extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -13504,7 +13561,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Session.ts
+	//#region packages/clerk-js/src/core/resources/Session.ts
 	const focusedRefresh = (onRefresh) => isTabFocused() === false ? {} : { onRefresh };
 	var Session = class Session extends BaseResource {
 		/**
@@ -13846,7 +13903,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/SessionWithActivities.ts
+	//#region packages/clerk-js/src/core/resources/SessionWithActivities.ts
 	const mapSessionActivityJSONToSessionActivity = (data) => ({
 		id: data.id,
 		deviceType: data.device_type,
@@ -13893,7 +13950,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/passwords/complexity.ts
+	//#region packages/shared/src/internal/clerk-js/passwords/complexity.ts
 	const createTestComplexityCases = (config) => {
 		let specialCharsRegex;
 		if (config.allowed_special_characters) {
@@ -13938,7 +13995,7 @@ isDevOrStagingUrl: (url) => {
 		return (password) => validate(password, config);
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/passwords/strength.ts
+	//#region packages/shared/src/internal/clerk-js/passwords/strength.ts
 	const createValidatePasswordStrength = ({ min_zxcvbn_strength, onResult }) => {
 		return (zxcvbn) => (password) => {
 			const result = zxcvbn(password);
@@ -13960,7 +14017,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/passwords/password.ts
+	//#region packages/shared/src/internal/clerk-js/passwords/password.ts
 	init_utils$1();
 	const createValidatePassword = (loadZxcvbn, config, callbacks) => {
 		const { onValidation = noop$1, onValidationComplexity = noop$1 } = callbacks || {};
@@ -14003,7 +14060,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../shared/src/buildAccountsBaseUrl.ts
+	//#region packages/shared/src/buildAccountsBaseUrl.ts
 	/**
 	* Builds a full origin string pointing to the Account Portal for the given frontend API.
 	*/
@@ -14012,7 +14069,7 @@ isDevOrStagingUrl: (url) => {
 		return `https://${frontendApi.replace(/clerk\.accountsstage\./, "accountsstage.").replace(/clerk\.accounts\.|clerk\./, "accounts.")}`;
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/authenticateWithPopup.ts
+	//#region packages/clerk-js/src/utils/authenticateWithPopup.ts
 	async function _authenticateWithPopup(client, reloadResource, authenticateMethod, params, navigateCallback) {
 		if (!client.client || !params.popup) return;
 		const accountPortalHost = buildAccountsBaseUrl(client.frontendApi);
@@ -14086,7 +14143,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/nativeAppleIdentity.ts
+	//#region packages/clerk-js/src/utils/nativeAppleIdentity.ts
 	async function getNativeAppleIdentity(clerk) {
 		const provider = clerk.__internal_getAppleIdentity;
 		if (!provider) throw new ClerkRuntimeError("Apple identity credentials are unavailable.", { code: "capability_unavailable" });
@@ -14100,7 +14157,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/runAsyncResourceTask.ts
+	//#region packages/clerk-js/src/utils/runAsyncResourceTask.ts
 	/**
 	* Wrap an async task with handling for emitting error and fetch events, which reduces boilerplate. Used in our Custom
 	* Flow APIs.
@@ -14133,7 +14190,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/passwords/loadZxcvbn.ts
+	//#region packages/shared/src/internal/clerk-js/passwords/loadZxcvbn.ts
 	const createLoadZxcvbn = (moduleManager) => {
 		const loadZxcvbn = () => {
 			return Promise.all([moduleManager.import("@zxcvbn-ts/core"), moduleManager.import("@zxcvbn-ts/language-common")]).then(([coreModule, languageCommonModule]) => {
@@ -14150,12 +14207,12 @@ isDevOrStagingUrl: (url) => {
 		return { loadZxcvbn };
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/zxcvbn.ts
+	//#region packages/clerk-js/src/utils/zxcvbn.ts
 	const loadZxcvbn = () => {
 		return createLoadZxcvbn(new ModuleManager()).loadZxcvbn;
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/SignIn.ts
+	//#region packages/clerk-js/src/core/resources/SignIn.ts
 	/**
 	* Terminal states for email-link verification polling: `verified` (success), `expired`
 	* (link timed out), or `transferable` (`signUpIfMissing` flows — the address was verified
@@ -14489,6 +14546,11 @@ isDevOrStagingUrl: (url) => {
 				});
 			};
 			this.authenticateWithPasskey = async (params) => {
+				if ((this.status === "needs_second_factor" || this.status === "needs_client_trust") && this.supportedSecondFactors?.some((factor) => factor.strategy === "passkey")) {
+					const { error } = await this.__internal_future.passkey(params);
+					if (error) throw error;
+					return this;
+				}
 				const { flow } = params || {};
 				/**
 				* The UI should always prevent from this method being called if WebAuthn is not supported.
@@ -15290,9 +15352,11 @@ isDevOrStagingUrl: (url) => {
 		*/
 		reset() {
 			if (!SignIn.clerk.client) throw new Error("Cannot reset sign-in without a client.");
-			this.#canBeDiscarded = true;
-			SignIn.clerk.client.resetSignIn();
-			return Promise.resolve({ error: null });
+			return Promise.resolve(SignIn.clerk.__internal_withNativeAuthReset("signIn", () => {
+				this.#canBeDiscarded = true;
+				SignIn.clerk.client.resetSignIn();
+				return { error: null };
+			}));
 		}
 		selectFirstFactor({ strategy, emailAddressId, phoneNumberId }) {
 			if (!this.#resource.supportedFirstFactors) return null;
@@ -15312,7 +15376,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/resourceParams.ts
+	//#region packages/clerk-js/src/utils/resourceParams.ts
 	function normalizeUnsafeMetadata(params) {
 		const { unsafeMetadata } = { ...params };
 		const unsafeMetadataJSON = unsafeMetadata ? typeof unsafeMetadata === "object" ? JSON.stringify(unsafeMetadata) : unsafeMetadata : "";
@@ -15322,7 +15386,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/SignUp.ts
+	//#region packages/clerk-js/src/core/resources/SignUp.ts
 	var SignUp = class SignUp extends BaseResource {
 		/**
 		* The current status of the sign-up process.
@@ -16218,9 +16282,11 @@ isDevOrStagingUrl: (url) => {
 		*/
 		reset() {
 			if (!SignUp.clerk.client) throw new Error("Cannot reset sign-up without a client.");
-			this.#canBeDiscarded = true;
-			SignUp.clerk.client.resetSignUp();
-			return Promise.resolve({ error: null });
+			return Promise.resolve(SignUp.clerk.__internal_withNativeAuthReset("signUp", () => {
+				this.#canBeDiscarded = true;
+				SignUp.clerk.client.resetSignUp();
+				return { error: null };
+			}));
 		}
 	};
 	var SignUpEnterpriseConnection = class extends BaseResource {
@@ -16237,7 +16303,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Token.ts
+	//#region packages/clerk-js/src/core/resources/Token.ts
 	var Token = class Token extends BaseResource {
 		static async create(path, body = {}, search = {}) {
 			return new Token(await BaseResource._fetch({
@@ -16270,7 +16336,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/TOTP.ts
+	//#region packages/clerk-js/src/core/resources/TOTP.ts
 	var TOTP = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -16294,10 +16360,10 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/user.ts
+	//#region packages/shared/src/internal/clerk-js/user.ts
 	const getFullName = ({ firstName, lastName, name }) => name || [firstName, lastName].join(" ").trim() || "";
 	//#endregion
-	//#region ../../node_modules/.pnpm/dequal@2.0.3/node_modules/dequal/dist/index.mjs
+	//#region node_modules/.pnpm/dequal@2.0.3/node_modules/dequal/dist/index.mjs
 	var has = Object.prototype.hasOwnProperty;
 	function find(iter, tar, key) {
 		for (key of iter.keys()) if (dequal(key, tar)) return key;
@@ -16359,7 +16425,7 @@ isDevOrStagingUrl: (url) => {
 		return foo !== foo && bar !== bar;
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/mergePatch.ts
+	//#region packages/clerk-js/src/utils/mergePatch.ts
 	/**
 	* Computes a JSON Merge Patch (RFC 7396) that, when deep-merged into `current`,
 	* produces `desired`. Keys present in `current` but absent from `desired`
@@ -16401,7 +16467,7 @@ isDevOrStagingUrl: (url) => {
 		return proto === null || proto === Object.prototype;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/resources/BackupCode.ts
+	//#region packages/clerk-js/src/core/resources/BackupCode.ts
 	var BackupCode = class extends BaseResource {
 		constructor(data) {
 			super();
@@ -16421,7 +16487,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/OrganizationCreationDefaults.ts
+	//#region packages/clerk-js/src/core/resources/OrganizationCreationDefaults.ts
 	var OrganizationCreationDefaults = class OrganizationCreationDefaults extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -16471,7 +16537,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/User.ts
+	//#region packages/clerk-js/src/core/resources/User.ts
 	var User = class User extends BaseResource {
 		static isUserResource(resource) {
 			return !!resource && resource instanceof User;
@@ -16766,7 +16832,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/UserData.ts
+	//#region packages/clerk-js/src/core/resources/UserData.ts
 	var UserData = class {
 		constructor(data) {
 			this.fromJSON(data);
@@ -16790,7 +16856,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/UserOrganizationInvitation.ts
+	//#region packages/clerk-js/src/core/resources/UserOrganizationInvitation.ts
 	var UserOrganizationInvitation = class UserOrganizationInvitation extends BaseResource {
 		static async retrieve(params) {
 			return await BaseResource._fetch({
@@ -16834,7 +16900,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/UserSettings.ts
+	//#region packages/clerk-js/src/core/resources/UserSettings.ts
 	const defaultMaxPasswordLength = 72;
 	const defaultMinPasswordLength = 8;
 	const defaultMinUsernameLength = 4;
@@ -17008,7 +17074,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Web3Wallet.ts
+	//#region packages/clerk-js/src/core/resources/Web3Wallet.ts
 	var Web3Wallet = class extends BaseResource {
 		constructor(data, pathRoot) {
 			super();
@@ -17056,7 +17122,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/resources/Waitlist.ts
+	//#region packages/clerk-js/src/core/resources/Waitlist.ts
 	var Waitlist = class Waitlist extends BaseResource {
 		constructor(data = null) {
 			super();
@@ -17088,7 +17154,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/NativeBiometricCredentials.ts
+	//#region packages/clerk-js/src/utils/NativeBiometricCredentials.ts
 	const policies = [
 		"biometry_current_set",
 		"biometry_any",
@@ -17474,7 +17540,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/NativeMagicLink.ts
+	//#region packages/clerk-js/src/utils/NativeMagicLink.ts
 	const terminalCodes = new Set([
 		"approval_token_consumed",
 		"approval_token_expired",
@@ -17650,63 +17716,173 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/mobile.ts
-	function installMobileCredentialTransport(core, storage, headers = {}, options = {}) {
-		let generation = 0;
+	//#region packages/clerk-js/src/utils/nativeCredentials.ts
+	const bridgeError = (code) => new ClerkRuntimeError("The native credential operation failed.", { code });
+	function binaryToJSON(value) {
+		if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+			const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+			return { base64url: btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") };
+		}
+		if (Array.isArray(value)) return value.map(binaryToJSON);
+		if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== void 0).map(([key, v]) => [key, binaryToJSON(v)]));
+		return value;
+	}
+	function binary(value) {
+		if (typeof value !== "string" || !/^[A-Za-z0-9_-]*$/.test(value)) throw bridgeError("invalid_credential_result");
+		return base64UrlToBuffer(value);
+	}
+	async function nativeCredential(kind, options, request) {
+		try {
+			const result = await request(`passkeys.${kind}`, options);
+			if (!result || result.type !== "public-key" || typeof result.id !== "string" || !result.response) throw bridgeError("invalid_credential_result");
+			const response = result.response;
+			const credential = {
+				id: result.id,
+				type: "public-key",
+				authenticatorAttachment: result.authenticatorAttachment ?? null,
+				rawId: binary(result.rawId),
+				toJSON: () => result
+			};
+			if (kind === "create") return {
+				publicKeyCredential: {
+					...credential,
+					response: {
+						clientDataJSON: binary(response.clientDataJSON),
+						attestationObject: binary(response.attestationObject),
+						getTransports: () => Array.isArray(response.transports) ? response.transports.filter((t) => typeof t === "string") : []
+					}
+				},
+				error: null
+			};
+			return {
+				publicKeyCredential: {
+					...credential,
+					response: {
+						clientDataJSON: binary(response.clientDataJSON),
+						authenticatorData: binary(response.authenticatorData),
+						signature: binary(response.signature),
+						userHandle: response.userHandle == null ? null : binary(response.userHandle)
+					}
+				},
+				error: null
+			};
+		} catch (error) {
+			return {
+				publicKeyCredential: null,
+				error: error instanceof Error ? error : bridgeError("passkey_failed")
+			};
+		}
+	}
+	//#endregion
+	//#region packages/clerk-js/src/utils/configureNativeHost.ts
+	/** Installs OS effects on a Clerk owner. It does not own HTTP, resource state, or client persistence. */
+	function configureNativeHost(clerk, host) {
+		const callback = new URL(host.callbackUrl);
+		if ([
+			"http:",
+			"javascript:",
+			"data:",
+			"file:",
+			"about:"
+		].includes(callback.protocol) || callback.username || callback.password || callback.hash) throw new ClerkRuntimeError("Invalid native authentication callback URL.", { code: "invalid_callback_url" });
 		let disposed = false;
-		let writes = Promise.resolve();
-		const requests = /* @__PURE__ */ new WeakMap();
-		const assertCurrent = (expected) => {
-			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
+		const supports = (capability) => !disposed && host.capabilities.includes(capability);
+		const request = (capability, args) => disposed ? Promise.reject(new ClerkRuntimeError("The native host is unavailable.", { code: "native_host_unavailable" })) : host.request(capability, args);
+		const unavailable = () => Promise.reject(new ClerkRuntimeError("This native capability is unavailable.", { code: "capability_unavailable" }));
+		const previous = {
+			__internal_getGoogleIdentity: clerk.__internal_getGoogleIdentity,
+			__internal_getAppleIdentity: clerk.__internal_getAppleIdentity,
+			__internal_nativeMagicLink: clerk.__internal_nativeMagicLink,
+			__internal_nativeBiometrics: clerk.__internal_nativeBiometrics,
+			__internal_isWebAuthnSupported: clerk.__internal_isWebAuthnSupported,
+			__internal_isWebAuthnAutofillSupported: clerk.__internal_isWebAuthnAutofillSupported,
+			__internal_isWebAuthnPlatformAuthenticatorSupported: clerk.__internal_isWebAuthnPlatformAuthenticatorSupported,
+			__internal_createPublicCredentials: clerk.__internal_createPublicCredentials,
+			__internal_getPublicCredentials: clerk.__internal_getPublicCredentials,
+			__internal_beforeNativeAuthReset: clerk.__internal_beforeNativeAuthReset
 		};
-		core.__internal_onBeforeRequest(async (request) => {
-			const current = generation;
-			requests.set(request, current);
-			await writes;
-			assertCurrent(current);
-			const credential = await storage.read();
-			assertCurrent(current);
-			request.credentials = "omit";
-			request.url?.searchParams.set("_is_native", "1");
-			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
-			requestHeaders.set("authorization", credential || "");
-			if (options.native !== false) requestHeaders.set("x-mobile", "1");
-			for (const [key, value] of Object.entries(headers)) requestHeaders.set(key, value);
-			request.headers = requestHeaders;
+		const scope = clerk.publishableKey;
+		clerk.__internal_getGoogleIdentity = supports("googleIdentity") ? (options) => request("googleIdentity", options) : void 0;
+		clerk.__internal_getAppleIdentity = (options) => supports("appleIdentity") ? request("appleIdentity", options) : unavailable();
+		const authStorageArgs = {
+			scope,
+			key: "magicLink"
+		};
+		const magicLink = new NativeMagicLink(clerk, host.callbackUrl, supports("authStorage") ? {
+			read: () => request("authStorage.read", authStorageArgs),
+			write: (value) => request("authStorage.write", {
+				...authStorageArgs,
+				value
+			}),
+			remove: () => request("authStorage.remove", authStorageArgs)
+		} : void 0, (value) => supports("crypto.sha256") ? request("crypto.sha256", { value }) : unavailable(), supports("magicLink.attestation") ? () => request("magicLink.attestation", {}) : void 0);
+		clerk.__internal_nativeMagicLink = magicLink;
+		const storage = (key) => ({
+			read: () => request("biometrics.storage.read", {
+				scope,
+				key
+			}),
+			write: (value) => request("biometrics.storage.write", {
+				scope,
+				key,
+				value
+			})
 		});
-		core.__internal_onAfterResponse(async (request, response) => {
-			if (!response) return;
-			const current = requests.get(request);
-			if (current === void 0) throw new Error("Missing mobile request generation.");
-			assertCurrent(current);
-			const credential = response.headers.get("authorization");
-			if (credential) {
-				const write = writes.then(async () => {
-					assertCurrent(current);
-					await storage.write(credential);
-				});
-				writes = write.catch(() => void 0);
-				await write;
-			}
-			assertCurrent(current);
-		});
+		const biometrics = new NativeBiometricCredentials(clerk, supports("biometrics") ? {
+			platform: host.platform,
+			appIdentifier: () => request("biometrics.appIdentifier", {}),
+			storage: storage("credentials"),
+			cleanupStorage: storage("cleanup"),
+			supports: (policy) => request("biometrics.supports", { policy }),
+			hasKey: (localKeyId) => request("biometrics.hasKey", { localKeyId }),
+			createKey: (policy) => request("biometrics.createKey", { policy }),
+			sign: (params) => request("biometrics.sign", params),
+			deleteKey: (localKeyId) => request("biometrics.deleteKey", { localKeyId })
+		} : void 0);
+		clerk.__internal_nativeBiometrics = biometrics;
+		clerk.__internal_isWebAuthnSupported ??= () => supports("passkeys");
+		clerk.__internal_isWebAuthnAutofillSupported ??= async () => supports("passkeys.autofill");
+		clerk.__internal_isWebAuthnPlatformAuthenticatorSupported ??= async () => supports("passkeys");
+		clerk.__internal_createPublicCredentials ??= (options) => nativeCredential("create", binaryToJSON(options), request);
+		clerk.__internal_getPublicCredentials ??= ({ publicKeyOptions, conditionalUI, preferImmediatelyAvailableCredentials }) => nativeCredential("get", binaryToJSON({
+			...publicKeyOptions,
+			conditionalUI,
+			preferImmediatelyAvailableCredentials
+		}), request);
+		clerk.__internal_beforeNativeAuthReset = async (reason) => {
+			host.cancelAuthentication();
+			biometrics.invalidate();
+			const credentials = host.invalidateCredentials();
+			const link = magicLink.reset();
+			const previousReset = previous.__internal_beforeNativeAuthReset?.(reason);
+			await Promise.all([
+				credentials,
+				link,
+				previousReset
+			]);
+		};
+		const keys = Object.keys(previous);
+		const installed = Object.fromEntries(keys.map((key) => [key, clerk[key]]));
 		return {
-			async invalidate({ clearCredential = false } = {}) {
-				++generation;
-				if (clearCredential) {
-					const remove = writes.then(() => storage.remove());
-					writes = remove.catch(() => void 0);
-					await remove;
-				} else await writes;
+			oauthTransport: {
+				getRedirectUrl: () => host.callbackUrl,
+				open: (url) => supports("browser") ? request("browser", {
+					url: url.toString(),
+					callbackUrl: host.callbackUrl
+				}) : unavailable()
 			},
+			retryCleanup: () => biometrics.retryPendingCleanup(),
 			dispose() {
+				if (disposed) return;
 				disposed = true;
-				++generation;
+				host.cancelAuthentication();
+				biometrics.invalidate();
+				for (const key of keys) if (clerk[key] === installed[key]) Object.assign(clerk, { [key]: previous[key] });
 			}
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/startMobileAuthentication.ts
+	//#region packages/clerk-js/src/utils/startMobileAuthentication.ts
 	/** The prebuilt identifier screen shares the same sign-in-or-up fallback on every mobile host. */
 	async function startMobileAuthentication(clerk, params) {
 		const { signIn, signUp } = clerk.__internal_getMobileResources();
@@ -17729,7 +17905,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/authenticateWithMobileSSO.ts
+	//#region packages/clerk-js/src/utils/authenticateWithMobileSSO.ts
 	async function authenticateWithMobileSSO(clerk, params) {
 		if (!(clerk.client?.signIn instanceof SignIn) || !(clerk.client.signUp instanceof SignUp)) throw new ClerkRuntimeError("Clerk is not loaded.", { code: "clerk_not_loaded" });
 		const signInResource = clerk.client.signIn;
@@ -17843,13 +18019,13 @@ isDevOrStagingUrl: (url) => {
 		return finishSignIn();
 	}
 	//#endregion
-	//#region ../shared/src/clerkEventBus.ts
+	//#region packages/shared/src/clerkEventBus.ts
 	const clerkEvents = { Status: "status" };
 	const createClerkEventBus = () => {
 		return createEventBus();
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/componentGuards.ts
+	//#region packages/shared/src/internal/clerk-js/componentGuards.ts
 	const isSignedInAndSingleSessionModeEnabled = (clerk, environment) => {
 		return !!(clerk.isSignedIn && environment?.authConfig.singleSessionMode);
 	};
@@ -17887,7 +18063,7 @@ isDevOrStagingUrl: (url) => {
 		return !environment?.userSettings.attributes.email_address?.enabled;
 	};
 	//#endregion
-	//#region ../shared/src/object.ts
+	//#region packages/shared/src/object.ts
 	const removeUndefined = (obj) => {
 		return Object.entries(obj).reduce((acc, [key, value]) => {
 			if (value !== void 0 && value !== null) acc[key] = value;
@@ -17905,7 +18081,7 @@ isDevOrStagingUrl: (url) => {
 		return result;
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/redirectUrls.ts
+	//#region packages/shared/src/internal/clerk-js/redirectUrls.ts
 	var RedirectUrls = class RedirectUrls {
 		static keys = [
 			"signInForceRedirectUrl",
@@ -17994,7 +18170,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/sessionTasks.ts
+	//#region packages/shared/src/internal/clerk-js/sessionTasks.ts
 	/**
 	* @internal
 	*/
@@ -18032,7 +18208,7 @@ isDevOrStagingUrl: (url) => {
 		logger.warnOnce(`Clerk: Session has pending tasks but no handling is configured. To handle pending tasks, provide either "taskUrls" for navigation to custom URLs or "navigate" for programmatic navigation. Without these options, users may get stuck on incomplete flows.`);
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/warnings.ts
+	//#region packages/shared/src/internal/clerk-js/warnings.ts
 	const formatWarning = (msg) => {
 		return `🔒 Clerk:\n${msg.trim()}\n(This notice only appears in development)`;
 	};
@@ -18083,7 +18259,7 @@ isDevOrStagingUrl: (url) => {
 		if (typeof item !== "function") warnings[key] = formatWarning(item);
 	}
 	//#endregion
-	//#region ../shared/src/proxy.ts
+	//#region packages/shared/src/proxy.ts
 	/**
 	*
 	*/
@@ -18118,7 +18294,7 @@ isDevOrStagingUrl: (url) => {
 		return AUTO_PROXY_HOST_SUFFIXES.some((hostSuffix) => hostname?.endsWith(hostSuffix)) ?? false;
 	}
 	//#endregion
-	//#region ../shared/src/telemetry/notice.ts
+	//#region packages/shared/src/telemetry/notice.ts
 	/**
 	* One-time runtime disclosure that Clerk collects telemetry from development instances.
 	*
@@ -18187,7 +18363,7 @@ isDevOrStagingUrl: (url) => {
 		} catch {}
 	}
 	//#endregion
-	//#region ../shared/src/telemetry/throttler.ts
+	//#region packages/shared/src/telemetry/throttler.ts
 	const DEFAULT_CACHE_TTL_MS = 864e5;
 	/**
 	* Manages throttling for telemetry events using a configurable cache implementation
@@ -18287,7 +18463,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/telemetry/collector.ts
+	//#region packages/shared/src/telemetry/collector.ts
 	/**
 	* The `TelemetryCollector` class handles collection of telemetry events from Clerk SDKs. Telemetry is opt-out and can be disabled by setting a CLERK_TELEMETRY_DISABLED environment variable.
 	* The `ClerkProvider` also accepts a `telemetry` prop that will be passed to the collector during initialization:.
@@ -18537,7 +18713,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../shared/src/telemetry/events/component-mounted.ts
+	//#region packages/shared/src/telemetry/events/component-mounted.ts
 	const EVENT_COMPONENT_MOUNTED = "COMPONENT_MOUNTED";
 	const EVENT_COMPONENT_OPENED = "COMPONENT_OPENED";
 	const EVENT_SAMPLING_RATE$1 = .1;
@@ -18598,7 +18774,7 @@ isDevOrStagingUrl: (url) => {
 		return createPrebuiltComponentEvent(EVENT_COMPONENT_OPENED)(component, props, additionalPayload);
 	}
 	//#endregion
-	//#region ../shared/src/telemetry/events/theme-usage.ts
+	//#region packages/shared/src/telemetry/events/theme-usage.ts
 	const EVENT_THEME_USAGE = "THEME_USAGE";
 	/**
 	* Helper function for `telemetry.record()`. Create a consistent event object for tracking theme usage in ClerkProvider.
@@ -18646,7 +18822,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../clerk-js/src/utils/localStorage.ts
+	//#region packages/clerk-js/src/utils/localStorage.ts
 	const CLERK_PREFIX = "__clerk_";
 	const CLERK_ENVIRONMENT_STORAGE_ENTRY = "environment";
 	const serialize = JSON.stringify;
@@ -18693,7 +18869,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/utils/memoizeStateListenerCallback.ts
+	//#region packages/clerk-js/src/utils/memoizeStateListenerCallback.ts
 	function clientChanged(prev, next) {
 		return prev.id !== next.id || prev.updatedAt.getTime() < next.updatedAt.getTime() || prev.sessions.length !== next.sessions.length;
 	}
@@ -18750,7 +18926,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../shared/src/devBrowser.ts
+	//#region packages/shared/src/devBrowser.ts
 	const DEV_BROWSER_KEY = "__clerk_db_jwt";
 	const DEV_BROWSER_HEADER = "Clerk-Db-Jwt";
 	function setDevBrowserInURL(url, devBrowser) {
@@ -18804,7 +18980,7 @@ isDevOrStagingUrl: (url) => {
 		return url;
 	};
 	//#endregion
-	//#region ../../node_modules/.pnpm/js-cookie@3.0.8/node_modules/js-cookie/dist/js.cookie.mjs
+	//#region node_modules/.pnpm/js-cookie@3.0.8/node_modules/js-cookie/dist/js.cookie.mjs
 	/*! js-cookie v3.0.8 | MIT */
 	function assign(target) {
 		for (var i = 1; i < arguments.length; i++) {
@@ -18875,7 +19051,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	var api = init(defaultConverter, { path: "/" });
 	//#endregion
-	//#region ../shared/src/cookie.ts
+	//#region packages/shared/src/cookie.ts
 	/**
 	* Creates helper methods for dealing with a specific cookie.
 	*
@@ -18911,7 +19087,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/getSecureAttribute.ts
+	//#region packages/clerk-js/src/core/auth/getSecureAttribute.ts
 	const getSecureAttribute = (sameSite) => {
 		if (window.location.protocol === "https:") return true;
 		if (sameSite !== "None") return false;
@@ -18920,7 +19096,7 @@ isDevOrStagingUrl: (url) => {
 		return window.location.hostname === "localhost";
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/auth/cookies/activeContext.ts
+	//#region packages/clerk-js/src/core/auth/cookies/activeContext.ts
 	const createActiveContextCookie = () => {
 		const handler = createCookieHandler("clerk_active_context");
 		const attributes = { secure: getSecureAttribute("None") };
@@ -18937,7 +19113,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../shared/src/date.ts
+	//#region packages/shared/src/date.ts
 	/**
 	*
 	*/
@@ -18957,7 +19133,7 @@ isDevOrStagingUrl: (url) => {
 		return date;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/getCookieDomain.ts
+	//#region packages/clerk-js/src/core/auth/getCookieDomain.ts
 	/**
 	* Determines the eTLD+1 domain, which is where we want the cookies to be set.
 	* This aligns with logic in FAPI, which is important to ensure we don't run into
@@ -19005,7 +19181,7 @@ isDevOrStagingUrl: (url) => {
 		return hostname;
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/thirdPartyDomains.ts
+	//#region packages/shared/src/internal/clerk-js/thirdPartyDomains.ts
 	/**
 	* Domains of third-party embedding platforms (e.g. online IDEs, preview environments)
 	* that require special handling for cookies and OAuth flows.
@@ -19036,7 +19212,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/cookies/clientUat.ts
+	//#region packages/clerk-js/src/core/auth/cookies/clientUat.ts
 	const CLIENT_UAT_COOKIE_NAME = "__client_uat";
 	/**
 	* Create a long-lived JS cookie to store the client last updated_at timestamp
@@ -19103,7 +19279,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/auth/cookies/session.ts
+	//#region packages/clerk-js/src/core/auth/cookies/session.ts
 	const SESSION_COOKIE_NAME = "__session";
 	const getCookieAttributes$1 = (options) => {
 		const isPartitioned = options.usePartitionedCookies();
@@ -19169,7 +19345,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../../node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/core.js
+	//#region node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/core.js
 	var require_core = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		(function(root, factory) {
 			if (typeof exports === "object") module.exports = exports = factory();
@@ -19755,7 +19931,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/sha1.js
+	//#region node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/sha1.js
 	var require_sha1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		(function(root, factory) {
 			if (typeof exports === "object") module.exports = exports = factory(require_core());
@@ -19865,7 +20041,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	}));
 	//#endregion
-	//#region ../../node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/enc-base64.js
+	//#region node_modules/.pnpm/crypto-js@4.2.0/node_modules/crypto-js/enc-base64.js
 	var require_enc_base64 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		(function(root, factory) {
 			if (typeof exports === "object") module.exports = exports = factory(require_core());
@@ -19952,7 +20128,7 @@ isDevOrStagingUrl: (url) => {
 		});
 	}));
 	//#endregion
-	//#region ../clerk-js/src/core/auth/cookieSuffix.ts
+	//#region packages/clerk-js/src/core/auth/cookieSuffix.ts
 	async function getCookieSuffix(publishableKey) {
 		let cookieSuffix;
 		try {
@@ -19967,7 +20143,7 @@ isDevOrStagingUrl: (url) => {
 		return cookieSuffix;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/cookies/devBrowser.ts
+	//#region packages/clerk-js/src/core/auth/cookies/devBrowser.ts
 	const getCookieAttributes = (options) => {
 		const isPartitioned = options.usePartitionedCookies();
 		const sameSite = isPartitioned || inCrossOriginIframe() || isThirdPartyCookieDomain() ? "None" : "Lax";
@@ -20026,7 +20202,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/auth/devBrowser.ts
+	//#region packages/clerk-js/src/core/auth/devBrowser.ts
 	function createDevBrowser({ cookieSuffix, frontendApi, fapiClient, cookieOptions }) {
 		const devBrowserCookie = createDevBrowserCookie(cookieSuffix, cookieOptions);
 		let devBrowserInMemory;
@@ -20087,7 +20263,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/auth/AuthCookieService.ts
+	//#region packages/clerk-js/src/core/auth/AuthCookieService.ts
 	init_utils$1();
 	/**
 	* The AuthCookieService class is a service responsible to handle
@@ -20267,7 +20443,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/auth/CaptchaHeartbeat.ts
+	//#region packages/clerk-js/src/core/auth/CaptchaHeartbeat.ts
 	var CaptchaHeartbeat = class {
 		constructor(clerk, captchaChallenge = new CaptchaChallenge(clerk), timers = createWorkerTimers()) {
 			this.clerk = clerk;
@@ -20299,7 +20475,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/fapiClient.ts
+	//#region packages/clerk-js/src/core/fapiClient.ts
 	const unauthorizedPathPrefixes = ["/client", "/waitlist"];
 	const protectPathPrefixes = ["/client/sign_ins", "/client/sign_ups"];
 	function isProtectGatedRequest(method, path) {
@@ -20443,7 +20619,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../shared/src/jwtPayloadParser.ts
+	//#region packages/shared/src/jwtPayloadParser.ts
 	const decimalToBinaryBits = (decimal, minimumLength) => {
 		if (!/^\d+$/.test(decimal)) return;
 		let remaining = decimal.replace(/^0+/, "") || "0";
@@ -20541,7 +20717,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/jwt-client.ts
+	//#region packages/clerk-js/src/core/jwt-client.ts
 	/**
 	* Create a new client instance from a jwt.
 	* The caller is responsible for reading the jwt from the `__session` cookie.
@@ -20605,7 +20781,7 @@ isDevOrStagingUrl: (url) => {
 		return Client.getOrCreateInstance(defaultClient);
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/modules/apiKeys/index.ts
+	//#region packages/clerk-js/src/core/modules/apiKeys/index.ts
 	var APIKeys = class APIKeys {
 		static #pathRoot = "/api_keys";
 		/**
@@ -20673,7 +20849,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/modules/checkout/instance.ts
+	//#region packages/clerk-js/src/core/modules/checkout/instance.ts
 	/**
 	* Generate cache key for checkout instance
 	*/
@@ -20717,7 +20893,7 @@ isDevOrStagingUrl: (url) => {
 		return signals.computedSignal();
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/modules/oauthApplication/index.ts
+	//#region packages/clerk-js/src/core/modules/oauthApplication/index.ts
 	var OAuthApplication = class {
 		async getConsentInfo(params) {
 			const { oauthClientId, scope, redirectUri } = params;
@@ -20793,7 +20969,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../clerk-js/src/core/protectSession.ts
+	//#region packages/clerk-js/src/core/protectSession.ts
 	/**
 	* Correlation id and Protect session token acquisition.
 	*
@@ -21351,7 +21527,7 @@ isDevOrStagingUrl: (url) => {
 		return MIN_RETRY_DELAY_MS * 2;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/protect.ts
+	//#region packages/clerk-js/src/core/protect.ts
 	var Protect = class {
 		#initialized = false;
 		#session;
@@ -21463,7 +21639,7 @@ isDevOrStagingUrl: (url) => {
 		return rollout !== 0 && Math.random() <= rollout;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/protectAssertion.ts
+	//#region packages/clerk-js/src/core/protectAssertion.ts
 	/** The request param carrying a Protect assertion; deliberately the same name as the cookie that can carry it. */
 	const PROTECT_ASSERTION_PARAM = "__clerk_protect_assertion";
 	/**
@@ -21495,7 +21671,7 @@ isDevOrStagingUrl: (url) => {
 		return token ? { [PROTECT_ASSERTION_PARAM]: token } : void 0;
 	}
 	//#endregion
-	//#region ../clerk-js/src/core/state.ts
+	//#region packages/clerk-js/src/core/state.ts
 	var State = class {
 		constructor() {
 			this.signInResourceSignal = signInResourceSignal;
@@ -21552,7 +21728,7 @@ isDevOrStagingUrl: (url) => {
 		return !newResource?.id && previousResource && previousResource.__internal_future?.canBeDiscarded === false;
 	}
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/timeoutManager.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/timeoutManager.js
 	/**
 	* In many cases code wants to delay to the next event loop tick; this is not
 	* mediated by {@link timeoutManager}.
@@ -21593,7 +21769,7 @@ isDevOrStagingUrl: (url) => {
 		timeoutManager = new TimeoutManager();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/utils.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/utils.js
 	function noop() {}
 	function functionalUpdate(updater, input) {
 		return typeof updater === "function" ? updater(input) : updater;
@@ -21755,7 +21931,7 @@ isDevOrStagingUrl: (url) => {
 		skipToken = Symbol();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/subscribable.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/subscribable.js
 	var Subscribable;
 	var init_subscribable = __esmMin(() => {
 		Subscribable = class {
@@ -21779,7 +21955,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/focusManager.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/focusManager.js
 	var FocusManager, focusManager;
 	var init_focusManager = __esmMin(() => {
 		init_subscribable();
@@ -21836,7 +22012,7 @@ isDevOrStagingUrl: (url) => {
 		focusManager = new FocusManager();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/notifyManager.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/notifyManager.js
 	function createNotifyManager() {
 		let queue = [];
 		let transactions = 0;
@@ -21913,7 +22089,7 @@ isDevOrStagingUrl: (url) => {
 		notifyManager = createNotifyManager();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/onlineManager.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/onlineManager.js
 	var OnlineManager, onlineManager;
 	var init_onlineManager = __esmMin(() => {
 		init_subscribable();
@@ -21965,7 +22141,7 @@ isDevOrStagingUrl: (url) => {
 		onlineManager = new OnlineManager();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/environmentManager.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/environmentManager.js
 	var isServerFn, isServer;
 	var init_environmentManager = __esmMin(() => {
 		init_utils();
@@ -21973,7 +22149,7 @@ isDevOrStagingUrl: (url) => {
 		isServer = () => isServerFn();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/retryer.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/retryer.js
 	function defaultRetryDelay(failureCount) {
 		return Math.min(1e3 * 2 ** failureCount, 3e4);
 	}
@@ -22095,7 +22271,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/removable.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/removable.js
 	var Removable;
 	var init_removable = __esmMin(() => {
 		init_timeoutManager();
@@ -22124,7 +22300,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/mutation.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/mutation.js
 	function getDefaultState$1() {
 		return {
 			context: void 0,
@@ -22345,7 +22521,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/mutationCache.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/mutationCache.js
 	function scopeFor(mutation) {
 		return mutation.options.scope?.id;
 	}
@@ -22459,7 +22635,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
 	function infiniteQueryBehavior(pages) {
 		return { onFetch: (context, query) => {
 			const options = context.options;
@@ -22540,7 +22716,7 @@ isDevOrStagingUrl: (url) => {
 		init_utils();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/query.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/query.js
 	function fetchState(data, options) {
 		return {
 			fetchFailureCount: 0,
@@ -22919,7 +23095,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/queryCache.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/queryCache.js
 	var QueryCache;
 	var init_queryCache = __esmMin(() => {
 		init_utils();
@@ -23018,7 +23194,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/queryClient.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/queryClient.js
 	var QueryClient;
 	var init_queryClient = __esmMin(() => {
 		init_utils();
@@ -23301,18 +23477,18 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/index.js
+	//#region node_modules/.pnpm/@tanstack+query-core@5.102.8/node_modules/@tanstack/query-core/build/modern/index.js
 	var init_modern = __esmMin(() => {
 		init_queryClient();
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/query-core.ts
+	//#region packages/clerk-js/src/core/query-core.ts
 	var query_core_exports = /* @__PURE__ */ __exportAll({ QueryClient: () => QueryClient });
 	var init_query_core = __esmMin(() => {
 		init_modern();
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@stripe+stripe-js@5.6.0/node_modules/@stripe/stripe-js/dist/index.mjs
+	//#region node_modules/.pnpm/@stripe+stripe-js@5.6.0/node_modules/@stripe/stripe-js/dist/index.mjs
 	var V3_URL, V3_URL_REGEX, EXISTING_SCRIPT_MESSAGE, findScript, injectScript, registerWrapper, stripePromise$1, onErrorListener, onLoadListener, onError, onLoad, loadScript, initStripe, stripePromise, loadCalled, getStripePromise, loadStripe;
 	var init_dist = __esmMin(() => {
 		V3_URL = "https://js.stripe.com/v3";
@@ -23425,13 +23601,13 @@ isDevOrStagingUrl: (url) => {
 		};
 	});
 	//#endregion
-	//#region ../../node_modules/.pnpm/@stripe+stripe-js@5.6.0/node_modules/@stripe/stripe-js/lib/index.mjs
+	//#region node_modules/.pnpm/@stripe+stripe-js@5.6.0/node_modules/@stripe/stripe-js/lib/index.mjs
 	var lib_exports = /* @__PURE__ */ __exportAll({ loadStripe: () => loadStripe });
 	var init_lib = __esmMin(() => {
 		init_dist();
 	});
 	//#endregion
-	//#region ../clerk-js/src/core/clerk.ts
+	//#region packages/clerk-js/src/core/clerk.ts
 	init_utils$1();
 	const CANNOT_RENDER_BILLING_DISABLED_ERROR_CODE = "cannot_render_billing_disabled";
 	const CANNOT_RENDER_USER_MISSING_ERROR_CODE = "cannot_render_user_missing";
@@ -23487,6 +23663,7 @@ isDevOrStagingUrl: (url) => {
 		#protectAssertion;
 		#protectAssertionSet;
 		#oauthTransport;
+		#nativeHost;
 		#pageLifecycle;
 		#touchThrottledUntil;
 		#publicEventBus;
@@ -23515,10 +23692,10 @@ isDevOrStagingUrl: (url) => {
 			} : void 0;
 		}
 		get __internal_hasOAuthTransport() {
-			return this.#oauthTransport !== null;
+			return this.__internal_oauthTransport !== null;
 		}
 		get __internal_oauthTransport() {
-			return this.#oauthTransport;
+			return this.#oauthTransport ?? this.#nativeHost?.oauthTransport ?? null;
 		}
 		/**
 		* The verification-module load timeout asked for by the loader THIS browser was assigned, or
@@ -23528,6 +23705,12 @@ isDevOrStagingUrl: (url) => {
 		*/
 		get __internal_protectChallengeLoadTimeoutMs() {
 			return this.#protect?.challengeLoadTimeoutMs;
+		}
+		#nativeResourceObservers;
+		__internal_withNativeAuthReset(reason, commit) {
+			for (const observer of this.#nativeResourceObservers) observer.onReset(reason);
+			const preparation = this.__internal_beforeNativeAuthReset?.(reason);
+			return preparation ? preparation.then(commit) : commit();
 		}
 		get publishableKey() {
 			return this.#publishableKey;
@@ -23646,10 +23829,35 @@ isDevOrStagingUrl: (url) => {
 			this.#options = {};
 			this.#protectAssertionSet = false;
 			this.#oauthTransport = null;
+			this.__internal_configureNativeHost = async (host) => {
+				this.#nativeHost?.dispose();
+				const installed = configureNativeHost(this, host);
+				this.#nativeHost = installed;
+				await installed.retryCleanup().catch(() => void 0);
+				return () => {
+					if (this.#nativeHost !== installed) return;
+					installed.dispose();
+					this.#nativeHost = void 0;
+				};
+			};
 			this.#pageLifecycle = null;
 			this.#touchThrottledUntil = 0;
 			this.#publicEventBus = createClerkEventBus();
 			this.#moduleManager = new ModuleManager();
+			this.#nativeResourceObservers = /* @__PURE__ */ new Set();
+			this.__internal_subscribeNativeResources = (observer) => {
+				this.#nativeResourceObservers.add(observer);
+				const publish = () => observer.onState();
+				const unsubscribe = this.addListener(publish, { skipInitialEmit: true });
+				eventBus.on(events.ResourceUpdate, publish);
+				eventBus.on(events.ResourceFetch, publish);
+				return () => {
+					this.#nativeResourceObservers.delete(observer);
+					unsubscribe();
+					eventBus.off(events.ResourceUpdate, publish);
+					eventBus.off(events.ResourceFetch, publish);
+				};
+			};
 			this.__internal_nativeBiometrics = new NativeBiometricCredentials(this);
 			this.__internal_setActiveInProgress = false;
 			this.setProtectAssertion = (assertion) => {
@@ -23710,6 +23918,8 @@ isDevOrStagingUrl: (url) => {
 				}
 			};
 			this.signOut = async (callbackOrOptions, options) => {
+				const preparation = this.__internal_withNativeAuthReset("signOut", noop$1);
+				if (preparation) await preparation;
 				if (!this.client || this.client.sessions.length === 0) return;
 				const onBeforeSetActive = typeof window !== "undefined" && typeof window.__internal_onBeforeSetActive === "function" ? window.__internal_onBeforeSetActive : noop$1;
 				const onAfterSetActive = typeof window !== "undefined" && typeof window.__internal_onAfterSetActive === "function" ? window.__internal_onAfterSetActive : noop$1;
@@ -25569,7 +25779,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region src/core.ts
+	//#region packages/mobile-runtime/src/core.ts
 	function mobileResources(clerk) {
 		if (!clerk.__internal_getMobileResources) throw new Error("This Clerk core does not support generated native resources.");
 		return clerk.__internal_getMobileResources();
@@ -25581,7 +25791,7 @@ isDevOrStagingUrl: (url) => {
 			signUp
 		};
 	}
-	function publicCore(clerk, beforeSignOut) {
+	function publicCore(clerk, beforeSignOut = async () => void 0) {
 		return {
 			get clientId() {
 				return mobileResources(clerk).clientId;
@@ -25639,7 +25849,7 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
-	//#region ../native-bindings/generated/operations.mjs
+	//#region packages/native-bindings/generated/operations.mjs
 	/** @type {Record<string, { type: string, parameters: any[], result: any, invoke: (target: any, args: any[]) => any }>} */
 	const operations = {
 		"Clerk.createOrganization": {
@@ -29055,7 +29265,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region ../native-bindings/generated/schema.mjs
+	//#region packages/native-bindings/generated/schema.mjs
 	/** @type {Record<string, any>} */
 	const schema = {
 		"Clerk": {
@@ -40834,8 +41044,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"signUp",
 				"signIn",
+				"signUp",
 				"auto"
 			],
 			"open": false,
@@ -40895,8 +41105,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"signUp",
 				"signIn",
+				"signUp",
 				"signInOrUp"
 			],
 			"open": false,
@@ -41259,7 +41469,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "6ddbd6b9ae47c552373f1959973d24eeb1e24d979342c240962cf85a68d023bd",
+		"contractHash": "c93c04e868659c2ce38c509c54cc61ea2da62533f5f4caaf5f19a9afe7be5bdf",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -41290,9 +41500,9 @@ isDevOrStagingUrl: (url) => {
 		"errorPolicy": "Approved authentication error-only envelopes throw after state is applied."
 	};
 	//#endregion
-	//#region src/codec.ts
+	//#region packages/mobile-runtime/src/codec.ts
 	function invalid() {
-		throw bridgeError("invalid_bridge_value");
+		throw bridgeError$1("invalid_bridge_value");
 	}
 	function isObject(value) {
 		return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -41452,7 +41662,8 @@ isDevOrStagingUrl: (url) => {
 		}
 	}
 	//#endregion
-	//#region src/runtime.ts
+	//#region packages/mobile-runtime/src/runtime.ts
+	let runtimeSequence = 0;
 	var ResourceRuntime = class {
 		#entries;
 		#identity;
@@ -41466,6 +41677,7 @@ isDevOrStagingUrl: (url) => {
 		#projectionEdge;
 		#invalidated;
 		#options;
+		#namespace;
 		constructor(options) {
 			this.manifest = manifest;
 			this.#entries = /* @__PURE__ */ new Map();
@@ -41478,12 +41690,15 @@ isDevOrStagingUrl: (url) => {
 			this.#disposed = false;
 			this.#invalidated = [];
 			this.#options = options;
+			const namespace = options.namespace ?? crypto.randomUUID();
+			if (!namespace || namespace.length > 128) throw bridgeError$1("invalid_resource_namespace");
+			this.#namespace = `${++runtimeSequence}:${namespace}`;
 		}
 		get epoch() {
 			return this.#epoch;
 		}
 		reference(value, type) {
-			if (!value || typeof value !== "object") throw bridgeError("invalid_resource");
+			if (!value || typeof value !== "object") throw bridgeError$1("invalid_resource");
 			let entry = this.#identity.get(value)?.get(type);
 			if (entry?.active) return entry.handle;
 			const serverID = value.id;
@@ -41492,7 +41707,7 @@ isDevOrStagingUrl: (url) => {
 			else {
 				entry = {
 					handle: {
-						id: `r${++this.#sequence}`,
+						id: `${this.#namespace}:r${++this.#sequence}`,
 						generation: this.#epoch,
 						type
 					},
@@ -41514,7 +41729,7 @@ isDevOrStagingUrl: (url) => {
 		}
 		resolve(handle, type) {
 			const entry = this.#entries.get(handle.id);
-			if (this.#disposed || !entry?.active || entry.handle.generation !== handle.generation || entry.handle.type !== type || handle.type !== type) throw bridgeError("stale_resource");
+			if (this.#disposed || !entry?.active || entry.handle.generation !== handle.generation || entry.handle.type !== type || handle.type !== type) throw bridgeError$1("stale_resource");
 			return entry.value;
 		}
 		#invalidate(entry, descendants = true) {
@@ -41532,6 +41747,22 @@ isDevOrStagingUrl: (url) => {
 			for (const pending of this.#pending.values()) if (pending.operation === preserveOperation) pending.epoch = this.#epoch;
 			this.#rootEntries.clear();
 		}
+		invalidateRoot(root, preserveOperation) {
+			const entry = this.#rootEntries.get(root);
+			if (!entry) return;
+			const affected = new Set([entry.handle.id]);
+			let added = true;
+			while (added) {
+				added = false;
+				for (const child of this.#entries.values()) if (child.parent && affected.has(child.parent) && !affected.has(child.handle.id)) {
+					affected.add(child.handle.id);
+					added = true;
+				}
+			}
+			for (const pending of this.#pending.values()) if (affected.has(pending.target) && pending.operation !== preserveOperation) pending.stale = true;
+			this.#invalidate(entry);
+			this.#rootEntries.delete(root);
+		}
 		release(handle) {
 			const entry = this.#entries.get(handle.id);
 			if (entry?.handle.generation === handle.generation && !Array.from(this.#rootEntries.values()).includes(entry)) {
@@ -41540,7 +41771,7 @@ isDevOrStagingUrl: (url) => {
 			}
 		}
 		snapshot(settledTarget) {
-			if (this.#disposed) throw bridgeError("runtime_disposed");
+			if (this.#disposed) throw bridgeError$1("runtime_disposed");
 			this.#projectionParent = void 0;
 			this.#projectionEdge = void 0;
 			const roots$1 = {};
@@ -41580,7 +41811,7 @@ isDevOrStagingUrl: (url) => {
 					try {
 						state[property.name] = encode(property.type, value, this);
 					} catch {
-						throw bridgeError(`invalid_projection:${entry.handle.type}.${property.name}`);
+						throw bridgeError$1(`invalid_projection:${entry.handle.type}.${property.name}`);
 					}
 				}
 				resources.push({
@@ -41607,7 +41838,7 @@ isDevOrStagingUrl: (url) => {
 		}
 		async invoke(call) {
 			if (this.#disposed) return;
-			if (this.#pending.has(call.id)) throw bridgeError("duplicate_call");
+			if (this.#pending.has(call.id)) throw bridgeError$1("duplicate_call");
 			const pending = {
 				epoch: this.#epoch,
 				cancelled: false,
@@ -41619,9 +41850,9 @@ isDevOrStagingUrl: (url) => {
 			let error;
 			try {
 				const operation = Object.hasOwn(operations, call.operation) ? operations[call.operation] : void 0;
-				if (!operation) throw bridgeError("unknown_operation");
+				if (!operation) throw bridgeError$1("unknown_operation");
 				this.resolve(call.target, operation.type);
-				if (!Array.isArray(call.args) || call.args.length > operation.parameters.length) throw bridgeError("invalid_arguments");
+				if (!Array.isArray(call.args) || call.args.length > operation.parameters.length) throw bridgeError$1("invalid_arguments");
 				const args = operation.parameters.map((parameter, index) => {
 					if (index >= call.args.length && parameter.optional) return void 0;
 					return decode(parameter.type, call.args[index], this);
@@ -41630,7 +41861,7 @@ isDevOrStagingUrl: (url) => {
 				const target = this.resolve(call.target, operation.type);
 				const output = await operation.invoke(target, args);
 				if (operation.result.kind === "errorResult") {
-					if (!output || typeof output !== "object" || !("error" in output)) throw bridgeError("invalid_error_result");
+					if (!output || typeof output !== "object" || !("error" in output)) throw bridgeError$1("invalid_error_result");
 					result = { error: output.error === null ? null : failure(output.error, "clerk") };
 				} else result = encode(operation.result, output, this);
 			} catch (cause) {
@@ -41638,13 +41869,13 @@ isDevOrStagingUrl: (url) => {
 			} finally {
 				this.#pending.delete(call.id);
 				if (this.#disposed) return;
-				if (pending.epoch !== this.#epoch) {
+				if (pending.stale || pending.epoch !== this.#epoch) {
 					result = void 0;
-					error = failure(bridgeError("stale_operation"), "bridge");
+					error = failure(bridgeError$1("stale_operation"), "bridge");
 				}
 				if (pending.cancelled) {
 					result = void 0;
-					error = failure(bridgeError("caller_cancelled"), "cancelled");
+					error = failure(bridgeError$1("caller_cancelled"), "cancelled");
 				}
 				const state = this.snapshot(call.target.id);
 				if (pending.completed) this.#options.emit({
@@ -41669,7 +41900,7 @@ isDevOrStagingUrl: (url) => {
 				kind: "complete",
 				id,
 				state: this.snapshot(),
-				failure: failure(bridgeError("caller_cancelled"), "cancelled")
+				failure: failure(bridgeError$1("caller_cancelled"), "cancelled")
 			});
 		}
 		dispose() {
@@ -41680,64 +41911,7 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region src/passkeys.ts
-	function binaryToJSON(value) {
-		if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-			const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-			return { base64url: btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join("")).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "") };
-		}
-		if (Array.isArray(value)) return value.map(binaryToJSON);
-		if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== void 0).map(([key, v]) => [key, binaryToJSON(v)]));
-		return value;
-	}
-	function binary(value) {
-		if (typeof value !== "string" || !/^[A-Za-z0-9_-]*$/.test(value)) throw bridgeError("invalid_credential_result");
-		return base64UrlToBuffer(value);
-	}
-	async function nativeCredential(kind, options) {
-		try {
-			const result = await hostRequest(`passkeys.${kind}`, options);
-			if (!result || result.type !== "public-key" || typeof result.id !== "string" || !result.response) throw bridgeError("invalid_credential_result");
-			const response = result.response;
-			const credential = {
-				id: result.id,
-				type: "public-key",
-				authenticatorAttachment: result.authenticatorAttachment ?? null,
-				rawId: binary(result.rawId),
-				toJSON: () => result
-			};
-			if (kind === "create") return {
-				publicKeyCredential: {
-					...credential,
-					response: {
-						clientDataJSON: binary(response.clientDataJSON),
-						attestationObject: binary(response.attestationObject),
-						getTransports: () => Array.isArray(response.transports) ? response.transports.filter((t) => typeof t === "string") : []
-					}
-				},
-				error: null
-			};
-			return {
-				publicKeyCredential: {
-					...credential,
-					response: {
-						clientDataJSON: binary(response.clientDataJSON),
-						authenticatorData: binary(response.authenticatorData),
-						signature: binary(response.signature),
-						userHandle: response.userHandle == null ? null : binary(response.userHandle)
-					}
-				},
-				error: null
-			};
-		} catch (error) {
-			return {
-				publicKeyCredential: null,
-				error: error instanceof Error ? error : bridgeError("passkey_failed")
-			};
-		}
-	}
-	//#endregion
-	//#region src/bootstrap.ts
+	//#region packages/mobile-runtime/src/bootstrap.ts
 	let core;
 	let runtime;
 	let mobile;
@@ -41745,16 +41919,17 @@ isDevOrStagingUrl: (url) => {
 	let unsubscribe;
 	let disposed = false;
 	let active = true;
+	let removeNativeHost;
 	let removeNetworkEnvironment;
 	async function initialize(id, configuration) {
-		if (initializing || core || disposed) throw bridgeError("runtime_already_initialized");
-		if (configuration.protocolVersion !== manifest.protocolVersion || configuration.contractHash !== manifest.contractHash) throw bridgeError("incompatible_bindings");
+		if (initializing || core || disposed) throw bridgeError$1("runtime_already_initialized");
+		if (configuration.protocolVersion !== manifest.protocolVersion || configuration.contractHash !== manifest.contractHash) throw bridgeError$1("incompatible_bindings");
 		for (const capability of [
 			"http",
 			"storage",
 			"timer",
 			"random"
-		]) if (!configuration.capabilities.includes(capability)) throw bridgeError(`missing_capability:${capability}`);
+		]) if (!configuration.capabilities.includes(capability)) throw bridgeError$1(`missing_capability:${capability}`);
 		const callback = new URL(configuration.callbackUrl);
 		if ([
 			"http:",
@@ -41762,7 +41937,7 @@ isDevOrStagingUrl: (url) => {
 			"data:",
 			"file:",
 			"about:"
-		].includes(callback.protocol) || callback.username || callback.password || callback.hash) throw bridgeError("invalid_callback_url");
+		].includes(callback.protocol) || callback.username || callback.password || callback.hash) throw bridgeError$1("invalid_callback_url");
 		initializing = true;
 		removeNetworkEnvironment = setNativeNetworkEnvironment({
 			isOnline: () => true,
@@ -41786,85 +41961,30 @@ isDevOrStagingUrl: (url) => {
 				key: "client"
 			})
 		}, { [`x-${configuration.platform}-sdk-version`]: "next" });
-		if (configuration.capabilities.includes("googleIdentity")) clerk.__internal_getGoogleIdentity = (options) => hostRequest("googleIdentity", options);
-		clerk.__internal_getAppleIdentity = (options) => {
-			if (!configuration.capabilities.includes("appleIdentity")) return Promise.reject(bridgeError("capability_unavailable"));
-			return hostRequest("appleIdentity", options);
-		};
-		const authStorageArgs = {
-			scope: configuration.publishableKey,
-			key: "magicLink"
-		};
-		clerk.__internal_nativeMagicLink = new NativeMagicLink(clerk, configuration.callbackUrl, configuration.capabilities.includes("authStorage") ? {
-			read: () => hostRequest("authStorage.read", authStorageArgs),
-			write: (value) => hostRequest("authStorage.write", {
-				...authStorageArgs,
-				value
-			}),
-			remove: () => hostRequest("authStorage.remove", authStorageArgs)
-		} : void 0, (value) => configuration.capabilities.includes("crypto.sha256") ? hostRequest("crypto.sha256", { value }) : Promise.reject(bridgeError("capability_unavailable:crypto.sha256")), configuration.capabilities.includes("magicLink.attestation") ? () => hostRequest("magicLink.attestation", {}) : void 0);
-		const biometricStorage = (key) => ({
-			read: () => hostRequest("biometrics.storage.read", {
-				scope,
-				key
-			}),
-			write: (value) => hostRequest("biometrics.storage.write", {
-				scope,
-				key,
-				value
-			})
-		});
-		clerk.__internal_nativeBiometrics = new NativeBiometricCredentials(clerk, configuration.capabilities.includes("biometrics") ? {
+		removeNativeHost = await clerk.__internal_configureNativeHost({
 			platform: configuration.platform,
-			appIdentifier: () => hostRequest("biometrics.appIdentifier", {}),
-			storage: biometricStorage("credentials"),
-			cleanupStorage: biometricStorage("cleanup"),
-			supports: (policy) => hostRequest("biometrics.supports", { policy }),
-			hasKey: (localKeyId) => hostRequest("biometrics.hasKey", { localKeyId }),
-			createKey: (policy) => hostRequest("biometrics.createKey", { policy }),
-			sign: (params) => hostRequest("biometrics.sign", params),
-			deleteKey: (localKeyId) => hostRequest("biometrics.deleteKey", { localKeyId })
-		} : void 0);
-		clerk.__internal_isWebAuthnSupported = () => configuration.capabilities.includes("passkeys");
-		clerk.__internal_isWebAuthnAutofillSupported = async () => configuration.capabilities.includes("passkeys.autofill");
-		clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = async () => configuration.capabilities.includes("passkeys");
-		clerk.__internal_createPublicCredentials = (options) => nativeCredential("create", binaryToJSON(options));
-		clerk.__internal_getPublicCredentials = ({ publicKeyOptions, conditionalUI, preferImmediatelyAvailableCredentials }) => nativeCredential("get", binaryToJSON({
-			...publicKeyOptions,
-			conditionalUI,
-			preferImmediatelyAvailableCredentials
-		}));
-		await clerk.load({
-			standardBrowser: false,
-			telemetry: false,
-			experimental: { runtimeEnvironment: "headless" },
-			__internal_oauthTransport: {
-				getRedirectUrl: () => configuration.callbackUrl,
-				open: (url) => {
-					if (!configuration.capabilities.includes("browser")) return Promise.reject(bridgeError("capability_unavailable"));
-					return hostRequest("browser", {
-						url: url.toString(),
-						callbackUrl: configuration.callbackUrl
-					});
-				}
-			}
-		});
-		if (disposed) return;
-		await clerk.__internal_nativeBiometrics.retryPendingCleanup().catch(() => void 0);
-		const facade = publicCore(clerk, async () => {
-			cancelCapabilities([
+			callbackUrl: configuration.callbackUrl,
+			capabilities: configuration.capabilities,
+			request: (capability, args) => hostRequest(capability, args),
+			cancelAuthentication: () => cancelCapabilities([
 				"browser",
 				"passkeys.get",
 				"passkeys.create",
 				"appleIdentity",
 				"googleIdentity",
 				"biometrics.sign"
-			]);
-			clerk.__internal_nativeBiometrics.invalidate();
-			runtime?.invalidate("Clerk.signOut");
-			await mobile?.invalidate();
-			await clerk.__internal_nativeMagicLink?.reset();
+			]),
+			invalidateCredentials: async () => {
+				await mobile?.invalidate();
+			}
 		});
+		await clerk.load({
+			standardBrowser: false,
+			telemetry: false,
+			experimental: { runtimeEnvironment: "headless" }
+		});
+		if (disposed) return;
+		const facade = publicCore(clerk);
 		runtime = new ResourceRuntime({
 			roots: () => ({
 				clerk: facade,
@@ -41873,22 +41993,7 @@ isDevOrStagingUrl: (url) => {
 				user: clerk.user,
 				organization: clerk.organization
 			}),
-			emit,
-			beforeInvoke: async (operation) => {
-				if (operation === "SignIn.reset" || operation === "SignUp.reset") {
-					cancelCapabilities([
-						"browser",
-						"passkeys.get",
-						"passkeys.create",
-						"appleIdentity",
-						"googleIdentity",
-						"biometrics.sign"
-					]);
-					clerk.__internal_nativeBiometrics.invalidate();
-					await mobile?.invalidate();
-					await clerk.__internal_nativeMagicLink?.reset();
-				}
-			}
+			emit
 		});
 		let queued = false;
 		const publish = () => {
@@ -41906,14 +42011,13 @@ isDevOrStagingUrl: (url) => {
 				}
 			});
 		};
-		const removeListener = clerk.addListener(publish, { skipInitialEmit: true });
-		eventBus.on(events.ResourceUpdate, publish);
-		eventBus.on(events.ResourceFetch, publish);
-		unsubscribe = () => {
-			removeListener();
-			eventBus.off(events.ResourceUpdate, publish);
-			eventBus.off(events.ResourceFetch, publish);
-		};
+		unsubscribe = clerk.__internal_subscribeNativeResources({
+			onState: publish,
+			onReset: (reason) => {
+				if (reason === "signOut") runtime?.invalidate("Clerk.signOut");
+				else runtime?.invalidateRoot(reason, reason === "signIn" ? "SignIn.reset" : "SignUp.reset");
+			}
+		});
 		initializing = false;
 		emit({
 			kind: "ready",
@@ -41925,7 +42029,7 @@ isDevOrStagingUrl: (url) => {
 	function receive(encoded) {
 		let message;
 		try {
-			if (encoded.length > 16 * 1024 * 1024) throw bridgeError("message_too_large");
+			if (encoded.length > 16 * 1024 * 1024) throw bridgeError$1("message_too_large");
 			message = JSON.parse(encoded);
 			if (message.kind === "hostReply") {
 				hostReply(message);
@@ -41944,12 +42048,13 @@ isDevOrStagingUrl: (url) => {
 				disposed = true;
 				unsubscribe?.();
 				removeNetworkEnvironment?.();
+				removeNativeHost?.();
 				mobile?.dispose();
 				runtime?.dispose();
 				disposeHost();
 				return;
 			}
-			if (!runtime) throw bridgeError("runtime_not_ready");
+			if (!runtime) throw bridgeError$1("runtime_not_ready");
 			if (message.kind === "invoke") runtime.invoke(message).catch((error) => emit({
 				kind: "runtimeError",
 				failure: failure(error, "bridge")
@@ -41957,14 +42062,14 @@ isDevOrStagingUrl: (url) => {
 			else if (message.kind === "cancel") runtime.cancel(message.id);
 			else if (message.kind === "release") runtime.release(message.target);
 			else if (message.kind === "lifecycle") {
-				if (!["foreground", "background"].includes(message.state)) throw bridgeError("invalid_lifecycle_state");
+				if (!["foreground", "background"].includes(message.state)) throw bridgeError$1("invalid_lifecycle_state");
 				const wasActive = active;
 				active = message.state === "foreground";
 				if (active && !wasActive) core?.__internal_reloadInitialResources().then(() => runtime?.publish(), (error) => emit({
 					kind: "lifecycleError",
 					failure: failure(error)
 				}));
-			} else throw bridgeError("unknown_message");
+			} else throw bridgeError$1("unknown_message");
 		} catch (error) {
 			emit({
 				kind: "runtimeError",
