@@ -18,9 +18,13 @@ import Foundation
     try await run()
   }
 
+  static func fixtureData() throws -> Data {
+    guard let path = Bundle.module.url(forResource: "fapi", withExtension: "json", subdirectory: "Fixtures") else { throw CoreError(code: "missing_fixtures") }
+    return try Data(contentsOf: path)
+  }
+
   @MainActor static func run() async throws {
-    guard let path = Bundle.module.url(forResource: "fapi", withExtension: "json", subdirectory: "Fixtures") else { fatalError("Missing fixtures") }
-    let capabilities = try FixtureCapabilities(data: Data(contentsOf: path))
+    let capabilities = try FixtureCapabilities(data: fixtureData())
     let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
     let configuration = try ClerkConfiguration(publishableKey: key, callbackURL: URL(string: "clerk-test://sso-callback")!)
     let clerk = try await Clerk.connect(configuration: configuration, capabilities: capabilities)
