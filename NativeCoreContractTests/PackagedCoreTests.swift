@@ -103,6 +103,26 @@ import Testing
     #expect(capabilities.authRecord == nil)
   }
 
+  @Test func authRequestsUseTheDeviceLocaleAndAllowExplicitSignUpLocale() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    func requestedLocale() throws -> String? {
+      let request = try #require(capabilities.requests.last)
+      let body = try #require(request["body"]).string()
+      var components = URLComponents()
+      components.percentEncodedQuery = body
+      return components.queryItems?.first { $0.name == "locale" }?.value
+    }
+    let locale = Locale.preferredLanguages.first ?? Locale.current.identifier.replacingOccurrences(of: "_", with: "-")
+    try await clerk.signIn.create(.init(identifier: "test@example.com"))
+    #expect(try requestedLocale() == locale)
+    try await clerk.signUp.create(.init(emailAddress: "test@example.com"))
+    #expect(try requestedLocale() == locale)
+    try await clerk.signUp.create(.init(emailAddress: "test@example.com", locale: "de-DE"))
+    #expect(try requestedLocale() == "de-DE")
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

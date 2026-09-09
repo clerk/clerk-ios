@@ -8161,6 +8161,10 @@ isDevOrStagingUrl: (url) => {
 			return DEFAULT_LOCALE;
 		}
 	}
+	/** Uses the current native owner's OS preference, with the existing browser fallback. */
+	function getClientLocale(nativeLocale) {
+		return nativeLocale?.trim() || getBrowserLocale();
+	}
 	//#endregion
 	//#region packages/shared/src/internal/clerk-js/organization.ts
 	/**
@@ -14269,8 +14273,8 @@ isDevOrStagingUrl: (url) => {
 					strategy: "strategy" in params ? params.strategy : void 0
 				});
 				let body = { ...params };
-				const browserLocale = getBrowserLocale();
-				if (browserLocale) body.locale = browserLocale;
+				const clientLocale = getClientLocale(SignIn.clerk.__internal_nativeLocale);
+				if (clientLocale) body.locale = clientLocale;
 				if (this.shouldRequireCaptcha(params) && !this.clientBypass() && !this.shouldBypassCaptchaForAttempt(params)) {
 					const captchaParams = await new CaptchaChallenge(SignIn.clerk).managedOrInvisible({ action: "signin" });
 					if (!captchaParams) throw new ClerkRuntimeError("", { code: "captcha_unavailable" });
@@ -14878,7 +14882,7 @@ isDevOrStagingUrl: (url) => {
 				captchaToken,
 				captchaWidgetType,
 				captchaError,
-				locale: getBrowserLocale() || void 0
+				locale: getClientLocale(SignIn.clerk.__internal_nativeLocale) || void 0
 			};
 			await this.#resource.__internal_basePost({
 				path: this.#resource.pathRoot,
@@ -14920,7 +14924,7 @@ isDevOrStagingUrl: (url) => {
 			return runAsyncResourceTask(this.#resource, async () => {
 				const identifier = params.identifier || params.emailAddress || params.phoneNumber;
 				const previousIdentifier = this.#resource.identifier;
-				const locale = getBrowserLocale();
+				const locale = getClientLocale(SignIn.clerk.__internal_nativeLocale);
 				await this.#resource.__internal_basePost({
 					path: this.#resource.pathRoot,
 					body: {
@@ -15445,8 +15449,8 @@ isDevOrStagingUrl: (url) => {
 				});
 				let finalParams = { ...params };
 				if (!finalParams.locale) {
-					const browserLocale = getBrowserLocale();
-					if (browserLocale) finalParams.locale = browserLocale;
+					const clientLocale = getClientLocale(SignUp.clerk.__internal_nativeLocale);
+					if (clientLocale) finalParams.locale = clientLocale;
 				}
 				if (!this.clientBypass() && !this.shouldBypassCaptchaForAttempt(params)) {
 					const captchaParams = await new CaptchaChallenge(SignUp.clerk).managedOrInvisible({ action: "signup" });
@@ -15960,7 +15964,7 @@ isDevOrStagingUrl: (url) => {
 				captchaError,
 				...params,
 				unsafeMetadata: params.unsafeMetadata ? normalizeUnsafeMetadata(params.unsafeMetadata) : void 0,
-				locale: params.locale ?? getBrowserLocale()
+				locale: params.locale ?? getClientLocale(SignUp.clerk.__internal_nativeLocale)
 			};
 			await this.#resource.__internal_basePost({
 				path: this.#resource.pathRoot,
@@ -15994,7 +15998,7 @@ isDevOrStagingUrl: (url) => {
 				};
 				if (this.#resource.id) await this.#resource.__internal_basePatch({ body });
 				else {
-					body.locale = params.locale ?? getBrowserLocale();
+					body.locale = params.locale ?? getClientLocale(SignUp.clerk.__internal_nativeLocale);
 					await this.#resource.__internal_basePost({
 						path: this.#resource.pathRoot,
 						body
@@ -16148,7 +16152,7 @@ isDevOrStagingUrl: (url) => {
 						locale
 					};
 					if (this.#resource.id) return this.#resource.__internal_basePatch({ body });
-					body.locale = locale ?? getBrowserLocale();
+					body.locale = locale ?? getClientLocale(SignUp.clerk.__internal_nativeLocale);
 					return this.#resource.__internal_basePost({
 						path: this.#resource.pathRoot,
 						body
@@ -17801,6 +17805,7 @@ isDevOrStagingUrl: (url) => {
 		const request = (capability, args) => disposed ? Promise.reject(new ClerkRuntimeError("The native host is unavailable.", { code: "native_host_unavailable" })) : host.request(capability, args);
 		const unavailable = () => Promise.reject(new ClerkRuntimeError("This native capability is unavailable.", { code: "capability_unavailable" }));
 		const previous = {
+			__internal_nativeLocale: clerk.__internal_nativeLocale,
 			__internal_getGoogleIdentity: clerk.__internal_getGoogleIdentity,
 			__internal_getAppleIdentity: clerk.__internal_getAppleIdentity,
 			__internal_nativeMagicLink: clerk.__internal_nativeMagicLink,
@@ -17812,6 +17817,7 @@ isDevOrStagingUrl: (url) => {
 			__internal_getPublicCredentials: clerk.__internal_getPublicCredentials,
 			__internal_beforeNativeAuthReset: clerk.__internal_beforeNativeAuthReset
 		};
+		clerk.__internal_nativeLocale = host.locale;
 		const scope = clerk.publishableKey;
 		clerk.__internal_getGoogleIdentity = supports("googleIdentity") ? (options) => request("googleIdentity", options) : void 0;
 		clerk.__internal_getAppleIdentity = (options) => supports("appleIdentity") ? request("appleIdentity", options) : unavailable();
@@ -41974,6 +41980,7 @@ isDevOrStagingUrl: (url) => {
 		}, { [`x-${configuration.platform}-sdk-version`]: "next" });
 		removeNativeHost = await clerk.__internal_configureNativeHost({
 			platform: configuration.platform,
+			locale: configuration.locale,
 			callbackUrl: configuration.callbackUrl,
 			capabilities: configuration.capabilities,
 			request: (capability, args) => hostRequest(capability, args),
