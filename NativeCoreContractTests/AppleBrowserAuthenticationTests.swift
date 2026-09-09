@@ -96,7 +96,7 @@ private final class BrowserProbe {
   private var requestedCount = 0
 
   func authentication() -> AppleAuthentication {
-    AppleAuthentication(anchor: { preconditionFailure("The stub must not present native UI") }) { url, callback, completion in
+    AppleAuthentication(anchor: { preconditionFailure("The stub must not present native UI") }, makeBrowser: { url, callback, completion in
       let session = StubWebAuthenticationSession(url: url, callbackURLScheme: callback.scheme,
                                                  completionHandler: completion, startResult: self.startsSuccessfully)
       self.sessions.append(session)
@@ -105,7 +105,7 @@ private final class BrowserProbe {
         waiter.resume()
       }
       return session
-    }
+    })
   }
 
   func session(number: Int) async -> StubWebAuthenticationSession {

@@ -8,8 +8,10 @@ Native UI presentation tests are outside this inventory and remain in their exis
 
 The [browser assertion audit](browser-test-audit.md) now maps every old browser
 presentation test to the current adapter, records the changed cancellation scope,
-and includes a verified regression test for stale callbacks. Other categories
-below still require their own assertion-level review.
+and includes a verified regression test for stale callbacks. The
+[passkey assertion audit](passkey-test-audit.md) covers request restrictions and
+explicit malformed-input rejection. Other categories below still require their
+own assertion-level review.
 
 ## Configuration validation
 

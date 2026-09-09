@@ -5,8 +5,10 @@ import Foundation
 @MainActor public final class AppleAuthentication: NSObject {
   public typealias Anchor = @MainActor () -> ASPresentationAnchor
   typealias BrowserFactory = @MainActor (URL, URL, @escaping ASWebAuthenticationSession.CompletionHandler) throws -> ASWebAuthenticationSession
+  typealias CredentialControllerFactory = @MainActor ([ASAuthorizationRequest]) -> ASAuthorizationController
   private let anchor: Anchor
   private let makeBrowser: BrowserFactory
+  private let makeCredentialController: CredentialControllerFactory
   private var browser: ASWebAuthenticationSession?
   private var browserID: UUID?
   private var browserCompletion: CheckedContinuation<JSONValue, any Error>?
@@ -18,9 +20,10 @@ import Foundation
     self.init(anchor: anchor, makeBrowser: Self.makeSystemBrowser)
   }
 
-  init(anchor: @escaping Anchor, makeBrowser: @escaping BrowserFactory) {
+  init(anchor: @escaping Anchor, makeCredentialController: @escaping CredentialControllerFactory = { ASAuthorizationController(authorizationRequests: $0) }, makeBrowser: @escaping BrowserFactory = AppleAuthentication.makeSystemBrowser) {
     self.anchor = anchor
     self.makeBrowser = makeBrowser
+    self.makeCredentialController = makeCredentialController
   }
 
   private static func makeSystemBrowser(url: URL, callback: URL, completion: @escaping ASWebAuthenticationSession.CompletionHandler) throws -> ASWebAuthenticationSession {
@@ -140,7 +143,7 @@ import Foundation
         credentialCompletion = continuation
         credentialID = operationID
         credentialFailureCode = failureCode
-        let controller = ASAuthorizationController(authorizationRequests: [request])
+        let controller = makeCredentialController([request])
         controller.delegate = self
         controller.presentationContextProvider = self
         credentialController = controller
@@ -169,7 +172,7 @@ import Foundation
   private func binary(_ value: JSONValue) throws -> Data {
     let text = try (value.object()["base64url"] ?? .undefined).string()
     let normalized = text.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
-    guard let data = Data(base64Encoded: normalized + String(repeating: "=", count: (4 - normalized.count % 4) % 4)) else { throw CoreError.invalidValue }
+    guard let data = Data(base64Encoded: normalized + String(repeating: "=", count: (4 - normalized.count % 4) % 4)), !data.isEmpty else { throw CoreError.invalidValue }
     return data
   }
 
