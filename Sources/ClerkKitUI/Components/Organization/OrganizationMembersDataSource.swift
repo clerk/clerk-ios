@@ -19,7 +19,7 @@ final class OrganizationMembersDataSource {
   var isLoadingMembers = true
   var isLoadingInvitations = true
   var isLoadingMembershipRequests = true
-  var roles: [RoleResource] = []
+  var roles: [Role] = []
   var hasRoleSetMigration = false
   var mutatingMembershipIds: Set<String> = []
   var revokingInvitationIds: Set<String> = []
@@ -85,7 +85,7 @@ final class OrganizationMembersDataSource {
 
   func loadRoles(organization: Organization) async {
     do {
-      let page = try await organization.getRoles(page: 1, pageSize: 20)
+      let page = try await organization.getRoles(.init(initialPage: 1, pageSize: 20))
       roles = page.data
       hasRoleSetMigration = page.hasRoleSetMigration ?? false
     } catch {
@@ -102,12 +102,12 @@ final class OrganizationMembersDataSource {
     defer { isLoadingMembers = false }
 
     do {
-      let page = try await organization.getMemberships(
-        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
-        page: 1,
-        pageSize: pageSize
-      )
-      membershipsPager.replace(with: page)
+      let page = try await organization.getMemberships(.init(
+        initialPage: 1,
+        pageSize: Double(pageSize),
+        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery
+      ))
+      membershipsPager.replace(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -123,12 +123,12 @@ final class OrganizationMembersDataSource {
     defer { membershipsPager.isLoadingMore = false }
 
     do {
-      let page = try await organization.getMemberships(
-        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
-        offset: membershipsPager.offset,
-        pageSize: pageSize
-      )
-      membershipsPager.append(page)
+      let page = try await organization.getMemberships(.init(
+        initialPage: Double(membershipsPager.nextPage),
+        pageSize: Double(pageSize),
+        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery
+      ))
+      membershipsPager.append(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -142,8 +142,8 @@ final class OrganizationMembersDataSource {
     defer { isLoadingInvitations = false }
 
     do {
-      let page = try await organization.getInvitations(page: 1, pageSize: pageSize, status: ["pending"])
-      invitationsPager.replace(with: page)
+      let page = try await organization.getInvitations(.init(initialPage: 1, pageSize: Double(pageSize), status: [.pending]))
+      invitationsPager.replace(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -159,12 +159,12 @@ final class OrganizationMembersDataSource {
     defer { invitationsPager.isLoadingMore = false }
 
     do {
-      let page = try await organization.getInvitations(
-        offset: invitationsPager.offset,
-        pageSize: pageSize,
-        status: ["pending"]
-      )
-      invitationsPager.append(page)
+      let page = try await organization.getInvitations(.init(
+        initialPage: Double(invitationsPager.nextPage),
+        pageSize: Double(pageSize),
+        status: [.pending]
+      ))
+      invitationsPager.append(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -178,8 +178,8 @@ final class OrganizationMembersDataSource {
     defer { isLoadingMembershipRequests = false }
 
     do {
-      let page = try await organization.getMembershipRequests(page: 1, pageSize: pageSize, status: "pending")
-      membershipRequestsPager.replace(with: page)
+      let page = try await organization.getMembershipRequests(.init(initialPage: 1, pageSize: Double(pageSize), status: .pending))
+      membershipRequestsPager.replace(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -195,12 +195,12 @@ final class OrganizationMembersDataSource {
     defer { membershipRequestsPager.isLoadingMore = false }
 
     do {
-      let page = try await organization.getMembershipRequests(
-        offset: membershipRequestsPager.offset,
-        pageSize: pageSize,
-        status: "pending"
-      )
-      membershipRequestsPager.append(page)
+      let page = try await organization.getMembershipRequests(.init(
+        initialPage: Double(membershipRequestsPager.nextPage),
+        pageSize: Double(pageSize),
+        status: .pending
+      ))
+      membershipRequestsPager.append(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -209,7 +209,7 @@ final class OrganizationMembersDataSource {
     }
   }
 
-  func updateMemberRole(_ membership: OrganizationMembership, role: RoleResource) async {
+  func updateMemberRole(_ membership: OrganizationMembership, role: Role) async {
     guard role.key != membership.role else { return }
     guard !hasRoleSetMigration else { return }
     guard !mutatingMembershipIds.contains(membership.id) else { return }
@@ -218,7 +218,7 @@ final class OrganizationMembersDataSource {
     defer { mutatingMembershipIds.remove(membership.id) }
 
     do {
-      let updatedMembership = try await membership.update(role: role.key)
+      let updatedMembership = try await membership.update(.init(role: role.key))
       membershipsPager.replace(updatedMembership)
     } catch {
       self.error = error
@@ -233,7 +233,7 @@ final class OrganizationMembersDataSource {
     defer { mutatingMembershipIds.remove(membership.id) }
 
     do {
-      try await membership.destroy()
+      _ = try await membership.destroy()
       membershipsPager.remove(membership)
     } catch {
       self.error = error
@@ -248,7 +248,7 @@ final class OrganizationMembersDataSource {
     defer { revokingInvitationIds.remove(invitation.id) }
 
     do {
-      try await invitation.revoke()
+      _ = try await invitation.revoke()
       await loadInvitations(organization: organization)
     } catch {
       self.error = error
@@ -269,7 +269,7 @@ final class OrganizationMembersDataSource {
     defer { acceptingMembershipRequestIds.remove(request.id) }
 
     do {
-      try await request.accept()
+      _ = try await request.accept()
 
       async let requestsLoad: Void = loadMembershipRequests(organization: organization)
       async let membersLoad: Void = reloadMembers ? loadMembers(organization: organization) : ()
@@ -289,7 +289,7 @@ final class OrganizationMembersDataSource {
     defer { rejectingMembershipRequestIds.remove(request.id) }
 
     do {
-      try await request.reject()
+      _ = try await request.reject()
       await loadMembershipRequests(organization: organization)
     } catch {
       self.error = error

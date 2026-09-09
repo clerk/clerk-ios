@@ -4,10 +4,12 @@
 
 import ClerkKit
 
-struct OrganizationAccountListPager<Item: Codable & Sendable> {
+@MainActor
+struct OrganizationAccountListPager<Item: CoreResource> {
   private(set) var items: [Item] = []
   private(set) var totalCount = 0
   private(set) var offset = 0
+  private(set) var nextPage = 1
   var isLoadingMore = false
 
   var hasNextPage: Bool {
@@ -16,32 +18,34 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
 
   func loadedPageOffsets(pageSize: Int) -> [Int] {
     let pageSize = max(pageSize, 1)
-    let loadedItemCount = max(offset, 1)
-    let loadedPageCount = max(1, (loadedItemCount + pageSize - 1) / pageSize)
+    let loadedPageCount = max(1, nextPage - 1)
     return (0 ..< loadedPageCount).map { $0 * pageSize }
   }
 
-  mutating func replace(with page: ClerkPaginatedResponse<Item>) {
-    items = page.data
-    totalCount = page.totalCount
-    offset = page.data.count
+  mutating func replace(data: [Item], totalCount: Double) {
+    items = data
+    self.totalCount = Int(exactly: totalCount) ?? data.count
+    offset = data.count
+    nextPage = 2
   }
 
-  mutating func replace(with pages: [ClerkPaginatedResponse<Item>]) {
+  mutating func replace(pages: [(data: [Item], totalCount: Double)]) {
     guard let lastPage = pages.last else {
       self = Self()
       return
     }
 
     items = pages.flatMap(\.data)
-    totalCount = lastPage.totalCount
+    totalCount = Int(exactly: lastPage.totalCount) ?? items.count
     offset = items.count
+    nextPage = pages.count + 1
   }
 
-  mutating func append(_ page: ClerkPaginatedResponse<Item>) {
-    items.append(contentsOf: page.data)
-    totalCount = page.totalCount
-    offset += page.data.count
+  mutating func append(data: [Item], totalCount: Double) {
+    items.append(contentsOf: data)
+    self.totalCount = Int(exactly: totalCount) ?? items.count
+    offset += data.count
+    nextPage += 1
   }
 
   mutating func removeOneFromPagination() {
@@ -50,15 +54,15 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
   }
 }
 
-extension OrganizationAccountListPager where Item: Identifiable {
+extension OrganizationAccountListPager {
   mutating func replace(_ item: Item) {
-    if let index = items.firstIndex(where: { $0.id == item.id }) {
+    if let index = items.firstIndex(where: { $0.handle == item.handle }) {
       items[index] = item
     }
   }
 
   mutating func remove(_ item: Item) {
-    if let index = items.firstIndex(where: { $0.id == item.id }) {
+    if let index = items.firstIndex(where: { $0.handle == item.handle }) {
       items.remove(at: index)
       removeOneFromPagination()
     }
