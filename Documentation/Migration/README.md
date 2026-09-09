@@ -118,4 +118,4 @@ Before a general release, validate an actual old-major app upgrade with a real s
 
 ## Removed implementation
 
-The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. Legacy test files remain for the unfinished assertion-level audit and are not claimed to run against the new API.
+The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. Unreviewed legacy test files remain for the unfinished assertion-level audit and are not claimed to run against the new API. Per-domain assertion audits record reviewed retirements and their replacement evidence.

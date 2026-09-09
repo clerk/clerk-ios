@@ -26,4 +26,6 @@ these runs do not prove visionOS exclusions or live passkey enrollment.
 The Android request suite also rejects empty/malformed bridge credential IDs and
 checks the Credential Manager JSON for allowed/excluded credentials and user data.
 Neither platform suite proves a system prompt, provider callback, or a signed-in
-application upgrade. The old test files remain retained during the broader audit.
+application upgrade. The two old passkey helper test files are retired after this
+mapping and the passing replacement suites. Their baseline declarations remain
+in the inventory; other unreviewed legacy tests remain retained.

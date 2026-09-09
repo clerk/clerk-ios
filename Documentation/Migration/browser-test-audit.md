@@ -25,5 +25,6 @@ the stale-callback and duplicate-completion tests fail; restoring it makes all f
 browser tests pass. Cancellation handlers also carry their operation identity so
 an asynchronously delivered cancellation cannot affect a later request.
 
-The old source file remains retained pending the broader test-target migration.
-These results do not retire unreviewed passkey, keychain, or biometric assertions.
+The old browser test file is retired after this assertion mapping and the passing
+replacement suite. Its baseline remains linked in the inventory. This retirement
+does not remove unreviewed keychain, biometric, or domain assertions.
