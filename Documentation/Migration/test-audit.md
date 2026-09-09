@@ -19,6 +19,9 @@ key-validation replacements and intentionally removed configuration options.
 The [owner replacement audit](reconfiguration-test-audit.md) reviews all 24 old
 global reconfiguration tests and records the new close/reconnect contract,
 including the Swift late-callback regression and retained release limitations.
+The [client response audit](client-response-test-audit.md) records all 33 response
+state and ordering declarations, the shared response-ordering fix, organization
+selection checks, and the unavailable watch behaviors.
 The [Keychain assertion audit](keychain-test-audit.md) records actual persisted
 formats, backend precedence, durable clears and unresolved shared-session gates.
 The [HTTP assertion audit](http-test-audit.md) separates URLSession execution checks

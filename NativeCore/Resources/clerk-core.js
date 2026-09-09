@@ -4689,17 +4689,29 @@ var ClerkCore = (function(exports) {
 	}
 	//#endregion
 	//#region packages/shared/src/mobile.ts
+	function responseClientVersion(payload) {
+		const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+		const body = object(payload);
+		const client = object(body?.client) || object(object(body?.meta)?.client) || object(body?.response);
+		if (client?.object !== "client") return;
+		return { updatedAt: typeof client.updated_at === "number" && Number.isFinite(client.updated_at) ? client.updated_at : void 0 };
+	}
 	function installMobileCredentialTransport(core, storage, headers = {}, options = {}) {
 		let generation = 0;
 		let disposed = false;
 		let writes = Promise.resolve();
+		let sequence = 0;
+		let acceptedClient;
 		const requests = /* @__PURE__ */ new WeakMap();
 		const assertCurrent = (expected) => {
 			if (disposed || expected !== generation) throw Object.assign(/* @__PURE__ */ new Error("The client changed while the request was in flight."), { code: "stale_client_request" });
 		};
 		core.__internal_onBeforeRequest(async (request) => {
 			const current = generation;
-			requests.set(request, current);
+			requests.set(request, {
+				generation: current,
+				sequence: ++sequence
+			});
 			await writes;
 			assertCurrent(current);
 			const credential = await storage.read();
@@ -4714,23 +4726,35 @@ var ClerkCore = (function(exports) {
 		});
 		core.__internal_onAfterResponse(async (request, response) => {
 			if (!response) return;
-			const current = requests.get(request);
-			if (current === void 0) throw new Error("Missing mobile request generation.");
-			assertCurrent(current);
+			const issued = requests.get(request);
+			if (issued === void 0) throw new Error("Missing mobile request generation.");
+			assertCurrent(issued.generation);
 			const credential = response.headers.get("authorization");
-			if (credential) {
-				const write = writes.then(async () => {
-					assertCurrent(current);
-					await storage.write(credential);
-				});
-				writes = write.catch(() => void 0);
-				await write;
-			}
-			assertCurrent(current);
+			const client = responseClientVersion(response.payload);
+			if (!credential && !client) return;
+			const parsedDate = Date.parse(response.headers.get("date") || "");
+			const serverDate = Number.isFinite(parsedDate) ? parsedDate : void 0;
+			const commit = writes.then(async () => {
+				assertCurrent(issued.generation);
+				if (client && acceptedClient && issued.sequence <= acceptedClient.sequence) {
+					if (!(serverDate !== void 0 && acceptedClient.serverDate !== void 0 && (serverDate > acceptedClient.serverDate || serverDate === acceptedClient.serverDate && client.updatedAt !== void 0 && acceptedClient.updatedAt !== void 0 && client.updatedAt > acceptedClient.updatedAt))) throw Object.assign(/* @__PURE__ */ new Error("A newer client response has already been accepted."), { code: "stale_client_response" });
+				}
+				if (credential) await storage.write(credential);
+				assertCurrent(issued.generation);
+				if (client) acceptedClient = {
+					sequence: Math.max(acceptedClient?.sequence ?? issued.sequence, issued.sequence),
+					serverDate: serverDate === void 0 ? acceptedClient?.serverDate : Math.max(acceptedClient?.serverDate ?? serverDate, serverDate),
+					updatedAt: client.updatedAt
+				};
+			});
+			writes = commit.catch(() => void 0);
+			await commit;
+			assertCurrent(issued.generation);
 		});
 		return {
 			async invalidate({ clearCredential = false } = {}) {
 				++generation;
+				acceptedClient = void 0;
 				if (clearCredential) {
 					const remove = writes.then(() => storage.remove());
 					writes = remove.catch(() => void 0);

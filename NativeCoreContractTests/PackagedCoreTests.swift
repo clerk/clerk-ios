@@ -304,6 +304,71 @@ import Testing
     let token = try await newSession.getToken()
     #expect(token != nil)
   }
+
+  @Test func sessionReloadPublishesOrganizationSelectionBeforeCompletion() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    func membership(_ id: String) -> JSONValue {
+      .object([
+        "object": .string("organization_membership"), "id": .string("membership_\(id)"),
+        "role": .string("org:admin"), "role_name": .string("Admin"), "permissions": .array([]),
+        "created_at": .number(1_700_000_000_000), "updated_at": .number(1_700_000_000_000),
+        "organization": .object([
+          "object": .string("organization"), "id": .string(id), "name": .string("Organization \(id)"),
+          "slug": .string(id), "created_at": .number(1_700_000_000_000), "updated_at": .number(1_700_000_000_000),
+        ]),
+      ])
+    }
+    var session = try #require(capabilities.fixtures["session"]).object()
+    var user = try #require(session["user"]).object()
+    user["organization_memberships"] = .array([membership("org_one"), membership("org_two")])
+    session["user"] = .object(user)
+    session["last_active_organization_id"] = .string("org_one")
+    var client = try #require(capabilities.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(session)])
+    capabilities.clientResponse = .object(client)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let originalSession = try #require(clerk.session)
+    #expect(clerk.organization?.id == "org_one")
+    #expect(clerk.organization?.name == "Organization org_one")
+    #expect(clerk.user?.organizationMemberships.first?.id == "membership_org_one")
+
+    for selected: String? in ["org_two", nil] {
+      session["last_active_organization_id"] = selected.map(JSONValue.string) ?? .null
+      client["sessions"] = .array([.object(session)])
+      capabilities.sessionReloadResponse = .object(["response": .object(session), "client": .object(client)])
+      _ = try await originalSession.reload()
+      #expect(clerk.session === originalSession)
+      #expect(originalSession.lastActiveOrganizationId == selected)
+      #expect(clerk.organization?.id == selected)
+      #expect(clerk.user?.organizationMemberships.count == 2)
+    }
+  }
+
+  @Test func olderClientResponseCannotRemoveANewerPendingTaskOrCredential() async throws {
+    let capabilities = try OrderedClientResponseCapabilities()
+    let clerk = try await connect(capabilities)
+    defer { capabilities.release(); clerk.close() }
+    let session = try #require(clerk.session)
+    let old = Task { try await session.reload() }
+    try await eventually { capabilities.waiting }
+    _ = try await session.reload()
+    #expect(clerk.session?.status == .pending)
+    #expect(clerk.session?.currentTask?.key.rawValue == "choose-organization")
+    capabilities.release()
+    do {
+      _ = try await old.value
+      Issue.record("Expected the older client response to be rejected")
+    } catch let error as CoreError {
+      #expect(error.code == "stale_client_response")
+    }
+    #expect(clerk.session === session)
+    #expect(session.status == .pending)
+    #expect(session.currentTask?.key.rawValue == "choose-organization")
+    #expect(capabilities.base.credential == "newer-response-credential")
+    _ = try await session.reload()
+    #expect(session.status == .pending)
+  }
 }
 
 @MainActor private final class LifecycleFailureCapabilities: NativeCapabilities {
@@ -328,4 +393,57 @@ import Testing
 @MainActor private final class NetworkProbe {
   var receive: (@Sendable (Bool) -> Void)?
   var stopped = false
+}
+
+@MainActor private final class OrderedClientResponseCapabilities: NativeCapabilities {
+  let base: FixtureCapabilities
+  var supported: [String] {
+    base.supported
+  }
+
+  var waiting = false
+  private var count = 0
+  private var continuation: CheckedContinuation<Void, Never>?
+
+  init() throws {
+    base = try FixtureCapabilities(data: PackageProof.fixtureData())
+    var client = try #require(base.fixtures["authenticatedClient"]).object()
+    client["object"] = .string("client")
+    client["updated_at"] = .number(1_700_000_000_000)
+    base.clientResponse = .object(client)
+  }
+
+  func release() {
+    continuation?.resume()
+    continuation = nil
+  }
+
+  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    if try capability != "http" || (arguments.object()["url"]?.url().path.hasSuffix("/sessions/sess_native")) != true {
+      return try await base.perform(capability, arguments: arguments)
+    }
+    count += 1
+    let older = count == 1
+    if older {
+      waiting = true
+      await withCheckedContinuation { continuation = $0 }
+    }
+    var session = try #require(base.fixtures["session"]).object()
+    var client = try #require(base.clientResponse).object()
+    if !older {
+      session["status"] = .string("pending")
+      session["tasks"] = .array([.object(["key": .string("choose-organization")])])
+      client["updated_at"] = .number(1_700_000_001_000)
+    }
+    client["sessions"] = .array([.object(session)])
+    let payload = JSONValue.object(["response": .object(session), "client": .object(client)])
+    return try .object([
+      "status": .number(200),
+      "headers": .object([
+        "date": .string(older ? "Wed, 09 Sep 2026 16:00:00 GMT" : "Wed, 09 Sep 2026 16:00:01 GMT"),
+        "authorization": .string(older ? "older-response-credential" : "newer-response-credential"),
+      ]),
+      "body": .string(String(decoding: JSONEncoder().encode(payload), as: UTF8.self)),
+    ])
+  }
 }
