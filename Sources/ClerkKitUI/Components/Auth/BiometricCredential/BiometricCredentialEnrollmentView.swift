@@ -112,11 +112,11 @@ extension BiometricCredentialEnrollmentView {
     error = nil
 
     do {
-      try await clerk.biometricCredentials.enroll(
+      _ = try await clerk.biometricCredentials.enroll(.init(
         identifierHint: clerk.user?.biometricCredentialIdentifierHint,
         reason: enrollmentReason,
         policy: .biometryCurrentSet
-      )
+      ))
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       continueAfterEnrollmentPrompt()
     } catch {

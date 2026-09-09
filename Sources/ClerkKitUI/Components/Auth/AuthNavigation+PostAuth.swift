@@ -8,7 +8,7 @@
 import ClerkKit
 
 extension AuthNavigation {
-  func nextPendingSessionTask(from session: Session?) -> Session.Task? {
+  func nextPendingSessionTask(from session: Session?) -> SessionTaskKey? {
     session?.pendingTasks.first
   }
 

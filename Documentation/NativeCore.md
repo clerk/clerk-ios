@@ -34,6 +34,12 @@ Email-link preparation uses the configured callback URL and saves its PKCE verif
 
 Pending links survive process restart. The previous iOS pending-link record requires a matching `LegacyKeychainConfiguration.publishableKey`; Android uses the matching cached publishable key or explicit `legacyPublishableKey`. Clearing a pending link leaves the client credential intact. Android callers can supply `magicLinkAttestation` when their instance requires an attestation provider.
 
+## Biometric credentials
+
+The generated `clerk.biometricCredentials` resource owns enrollment, local selection, server validation, revocation and cleanup in TypeScript. Use its `canEnroll` state and asynchronous availability methods to drive presentation. `clerk.signIn.biometricCredential()` authenticates through the canonical future sign-in resource and leaves finalization explicit. Native hosts create device-held EC keys and return public material or challenge signatures; private keys and local key identifiers are excluded from observable snapshots.
+
+The adapters preserve the previous Secure Enclave / Android Keystore key names and migrate scoped local metadata using the same explicit instance checks as pending email links. Biometric metadata has a separate secure-storage entry. Account deletion records unsuccessful local key cleanup for retry on restart. The system prompt still requires enrolled biometrics and an appropriate presentation host; device-passcode fallback follows the selected platform policy.
+
 ## Bundle updates
 
 From the clean JavaScript repository, run `node packages/mobile-runtime/pack.mjs IOS_REPOSITORY ANDROID_REPOSITORY`. Packaging verifies generated contracts, rebuilds the bundle, pins the source commit and SHA-256, and copies the canonical generated API. Commit these resources together. Do not manually modify generated Swift or remotely replace executable code. Review `NativeCore/public-api.txt` for native source compatibility on every update.

@@ -11538,6 +11538,7 @@ isDevOrStagingUrl: (url) => {
 		constructor(data) {
 			super();
 			this.pathRoot = "";
+			this.__internal_trustedDeviceChallenge = null;
 			this.status = null;
 			this.strategy = null;
 			this.nonce = null;
@@ -11554,6 +11555,7 @@ isDevOrStagingUrl: (url) => {
 		}
 		fromJSON(data) {
 			if (data) {
+				this.__internal_trustedDeviceChallenge = "trusted_device_challenge" in data ? data.trusted_device_challenge ?? null : null;
 				this.status = data.status;
 				this.verifiedAtClient = data.verified_at_client;
 				this.strategy = data.strategy;
@@ -14826,6 +14828,27 @@ isDevOrStagingUrl: (url) => {
 				await this._create(params);
 			});
 		}
+		async biometricCredential(params = {}) {
+			return runAsyncResourceTask(this.#resource, async () => {
+				await SignIn.clerk.__internal_nativeBiometrics.authenticate(params, async (id) => {
+					await this._create({
+						strategy: "trusted_device",
+						trustedDeviceId: id
+					});
+					const verification = this.#resource.firstFactorVerification;
+					return verification instanceof Verification ? verification.__internal_trustedDeviceChallenge : null;
+				}, async (id, signature) => {
+					await this.#resource.__internal_basePost({
+						action: "attempt_first_factor",
+						body: {
+							strategy: "trusted_device",
+							trustedDeviceId: id,
+							...signature
+						}
+					});
+				});
+			});
+		}
 		async password(params) {
 			if ([
 				params.identifier,
@@ -16595,11 +16618,11 @@ isDevOrStagingUrl: (url) => {
 					path: `${this.path()}/remove_password`
 				});
 			};
-			this.delete = () => {
-				return this._baseDelete({ path: "/me" }).then((res) => {
-					eventBus.emit(events.UserSignOut, null);
-					return res;
-				});
+			this.delete = async () => {
+				const userId = this.id;
+				await this._baseDelete({ path: "/me" });
+				eventBus.emit(events.UserSignOut, null);
+				if (userId) await User.clerk.__internal_nativeBiometrics?.forgetLocalCredentials({ userId }).catch(() => void 0);
 			};
 			this.getSessions = async () => {
 				if (this.cachedSessionsWithActivities) return this.cachedSessionsWithActivities;
@@ -17062,6 +17085,392 @@ isDevOrStagingUrl: (url) => {
 				method: "POST",
 				body: params
 			}));
+		}
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/NativeBiometricCredentials.ts
+	const policies = [
+		"biometry_current_set",
+		"biometry_any",
+		"biometry_or_device_passcode"
+	];
+	const normalizeHint = (value) => value?.trim().toLowerCase() || null;
+	const unavailable = (reason) => ({
+		isAvailable: false,
+		unavailableReason: reason
+	});
+	const available = {
+		isAvailable: true,
+		unavailableReason: null
+	};
+	const fail$1 = (code) => new ClerkRuntimeError("Biometric authentication could not be completed.", { code });
+	const isMissingCredential = (error) => isClerkAPIResponseError(error) && error.errors.some(({ code, meta }) => ["form_resource_not_found", "trusted_device_not_registered"].includes(code) && meta?.paramName === "trusted_device_id");
+	const isMissingKey = (error) => typeof error === "object" && error !== null && "code" in error && ["key_not_found", "key_invalidated"].includes(String(error.code));
+	/** Owns credential selection, server reconciliation, and enrollment policy; keys stay in the host. */
+	var NativeBiometricCredentials = class {
+		#generation = 0;
+		#writes = Promise.resolve();
+		constructor(clerk, host) {
+			this.clerk = clerk;
+			this.host = host;
+		}
+		get canEnroll() {
+			return !!this.clerk.session?.user?.id && ["active", "pending"].includes(this.clerk.session?.status ?? "") && !this.featureReason();
+		}
+		invalidate() {
+			++this.#generation;
+		}
+		async list() {
+			const response = await this.request("/me/biometric_credentials", "GET", void 0, this.clerk.session?.id);
+			if (!Array.isArray(response)) throw fail$1("invalid_biometric_response");
+			return response.map((value) => this.credential(value));
+		}
+		async localAvailability(params = {}) {
+			const result = await this.candidates(params);
+			return result.reason ? unavailable(result.reason) : available;
+		}
+		async availability(params = {}) {
+			const result = await this.selected(params);
+			return result.reason ? unavailable(result.reason) : available;
+		}
+		async validateLocalCredential(params = {}) {
+			if (this.featureReason() === "environmentUnavailable") return {
+				status: "inconclusive",
+				reason: null
+			};
+			try {
+				const candidates = await this.candidates(params);
+				if (candidates.reason) return {
+					status: "invalid",
+					reason: candidates.reason
+				};
+				if (!this.clerk.client) return {
+					status: "inconclusive",
+					reason: null
+				};
+				for (const record of candidates.records) try {
+					if ((await this.request("/client/biometric_credentials/validate", "POST", { trustedDeviceId: record.id })).valid) return {
+						status: "valid",
+						reason: null
+					};
+					await this.deleteLocal(record);
+				} catch (error) {
+					if (isMissingCredential(error)) {
+						await this.deleteLocal(record);
+						continue;
+					}
+					if (isClerkAPIResponseError(error)) {
+						if (error.errors.some(({ code }) => code === "native_api_disabled")) return {
+							status: "invalid",
+							reason: "nativeAPIDisabled"
+						};
+						if (error.errors.some(({ code }) => code === "feature_not_enabled")) return {
+							status: "invalid",
+							reason: "featureDisabled"
+						};
+					}
+					return {
+						status: "inconclusive",
+						reason: null
+					};
+				}
+				return {
+					status: "invalid",
+					reason: "serverCredentialMissing"
+				};
+			} catch {
+				return {
+					status: "inconclusive",
+					reason: null
+				};
+			}
+		}
+		async enroll(params = {}) {
+			const session = this.clerk.session;
+			if (!session || !["active", "pending"].includes(session.status) || !session.user?.id) throw fail$1("biometric_session_required");
+			const reason = this.featureReason();
+			if (reason) throw fail$1(reason);
+			const host = this.requireHost();
+			const generation = this.#generation;
+			const userId = session.user.id;
+			const assertEnrollmentCurrent = () => {
+				this.assertCurrent(generation);
+				if (this.clerk.session?.id !== session.id || this.clerk.session?.user?.id !== userId) throw fail$1("stale_authentication_attempt");
+			};
+			const appIdentifier = await host.appIdentifier();
+			if (!appIdentifier) throw fail$1("missing_app_identifier");
+			const policy = params.policy ?? (host.platform === "android" ? "biometry_or_device_passcode" : "biometry_current_set");
+			assertEnrollmentCurrent();
+			const key = await host.createKey(policy);
+			try {
+				assertEnrollmentCurrent();
+				const body = {
+					platform: host.platform,
+					appIdentifier,
+					name: params.name,
+					algorithm: "ES256",
+					publicKeyJwk: key.publicKeyJwk
+				};
+				const challenge = await this.request("/me/biometric_credentials/prepare", "POST", body, session.id);
+				assertEnrollmentCurrent();
+				this.validateChallenge(challenge);
+				const signature = await host.sign({
+					localKeyId: key.localKeyId,
+					policy,
+					clientData: challenge.client_data,
+					reason: params.reason ?? "Use biometrics to enroll this device.",
+					promptSubtitle: params.promptSubtitle
+				});
+				assertEnrollmentCurrent();
+				this.validateSignature(signature, challenge);
+				const result = this.credential(await this.request("/me/biometric_credentials/attempt", "POST", {
+					...body,
+					...signature
+				}, session.id));
+				assertEnrollmentCurrent();
+				if (result.appIdentifier !== appIdentifier || result.platform !== host.platform) throw fail$1("invalid_biometric_response");
+				const record = {
+					id: result.id,
+					localKeyId: key.localKeyId,
+					userId,
+					appIdentifier,
+					identifierHint: normalizeHint(params.identifierHint),
+					policy,
+					createdAt: result.createdAt.getTime(),
+					updatedAt: result.updatedAt.getTime()
+				};
+				try {
+					await this.serialized(async () => {
+						assertEnrollmentCurrent();
+						const records = await this.records();
+						assertEnrollmentCurrent();
+						await host.storage.write(JSON.stringify([...records.filter((value) => value.id !== record.id), record]));
+					});
+				} catch (error) {
+					await this.request("/me/biometric_credentials/" + encodeURIComponent(result.id), "DELETE", void 0, session.id).catch(() => void 0);
+					throw error;
+				}
+				assertEnrollmentCurrent();
+				for (const old of await this.records()) if (old.appIdentifier === appIdentifier && old.id !== record.id) await this.deleteLocal(old).catch(() => void 0);
+				return result;
+			} catch (error) {
+				await host.deleteKey(key.localKeyId).catch(() => void 0);
+				throw error;
+			}
+		}
+		async revoke({ id }) {
+			const result = this.credential(await this.request("/me/biometric_credentials/" + encodeURIComponent(id), "DELETE", void 0, this.clerk.session?.id));
+			if (this.host) {
+				const record = (await this.records()).find((record) => record.id === id);
+				if (record) await this.deleteLocal(record).catch(() => void 0);
+			}
+			return result;
+		}
+		async revokeCurrentDeviceCredential() {
+			if (!this.clerk.session || !["active", "pending"].includes(this.clerk.session.status)) throw fail$1("biometric_session_required");
+			const { records } = await this.selected({ currentUser: true });
+			return records.length ? this.revoke({ id: records[0].id }) : null;
+		}
+		async forgetLocalCredentials({ userId }) {
+			const appIdentifier = await this.requireHost().appIdentifier();
+			await this.updateCleanup((users) => [...new Set([...users, userId])]);
+			const records = (await this.records()).filter((record) => record.userId === userId && record.appIdentifier === appIdentifier);
+			for (const record of records) await this.deleteLocal(record);
+			await this.updateCleanup((users) => users.filter((value) => value !== userId));
+			return records.length;
+		}
+		async retryPendingCleanup() {
+			if (!this.host) return;
+			for (const userId of await this.cleanupUsers()) await this.forgetLocalCredentials({ userId }).catch(() => void 0);
+		}
+		async authenticate(params, prepare, attempt) {
+			const host = this.requireHost();
+			const generation = this.#generation;
+			const selection = await this.selected(params);
+			this.assertCurrent(generation);
+			const record = selection.records[0];
+			if (!record) throw fail$1(selection.reason ?? "noLocalCredential");
+			try {
+				const challenge = await prepare(record.id);
+				this.assertCurrent(generation);
+				this.validateChallenge(challenge, record.id);
+				const signature = await host.sign({
+					localKeyId: record.localKeyId,
+					policy: record.policy,
+					clientData: challenge.client_data,
+					reason: params.reason ?? "Use biometrics to sign in.",
+					promptSubtitle: params.promptSubtitle
+				});
+				this.assertCurrent(generation);
+				this.validateSignature(signature, challenge);
+				await attempt(record.id, signature);
+				this.assertCurrent(generation);
+			} catch (error) {
+				if (isMissingCredential(error) || isMissingKey(error)) await this.deleteLocal(record).catch(() => void 0);
+				throw error;
+			}
+		}
+		featureReason() {
+			const settings = this.clerk.__internal_environment?.authConfig.nativeSettings;
+			if (!settings) return "environmentUnavailable";
+			if (!settings.apiEnabled) return "nativeAPIDisabled";
+			if (!settings.trustedDeviceSignInEnabled) return "featureDisabled";
+			if (!this.host) return "unsupportedPlatform";
+			return null;
+		}
+		async candidates(params) {
+			const reason = this.featureReason();
+			if (reason) return {
+				records: [],
+				reason
+			};
+			const host = this.requireHost();
+			const appIdentifier = await host.appIdentifier();
+			const userId = params.currentUser ? this.clerk.user?.id : void 0;
+			if (params.currentUser && !userId) return {
+				records: [],
+				reason: "noLocalCredential"
+			};
+			const hint = normalizeHint(params.identifierHint);
+			const records = (await this.records()).filter((record) => record.appIdentifier === appIdentifier && (!params.id || record.id === params.id) && (userId ? record.userId === userId : !hint || record.identifierHint === hint)).sort((a, b) => b.createdAt - a.createdAt || b.updatedAt - a.updatedAt || b.id.localeCompare(a.id));
+			if (!records.length) return {
+				records: [],
+				reason: "noLocalCredential"
+			};
+			const existing = [];
+			for (const record of records) {
+				let exists;
+				try {
+					exists = await host.hasKey(record.localKeyId);
+				} catch (error) {
+					if (!isMissingKey(error)) throw error;
+					exists = false;
+				}
+				if (exists) existing.push(record);
+				else await this.deleteLocal(record);
+			}
+			if (!existing.length) return {
+				records: [],
+				reason: "localKeyMissing"
+			};
+			const supported = [];
+			for (const record of existing) if (await host.supports(record.policy)) supported.push(record);
+			return {
+				records: supported,
+				reason: supported.length ? null : "biometricAuthenticationUnavailable"
+			};
+		}
+		async selected(params) {
+			const result = await this.candidates(params);
+			if (result.reason || this.clerk.session?.status !== "active" || !this.clerk.session.user?.id) return result;
+			const userId = this.clerk.session.user.id;
+			const records = result.records.filter((record) => record.userId === userId);
+			if (!records.length) return {
+				records: [],
+				reason: "noLocalCredential"
+			};
+			const remote = await this.list();
+			let reason = null;
+			for (const record of records) {
+				const credential = remote.find((value) => value.id === record.id);
+				if (credential?.status === "active") return {
+					records: [record],
+					reason: null
+				};
+				await this.deleteLocal(record);
+				reason ??= credential ? "serverCredentialRevoked" : "serverCredentialMissing";
+			}
+			return {
+				records: [],
+				reason: reason ?? "serverCredentialMissing"
+			};
+		}
+		async records() {
+			const raw = await this.requireHost().storage.read();
+			if (!raw) return [];
+			let values;
+			try {
+				values = JSON.parse(raw);
+			} catch {
+				return [];
+			}
+			if (!Array.isArray(values)) return [];
+			return values.filter((record) => record !== null && typeof record === "object" && [
+				"id",
+				"localKeyId",
+				"userId",
+				"appIdentifier"
+			].every((key) => typeof record[key] === "string" && record[key]) && (record.identifierHint == null || typeof record.identifierHint === "string") && policies.includes(record.policy) && Number.isFinite(record.createdAt) && Number.isFinite(record.updatedAt)).map((record) => ({
+				...record,
+				identifierHint: normalizeHint(record.identifierHint)
+			}));
+		}
+		async deleteLocal(record) {
+			const host = this.requireHost();
+			await host.deleteKey(record.localKeyId);
+			await this.serialized(async () => {
+				const records = await this.records();
+				await host.storage.write(JSON.stringify(records.filter((value) => value.id !== record.id || value.localKeyId !== record.localKeyId)));
+			});
+		}
+		async cleanupUsers() {
+			const raw = await this.requireHost().cleanupStorage.read();
+			if (!raw) return [];
+			try {
+				const value = JSON.parse(raw);
+				return Array.isArray(value) ? value.filter((item) => typeof item === "string" && item) : [];
+			} catch {
+				return [];
+			}
+		}
+		async updateCleanup(update) {
+			await this.serialized(async () => this.requireHost().cleanupStorage.write(JSON.stringify(update(await this.cleanupUsers()))));
+		}
+		validateChallenge(challenge, id) {
+			if (!challenge || challenge.algorithm !== "ES256" || typeof challenge.client_data !== "string" || !challenge.client_data || id && challenge.trusted_device_id && challenge.trusted_device_id !== id) throw fail$1("invalid_biometric_challenge");
+			const expires = challenge.expires_at > 1e10 ? challenge.expires_at : challenge.expires_at * 1e3;
+			if (!Number.isFinite(expires) || expires <= Date.now()) throw fail$1("expired_biometric_challenge");
+		}
+		validateSignature(signature, challenge) {
+			if (signature.clientData !== challenge.client_data || signature.algorithm !== "ES256" || !signature.signature) throw fail$1("invalid_biometric_signature");
+		}
+		credential(value) {
+			if (!value || !value.id || !Number.isFinite(value.created_at) || !Number.isFinite(value.updated_at)) throw fail$1("invalid_biometric_response");
+			return {
+				id: value.id,
+				object: value.object,
+				platform: value.platform,
+				appIdentifier: value.app_identifier,
+				name: value.name ?? null,
+				algorithm: value.algorithm,
+				status: value.status,
+				createdAt: new Date(value.created_at),
+				updatedAt: new Date(value.updated_at),
+				lastUsedAt: value.last_used_at == null ? null : new Date(value.last_used_at),
+				revokedAt: value.revoked_at == null ? null : new Date(value.revoked_at)
+			};
+		}
+		async request(path, method, body, sessionId) {
+			const response = await BaseResource._fetch({
+				path,
+				method,
+				body,
+				sessionId
+			});
+			if (!response) throw fail$1("invalid_biometric_response");
+			return response.response;
+		}
+		requireHost() {
+			if (!this.host) throw fail$1("capability_unavailable:biometrics");
+			return this.host;
+		}
+		assertCurrent(generation) {
+			if (generation !== this.#generation) throw fail$1("stale_authentication_attempt");
+		}
+		serialized(operation) {
+			const result = this.#writes.then(operation);
+			this.#writes = result.catch(() => void 0);
+			return result;
 		}
 	};
 	//#endregion
@@ -23178,6 +23587,7 @@ isDevOrStagingUrl: (url) => {
 			this.#touchThrottledUntil = 0;
 			this.#publicEventBus = createClerkEventBus();
 			this.#moduleManager = new ModuleManager();
+			this.__internal_nativeBiometrics = new NativeBiometricCredentials(this);
 			this.__internal_setActiveInProgress = false;
 			this.setProtectAssertion = (assertion) => {
 				this.#protectAssertion = assertion;
@@ -24511,6 +24921,8 @@ isDevOrStagingUrl: (url) => {
 			this.__internal_getMobileResources = () => {
 				if (!this.client || !this.environment) throw new Error("Clerk must be loaded before attaching native resources.");
 				return {
+					clientId: this.client.id ?? null,
+					biometricCredentials: this.__internal_nativeBiometrics,
 					authCallback: this.__internal_nativeMagicLink?.authCallback ?? null,
 					handleAuthCallback: async (url) => {
 						if (!this.__internal_nativeMagicLink) throw new ClerkRuntimeError("Native email links are unavailable.", { code: "capability_unavailable" });
@@ -25107,6 +25519,12 @@ isDevOrStagingUrl: (url) => {
 	}
 	function publicCore(clerk, beforeSignOut) {
 		return {
+			get clientId() {
+				return mobileResources(clerk).clientId;
+			},
+			get biometricCredentials() {
+				return mobileResources(clerk).biometricCredentials;
+			},
 			get authCallback() {
 				return mobileResources(clerk).authCallback;
 			},
@@ -27467,6 +27885,145 @@ isDevOrStagingUrl: (url) => {
 			},
 			invoke: (target, args) => target["reload"](...args)
 		},
+		"BiometricCredentials.list": {
+			type: "BiometricCredentials",
+			parameters: [],
+			result: {
+				"kind": "array",
+				"element": {
+					"kind": "ref",
+					"name": "BiometricCredential"
+				}
+			},
+			invoke: (target, args) => target["list"](...args)
+		},
+		"BiometricCredentials.availability": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialSelectionParams"
+					}
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "BiometricCredentialAvailability"
+			},
+			invoke: (target, args) => target["availability"](...args)
+		},
+		"BiometricCredentials.localAvailability": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialSelectionParams"
+					}
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "BiometricCredentialAvailability"
+			},
+			invoke: (target, args) => target["localAvailability"](...args)
+		},
+		"BiometricCredentials.validateLocalCredential": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialSelectionParams"
+					}
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "BiometricCredentialValidationResult"
+			},
+			invoke: (target, args) => target["validateLocalCredential"](...args)
+		},
+		"BiometricCredentials.enroll": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialEnrollmentParams"
+					}
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "BiometricCredential"
+			},
+			invoke: (target, args) => target["enroll"](...args)
+		},
+		"BiometricCredentials.revoke": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "BiometricCredentialsRevokeParams"
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "BiometricCredential"
+			},
+			invoke: (target, args) => target["revoke"](...args)
+		},
+		"BiometricCredentials.revokeCurrentDeviceCredential": {
+			type: "BiometricCredentials",
+			parameters: [],
+			result: {
+				"kind": "optional",
+				"nullable": true,
+				"omittable": false,
+				"value": {
+					"kind": "ref",
+					"name": "BiometricCredential"
+				}
+			},
+			invoke: (target, args) => target["revokeCurrentDeviceCredential"](...args)
+		},
+		"BiometricCredentials.forgetLocalCredentials": {
+			type: "BiometricCredentials",
+			parameters: [{
+				"name": "params",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "BiometricCredentialsForgetLocalCredentialsParams"
+				}
+			}],
+			result: { "kind": "number" },
+			invoke: (target, args) => target["forgetLocalCredentials"](...args)
+		},
 		"SignIn.create": {
 			type: "SignIn",
 			parameters: [{
@@ -27492,6 +28049,24 @@ isDevOrStagingUrl: (url) => {
 			}],
 			result: { "kind": "errorResult" },
 			invoke: (target, args) => target["password"](...args)
+		},
+		"SignIn.biometricCredential": {
+			type: "SignIn",
+			parameters: [{
+				"name": "params",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": false,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "SignInBiometricCredentialParams"
+					}
+				}
+			}],
+			result: { "kind": "errorResult" },
+			invoke: (target, args) => target["biometricCredential"](...args)
 		},
 		"SignIn.sso": {
 			type: "SignIn",
@@ -28465,6 +29040,24 @@ isDevOrStagingUrl: (url) => {
 							"kind": "ref",
 							"name": "Organization"
 						}
+					}
+				},
+				{
+					"name": "clientId",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "biometricCredentials",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "BiometricCredentials"
 					}
 				},
 				{
@@ -36840,6 +37433,341 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
+		"BiometricCredentials": {
+			"name": "BiometricCredentials",
+			"kind": "resource",
+			"properties": [{
+				"name": "canEnroll",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"BiometricCredential": {
+			"name": "BiometricCredential",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "object",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "platform",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "BiometricCredentialPlatform"
+					}
+				},
+				{
+					"name": "appIdentifier",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "name",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "algorithm",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "BiometricCredentialAlgorithm"
+					}
+				},
+				{
+					"name": "status",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "BiometricCredentialStatus"
+					}
+				},
+				{
+					"name": "createdAt",
+					"optional": false,
+					"type": { "kind": "date" }
+				},
+				{
+					"name": "updatedAt",
+					"optional": false,
+					"type": { "kind": "date" }
+				},
+				{
+					"name": "lastUsedAt",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "date" }
+					}
+				},
+				{
+					"name": "revokedAt",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": true,
+						"omittable": false,
+						"value": { "kind": "date" }
+					}
+				}
+			]
+		},
+		"BiometricCredentialPlatform": {
+			"name": "BiometricCredentialPlatform",
+			"kind": "union",
+			"properties": [],
+			"variants": [
+				{
+					"kind": "literal",
+					"value": "ios"
+				},
+				{
+					"kind": "literal",
+					"value": "android"
+				},
+				{ "kind": "string" }
+			]
+		},
+		"BiometricCredentialAlgorithm": {
+			"name": "BiometricCredentialAlgorithm",
+			"kind": "union",
+			"properties": [],
+			"variants": [{ "kind": "string" }, {
+				"kind": "literal",
+				"value": "ES256"
+			}]
+		},
+		"BiometricCredentialStatus": {
+			"name": "BiometricCredentialStatus",
+			"kind": "union",
+			"properties": [],
+			"variants": [
+				{
+					"kind": "literal",
+					"value": "active"
+				},
+				{
+					"kind": "literal",
+					"value": "revoked"
+				},
+				{ "kind": "string" }
+			]
+		},
+		"BiometricCredentialSelectionParams": {
+			"name": "BiometricCredentialSelectionParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "identifierHint",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "currentUser",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
+				}
+			]
+		},
+		"BiometricCredentialAvailability": {
+			"name": "BiometricCredentialAvailability",
+			"kind": "object",
+			"properties": [{
+				"name": "isAvailable",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "unavailableReason",
+				"optional": false,
+				"type": {
+					"kind": "optional",
+					"nullable": true,
+					"omittable": false,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialUnavailableReason"
+					}
+				}
+			}]
+		},
+		"BiometricCredentialUnavailableReason": {
+			"name": "BiometricCredentialUnavailableReason",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"environmentUnavailable",
+				"nativeAPIDisabled",
+				"featureDisabled",
+				"unsupportedPlatform",
+				"biometricAuthenticationUnavailable",
+				"noLocalCredential",
+				"localKeyMissing",
+				"serverCredentialMissing",
+				"serverCredentialRevoked"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"BiometricCredentialValidationResult": {
+			"name": "BiometricCredentialValidationResult",
+			"kind": "object",
+			"properties": [{
+				"name": "status",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "BiometricCredentialValidationResultStatus"
+				}
+			}, {
+				"name": "reason",
+				"optional": false,
+				"type": {
+					"kind": "optional",
+					"nullable": true,
+					"omittable": false,
+					"value": {
+						"kind": "ref",
+						"name": "BiometricCredentialUnavailableReason"
+					}
+				}
+			}]
+		},
+		"BiometricCredentialValidationResultStatus": {
+			"name": "BiometricCredentialValidationResultStatus",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"valid",
+				"invalid",
+				"inconclusive"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"BiometricCredentialEnrollmentParams": {
+			"name": "BiometricCredentialEnrollmentParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "name",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "identifierHint",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "reason",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "promptSubtitle",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "policy",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "ref",
+							"name": "BiometricCredentialPolicy"
+						}
+					}
+				}
+			]
+		},
+		"BiometricCredentialPolicy": {
+			"name": "BiometricCredentialPolicy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"biometry_current_set",
+				"biometry_any",
+				"biometry_or_device_passcode"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"BiometricCredentialsRevokeParams": {
+			"name": "BiometricCredentialsRevokeParams",
+			"kind": "object",
+			"properties": [{
+				"name": "id",
+				"optional": false,
+				"type": { "kind": "string" }
+			}]
+		},
+		"BiometricCredentialsForgetLocalCredentialsParams": {
+			"name": "BiometricCredentialsForgetLocalCredentialsParams",
+			"kind": "object",
+			"properties": [{
+				"name": "userId",
+				"optional": false,
+				"type": { "kind": "string" }
+			}]
+		},
 		"MobileAuthCallback": {
 			"name": "MobileAuthCallback",
 			"kind": "object",
@@ -37449,6 +38377,16 @@ isDevOrStagingUrl: (url) => {
 					}
 				},
 				{
+					"name": "trustedDeviceId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
 					"name": "token",
 					"optional": true,
 					"type": {
@@ -37547,7 +38485,8 @@ isDevOrStagingUrl: (url) => {
 				"oauth_x",
 				"oauth_enstall",
 				"oauth_huggingface",
-				"oauth_vercel"
+				"oauth_vercel",
+				"trusted_device"
 			],
 			"open": false,
 			"patterns": ["^oauth_custom_.*$"]
@@ -37982,6 +38921,52 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": { "kind": "string" }
 			}]
+		},
+		"SignInBiometricCredentialParams": {
+			"name": "SignInBiometricCredentialParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "id",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "identifierHint",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "reason",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "promptSubtitle",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
 		},
 		"SignInSSOParams": {
 			"name": "SignInSSOParams",
@@ -40035,7 +41020,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "de318d17179d3c133b56f634c981ac2f7f090c3bb6a53051a195ca7a446f4268",
+		"contractHash": "db0edcf151926939c7031f50b51514339c6787c28e4518d71b4c6b331b074a5a",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -40578,6 +41563,28 @@ isDevOrStagingUrl: (url) => {
 			}),
 			remove: () => hostRequest("authStorage.remove", authStorageArgs)
 		} : void 0, (value) => configuration.capabilities.includes("crypto.sha256") ? hostRequest("crypto.sha256", { value }) : Promise.reject(bridgeError("capability_unavailable:crypto.sha256")), configuration.capabilities.includes("magicLink.attestation") ? () => hostRequest("magicLink.attestation", {}) : void 0);
+		const biometricStorage = (key) => ({
+			read: () => hostRequest("biometrics.storage.read", {
+				scope,
+				key
+			}),
+			write: (value) => hostRequest("biometrics.storage.write", {
+				scope,
+				key,
+				value
+			})
+		});
+		clerk.__internal_nativeBiometrics = new NativeBiometricCredentials(clerk, configuration.capabilities.includes("biometrics") ? {
+			platform: configuration.platform,
+			appIdentifier: () => hostRequest("biometrics.appIdentifier", {}),
+			storage: biometricStorage("credentials"),
+			cleanupStorage: biometricStorage("cleanup"),
+			supports: (policy) => hostRequest("biometrics.supports", { policy }),
+			hasKey: (localKeyId) => hostRequest("biometrics.hasKey", { localKeyId }),
+			createKey: (policy) => hostRequest("biometrics.createKey", { policy }),
+			sign: (params) => hostRequest("biometrics.sign", params),
+			deleteKey: (localKeyId) => hostRequest("biometrics.deleteKey", { localKeyId })
+		} : void 0);
 		clerk.__internal_isWebAuthnSupported = () => configuration.capabilities.includes("passkeys");
 		clerk.__internal_isWebAuthnAutofillSupported = async () => configuration.capabilities.includes("passkeys.autofill");
 		clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = async () => configuration.capabilities.includes("passkeys");
@@ -40603,13 +41610,16 @@ isDevOrStagingUrl: (url) => {
 			}
 		});
 		if (disposed) return;
+		await clerk.__internal_nativeBiometrics.retryPendingCleanup().catch(() => void 0);
 		const facade = publicCore(clerk, async () => {
 			cancelCapabilities([
 				"browser",
 				"passkeys.get",
 				"passkeys.create",
-				"appleIdentity"
+				"appleIdentity",
+				"biometrics.sign"
 			]);
+			clerk.__internal_nativeBiometrics.invalidate();
 			runtime?.invalidate("Clerk.signOut");
 			await mobile?.invalidate();
 			await clerk.__internal_nativeMagicLink?.reset();
@@ -40629,8 +41639,10 @@ isDevOrStagingUrl: (url) => {
 						"browser",
 						"passkeys.get",
 						"passkeys.create",
-						"appleIdentity"
+						"appleIdentity",
+						"biometrics.sign"
 					]);
+					clerk.__internal_nativeBiometrics.invalidate();
 					await mobile?.invalidate();
 					await clerk.__internal_nativeMagicLink?.reset();
 				}

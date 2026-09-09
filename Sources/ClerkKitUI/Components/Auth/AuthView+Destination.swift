@@ -26,10 +26,10 @@ extension AuthView {
     case signUpEmailLink
     case signUpCompleteProfile
 
-    case sessionTaskStart(task: Session.Task, token: AuthFlowPresentationToken)
+    case sessionTaskStart(task: SessionTaskKey, token: AuthFlowPresentationToken)
     case taskMfaSmsChooseNumber(token: AuthFlowPresentationToken)
     case taskVerifySms(phoneNumber: PhoneNumber, token: AuthFlowPresentationToken)
-    case taskMfaTotp(totpResource: TOTPResource, token: AuthFlowPresentationToken)
+    case taskMfaTotp(totpResource: TOTP, token: AuthFlowPresentationToken)
     case taskVerifyTotp(token: AuthFlowPresentationToken)
     case sessionTaskCreateOrganization(
       creationDefaults: OrganizationCreationDefaults?,

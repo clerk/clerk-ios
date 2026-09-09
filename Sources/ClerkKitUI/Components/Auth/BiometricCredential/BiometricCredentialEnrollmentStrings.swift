@@ -12,7 +12,8 @@ import SwiftUI
 enum BiometricCredentialEnrollmentStrings {
   @MainActor
   static func applicationName(for clerk: Clerk) -> String? {
-    guard let applicationName = clerk.environment?.displayConfig.applicationName,
+    let applicationName = clerk.environment.displayConfig.applicationName
+    guard
           !applicationName.isEmptyTrimmed
     else {
       return nil

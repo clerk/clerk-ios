@@ -59,7 +59,7 @@ struct GetHelpView: View {
 
         VStack(spacing: 16) {
           Button {
-            openEmail(to: clerk.environment?.displayConfig.supportEmail ?? "")
+            openEmail(to: clerk.environment.displayConfig.supportEmail ?? "")
           } label: {
             Text("Email support", bundle: .module)
               .frame(maxWidth: .infinity)

@@ -25,7 +25,7 @@ struct AuthConfig: Equatable {
   var persistsIdentifiers: Bool = true
 
   /// Unsafe metadata to attach when this flow creates a sign-up.
-  var unsafeMetadata: JSON?
+  var unsafeMetadata: JSONValue?
 }
 
 #endif

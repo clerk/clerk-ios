@@ -83,8 +83,13 @@ import Foundation
     precondition(reservedPhone === phone && phone.reservedForSecondFactor)
     let codes = try await phone.backupCodes()
     precondition(codes == ["fixture-recovery-code"])
+    precondition(clerk.biometricCredentials.canEnroll)
+    let biometric = try await clerk.biometricCredentials.enroll(.init(identifierHint: "test@example.com"))
+    precondition(biometric.id == "td_native" && capabilities.biometricRecords != nil)
     try await clerk.signOut()
     precondition(clerk.session == nil && clerk.user == nil)
+    try await clerk.signIn.biometricCredential()
+    precondition(clerk.signIn.status == .complete && clerk.session == nil && capabilities.biometricSignCount == 2)
     print("PASS: packaged ClerkKit bundle, future SSO, local reset, explicit finalization, getToken, typed errors, returned resources, explicit recovery-code reads, and sign-out")
   }
 }

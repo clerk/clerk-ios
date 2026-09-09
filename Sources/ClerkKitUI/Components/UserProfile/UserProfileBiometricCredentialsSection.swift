@@ -106,13 +106,13 @@ extension UserProfileBiometricCredentialsSection {
 
     do {
       if enabled {
-        try await clerk.biometricCredentials.enroll(
+        _ = try await clerk.biometricCredentials.enroll(.init(
           identifierHint: user.biometricCredentialIdentifierHint,
           reason: enrollmentReason,
           policy: .biometryCurrentSet
-        )
+        ))
       } else {
-        try await clerk.biometricCredentials.revokeCurrentDeviceCredential()
+        _ = try await clerk.biometricCredentials.revokeCurrentDeviceCredential()
       }
 
       if await refreshAvailability() != nil {
@@ -135,7 +135,7 @@ extension UserProfileBiometricCredentialsSection {
 #Preview {
   UserProfileBiometricCredentialsSection(
     isEnabled: true,
-    refreshAvailability: { .available }
+    refreshAvailability: { .init(isAvailable: true, unavailableReason: nil) }
   )
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)

@@ -359,7 +359,7 @@ extension AuthStartView {
     .state(
       biometricCredentialFeatureIsEnabled: biometricCredentialFeatureIsEnabled,
       activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil,
-      clientID: clerk.client?.id
+      clientID: clerk.clientId
     )
   }
 }
@@ -766,7 +766,7 @@ extension AuthStartView {
       return
     }
 
-    guard let localAvailability = try? clerk.biometricCredentials.localAvailability() else {
+    guard let localAvailability = try? await clerk.biometricCredentials.localAvailability() else {
       biometricCredentialAvailability = nil
       return
     }
@@ -777,15 +777,15 @@ extension AuthStartView {
     biometricCredentialAvailability = localAvailability
     guard localAvailability.isAvailable else { return }
 
-    let validationResult = await clerk.biometricCredentials.validateLocalCredentialIfPossible()
+    guard let validationResult = try? await clerk.biometricCredentials.validateLocalCredential() else { return }
     guard !Task.isCancelled else { return }
 
-    switch validationResult {
+    switch validationResult.status {
     case .valid:
-      biometricCredentialAvailability = .available
-    case let .invalid(reason):
-      biometricCredentialAvailability = .unavailable(reason)
-    case .inconclusive:
+      biometricCredentialAvailability = .init(isAvailable: true, unavailableReason: nil)
+    case .invalid:
+      biometricCredentialAvailability = .init(isAvailable: false, unavailableReason: validationResult.reason)
+    case .inconclusive, .unrecognized:
       break
     }
   }
@@ -794,7 +794,9 @@ extension AuthStartView {
     generalError = nil
 
     do {
-      let signIn = try await clerk.auth.signInWithBiometrics()
+      try await clerk.signIn.biometricCredential()
+      let signIn = clerk.signIn
+      try await clerk.finalizeForPresentation(.signIn(signIn))
       guard !Task.isCancelled, navigation.path.isEmpty else { return }
       navigation.setToStepForStatus(signIn: signIn)
     } catch {

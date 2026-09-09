@@ -11,15 +11,15 @@ import Foundation
 extension TransferFlowResult {
   func shouldOfferBiometricCredentialEnrollmentPrompt(
     userID: String,
-    nativeSettings: Clerk.Environment.AuthConfig.NativeSettings,
+    nativeSettings: NativeAuthSettings,
     promptStore: BiometricCredentialEnrollmentPromptStore
   ) -> Bool {
     switch self {
     case .signIn:
-      nativeSettings.biometricCredentialPromptAfterSignInEnabled &&
+      nativeSettings.trustedDeviceEnrollmentPromptAfterSignInEnabled &&
         !promptStore.hasSeenPrompt(userID: userID)
     case .signUp:
-      nativeSettings.biometricCredentialPromptAfterSignUpEnabled
+      nativeSettings.trustedDeviceEnrollmentPromptAfterSignUpEnabled
     }
   }
 }

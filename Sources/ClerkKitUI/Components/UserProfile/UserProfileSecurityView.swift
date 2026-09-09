@@ -17,6 +17,7 @@ struct UserProfileSecurityView: View {
   @State private var error: Error?
 
   @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
+  @State private var localBiometricCredentialAvailability: BiometricCredentialAvailability?
   private let biometryDisplayName = BiometryDisplayName.current()
 
   private var user: User? {
@@ -52,14 +53,6 @@ struct UserProfileSecurityView: View {
     }
 
     return localBiometricCredentialAvailability?.isAvailable == true
-  }
-
-  private var localBiometricCredentialAvailability: BiometricCredentialAvailability? {
-    guard biometricCredentialFeatureIsEnabled else {
-      return nil
-    }
-
-    return try? clerk.biometricCredentials.currentUserLocalAvailability()
   }
 
   private var biometricCredentialAvailabilityRefreshKey: BiometricCredentialAvailabilityRefreshKey? {
@@ -136,7 +129,7 @@ struct UserProfileSecurityView: View {
       try? await profileData.refresh(user: user)
     }
     .task(id: biometricCredentialAvailabilityRefreshKey) {
-      refreshLocalBiometricCredentialAvailability()
+      await refreshLocalBiometricCredentialAvailability()
       await refreshBiometricCredentialAvailability()
     }
     .task {
@@ -156,14 +149,15 @@ struct UserProfileSecurityView: View {
 
 extension UserProfileSecurityView {
   @MainActor
-  private func refreshLocalBiometricCredentialAvailability() {
+  private func refreshLocalBiometricCredentialAvailability() async {
     guard biometricCredentialFeatureIsEnabled else {
       biometricCredentialAvailability = nil
       return
     }
 
     do {
-      biometricCredentialAvailability = try clerk.biometricCredentials.currentUserLocalAvailability()
+      localBiometricCredentialAvailability = try await clerk.biometricCredentials.localAvailability(.init(currentUser: true))
+      biometricCredentialAvailability = localBiometricCredentialAvailability
     } catch {
       biometricCredentialAvailability = nil
       ClerkLogger.error("Failed to refresh local biometric sign-in availability", error: error)
@@ -179,7 +173,7 @@ extension UserProfileSecurityView {
     }
 
     do {
-      let availability = try await clerk.biometricCredentials.currentUserAvailability()
+      let availability = try await clerk.biometricCredentials.availability(.init(currentUser: true))
       biometricCredentialAvailability = availability
       return availability
     } catch {

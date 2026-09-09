@@ -22,6 +22,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
 
 @MainActor public final class AppleCapabilities: NativeCapabilities {
   public typealias Presentation = @MainActor (String, JSONValue) async throws -> JSONValue
+  private let biometrics: AppleBiometricCapabilities?
   private let authStorage: (any CredentialStorage)?
   private let storage: any CredentialStorage
   private let publishableKey: String
@@ -32,10 +33,11 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
   private let appleIdentity: Presentation?
   private let passkeyAutofill: Bool
   public var supported: [String] {
-    ["http", "storage", "timer", "random", "crypto.sha256"] + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
+    ["http", "storage", "timer", "random", "crypto.sha256"] + (biometrics == nil ? [] : ["biometrics"]) + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
-  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil) throws {
+  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil) throws {
+    self.biometrics = biometrics
     self.authStorage = authStorage
     guard frontendAPI.scheme == "https", frontendAPI.host != nil, frontendAPI.user == nil, frontendAPI.password == nil else { throw CoreError(code: "invalid_frontend_api") }
     self.publishableKey = publishableKey
@@ -54,6 +56,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
 
   public func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
     try Task.checkCancellation()
+    if capability.hasPrefix("biometrics."), let biometrics { return try await biometrics.perform(capability, arguments: arguments) }
     if capability == "browser", let browser { return try await browser(capability, arguments) }
     if capability.hasPrefix("passkeys."), let passkeys { return try await passkeys(capability, arguments) }
     if capability == "appleIdentity", let appleIdentity { return try await appleIdentity(capability, arguments) }

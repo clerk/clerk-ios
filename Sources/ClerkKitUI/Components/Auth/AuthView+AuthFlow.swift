@@ -256,7 +256,7 @@ extension AuthView {
     }
 
     do {
-      let availability = try await clerk.biometricCredentials.currentUserAvailability()
+      let availability = try await clerk.biometricCredentials.availability(.init(currentUser: true))
       guard enrollmentContextIsCurrent(context, availability: availability),
             let token = clerk.startAuthFlowPresentation(
               for: owner,
@@ -294,7 +294,7 @@ extension AuthView {
           nativeSettings.trustedDeviceSignInEnabled,
           let session = clerk.session,
           session.id == sessionId,
-          session.status.allowsBiometricCredentialEnrollment,
+          clerk.biometricCredentials.canEnroll,
           let userId = session.user?.id
     else {
       return nil
@@ -325,7 +325,7 @@ extension AuthView {
   ) -> Bool {
     !Task.isCancelled
       && clerk.session?.id == context.session.id
-      && clerk.session?.status.allowsBiometricCredentialEnrollment == true
+      && clerk.biometricCredentials.canEnroll
       && clerk.user?.id == context.userId
       && !availability.isAvailable
       && availability.canPromptForEnrollment

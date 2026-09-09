@@ -40,9 +40,11 @@ final class AuthState {
   private(set) var prefilledFieldsAreLocked = false
 
   /// Unsafe metadata to attach if the current UI flow creates a sign-up.
-  private(set) var unsafeMetadata: JSON?
+  private(set) var unsafeMetadata: JSONValue?
 
-  private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
+  private var environmentRefreshTask: Task<EnvironmentResource, Error>?
+  private var environmentOwner: ObjectIdentifier?
+  private var environmentRefreshID = UUID()
 
   private let userDefaults: UserDefaults
 
@@ -165,14 +167,27 @@ enum AuthStartField {
 }
 
 extension AuthState {
-  func environmentRefreshCheckpoint(for clerk: Clerk) -> Clerk.EnvironmentRefreshCheckpoint {
-    if let environmentRefreshCheckpoint {
-      return environmentRefreshCheckpoint
+  func refreshedEnvironment(for clerk: Clerk) async throws -> EnvironmentResource {
+    if environmentOwner != ObjectIdentifier(clerk) {
+      environmentRefreshTask?.cancel()
+      environmentRefreshTask = nil
+      environmentOwner = ObjectIdentifier(clerk)
     }
-
-    let checkpoint = clerk.environmentRefreshCheckpoint
-    environmentRefreshCheckpoint = checkpoint
-    return checkpoint
+    if environmentRefreshTask == nil {
+      environmentRefreshID = UUID()
+      environmentRefreshTask = Task { try await clerk.environment.reload() }
+    }
+    guard let task = environmentRefreshTask else { throw CancellationError() }
+    let refreshID = environmentRefreshID
+    do {
+      let environment = try await task.value
+      try Task.checkCancellation()
+      guard environmentRefreshID == refreshID else { throw CancellationError() }
+      return environment
+    } catch {
+      if !Task.isCancelled, environmentRefreshID == refreshID { environmentRefreshTask = nil }
+      throw error
+    }
   }
 
   var authStartIdentifierIsLocked: Bool {

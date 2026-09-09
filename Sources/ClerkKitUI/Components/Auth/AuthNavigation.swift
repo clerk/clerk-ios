@@ -47,6 +47,8 @@ final class AuthNavigation {
       }
 
       path.append(AuthView.Destination.signInFactorTwo(factor: factor))
+    case .needsProtectCheck:
+      path.append(AuthView.Destination.getHelp(.signIn))
     case .needsNewPassword:
       path.append(AuthView.Destination.signInSetNewPassword(token: nil))
     case .needsClientTrust:
@@ -56,7 +58,7 @@ final class AuthNavigation {
         return
       }
       path.append(AuthView.Destination.signInClientTrust(factor: factor))
-    case .unknown:
+    case .unrecognized:
       return
     }
   }
@@ -73,7 +75,7 @@ final class AuthNavigation {
       handleMissingRequirements(signUp: signUp)
     case .complete:
       return
-    case .unknown:
+    case .unrecognized:
       return
     }
   }
@@ -88,7 +90,7 @@ final class AuthNavigation {
   }
 
   @MainActor
-  private func handleFieldToVerify(signUp: SignUp, field: SignUp.Field) {
+  private func handleFieldToVerify(signUp: SignUp, field: SignUpField) {
     switch field {
     case .emailAddress:
       guard let emailAddress = signUp.emailAddress else {
@@ -112,7 +114,7 @@ final class AuthNavigation {
   }
 
   @MainActor
-  private func handleFieldToCollect(signUp: SignUp, field: SignUp.Field) {
+  private func handleFieldToCollect(signUp: SignUp, field: SignUpField) {
     switch field {
     case .password:
       path.append(AuthView.Destination.signUpCollectField(.password))

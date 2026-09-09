@@ -12,7 +12,7 @@ public struct LegacyKeychainConfiguration: Sendable {
 }
 
 public actor KeychainCredentialStorage: CredentialStorage {
-  public enum Purpose: String, Sendable { case client, magicLink }
+  public enum Purpose: String, Sendable { case client, magicLink, biometricCredentials, biometricCleanup }
   private let purpose: Purpose
   private struct Record: Codable { let schemaVersion: Int; let credential: String? }
   private let service: String
@@ -64,11 +64,13 @@ public actor KeychainCredentialStorage: CredentialStorage {
   }
 
   private func migrateLegacy() throws -> String? {
-    if purpose == .magicLink {
+    if purpose != .client {
       guard legacy.publishableKey == publishableKey else { return nil }
+      guard purpose != .biometricCleanup else { return nil }
+      let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
       let service = legacy.service ?? applicationIdentifier
-      let data = try readItem(service: service, account: "pendingMagicLinkFlow")
-        ?? readItem(service: service, account: "pendingMagicLinkFlow", accessGroup: legacy.accessGroup)
+      let data = try readItem(service: service, account: account)
+        ?? readItem(service: service, account: account, accessGroup: legacy.accessGroup)
       return data.flatMap { String(data: $0, encoding: .utf8) }
     }
     var origin = frontendAPI.absoluteString.trimmingCharacters(in: .whitespacesAndNewlines)
