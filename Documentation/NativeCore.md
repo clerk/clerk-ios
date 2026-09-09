@@ -62,7 +62,7 @@ Run `scripts/benchmark-native-core.sh OUTPUT_JSON` to collect raw fresh-engine s
 
 The Swift script builds the release proof executable and uses `/usr/bin/time -l` to report process-wide peak resident memory. That total includes the harness and system libraries.
 
-Record the OS/device, build mode, core revision/hash and packaged artifact sizes with each run. Agree release startup, memory, size and call-overhead budgets before treating measurements as a go/no-go gate.
+Record the OS/device, build mode, core revision/hash and packaged artifact sizes with each run. The provisional release budgets and physical-device measurement protocol are in [Performance.md](Performance.md). The declared Apple targets and current capability/validation limits are in [PlatformSupport.md](PlatformSupport.md).
 
 Release performance limits and outstanding measurements are recorded in [the performance budgets](Performance.md).
 
