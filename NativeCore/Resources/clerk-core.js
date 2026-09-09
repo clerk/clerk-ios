@@ -13663,30 +13663,32 @@ isDevOrStagingUrl: (url) => {
 				SessionTokenCache.clear();
 				return this._basePost({ action: "remove" });
 			};
-			this._touchPost = async ({ intent, skipUpdateClient } = { skipUpdateClient: false }) => {
+			this._touchPost = async ({ intent, skipUpdateClient, organizationId } = { skipUpdateClient: false }) => {
 				const json = await BaseResource._fetch({
 					method: "POST",
 					path: this.path("touch"),
 					body: {
-						active_organization_id: this.lastActiveOrganizationId,
+						active_organization_id: organizationId === void 0 ? this.lastActiveOrganizationId : organizationId,
 						intent
 					}
 				}, { skipUpdateClient });
 				this.fromJSON(json?.response || json);
 				return json;
 			};
-			this.touch = async ({ intent } = {}) => {
+			this.touch = async ({ intent, __internal_organizationId } = {}) => {
 				await this._touchPost({
 					intent,
-					skipUpdateClient: false
+					skipUpdateClient: false,
+					organizationId: __internal_organizationId
 				});
 				if (this.lastActiveToken) eventBus.emit(events.TokenUpdate, { token: this.lastActiveToken });
 				return this;
 			};
-			this.__internal_touch = async ({ intent } = {}) => {
+			this.__internal_touch = async ({ intent, __internal_organizationId } = {}) => {
 				return getClientResourceFromPayload(await this._touchPost({
 					intent,
-					skipUpdateClient: true
+					skipUpdateClient: true,
+					organizationId: __internal_organizationId
 				}));
 			};
 			this.clearCache = () => {
@@ -24714,14 +24716,15 @@ isDevOrStagingUrl: (url) => {
 						...params
 					});
 					const shouldSwitchOrganization = organization !== void 0;
+					let requestedOrganizationId;
 					if (newSession && shouldSwitchOrganization) {
 						const organizationIdOrSlug = typeof organization === "string" ? organization : organization?.id;
-						if (isOrganizationId(organizationIdOrSlug)) newSession.lastActiveOrganizationId = organizationIdOrSlug || null;
+						if (isOrganizationId(organizationIdOrSlug)) requestedOrganizationId = organizationIdOrSlug || null;
 						else {
 							const newLastActiveOrganizationId = newSession.user.organizationMemberships.find((mem) => mem.organization.slug === organizationIdOrSlug)?.organization.id || null;
 							const isPersonalWorkspace = newLastActiveOrganizationId === null;
 							if (this.environment?.organizationSettings?.forceOrganizationSelection && isPersonalWorkspace) return;
-							newSession.lastActiveOrganizationId = newLastActiveOrganizationId;
+							requestedOrganizationId = newLastActiveOrganizationId;
 						}
 					}
 					if (newSession?.status !== "pending")
@@ -24732,16 +24735,19 @@ isDevOrStagingUrl: (url) => {
 					const taskUrl = newSession?.status === "pending" && newSession?.currentTask && this.#options.taskUrls?.[newSession?.currentTask.key];
 					const shouldNavigate = !!(redirectUrl || taskUrl || setActiveNavigate);
 					const touchIntent = shouldSwitchOrganization ? "select_org" : "select_session";
-					if (inActiveBrowserTab() || !this.#options.standardBrowser) {
+					if (shouldSwitchOrganization || inActiveBrowserTab() || !this.#options.standardBrowser) {
 						let updatedClient;
 						if (shouldNavigate && newSession) try {
-							updatedClient = await newSession.__internal_touch({ intent: touchIntent });
+							updatedClient = await newSession.__internal_touch({
+								intent: touchIntent,
+								...requestedOrganizationId !== void 0 ? { __internal_organizationId: requestedOrganizationId } : {}
+							});
 							if (updatedClient) this.updateClient(updatedClient, { __internal_dangerouslySkipEmit: true });
 						} catch (e) {
 							if (isUnauthenticatedError(e)) this.handleUnauthenticated();
 							else throw e;
 						}
-						else await this.#touchCurrentSession(newSession, touchIntent);
+						else await this.#touchCurrentSession(newSession, touchIntent, requestedOrganizationId);
 						newSession = this.#getSessionFromClient(newSession?.id, updatedClient);
 					}
 					try {
@@ -25601,9 +25607,12 @@ isDevOrStagingUrl: (url) => {
 					SafeLocalStorage.setItem(CLERK_ENVIRONMENT_STORAGE_ENTRY, this.environment?.__internal_toSnapshot(), 1440 * 60 * 1e3);
 				});
 			};
-			this.#touchCurrentSession = async (session, intent = "focus") => {
+			this.#touchCurrentSession = async (session, intent = "focus", organizationId) => {
 				if (!session) return Promise.resolve();
-				await session.touch({ intent }).catch((e) => {
+				await session.touch({
+					intent,
+					...organizationId !== void 0 ? { __internal_organizationId: organizationId } : {}
+				}).catch((e) => {
 					if (isUnauthenticatedError(e)) this.handleUnauthenticated();
 					else throw e;
 				});
@@ -41639,7 +41648,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "fc919ded53c772af190eb2a07f5fdec94a7f1f47fbc2b04b4a3ab76c4d39bf16",
+		"contractHash": "d0e44f4d5307614738d237be8326540031290579f49e2b098be85596ced06d98",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
