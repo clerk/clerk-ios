@@ -127,3 +127,7 @@ Before a general release, validate an actual old-major app upgrade with a real s
 ## Removed implementation
 
 The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. Unreviewed legacy test files remain for the unfinished assertion-level audit and are not claimed to run against the new API. Per-domain assertion audits record reviewed retirements and their replacement evidence.
+
+### Contact deletion and verification
+
+Use generated `EmailAddress.prepareVerification` / `attemptVerification`, `PhoneNumber.prepareVerification` / `attemptVerification`, and `PhoneNumber.destroy` in place of the old send-code, verify-code and phone-delete conveniences. Contact `destroy` methods return `Void`; no `DeletedObject` DTO is returned. Successful deletion applies the server's client update while retained contact wrappers keep their last readable fields. See the [complete contact assertion audit](contact-resource-test-audit.md) for request encoding differences, source ownership and validation limits.

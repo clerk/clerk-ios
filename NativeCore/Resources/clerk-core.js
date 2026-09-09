@@ -6769,7 +6769,9 @@ isDevOrStagingUrl: (url) => {
 				body,
 				signal
 			});
-			return this.fromJSON(json?.response || json);
+			const resource = json?.response || json;
+			if (method === "DELETE" && resource && "deleted" in resource && resource.deleted === true) return this;
+			return this.fromJSON(resource);
 		}
 		async _baseMutateBypass(params) {
 			const { action, body, method, path } = params;
