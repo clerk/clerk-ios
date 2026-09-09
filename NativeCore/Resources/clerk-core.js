@@ -25983,7 +25983,7 @@ isDevOrStagingUrl: (url) => {
 			}],
 			result: {
 				"kind": "ref",
-				"name": "Image"
+				"name": "ImageResource"
 			},
 			invoke: (target, args) => target["setProfileImage"](...args)
 		},
@@ -26808,8 +26808,8 @@ isDevOrStagingUrl: (url) => {
 			},
 			invoke: (target, args) => target["reload"](...args)
 		},
-		"Image.reload": {
-			type: "Image",
+		"ImageResource.reload": {
+			type: "ImageResource",
 			parameters: [{
 				"name": "p",
 				"optional": true,
@@ -26825,7 +26825,7 @@ isDevOrStagingUrl: (url) => {
 			}],
 			result: {
 				"kind": "ref",
-				"name": "Image"
+				"name": "ImageResource"
 			},
 			invoke: (target, args) => target["reload"](...args)
 		},
@@ -27852,7 +27852,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "MobileEnvironment"
+						"name": "EnvironmentResource"
 					}
 				},
 				{
@@ -28326,10 +28326,10 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"expired",
 				"pending",
 				"accepted",
-				"revoked",
-				"expired"
+				"revoked"
 			],
 			"open": false,
 			"patterns": []
@@ -28557,7 +28557,7 @@ isDevOrStagingUrl: (url) => {
 			"name": "PermissionType",
 			"kind": "enum",
 			"properties": [],
-			"values": ["system", "user"],
+			"values": ["user", "system"],
 			"open": false,
 			"patterns": []
 		},
@@ -28605,10 +28605,10 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"enterprise_sso",
 				"manual_invitation",
 				"automatic_invitation",
-				"automatic_suggestion",
-				"enterprise_sso"
+				"automatic_suggestion"
 			],
 			"open": false,
 			"patterns": []
@@ -28768,9 +28768,9 @@ isDevOrStagingUrl: (url) => {
 			"properties": [],
 			"values": [
 				"expired",
+				"failed",
 				"unverified",
-				"verified",
-				"failed"
+				"verified"
 			],
 			"open": false,
 			"patterns": []
@@ -29552,10 +29552,10 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"saml_custom",
 				"saml_okta",
 				"saml_google",
 				"saml_microsoft",
+				"saml_custom",
 				"oidc_custom",
 				"oidc_github_enterprise",
 				"oidc_gitlab"
@@ -30426,8 +30426,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"expired",
 				"active",
+				"expired",
 				"disconnected"
 			],
 			"open": false,
@@ -30489,8 +30489,8 @@ isDevOrStagingUrl: (url) => {
 				"type": { "kind": "number" }
 			}]
 		},
-		"MobileEnvironment": {
-			"name": "MobileEnvironment",
+		"EnvironmentResource": {
+			"name": "EnvironmentResource",
 			"kind": "object",
 			"properties": [
 				{
@@ -30527,7 +30527,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "MobileUserSettings"
+						"name": "UserSettings"
 					}
 				}
 			]
@@ -31065,7 +31065,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "Color"
+						"name": "DisplayThemeColor"
 					}
 				},
 				{
@@ -31103,8 +31103,8 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"Color": {
-			"name": "Color",
+		"DisplayThemeColor": {
+			"name": "DisplayThemeColor",
 			"kind": "union",
 			"properties": [],
 			"variants": [
@@ -31213,12 +31213,12 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": {
 					"kind": "ref",
-					"name": "Color"
+					"name": "DisplayThemeColor"
 				}
 			}]
 		},
-		"MobileUserSettings": {
-			"name": "MobileUserSettings",
+		"UserSettings": {
+			"name": "UserSettings",
 			"kind": "object",
 			"properties": [
 				{
@@ -31245,31 +31245,31 @@ isDevOrStagingUrl: (url) => {
 						},
 						"keys": {
 							"values": [
+								"passkey",
 								"password",
+								"backup_code",
 								"email_address",
 								"phone_number",
 								"username",
 								"first_name",
 								"last_name",
 								"web3_wallet",
-								"authenticator_app",
-								"backup_code",
-								"passkey"
+								"authenticator_app"
 							],
 							"patterns": [],
 							"open": false
 						},
 						"requiredKeys": [
+							"passkey",
 							"password",
+							"backup_code",
 							"email_address",
 							"phone_number",
 							"username",
 							"first_name",
 							"last_name",
 							"web3_wallet",
-							"authenticator_app",
-							"backup_code",
-							"passkey"
+							"authenticator_app"
 						]
 					}
 				},
@@ -31358,7 +31358,7 @@ isDevOrStagingUrl: (url) => {
 						"kind": "array",
 						"element": {
 							"kind": "ref",
-							"name": "MobileUserSettingsWeb3FirstFactorsElement"
+							"name": "UserSettingsWeb3FirstFactorsElement"
 						}
 					}
 				},
@@ -31564,11 +31564,11 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"email_code",
-				"backup_code",
-				"email_link",
 				"phone_code",
-				"totp"
+				"email_code",
+				"email_link",
+				"totp",
+				"backup_code"
 			],
 			"open": false,
 			"patterns": []
@@ -31578,16 +31578,16 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"passkey",
 				"password",
+				"backup_code",
 				"email_address",
 				"phone_number",
 				"username",
 				"first_name",
 				"last_name",
 				"web3_wallet",
-				"authenticator_app",
-				"backup_code",
-				"passkey"
+				"authenticator_app"
 			],
 			"open": false,
 			"patterns": []
@@ -31801,16 +31801,16 @@ isDevOrStagingUrl: (url) => {
 				"type": { "kind": "boolean" }
 			}]
 		},
-		"MobileUserSettingsWeb3FirstFactorsElement": {
-			"name": "MobileUserSettingsWeb3FirstFactorsElement",
+		"UserSettingsWeb3FirstFactorsElement": {
+			"name": "UserSettingsWeb3FirstFactorsElement",
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"web3_solana_signature",
 				"web3_metamask_signature",
-				"web3_base_signature",
 				"web3_coinbase_wallet_signature",
 				"web3_okx_wallet_signature",
-				"web3_solana_signature"
+				"web3_base_signature"
 			],
 			"open": false,
 			"patterns": []
@@ -32001,12 +32001,12 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"pending",
-				"revoked",
-				"expired",
 				"active",
-				"abandoned",
 				"ended",
+				"expired",
+				"pending",
+				"abandoned",
+				"revoked",
 				"removed",
 				"replaced"
 			],
@@ -32747,9 +32747,9 @@ isDevOrStagingUrl: (url) => {
 			"properties": [],
 			"values": [
 				"expired",
+				"failed",
 				"unverified",
 				"verified",
-				"failed",
 				"transferable"
 			],
 			"open": false,
@@ -32812,7 +32812,7 @@ isDevOrStagingUrl: (url) => {
 			"name": "EmailAddressPrepareVerificationParamsCase2Strategy",
 			"kind": "enum",
 			"properties": [],
-			"values": ["enterprise_sso", "email_link"],
+			"values": ["email_link", "enterprise_sso"],
 			"open": false,
 			"patterns": []
 		},
@@ -32948,7 +32948,7 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": {
 					"kind": "ref",
-					"name": "MobileUserSettingsWeb3FirstFactorsElement"
+					"name": "UserSettingsWeb3FirstFactorsElement"
 				}
 			}]
 		},
@@ -32968,7 +32968,7 @@ isDevOrStagingUrl: (url) => {
 					"omittable": true,
 					"value": {
 						"kind": "ref",
-						"name": "MobileUserSettingsWeb3FirstFactorsElement"
+						"name": "UserSettingsWeb3FirstFactorsElement"
 					}
 				}
 			}]
@@ -33413,10 +33413,6 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"saml_custom",
-				"saml_okta",
-				"saml_google",
-				"saml_microsoft",
 				"oauth_facebook",
 				"oauth_google",
 				"oauth_hubspot",
@@ -33445,7 +33441,11 @@ isDevOrStagingUrl: (url) => {
 				"oauth_x",
 				"oauth_enstall",
 				"oauth_huggingface",
-				"oauth_vercel"
+				"oauth_vercel",
+				"saml_okta",
+				"saml_google",
+				"saml_microsoft",
+				"saml_custom"
 			],
 			"open": false,
 			"patterns": ["^oauth_custom_.*$"]
@@ -33936,8 +33936,8 @@ isDevOrStagingUrl: (url) => {
 				}
 			}]
 		},
-		"Image": {
-			"name": "Image",
+		"ImageResource": {
+			"name": "ImageResource",
 			"kind": "resource",
 			"properties": [
 				{
@@ -35301,6 +35301,14 @@ isDevOrStagingUrl: (url) => {
 			"kind": "object",
 			"properties": [
 				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "literal",
+						"value": "email_code"
+					}
+				},
+				{
 					"name": "primary",
 					"optional": true,
 					"type": {
@@ -35314,14 +35322,6 @@ isDevOrStagingUrl: (url) => {
 					"name": "emailAddressId",
 					"optional": false,
 					"type": { "kind": "string" }
-				},
-				{
-					"name": "strategy",
-					"optional": false,
-					"type": {
-						"kind": "literal",
-						"value": "email_code"
-					}
 				}
 			]
 		},
@@ -35330,13 +35330,11 @@ isDevOrStagingUrl: (url) => {
 			"kind": "object",
 			"properties": [
 				{
-					"name": "primary",
-					"optional": true,
+					"name": "strategy",
+					"optional": false,
 					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "boolean" }
+						"kind": "literal",
+						"value": "phone_code"
 					}
 				},
 				{
@@ -35345,11 +35343,13 @@ isDevOrStagingUrl: (url) => {
 					"type": { "kind": "string" }
 				},
 				{
-					"name": "strategy",
-					"optional": false,
+					"name": "primary",
+					"optional": true,
 					"type": {
-						"kind": "literal",
-						"value": "phone_code"
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
 					}
 				},
 				{
@@ -35382,6 +35382,14 @@ isDevOrStagingUrl: (url) => {
 			"kind": "object",
 			"properties": [
 				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "literal",
+						"value": "enterprise_sso"
+					}
+				},
+				{
 					"name": "emailAddressId",
 					"optional": true,
 					"type": {
@@ -35389,14 +35397,6 @@ isDevOrStagingUrl: (url) => {
 						"nullable": false,
 						"omittable": true,
 						"value": { "kind": "string" }
-					}
-				},
-				{
-					"name": "strategy",
-					"optional": false,
-					"type": {
-						"kind": "literal",
-						"value": "enterprise_sso"
 					}
 				},
 				{
@@ -35531,11 +35531,6 @@ isDevOrStagingUrl: (url) => {
 			"kind": "object",
 			"properties": [
 				{
-					"name": "id",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
 					"name": "authenticatorAttachment",
 					"optional": false,
 					"type": {
@@ -35549,6 +35544,11 @@ isDevOrStagingUrl: (url) => {
 					"name": "rawId",
 					"optional": false,
 					"type": { "kind": "binary" }
+				},
+				{
+					"name": "id",
+					"optional": false,
+					"type": { "kind": "string" }
 				},
 				{
 					"name": "type",
@@ -35853,7 +35853,15 @@ isDevOrStagingUrl: (url) => {
 				},
 				{
 					"kind": "ref",
+					"name": "EmailLinkFactor"
+				},
+				{
+					"kind": "ref",
 					"name": "PhoneCodeFactor"
+				},
+				{
+					"kind": "ref",
+					"name": "Web3SignatureFactor"
 				},
 				{
 					"kind": "ref",
@@ -35865,11 +35873,11 @@ isDevOrStagingUrl: (url) => {
 				},
 				{
 					"kind": "ref",
-					"name": "EnterpriseSSOFactor"
+					"name": "OauthFactor"
 				},
 				{
 					"kind": "ref",
-					"name": "EmailLinkFactor"
+					"name": "EnterpriseSSOFactor"
 				},
 				{
 					"kind": "ref",
@@ -35878,14 +35886,6 @@ isDevOrStagingUrl: (url) => {
 				{
 					"kind": "ref",
 					"name": "ResetPasswordEmailCodeFactor"
-				},
-				{
-					"kind": "ref",
-					"name": "Web3SignatureFactor"
-				},
-				{
-					"kind": "ref",
-					"name": "OauthFactor"
 				}
 			]
 		},
@@ -35922,6 +35922,57 @@ isDevOrStagingUrl: (url) => {
 					}
 				}
 			]
+		},
+		"Web3SignatureFactor": {
+			"name": "Web3SignatureFactor",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "UserSettingsWeb3FirstFactorsElement"
+					}
+				},
+				{
+					"name": "web3WalletId",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "primary",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
+				},
+				{
+					"name": "walletName",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"OauthFactor": {
+			"name": "OauthFactor",
+			"kind": "object",
+			"properties": [{
+				"name": "strategy",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "OAuthStrategy"
+				}
+			}]
 		},
 		"ResetPasswordPhoneCodeFactor": {
 			"name": "ResetPasswordPhoneCodeFactor",
@@ -35991,57 +36042,6 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"Web3SignatureFactor": {
-			"name": "Web3SignatureFactor",
-			"kind": "object",
-			"properties": [
-				{
-					"name": "strategy",
-					"optional": false,
-					"type": {
-						"kind": "ref",
-						"name": "MobileUserSettingsWeb3FirstFactorsElement"
-					}
-				},
-				{
-					"name": "web3WalletId",
-					"optional": false,
-					"type": { "kind": "string" }
-				},
-				{
-					"name": "primary",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "boolean" }
-					}
-				},
-				{
-					"name": "walletName",
-					"optional": true,
-					"type": {
-						"kind": "optional",
-						"nullable": false,
-						"omittable": true,
-						"value": { "kind": "string" }
-					}
-				}
-			]
-		},
-		"OauthFactor": {
-			"name": "OauthFactor",
-			"kind": "object",
-			"properties": [{
-				"name": "strategy",
-				"optional": false,
-				"type": {
-					"kind": "ref",
-					"name": "OAuthStrategy"
-				}
-			}]
-		},
 		"SignInSecondFactor": {
 			"name": "SignInSecondFactor",
 			"kind": "union",
@@ -36050,6 +36050,10 @@ isDevOrStagingUrl: (url) => {
 				{
 					"kind": "ref",
 					"name": "EmailCodeFactor"
+				},
+				{
+					"kind": "ref",
+					"name": "EmailLinkFactor"
 				},
 				{
 					"kind": "ref",
@@ -36062,10 +36066,6 @@ isDevOrStagingUrl: (url) => {
 				{
 					"kind": "ref",
 					"name": "BackupCodeFactor"
-				},
-				{
-					"kind": "ref",
-					"name": "EmailLinkFactor"
 				}
 			]
 		},
@@ -36074,13 +36074,13 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"needs_identifier",
 				"needs_first_factor",
 				"needs_second_factor",
-				"complete",
-				"needs_identifier",
 				"needs_client_trust",
 				"needs_new_password",
-				"needs_protect_check"
+				"needs_protect_check",
+				"complete"
 			],
 			"open": false,
 			"patterns": []
@@ -36282,6 +36282,8 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"passkey",
+				"ticket",
 				"enterprise_sso",
 				"oauth_facebook",
 				"oauth_google",
@@ -36311,9 +36313,7 @@ isDevOrStagingUrl: (url) => {
 				"oauth_x",
 				"oauth_enstall",
 				"oauth_huggingface",
-				"oauth_vercel",
-				"passkey",
-				"ticket"
+				"oauth_vercel"
 			],
 			"open": false,
 			"patterns": ["^oauth_custom_.*$"]
@@ -36618,8 +36618,8 @@ isDevOrStagingUrl: (url) => {
 			"properties": [],
 			"values": [
 				"expired",
-				"verified",
 				"failed",
+				"verified",
 				"client_mismatch"
 			],
 			"open": false,
@@ -37169,9 +37169,9 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
-				"abandoned",
 				"complete",
-				"missing_requirements"
+				"missing_requirements",
+				"abandoned"
 			],
 			"open": false,
 			"patterns": []
@@ -37181,6 +37181,7 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"password",
 				"enterprise_sso",
 				"oauth_facebook",
 				"oauth_google",
@@ -37211,15 +37212,14 @@ isDevOrStagingUrl: (url) => {
 				"oauth_enstall",
 				"oauth_huggingface",
 				"oauth_vercel",
-				"password",
 				"email_address",
 				"phone_number",
 				"username",
 				"first_name",
 				"last_name",
 				"web3_wallet",
-				"legal_accepted",
 				"email_address_or_phone_number",
+				"legal_accepted",
 				"protect_check"
 			],
 			"open": false,
@@ -37422,6 +37422,10 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"google_one_tap",
+				"oauth_token_apple",
+				"phone_code",
+				"ticket",
 				"enterprise_sso",
 				"oauth_facebook",
 				"oauth_google",
@@ -37451,11 +37455,7 @@ isDevOrStagingUrl: (url) => {
 				"oauth_x",
 				"oauth_enstall",
 				"oauth_huggingface",
-				"oauth_vercel",
-				"phone_code",
-				"ticket",
-				"google_one_tap",
-				"oauth_token_apple"
+				"oauth_vercel"
 			],
 			"open": false,
 			"patterns": ["^oauth_custom_.*$"]
@@ -38310,18 +38310,6 @@ isDevOrStagingUrl: (url) => {
 			"name": "MobileSetActiveParams",
 			"kind": "object",
 			"properties": [{
-				"name": "session",
-				"optional": true,
-				"type": {
-					"kind": "optional",
-					"nullable": true,
-					"omittable": true,
-					"value": {
-						"kind": "ref",
-						"name": "MobileSetActiveParamsSession"
-					}
-				}
-			}, {
 				"name": "organization",
 				"optional": true,
 				"type": {
@@ -38333,6 +38321,27 @@ isDevOrStagingUrl: (url) => {
 						"name": "MobileSetActiveParamsOrganization"
 					}
 				}
+			}, {
+				"name": "session",
+				"optional": true,
+				"type": {
+					"kind": "optional",
+					"nullable": true,
+					"omittable": true,
+					"value": {
+						"kind": "ref",
+						"name": "MobileSetActiveParamsSession"
+					}
+				}
+			}]
+		},
+		"MobileSetActiveParamsOrganization": {
+			"name": "MobileSetActiveParamsOrganization",
+			"kind": "union",
+			"properties": [],
+			"variants": [{ "kind": "string" }, {
+				"kind": "ref",
+				"name": "Organization"
 			}]
 		},
 		"MobileSetActiveParamsSession": {
@@ -38610,15 +38619,6 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"MobileSetActiveParamsOrganization": {
-			"name": "MobileSetActiveParamsOrganization",
-			"kind": "union",
-			"properties": [],
-			"variants": [{ "kind": "string" }, {
-				"kind": "ref",
-				"name": "Organization"
-			}]
-		},
 		"MobileSignOutOptions": {
 			"name": "MobileSignOutOptions",
 			"kind": "object",
@@ -38663,7 +38663,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "6d856909ecaad00b05898db345582a87a00387fd1215513831ecd7fe9a9968ae",
+		"contractHash": "a720a6456db3de69194e9f7cc5fce3b619074d43ca0cf4a02ede68e3f9c70db4",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
