@@ -36,5 +36,7 @@ Validation on 2026-09-09: the complete macOS native contract target passes 24 te
 declarations across eight suites, including the copied presentation assertions;
 the selected iOS UI privacy test passes; the shared query-string suite passes 17
 tests; and the mobile email-link suite passes 11 tests. These are separate test
-runs and are not a legacy coverage percentage. Old utility files remain retained
-while the broader target migration is reviewed.
+runs and are not a legacy coverage percentage. `StringExtensionsTests`,
+`PKCETests`, `PrivacyManifestTests`, and `VersionTests` are retired after the
+passing replacement checks. Other utility files remain retained while their
+dispositions and the broader target migration are reviewed.
