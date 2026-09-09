@@ -1,6 +1,18 @@
 import fs from "node:fs/promises";
+import { Buffer } from "node:buffer";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+
+const now = 1700000000000;
+const NativeDate = Date;
+globalThis.Date = class extends NativeDate {
+  constructor(...args) {
+    super(...(args.length ? args : [now]));
+  }
+  static now() {
+    return now;
+  }
+};
 
 const javascript = path.resolve(process.argv[2] ?? "../javascript");
 const { fixture, response } = await import(
@@ -17,8 +29,12 @@ const directory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../Sources/ClerkKitUI/Resources/Preview",
 );
-await fs.mkdir(directory, { recursive: true });
-const now = 1700000000000;
+const directories = [directory];
+if (process.argv[3])
+  directories.push(
+    path.resolve(process.argv[3], "source/ui/src/main/assets/clerk-preview"),
+  );
+for (const output of directories) await fs.mkdir(output, { recursive: true });
 const verified = (strategy) => ({
   status: "verified",
   strategy,
@@ -264,6 +280,8 @@ for (const variant of [
           },
         ];
   const f = await fixture({
+    randomBytes: (length) => Buffer.alloc(length),
+    now,
     client,
     http(request) {
       const url = new URL(request.url);
@@ -299,9 +317,25 @@ for (const variant of [
           total_count: 1,
         });
       if (url.pathname.endsWith("/organization_suggestions"))
-        return response({ data: [{ object: "organization_suggestion", id: "sug_preview", status: "pending",
-          public_organization_data: { id: "org_suggested", has_image: false, image_url: "", name: "Suggested Labs", slug: "suggested" },
-          created_at: now, updated_at: now }], total_count: 1 });
+        return response({
+          data: [
+            {
+              object: "organization_suggestion",
+              id: "sug_preview",
+              status: "pending",
+              public_organization_data: {
+                id: "org_suggested",
+                has_image: false,
+                image_url: "",
+                name: "Suggested Labs",
+                slug: "suggested",
+              },
+              created_at: now,
+              updated_at: now,
+            },
+          ],
+          total_count: 1,
+        });
       if (
         url.pathname.endsWith("/invitations") ||
         url.pathname.endsWith("/membership_requests") ||
@@ -344,10 +378,12 @@ for (const variant of [
       ]);
     }
     const record = { manifest: f.ready.manifest, state: f.state, results };
-    await fs.writeFile(
-      path.join(directory, `${variant}.json`),
-      JSON.stringify(record) + "\n",
-    );
+    for (const output of directories) {
+      await fs.writeFile(
+        path.join(output, `${variant}.json`),
+        JSON.stringify(record) + "\n",
+      );
+    }
   } finally {
     f.dispose();
   }
