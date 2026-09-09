@@ -6,3 +6,5 @@
 --disable preferKeyPath
 --disable hoistPatternLet
 --ifdef preserve
+
+--exclude NativeCore/GeneratedAPI.swift,NativeCore/BundledCore.swift

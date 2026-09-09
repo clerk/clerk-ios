@@ -8,48 +8,6 @@ public protocol CredentialStorage: Sendable {
   func remove() async throws
 }
 
-public actor KeychainCredentialStorage: CredentialStorage {
-  private let service: String
-  public init(publishableKey: String, applicationIdentifier: String = Bundle.main.bundleIdentifier ?? "Clerk") {
-    let hash = SHA256.hash(data: Data(publishableKey.utf8)).map { String(format: "%02x", $0) }.joined()
-    service = "\(applicationIdentifier).clerk.core.v1.\(hash)"
-  }
-
-  private var query: [String: Any] {
-    [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: "client"]
-  }
-
-  public func read() throws -> String? {
-    try Task.checkCancellation()
-    var request = query
-    request[kSecReturnData as String] = true
-    request[kSecMatchLimit as String] = kSecMatchLimitOne
-    var result: CFTypeRef?
-    let status = SecItemCopyMatching(request as CFDictionary, &result)
-    if status == errSecItemNotFound { return nil }
-    guard status == errSecSuccess, let data = result as? Data, let value = String(data: data, encoding: .utf8) else { throw CoreError(code: "secure_storage_read_failed") }
-    return value
-  }
-
-  public func write(_ value: String) throws {
-    try Task.checkCancellation()
-    var request = query
-    request[kSecValueData as String] = Data(value.utf8)
-    request[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-    let status = SecItemAdd(request as CFDictionary, nil)
-    if status == errSecDuplicateItem {
-      let update: [String: Any] = [kSecValueData as String: Data(value.utf8)]
-      guard SecItemUpdate(query as CFDictionary, update as CFDictionary) == errSecSuccess else { throw CoreError(code: "secure_storage_write_failed") }
-    } else if status != errSecSuccess { throw CoreError(code: "secure_storage_write_failed") }
-  }
-
-  public func remove() throws {
-    try Task.checkCancellation()
-    let status = SecItemDelete(query as CFDictionary)
-    guard status == errSecSuccess || status == errSecItemNotFound else { throw CoreError(code: "secure_storage_remove_failed") }
-  }
-}
-
 private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Sendable {
   let origin: URL
   init(origin: URL) {

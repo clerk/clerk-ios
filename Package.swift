@@ -26,10 +26,19 @@ let package = Package(
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.4"),
   ],
   targets: [
+    .executableTarget(
+      name: "NativeCoreProof",
+      dependencies: ["ClerkKit"],
+      path: "NativeCoreTests",
+      exclude: ["EngineProof.swift"],
+      sources: ["PackageProof.swift", "FixtureCapabilities.swift", "CredentialUpgradeProof.swift"],
+      resources: [.copy("Fixtures")]
+    ),
     .target(
       name: "ClerkKit",
       dependencies: [],
-      path: "Sources/ClerkKit",
+      path: "NativeCore",
+      exclude: ["public-api.txt"],
       resources: [
         .process("Resources"),
       ],

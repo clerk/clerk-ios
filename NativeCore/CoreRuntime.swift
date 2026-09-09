@@ -101,6 +101,8 @@ public struct ResourceHandle: Hashable, Sendable {
   public private(set) var epoch: Int = 0
   public private(set) var roots: [String: ResourceHandle] = [:]
   public private(set) var isAvailable = true
+  public private(set) var lastLifecycleError: CoreError?
+  @ObservationIgnored private var teardown: [@MainActor () -> Void] = []
   @ObservationIgnored private let transport: any CoreTransport
   @ObservationIgnored private var resources: [ResourceHandle: WeakResource] = [:]
   @ObservationIgnored private var states: [ResourceHandle: JSONValue] = [:]
@@ -201,6 +203,7 @@ public struct ResourceHandle: Hashable, Sendable {
         let id = try (m["id"] ?? .undefined).string()
         if let failure = m["failure"] { try pending.removeValue(forKey: id)?.resume(throwing: CoreError.decode(failure)) }
         else { pending.removeValue(forKey: id)?.resume(returning: m["result"] ?? .undefined) }
+      } else if kind == "lifecycleError" { lastLifecycleError = try m["failure"].map(CoreError.decode)
       } else if kind == "runtimeError" || kind == "unavailable" || kind == "initializationFailed" { throw try m["failure"].map(CoreError.decode) ?? CoreError(code: "runtime_unavailable") }
     } catch { fail(error) }
   }
@@ -276,8 +279,23 @@ public struct ResourceHandle: Hashable, Sendable {
     revision += 1
   }
 
-  isolated deinit { transport.close() }
+  public func setApplicationActive(_ active: Bool) {
+    guard isAvailable else { return }
+    do { try transport.send(.object(["kind": .string("lifecycle"), "state": .string(active ? "foreground" : "background")])) }
+    catch { fail(error) }
+  }
+
+  func addTeardown(_ action: @escaping @MainActor () -> Void) {
+    teardown.append(action)
+  }
+
+  isolated deinit { for action in teardown {
+    action()
+  }; transport.close() }
   public func close() {
+    for action in teardown {
+      action()
+    }; teardown.removeAll()
     try? transport.send(.object(["kind": .string("dispose")]))
     transport.close()
     fail(CoreError(code: "runtime_disposed"))
