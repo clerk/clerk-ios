@@ -21,4 +21,4 @@ The four configuration test declarations pass against the generated-core package
 Additional malformed-key cases include a prefixless encoded host, a decoded
 single character, and a host ending in `x` instead of `$`, matching intentionally
 tightened behavior identified while reviewing the Android helper tests. Old
-configuration test files are retired after this assertion review and passing current configuration checks. Separate global reconfiguration, storage, startup and identity test files remain pending their own outcome audits.
+configuration test files are retired after this assertion review and passing current configuration checks. The separate [owner replacement audit](reconfiguration-test-audit.md) records the removed global reconfiguration contract. Storage, startup and identity outcomes have separate audits and release gates.

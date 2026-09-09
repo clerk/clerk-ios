@@ -16,6 +16,9 @@ separates retained presentation/serialization/PKCE/packaging assertions from
 removed helper APIs and unresolved callback/state behavior.
 The [configuration assertion audit](configuration-test-audit.md) records exact
 key-validation replacements and intentionally removed configuration options.
+The [owner replacement audit](reconfiguration-test-audit.md) reviews all 24 old
+global reconfiguration tests and records the new close/reconnect contract,
+including the Swift late-callback regression and retained release limitations.
 The [Keychain assertion audit](keychain-test-audit.md) records actual persisted
 formats, backend precedence, durable clears and unresolved shared-session gates.
 The [HTTP assertion audit](http-test-audit.md) separates URLSession execution checks

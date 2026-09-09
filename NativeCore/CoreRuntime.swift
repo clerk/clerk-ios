@@ -214,6 +214,7 @@ extension CoreResource {
   }
 
   public func receive(_ message: JSONValue) {
+    guard isAvailable else { return }
     do {
       let m = try message.object()
       let kind = try (m["kind"] ?? .undefined).string()

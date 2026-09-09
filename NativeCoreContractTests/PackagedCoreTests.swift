@@ -263,6 +263,47 @@ import Testing
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }
+
+  @Test func replacingAnOwnerInvalidatesOldResourcesAndPreservesItsCredential() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    capabilities.credential = "existing-device-credential"
+    capabilities.clientResponse = capabilities.fixtures["authenticatedClient"]
+    let original = try await connect(capabilities)
+    defer { original.close() }
+    let oldSession = try #require(original.session)
+    let callback = try #require(URL(string: "clerk-test://sso-callback"))
+    do {
+      _ = try ClerkConfiguration(publishableKey: "invalid", callbackURL: callback)
+      Issue.record("Expected invalid replacement configuration to fail")
+    } catch let error as CoreError {
+      #expect(error.code == "invalid_publishable_key")
+    }
+    #expect(original.session === oldSession)
+    #expect(!oldSession.isInvalidated)
+    let credential = capabilities.credential
+    #expect(credential != nil)
+    original.close()
+    #expect(oldSession.isInvalidated)
+    #expect(capabilities.credential == credential)
+
+    let replacement = try await connect(capabilities)
+    defer { replacement.close() }
+    let newSession = try #require(replacement.session)
+    #expect(newSession.id == oldSession.id)
+    #expect(newSession !== oldSession)
+    let requestCount = capabilities.requests.count
+    do {
+      _ = try await oldSession.getToken()
+      Issue.record("Expected the old session to reject work after close")
+    } catch let error as CoreError {
+      #expect(error.code == "stale_resource")
+    }
+    #expect(capabilities.requests.count == requestCount)
+    #expect(replacement.session === newSession)
+    #expect(!newSession.isInvalidated)
+    let token = try await newSession.getToken()
+    #expect(token != nil)
+  }
 }
 
 @MainActor private final class LifecycleFailureCapabilities: NativeCapabilities {
