@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          version_file="Sources/ClerkKit/Utils/Version.swift"
+          version_file="NativeCore/Version.swift"
 
           if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
             echo "❌ Invalid version: '$RELEASE_VERSION'. Expected SemVer (for example 1.2.3 or 1.2.3-rc.1)."
@@ -291,7 +291,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          version_file="Sources/ClerkKit/Utils/Version.swift"
+          version_file="NativeCore/Version.swift"
           if ! grep -q "sdkVersion: String = \"$RELEASE_VERSION\"" "$version_file"; then
             echo "❌ Failed to apply SDK version update in $version_file"
             exit 1

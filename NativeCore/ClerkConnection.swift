@@ -20,10 +20,6 @@ public struct ClerkConfiguration: Sendable {
 }
 
 extension Clerk {
-  public static var sdkVersion: String {
-    "2.0.0-alpha.0"
-  }
-
   @MainActor public static func connect(configuration: ClerkConfiguration, storage: (any CredentialStorage)? = nil, browser: AppleCapabilities.Presentation? = nil, passkeys: AppleCapabilities.Presentation? = nil, appleIdentity: AppleCapabilities.Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil) async throws -> Clerk {
     let storage = storage ?? KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain)
     let authStorage = authStorage ?? KeychainCredentialStorage(publishableKey: configuration.publishableKey, frontendAPI: configuration.frontendAPI, legacy: configuration.legacyKeychain, purpose: .magicLink)

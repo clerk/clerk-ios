@@ -29,7 +29,7 @@ expect_equal() {
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version_file="$repo_root/Sources/ClerkKit/Utils/Version.swift"
+version_file="$repo_root/NativeCore/Version.swift"
 package_file="$repo_root/Package.swift"
 readme_file="$repo_root/README.md"
 contributing_file="$repo_root/CONTRIBUTING.md"
