@@ -35,9 +35,6 @@ struct E2EHostView: View {
     .onChange(of: clerk.session?.currentTask?.key, initial: true) { _, key in
       if key != nil { authViewIsPresented = true }
     }
-    .onOpenURL { url in
-      Task { _ = try? await clerk.handleAuthCallback(url) }
-    }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView(mode: configuration.authMode)
         .persistsIdentifiers(false)

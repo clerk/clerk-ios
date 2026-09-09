@@ -33,7 +33,7 @@ struct E2EConfiguration {
   }
 
   @MainActor
-  func connect() async throws -> Clerk {
+  func connect(authentication: AppleAuthentication) async throws -> Clerk {
     let configuration = try ClerkConfiguration(
       publishableKey: publishableKey,
       callbackURL: URL(string: "com.clerk.E2EHost://oauth/callback")!,
@@ -47,7 +47,9 @@ struct E2EConfiguration {
       )
     }
     return try await Clerk.connect(
-      configuration: configuration, storage: storage(.client), authStorage: storage(.magicLink),
+      configuration: configuration, storage: storage(.client),
+      browser: authentication.openBrowser, passkeys: authentication.credential,
+      appleIdentity: authentication.appleIdentity, authStorage: storage(.magicLink),
       biometrics: AppleBiometricCapabilities(
         publishableKey: publishableKey, appIdentifier: namespace,
         credentials: storage(.biometricCredentials), cleanup: storage(.biometricCleanup)
