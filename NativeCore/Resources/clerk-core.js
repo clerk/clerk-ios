@@ -10779,6 +10779,7 @@ isDevOrStagingUrl: (url) => {
 		const store = createTokenStore();
 		const keyResolver = createKeyResolver(prefix);
 		const tabId = generateTabId();
+		let generation = 0;
 		let broadcastChannel = null;
 		const ensureBroadcastChannel = () => {
 			if (broadcastChannel) return broadcastChannel;
@@ -10791,6 +10792,7 @@ isDevOrStagingUrl: (url) => {
 		};
 		ensureBroadcastChannel();
 		const clear = () => {
+			generation++;
 			store.forEach((value) => {
 				if (value.timeoutId !== void 0) clearTimeout(value.timeoutId);
 				if (value.refreshTimeoutId !== void 0) clearTimeout(value.refreshTimeoutId);
@@ -10900,6 +10902,7 @@ isDevOrStagingUrl: (url) => {
 		* @param options - Configuration for cache behavior; broadcast controls whether to notify other tabs
 		*/
 		const setInternal = (entry, options = BROADCAST) => {
+			const entryGeneration = generation;
 			const key = keyResolver.toKey({
 				audience: entry.audience,
 				tokenId: entry.tokenId
@@ -10923,6 +10926,7 @@ isDevOrStagingUrl: (url) => {
 			};
 			store.set(key, value);
 			entry.tokenResolver.then((newToken) => {
+				if (entryGeneration !== generation) return;
 				const live = store.get(key);
 				if (!live) return;
 				const claims = newToken.jwt?.claims;

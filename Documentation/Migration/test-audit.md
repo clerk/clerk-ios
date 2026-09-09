@@ -60,6 +60,8 @@ Valid test/live keys, whitespace, malformed keys, invalid callback routes, and s
 
 ## Core lifecycle and token policy
 
+The [token cache and freshness assertion audit](token-cache-test-audit.md) reviews 38 declarations, records the reproduced cache-clear race, and preserves specific unresolved token and upgrade checks. It corrects the earlier fetcher inventory count and leaves both legacy files retained.
+
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/protocol.test.mjs; clerk-js SessionTokenCache/Session tests; native lifecycle adapters.
 
 Background/foreground notifications delegate reload and token policy to TypeScript. Do not migrate native polling or token-cache algorithms. Process death, native cancellation and all foreground failure paths still require platform evidence.
