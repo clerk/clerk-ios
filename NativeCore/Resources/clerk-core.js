@@ -15099,7 +15099,8 @@ isDevOrStagingUrl: (url) => {
 				if (!this.#resource.id || wouldReplayStaleRedirect) await this._create({
 					strategy,
 					...routes,
-					identifier
+					identifier,
+					oidcPrompt
 				});
 				if (strategy === "enterprise_sso") await this.#resource.__internal_basePost({
 					body: {

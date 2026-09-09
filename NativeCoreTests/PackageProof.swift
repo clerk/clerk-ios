@@ -73,9 +73,11 @@ import Foundation
     precondition(capabilities.appleIdentityCount == 3 && capabilities.browserCount == 0)
     try await clerk.signIn.reset()
     try await clerk.signUp.reset()
-    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle, oidcPrompt: "consent"))
+    precondition(capabilities.requests.contains { (try? $0["body"]?.string().contains("oidc_prompt=consent")) == true })
     precondition(clerk.signIn.status.rawValue == "complete" && clerk.session == nil)
-    try await clerk.signUp.sso(.init(strategy: "oauth_google"))
+    try await clerk.signUp.sso(.init(strategy: "oauth_google", oidcPrompt: "login"))
+    precondition(capabilities.requests.contains { (try? $0["body"]?.string().contains("oidc_prompt=login")) == true })
     precondition(clerk.signUp.status.rawValue == "complete" && clerk.session == nil)
     let oldGroup = clerk.signIn.emailCode
     let beforeReset = capabilities.requests.count
