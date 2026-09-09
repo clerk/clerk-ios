@@ -1,0 +1,36 @@
+# Sign-in and sign-up service assertion audit
+
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This review covers all 26 tests in `SignInServiceTests.swift` and all 16 in `SignUpServiceTests.swift`. Their mock request handlers check endpoints, HTTP methods, form fields, and that a request happened. The two basic creation tests also inspect a private startup-takeover marker. These files do not validate live credentials, system presentation, or client response ordering.
+
+## Owner and verification
+
+Request construction is the existing TypeScript resource implementation, invoked through generated future-style methods. The native adapters execute HTTP. The current `SignIn.test.ts` and `SignUp.test.ts` suites pass 181 tests, including future creation, factors, ticket/transfer, locale precedence, and continuation. All 125 embedded runtime tests pass, including passkeys, Apple/Google identity, SSO, email-link PKCE, MFA factor selection, transfer, cancellation and reset. Seven additional generated-protocol tests in `auth-request-continuity.test.mjs` pass for metadata/profile/consent serialization and both password-reset groups.
+
+The service review exposed the missing native request locale, now fixed and tested on both actual packaged VMs; see [locale continuity](locale.md). The new metadata tests check both create and update, preserve caller-owned nested keys/nulls/arrays, reject bracket-encoded metadata, and check explicit false consent. Both reset groups test default/true/false session revocation, completion state, and no implicit session adoption.
+
+## Exact assertion dispositions
+
+| Previous tests/assertions | Current contract and evidence |
+| --- | --- |
+| Sign-in create identifier, empty parameters, and locale | `signIn.create` uses the generated arguments and TypeScript resource. The packaged iOS/Android locale tests check the actual body; source tests cover empty and identifier creation. |
+| Sign-up standard email/password, empty parameters, and locale | `signUp.create` uses the same source-owned request construction. Source and packaged locale tests cover the body and explicit locale precedence. |
+| Both create OAuth and enterprise SSO: provider, identifier/email, redirect | `signIn.sso` / `signUp.sso` and shared transfer-aware SSO use the configured host callback. `sso.test.mjs` and `mobile-sso.test.mjs` execute real future resources, callback reconciliation, transfer/remaining requirements and cancellation. Per-call native service construction is removed. |
+| Both create Apple token; sign-in attempt Apple token | The source accepts the token-based strategy. `apple-identity.test.mjs` checks provider request, token strategy/body and cancellation before HTTP. Raw token creation remains generated; no native token-to-session policy is retained. |
+| Sign-in passkey create, prepare and attempt | `passkey.test.mjs` covers discoverable/autofill and second-factor flows, native credential serialization, exact stage failures and remaining requirements. Old manual public-key string injection is a removed private service API. |
+| Sign-in biometric create and attempt: trusted-device ID, signed client data, signature, ES256 | `biometrics.test.mjs` exercises the shared credential orchestration and source-owned request bodies, including the platform signature, challenge validation, cancellation, expiry and cleanup. The native adapter signs; it does not prepare/attempt the Clerk factor. |
+| Both create ticket and transfer | Source future-resource tests cover ticket/transfer. `mobile-sso.test.mjs` and `mobile-identifier-google.test.mjs` check generated transfer paths and metadata carriage. Browser query fallback is not assumed in embedded VMs; applications supply the ticket. |
+| Sign-in password attempt | The source `signIn.password` and source resource tests own the strategy/body. Generated grouping/union rules preserve supported identifier options. |
+| Sign-in first-factor email/phone prepare and attempt | Generated `emailCode` / `phoneCode` groups delegate to the source methods. Protocol invalid-code/MFA-required checks and the source suites exercise verification outcomes. `selected-code-factors.test.mjs` additionally covers explicit/default/unknown factor selection. |
+| Sign-in email-link prepare: email ID, callback, challenge and S256 | `magic-link.test.mjs` verifies the actual SHA-256 of the persisted 43-character verifier, configured callback, completion, restart, expiration and reset races. See the [callback audit](callback-test-audit.md). |
+| Sign-in second-factor phone prepare/attempt, TOTP, backup code | The source MFA group owns strategies and verification. Source tests and selected-factor/protocol tests preserve remaining requirements and errors. Native UI selects a method; it does not infer verification success. |
+| Sign-in reset password and sign-out-other-sessions true | Both generated reset groups now execute the protocol with default, true and false choices. The response updates the sign-in to complete without adopting a session. |
+| Sign-up metadata create/update | Additional generated-protocol tests assert a single JSON-valued `unsafe_metadata` form field, preserving nested keys and values, and no bracket-encoded metadata. |
+| Sign-up update name and legal acceptance | The same tests assert first/last-name fields and both true/false consent. The TypeScript transport uses POST with `_method=PATCH`, which is the existing Clerk JS contract; the old native wire-level PATCH assertion is intentionally not retained. |
+| Sign-up email/phone prepare and attempt | Generated `verifications` methods delegate to the existing source; source tests, protocol tests and packaged-core vertical proofs cover verification/error behavior. |
+| Both GET and GET with rotating-token nonce | Generated resource reload and shared SSO reconciliation use the existing core. `sso.test.mjs` checks query nonce/no-nonce behavior, including empty nonce and preserved fragments; packaged SSO tests execute the same path on both engines. |
+| Every request-handled flag and old POST/GET/path assertion | Current tests inspect actual source requests and generated outcomes. Boolean forms use the existing JS `true`/`false` encoding, replacing the old native `1`/`0` encoder. No native request-construction service remains. |
+| Private `clerkStartupClientRefreshTakeoverID` on basic sign-in/sign-up create | The old partial global startup API and request marker are removed. `Clerk.connect` awaits core initialization before returning its owner and closes the runtime on failure. This is an explicit API change, not evidence that all late response races are solved. Keep the separate core response/identity/startup suites pending their outcome audit. |
+
+## Limits
+
+These assertions justify retiring these two request-construction service suites with their deleted implementations. They do not justify removing the separate `AuthTests`, `SignInTests`, `SignUpTests`, client response ordering/identity, token freshness, or shared-session suites. Real signed-in upgrades, live provider authentication and native UI journeys remain independent release gates.

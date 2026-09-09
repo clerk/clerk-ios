@@ -24,6 +24,9 @@ The [lifecycle assertion audit](lifecycle-test-audit.md) maps the three old life
 files to packaged-core notification/recovery checks or retired private polling policy.
 The [callback assertion audit](callback-test-audit.md) records restored email-link
 route forms, nonce semantics and the remaining tokenless startup assertion.
+The [authentication service assertion audit](auth-service-test-audit.md) maps all
+42 old sign-in/sign-up service tests to their TypeScript owner, restored locale
+behavior, request continuity tests, or explicitly removed private startup markers.
 
 ## Configuration validation
 
