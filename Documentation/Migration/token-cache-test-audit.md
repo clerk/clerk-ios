@@ -26,7 +26,7 @@ The source cache ignored a settled request if its key was absent, but accepted i
 | `hydrationDoesNotReplaceCanonicalTokenOnTimestampTie`, `hydrationAcceptsStrictlyFresherSessionSnapshot`, `hydrationPreservesFresherExpiredTokenForNextMint` | Source session hydration and last-active-token freshness are authoritative. Source tests cover fresher/staler touch responses and future mint inputs. The old hydration-only tie rule and exact expired native-cache fallback are not claimed as equivalent. |
 | `sessionMinterUsesLatestSessionTokenAndForcesOrigin`, `sessionMinterOmitsPreviousTokenOnFirstMint`, `disabledSessionMinterDoesNotPassTokenOrForceOrigin` | Source session tests verify the minter flag, previous-token body, forced-origin option, and first mint. No second native minter policy is added. |
 | `concurrentForcedRefreshesCannotRollBackCanonicalToken` | Source session tests cover both resolution orders, each caller's own token, the freshest cached result, last-active token, and the next mint's input. The new invalidation fence preserves ranking within the same cache lifetime. |
-| `resetCancelsConcurrentForcedRefreshes`, `cancellingCallerCancelsForcedRefresh` | The private native fetcher reset disappears. Runtime cancellation and owner teardown are covered separately, but cancellation of coalesced token requests, background refresh, and subsequent recovery remain specific checks to complete. |
+| `resetCancelsConcurrentForcedRefreshes`, `cancellingCallerCancelsForcedRefresh` | The private native fetcher reset disappears. Runtime cancellation stops an individual native waiter; it does not promise to abort the shared source request. The coalesced-caller checks below verify cancellation errors, surviving callers, and subsequent recovery. They do not restore the old private forced-task registry or reset contract. |
 
 ## Freshness assertions
 
@@ -43,7 +43,7 @@ The source cache ignored a settled request if its key was absent, but accepted i
 
 The fix passes all 229 embedded-core tests and 195 focused source tests across `Session`, `tokenCache`, and `tokenFreshness`. The full native contract suite passes 69 tests on macOS and 66 on iOS Simulator; both Android invalidation tests pass. The packaged core is pinned to `35639cd01a43caced4eb948891e404bff43271dd`, SHA-256 `0282374e1419ee72a7e8718fa7bd2936442e00f92dbecf125262f13b55462549`; generated public signatures are unchanged.
 
-This audit does not establish cancellation behavior for multiple callers sharing one token request, all old snapshot-hydration semantics, live service behavior, or signed-in old-major upgrades. The legacy files remain available for those follow-up checks. Native token/session policy remains in TypeScript throughout.
+This audit does not establish all old snapshot-hydration semantics, live service behavior, or signed-in old-major upgrades. The legacy files remain available for those follow-up checks. Native token/session policy remains in TypeScript throughout.
 
 ## Proactive refresh follow-up
 
@@ -52,3 +52,11 @@ The initial fix fenced requests already registered with the cache. Proactive ref
 The source tests exercise both cache outcomes and overlap between two cache lifetimes, including a later timer coalescing with the current refresh. Native `clearCacheRejectsAProactiveRefresh` checks both empty and repopulated caches. It explicitly foregrounds the fixture runtime, advances one host refresh timer, and lets the suspended response settle before reading the token through the generated API. Both cases failed on the prior packaged core; these are controlled host fixtures, not real OS suspension evidence. Token checks share the lifecycle tests' serialized `PackagedCoreTests` suite because those tests post process-wide active/inactive notifications.
 
 The shared follow-up passes all 231 embedded-core tests and 198 focused token/session source tests. Full native contract suites pass 70 tests on macOS and 67 on iOS Simulator. Android passes four token invalidation tests and 11 packaged-core tests in separate runs. Its packaged revision is `750f50cf8b67f6251c3b5a4776d87cc90be680a8`, SHA-256 `fc41a7eee1663d8cc2016d3f1cc52fcca92fc58f68c1e5416a5a441406c05e59`. Public generated signatures remain unchanged.
+
+## Coalesced caller cancellation
+
+Five generated embedded checks now cover canceling the first caller, the second, or both while a template-token request is pending, plus a shared 403 response with either caller canceled. Cancellation immediately completes only that waiter with `caller_cancelled`; the surviving waiter receives its token or structured `token_denied` response. Even when both callers cancel, the completed source request can populate the cache for the next call. A failed shared request permits a new request, and canceled calls never receive a second completion.
+
+`NativeCoreContractTests/TokenCancellationTests.swift` runs the same five scenarios through generated Swift methods in the serialized packaged-core suite. Canceled Swift tasks throw `CancellationError`; Kotlin checks the corresponding `CancellationException`. These outcomes already worked and required no runtime change. The core remains pinned to the proactive-refresh revision above. All 236 embedded tests, 72 macOS contract tests, 69 iOS Simulator contract tests, and five focused Android cancellation tests pass.
+
+This deliberately replaces the old private fetcher's task-abort expectation with the documented native-waiter policy. Cache invalidation, authentication reset, owner teardown, and cancellation of a waiter are separate operations; no authentication rollback is inferred from cancellation.
