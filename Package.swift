@@ -31,7 +31,7 @@ let package = Package(
       dependencies: ["ClerkKit"],
       path: "NativeCoreTests",
       exclude: ["EngineProof.swift"],
-      sources: ["PackageProof.swift", "FixtureCapabilities.swift", "CredentialUpgradeProof.swift"],
+      sources: ["PackageProof.swift", "FixtureCapabilities.swift", "CredentialUpgradeProof.swift", "PreviewFixtureProof.swift"],
       resources: [.copy("Fixtures")]
     ),
     .target(

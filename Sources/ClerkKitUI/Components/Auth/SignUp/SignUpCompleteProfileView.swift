@@ -252,17 +252,7 @@ extension SignUpCompleteProfileView {
 #Preview {
   SignUpCompleteProfileView()
     .clerkPreview()
-    .environment(Clerk.preview { preview in
-      var client = Client.mock
-      var signUp = SignUp.mock
-      signUp.missingFields.append(contentsOf: [
-        .firstName,
-        .lastName,
-        .legalAccepted,
-      ])
-      client.signUp = signUp
-      preview.client = client
-    })
+    .environment(Clerk.preview(.completeProfile))
     .environment(\.clerkTheme, .clerk)
 }
 

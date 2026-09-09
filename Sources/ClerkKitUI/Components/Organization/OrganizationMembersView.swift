@@ -206,31 +206,7 @@ private enum OrganizationMembersTab: Hashable, Identifiable {
 #Preview("Organization Members") {
   NavigationStack {
     OrganizationMembersView()
-      .environment(Clerk.preview { preview in
-        let organization = Organization.mock
-        var membership = OrganizationMembership.mockWithUserData
-        membership.organization = organization
-        membership.permissions = [
-          OrganizationSystemPermission.readMemberships.rawValue,
-          OrganizationSystemPermission.manageMemberships.rawValue,
-        ]
-
-        var user = User.mock
-        user.organizationMemberships = [membership]
-
-        var session = Session.mock
-        session.lastActiveOrganizationId = organization.id
-        session.user = user
-
-        var client = Client.mock
-        client.sessions = [session]
-        client.lastActiveSessionId = session.id
-
-        preview.client = client
-        var environment = EnvironmentResource.mock
-        environment.organizationSettings.domains.enabled = true
-        preview.environment = environment
-      })
+      .environment(Clerk.preview(.members))
   }
 }
 

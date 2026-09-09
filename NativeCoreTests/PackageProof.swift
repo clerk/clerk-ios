@@ -6,6 +6,9 @@ import Foundation
     if CommandLine.arguments.count == 4, CommandLine.arguments[1] == "--credential-upgrade" {
       try await CredentialUpgradeProof.run(mode: CommandLine.arguments[2], fixture: CommandLine.arguments[3]); return
     }
+    if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--preview-fixtures" {
+      try PreviewFixtureProof.run(directory: CommandLine.arguments[2]); return
+    }
     guard let path = Bundle.module.url(forResource: "fapi", withExtension: "json", subdirectory: "Fixtures") else { fatalError("Missing fixtures") }
     let capabilities = try FixtureCapabilities(data: Data(contentsOf: path))
     let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()

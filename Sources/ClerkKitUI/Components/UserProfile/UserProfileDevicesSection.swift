@@ -10,19 +10,19 @@ import SwiftUI
 
 struct UserProfileDevicesSection: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(UserProfileData.self) private var profileData
   @Environment(\.clerkTheme) private var theme
 
   private var user: User? {
     clerk.user
   }
 
-  private var sortedSessions: [Session] {
-    guard let user else { return [] }
-    let sessions = (clerk.sessionsByUserId[user.id] ?? []).filter { $0.latestActivity != nil }
+  private var sortedSessions: [SessionWithActivities] {
+    let sessions = profileData.sessions
     return sessions.sorted { lhs, rhs in
-      if lhs.isThisDevice {
+      if lhs.id == clerk.session?.id {
         true
-      } else if rhs.isThisDevice {
+      } else if rhs.id == clerk.session?.id {
         false
       } else {
         lhs.lastActiveAt > rhs.lastActiveAt
@@ -33,7 +33,7 @@ struct UserProfileDevicesSection: View {
   var body: some View {
     Section {
       VStack(spacing: 0) {
-        ForEach(sortedSessions) { session in
+        ForEach(sortedSessions, id: \.id) { session in
           UserProfileDeviceRow(session: session)
         }
       }

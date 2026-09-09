@@ -689,21 +689,7 @@ enum OrganizationCreatePresentation: Equatable {
 #Preview("Update Organization Form") {
   NavigationStack {
     OrganizationProfileFormView(organization: .mock)
-      .environment(Clerk.preview { preview in
-        var user = User.mock
-        user.organizationMemberships = [.mockWithUserData]
-
-        var session = Session.mock
-        session.lastActiveOrganizationId = Organization.mock.id
-        session.user = user
-
-        var client = Client.mock
-        client.sessions = [session]
-        client.lastActiveSessionId = session.id
-
-        preview.client = client
-        preview.environment = .mock
-      })
+      .environment(Clerk.preview(.profile))
   }
 }
 

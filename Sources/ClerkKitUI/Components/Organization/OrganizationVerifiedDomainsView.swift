@@ -417,44 +417,7 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
           }
         )
       )
-      .environment(Clerk.preview { preview in
-        var membership = OrganizationMembership.mockWithUserData
-        membership.permissions = [
-          OrganizationSystemPermission.readDomains.rawValue,
-          OrganizationSystemPermission.manageDomains.rawValue,
-        ]
-
-        var user = User.mock
-        user.organizationMemberships = [membership]
-
-        var session = Session.mock
-        session.lastActiveOrganizationId = membership.organization.id
-        session.user = user
-
-        var client = Client.mock
-        client.sessions = [session]
-        client.lastActiveSessionId = session.id
-
-        var environment = EnvironmentResource.mock
-        environment.organizationSettings.domains.enabled = true
-
-        preview.client = client
-        preview.environment = environment
-        preview.services.organizationService.getOrganizationDomainsHandler = { _, _, _, _ in
-          var unverifiedDomain = OrganizationDomain.mock
-          unverifiedDomain.id = "domain_1"
-          unverifiedDomain.name = "clerk.com"
-          unverifiedDomain.verification = .init(status: "unverified", strategy: "strategy", attempts: 0)
-
-          var manualDomain = OrganizationDomain.mock
-          manualDomain.id = "domain_2"
-          manualDomain.name = "clerky.com"
-          manualDomain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
-          manualDomain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
-
-          return ClerkPaginatedResponse(data: [unverifiedDomain, manualDomain], totalCount: 2)
-        }
-      })
+      .environment(Clerk.preview(.domains))
   }
 }
 

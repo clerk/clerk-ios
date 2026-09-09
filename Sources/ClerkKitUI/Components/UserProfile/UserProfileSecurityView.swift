@@ -10,6 +10,7 @@ import SwiftUI
 
 struct UserProfileSecurityView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(UserProfileData.self) private var profileData
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(CodeLimiter.self) private var codeLimiter
@@ -22,13 +23,12 @@ struct UserProfileSecurityView: View {
     clerk.user
   }
 
-  private var environment: Clerk.Environment? {
+  private var environment: EnvironmentResource? {
     clerk.environment
   }
 
   private var shouldShowDevices: Bool {
-    guard let user else { return false }
-    return (clerk.sessionsByUserId[user.id] ?? []).contains { $0.latestActivity != nil }
+    !profileData.sessions.isEmpty
   }
 
   private var biometricCredentialFeatureIsEnabled: Bool {
@@ -37,7 +37,7 @@ struct UserProfileSecurityView: View {
     }
 
     return nativeSettings.apiEnabled &&
-      nativeSettings.biometricSignInEnabled &&
+      nativeSettings.trustedDeviceSignInEnabled &&
       biometryDisplayName.isSupported
   }
 
@@ -111,7 +111,7 @@ struct UserProfileSecurityView: View {
             }
           }
           .animation(.default, value: user)
-          .animation(.default, value: clerk.sessionsByUserId)
+          .animation(.default, value: profileData.sessions)
           .animation(.default, value: environment)
         }
         .background(theme.colors.muted)
@@ -133,14 +133,14 @@ struct UserProfileSecurityView: View {
     .background(theme.colors.background)
     .clerkErrorPresenting($error)
     .task {
-      _ = try? await user?.getSessions()
+      try? await profileData.refresh(user: user)
     }
     .task(id: biometricCredentialAvailabilityRefreshKey) {
       refreshLocalBiometricCredentialAvailability()
       await refreshBiometricCredentialAvailability()
     }
     .task {
-      _ = try? await clerk.refreshClient()
+      _ = try? await clerk.user?.reload()
     }
     .sheet(item: $navigation.presentedAddMfaType) {
       $0.view

@@ -175,11 +175,7 @@ private struct OrganizationSwitcherLabelMetrics {
 }
 
 #Preview("Organization Switcher Label Widths") {
-  let organization = {
-    var organization = Organization.mock
-    organization.name = "Acme International Product Research and Operations"
-    return organization
-  }()
+  let organization = Organization.previewLongName
 
   VStack(alignment: .leading, spacing: 16) {
     OrganizationSwitcherLabel(organization: organization, user: nil)
@@ -195,11 +191,7 @@ private struct OrganizationSwitcherLabelMetrics {
 }
 
 #Preview("Organization Switcher Label States") {
-  let missingImageOrganization = {
-    var organization = Organization.mock
-    organization.imageUrl = ""
-    return organization
-  }()
+  let missingImageOrganization = Organization.mock
 
   VStack(alignment: .leading, spacing: 16) {
     OrganizationSwitcherLabel(organization: missingImageOrganization, user: nil)

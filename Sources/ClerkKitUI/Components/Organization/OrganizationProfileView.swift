@@ -570,31 +570,7 @@ private enum OrganizationProfileListRowID<Route: Hashable>: Hashable {
 
 #Preview("Organization Profile") {
   OrganizationProfileView()
-    .environment(Clerk.preview { preview in
-      var membership = OrganizationMembership.mockWithUserData
-      membership.permissions = [
-        OrganizationSystemPermission.manageProfile.rawValue,
-        OrganizationSystemPermission.readMemberships.rawValue,
-        OrganizationSystemPermission.readDomains.rawValue,
-        OrganizationSystemPermission.deleteProfile.rawValue,
-      ]
-
-      var user = User.mock
-      user.organizationMemberships = [membership]
-
-      var session = Session.mock
-      session.lastActiveOrganizationId = membership.organization.id
-      session.user = user
-
-      var client = Client.mock
-      client.sessions = [session]
-      client.lastActiveSessionId = session.id
-
-      var environment = EnvironmentResource.mock
-      environment.organizationSettings.domains.enabled = true
-      preview.client = client
-      preview.environment = environment
-    })
+    .environment(Clerk.preview(.profile))
 }
 
 #endif

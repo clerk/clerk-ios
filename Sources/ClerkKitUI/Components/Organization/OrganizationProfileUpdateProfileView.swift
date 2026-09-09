@@ -48,26 +48,7 @@ struct OrganizationProfileUpdateProfileView: View {
 
 #Preview {
   OrganizationProfileUpdateProfileView(organization: .mock)
-    .environment(Clerk.preview { preview in
-      var membership = OrganizationMembership.mockWithUserData
-      membership.permissions = [
-        OrganizationSystemPermission.manageProfile.rawValue,
-      ]
-
-      var user = User.mock
-      user.organizationMemberships = [membership]
-
-      var session = Session.mock
-      session.lastActiveOrganizationId = membership.organization.id
-      session.user = user
-
-      var client = Client.mock
-      client.sessions = [session]
-      client.lastActiveSessionId = session.id
-
-      preview.client = client
-      preview.environment = .mock
-    })
+    .environment(Clerk.preview(.profile))
 }
 
 #endif

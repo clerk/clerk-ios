@@ -185,7 +185,7 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
       presentedSheet = nil
     }
     .taskOnce {
-      await clerk.telemetry.record(TelemetryEvents.viewDidAppear("UserButton"))
+      try? await clerk.telemetry?.record(TelemetryEvents.viewDidAppear("UserButton"))
     }
   }
 }

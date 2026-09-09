@@ -10,9 +10,10 @@ import SwiftUI
 
 struct UserProfileDeviceRow: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(UserProfileData.self) private var profileData
   @Environment(\.clerkTheme) private var theme
 
-  let session: Session
+  let session: SessionWithActivities
 
   @State private var isLoading = false
   @State private var error: Error?
@@ -24,14 +25,15 @@ struct UserProfileDeviceRow: View {
   var body: some View {
     HStack(spacing: 16) {
       HStack(alignment: .top) {
-        if let activity = session.latestActivity {
+        Group {
+          let activity = session.latestActivity
           activity.deviceImage
             .resizable()
             .scaledToFit()
             .frame(width: 24, height: 24)
 
           VStack(alignment: .leading, spacing: 8) {
-            if session.isThisDevice {
+            if session.id == clerk.session?.id {
               Badge(key: "This device", style: .secondary)
             }
 
@@ -58,7 +60,7 @@ struct UserProfileDeviceRow: View {
 
       Spacer(minLength: 0)
 
-      if !session.isThisDevice {
+      if session.id != clerk.session?.id {
         Menu {
           AsyncButton(role: .destructive) {
             await signOutOfDevice()
@@ -91,8 +93,8 @@ extension UserProfileDeviceRow {
   @MainActor
   private func signOutOfDevice() async {
     do {
-      try await session.revoke()
-      try await user?.getSessions()
+      _ = try await session.revoke()
+      try await profileData.refresh(user: user)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to sign out of device", error: error)

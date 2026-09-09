@@ -243,7 +243,7 @@ struct AddMfaSmsRow: View {
   let phoneNumbers: [ClerkKit.PhoneNumber] = [.mock, .mockMfa]
 
   VStack {
-    ForEach(phoneNumbers) { phoneNumber in
+    ForEach(phoneNumbers, id: \.id) { phoneNumber in
       Button {
         selectedPhoneNumber = phoneNumber
       } label: {

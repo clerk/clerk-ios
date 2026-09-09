@@ -19,7 +19,6 @@ extension View {
   /// - `AuthNavigation()` for `@Environment(AuthNavigation.self)`
   /// - `CodeLimiter()` for `@Environment(CodeLimiter.self)`
   /// - `UserProfileSheetNavigation()` for `@Environment(UserProfileSheetNavigation.self)`
-  /// - `OrganizationSheetNavigation()` for `@Environment(OrganizationSheetNavigation.self)`
   ///
   /// Note: `ClerkTheme` has a default value and doesn't need to be injected.
   ///
@@ -35,16 +34,14 @@ extension View {
   /// ```
   @MainActor
   package func clerkPreview(isSignedIn: Bool = true) -> some View {
-    if EnvironmentDetection.isRunningInPreviews {
-      // Configure Clerk.shared so views that access it directly don't fail
-      let clerk = Clerk.preview { builder in
-        builder.isSignedIn = isSignedIn
-      }
+    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+      let clerk = Clerk.preview(isSignedIn ? .default : .signedOut)
 
       return AnyView(
         environment(clerk)
           .environment(CodeLimiter())
           .environment(UserProfileSheetNavigation())
+          .environment(UserProfileData())
           .environment(AuthState())
           .environment(AuthNavigation())
       )

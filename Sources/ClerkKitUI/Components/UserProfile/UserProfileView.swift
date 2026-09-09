@@ -114,6 +114,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @State private var internalPath = NavigationPath()
   @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
+  @State private var profileData = UserProfileData()
   @State private var error: Error?
 
   init(
@@ -163,7 +164,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             profileContent(user: user)
               .navigationDestination(for: Route.self) { route in
                 view(for: route)
-                  .environment(sheetNavigation)
+                  .environment(profileData)
+      .environment(sheetNavigation)
                   .environment(codeLimiter)
                   .environment(
                     UserProfileNavigator(
@@ -202,11 +204,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
           .presentationDetents([.height(accountSwitcherHeight)])
           .environment(clerk)
-          .environment(sheetNavigation)
+          .environment(profileData)
+      .environment(sheetNavigation)
         #elseif os(macOS)
         UserButtonAccountSwitcher()
           .environment(clerk)
-          .environment(sheetNavigation)
+          .environment(profileData)
+      .environment(sheetNavigation)
         #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
@@ -224,13 +228,13 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         await getSessionsOnAllDevices()
       }
       .task {
-        _ = try? await clerk.refreshEnvironment()
+        _ = try? await clerk.environment.reload()
       }
       .task {
-        _ = try? await clerk.refreshClient()
+        _ = try? await clerk.user?.reload()
       }
       .taskOnce {
-        await clerk.telemetry.record(
+        try? await clerk.telemetry?.record(
           TelemetryEvents.viewDidAppear(
             "UserProfileView",
             payload: [
@@ -240,6 +244,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           )
         )
       }
+      .environment(profileData)
       .environment(sheetNavigation)
       .environment(codeLimiter)
       .environment(
@@ -282,8 +287,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private var accountBuiltInRows: [UserProfileRow] {
     var rows: [UserProfileRow] = []
 
-    if clerk.environment?.mutliSessionModeIsEnabled == true {
-      if clerk.auth.sessions.count > 1 {
+    if clerk.environment.mutliSessionModeIsEnabled == true {
+      if clerk.sessions.count > 1 {
         rows.append(.switchAccount)
       }
 
@@ -337,7 +342,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     .hostBackToolbar()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
       view(for: destination)
-        .environment(sheetNavigation)
+        .environment(profileData)
+      .environment(sheetNavigation)
         .environment(codeLimiter)
         .environment(
           UserProfileNavigator(
@@ -593,7 +599,7 @@ extension UserProfileView {
 extension UserProfileView {
   fileprivate func signOut(sessionId: String) async {
     do {
-      try await clerk.auth.signOut(sessionId: sessionId)
+      try await clerk.signOut(.init(sessionId: sessionId))
       if clerk.session == nil {
         dismiss()
       }
@@ -604,9 +610,8 @@ extension UserProfileView {
   }
 
   fileprivate func getSessionsOnAllDevices() async {
-    guard let user = clerk.user else { return }
     do {
-      try await user.getSessions()
+      try await profileData.refresh(user: clerk.user)
     } catch {
       guard !error.isCancellationError else { return }
 
@@ -640,22 +645,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 #Preview("Dismissible") {
   UserProfileView()
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
-      }
+      Clerk.preview(.default, delay: .seconds(1))
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -689,22 +679,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
       }
     }
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
-      }
+      Clerk.preview(.default, delay: .seconds(1))
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -714,22 +689,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 #Preview("Not dismissible") {
   UserProfileView(isDismissible: false)
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
-      }
+      Clerk.preview(.default, delay: .seconds(1))
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
@@ -741,22 +701,7 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
 
   UserProfileView(isDismissible: false, navigationPath: $navigationPath)
     .environment(
-      Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Client.mock
-        }
-
-        builder.services.environmentService.getHandler = {
-          try? await Task.sleep(for: .seconds(1))
-          return Clerk.Environment.mock
-        }
-
-        builder.services.userService.getSessionsHandler = { _ in
-          try? await Task.sleep(for: .seconds(1))
-          return [Session.mock, Session.mock2]
-        }
-      }
+      Clerk.preview(.default, delay: .seconds(1))
     )
     .environment(AuthState())
     .environment(UserProfileSheetNavigation())
