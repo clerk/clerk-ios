@@ -28,6 +28,12 @@ The adapter never substitutes a development key when secure storage fails. If ol
 
 Run `make test-native-core` on macOS for the packaged-core contract suite, and `make test-ui` for the presentation suite. Run `scripts/test-native-core.sh` for the separate-process credential checks. The proof executes the packaged bundle, generated SSO, local reset, explicit finalization, token retrieval and sign-out with deterministic HTTP fixtures. It also seeds an isolated prior-format Keychain identity, restores it from separate process launches, clears it and verifies that it remains cleared. It does not read the developer's credentials. A physical-device upgrade from a released app with a real signed-in user remains a release gate.
 
+For an opt-in service startup smoke test, set `CLERK_PROOF_PUBLISHABLE_KEY` to a
+development publishable key and run `swift run NativeCoreProof --live-startup`.
+This proof uses the packaged engine and production HTTP adapter, permits only GET
+requests to `/v1/environment` and `/v1/client`, and stores credentials only in memory.
+It asserts a loaded, signed-out owner. It does not exercise sign-in or OS prompts.
+
 ## Native email links
 
 Email-link preparation uses the configured callback URL and saves its PKCE verifier in a separate secure record scoped to the instance. The TypeScript core validates the saved record, expiration and callback before completing it. Forward incoming URLs to `clerk.handleAuthCallback`. It returns the generated sign-in or sign-up resource without activating a session; custom interfaces must explicitly finalize a complete result. The callback also remains available as `clerk.authCallback` until `clearAuthCallback(id)` consumes it. `AuthView` consumes this record and finalizes as part of its existing presentation flow.

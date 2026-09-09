@@ -3,6 +3,9 @@ import Foundation
 
 @main struct PackageProof {
   @MainActor static func main() async throws {
+    if CommandLine.arguments.count == 2, CommandLine.arguments[1] == "--live-startup" {
+      try await LiveStartupProof.run(); return
+    }
     if CommandLine.arguments.count == 4, CommandLine.arguments[1] == "--credential-upgrade" {
       try await CredentialUpgradeProof.run(mode: CommandLine.arguments[2], fixture: CommandLine.arguments[3]); return
     }
