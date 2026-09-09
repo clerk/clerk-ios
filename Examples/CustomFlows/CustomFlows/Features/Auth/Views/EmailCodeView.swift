@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EmailCodeView: View {
@@ -46,6 +47,7 @@ struct EmailCodeView: View {
 
 struct EmailCodeSignInView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var code = ""
   @State private var isVerifying = false
@@ -84,32 +86,33 @@ struct EmailCodeSignInView: View {
 
   private func handleSignIn() async {
     do {
-      try await clerk.auth.signInWithEmailCode(emailAddress: emailAddress)
+      try await clerk.signIn.emailCode.sendCode(.case1(.init(emailAddress: emailAddress)))
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signIn = clerk.auth.currentSignIn else { return }
-      signIn = try await signIn.verifyCode(code)
+      let signIn = clerk.signIn
+      try await signIn.emailCode.verifyCode(.init(code: code))
 
       switch signIn.status {
       case .complete:
-        dump(clerk.session)
+        try await signIn.finalize()
       default:
-        dump(signIn.status)
+        feedback.continuation = .signIn
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
 
 struct EmailCodeSignUpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var code = ""
   @State private var isVerifying = false
@@ -148,27 +151,28 @@ struct EmailCodeSignUpView: View {
 
   private func handleSignUp() async {
     do {
-      let signUp = try await clerk.auth.signUp(emailAddress: emailAddress)
-      try await signUp.sendEmailCode()
+      let signUp = clerk.signUp
+      try await signUp.create(.init(emailAddress: emailAddress))
+      try await signUp.verifications.sendEmailCode()
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signUp = clerk.auth.currentSignUp else { return }
-      signUp = try await signUp.verifyEmailCode(code)
+      let signUp = clerk.signUp
+      try await signUp.verifications.verifyEmailCode(.init(code: code))
 
       switch signUp.status {
       case .complete:
-        dump(clerk.session)
+        try await signUp.finalize()
       default:
-        dump(signUp.status)
+        feedback.continuation = .signUp
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -176,8 +180,7 @@ struct EmailCodeSignUpView: View {
 #Preview {
   NavigationStack {
     EmailCodeView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

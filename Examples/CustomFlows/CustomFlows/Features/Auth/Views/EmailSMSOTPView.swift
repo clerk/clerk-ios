@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EmailPhoneOTPView: View {
@@ -31,6 +32,7 @@ struct EmailPhoneOTPView: View {
 
 struct EmailPhoneOTPSignInView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var phoneNumber = ""
   @State private var code = ""
@@ -83,35 +85,40 @@ struct EmailPhoneOTPSignInView: View {
   private func handleSignIn() async {
     do {
       if useEmail {
-        try await clerk.auth.signInWithEmailCode(emailAddress: emailAddress)
+        try await clerk.signIn.emailCode.sendCode(.case1(.init(emailAddress: emailAddress)))
       } else {
-        try await clerk.auth.signInWithPhoneCode(phoneNumber: phoneNumber)
+        try await clerk.signIn.phoneCode.sendCode(.case1(.init(phoneNumber: phoneNumber)))
       }
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signIn = clerk.auth.currentSignIn else { return }
-      signIn = try await signIn.verifyCode(code)
+      let signIn = clerk.signIn
+      if useEmail {
+        try await signIn.emailCode.verifyCode(.init(code: code))
+      } else {
+        try await signIn.phoneCode.verifyCode(.init(code: code))
+      }
 
       switch signIn.status {
       case .complete:
-        dump(clerk.session)
+        try await signIn.finalize()
       default:
-        dump(signIn.status)
+        feedback.continuation = .signIn
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
 
 struct EmailPhoneOTPSignUpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var phoneNumber = ""
   @State private var code = ""
@@ -163,37 +170,37 @@ struct EmailPhoneOTPSignUpView: View {
 
   private func handleSignUp() async {
     do {
-      let signUp: SignUp
+      let signUp = clerk.signUp
       if useEmail {
-        signUp = try await clerk.auth.signUp(emailAddress: emailAddress)
-        try await signUp.sendEmailCode()
+        try await signUp.create(.init(emailAddress: emailAddress))
+        try await signUp.verifications.sendEmailCode()
       } else {
-        signUp = try await clerk.auth.signUp(phoneNumber: phoneNumber)
-        try await signUp.sendPhoneCode()
+        try await signUp.create(.init(phoneNumber: phoneNumber))
+        try await signUp.verifications.sendPhoneCode()
       }
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signUp = clerk.auth.currentSignUp else { return }
+      let signUp = clerk.signUp
       if useEmail {
-        signUp = try await signUp.verifyEmailCode(code)
+        try await signUp.verifications.verifyEmailCode(.init(code: code))
       } else {
-        signUp = try await signUp.verifyPhoneCode(code)
+        try await signUp.verifications.verifyPhoneCode(.init(code: code))
       }
 
       switch signUp.status {
       case .complete:
-        dump(clerk.session)
+        try await signUp.finalize()
       default:
-        dump(signUp.status)
+        feedback.continuation = .signUp
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -201,8 +208,7 @@ struct EmailPhoneOTPSignUpView: View {
 #Preview {
   NavigationStack {
     EmailPhoneOTPView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EmailPasswordMFAView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var password = ""
   @State private var mfaCode = ""
@@ -68,36 +70,37 @@ struct EmailPasswordMFAView: View {
 
   private func handleSignIn() async {
     do {
-      let signIn = try await clerk.auth.signInWithPassword(identifier: emailAddress, password: password)
+      let signIn = clerk.signIn
+      try await signIn.password(.case1(.init(password: password, identifier: emailAddress)))
 
       switch signIn.status {
       case .complete:
-        dump(clerk.session)
+        try await signIn.finalize()
       case .needsSecondFactor:
-        guard var signIn = clerk.auth.currentSignIn else { return }
-        signIn = try await signIn.sendMfaEmailCode()
+        let signIn = clerk.signIn
+        try await signIn.mfa.sendEmailCode()
         needsMFA = true
       default:
-        dump(signIn.status)
+        feedback.continuation = .signIn
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verifyMFA(code: String) async {
     do {
-      guard var signIn = clerk.auth.currentSignIn else { return }
-      signIn = try await signIn.verifyMfaCode(code, type: .emailCode)
+      let signIn = clerk.signIn
+      try await signIn.mfa.verifyEmailCode(.init(code: code))
 
       switch signIn.status {
       case .complete:
-        dump(clerk.session)
+        try await signIn.finalize()
       default:
-        dump(signIn.status)
+        feedback.continuation = .signIn
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -105,8 +108,7 @@ struct EmailPasswordMFAView: View {
 #Preview {
   NavigationStack {
     EmailPasswordMFAView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

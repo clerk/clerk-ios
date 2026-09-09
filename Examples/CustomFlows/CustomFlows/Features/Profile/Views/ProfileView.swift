@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct ProfileView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
 
   var body: some View {
     VStack(spacing: 24) {
@@ -38,9 +40,9 @@ struct ProfileView: View {
   private func signOut() {
     Task {
       do {
-        try await clerk.auth.signOut()
+        try await clerk.signOut()
       } catch {
-        print("Sign out error: \(error.localizedDescription)")
+        feedback.error = error.localizedDescription
       }
     }
   }
@@ -50,5 +52,6 @@ struct ProfileView: View {
   NavigationStack {
     ProfileView()
       .environment(Clerk.preview())
+      .environment(CustomFlowFeedback())
   }
 }

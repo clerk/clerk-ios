@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct PhoneSMSOTPView: View {
@@ -46,6 +47,7 @@ struct PhoneSMSOTPView: View {
 
 struct PhoneSMSOTPSignInView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var phoneNumber = ""
   @State private var code = ""
   @State private var isVerifying = false
@@ -82,32 +84,33 @@ struct PhoneSMSOTPSignInView: View {
 
   private func handleSignIn() async {
     do {
-      try await clerk.auth.signInWithPhoneCode(phoneNumber: phoneNumber)
+      try await clerk.signIn.phoneCode.sendCode(.case1(.init(phoneNumber: phoneNumber)))
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signIn = clerk.auth.currentSignIn else { return }
-      signIn = try await signIn.verifyCode(code)
+      let signIn = clerk.signIn
+      try await signIn.phoneCode.verifyCode(.init(code: code))
 
       switch signIn.status {
       case .complete:
-        dump(clerk.session)
+        try await signIn.finalize()
       default:
-        dump(signIn.status)
+        feedback.continuation = .signIn
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
 
 struct PhoneSMSOTPSignUpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var phoneNumber = ""
   @State private var code = ""
   @State private var isVerifying = false
@@ -144,27 +147,28 @@ struct PhoneSMSOTPSignUpView: View {
 
   private func handleSignUp() async {
     do {
-      let signUp = try await clerk.auth.signUp(phoneNumber: phoneNumber)
-      try await signUp.sendPhoneCode()
+      let signUp = clerk.signUp
+      try await signUp.create(.init(phoneNumber: phoneNumber))
+      try await signUp.verifications.sendPhoneCode()
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signUp = clerk.auth.currentSignUp else { return }
-      signUp = try await signUp.verifyPhoneCode(code)
+      let signUp = clerk.signUp
+      try await signUp.verifications.verifyPhoneCode(.init(code: code))
 
       switch signUp.status {
       case .complete:
-        dump(clerk.session)
+        try await signUp.finalize()
       default:
-        dump(signUp.status)
+        feedback.continuation = .signUp
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -172,8 +176,7 @@ struct PhoneSMSOTPSignUpView: View {
 #Preview {
   NavigationStack {
     PhoneSMSOTPView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

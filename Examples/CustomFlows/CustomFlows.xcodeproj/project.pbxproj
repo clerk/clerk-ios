@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		868A35FDE01A4C9698708A3C /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = F025EF57F1A64FC98B92BB5F /* ClerkKitUI */; };
 		3599FB08D73F41D3A43DAC80 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = E6971758A22B49D086A5B33F /* ClerkKit */; };
 		E6ATLANTIS001A22B49D086A5B33F /* Atlantis in Frameworks */ = {isa = PBXBuildFile; productRef = E6ATLANTIS002A22B49D086A5B33F /* Atlantis */; };
 /* End PBXBuildFile section */
@@ -42,6 +43,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3599FB08D73F41D3A43DAC80 /* ClerkKit in Frameworks */,
+				868A35FDE01A4C9698708A3C /* ClerkKitUI in Frameworks */,
 				E6ATLANTIS001A22B49D086A5B33F /* Atlantis in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -86,6 +88,7 @@
 			name = CustomFlows;
 			packageProductDependencies = (
 				E6971758A22B49D086A5B33F /* ClerkKit */,
+				F025EF57F1A64FC98B92BB5F /* ClerkKitUI */,
 				E6ATLANTIS002A22B49D086A5B33F /* Atlantis */,
 			);
 			productName = CustomFlows;
@@ -386,6 +389,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F025EF57F1A64FC98B92BB5F /* ClerkKitUI */ = {isa = XCSwiftPackageProductDependency; productName = ClerkKitUI; };
 		E6971758A22B49D086A5B33F /* ClerkKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ClerkKit;

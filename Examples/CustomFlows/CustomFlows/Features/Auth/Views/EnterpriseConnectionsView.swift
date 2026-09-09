@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EnterpriseConnectionsView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var showDocs = false
 
@@ -48,20 +50,23 @@ struct EnterpriseConnectionsView: View {
 
   private func handleSignIn() async {
     do {
-      let result = try await clerk.auth.signInWithEnterpriseSSO(emailAddress: emailAddress)
+      let result = try await clerk.authenticateWithSSO(.init(strategy: .enterpriseSso, identifier: emailAddress, start: .signIn, transferable: true))
       switch result {
-      case .signIn(let signIn):
-        switch signIn.status {
-        case .complete:
-          dump(clerk.session)
-        default:
-          dump(signIn.status)
+      case .case1(let value):
+        if value.signIn.status == .complete {
+          try await value.signIn.finalize()
+        } else {
+          feedback.continuation = .signIn
         }
-      case .signUp(let signUp):
-        dump(signUp.status)
+      case .case2(let value):
+        if value.signUp.status == .complete {
+          try await value.signUp.finalize()
+        } else {
+          feedback.continuation = .signUp
+        }
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -69,8 +74,7 @@ struct EnterpriseConnectionsView: View {
 #Preview {
   NavigationStack {
     EnterpriseConnectionsView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

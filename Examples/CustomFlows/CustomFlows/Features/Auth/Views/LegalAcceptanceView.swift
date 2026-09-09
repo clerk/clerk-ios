@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct LegalAcceptanceView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var password = ""
   @State private var code = ""
@@ -73,31 +75,32 @@ struct LegalAcceptanceView: View {
 
   private func handleSignUp() async {
     do {
-      let signUp = try await clerk.auth.signUp(
+      let signUp = clerk.signUp
+      try await signUp.create(.init(
         emailAddress: emailAddress,
         password: password,
         legalAccepted: legalAccepted
-      )
-      try await signUp.sendEmailCode()
+      ))
+      try await signUp.verifications.sendEmailCode()
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signUp = clerk.auth.currentSignUp else { return }
-      signUp = try await signUp.verifyEmailCode(code)
+      let signUp = clerk.signUp
+      try await signUp.verifications.verifyEmailCode(.init(code: code))
 
       switch signUp.status {
       case .complete:
-        dump(clerk.session)
+        try await signUp.finalize()
       default:
-        dump(signUp.status)
+        feedback.continuation = .signUp
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -105,8 +108,7 @@ struct LegalAcceptanceView: View {
 #Preview {
   NavigationStack {
     LegalAcceptanceView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

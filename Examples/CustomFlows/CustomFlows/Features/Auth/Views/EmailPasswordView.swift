@@ -4,6 +4,7 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct EmailPasswordView: View {
@@ -46,6 +47,7 @@ struct EmailPasswordView: View {
 
 struct EmailPasswordSignInView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var password = ""
 
@@ -72,15 +74,21 @@ struct EmailPasswordSignInView: View {
 
   private func handleSignIn() async {
     do {
-      try await clerk.auth.signInWithPassword(identifier: emailAddress, password: password)
+      try await clerk.signIn.password(.case1(.init(password: password, identifier: emailAddress)))
+      if clerk.signIn.status == .complete {
+        try await clerk.signIn.finalize()
+      } else {
+        feedback.continuation = .signIn
+      }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
 
 struct EmailPasswordSignUpView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var emailAddress = ""
   @State private var password = ""
   @State private var code = ""
@@ -123,30 +131,31 @@ struct EmailPasswordSignUpView: View {
 
   private func handleSignUp() async {
     do {
-      let signUp = try await clerk.auth.signUp(
+      let signUp = clerk.signUp
+      try await signUp.create(.init(
         emailAddress: emailAddress,
         password: password
-      )
-      try await signUp.sendEmailCode()
+      ))
+      try await signUp.verifications.sendEmailCode()
       isVerifying = true
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 
   private func verify(code: String) async {
     do {
-      guard var signUp = clerk.auth.currentSignUp else { return }
-      signUp = try await signUp.verifyEmailCode(code)
+      let signUp = clerk.signUp
+      try await signUp.verifications.verifyEmailCode(.init(code: code))
 
       switch signUp.status {
       case .complete:
-        dump(clerk.session)
+        try await signUp.finalize()
       default:
-        dump(signUp.status)
+        feedback.continuation = .signUp
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -154,8 +163,7 @@ struct EmailPasswordSignUpView: View {
 #Preview {
   NavigationStack {
     EmailPasswordView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }

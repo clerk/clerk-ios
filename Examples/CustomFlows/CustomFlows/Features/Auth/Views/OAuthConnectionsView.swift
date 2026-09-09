@@ -4,10 +4,12 @@
 //
 
 import ClerkKit
+import ClerkKitUI
 import SwiftUI
 
 struct OAuthConnectionsView: View {
   @Environment(Clerk.self) private var clerk
+  @Environment(CustomFlowFeedback.self) private var feedback
   @State private var showDocs = false
 
   var body: some View {
@@ -15,13 +17,13 @@ struct OAuthConnectionsView: View {
       Section {
         Button("Sign In with Google") {
           Task {
-            await handleSignIn(provider: .google)
+            await handleSignIn(provider: .oauthGoogle)
           }
         }
 
         Button("Sign In with GitHub") {
           Task {
-            await handleSignIn(provider: .github)
+            await handleSignIn(provider: .oauthGithub)
           }
         }
       }
@@ -43,22 +45,25 @@ struct OAuthConnectionsView: View {
     }
   }
 
-  private func handleSignIn(provider: OAuthProvider) async {
+  private func handleSignIn(provider: SignInSSOParamsStrategy) async {
     do {
-      let result = try await clerk.auth.signInWithOAuth(provider: provider)
+      let result = try await clerk.authenticateWithSSO(.init(strategy: provider, start: .signIn, transferable: true))
       switch result {
-      case .signIn(let signIn):
-        switch signIn.status {
-        case .complete:
-          dump(clerk.session)
-        default:
-          dump(signIn.status)
+      case .case1(let value):
+        if value.signIn.status == .complete {
+          try await value.signIn.finalize()
+        } else {
+          feedback.continuation = .signIn
         }
-      case .signUp(let signUp):
-        dump(signUp.status)
+      case .case2(let value):
+        if value.signUp.status == .complete {
+          try await value.signUp.finalize()
+        } else {
+          feedback.continuation = .signUp
+        }
       }
     } catch {
-      dump(error)
+      feedback.error = error.localizedDescription
     }
   }
 }
@@ -66,8 +71,7 @@ struct OAuthConnectionsView: View {
 #Preview {
   NavigationStack {
     OAuthConnectionsView()
-      .environment(Clerk.preview { preview in
-        preview.isSignedIn = false
-      })
+      .environment(Clerk.preview(.signedOut))
+      .environment(CustomFlowFeedback())
   }
 }
