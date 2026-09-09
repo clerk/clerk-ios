@@ -20,7 +20,7 @@ struct UserProfilePasskeyRenameView: View {
 
   init(passkey: Passkey) {
     self.passkey = passkey
-    _passkeyName = State(initialValue: passkey.name)
+    _passkeyName = State(initialValue: passkey.name ?? "")
   }
 
   var body: some View {
@@ -87,7 +87,7 @@ struct UserProfilePasskeyRenameView: View {
 extension UserProfilePasskeyRenameView {
   func renamePasskey() async {
     do {
-      try await passkey.update(name: passkeyName)
+      _ = try await passkey.update(.init(name: .value(passkeyName)))
       dismiss()
     } catch {
       self.error = error

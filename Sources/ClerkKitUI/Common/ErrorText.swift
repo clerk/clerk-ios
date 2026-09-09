@@ -40,7 +40,7 @@ struct ErrorText: View {
 }
 
 #Preview {
-  ErrorText(error: ClerkClientError(message: "Password is incorrect. Try again, or use another method.", localizationBundle: .module))
+  ErrorText(error: PresentationError(message: "Password is incorrect. Try again, or use another method.", localizationBundle: .module))
     .padding()
 }
 

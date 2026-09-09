@@ -163,7 +163,7 @@ struct UserProfileChangePasswordView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"]?.stringValue == "current_password" {
+        if let clerkApiError = (error as? CoreError)?.errors.first, clerkApiError.meta?.paramName == "current_password" {
           return .init(text: "Go back") {
             path = NavigationPath()
           }
@@ -222,10 +222,10 @@ extension UserProfileChangePasswordView {
     guard let user else { return }
 
     do {
-      try await user.updatePassword(
+      _ = try await user.updatePassword(
         .init(
-          currentPassword: isAddingPassword ? nil : currentPassword,
           newPassword: newPassword,
+          currentPassword: isAddingPassword ? nil : currentPassword,
           signOutOfOtherSessions: signOutOfOtherSessions
         )
       )

@@ -14,7 +14,7 @@ enum OTPSubmissionDisposition: Equatable {
 
 extension Error {
   var otpSubmissionDisposition: OTPSubmissionDisposition {
-    guard let clerkError = self as? ClerkAPIError else {
+    guard let clerkError = (self as? CoreError)?.errors.first else {
       return .stop
     }
 

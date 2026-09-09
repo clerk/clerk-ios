@@ -24,7 +24,7 @@ struct UserProfileUpdateProfileView: View {
   @State private var username: String
   @State private var error: Error?
 
-  private var environment: Clerk.Environment? {
+  private var environment: EnvironmentResource? {
     clerk.environment
   }
 
@@ -125,10 +125,10 @@ struct UserProfileUpdateProfileView: View {
               let data = try await item.loadTransferable(type: Data.self),
               let resizedData = resizedImageData(from: data)
             else {
-              throw ClerkClientError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
+              throw PresentationError(message: "There was an error loading the image from the photos library.", localizationBundle: .module)
             }
 
-            try await user.setProfileImage(imageData: resizedData)
+            _ = try await user.setProfileImage(.init(file: .case2(.init(name: "profile.jpg", contentType: "image/jpeg", data: resizedData))))
           } catch {
             self.error = error
             ClerkLogger.error("Failed to set profile image", error: error)
@@ -216,7 +216,7 @@ struct UserProfileUpdateProfileView: View {
         defer { imageIsLoading = false }
 
         do {
-          try await user.deleteProfileImage()
+          _ = try await user.setProfileImage(.init(file: nil))
         } catch {
           self.error = error
           ClerkLogger.error("Failed to delete profile image", error: error)
@@ -253,9 +253,9 @@ extension UserProfileUpdateProfileView {
     do {
       try await user.update(
         .init(
-          username: usernameIsEditable ? username : nil,
-          firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
-          lastName: environment?.lastNameIsEnabled == true ? lastName : nil
+          username: usernameIsEditable ? .value(username) : .omitted,
+          firstName: environment?.firstNameIsEnabled == true ? .value(firstName) : .omitted,
+          lastName: environment?.lastNameIsEnabled == true ? .value(lastName) : .omitted
         )
       )
       dismiss()

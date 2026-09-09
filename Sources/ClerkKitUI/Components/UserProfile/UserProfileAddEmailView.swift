@@ -130,7 +130,7 @@ extension UserProfileAddEmailView {
     guard let user else { return }
 
     do {
-      let emailAddress = try await user.createEmailAddress(email)
+      let emailAddress = try await user.createEmailAddress(.init(email: email))
       path.append(Destination.verify(emailAddress))
     } catch {
       self.error = error

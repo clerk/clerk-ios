@@ -133,7 +133,7 @@ extension UserProfileAddPhoneView {
     guard let user else { return }
 
     do {
-      let phoneNumber = try await user.createPhoneNumber(phoneNumber)
+      let phoneNumber = try await user.createPhoneNumber(.init(phoneNumber: phoneNumber))
       path.append(Destination.verify(phoneNumber))
     } catch {
       self.error = error

@@ -210,9 +210,9 @@ extension UserProfileVerifyView {
     do {
       switch mode {
       case let .email(emailAddress):
-        try await emailAddress.sendCode()
+        _ = try await emailAddress.prepareVerification(.case1(.init()))
       case let .phone(phoneNumber):
-        try await phoneNumber.sendCode()
+        _ = try await phoneNumber.prepareVerification()
       case .totp:
         return
       }
@@ -235,11 +235,11 @@ extension UserProfileVerifyView {
 
       switch verificationMode {
       case let .email(emailAddress):
-        try await emailAddress.verifyCode(code)
+        _ = try await emailAddress.attemptVerification(.init(code: code))
         backupCodes = nil
         codeLimiterIdentifier = emailAddress.emailAddress
       case let .phone(phoneNumber):
-        try await phoneNumber.verifyCode(code)
+        _ = try await phoneNumber.attemptVerification(.init(code: code))
         backupCodes = nil
         codeLimiterIdentifier = phoneNumber.phoneNumber
       case .totp:
@@ -247,7 +247,7 @@ extension UserProfileVerifyView {
           verificationState = .default
           return .stop
         }
-        let totp = try await user.verifyTOTP(code: code)
+        let totp = try await user.verifyTOTP(.init(code: code))
         backupCodes = totp.backupCodes
         codeLimiterIdentifier = nil
       }
@@ -274,8 +274,8 @@ extension UserProfileVerifyView {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkError = error as? ClerkAPIError, clerkError.meta?["param_name"] == nil {
-        self.error = clerkError
+      if let clerkError = (error as? CoreError)?.errors.first, clerkError.meta?.paramName == nil {
+        self.error = error
         otpFieldIsFocused = false
       }
 

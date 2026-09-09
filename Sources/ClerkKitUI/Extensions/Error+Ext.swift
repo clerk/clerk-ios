@@ -18,17 +18,15 @@ extension Error {
       return nsError.code == ASAuthorizationError.Code.canceled.rawValue
     }
 
-    if let biometricCredentialError = self as? BiometricCredentialKeyManagerError,
-       biometricCredentialError == .biometricAuthenticationCanceled
-    {
-      return true
+    if let coreError = self as? CoreError {
+      return coreError.kind == .cancelled || coreError.code == "user_cancelled"
     }
 
     return false
   }
 
   var isCancellationError: Bool {
-    if self is CancellationError {
+    if self is CancellationError || (self as? CoreError)?.kind == .cancelled {
       return true
     }
 
