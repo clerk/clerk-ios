@@ -2,17 +2,19 @@
 import Foundation
 import Observation
 
-public struct ClerkState: Sendable {
+public struct ClerkState: Hashable, Sendable {
   public let `status`: ClerkStatus
   public let `loaded`: Bool
+  public let `environment`: MobileEnvironment
   public let `session`: Session?
   public let `user`: User?
   public let `organization`: Organization?
   public let `signIn`: SignIn
   public let `signUp`: SignUp
-  public init(`status`: ClerkStatus, `loaded`: Bool, `session`: Session?, `user`: User?, `organization`: Organization?, `signIn`: SignIn, `signUp`: SignUp) {
+  public init(`status`: ClerkStatus, `loaded`: Bool, `environment`: MobileEnvironment, `session`: Session?, `user`: User?, `organization`: Organization?, `signIn`: SignIn, `signUp`: SignUp) {
     self.`status` = `status`
     self.`loaded` = `loaded`
+    self.`environment` = `environment`
     self.`session` = `session`
     self.`user` = `user`
     self.`organization` = `organization`
@@ -23,6 +25,7 @@ public struct ClerkState: Sendable {
     let values: [String: JSONValue] = [
       "status": try self.`status`.encode(),
       "loaded": .bool(self.`loaded`),
+      "environment": try self.`environment`.encode(),
       "session": try self.`session`.map { value in try value.encode() } ?? .null,
       "user": try self.`user`.map { value in try value.encode() } ?? .null,
       "organization": try self.`organization`.map { value in try value.encode() } ?? .null,
@@ -34,7 +37,7 @@ public struct ClerkState: Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> ClerkState {
     let values = try value.object()
 
-    return try ClerkState(`status`: try ClerkStatus.decode((values["status"] ?? .undefined), in: runtime), `loaded`: try (values["loaded"] ?? .undefined).bool(), `session`: try (values["session"] ?? .undefined).optional { value in try Session.decode(value, in: runtime) }, `user`: try (values["user"] ?? .undefined).optional { value in try User.decode(value, in: runtime) }, `organization`: try (values["organization"] ?? .undefined).optional { value in try Organization.decode(value, in: runtime) }, `signIn`: try SignIn.decode((values["signIn"] ?? .undefined), in: runtime), `signUp`: try SignUp.decode((values["signUp"] ?? .undefined), in: runtime))
+    return try ClerkState(`status`: try ClerkStatus.decode((values["status"] ?? .undefined), in: runtime), `loaded`: try (values["loaded"] ?? .undefined).bool(), `environment`: try MobileEnvironment.decode((values["environment"] ?? .undefined), in: runtime), `session`: try (values["session"] ?? .undefined).optional { value in try Session.decode(value, in: runtime) }, `user`: try (values["user"] ?? .undefined).optional { value in try User.decode(value, in: runtime) }, `organization`: try (values["organization"] ?? .undefined).optional { value in try Organization.decode(value, in: runtime) }, `signIn`: try SignIn.decode((values["signIn"] ?? .undefined), in: runtime), `signUp`: try SignUp.decode((values["signUp"] ?? .undefined), in: runtime))
   }
 }
 @MainActor @Observable public final class Clerk: CoreResource {
@@ -45,6 +48,7 @@ public struct ClerkState: Sendable {
   public init(handle: ResourceHandle, runtime: CoreRuntime) { self.handle = handle; self.context = ResourceContext(runtime: runtime, handle: handle, ownsRuntime: true) }
   public var `status`: ClerkStatus { state.`status` }
   public var `loaded`: Bool { state.`loaded` }
+  public var `environment`: MobileEnvironment { state.`environment` }
   public var `session`: Session? { state.`session` }
   public var `user`: User? { state.`user` }
   public var `organization`: Organization? { state.`organization` }
@@ -59,24 +63,28 @@ public struct ClerkState: Sendable {
   /// > For React-based apps, consider using the [`<CreateOrganization />`](https://clerk.com/docs/reference/components/organization/create-organization) component.
   public func `createOrganization`(_ `params`: CreateOrganizationParams) async throws -> Organization {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Clerk.createOrganization", arguments: [try `params`.encode()])
-    return try Organization.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Clerk.createOrganization", arguments: [try `params`.encode()]) { result in
+      return try Organization.decode(result, in: runtime)
+    }
   }
   /// Gets a single [Organization](https://clerk.com/docs/reference/objects/organization) by ID.
   public func `getOrganization`(_ `organizationId`: String) async throws -> Organization {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Clerk.getOrganization", arguments: [.string(`organizationId`)])
-    return try Organization.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Clerk.getOrganization", arguments: [.string(`organizationId`)]) { result in
+      return try Organization.decode(result, in: runtime)
+    }
   }
   public func `setActive`(_ `params`: MobileSetActiveParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Clerk.setActive", arguments: [try `params`.encode()])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "Clerk.setActive", arguments: [try `params`.encode()]) { result in
+      _ = result
+    }
   }
   public func `signOut`(_ `options`: MobileSignOutOptions? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Clerk.signOut", arguments: [try `options`.map { value in try value.encode() } ?? .undefined])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "Clerk.signOut", arguments: [try `options`.map { value in try value.encode() } ?? .undefined]) { result in
+      _ = result
+    }
   }
 }
 
@@ -108,7 +116,7 @@ public enum ClerkStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> ClerkStatus { .init(rawValue: try value.string()) }
 }
 
-public struct CreateOrganizationParams: Sendable {
+public struct CreateOrganizationParams: Hashable, Sendable {
   public let `name`: String
   public let `slug`: String?
   public init(`name`: String, `slug`: String? = nil) {
@@ -132,7 +140,7 @@ public struct CreateOrganizationParams: Sendable {
 /// The `Organization` object holds information about an Organization, as well as methods for managing it.
 /// 
 /// To use these methods, you must have the **Organizations** feature [enabled in your app's settings in the Clerk Dashboard](https://clerk.com/docs/guides/organizations/configure#enable-organizations).
-public struct OrganizationState: Sendable {
+public struct OrganizationState: Hashable, Sendable {
   public let `id`: String
   public let `name`: String
   public let `slug`: String?
@@ -214,164 +222,191 @@ public struct OrganizationState: Sendable {
   /// Updates the current Organization.
   public func `update`(_ `params`: UpdateOrganizationParams) async throws -> Organization {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.update", arguments: [try `params`.encode()])
-    return try Organization.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.update", arguments: [try `params`.encode()]) { result in
+      return try Organization.decode(result, in: runtime)
+    }
   }
   /// Gets the list of Organization Memberships.
   public func `getMemberships`(_ `params`: GetMembersParams? = nil) async throws -> ClerkPaginatedResponseOrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getMemberships", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getMemberships", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Gets the list of invitations.
   public func `getInvitations`(_ `params`: GetInvitationsParams? = nil) async throws -> ClerkPaginatedResponseOrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getInvitations", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getInvitations", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationInvitation.decode(result, in: runtime)
+    }
   }
   /// Gets the list of [Roles](https://clerk.com/docs/guides/organizations/control-access/roles-and-permissions) available.
   public func `getRoles`(_ `params`: GetRolesParams? = nil) async throws -> GetRolesResponse {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getRoles", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try GetRolesResponse.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getRoles", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try GetRolesResponse.decode(result, in: runtime)
+    }
   }
   /// Gets the list of domains.
   public func `getDomains`(_ `params`: GetDomainsParams? = nil) async throws -> ClerkPaginatedResponseOrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getDomains", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getDomains", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationDomain.decode(result, in: runtime)
+    }
   }
   /// Gets the list of membership requests.
   public func `getMembershipRequests`(_ `params`: GetMembershipRequestParams? = nil) async throws -> ClerkPaginatedResponseOrganizationMembershipRequest {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getMembershipRequests", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationMembershipRequest.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getMembershipRequests", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationMembershipRequest.decode(result, in: runtime)
+    }
   }
   /// Adds a user as a member to an organization. A user can only be added to an organization if they are not already a member of it and if they already exist in the same instance as the organization. Only administrators can add members to an organization.
   public func `addMember`(_ `params`: AddMemberParams) async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.addMember", arguments: [try `params`.encode()])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.addMember", arguments: [try `params`.encode()]) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Creates and sends an invitation to the given email address.
   public func `inviteMember`(_ `params`: InviteMemberParams) async throws -> OrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.inviteMember", arguments: [try `params`.encode()])
-    return try OrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.inviteMember", arguments: [try `params`.encode()]) { result in
+      return try OrganizationInvitation.decode(result, in: runtime)
+    }
   }
   /// Creates and sends invitations to the given email addresses.
   public func `inviteMembers`(_ `params`: InviteMembersParams) async throws -> [OrganizationInvitation] {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.inviteMembers", arguments: [try `params`.encode()])
-    return try result.array().map { value in try OrganizationInvitation.decode(value, in: runtime) }
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.inviteMembers", arguments: [try `params`.encode()]) { result in
+      return try result.array().map { value in try OrganizationInvitation.decode(value, in: runtime) }
+    }
   }
   /// Updates a given member.
   public func `updateMember`(_ `params`: UpdateMembershipParams) async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.updateMember", arguments: [try `params`.encode()])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.updateMember", arguments: [try `params`.encode()]) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Removes a member.
   public func `removeMember`(_ `userId`: String) async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.removeMember", arguments: [.string(`userId`)])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.removeMember", arguments: [.string(`userId`)]) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Creates a new domain.
   public func `createDomain`(_ `domainName`: String, `params`: PickCreateOrganizationDomainParamsAndenrollmentMode? = nil) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.createDomain", arguments: [.string(`domainName`), try `params`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.createDomain", arguments: [.string(`domainName`), try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
   /// Starts the verification process of multiple [Verified Domains](https://clerk.com/docs/guides/organizations/add-members/verified-domains) at once by issuing a fresh TXT challenge for each of the given domains in a single request. Each resolved domain's `ownershipVerification` property carries the `txtRecordName` and `txtRecordValue` the Organization [admin](https://clerk.com/docs/guides/organizations/control-access/roles-and-permissions) must publish. A single bad domain does not fail the batch; it lands in the returned [`OrganizationDomainsBulkOwnershipVerificationResource`](https://clerk.com/docs/reference/types/organization-domains-bulk-ownership-verification-resource) object's `errors` array.
   public func `prepareOwnershipVerification`(_ `domainIds`: [String]) async throws -> OrganizationDomainsBulkOwnershipVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.prepareOwnershipVerification", arguments: [.array(try `domainIds`.map { value in .string(value) })])
-    return try OrganizationDomainsBulkOwnershipVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.prepareOwnershipVerification", arguments: [.array(try `domainIds`.map { value in .string(value) })]) { result in
+      return try OrganizationDomainsBulkOwnershipVerification.decode(result, in: runtime)
+    }
   }
   /// Completes the verification process started by [`prepareOwnershipVerification()`](https://clerk.com/docs/reference/objects/organization#prepare-ownership-verification), by resolving the published TXT record for each of the given domains in a single request. A single bad domain does not fail the batch; it lands in the returned [`OrganizationDomainsBulkOwnershipVerificationResource`](https://clerk.com/docs/reference/types/organization-domains-bulk-ownership-verification-resource) object's `errors` array.
   public func `attemptOwnershipVerification`(_ `domainIds`: [String]) async throws -> OrganizationDomainsBulkOwnershipVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.attemptOwnershipVerification", arguments: [.array(try `domainIds`.map { value in .string(value) })])
-    return try OrganizationDomainsBulkOwnershipVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.attemptOwnershipVerification", arguments: [.array(try `domainIds`.map { value in .string(value) })]) { result in
+      return try OrganizationDomainsBulkOwnershipVerification.decode(result, in: runtime)
+    }
   }
   /// Gets a domain for an Organization based on the given domain ID.
   public func `getDomain`(_ `value0`: OrganizationGetDomain__0) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getDomain", arguments: [try `value0`.encode()])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getDomain", arguments: [try `value0`.encode()]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
   public func `getEnterpriseConnections`(_ `params`: GetEnterpriseConnectionsParams? = nil) async throws -> [EnterpriseConnection] {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getEnterpriseConnections", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try result.array().map { value in try EnterpriseConnection.decode(value, in: runtime) }
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getEnterpriseConnections", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try result.array().map { value in try EnterpriseConnection.decode(value, in: runtime) }
+    }
   }
   public func `createEnterpriseConnection`(_ `params`: CreateOrganizationEnterpriseConnectionParams) async throws -> EnterpriseConnection {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.createEnterpriseConnection", arguments: [try `params`.encode()])
-    return try EnterpriseConnection.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.createEnterpriseConnection", arguments: [try `params`.encode()]) { result in
+      return try EnterpriseConnection.decode(result, in: runtime)
+    }
   }
   public func `updateEnterpriseConnection`(_ `enterpriseConnectionId`: String, `params`: UpdateOrganizationEnterpriseConnectionParams) async throws -> EnterpriseConnection {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.updateEnterpriseConnection", arguments: [.string(`enterpriseConnectionId`), try `params`.encode()])
-    return try EnterpriseConnection.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.updateEnterpriseConnection", arguments: [.string(`enterpriseConnectionId`), try `params`.encode()]) { result in
+      return try EnterpriseConnection.decode(result, in: runtime)
+    }
   }
   public func `deleteEnterpriseConnection`(_ `enterpriseConnectionId`: String) async throws -> DeletedObject {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.deleteEnterpriseConnection", arguments: [.string(`enterpriseConnectionId`)])
-    return try DeletedObject.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.deleteEnterpriseConnection", arguments: [.string(`enterpriseConnectionId`)]) { result in
+      return try DeletedObject.decode(result, in: runtime)
+    }
   }
   public func `createEnterpriseConnectionTestRun`(_ `enterpriseConnectionId`: String) async throws -> EnterpriseConnectionTestRunInit {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.createEnterpriseConnectionTestRun", arguments: [.string(`enterpriseConnectionId`)])
-    return try EnterpriseConnectionTestRunInit.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.createEnterpriseConnectionTestRun", arguments: [.string(`enterpriseConnectionId`)]) { result in
+      return try EnterpriseConnectionTestRunInit.decode(result, in: runtime)
+    }
   }
   public func `getEnterpriseConnectionTestRuns`(_ `enterpriseConnectionId`: String, `params`: GetEnterpriseConnectionTestRunsParams? = nil) async throws -> ClerkPaginatedResponseEnterpriseConnectionTestRun {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getEnterpriseConnectionTestRuns", arguments: [.string(`enterpriseConnectionId`), try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseEnterpriseConnectionTestRun.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getEnterpriseConnectionTestRuns", arguments: [.string(`enterpriseConnectionId`), try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseEnterpriseConnectionTestRun.decode(result, in: runtime)
+    }
   }
   /// Deletes the Organization. Only administrators can delete an Organization.
   /// 
   /// Deleting an Organization will also delete all memberships and invitations. **This is not reversible.**
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   /// Sets or replaces an Organization's logo.
   public func `setLogo`(_ `params`: SetOrganizationLogoParams) async throws -> Organization {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.setLogo", arguments: [try `params`.encode()])
-    return try Organization.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.setLogo", arguments: [try `params`.encode()]) { result in
+      return try Organization.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Organization {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Organization.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Organization.decode(result, in: runtime)
+    }
   }
   /// Initializes a payment method.
   public func `initializePaymentMethod`(_ `params`: InitializePaymentMethodParams) async throws -> BillingInitializedPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.initializePaymentMethod", arguments: [try `params`.encode()])
-    return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.initializePaymentMethod", arguments: [try `params`.encode()]) { result in
+      return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    }
   }
   /// Adds a payment method.
   public func `addPaymentMethod`(_ `params`: AddPaymentMethodParams) async throws -> BillingPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.addPaymentMethod", arguments: [try `params`.encode()])
-    return try BillingPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.addPaymentMethod", arguments: [try `params`.encode()]) { result in
+      return try BillingPaymentMethod.decode(result, in: runtime)
+    }
   }
   /// Gets a list of payment methods that have been stored.
   public func `getPaymentMethods`(_ `params`: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponseBillingPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Organization.getPaymentMethods", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseBillingPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Organization.getPaymentMethods", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseBillingPaymentMethod.decode(result, in: runtime)
+    }
   }
 }
 
-public struct UpdateOrganizationParams: Sendable {
+public struct UpdateOrganizationParams: Hashable, Sendable {
   public let `name`: String
   public let `slug`: String?
   public init(`name`: String, `slug`: String? = nil) {
@@ -392,7 +427,7 @@ public struct UpdateOrganizationParams: Sendable {
   }
 }
 
-public struct GetMembersParams: Sendable {
+public struct GetMembersParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `role`: [String]?
@@ -423,7 +458,7 @@ public struct GetMembersParams: Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseOrganizationMembership: Sendable {
+public struct ClerkPaginatedResponseOrganizationMembership: Hashable, Sendable {
   public let `data`: [OrganizationMembership]
   public let `totalCount`: Double
   public init(`data`: [OrganizationMembership], `totalCount`: Double) {
@@ -445,7 +480,7 @@ public struct ClerkPaginatedResponseOrganizationMembership: Sendable {
 }
 
 /// The `OrganizationMembership` object is the model around a user's membership in an Organization.
-public struct OrganizationMembershipState: Sendable {
+public struct OrganizationMembershipState: Hashable, Sendable {
   public let `id`: String
   public let `organization`: Organization
   public let `permissions`: [String]
@@ -507,25 +542,28 @@ public struct OrganizationMembershipState: Sendable {
   /// Deletes the membership, removing the user from the Organization.
   public func `destroy`() async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.destroy", arguments: [])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.destroy", arguments: []) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Updates the member's [Role](https://clerk.com/docs/guides/organizations/control-access/roles-and-permissions) in the Organization.
   public func `update`(_ `updateParams`: UpdateOrganizationMembershipParams) async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.update", arguments: [try `updateParams`.encode()])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.update", arguments: [try `updateParams`.encode()]) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembership.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationMembership.decode(result, in: runtime)
+    }
   }
 }
 
 /// Information about the user that's publicly available.
-public struct PublicUserData: Sendable {
+public struct PublicUserData: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `imageUrl`: String
@@ -567,7 +605,7 @@ public struct PublicUserData: Sendable {
   }
 }
 
-public struct UpdateOrganizationMembershipParams: Sendable {
+public struct UpdateOrganizationMembershipParams: Hashable, Sendable {
   public let `role`: String
   public init(`role`: String) {
     self.`role` = `role`
@@ -585,7 +623,7 @@ public struct UpdateOrganizationMembershipParams: Sendable {
   }
 }
 
-public struct ClerkResourceReloadParams: Sendable {
+public struct ClerkResourceReloadParams: Hashable, Sendable {
   public let `rotatingTokenNonce`: String?
   public init(`rotatingTokenNonce`: String? = nil) {
     self.`rotatingTokenNonce` = `rotatingTokenNonce`
@@ -603,7 +641,7 @@ public struct ClerkResourceReloadParams: Sendable {
   }
 }
 
-public struct GetInvitationsParams: Sendable {
+public struct GetInvitationsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `status`: [OrganizationInvitationStatus]?
@@ -659,7 +697,7 @@ public enum OrganizationInvitationStatus: Hashable, Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseOrganizationInvitation: Sendable {
+public struct ClerkPaginatedResponseOrganizationInvitation: Hashable, Sendable {
   public let `data`: [OrganizationInvitation]
   public let `totalCount`: Double
   public init(`data`: [OrganizationInvitation], `totalCount`: Double) {
@@ -681,7 +719,7 @@ public struct ClerkPaginatedResponseOrganizationInvitation: Sendable {
 }
 
 /// The `OrganizationInvitation` object is the model around [an invitation to join an Organization](https://clerk.com/docs/guides/organizations/add-members/invitations).
-public struct OrganizationInvitationState: Sendable {
+public struct OrganizationInvitationState: Hashable, Sendable {
   public let `id`: String
   public let `emailAddress`: String
   public let `organizationId`: String
@@ -743,18 +781,20 @@ public struct OrganizationInvitationState: Sendable {
   /// Revokes the invitation so it can no longer be accepted.
   public func `revoke`() async throws -> OrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationInvitation.revoke", arguments: [])
-    return try OrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationInvitation.revoke", arguments: []) { result in
+      return try OrganizationInvitation.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationInvitation.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationInvitation.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationInvitation.decode(result, in: runtime)
+    }
   }
 }
 
-public struct GetRolesParams: Sendable {
+public struct GetRolesParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public init(`initialPage`: Double? = nil, `pageSize`: Double? = nil) {
@@ -775,7 +815,7 @@ public struct GetRolesParams: Sendable {
   }
 }
 
-public struct GetRolesResponse: Sendable {
+public struct GetRolesResponse: Hashable, Sendable {
   public let `hasRoleSetMigration`: Bool?
   public let `data`: [Role]
   public let `totalCount`: Double
@@ -799,7 +839,7 @@ public struct GetRolesResponse: Sendable {
   }
 }
 
-public struct RoleState: Sendable {
+public struct RoleState: Hashable, Sendable {
   public let `id`: String
   public let `key`: String
   public let `name`: String
@@ -853,12 +893,13 @@ public struct RoleState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Role {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Role.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Role.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Role.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Role.decode(result, in: runtime)
+    }
   }
 }
 
-public struct PermissionState: Sendable {
+public struct PermissionState: Hashable, Sendable {
   public let `id`: String
   public let `key`: String
   public let `name`: String
@@ -912,8 +953,9 @@ public struct PermissionState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Permission {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Permission.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Permission.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Permission.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Permission.decode(result, in: runtime)
+    }
   }
 }
 
@@ -939,7 +981,7 @@ public enum PermissionType: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PermissionType { .init(rawValue: try value.string()) }
 }
 
-public struct GetDomainsParams: Sendable {
+public struct GetDomainsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `enrollmentMode`: OrganizationEnrollmentMode?
@@ -995,7 +1037,7 @@ public enum OrganizationEnrollmentMode: Hashable, Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseOrganizationDomain: Sendable {
+public struct ClerkPaginatedResponseOrganizationDomain: Hashable, Sendable {
   public let `data`: [OrganizationDomain]
   public let `totalCount`: Double
   public init(`data`: [OrganizationDomain], `totalCount`: Double) {
@@ -1017,7 +1059,7 @@ public struct ClerkPaginatedResponseOrganizationDomain: Sendable {
 }
 
 /// The `OrganizationDomain` object is the model around an Organization's [Verified Domain](https://clerk.com/docs/guides/organizations/add-members/verified-domains).
-public struct OrganizationDomainState: Sendable {
+public struct OrganizationDomainState: Hashable, Sendable {
   public let `id`: String
   public let `name`: String
   public let `organizationId`: String
@@ -1091,37 +1133,42 @@ public struct OrganizationDomainState: Sendable {
   /// Begins the verification process of a created Organization domain by sending a verification code to the provided email address.
   public func `prepareAffiliationVerification`(_ `params`: PrepareAffiliationVerificationParams) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.prepareAffiliationVerification", arguments: [try `params`.encode()])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.prepareAffiliationVerification", arguments: [try `params`.encode()]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
   /// Completes the verification process started by [`prepareAffiliationVerification()`](https://clerk.com/docs/reference/types/organization-domain-resource#prepare-affiliation-verification), by validating the provided verification code.
   public func `attemptAffiliationVerification`(_ `params`: AttemptAffiliationVerificationParams) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.attemptAffiliationVerification", arguments: [try `params`.encode()])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.attemptAffiliationVerification", arguments: [try `params`.encode()]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
   /// Deletes the Verified Domain.
   public func `delete`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.delete", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.delete", arguments: []) { result in
+      _ = result
+    }
   }
   /// Updates the enrollment mode of the Verified Domain.
   public func `updateEnrollmentMode`(_ `params`: UpdateEnrollmentModeParams) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.updateEnrollmentMode", arguments: [try `params`.encode()])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.updateEnrollmentMode", arguments: [try `params`.encode()]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationDomain {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationDomain.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationDomain.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationDomain.decode(result, in: runtime)
+    }
   }
 }
 
 /// The `OrganizationDomainVerification` object holds the affiliation verification details of an Organization's [Verified Domain](/docs/guides/organizations/add-members/verified-domains). Affiliation proves that the current user controls an email address that belongs to the domain.
-public struct OrganizationDomainVerification: Sendable {
+public struct OrganizationDomainVerification: Hashable, Sendable {
   public let `status`: OrganizationDomainVerificationStatus
   public var `strategy`: String { "email_code" }
   public let `attempts`: Double
@@ -1184,7 +1231,7 @@ public enum OrganizationDomainVerificationStatus: Hashable, Sendable {
 }
 
 /// Holds the ownership verification details of an Organization's [Verified Domain](https://clerk.com/docs/guides/organizations/add-members/verified-domains). Ownership proves control of the underlying DNS domain, typically by publishing a TXT record, and is required before the domain can be used for enterprise SSO.
-public struct OrganizationDomainOwnershipVerification: Sendable {
+public struct OrganizationDomainOwnershipVerification: Hashable, Sendable {
   public let `status`: OrganizationDomainOwnershipVerificationStatus
   public let `strategy`: OrganizationDomainOwnershipVerificationStrategy
   public let `attempts`: Double?
@@ -1281,7 +1328,7 @@ public enum OrganizationDomainOwnershipVerificationStrategy: Hashable, Sendable 
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationDomainOwnershipVerificationStrategy { .init(rawValue: try value.string()) }
 }
 
-public struct PrepareAffiliationVerificationParams: Sendable {
+public struct PrepareAffiliationVerificationParams: Hashable, Sendable {
   public let `affiliationEmailAddress`: String
   public init(`affiliationEmailAddress`: String) {
     self.`affiliationEmailAddress` = `affiliationEmailAddress`
@@ -1299,7 +1346,7 @@ public struct PrepareAffiliationVerificationParams: Sendable {
   }
 }
 
-public struct AttemptAffiliationVerificationParams: Sendable {
+public struct AttemptAffiliationVerificationParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -1317,7 +1364,7 @@ public struct AttemptAffiliationVerificationParams: Sendable {
   }
 }
 
-public struct UpdateEnrollmentModeParams: Sendable {
+public struct UpdateEnrollmentModeParams: Hashable, Sendable {
   public let `enrollmentMode`: OrganizationEnrollmentMode
   public let `deletePending`: Bool?
   public init(`enrollmentMode`: OrganizationEnrollmentMode, `deletePending`: Bool? = nil) {
@@ -1338,7 +1385,7 @@ public struct UpdateEnrollmentModeParams: Sendable {
   }
 }
 
-public struct GetMembershipRequestParams: Sendable {
+public struct GetMembershipRequestParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `status`: OrganizationInvitationStatus?
@@ -1366,7 +1413,7 @@ public struct GetMembershipRequestParams: Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseOrganizationMembershipRequest: Sendable {
+public struct ClerkPaginatedResponseOrganizationMembershipRequest: Hashable, Sendable {
   public let `data`: [OrganizationMembershipRequest]
   public let `totalCount`: Double
   public init(`data`: [OrganizationMembershipRequest], `totalCount`: Double) {
@@ -1388,7 +1435,7 @@ public struct ClerkPaginatedResponseOrganizationMembershipRequest: Sendable {
 }
 
 /// The `OrganizationMembershipRequest` object is the model that describes [the request of a user to join an Organization](https://clerk.com/docs/guides/organizations/add-members/verified-domains#membership-requests).
-public struct OrganizationMembershipRequestState: Sendable {
+public struct OrganizationMembershipRequestState: Hashable, Sendable {
   public let `id`: String
   public let `organizationId`: String
   public let `status`: OrganizationInvitationStatus
@@ -1438,24 +1485,27 @@ public struct OrganizationMembershipRequestState: Sendable {
   /// Accepts the Membership Request, adding the user to the Organization.
   public func `accept`() async throws -> OrganizationMembershipRequest {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.accept", arguments: [])
-    return try OrganizationMembershipRequest.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.accept", arguments: []) { result in
+      return try OrganizationMembershipRequest.decode(result, in: runtime)
+    }
   }
   /// Rejects the Membership Request, declining the user's request to join the Organization.
   public func `reject`() async throws -> OrganizationMembershipRequest {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.reject", arguments: [])
-    return try OrganizationMembershipRequest.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.reject", arguments: []) { result in
+      return try OrganizationMembershipRequest.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationMembershipRequest {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationMembershipRequest.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationMembershipRequest.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationMembershipRequest.decode(result, in: runtime)
+    }
   }
 }
 
-public struct AddMemberParams: Sendable {
+public struct AddMemberParams: Hashable, Sendable {
   public let `userId`: String
   public let `role`: String
   public init(`userId`: String, `role`: String) {
@@ -1476,7 +1526,7 @@ public struct AddMemberParams: Sendable {
   }
 }
 
-public struct InviteMemberParams: Sendable {
+public struct InviteMemberParams: Hashable, Sendable {
   public let `emailAddress`: String
   public let `role`: String
   public init(`emailAddress`: String, `role`: String) {
@@ -1497,7 +1547,7 @@ public struct InviteMemberParams: Sendable {
   }
 }
 
-public struct InviteMembersParams: Sendable {
+public struct InviteMembersParams: Hashable, Sendable {
   public let `emailAddresses`: [String]
   public let `role`: String
   public init(`emailAddresses`: [String], `role`: String) {
@@ -1518,7 +1568,7 @@ public struct InviteMembersParams: Sendable {
   }
 }
 
-public struct UpdateMembershipParams: Sendable {
+public struct UpdateMembershipParams: Hashable, Sendable {
   public let `userId`: String
   public let `role`: String
   public init(`userId`: String, `role`: String) {
@@ -1540,7 +1590,7 @@ public struct UpdateMembershipParams: Sendable {
 }
 
 /// From T, pick a set of properties whose keys are in the union K
-public struct PickCreateOrganizationDomainParamsAndenrollmentMode: Sendable {
+public struct PickCreateOrganizationDomainParamsAndenrollmentMode: Hashable, Sendable {
   public let `enrollmentMode`: OrganizationEnrollmentMode?
   public init(`enrollmentMode`: OrganizationEnrollmentMode? = nil) {
     self.`enrollmentMode` = `enrollmentMode`
@@ -1559,7 +1609,7 @@ public struct PickCreateOrganizationDomainParamsAndenrollmentMode: Sendable {
 }
 
 /// The `OrganizationDomainsBulkOwnershipVerificationResource` object is the result of a bulk ownership verification flow, such as [`prepareOwnershipVerification()`](https://clerk.com/docs/reference/objects/organization#prepare-ownership-verification) or [`attemptOwnershipVerification()`](https://clerk.com/docs/reference/objects/organization#attempt-ownership-verification), where ownership is verified for several of an Organization's [Verified Domains](https://clerk.com/docs/guides/organizations/add-members/verified-domains) at once. Because the operation can partially succeed, each requested domain is reported in either `data` or `errors`.
-public struct OrganizationDomainsBulkOwnershipVerification: Sendable {
+public struct OrganizationDomainsBulkOwnershipVerification: Hashable, Sendable {
   public let `data`: [OrganizationDomain]
   public let `errors`: [OrganizationDomainBulkOwnershipVerificationError]
   public init(`data`: [OrganizationDomain], `errors`: [OrganizationDomainBulkOwnershipVerificationError]) {
@@ -1580,7 +1630,7 @@ public struct OrganizationDomainsBulkOwnershipVerification: Sendable {
   }
 }
 
-public struct OrganizationDomainBulkOwnershipVerificationError: Sendable {
+public struct OrganizationDomainBulkOwnershipVerificationError: Hashable, Sendable {
   public let `id`: String
   public let `code`: String
   public init(`id`: String, `code`: String) {
@@ -1601,7 +1651,7 @@ public struct OrganizationDomainBulkOwnershipVerificationError: Sendable {
   }
 }
 
-public struct OrganizationGetDomain__0: Sendable {
+public struct OrganizationGetDomain__0: Hashable, Sendable {
   public let `domainId`: String
   public init(`domainId`: String) {
     self.`domainId` = `domainId`
@@ -1619,7 +1669,7 @@ public struct OrganizationGetDomain__0: Sendable {
   }
 }
 
-public struct GetEnterpriseConnectionsParams: Sendable {
+public struct GetEnterpriseConnectionsParams: Hashable, Sendable {
   public let `withOrganizationAccountLinking`: Bool?
   public init(`withOrganizationAccountLinking`: Bool? = nil) {
     self.`withOrganizationAccountLinking` = `withOrganizationAccountLinking`
@@ -1637,7 +1687,7 @@ public struct GetEnterpriseConnectionsParams: Sendable {
   }
 }
 
-public struct EnterpriseConnectionState: Sendable {
+public struct EnterpriseConnectionState: Hashable, Sendable {
   public let `id`: String
   public let `name`: String
   public let `active`: Bool
@@ -1723,12 +1773,13 @@ public struct EnterpriseConnectionState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> EnterpriseConnection {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseConnection.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try EnterpriseConnection.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseConnection.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try EnterpriseConnection.decode(result, in: runtime)
+    }
   }
 }
 
-public struct EnterpriseOAuthConfig: Sendable {
+public struct EnterpriseOAuthConfig: Hashable, Sendable {
   public let `id`: String
   public let `name`: String
   public let `clientId`: String
@@ -1782,7 +1833,7 @@ public struct EnterpriseOAuthConfig: Sendable {
   }
 }
 
-public struct EnterpriseSamlConnectionNested: Sendable {
+public struct EnterpriseSamlConnectionNested: Hashable, Sendable {
   public let `id`: String
   public let `name`: String
   public let `active`: Bool
@@ -1845,7 +1896,7 @@ public struct EnterpriseSamlConnectionNested: Sendable {
   }
 }
 
-public struct CreateOrganizationEnterpriseConnectionParams: Sendable {
+public struct CreateOrganizationEnterpriseConnectionParams: Hashable, Sendable {
   public let `provider`: OrganizationEnterpriseConnectionProvider
   public let `name`: String?
   public let `domains`: [String]?
@@ -1915,7 +1966,7 @@ public enum OrganizationEnterpriseConnectionProvider: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationEnterpriseConnectionProvider { .init(rawValue: try value.string()) }
 }
 
-public struct OrganizationEnterpriseConnectionSamlInput: Sendable {
+public struct OrganizationEnterpriseConnectionSamlInput: Hashable, Sendable {
   public let `idpEntityId`: Field<String>
   public let `idpSsoUrl`: Field<String>
   public let `idpCertificate`: Field<String>
@@ -1957,7 +2008,7 @@ public struct OrganizationEnterpriseConnectionSamlInput: Sendable {
   }
 }
 
-public struct OrganizationEnterpriseConnectionOidcInput: Sendable {
+public struct OrganizationEnterpriseConnectionOidcInput: Hashable, Sendable {
   public let `clientId`: Field<String>
   public let `clientSecret`: Field<String>
   public let `discoveryUrl`: Field<String>
@@ -1993,7 +2044,7 @@ public struct OrganizationEnterpriseConnectionOidcInput: Sendable {
   }
 }
 
-public struct UpdateOrganizationEnterpriseConnectionParams: Sendable {
+public struct UpdateOrganizationEnterpriseConnectionParams: Hashable, Sendable {
   public let `name`: Field<String>
   public let `domains`: [String]?
   public let `active`: Field<Bool>
@@ -2036,7 +2087,7 @@ public struct UpdateOrganizationEnterpriseConnectionParams: Sendable {
 }
 
 /// The `DeletedObjectResource` type represents an item that has been deleted from the database.
-public struct DeletedObject: Sendable {
+public struct DeletedObject: Hashable, Sendable {
   public let `object`: String
   public let `id`: String?
   public let `slug`: String?
@@ -2063,7 +2114,7 @@ public struct DeletedObject: Sendable {
   }
 }
 
-public struct EnterpriseConnectionTestRunInit: Sendable {
+public struct EnterpriseConnectionTestRunInit: Hashable, Sendable {
   public let `url`: String
   public init(`url`: String) {
     self.`url` = `url`
@@ -2081,7 +2132,7 @@ public struct EnterpriseConnectionTestRunInit: Sendable {
   }
 }
 
-public struct GetEnterpriseConnectionTestRunsParams: Sendable {
+public struct GetEnterpriseConnectionTestRunsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `status`: [EnterpriseConnectionTestRunStatus]?
@@ -2134,7 +2185,7 @@ public enum EnterpriseConnectionTestRunStatus: Hashable, Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseEnterpriseConnectionTestRun: Sendable {
+public struct ClerkPaginatedResponseEnterpriseConnectionTestRun: Hashable, Sendable {
   public let `data`: [EnterpriseConnectionTestRun]
   public let `totalCount`: Double
   public init(`data`: [EnterpriseConnectionTestRun], `totalCount`: Double) {
@@ -2155,7 +2206,7 @@ public struct ClerkPaginatedResponseEnterpriseConnectionTestRun: Sendable {
   }
 }
 
-public struct EnterpriseConnectionTestRunState: Sendable {
+public struct EnterpriseConnectionTestRunState: Hashable, Sendable {
   public let `id`: String
   public let `status`: String
   public let `connectionType`: EnterpriseConnectionTestRunConnectionType
@@ -2213,8 +2264,9 @@ public struct EnterpriseConnectionTestRunState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> EnterpriseConnectionTestRun {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseConnectionTestRun.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try EnterpriseConnectionTestRun.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseConnectionTestRun.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try EnterpriseConnectionTestRun.decode(result, in: runtime)
+    }
   }
 }
 
@@ -2240,7 +2292,7 @@ public enum EnterpriseConnectionTestRunConnectionType: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> EnterpriseConnectionTestRunConnectionType { .init(rawValue: try value.string()) }
 }
 
-public struct EnterpriseConnectionTestRunParsedUserInfo: Sendable {
+public struct EnterpriseConnectionTestRunParsedUserInfo: Hashable, Sendable {
   public let `emailAddress`: String?
   public let `firstName`: String?
   public let `lastName`: String?
@@ -2267,7 +2319,7 @@ public struct EnterpriseConnectionTestRunParsedUserInfo: Sendable {
   }
 }
 
-public struct EnterpriseConnectionTestRunLog: Sendable {
+public struct EnterpriseConnectionTestRunLog: Hashable, Sendable {
   public let `level`: String?
   public let `code`: String?
   public let `shortMessage`: String?
@@ -2294,7 +2346,7 @@ public struct EnterpriseConnectionTestRunLog: Sendable {
   }
 }
 
-public struct EnterpriseConnectionTestRunSamlPayload: Sendable {
+public struct EnterpriseConnectionTestRunSamlPayload: Hashable, Sendable {
   public let `samlRequest`: String?
   public let `samlResponse`: String?
   public let `relayState`: String?
@@ -2318,7 +2370,7 @@ public struct EnterpriseConnectionTestRunSamlPayload: Sendable {
   }
 }
 
-public struct EnterpriseConnectionTestRunOauthPayload: Sendable {
+public struct EnterpriseConnectionTestRunOauthPayload: Hashable, Sendable {
   public let `userInfo`: String?
   public init(`userInfo`: String? = nil) {
     self.`userInfo` = `userInfo`
@@ -2336,7 +2388,7 @@ public struct EnterpriseConnectionTestRunOauthPayload: Sendable {
   }
 }
 
-public struct SetOrganizationLogoParams: Sendable {
+public struct SetOrganizationLogoParams: Hashable, Sendable {
   public let `file`: SetOrganizationLogoParamsFile?
   public init(`file`: SetOrganizationLogoParamsFile?) {
     self.`file` = `file`
@@ -2354,7 +2406,7 @@ public struct SetOrganizationLogoParams: Sendable {
   }
 }
 
-public indirect enum SetOrganizationLogoParamsFile: Sendable {
+public indirect enum SetOrganizationLogoParamsFile: Hashable, Sendable {
   case case1(String)
   case case2(UploadFile)
   case case3(UploadFile)
@@ -2377,7 +2429,7 @@ public indirect enum SetOrganizationLogoParamsFile: Sendable {
   }
 }
 
-public struct InitializePaymentMethodParams: Sendable {
+public struct InitializePaymentMethodParams: Hashable, Sendable {
   public var `gateway`: String { "stripe" }
   public init() {
 
@@ -2396,7 +2448,7 @@ public struct InitializePaymentMethodParams: Sendable {
 }
 
 /// The `BillingInitializedPaymentMethodResource` type represents a payment method that has been initialized for checkout session.
-public struct BillingInitializedPaymentMethodState: Sendable {
+public struct BillingInitializedPaymentMethodState: Hashable, Sendable {
   public let `externalClientSecret`: String
   public let `externalGatewayId`: String
   public let `paymentMethodOrder`: [String]
@@ -2438,12 +2490,13 @@ public struct BillingInitializedPaymentMethodState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> BillingInitializedPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "BillingInitializedPaymentMethod.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "BillingInitializedPaymentMethod.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    }
   }
 }
 
-public struct AddPaymentMethodParams: Sendable {
+public struct AddPaymentMethodParams: Hashable, Sendable {
   public var `gateway`: String { "stripe" }
   public let `paymentToken`: String
   public init(`paymentToken`: String) {
@@ -2464,7 +2517,7 @@ public struct AddPaymentMethodParams: Sendable {
 }
 
 /// The `BillingPaymentMethodResource` type represents a payment method for a checkout session.
-public struct BillingPaymentMethodState: Sendable {
+public struct BillingPaymentMethodState: Hashable, Sendable {
   public let `id`: String
   public let `last4`: String?
   public let `paymentType`: String?
@@ -2541,8 +2594,9 @@ public struct BillingPaymentMethodState: Sendable {
   /// </ul>
   public func `remove`(_ `params`: BillingPaymentMethodRemoveParams? = nil) async throws -> DeletedObject {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.remove", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try DeletedObject.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.remove", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try DeletedObject.decode(result, in: runtime)
+    }
   }
   /// A function that sets this payment method as the default for the account. Accepts the following parameters:
   /// <ul>
@@ -2550,14 +2604,16 @@ public struct BillingPaymentMethodState: Sendable {
   /// </ul>
   public func `makeDefault`(_ `params`: BillingPaymentMethodRemoveParams? = nil) async throws -> JSONValue {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.makeDefault", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return result
+    return try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.makeDefault", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return result
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> BillingPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try BillingPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "BillingPaymentMethod.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try BillingPaymentMethod.decode(result, in: runtime)
+    }
   }
 }
 
@@ -2587,7 +2643,7 @@ public enum BillingPaymentMethodStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> BillingPaymentMethodStatus { .init(rawValue: try value.string()) }
 }
 
-public struct BillingPaymentMethodRemoveParams: Sendable {
+public struct BillingPaymentMethodRemoveParams: Hashable, Sendable {
   public let `orgId`: String?
   public init(`orgId`: String? = nil) {
     self.`orgId` = `orgId`
@@ -2605,7 +2661,7 @@ public struct BillingPaymentMethodRemoveParams: Sendable {
   }
 }
 
-public struct GetPaymentMethodsParams: Sendable {
+public struct GetPaymentMethodsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public init(`initialPage`: Double? = nil, `pageSize`: Double? = nil) {
@@ -2630,7 +2686,7 @@ public struct GetPaymentMethodsParams: Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseBillingPaymentMethod: Sendable {
+public struct ClerkPaginatedResponseBillingPaymentMethod: Hashable, Sendable {
   public let `data`: [BillingPaymentMethod]
   public let `totalCount`: Double
   public init(`data`: [BillingPaymentMethod], `totalCount`: Double) {
@@ -2651,6 +2707,1199 @@ public struct ClerkPaginatedResponseBillingPaymentMethod: Sendable {
   }
 }
 
+public struct MobileEnvironment: Hashable, Sendable {
+  public let `organizationSettings`: OrganizationSettings
+  public let `authConfig`: AuthConfig
+  public let `displayConfig`: DisplayConfig
+  public let `maintenanceMode`: Bool
+  public let `userSettings`: MobileUserSettings
+  public init(`organizationSettings`: OrganizationSettings, `authConfig`: AuthConfig, `displayConfig`: DisplayConfig, `maintenanceMode`: Bool, `userSettings`: MobileUserSettings) {
+    self.`organizationSettings` = `organizationSettings`
+    self.`authConfig` = `authConfig`
+    self.`displayConfig` = `displayConfig`
+    self.`maintenanceMode` = `maintenanceMode`
+    self.`userSettings` = `userSettings`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "organizationSettings": try self.`organizationSettings`.encode(),
+      "authConfig": try self.`authConfig`.encode(),
+      "displayConfig": try self.`displayConfig`.encode(),
+      "maintenanceMode": .bool(self.`maintenanceMode`),
+      "userSettings": try self.`userSettings`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> MobileEnvironment {
+    let values = try value.object()
+
+    return try MobileEnvironment(`organizationSettings`: try OrganizationSettings.decode((values["organizationSettings"] ?? .undefined), in: runtime), `authConfig`: try AuthConfig.decode((values["authConfig"] ?? .undefined), in: runtime), `displayConfig`: try DisplayConfig.decode((values["displayConfig"] ?? .undefined), in: runtime), `maintenanceMode`: try (values["maintenanceMode"] ?? .undefined).bool(), `userSettings`: try MobileUserSettings.decode((values["userSettings"] ?? .undefined), in: runtime))
+  }
+}
+
+/// The `OrganizationSettings` object holds the Organization-related settings configured for the instance.
+public struct OrganizationSettings: Hashable, Sendable {
+  public let `enabled`: Bool
+  public let `maxAllowedMemberships`: Double
+  public let `forceOrganizationSelection`: Bool
+  public let `actions`: OrganizationSettingsActions
+  public let `domains`: OrganizationSettingsDomains
+  public let `slug`: OrganizationSettingsSlug
+  public let `organizationCreationDefaults`: OrganizationSettingsOrganizationCreationDefaults
+  public let `id`: String?
+  public init(`enabled`: Bool, `maxAllowedMemberships`: Double, `forceOrganizationSelection`: Bool, `actions`: OrganizationSettingsActions, `domains`: OrganizationSettingsDomains, `slug`: OrganizationSettingsSlug, `organizationCreationDefaults`: OrganizationSettingsOrganizationCreationDefaults, `id`: String? = nil) {
+    self.`enabled` = `enabled`
+    self.`maxAllowedMemberships` = `maxAllowedMemberships`
+    self.`forceOrganizationSelection` = `forceOrganizationSelection`
+    self.`actions` = `actions`
+    self.`domains` = `domains`
+    self.`slug` = `slug`
+    self.`organizationCreationDefaults` = `organizationCreationDefaults`
+    self.`id` = `id`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`),
+      "maxAllowedMemberships": .number(self.`maxAllowedMemberships`),
+      "forceOrganizationSelection": .bool(self.`forceOrganizationSelection`),
+      "actions": try self.`actions`.encode(),
+      "domains": try self.`domains`.encode(),
+      "slug": try self.`slug`.encode(),
+      "organizationCreationDefaults": try self.`organizationCreationDefaults`.encode(),
+      "id": try self.`id`.map { value in .string(value) } ?? .undefined
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationSettings {
+    let values = try value.object()
+
+    return try OrganizationSettings(`enabled`: try (values["enabled"] ?? .undefined).bool(), `maxAllowedMemberships`: try (values["maxAllowedMemberships"] ?? .undefined).number(), `forceOrganizationSelection`: try (values["forceOrganizationSelection"] ?? .undefined).bool(), `actions`: try OrganizationSettingsActions.decode((values["actions"] ?? .undefined), in: runtime), `domains`: try OrganizationSettingsDomains.decode((values["domains"] ?? .undefined), in: runtime), `slug`: try OrganizationSettingsSlug.decode((values["slug"] ?? .undefined), in: runtime), `organizationCreationDefaults`: try OrganizationSettingsOrganizationCreationDefaults.decode((values["organizationCreationDefaults"] ?? .undefined), in: runtime), `id`: try (values["id"] ?? .undefined).optional { value in try value.string() })
+  }
+}
+
+public struct OrganizationSettingsActions: Hashable, Sendable {
+  public let `adminDelete`: Bool
+  public init(`adminDelete`: Bool) {
+    self.`adminDelete` = `adminDelete`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "adminDelete": .bool(self.`adminDelete`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationSettingsActions {
+    let values = try value.object()
+
+    return try OrganizationSettingsActions(`adminDelete`: try (values["adminDelete"] ?? .undefined).bool())
+  }
+}
+
+public struct OrganizationSettingsDomains: Hashable, Sendable {
+  public let `enabled`: Bool
+  public let `enrollmentModes`: [OrganizationEnrollmentMode]
+  public let `defaultRole`: String?
+  public init(`enabled`: Bool, `enrollmentModes`: [OrganizationEnrollmentMode], `defaultRole`: String?) {
+    self.`enabled` = `enabled`
+    self.`enrollmentModes` = `enrollmentModes`
+    self.`defaultRole` = `defaultRole`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`),
+      "enrollmentModes": .array(try self.`enrollmentModes`.map { value in try value.encode() }),
+      "defaultRole": try self.`defaultRole`.map { value in .string(value) } ?? .null
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationSettingsDomains {
+    let values = try value.object()
+
+    return try OrganizationSettingsDomains(`enabled`: try (values["enabled"] ?? .undefined).bool(), `enrollmentModes`: try (values["enrollmentModes"] ?? .undefined).array().map { value in try OrganizationEnrollmentMode.decode(value, in: runtime) }, `defaultRole`: try (values["defaultRole"] ?? .undefined).optional { value in try value.string() })
+  }
+}
+
+public struct OrganizationSettingsSlug: Hashable, Sendable {
+  public let `disabled`: Bool
+  public init(`disabled`: Bool) {
+    self.`disabled` = `disabled`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "disabled": .bool(self.`disabled`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationSettingsSlug {
+    let values = try value.object()
+
+    return try OrganizationSettingsSlug(`disabled`: try (values["disabled"] ?? .undefined).bool())
+  }
+}
+
+public struct OrganizationSettingsOrganizationCreationDefaults: Hashable, Sendable {
+  public let `enabled`: Bool
+  public init(`enabled`: Bool) {
+    self.`enabled` = `enabled`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OrganizationSettingsOrganizationCreationDefaults {
+    let values = try value.object()
+
+    return try OrganizationSettingsOrganizationCreationDefaults(`enabled`: try (values["enabled"] ?? .undefined).bool())
+  }
+}
+
+public struct AuthConfig: Hashable, Sendable {
+  public let `singleSessionMode`: Bool
+  public let `claimedAt`: Date?
+  public let `reverification`: Bool
+  public let `preferredChannels`: [String: PhoneCodeChannel]?
+  public let `sessionMinter`: Bool
+  public let `id`: String?
+  public init(`singleSessionMode`: Bool, `claimedAt`: Date?, `reverification`: Bool, `preferredChannels`: [String: PhoneCodeChannel]?, `sessionMinter`: Bool, `id`: String? = nil) {
+    self.`singleSessionMode` = `singleSessionMode`
+    self.`claimedAt` = `claimedAt`
+    self.`reverification` = `reverification`
+    self.`preferredChannels` = `preferredChannels`
+    self.`sessionMinter` = `sessionMinter`
+    self.`id` = `id`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "singleSessionMode": .bool(self.`singleSessionMode`),
+      "claimedAt": try self.`claimedAt`.map { value in .string(value.ISO8601Format(.init(includingFractionalSeconds: true))) } ?? .null,
+      "reverification": .bool(self.`reverification`),
+      "preferredChannels": try self.`preferredChannels`.map { value in .object(try value.mapValues { value in try value.encode() }) } ?? .null,
+      "sessionMinter": .bool(self.`sessionMinter`),
+      "id": try self.`id`.map { value in .string(value) } ?? .undefined
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> AuthConfig {
+    let values = try value.object()
+
+    return try AuthConfig(`singleSessionMode`: try (values["singleSessionMode"] ?? .undefined).bool(), `claimedAt`: try (values["claimedAt"] ?? .undefined).optional { value in try value.date() }, `reverification`: try (values["reverification"] ?? .undefined).bool(), `preferredChannels`: try (values["preferredChannels"] ?? .undefined).optional { value in try value.object().mapValues { value in try PhoneCodeChannel.decode(value, in: runtime) } }, `sessionMinter`: try (values["sessionMinter"] ?? .undefined).bool(), `id`: try (values["id"] ?? .undefined).optional { value in try value.string() })
+  }
+}
+
+public enum PhoneCodeChannel: Hashable, Sendable {
+  case `sms`
+  case `whatsapp`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`sms`: return "sms"
+    case .`whatsapp`: return "whatsapp"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "sms": self = .`sms`
+    case "whatsapp": self = .`whatsapp`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PhoneCodeChannel { .init(rawValue: try value.string()) }
+}
+
+public struct DisplayConfig: Hashable, Sendable {
+  public let `id`: String
+  public let `afterSignInUrl`: String
+  public let `afterSignOutAllUrl`: String
+  public let `afterSignOutOneUrl`: String
+  public let `afterSignUpUrl`: String
+  public let `afterSwitchSessionUrl`: String
+  public let `applicationName`: String
+  public let `backendHost`: String
+  public let `branded`: Bool
+  public let `captchaPublicKey`: String?
+  public let `captchaWidgetType`: DisplayConfigCaptchaWidgetType?
+  public var `captchaProvider`: String { "turnstile" }
+  public let `captchaPublicKeyInvisible`: String?
+  public let `captchaOauthBypass`: [OAuthStrategy]
+  public let `captchaHeartbeat`: Bool
+  public let `captchaHeartbeatIntervalMs`: Double?
+  public let `homeUrl`: String
+  public let `instanceEnvironmentType`: String
+  public let `logoImageUrl`: String
+  public let `faviconImageUrl`: String
+  public let `preferredSignInStrategy`: PreferredSignInStrategy
+  public let `signInUrl`: String
+  public let `signUpUrl`: String
+  public let `supportEmail`: String
+  public let `theme`: DisplayThemeJSON
+  public let `userProfileUrl`: String
+  public let `clerkJSVersion`: String?
+  public let `organizationProfileUrl`: String
+  public let `createOrganizationUrl`: String
+  public let `afterLeaveOrganizationUrl`: String
+  public let `afterCreateOrganizationUrl`: String
+  public let `googleOneTapClientId`: String?
+  public let `showDevModeWarning`: Bool
+  public let `termsUrl`: String
+  public let `privacyPolicyUrl`: String
+  public let `waitlistUrl`: String
+  public let `afterJoinWaitlistUrl`: String
+  public init(`id`: String, `afterSignInUrl`: String, `afterSignOutAllUrl`: String, `afterSignOutOneUrl`: String, `afterSignUpUrl`: String, `afterSwitchSessionUrl`: String, `applicationName`: String, `backendHost`: String, `branded`: Bool, `captchaPublicKey`: String?, `captchaWidgetType`: DisplayConfigCaptchaWidgetType?, `captchaPublicKeyInvisible`: String?, `captchaOauthBypass`: [OAuthStrategy], `captchaHeartbeat`: Bool, `captchaHeartbeatIntervalMs`: Double? = nil, `homeUrl`: String, `instanceEnvironmentType`: String, `logoImageUrl`: String, `faviconImageUrl`: String, `preferredSignInStrategy`: PreferredSignInStrategy, `signInUrl`: String, `signUpUrl`: String, `supportEmail`: String, `theme`: DisplayThemeJSON, `userProfileUrl`: String, `clerkJSVersion`: String? = nil, `organizationProfileUrl`: String, `createOrganizationUrl`: String, `afterLeaveOrganizationUrl`: String, `afterCreateOrganizationUrl`: String, `googleOneTapClientId`: String? = nil, `showDevModeWarning`: Bool, `termsUrl`: String, `privacyPolicyUrl`: String, `waitlistUrl`: String, `afterJoinWaitlistUrl`: String) {
+    self.`id` = `id`
+    self.`afterSignInUrl` = `afterSignInUrl`
+    self.`afterSignOutAllUrl` = `afterSignOutAllUrl`
+    self.`afterSignOutOneUrl` = `afterSignOutOneUrl`
+    self.`afterSignUpUrl` = `afterSignUpUrl`
+    self.`afterSwitchSessionUrl` = `afterSwitchSessionUrl`
+    self.`applicationName` = `applicationName`
+    self.`backendHost` = `backendHost`
+    self.`branded` = `branded`
+    self.`captchaPublicKey` = `captchaPublicKey`
+    self.`captchaWidgetType` = `captchaWidgetType`
+    self.`captchaPublicKeyInvisible` = `captchaPublicKeyInvisible`
+    self.`captchaOauthBypass` = `captchaOauthBypass`
+    self.`captchaHeartbeat` = `captchaHeartbeat`
+    self.`captchaHeartbeatIntervalMs` = `captchaHeartbeatIntervalMs`
+    self.`homeUrl` = `homeUrl`
+    self.`instanceEnvironmentType` = `instanceEnvironmentType`
+    self.`logoImageUrl` = `logoImageUrl`
+    self.`faviconImageUrl` = `faviconImageUrl`
+    self.`preferredSignInStrategy` = `preferredSignInStrategy`
+    self.`signInUrl` = `signInUrl`
+    self.`signUpUrl` = `signUpUrl`
+    self.`supportEmail` = `supportEmail`
+    self.`theme` = `theme`
+    self.`userProfileUrl` = `userProfileUrl`
+    self.`clerkJSVersion` = `clerkJSVersion`
+    self.`organizationProfileUrl` = `organizationProfileUrl`
+    self.`createOrganizationUrl` = `createOrganizationUrl`
+    self.`afterLeaveOrganizationUrl` = `afterLeaveOrganizationUrl`
+    self.`afterCreateOrganizationUrl` = `afterCreateOrganizationUrl`
+    self.`googleOneTapClientId` = `googleOneTapClientId`
+    self.`showDevModeWarning` = `showDevModeWarning`
+    self.`termsUrl` = `termsUrl`
+    self.`privacyPolicyUrl` = `privacyPolicyUrl`
+    self.`waitlistUrl` = `waitlistUrl`
+    self.`afterJoinWaitlistUrl` = `afterJoinWaitlistUrl`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "id": .string(self.`id`),
+      "afterSignInUrl": .string(self.`afterSignInUrl`),
+      "afterSignOutAllUrl": .string(self.`afterSignOutAllUrl`),
+      "afterSignOutOneUrl": .string(self.`afterSignOutOneUrl`),
+      "afterSignUpUrl": .string(self.`afterSignUpUrl`),
+      "afterSwitchSessionUrl": .string(self.`afterSwitchSessionUrl`),
+      "applicationName": .string(self.`applicationName`),
+      "backendHost": .string(self.`backendHost`),
+      "branded": .bool(self.`branded`),
+      "captchaPublicKey": try self.`captchaPublicKey`.map { value in .string(value) } ?? .null,
+      "captchaWidgetType": try self.`captchaWidgetType`.map { value in try value.encode() } ?? .null,
+      "captchaProvider": .string("turnstile"),
+      "captchaPublicKeyInvisible": try self.`captchaPublicKeyInvisible`.map { value in .string(value) } ?? .null,
+      "captchaOauthBypass": .array(try self.`captchaOauthBypass`.map { value in try value.encode() }),
+      "captchaHeartbeat": .bool(self.`captchaHeartbeat`),
+      "captchaHeartbeatIntervalMs": try self.`captchaHeartbeatIntervalMs`.map { value in .number(value) } ?? .undefined,
+      "homeUrl": .string(self.`homeUrl`),
+      "instanceEnvironmentType": .string(self.`instanceEnvironmentType`),
+      "logoImageUrl": .string(self.`logoImageUrl`),
+      "faviconImageUrl": .string(self.`faviconImageUrl`),
+      "preferredSignInStrategy": try self.`preferredSignInStrategy`.encode(),
+      "signInUrl": .string(self.`signInUrl`),
+      "signUpUrl": .string(self.`signUpUrl`),
+      "supportEmail": .string(self.`supportEmail`),
+      "theme": try self.`theme`.encode(),
+      "userProfileUrl": .string(self.`userProfileUrl`),
+      "clerkJSVersion": try self.`clerkJSVersion`.map { value in .string(value) } ?? .undefined,
+      "organizationProfileUrl": .string(self.`organizationProfileUrl`),
+      "createOrganizationUrl": .string(self.`createOrganizationUrl`),
+      "afterLeaveOrganizationUrl": .string(self.`afterLeaveOrganizationUrl`),
+      "afterCreateOrganizationUrl": .string(self.`afterCreateOrganizationUrl`),
+      "googleOneTapClientId": try self.`googleOneTapClientId`.map { value in .string(value) } ?? .undefined,
+      "showDevModeWarning": .bool(self.`showDevModeWarning`),
+      "termsUrl": .string(self.`termsUrl`),
+      "privacyPolicyUrl": .string(self.`privacyPolicyUrl`),
+      "waitlistUrl": .string(self.`waitlistUrl`),
+      "afterJoinWaitlistUrl": .string(self.`afterJoinWaitlistUrl`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayConfig {
+    let values = try value.object()
+    guard values["captchaProvider"] == .string("turnstile") else { throw CoreError.invalidValue }
+    return try DisplayConfig(`id`: try (values["id"] ?? .undefined).string(), `afterSignInUrl`: try (values["afterSignInUrl"] ?? .undefined).string(), `afterSignOutAllUrl`: try (values["afterSignOutAllUrl"] ?? .undefined).string(), `afterSignOutOneUrl`: try (values["afterSignOutOneUrl"] ?? .undefined).string(), `afterSignUpUrl`: try (values["afterSignUpUrl"] ?? .undefined).string(), `afterSwitchSessionUrl`: try (values["afterSwitchSessionUrl"] ?? .undefined).string(), `applicationName`: try (values["applicationName"] ?? .undefined).string(), `backendHost`: try (values["backendHost"] ?? .undefined).string(), `branded`: try (values["branded"] ?? .undefined).bool(), `captchaPublicKey`: try (values["captchaPublicKey"] ?? .undefined).optional { value in try value.string() }, `captchaWidgetType`: try (values["captchaWidgetType"] ?? .undefined).optional { value in try DisplayConfigCaptchaWidgetType.decode(value, in: runtime) }, `captchaPublicKeyInvisible`: try (values["captchaPublicKeyInvisible"] ?? .undefined).optional { value in try value.string() }, `captchaOauthBypass`: try (values["captchaOauthBypass"] ?? .undefined).array().map { value in try OAuthStrategy.decode(value, in: runtime) }, `captchaHeartbeat`: try (values["captchaHeartbeat"] ?? .undefined).bool(), `captchaHeartbeatIntervalMs`: try (values["captchaHeartbeatIntervalMs"] ?? .undefined).optional { value in try value.number() }, `homeUrl`: try (values["homeUrl"] ?? .undefined).string(), `instanceEnvironmentType`: try (values["instanceEnvironmentType"] ?? .undefined).string(), `logoImageUrl`: try (values["logoImageUrl"] ?? .undefined).string(), `faviconImageUrl`: try (values["faviconImageUrl"] ?? .undefined).string(), `preferredSignInStrategy`: try PreferredSignInStrategy.decode((values["preferredSignInStrategy"] ?? .undefined), in: runtime), `signInUrl`: try (values["signInUrl"] ?? .undefined).string(), `signUpUrl`: try (values["signUpUrl"] ?? .undefined).string(), `supportEmail`: try (values["supportEmail"] ?? .undefined).string(), `theme`: try DisplayThemeJSON.decode((values["theme"] ?? .undefined), in: runtime), `userProfileUrl`: try (values["userProfileUrl"] ?? .undefined).string(), `clerkJSVersion`: try (values["clerkJSVersion"] ?? .undefined).optional { value in try value.string() }, `organizationProfileUrl`: try (values["organizationProfileUrl"] ?? .undefined).string(), `createOrganizationUrl`: try (values["createOrganizationUrl"] ?? .undefined).string(), `afterLeaveOrganizationUrl`: try (values["afterLeaveOrganizationUrl"] ?? .undefined).string(), `afterCreateOrganizationUrl`: try (values["afterCreateOrganizationUrl"] ?? .undefined).string(), `googleOneTapClientId`: try (values["googleOneTapClientId"] ?? .undefined).optional { value in try value.string() }, `showDevModeWarning`: try (values["showDevModeWarning"] ?? .undefined).bool(), `termsUrl`: try (values["termsUrl"] ?? .undefined).string(), `privacyPolicyUrl`: try (values["privacyPolicyUrl"] ?? .undefined).string(), `waitlistUrl`: try (values["waitlistUrl"] ?? .undefined).string(), `afterJoinWaitlistUrl`: try (values["afterJoinWaitlistUrl"] ?? .undefined).string())
+  }
+}
+
+public enum DisplayConfigCaptchaWidgetType: Hashable, Sendable {
+  case `smart`
+  case `invisible`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`smart`: return "smart"
+    case .`invisible`: return "invisible"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "smart": self = .`smart`
+    case "invisible": self = .`invisible`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayConfigCaptchaWidgetType { .init(rawValue: try value.string()) }
+}
+
+/// OAuth-related authentication strategies (`oauth_<provider>` and custom OAuth).
+public enum OAuthStrategy: Hashable, Sendable {
+  case `oauthFacebook`
+  case `oauthGoogle`
+  case `oauthHubspot`
+  case `oauthGithub`
+  case `oauthTiktok`
+  case `oauthGitlab`
+  case `oauthDiscord`
+  case `oauthTwitter`
+  case `oauthTwitch`
+  case `oauthLinkedin`
+  case `oauthLinkedinOidc`
+  case `oauthDropbox`
+  case `oauthAtlassian`
+  case `oauthBitbucket`
+  case `oauthMicrosoft`
+  case `oauthNotion`
+  case `oauthApple`
+  case `oauthLine`
+  case `oauthInstagram`
+  case `oauthCoinbase`
+  case `oauthSpotify`
+  case `oauthXero`
+  case `oauthBox`
+  case `oauthSlack`
+  case `oauthLinear`
+  case `oauthX`
+  case `oauthEnstall`
+  case `oauthHuggingface`
+  case `oauthVercel`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`oauthFacebook`: return "oauth_facebook"
+    case .`oauthGoogle`: return "oauth_google"
+    case .`oauthHubspot`: return "oauth_hubspot"
+    case .`oauthGithub`: return "oauth_github"
+    case .`oauthTiktok`: return "oauth_tiktok"
+    case .`oauthGitlab`: return "oauth_gitlab"
+    case .`oauthDiscord`: return "oauth_discord"
+    case .`oauthTwitter`: return "oauth_twitter"
+    case .`oauthTwitch`: return "oauth_twitch"
+    case .`oauthLinkedin`: return "oauth_linkedin"
+    case .`oauthLinkedinOidc`: return "oauth_linkedin_oidc"
+    case .`oauthDropbox`: return "oauth_dropbox"
+    case .`oauthAtlassian`: return "oauth_atlassian"
+    case .`oauthBitbucket`: return "oauth_bitbucket"
+    case .`oauthMicrosoft`: return "oauth_microsoft"
+    case .`oauthNotion`: return "oauth_notion"
+    case .`oauthApple`: return "oauth_apple"
+    case .`oauthLine`: return "oauth_line"
+    case .`oauthInstagram`: return "oauth_instagram"
+    case .`oauthCoinbase`: return "oauth_coinbase"
+    case .`oauthSpotify`: return "oauth_spotify"
+    case .`oauthXero`: return "oauth_xero"
+    case .`oauthBox`: return "oauth_box"
+    case .`oauthSlack`: return "oauth_slack"
+    case .`oauthLinear`: return "oauth_linear"
+    case .`oauthX`: return "oauth_x"
+    case .`oauthEnstall`: return "oauth_enstall"
+    case .`oauthHuggingface`: return "oauth_huggingface"
+    case .`oauthVercel`: return "oauth_vercel"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "oauth_facebook": self = .`oauthFacebook`
+    case "oauth_google": self = .`oauthGoogle`
+    case "oauth_hubspot": self = .`oauthHubspot`
+    case "oauth_github": self = .`oauthGithub`
+    case "oauth_tiktok": self = .`oauthTiktok`
+    case "oauth_gitlab": self = .`oauthGitlab`
+    case "oauth_discord": self = .`oauthDiscord`
+    case "oauth_twitter": self = .`oauthTwitter`
+    case "oauth_twitch": self = .`oauthTwitch`
+    case "oauth_linkedin": self = .`oauthLinkedin`
+    case "oauth_linkedin_oidc": self = .`oauthLinkedinOidc`
+    case "oauth_dropbox": self = .`oauthDropbox`
+    case "oauth_atlassian": self = .`oauthAtlassian`
+    case "oauth_bitbucket": self = .`oauthBitbucket`
+    case "oauth_microsoft": self = .`oauthMicrosoft`
+    case "oauth_notion": self = .`oauthNotion`
+    case "oauth_apple": self = .`oauthApple`
+    case "oauth_line": self = .`oauthLine`
+    case "oauth_instagram": self = .`oauthInstagram`
+    case "oauth_coinbase": self = .`oauthCoinbase`
+    case "oauth_spotify": self = .`oauthSpotify`
+    case "oauth_xero": self = .`oauthXero`
+    case "oauth_box": self = .`oauthBox`
+    case "oauth_slack": self = .`oauthSlack`
+    case "oauth_linear": self = .`oauthLinear`
+    case "oauth_x": self = .`oauthX`
+    case "oauth_enstall": self = .`oauthEnstall`
+    case "oauth_huggingface": self = .`oauthHuggingface`
+    case "oauth_vercel": self = .`oauthVercel`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OAuthStrategy { .init(rawValue: try value.string()) }
+}
+
+public enum PreferredSignInStrategy: Hashable, Sendable {
+  case `password`
+  case `otp`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`password`: return "password"
+    case .`otp`: return "otp"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "password": self = .`password`
+    case "otp": self = .`otp`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PreferredSignInStrategy { .init(rawValue: try value.string()) }
+}
+
+public struct DisplayThemeJSON: Hashable, Sendable {
+  public let `general`: DisplayThemeJSONGeneral
+  public let `buttons`: DisplayThemeJSONButtons
+  public let `accounts`: DisplayThemeJSONAccounts
+  public init(`general`: DisplayThemeJSONGeneral, `buttons`: DisplayThemeJSONButtons, `accounts`: DisplayThemeJSONAccounts) {
+    self.`general` = `general`
+    self.`buttons` = `buttons`
+    self.`accounts` = `accounts`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "general": try self.`general`.encode(),
+      "buttons": try self.`buttons`.encode(),
+      "accounts": try self.`accounts`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayThemeJSON {
+    let values = try value.object()
+
+    return try DisplayThemeJSON(`general`: try DisplayThemeJSONGeneral.decode((values["general"] ?? .undefined), in: runtime), `buttons`: try DisplayThemeJSONButtons.decode((values["buttons"] ?? .undefined), in: runtime), `accounts`: try DisplayThemeJSONAccounts.decode((values["accounts"] ?? .undefined), in: runtime))
+  }
+}
+
+public struct DisplayThemeJSONGeneral: Hashable, Sendable {
+  public let `color`: String
+  public let `backgroundColor`: Color
+  public let `fontFamily`: String
+  public let `fontColor`: String
+  public let `labelFontWeight`: String
+  public let `padding`: String
+  public let `borderRadius`: String
+  public let `boxShadow`: String
+  public init(`color`: String, `backgroundColor`: Color, `fontFamily`: String, `fontColor`: String, `labelFontWeight`: String, `padding`: String, `borderRadius`: String, `boxShadow`: String) {
+    self.`color` = `color`
+    self.`backgroundColor` = `backgroundColor`
+    self.`fontFamily` = `fontFamily`
+    self.`fontColor` = `fontColor`
+    self.`labelFontWeight` = `labelFontWeight`
+    self.`padding` = `padding`
+    self.`borderRadius` = `borderRadius`
+    self.`boxShadow` = `boxShadow`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "color": .string(self.`color`),
+      "background_color": try self.`backgroundColor`.encode(),
+      "font_family": .string(self.`fontFamily`),
+      "font_color": .string(self.`fontColor`),
+      "label_font_weight": .string(self.`labelFontWeight`),
+      "padding": .string(self.`padding`),
+      "border_radius": .string(self.`borderRadius`),
+      "box_shadow": .string(self.`boxShadow`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayThemeJSONGeneral {
+    let values = try value.object()
+
+    return try DisplayThemeJSONGeneral(`color`: try (values["color"] ?? .undefined).string(), `backgroundColor`: try Color.decode((values["background_color"] ?? .undefined), in: runtime), `fontFamily`: try (values["font_family"] ?? .undefined).string(), `fontColor`: try (values["font_color"] ?? .undefined).string(), `labelFontWeight`: try (values["label_font_weight"] ?? .undefined).string(), `padding`: try (values["padding"] ?? .undefined).string(), `borderRadius`: try (values["border_radius"] ?? .undefined).string(), `boxShadow`: try (values["box_shadow"] ?? .undefined).string())
+  }
+}
+
+public indirect enum Color: Hashable, Sendable {
+  case case1(String)
+  case case2(HslaColor)
+  case case3(RgbaColor)
+  @MainActor public func encode() throws -> JSONValue {
+    switch self {
+    case .case1(let value): return .object(["$case": .number(0), "value": .string(value)])
+    case .case2(let value): return .object(["$case": .number(1), "value": try value.encode()])
+    case .case3(let value): return .object(["$case": .number(2), "value": try value.encode()])
+    }
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Color {
+    let values = try value.object()
+    let payload = values["value"] ?? .undefined
+    switch try (values["$case"] ?? .undefined).number() {
+    case 0: return .case1(try payload.string())
+    case 1: return .case2(try HslaColor.decode(payload, in: runtime))
+    case 2: return .case3(try RgbaColor.decode(payload, in: runtime))
+    default: throw CoreError.invalidValue
+    }
+  }
+}
+
+public struct HslaColor: Hashable, Sendable {
+  public let `h`: Double
+  public let `s`: Double
+  public let `l`: Double
+  public let `a`: Double?
+  public init(`h`: Double, `s`: Double, `l`: Double, `a`: Double? = nil) {
+    self.`h` = `h`
+    self.`s` = `s`
+    self.`l` = `l`
+    self.`a` = `a`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "h": .number(self.`h`),
+      "s": .number(self.`s`),
+      "l": .number(self.`l`),
+      "a": try self.`a`.map { value in .number(value) } ?? .undefined
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> HslaColor {
+    let values = try value.object()
+
+    return try HslaColor(`h`: try (values["h"] ?? .undefined).number(), `s`: try (values["s"] ?? .undefined).number(), `l`: try (values["l"] ?? .undefined).number(), `a`: try (values["a"] ?? .undefined).optional { value in try value.number() })
+  }
+}
+
+public struct RgbaColor: Hashable, Sendable {
+  public let `r`: Double
+  public let `g`: Double
+  public let `b`: Double
+  public let `a`: Double?
+  public init(`r`: Double, `g`: Double, `b`: Double, `a`: Double? = nil) {
+    self.`r` = `r`
+    self.`g` = `g`
+    self.`b` = `b`
+    self.`a` = `a`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "r": .number(self.`r`),
+      "g": .number(self.`g`),
+      "b": .number(self.`b`),
+      "a": try self.`a`.map { value in .number(value) } ?? .undefined
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> RgbaColor {
+    let values = try value.object()
+
+    return try RgbaColor(`r`: try (values["r"] ?? .undefined).number(), `g`: try (values["g"] ?? .undefined).number(), `b`: try (values["b"] ?? .undefined).number(), `a`: try (values["a"] ?? .undefined).optional { value in try value.number() })
+  }
+}
+
+public struct DisplayThemeJSONButtons: Hashable, Sendable {
+  public let `fontColor`: String
+  public let `fontFamily`: String
+  public let `fontWeight`: String
+  public init(`fontColor`: String, `fontFamily`: String, `fontWeight`: String) {
+    self.`fontColor` = `fontColor`
+    self.`fontFamily` = `fontFamily`
+    self.`fontWeight` = `fontWeight`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "font_color": .string(self.`fontColor`),
+      "font_family": .string(self.`fontFamily`),
+      "font_weight": .string(self.`fontWeight`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayThemeJSONButtons {
+    let values = try value.object()
+
+    return try DisplayThemeJSONButtons(`fontColor`: try (values["font_color"] ?? .undefined).string(), `fontFamily`: try (values["font_family"] ?? .undefined).string(), `fontWeight`: try (values["font_weight"] ?? .undefined).string())
+  }
+}
+
+public struct DisplayThemeJSONAccounts: Hashable, Sendable {
+  public let `backgroundColor`: Color
+  public init(`backgroundColor`: Color) {
+    self.`backgroundColor` = `backgroundColor`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "background_color": try self.`backgroundColor`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> DisplayThemeJSONAccounts {
+    let values = try value.object()
+
+    return try DisplayThemeJSONAccounts(`backgroundColor`: try Color.decode((values["background_color"] ?? .undefined), in: runtime))
+  }
+}
+
+public struct MobileUserSettings: Hashable, Sendable {
+  public let `enterpriseSSO`: EnterpriseSSOSettings
+  public let `attributes`: [String: AttributeData]
+  public let `actions`: Actions
+  public let `signIn`: SignInData
+  public let `signUp`: SignUpData
+  public let `passwordSettings`: PasswordSettingsData
+  public let `usernameSettings`: UsernameSettingsData
+  public let `attackProtection`: AttackProtectionData
+  public let `passkeySettings`: PasskeySettingsData
+  public let `socialProviderStrategies`: [OAuthStrategy]
+  public let `authenticatableSocialStrategies`: [OAuthStrategy]
+  public let `web3FirstFactors`: [MobileUserSettingsWeb3FirstFactorsElement]
+  public let `alternativePhoneCodeChannels`: [PhoneCodeChannel]
+  public let `enabledFirstFactorIdentifiers`: [Attribute]
+  public let `instanceIsPasswordBased`: Bool
+  public let `hasValidAuthFactor`: Bool
+  public let `social`: [String: OAuthProviderSettings?]
+  public init(`enterpriseSSO`: EnterpriseSSOSettings, `attributes`: [String: AttributeData], `actions`: Actions, `signIn`: SignInData, `signUp`: SignUpData, `passwordSettings`: PasswordSettingsData, `usernameSettings`: UsernameSettingsData, `attackProtection`: AttackProtectionData, `passkeySettings`: PasskeySettingsData, `socialProviderStrategies`: [OAuthStrategy], `authenticatableSocialStrategies`: [OAuthStrategy], `web3FirstFactors`: [MobileUserSettingsWeb3FirstFactorsElement], `alternativePhoneCodeChannels`: [PhoneCodeChannel], `enabledFirstFactorIdentifiers`: [Attribute], `instanceIsPasswordBased`: Bool, `hasValidAuthFactor`: Bool, `social`: [String: OAuthProviderSettings?]) {
+    self.`enterpriseSSO` = `enterpriseSSO`
+    self.`attributes` = `attributes`
+    self.`actions` = `actions`
+    self.`signIn` = `signIn`
+    self.`signUp` = `signUp`
+    self.`passwordSettings` = `passwordSettings`
+    self.`usernameSettings` = `usernameSettings`
+    self.`attackProtection` = `attackProtection`
+    self.`passkeySettings` = `passkeySettings`
+    self.`socialProviderStrategies` = `socialProviderStrategies`
+    self.`authenticatableSocialStrategies` = `authenticatableSocialStrategies`
+    self.`web3FirstFactors` = `web3FirstFactors`
+    self.`alternativePhoneCodeChannels` = `alternativePhoneCodeChannels`
+    self.`enabledFirstFactorIdentifiers` = `enabledFirstFactorIdentifiers`
+    self.`instanceIsPasswordBased` = `instanceIsPasswordBased`
+    self.`hasValidAuthFactor` = `hasValidAuthFactor`
+    self.`social` = `social`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enterpriseSSO": try self.`enterpriseSSO`.encode(),
+      "attributes": .object(try self.`attributes`.mapValues { value in try value.encode() }),
+      "actions": try self.`actions`.encode(),
+      "signIn": try self.`signIn`.encode(),
+      "signUp": try self.`signUp`.encode(),
+      "passwordSettings": try self.`passwordSettings`.encode(),
+      "usernameSettings": try self.`usernameSettings`.encode(),
+      "attackProtection": try self.`attackProtection`.encode(),
+      "passkeySettings": try self.`passkeySettings`.encode(),
+      "socialProviderStrategies": .array(try self.`socialProviderStrategies`.map { value in try value.encode() }),
+      "authenticatableSocialStrategies": .array(try self.`authenticatableSocialStrategies`.map { value in try value.encode() }),
+      "web3FirstFactors": .array(try self.`web3FirstFactors`.map { value in try value.encode() }),
+      "alternativePhoneCodeChannels": .array(try self.`alternativePhoneCodeChannels`.map { value in try value.encode() }),
+      "enabledFirstFactorIdentifiers": .array(try self.`enabledFirstFactorIdentifiers`.map { value in try value.encode() }),
+      "instanceIsPasswordBased": .bool(self.`instanceIsPasswordBased`),
+      "hasValidAuthFactor": .bool(self.`hasValidAuthFactor`),
+      "social": .object(try self.`social`.mapValues { value in try value.map { value in try value.encode() } ?? .undefined })
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> MobileUserSettings {
+    let values = try value.object()
+
+    return try MobileUserSettings(`enterpriseSSO`: try EnterpriseSSOSettings.decode((values["enterpriseSSO"] ?? .undefined), in: runtime), `attributes`: try (values["attributes"] ?? .undefined).object().mapValues { value in try AttributeData.decode(value, in: runtime) }, `actions`: try Actions.decode((values["actions"] ?? .undefined), in: runtime), `signIn`: try SignInData.decode((values["signIn"] ?? .undefined), in: runtime), `signUp`: try SignUpData.decode((values["signUp"] ?? .undefined), in: runtime), `passwordSettings`: try PasswordSettingsData.decode((values["passwordSettings"] ?? .undefined), in: runtime), `usernameSettings`: try UsernameSettingsData.decode((values["usernameSettings"] ?? .undefined), in: runtime), `attackProtection`: try AttackProtectionData.decode((values["attackProtection"] ?? .undefined), in: runtime), `passkeySettings`: try PasskeySettingsData.decode((values["passkeySettings"] ?? .undefined), in: runtime), `socialProviderStrategies`: try (values["socialProviderStrategies"] ?? .undefined).array().map { value in try OAuthStrategy.decode(value, in: runtime) }, `authenticatableSocialStrategies`: try (values["authenticatableSocialStrategies"] ?? .undefined).array().map { value in try OAuthStrategy.decode(value, in: runtime) }, `web3FirstFactors`: try (values["web3FirstFactors"] ?? .undefined).array().map { value in try MobileUserSettingsWeb3FirstFactorsElement.decode(value, in: runtime) }, `alternativePhoneCodeChannels`: try (values["alternativePhoneCodeChannels"] ?? .undefined).array().map { value in try PhoneCodeChannel.decode(value, in: runtime) }, `enabledFirstFactorIdentifiers`: try (values["enabledFirstFactorIdentifiers"] ?? .undefined).array().map { value in try Attribute.decode(value, in: runtime) }, `instanceIsPasswordBased`: try (values["instanceIsPasswordBased"] ?? .undefined).bool(), `hasValidAuthFactor`: try (values["hasValidAuthFactor"] ?? .undefined).bool(), `social`: try (values["social"] ?? .undefined).object().mapValues { value in try value.optional { value in try OAuthProviderSettings.decode(value, in: runtime) } })
+  }
+}
+
+public struct EnterpriseSSOSettings: Hashable, Sendable {
+  public let `enabled`: Bool
+  public let `selfServeSso`: Bool
+  public init(`enabled`: Bool, `selfServeSso`: Bool) {
+    self.`enabled` = `enabled`
+    self.`selfServeSso` = `selfServeSso`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`),
+      "self_serve_sso": .bool(self.`selfServeSso`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> EnterpriseSSOSettings {
+    let values = try value.object()
+
+    return try EnterpriseSSOSettings(`enabled`: try (values["enabled"] ?? .undefined).bool(), `selfServeSso`: try (values["self_serve_sso"] ?? .undefined).bool())
+  }
+}
+
+public struct AttributeData: Hashable, Sendable {
+  public let `enabled`: Bool
+  public let `required`: Bool
+  public let `immutable`: Bool?
+  public let `verifications`: [VerificationStrategy]
+  public let `usedForFirstFactor`: Bool
+  public let `firstFactors`: [VerificationStrategy]
+  public let `usedForSecondFactor`: Bool
+  public let `secondFactors`: [VerificationStrategy]
+  public let `verifyAtSignUp`: Bool
+  public let `channels`: [PhoneCodeChannel]?
+  public let `name`: Attribute
+  public init(`enabled`: Bool, `required`: Bool, `immutable`: Bool? = nil, `verifications`: [VerificationStrategy], `usedForFirstFactor`: Bool, `firstFactors`: [VerificationStrategy], `usedForSecondFactor`: Bool, `secondFactors`: [VerificationStrategy], `verifyAtSignUp`: Bool, `channels`: [PhoneCodeChannel]? = nil, `name`: Attribute) {
+    self.`enabled` = `enabled`
+    self.`required` = `required`
+    self.`immutable` = `immutable`
+    self.`verifications` = `verifications`
+    self.`usedForFirstFactor` = `usedForFirstFactor`
+    self.`firstFactors` = `firstFactors`
+    self.`usedForSecondFactor` = `usedForSecondFactor`
+    self.`secondFactors` = `secondFactors`
+    self.`verifyAtSignUp` = `verifyAtSignUp`
+    self.`channels` = `channels`
+    self.`name` = `name`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`),
+      "required": .bool(self.`required`),
+      "immutable": try self.`immutable`.map { value in .bool(value) } ?? .undefined,
+      "verifications": .array(try self.`verifications`.map { value in try value.encode() }),
+      "used_for_first_factor": .bool(self.`usedForFirstFactor`),
+      "first_factors": .array(try self.`firstFactors`.map { value in try value.encode() }),
+      "used_for_second_factor": .bool(self.`usedForSecondFactor`),
+      "second_factors": .array(try self.`secondFactors`.map { value in try value.encode() }),
+      "verify_at_sign_up": .bool(self.`verifyAtSignUp`),
+      "channels": try self.`channels`.map { value in .array(try value.map { value in try value.encode() }) } ?? .undefined,
+      "name": try self.`name`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> AttributeData {
+    let values = try value.object()
+
+    return try AttributeData(`enabled`: try (values["enabled"] ?? .undefined).bool(), `required`: try (values["required"] ?? .undefined).bool(), `immutable`: try (values["immutable"] ?? .undefined).optional { value in try value.bool() }, `verifications`: try (values["verifications"] ?? .undefined).array().map { value in try VerificationStrategy.decode(value, in: runtime) }, `usedForFirstFactor`: try (values["used_for_first_factor"] ?? .undefined).bool(), `firstFactors`: try (values["first_factors"] ?? .undefined).array().map { value in try VerificationStrategy.decode(value, in: runtime) }, `usedForSecondFactor`: try (values["used_for_second_factor"] ?? .undefined).bool(), `secondFactors`: try (values["second_factors"] ?? .undefined).array().map { value in try VerificationStrategy.decode(value, in: runtime) }, `verifyAtSignUp`: try (values["verify_at_sign_up"] ?? .undefined).bool(), `channels`: try (values["channels"] ?? .undefined).optional { value in try value.array().map { value in try PhoneCodeChannel.decode(value, in: runtime) } }, `name`: try Attribute.decode((values["name"] ?? .undefined), in: runtime))
+  }
+}
+
+public enum VerificationStrategy: Hashable, Sendable {
+  case `emailCode`
+  case `backupCode`
+  case `emailLink`
+  case `phoneCode`
+  case `totp`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`emailCode`: return "email_code"
+    case .`backupCode`: return "backup_code"
+    case .`emailLink`: return "email_link"
+    case .`phoneCode`: return "phone_code"
+    case .`totp`: return "totp"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "email_code": self = .`emailCode`
+    case "backup_code": self = .`backupCode`
+    case "email_link": self = .`emailLink`
+    case "phone_code": self = .`phoneCode`
+    case "totp": self = .`totp`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> VerificationStrategy { .init(rawValue: try value.string()) }
+}
+
+public enum Attribute: Hashable, Sendable {
+  case `password`
+  case `emailAddress`
+  case `phoneNumber`
+  case `username`
+  case `firstName`
+  case `lastName`
+  case `web3Wallet`
+  case `authenticatorApp`
+  case `backupCode`
+  case `passkey`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`password`: return "password"
+    case .`emailAddress`: return "email_address"
+    case .`phoneNumber`: return "phone_number"
+    case .`username`: return "username"
+    case .`firstName`: return "first_name"
+    case .`lastName`: return "last_name"
+    case .`web3Wallet`: return "web3_wallet"
+    case .`authenticatorApp`: return "authenticator_app"
+    case .`backupCode`: return "backup_code"
+    case .`passkey`: return "passkey"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "password": self = .`password`
+    case "email_address": self = .`emailAddress`
+    case "phone_number": self = .`phoneNumber`
+    case "username": self = .`username`
+    case "first_name": self = .`firstName`
+    case "last_name": self = .`lastName`
+    case "web3_wallet": self = .`web3Wallet`
+    case "authenticator_app": self = .`authenticatorApp`
+    case "backup_code": self = .`backupCode`
+    case "passkey": self = .`passkey`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Attribute { .init(rawValue: try value.string()) }
+}
+
+public struct Actions: Hashable, Sendable {
+  public let `deleteSelf`: Bool
+  public let `createOrganization`: Bool
+  public init(`deleteSelf`: Bool, `createOrganization`: Bool) {
+    self.`deleteSelf` = `deleteSelf`
+    self.`createOrganization` = `createOrganization`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "delete_self": .bool(self.`deleteSelf`),
+      "create_organization": .bool(self.`createOrganization`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Actions {
+    let values = try value.object()
+
+    return try Actions(`deleteSelf`: try (values["delete_self"] ?? .undefined).bool(), `createOrganization`: try (values["create_organization"] ?? .undefined).bool())
+  }
+}
+
+public struct SignInData: Hashable, Sendable {
+  public let `secondFactor`: SignInDataSecond_factor
+  public init(`secondFactor`: SignInDataSecond_factor) {
+    self.`secondFactor` = `secondFactor`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "second_factor": try self.`secondFactor`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInData {
+    let values = try value.object()
+
+    return try SignInData(`secondFactor`: try SignInDataSecond_factor.decode((values["second_factor"] ?? .undefined), in: runtime))
+  }
+}
+
+public struct SignInDataSecond_factor: Hashable, Sendable {
+  public let `required`: Bool
+  public let `enabled`: Bool
+  public init(`required`: Bool, `enabled`: Bool) {
+    self.`required` = `required`
+    self.`enabled` = `enabled`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "required": .bool(self.`required`),
+      "enabled": .bool(self.`enabled`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInDataSecond_factor {
+    let values = try value.object()
+
+    return try SignInDataSecond_factor(`required`: try (values["required"] ?? .undefined).bool(), `enabled`: try (values["enabled"] ?? .undefined).bool())
+  }
+}
+
+public struct SignUpData: Hashable, Sendable {
+  public let `allowlistOnly`: Bool
+  public let `progressive`: Bool
+  public let `captchaEnabled`: Bool
+  public let `mode`: SignUpModes
+  public let `legalConsentEnabled`: Bool
+  public let `mfa`: SignUpDataMfa?
+  public init(`allowlistOnly`: Bool, `progressive`: Bool, `captchaEnabled`: Bool, `mode`: SignUpModes, `legalConsentEnabled`: Bool, `mfa`: SignUpDataMfa? = nil) {
+    self.`allowlistOnly` = `allowlistOnly`
+    self.`progressive` = `progressive`
+    self.`captchaEnabled` = `captchaEnabled`
+    self.`mode` = `mode`
+    self.`legalConsentEnabled` = `legalConsentEnabled`
+    self.`mfa` = `mfa`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "allowlist_only": .bool(self.`allowlistOnly`),
+      "progressive": .bool(self.`progressive`),
+      "captcha_enabled": .bool(self.`captchaEnabled`),
+      "mode": try self.`mode`.encode(),
+      "legal_consent_enabled": .bool(self.`legalConsentEnabled`),
+      "mfa": try self.`mfa`.map { value in try value.encode() } ?? .undefined
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpData {
+    let values = try value.object()
+
+    return try SignUpData(`allowlistOnly`: try (values["allowlist_only"] ?? .undefined).bool(), `progressive`: try (values["progressive"] ?? .undefined).bool(), `captchaEnabled`: try (values["captcha_enabled"] ?? .undefined).bool(), `mode`: try SignUpModes.decode((values["mode"] ?? .undefined), in: runtime), `legalConsentEnabled`: try (values["legal_consent_enabled"] ?? .undefined).bool(), `mfa`: try (values["mfa"] ?? .undefined).optional { value in try SignUpDataMfa.decode(value, in: runtime) })
+  }
+}
+
+public enum SignUpModes: Hashable, Sendable {
+  case `public`
+  case `restricted`
+  case `waitlist`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`public`: return "public"
+    case .`restricted`: return "restricted"
+    case .`waitlist`: return "waitlist"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "public": self = .`public`
+    case "restricted": self = .`restricted`
+    case "waitlist": self = .`waitlist`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpModes { .init(rawValue: try value.string()) }
+}
+
+public struct SignUpDataMfa: Hashable, Sendable {
+  public let `required`: Bool
+  public init(`required`: Bool) {
+    self.`required` = `required`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "required": .bool(self.`required`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpDataMfa {
+    let values = try value.object()
+
+    return try SignUpDataMfa(`required`: try (values["required"] ?? .undefined).bool())
+  }
+}
+
+public struct PasswordSettingsData: Hashable, Sendable {
+  public let `allowedSpecialCharacters`: String
+  public let `disableHibp`: Bool
+  public let `minLength`: Double
+  public let `maxLength`: Double
+  public let `requireSpecialChar`: Bool
+  public let `requireNumbers`: Bool
+  public let `requireUppercase`: Bool
+  public let `requireLowercase`: Bool
+  public let `showZxcvbn`: Bool
+  public let `minZxcvbnStrength`: Double
+  public init(`allowedSpecialCharacters`: String, `disableHibp`: Bool, `minLength`: Double, `maxLength`: Double, `requireSpecialChar`: Bool, `requireNumbers`: Bool, `requireUppercase`: Bool, `requireLowercase`: Bool, `showZxcvbn`: Bool, `minZxcvbnStrength`: Double) {
+    self.`allowedSpecialCharacters` = `allowedSpecialCharacters`
+    self.`disableHibp` = `disableHibp`
+    self.`minLength` = `minLength`
+    self.`maxLength` = `maxLength`
+    self.`requireSpecialChar` = `requireSpecialChar`
+    self.`requireNumbers` = `requireNumbers`
+    self.`requireUppercase` = `requireUppercase`
+    self.`requireLowercase` = `requireLowercase`
+    self.`showZxcvbn` = `showZxcvbn`
+    self.`minZxcvbnStrength` = `minZxcvbnStrength`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "allowed_special_characters": .string(self.`allowedSpecialCharacters`),
+      "disable_hibp": .bool(self.`disableHibp`),
+      "min_length": .number(self.`minLength`),
+      "max_length": .number(self.`maxLength`),
+      "require_special_char": .bool(self.`requireSpecialChar`),
+      "require_numbers": .bool(self.`requireNumbers`),
+      "require_uppercase": .bool(self.`requireUppercase`),
+      "require_lowercase": .bool(self.`requireLowercase`),
+      "show_zxcvbn": .bool(self.`showZxcvbn`),
+      "min_zxcvbn_strength": .number(self.`minZxcvbnStrength`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PasswordSettingsData {
+    let values = try value.object()
+
+    return try PasswordSettingsData(`allowedSpecialCharacters`: try (values["allowed_special_characters"] ?? .undefined).string(), `disableHibp`: try (values["disable_hibp"] ?? .undefined).bool(), `minLength`: try (values["min_length"] ?? .undefined).number(), `maxLength`: try (values["max_length"] ?? .undefined).number(), `requireSpecialChar`: try (values["require_special_char"] ?? .undefined).bool(), `requireNumbers`: try (values["require_numbers"] ?? .undefined).bool(), `requireUppercase`: try (values["require_uppercase"] ?? .undefined).bool(), `requireLowercase`: try (values["require_lowercase"] ?? .undefined).bool(), `showZxcvbn`: try (values["show_zxcvbn"] ?? .undefined).bool(), `minZxcvbnStrength`: try (values["min_zxcvbn_strength"] ?? .undefined).number())
+  }
+}
+
+public struct UsernameSettingsData: Hashable, Sendable {
+  public let `minLength`: Double
+  public let `maxLength`: Double
+  public init(`minLength`: Double, `maxLength`: Double) {
+    self.`minLength` = `minLength`
+    self.`maxLength` = `maxLength`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "min_length": .number(self.`minLength`),
+      "max_length": .number(self.`maxLength`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> UsernameSettingsData {
+    let values = try value.object()
+
+    return try UsernameSettingsData(`minLength`: try (values["min_length"] ?? .undefined).number(), `maxLength`: try (values["max_length"] ?? .undefined).number())
+  }
+}
+
+public struct AttackProtectionData: Hashable, Sendable {
+  public let `enumerationProtection`: AttackProtectionDataEnumeration_protection
+  public init(`enumerationProtection`: AttackProtectionDataEnumeration_protection) {
+    self.`enumerationProtection` = `enumerationProtection`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enumeration_protection": try self.`enumerationProtection`.encode()
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> AttackProtectionData {
+    let values = try value.object()
+
+    return try AttackProtectionData(`enumerationProtection`: try AttackProtectionDataEnumeration_protection.decode((values["enumeration_protection"] ?? .undefined), in: runtime))
+  }
+}
+
+public struct AttackProtectionDataEnumeration_protection: Hashable, Sendable {
+  public let `enabled`: Bool
+  public init(`enabled`: Bool) {
+    self.`enabled` = `enabled`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> AttackProtectionDataEnumeration_protection {
+    let values = try value.object()
+
+    return try AttackProtectionDataEnumeration_protection(`enabled`: try (values["enabled"] ?? .undefined).bool())
+  }
+}
+
+public struct PasskeySettingsData: Hashable, Sendable {
+  public let `allowAutofill`: Bool
+  public let `showSignInButton`: Bool
+  public init(`allowAutofill`: Bool, `showSignInButton`: Bool) {
+    self.`allowAutofill` = `allowAutofill`
+    self.`showSignInButton` = `showSignInButton`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "allow_autofill": .bool(self.`allowAutofill`),
+      "show_sign_in_button": .bool(self.`showSignInButton`)
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PasskeySettingsData {
+    let values = try value.object()
+
+    return try PasskeySettingsData(`allowAutofill`: try (values["allow_autofill"] ?? .undefined).bool(), `showSignInButton`: try (values["show_sign_in_button"] ?? .undefined).bool())
+  }
+}
+
+public enum MobileUserSettingsWeb3FirstFactorsElement: Hashable, Sendable {
+  case `web3MetamaskSignature`
+  case `web3BaseSignature`
+  case `web3CoinbaseWalletSignature`
+  case `web3OkxWalletSignature`
+  case `web3SolanaSignature`
+  case unrecognized(String)
+  public var rawValue: String {
+    switch self {
+    case .`web3MetamaskSignature`: return "web3_metamask_signature"
+    case .`web3BaseSignature`: return "web3_base_signature"
+    case .`web3CoinbaseWalletSignature`: return "web3_coinbase_wallet_signature"
+    case .`web3OkxWalletSignature`: return "web3_okx_wallet_signature"
+    case .`web3SolanaSignature`: return "web3_solana_signature"
+    case .unrecognized(let value): return value
+    }
+  }
+  public init(rawValue: String) {
+    switch rawValue {
+    case "web3_metamask_signature": self = .`web3MetamaskSignature`
+    case "web3_base_signature": self = .`web3BaseSignature`
+    case "web3_coinbase_wallet_signature": self = .`web3CoinbaseWalletSignature`
+    case "web3_okx_wallet_signature": self = .`web3OkxWalletSignature`
+    case "web3_solana_signature": self = .`web3SolanaSignature`
+    default: self = .unrecognized(rawValue)
+    }
+  }
+  public func encode() throws -> JSONValue { .string(rawValue) }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> MobileUserSettingsWeb3FirstFactorsElement { .init(rawValue: try value.string()) }
+}
+
+public struct OAuthProviderSettings: Hashable, Sendable {
+  public let `enabled`: Bool
+  public let `required`: Bool
+  public let `authenticatable`: Bool
+  public let `strategy`: OAuthStrategy
+  public let `name`: String
+  public let `logoUrl`: String?
+  public init(`enabled`: Bool, `required`: Bool, `authenticatable`: Bool, `strategy`: OAuthStrategy, `name`: String, `logoUrl`: String?) {
+    self.`enabled` = `enabled`
+    self.`required` = `required`
+    self.`authenticatable` = `authenticatable`
+    self.`strategy` = `strategy`
+    self.`name` = `name`
+    self.`logoUrl` = `logoUrl`
+  }
+  @MainActor public func encode() throws -> JSONValue {
+    let values: [String: JSONValue] = [
+      "enabled": .bool(self.`enabled`),
+      "required": .bool(self.`required`),
+      "authenticatable": .bool(self.`authenticatable`),
+      "strategy": try self.`strategy`.encode(),
+      "name": .string(self.`name`),
+      "logo_url": try self.`logoUrl`.map { value in .string(value) } ?? .null
+    ]
+    return .object(values.filter { !$0.value.isUndefined })
+  }
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OAuthProviderSettings {
+    let values = try value.object()
+
+    return try OAuthProviderSettings(`enabled`: try (values["enabled"] ?? .undefined).bool(), `required`: try (values["required"] ?? .undefined).bool(), `authenticatable`: try (values["authenticatable"] ?? .undefined).bool(), `strategy`: try OAuthStrategy.decode((values["strategy"] ?? .undefined), in: runtime), `name`: try (values["name"] ?? .undefined).string(), `logoUrl`: try (values["logo_url"] ?? .undefined).optional { value in try value.string() })
+  }
+}
+
 /// The `Session` object is an abstraction over an HTTP session. It models the period of information exchange between a user and the server.
 /// 
 /// The `Session` object includes methods for recording session activity and ending the session client-side. For security reasons, sessions can also expire server-side.
@@ -2663,7 +3912,7 @@ public struct ClerkPaginatedResponseBillingPaymentMethod: Sendable {
 /// 
 /// > [!NOTE]
 /// > For more information regarding the different session states, see the [guide on session management](https://clerk.com/docs/guides/secure/session-options).
-public struct SessionState: Sendable {
+public struct SessionState: Hashable, Sendable {
   public let `id`: String
   public let `status`: SessionStatus
   public let `expireAt`: Date
@@ -2749,20 +3998,23 @@ public struct SessionState: Sendable {
   /// Marks the session as ended. The session will no longer be active for this `Client` and its status will become **ended**.
   public func `end`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.end", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.end", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Invalidates the current session by marking it as removed. Once removed, the session will be deactivated for the current Client instance and its `status` will be set to `removed`. This operation cannot be undone.
   public func `remove`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.remove", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.remove", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Updates the session's last active timestamp to the current time. This method should be called periodically to indicate ongoing user activity and prevent the session from becoming stale. The updated timestamp is used for session management and analytics purposes.
   public func `touch`(_ `params`: SessionTouchParams? = nil) async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Gets the current user's [session token](https://clerk.com/docs/guides/sessions/session-tokens) or a [custom JWT template](https://clerk.com/docs/guides/sessions/jwt-templates).
   /// 
@@ -2771,62 +4023,72 @@ public struct SessionState: Sendable {
   /// Tokens can only be generated if the user is signed in.
   public func `getToken`(_ `options`: GetTokenOptions? = nil) async throws -> String? {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined])
-    return try result.optional { value in try value.string() }
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try result.optional { value in try value.string() }
+    }
   }
   /// Checks if the user is [authorized for the specified Role, Permission, Feature, or Plan](https://clerk.com/docs/guides/secure/authorization-checks) or requires the user to [reverify their credentials](https://clerk.com/docs/guides/secure/reverification) if their last verification is older than allowed.
   public func `checkAuthorization`(_ `isAuthorizedParams`: CheckAuthorizationParams) async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()]) { result in
+      return try result.bool()
+    }
   }
   /// Clears the cache for the current session. This is useful if the session has been updated and the cache is no longer valid.
   public func `clearCache`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.clearCache", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.clearCache", arguments: []) { result in
+      _ = result
+    }
   }
   /// Initiates the reverification flow.
   public func `startVerification`(_ `params`: SessionVerifyCreateParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.startVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.startVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [first factor verification](!first-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareFirstFactorVerification`(_ `factor`: SessionVerifyPrepareFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.prepareFirstFactorVerification", arguments: [try `factor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.prepareFirstFactorVerification", arguments: [try `factor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [first factor verification](!first-factor-verification) process.
   public func `attemptFirstFactorVerification`(_ `attemptFactor`: SessionVerifyAttemptFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [second factor verification](!second-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareSecondFactorVerification`(_ `params`: PhoneCodeSecondFactorConfig) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.prepareSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.prepareSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [second factor verification](!second-factor-verification) process.
   public func `attemptSecondFactorVerification`(_ `params`: SessionVerifyAttemptSecondFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.attemptSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.attemptSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates a verification flow using passkeys.
   public func `verifyWithPasskey`() async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.verifyWithPasskey", arguments: [])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.verifyWithPasskey", arguments: []) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Session.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Session.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
 }
 
@@ -2872,7 +4134,7 @@ public enum SessionStatus: Hashable, Sendable {
 }
 
 /// Represents the current pending task of a session.
-public struct SessionTask: Sendable {
+public struct SessionTask: Hashable, Sendable {
   public let `key`: SessionTaskKey
   public init(`key`: SessionTaskKey) {
     self.`key` = `key`
@@ -2920,7 +4182,7 @@ public enum SessionTaskKey: Hashable, Sendable {
 /// A user can be contacted at their primary email address or primary phone number. They can have more than one registered email address or phone number, but only one of them will be their primary email address (`User.primaryEmailAddress`) or primary phone number (`User.primaryPhoneNumber`). At the same time, a user can also have one or more external accounts by connecting to [social providers](https://clerk.com/docs/guides/configure/auth-strategies/social-connections/overview) such as Google, Apple, Facebook, and many more (`User.externalAccounts`).
 /// 
 /// Finally, a `User` object holds profile data like the user's name, profile picture, and a set of [metadata](https://clerk.com/docs/guides/users/extending) that can be used internally to store arbitrary information. The metadata are split into `publicMetadata` and `privateMetadata`. Both types are set from the [Backend API](https://clerk.com/docs/reference/backend-api){{ target: '_blank' }}, but public metadata can also be accessed from the [Frontend API](https://clerk.com/docs/reference/frontend-api){{ target: '_blank' }}.
-public struct UserState: Sendable {
+public struct UserState: Hashable, Sendable {
   public let `id`: String
   public let `externalId`: String?
   public let `primaryEmailAddressId`: String?
@@ -3104,32 +4366,37 @@ public struct UserState: Sendable {
   /// The appropriate settings must be enabled in the Clerk Dashboard for the user to be able to update their attributes. For example, if you want to use the `update({ firstName })` method, you must enable the **First and last name** setting. It can be found on the [**User & authentication**](https://dashboard.clerk.com/~/user-authentication/user-and-authentication?user_auth_tab=user-profile) page in the Clerk Dashboard.
   public func `update`(_ `params`: UpdateUserParams) async throws -> User {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.update", arguments: [try `params`.encode()])
-    return try User.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.update", arguments: [try `params`.encode()]) { result in
+      return try User.decode(result, in: runtime)
+    }
   }
   /// Updates the user's `unsafeMetadata` using deep-merge semantics. Unlike [`update()`](https://clerk.com/docs/reference/objects/user#update), which fully replaces `unsafeMetadata`, this method merges the provided value with the existing `unsafeMetadata`. Top-level and nested keys are merged, and any key set to `null` is removed. Only `unsafeMetadata` is writable from the frontend; `publicMetadata` and `privateMetadata` can only be set from the [Backend API](https://clerk.com/docs/reference/backend-api){{ target: '_blank' }}.
   public func `updateMetadata`(_ `params`: UpdateUserMetadataParams) async throws -> User {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.updateMetadata", arguments: [try `params`.encode()])
-    return try User.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.updateMetadata", arguments: [try `params`.encode()]) { result in
+      return try User.decode(result, in: runtime)
+    }
   }
   /// Deletes the current user.
   public func `delete`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.delete", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.delete", arguments: []) { result in
+      _ = result
+    }
   }
   /// Updates the user's password.
   public func `updatePassword`(_ `params`: UpdateUserPasswordParams) async throws -> User {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.updatePassword", arguments: [try `params`.encode()])
-    return try User.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.updatePassword", arguments: [try `params`.encode()]) { result in
+      return try User.decode(result, in: runtime)
+    }
   }
   /// Removes the user's password.
   public func `removePassword`(_ `params`: RemoveUserPasswordParams) async throws -> User {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.removePassword", arguments: [try `params`.encode()])
-    return try User.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.removePassword", arguments: [try `params`.encode()]) { result in
+      return try User.decode(result, in: runtime)
+    }
   }
   /// Adds an email address for the user. A new [`EmailAddress`](https://clerk.com/docs/reference/types/email-address) will be created and associated with the user.
   /// 
@@ -3137,14 +4404,16 @@ public struct UserState: Sendable {
   /// > [**Email** must be enabled](https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options#email) in your app's settings in the Clerk Dashboard.
   public func `createEmailAddress`(_ `params`: CreateEmailAddressParams) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createEmailAddress", arguments: [try `params`.encode()])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createEmailAddress", arguments: [try `params`.encode()]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   /// Creates a passkey for the signed-in user. For an example, see the [custom flow guide](https://clerk.com/docs/guides/development/custom-flows/authentication/passkeys#create-user-passkeys).
   public func `createPasskey`() async throws -> Passkey {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createPasskey", arguments: [])
-    return try Passkey.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createPasskey", arguments: []) { result in
+      return try Passkey.decode(result, in: runtime)
+    }
   }
   /// Adds a phone number for the user. A new [`PhoneNumber`](https://clerk.com/docs/reference/types/phone-number) will be created and associated with the user.
   /// 
@@ -3152,32 +4421,37 @@ public struct UserState: Sendable {
   /// > [**Phone** must be enabled](https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options#phone) in your app's settings in the Clerk Dashboard.
   public func `createPhoneNumber`(_ `params`: CreatePhoneNumberParams) async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createPhoneNumber", arguments: [try `params`.encode()])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createPhoneNumber", arguments: [try `params`.encode()]) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   /// Adds a Web3 wallet for the user. A new [`Web3WalletResource`](https://clerk.com/docs/reference/types/web3-wallet) will be created and associated with the user.
   public func `createWeb3Wallet`(_ `params`: CreateWeb3WalletParams) async throws -> Web3Wallet {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createWeb3Wallet", arguments: [try `params`.encode()])
-    return try Web3Wallet.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createWeb3Wallet", arguments: [try `params`.encode()]) { result in
+      return try Web3Wallet.decode(result, in: runtime)
+    }
   }
   /// A check whether or not the given resource is the primary identifier for the user.
   public func `isPrimaryIdentification`(_ `ident`: UserIsPrimaryIdentificationIdent) async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.isPrimaryIdentification", arguments: [try `ident`.encode()])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.isPrimaryIdentification", arguments: [try `ident`.encode()]) { result in
+      return try result.bool()
+    }
   }
   /// Gets all **active** sessions for this user. This method uses a cache so a network request will only be triggered only once.
   public func `getSessions`() async throws -> [SessionWithActivities] {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getSessions", arguments: [])
-    return try result.array().map { value in try SessionWithActivities.decode(value, in: runtime) }
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getSessions", arguments: []) { result in
+      return try result.array().map { value in try SessionWithActivities.decode(value, in: runtime) }
+    }
   }
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
   public func `setProfileImage`(_ `params`: SetProfileImageParams) async throws -> Image {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.setProfileImage", arguments: [try `params`.encode()])
-    return try Image.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.setProfileImage", arguments: [try `params`.encode()]) { result in
+      return try Image.decode(result, in: runtime)
+    }
   }
   /// Adds an external account for the user. A new [`ExternalAccount`](https://clerk.com/docs/reference/types/external-account) will be created and associated with the user. This method is useful if you want to allow an already signed-in user to connect their account with an external provider, such as Facebook, GitHub, etc., so that they can sign in with that provider in the future.
   /// 
@@ -3185,96 +4459,111 @@ public struct UserState: Sendable {
   /// > The social provider that you want to connect to [must be enabled](https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options#sso-connections) in your app's settings in the Clerk Dashboard.
   public func `createExternalAccount`(_ `params`: CreateExternalAccountParams) async throws -> ExternalAccount {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createExternalAccount", arguments: [try `params`.encode()])
-    return try ExternalAccount.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createExternalAccount", arguments: [try `params`.encode()]) { result in
+      return try ExternalAccount.decode(result, in: runtime)
+    }
   }
   public func `getOrganizationMemberships`(_ `params`: GetUserOrganizationMembershipParams? = nil) async throws -> ClerkPaginatedResponseOrganizationMembership {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationMemberships", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationMembership.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationMemberships", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationMembership.decode(result, in: runtime)
+    }
   }
   /// Gets a list of Organization invitations for the user.
   public func `getOrganizationInvitations`(_ `params`: GetUserOrganizationInvitationsParams? = nil) async throws -> ClerkPaginatedResponseUserOrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationInvitations", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseUserOrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationInvitations", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseUserOrganizationInvitation.decode(result, in: runtime)
+    }
   }
   /// Gets a list of Organization suggestions for the user.
   public func `getOrganizationSuggestions`(_ `params`: GetUserOrganizationSuggestionsParams? = nil) async throws -> ClerkPaginatedResponseOrganizationSuggestion {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationSuggestions", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseOrganizationSuggestion.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationSuggestions", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseOrganizationSuggestion.decode(result, in: runtime)
+    }
   }
   /// Gets organization creation defaults for the current user.
   public func `getOrganizationCreationDefaults`() async throws -> OrganizationCreationDefaults {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationCreationDefaults", arguments: [])
-    return try OrganizationCreationDefaults.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getOrganizationCreationDefaults", arguments: []) { result in
+      return try OrganizationCreationDefaults.decode(result, in: runtime)
+    }
   }
   /// Leaves an organization that the user is a member of.
   public func `leaveOrganization`(_ `organizationId`: String) async throws -> DeletedObject {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.leaveOrganization", arguments: [.string(`organizationId`)])
-    return try DeletedObject.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.leaveOrganization", arguments: [.string(`organizationId`)]) { result in
+      return try DeletedObject.decode(result, in: runtime)
+    }
   }
   /// Get the enterprise connections for the current user. This method is not intended for public use.
   /// Currently some customers use this to get enterprise connections for account linking purposes.
   public func `getEnterpriseConnections`(_ `params`: GetEnterpriseConnectionsParams? = nil) async throws -> [EnterpriseConnection] {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getEnterpriseConnections", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try result.array().map { value in try EnterpriseConnection.decode(value, in: runtime) }
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getEnterpriseConnections", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try result.array().map { value in try EnterpriseConnection.decode(value, in: runtime) }
+    }
   }
   /// Generates a TOTP secret for a user that can be used to register the application on the user's authenticator app of choice. If this method is called again (while still unverified), it replaces the previously generated secret.
   public func `createTOTP`() async throws -> TOTP {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createTOTP", arguments: [])
-    return try TOTP.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createTOTP", arguments: []) { result in
+      return try TOTP.decode(result, in: runtime)
+    }
   }
   /// Verifies a TOTP secret after a user has created it. The user must provide a code from their authenticator app that has been generated using the previously created secret. This way, correct set up and ownership of the authenticator app can be validated.
   public func `verifyTOTP`(_ `params`: VerifyTOTPParams) async throws -> TOTP {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.verifyTOTP", arguments: [try `params`.encode()])
-    return try TOTP.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.verifyTOTP", arguments: [try `params`.encode()]) { result in
+      return try TOTP.decode(result, in: runtime)
+    }
   }
   /// Disables TOTP by deleting the user's TOTP secret.
   public func `disableTOTP`() async throws -> DeletedObject {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.disableTOTP", arguments: [])
-    return try DeletedObject.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.disableTOTP", arguments: []) { result in
+      return try DeletedObject.decode(result, in: runtime)
+    }
   }
   /// Generates a fresh new set of backup codes for the user. Every time the method is called, it will replace the previously generated backup codes.
   public func `createBackupCode`() async throws -> BackupCode {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.createBackupCode", arguments: [])
-    return try BackupCode.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.createBackupCode", arguments: []) { result in
+      return try BackupCode.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> User {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try User.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try User.decode(result, in: runtime)
+    }
   }
   /// Initializes a payment method.
   public func `initializePaymentMethod`(_ `params`: InitializePaymentMethodParams) async throws -> BillingInitializedPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.initializePaymentMethod", arguments: [try `params`.encode()])
-    return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.initializePaymentMethod", arguments: [try `params`.encode()]) { result in
+      return try BillingInitializedPaymentMethod.decode(result, in: runtime)
+    }
   }
   /// Adds a payment method.
   public func `addPaymentMethod`(_ `params`: AddPaymentMethodParams) async throws -> BillingPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.addPaymentMethod", arguments: [try `params`.encode()])
-    return try BillingPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.addPaymentMethod", arguments: [try `params`.encode()]) { result in
+      return try BillingPaymentMethod.decode(result, in: runtime)
+    }
   }
   /// Gets a list of payment methods that have been stored.
   public func `getPaymentMethods`(_ `params`: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponseBillingPaymentMethod {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "User.getPaymentMethods", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try ClerkPaginatedResponseBillingPaymentMethod.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "User.getPaymentMethods", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ClerkPaginatedResponseBillingPaymentMethod.decode(result, in: runtime)
+    }
   }
 }
 
-public struct EmailAddressState: Sendable {
+public struct EmailAddressState: Hashable, Sendable {
   public let `id`: String
   public let `emailAddress`: String
   public let `verification`: Verification
@@ -3320,48 +4609,56 @@ public struct EmailAddressState: Sendable {
   /// Returns a string representation of an object.
   public func `stringValue`() async throws -> String {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.toString", arguments: [])
-    return try result.string()
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.toString", arguments: []) { result in
+      return try result.string()
+    }
   }
   public func `prepareVerification`(_ `params`: PrepareEmailAddressVerificationParams) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.prepareVerification", arguments: [try `params`.encode()])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.prepareVerification", arguments: [try `params`.encode()]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   public func `attemptVerification`(_ `params`: AttemptEmailAddressVerificationParams) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.attemptVerification", arguments: [try `params`.encode()])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.attemptVerification", arguments: [try `params`.encode()]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   public func `createEmailLinkFlow`() async throws -> CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.createEmailLinkFlow", arguments: [])
-    return try CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.createEmailLinkFlow", arguments: []) { result in
+      return try CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.decode(result, in: runtime)
+    }
   }
   public func `createEnterpriseSSOLinkFlow`() async throws -> CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.createEnterpriseSSOLinkFlow", arguments: [])
-    return try CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.createEnterpriseSSOLinkFlow", arguments: []) { result in
+      return try CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.decode(result, in: runtime)
+    }
   }
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   public func `create`() async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.create", arguments: [])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.create", arguments: []) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EmailAddress.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
 }
 
-public struct VerificationState: Sendable {
+public struct VerificationState: Hashable, Sendable {
   public let `attempts`: Double?
   public let `error`: ClerkAPIError?
   public let `expireAt`: Date?
@@ -3418,19 +4715,21 @@ public struct VerificationState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Verification { try runtime.resource(ResourceHandle.decodeReference(value), as: Verification.self) }
   public func `verifiedFromTheSameClient`() async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Verification.verifiedFromTheSameClient", arguments: [])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "Verification.verifiedFromTheSameClient", arguments: []) { result in
+      return try result.bool()
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Verification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Verification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Verification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Verification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Verification.decode(result, in: runtime)
+    }
   }
 }
 
 /// An interface that represents an error returned by the Clerk API.
-public struct ClerkAPIError: Sendable {
+public struct ClerkAPIError: Hashable, Sendable {
   public let `code`: String
   public let `message`: String
   public let `longMessage`: String?
@@ -3457,7 +4756,7 @@ public struct ClerkAPIError: Sendable {
   }
 }
 
-public struct ClerkAPIErrorMeta: Sendable {
+public struct ClerkAPIErrorMeta: Hashable, Sendable {
   public let `paramName`: String?
   public let `sessionId`: String?
   public let `emailAddresses`: [String]?
@@ -3502,7 +4801,7 @@ public struct ClerkAPIErrorMeta: Sendable {
   }
 }
 
-public struct ClerkAPIErrorMetaZxcvbn: Sendable {
+public struct ClerkAPIErrorMetaZxcvbn: Hashable, Sendable {
   public let `suggestions`: [ClerkAPIErrorMetaZxcvbnSuggestionsElement]
   public init(`suggestions`: [ClerkAPIErrorMetaZxcvbnSuggestionsElement]) {
     self.`suggestions` = `suggestions`
@@ -3520,7 +4819,7 @@ public struct ClerkAPIErrorMetaZxcvbn: Sendable {
   }
 }
 
-public struct ClerkAPIErrorMetaZxcvbnSuggestionsElement: Sendable {
+public struct ClerkAPIErrorMetaZxcvbnSuggestionsElement: Hashable, Sendable {
   public let `code`: String
   public let `message`: String
   public init(`code`: String, `message`: String) {
@@ -3541,7 +4840,7 @@ public struct ClerkAPIErrorMetaZxcvbnSuggestionsElement: Sendable {
   }
 }
 
-public struct ClerkAPIErrorMetaPlan: Sendable {
+public struct ClerkAPIErrorMetaPlan: Hashable, Sendable {
   public let `amountFormatted`: String
   public let `annualMonthlyAmountFormatted`: String
   public let `currencySymbol`: String
@@ -3602,29 +4901,7 @@ public enum VerificationStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> VerificationStatus { .init(rawValue: try value.string()) }
 }
 
-public enum PhoneCodeChannel: Hashable, Sendable {
-  case `sms`
-  case `whatsapp`
-  case unrecognized(String)
-  public var rawValue: String {
-    switch self {
-    case .`sms`: return "sms"
-    case .`whatsapp`: return "whatsapp"
-    case .unrecognized(let value): return value
-    }
-  }
-  public init(rawValue: String) {
-    switch rawValue {
-    case "sms": self = .`sms`
-    case "whatsapp": self = .`whatsapp`
-    default: self = .unrecognized(rawValue)
-    }
-  }
-  public func encode() throws -> JSONValue { .string(rawValue) }
-  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PhoneCodeChannel { .init(rawValue: try value.string()) }
-}
-
-public struct IdentificationLinkState: Sendable {
+public struct IdentificationLinkState: Hashable, Sendable {
   public let `id`: String
   public let `type`: String
   public init(`id`: String, `type`: String) {
@@ -3658,14 +4935,21 @@ public struct IdentificationLinkState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> IdentificationLink {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "IdentificationLink.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try IdentificationLink.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "IdentificationLink.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try IdentificationLink.decode(result, in: runtime)
+    }
   }
 }
 
-public indirect enum PrepareEmailAddressVerificationParams: Sendable {
+public indirect enum PrepareEmailAddressVerificationParams: Hashable, Sendable {
   case case1(EmailAddressPrepareVerificationParamsCase1)
   case case2(EmailAddressPrepareVerificationParamsCase2)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`.rawValue
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -3683,7 +4967,7 @@ public indirect enum PrepareEmailAddressVerificationParams: Sendable {
   }
 }
 
-public struct EmailAddressPrepareVerificationParamsCase1: Sendable {
+public struct EmailAddressPrepareVerificationParamsCase1: Hashable, Sendable {
   public var `strategy`: String { "email_code" }
   public init() {
 
@@ -3701,7 +4985,7 @@ public struct EmailAddressPrepareVerificationParamsCase1: Sendable {
   }
 }
 
-public struct EmailAddressPrepareVerificationParamsCase2: Sendable {
+public struct EmailAddressPrepareVerificationParamsCase2: Hashable, Sendable {
   public let `strategy`: EmailAddressPrepareVerificationParamsCase2Strategy
   public let `redirectUrl`: String
   public init(`strategy`: EmailAddressPrepareVerificationParamsCase2Strategy, `redirectUrl`: String) {
@@ -3744,7 +5028,7 @@ public enum EmailAddressPrepareVerificationParamsCase2Strategy: Hashable, Sendab
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> EmailAddressPrepareVerificationParamsCase2Strategy { .init(rawValue: try value.string()) }
 }
 
-public struct AttemptEmailAddressVerificationParams: Sendable {
+public struct AttemptEmailAddressVerificationParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -3762,7 +5046,7 @@ public struct AttemptEmailAddressVerificationParams: Sendable {
   }
 }
 
-public struct CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddressState: Sendable {
+public struct CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddressState: Hashable, Sendable {
 
   public init() {
 
@@ -3790,17 +5074,19 @@ public struct CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddressSt
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress { try runtime.resource(ResourceHandle.decodeReference(value), as: CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.self) }
   public func `startEmailLinkFlow`(_ `params`: StartEmailLinkFlowParams) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.startEmailLinkFlow", arguments: [try `params`.encode()])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.startEmailLinkFlow", arguments: [try `params`.encode()]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   public func `cancelEmailLinkFlow`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.cancelEmailLinkFlow", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "CreateEmailLinkFlowReturnStartEmailLinkFlowParamsAndEmailAddress.cancelEmailLinkFlow", arguments: []) { result in
+      _ = result
+    }
   }
 }
 
-public struct StartEmailLinkFlowParams: Sendable {
+public struct StartEmailLinkFlowParams: Hashable, Sendable {
   public let `redirectUrl`: String
   public init(`redirectUrl`: String) {
     self.`redirectUrl` = `redirectUrl`
@@ -3818,7 +5104,7 @@ public struct StartEmailLinkFlowParams: Sendable {
   }
 }
 
-public struct CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddressState: Sendable {
+public struct CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddressState: Hashable, Sendable {
 
   public init() {
 
@@ -3846,17 +5132,19 @@ public struct CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsA
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress { try runtime.resource(ResourceHandle.decodeReference(value), as: CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.self) }
   public func `startEnterpriseSSOLinkFlow`(_ `params`: StartEnterpriseSSOLinkFlowParams) async throws -> EmailAddress {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.startEnterpriseSSOLinkFlow", arguments: [try `params`.encode()])
-    return try EmailAddress.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.startEnterpriseSSOLinkFlow", arguments: [try `params`.encode()]) { result in
+      return try EmailAddress.decode(result, in: runtime)
+    }
   }
   public func `cancelEnterpriseSSOLinkFlow`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.cancelEnterpriseSSOLinkFlow", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "CreateEnterpriseSSOLinkFlowReturnStartEnterpriseSSOLinkFlowParamsAndEmailAddress.cancelEnterpriseSSOLinkFlow", arguments: []) { result in
+      _ = result
+    }
   }
 }
 
-public struct StartEnterpriseSSOLinkFlowParams: Sendable {
+public struct StartEnterpriseSSOLinkFlowParams: Hashable, Sendable {
   public let `redirectUrl`: String
   public init(`redirectUrl`: String) {
     self.`redirectUrl` = `redirectUrl`
@@ -3874,7 +5162,7 @@ public struct StartEnterpriseSSOLinkFlowParams: Sendable {
   }
 }
 
-public struct PhoneNumberState: Sendable {
+public struct PhoneNumberState: Hashable, Sendable {
   public let `id`: String
   public let `phoneNumber`: String
   public let `verification`: Verification
@@ -3921,51 +5209,65 @@ public struct PhoneNumberState: Sendable {
   public func prepare(_ value: JSONValue) throws -> any Sendable { try PhoneNumberState.decode(value, in: context.requireRuntime()) }
   public func encode() throws -> JSONValue { .object(["$ref": handle.json]) }
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PhoneNumber { try runtime.resource(ResourceHandle.decodeReference(value), as: PhoneNumber.self) }
+  public func `backupCodes`() async throws -> [String]? {
+    let runtime = try context.requireRuntime()
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.backupCodes", arguments: []) { result in
+      return try result.optional { value in try value.array().map { value in try value.string() } }
+    }
+  }
   /// Returns a string representation of an object.
   public func `stringValue`() async throws -> String {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.toString", arguments: [])
-    return try result.string()
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.toString", arguments: []) { result in
+      return try result.string()
+    }
   }
   public func `prepareVerification`() async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.prepareVerification", arguments: [])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.prepareVerification", arguments: []) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   public func `attemptVerification`(_ `params`: AttemptPhoneNumberVerificationParams) async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.attemptVerification", arguments: [try `params`.encode()])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.attemptVerification", arguments: [try `params`.encode()]) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   public func `makeDefaultSecondFactor`() async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.makeDefaultSecondFactor", arguments: [])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.makeDefaultSecondFactor", arguments: []) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   public func `setReservedForSecondFactor`(_ `params`: SetReservedForSecondFactorParams) async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.setReservedForSecondFactor", arguments: [try `params`.encode()])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.setReservedForSecondFactor", arguments: [try `params`.encode()]) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   public func `create`() async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.create", arguments: [])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.create", arguments: []) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> PhoneNumber {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try PhoneNumber.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PhoneNumber.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try PhoneNumber.decode(result, in: runtime)
+    }
   }
 }
 
-public struct AttemptPhoneNumberVerificationParams: Sendable {
+public struct AttemptPhoneNumberVerificationParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -3983,7 +5285,7 @@ public struct AttemptPhoneNumberVerificationParams: Sendable {
   }
 }
 
-public struct SetReservedForSecondFactorParams: Sendable {
+public struct SetReservedForSecondFactorParams: Hashable, Sendable {
   public let `reserved`: Bool
   public init(`reserved`: Bool) {
     self.`reserved` = `reserved`
@@ -4001,7 +5303,7 @@ public struct SetReservedForSecondFactorParams: Sendable {
   }
 }
 
-public struct Web3WalletState: Sendable {
+public struct Web3WalletState: Hashable, Sendable {
   public let `id`: String
   public let `web3Wallet`: String
   public let `verification`: Verification
@@ -4039,40 +5341,46 @@ public struct Web3WalletState: Sendable {
   /// Returns a string representation of an object.
   public func `stringValue`() async throws -> String {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.toString", arguments: [])
-    return try result.string()
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.toString", arguments: []) { result in
+      return try result.string()
+    }
   }
   public func `prepareVerification`(_ `params`: PrepareWeb3WalletVerificationParams) async throws -> Web3Wallet {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.prepareVerification", arguments: [try `params`.encode()])
-    return try Web3Wallet.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.prepareVerification", arguments: [try `params`.encode()]) { result in
+      return try Web3Wallet.decode(result, in: runtime)
+    }
   }
   public func `attemptVerification`(_ `params`: AttemptWeb3WalletVerificationParams) async throws -> Web3Wallet {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.attemptVerification", arguments: [try `params`.encode()])
-    return try Web3Wallet.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.attemptVerification", arguments: [try `params`.encode()]) { result in
+      return try Web3Wallet.decode(result, in: runtime)
+    }
   }
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   public func `create`() async throws -> Web3Wallet {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.create", arguments: [])
-    return try Web3Wallet.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.create", arguments: []) { result in
+      return try Web3Wallet.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Web3Wallet {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Web3Wallet.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Web3Wallet.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Web3Wallet.decode(result, in: runtime)
+    }
   }
 }
 
-public struct PrepareWeb3WalletVerificationParams: Sendable {
-  public let `strategy`: PrepareWeb3WalletVerificationParamsStrategy
-  public init(`strategy`: PrepareWeb3WalletVerificationParamsStrategy) {
+public struct PrepareWeb3WalletVerificationParams: Hashable, Sendable {
+  public let `strategy`: MobileUserSettingsWeb3FirstFactorsElement
+  public init(`strategy`: MobileUserSettingsWeb3FirstFactorsElement) {
     self.`strategy` = `strategy`
   }
   @MainActor public func encode() throws -> JSONValue {
@@ -4084,45 +5392,14 @@ public struct PrepareWeb3WalletVerificationParams: Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PrepareWeb3WalletVerificationParams {
     let values = try value.object()
 
-    return try PrepareWeb3WalletVerificationParams(`strategy`: try PrepareWeb3WalletVerificationParamsStrategy.decode((values["strategy"] ?? .undefined), in: runtime))
+    return try PrepareWeb3WalletVerificationParams(`strategy`: try MobileUserSettingsWeb3FirstFactorsElement.decode((values["strategy"] ?? .undefined), in: runtime))
   }
 }
 
-public enum PrepareWeb3WalletVerificationParamsStrategy: Hashable, Sendable {
-  case `web3MetamaskSignature`
-  case `web3BaseSignature`
-  case `web3CoinbaseWalletSignature`
-  case `web3OkxWalletSignature`
-  case `web3SolanaSignature`
-  case unrecognized(String)
-  public var rawValue: String {
-    switch self {
-    case .`web3MetamaskSignature`: return "web3_metamask_signature"
-    case .`web3BaseSignature`: return "web3_base_signature"
-    case .`web3CoinbaseWalletSignature`: return "web3_coinbase_wallet_signature"
-    case .`web3OkxWalletSignature`: return "web3_okx_wallet_signature"
-    case .`web3SolanaSignature`: return "web3_solana_signature"
-    case .unrecognized(let value): return value
-    }
-  }
-  public init(rawValue: String) {
-    switch rawValue {
-    case "web3_metamask_signature": self = .`web3MetamaskSignature`
-    case "web3_base_signature": self = .`web3BaseSignature`
-    case "web3_coinbase_wallet_signature": self = .`web3CoinbaseWalletSignature`
-    case "web3_okx_wallet_signature": self = .`web3OkxWalletSignature`
-    case "web3_solana_signature": self = .`web3SolanaSignature`
-    default: self = .unrecognized(rawValue)
-    }
-  }
-  public func encode() throws -> JSONValue { .string(rawValue) }
-  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PrepareWeb3WalletVerificationParamsStrategy { .init(rawValue: try value.string()) }
-}
-
-public struct AttemptWeb3WalletVerificationParams: Sendable {
+public struct AttemptWeb3WalletVerificationParams: Hashable, Sendable {
   public let `signature`: String
-  public let `strategy`: PrepareWeb3WalletVerificationParamsStrategy?
-  public init(`signature`: String, `strategy`: PrepareWeb3WalletVerificationParamsStrategy? = nil) {
+  public let `strategy`: MobileUserSettingsWeb3FirstFactorsElement?
+  public init(`signature`: String, `strategy`: MobileUserSettingsWeb3FirstFactorsElement? = nil) {
     self.`signature` = `signature`
     self.`strategy` = `strategy`
   }
@@ -4136,11 +5413,11 @@ public struct AttemptWeb3WalletVerificationParams: Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> AttemptWeb3WalletVerificationParams {
     let values = try value.object()
 
-    return try AttemptWeb3WalletVerificationParams(`signature`: try (values["signature"] ?? .undefined).string(), `strategy`: try (values["strategy"] ?? .undefined).optional { value in try PrepareWeb3WalletVerificationParamsStrategy.decode(value, in: runtime) })
+    return try AttemptWeb3WalletVerificationParams(`signature`: try (values["signature"] ?? .undefined).string(), `strategy`: try (values["strategy"] ?? .undefined).optional { value in try MobileUserSettingsWeb3FirstFactorsElement.decode(value, in: runtime) })
   }
 }
 
-public struct ExternalAccountState: Sendable {
+public struct ExternalAccountState: Hashable, Sendable {
   public let `id`: String
   public let `identificationId`: String
   public let `provider`: OAuthProvider
@@ -4221,34 +5498,40 @@ public struct ExternalAccountState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> ExternalAccount { try runtime.resource(ResourceHandle.decodeReference(value), as: ExternalAccount.self) }
   public func `reauthorize`(_ `params`: ReauthorizeExternalAccountParams) async throws -> ExternalAccount {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.reauthorize", arguments: [try `params`.encode()])
-    return try ExternalAccount.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.reauthorize", arguments: [try `params`.encode()]) { result in
+      return try ExternalAccount.decode(result, in: runtime)
+    }
   }
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   public func `providerSlug`() async throws -> OAuthProvider {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.providerSlug", arguments: [])
-    return try OAuthProvider.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.providerSlug", arguments: []) { result in
+      return try OAuthProvider.decode(result, in: runtime)
+    }
   }
   public func `providerTitle`() async throws -> String {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.providerTitle", arguments: [])
-    return try result.string()
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.providerTitle", arguments: []) { result in
+      return try result.string()
+    }
   }
   public func `accountIdentifier`() async throws -> String {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.accountIdentifier", arguments: [])
-    return try result.string()
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.accountIdentifier", arguments: []) { result in
+      return try result.string()
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> ExternalAccount {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try ExternalAccount.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ExternalAccount.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ExternalAccount.decode(result, in: runtime)
+    }
   }
 }
 
@@ -4356,7 +5639,7 @@ public enum OAuthProvider: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OAuthProvider { .init(rawValue: try value.string()) }
 }
 
-public struct ReauthorizeExternalAccountParams: Sendable {
+public struct ReauthorizeExternalAccountParams: Hashable, Sendable {
   public let `additionalScopes`: [String]?
   public let `redirectUrl`: String?
   public let `oidcPrompt`: String?
@@ -4383,7 +5666,7 @@ public struct ReauthorizeExternalAccountParams: Sendable {
   }
 }
 
-public struct EnterpriseAccountState: Sendable {
+public struct EnterpriseAccountState: Hashable, Sendable {
   public let `active`: Bool
   public let `emailAddress`: String
   public let `enterpriseConnection`: EnterpriseAccountConnection?
@@ -4460,18 +5743,20 @@ public struct EnterpriseAccountState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> EnterpriseAccount { try runtime.resource(ResourceHandle.decodeReference(value), as: EnterpriseAccount.self) }
   public func `destroy`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccount.destroy", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccount.destroy", arguments: []) { result in
+      _ = result
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> EnterpriseAccount {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccount.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try EnterpriseAccount.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccount.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try EnterpriseAccount.decode(result, in: runtime)
+    }
   }
 }
 
-public struct EnterpriseAccountConnectionState: Sendable {
+public struct EnterpriseAccountConnectionState: Hashable, Sendable {
   public let `active`: Bool
   public let `allowIdpInitiated`: Bool
   public let `allowSubdomains`: Bool
@@ -4549,8 +5834,9 @@ public struct EnterpriseAccountConnectionState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> EnterpriseAccountConnection {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccountConnection.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try EnterpriseAccountConnection.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "EnterpriseAccountConnection.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try EnterpriseAccountConnection.decode(result, in: runtime)
+    }
   }
 }
 
@@ -4691,7 +5977,7 @@ public enum EnterpriseProvider: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> EnterpriseProvider { .init(rawValue: try value.string()) }
 }
 
-public struct PasskeyState: Sendable {
+public struct PasskeyState: Hashable, Sendable {
   public let `id`: String
   public let `name`: String?
   public let `verification`: PasskeyVerification?
@@ -4740,23 +6026,26 @@ public struct PasskeyState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Passkey { try runtime.resource(ResourceHandle.decodeReference(value), as: Passkey.self) }
   public func `update`(_ `params`: Partialtype) async throws -> Passkey {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Passkey.update", arguments: [try `params`.encode()])
-    return try Passkey.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Passkey.update", arguments: [try `params`.encode()]) { result in
+      return try Passkey.decode(result, in: runtime)
+    }
   }
   public func `delete`() async throws -> DeletedObject {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Passkey.delete", arguments: [])
-    return try DeletedObject.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Passkey.delete", arguments: []) { result in
+      return try DeletedObject.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Passkey {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Passkey.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Passkey.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Passkey.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Passkey.decode(result, in: runtime)
+    }
   }
 }
 
-public struct PasskeyVerificationState: Sendable {
+public struct PasskeyVerificationState: Hashable, Sendable {
   public let `attempts`: Double?
   public let `error`: ClerkAPIError?
   public let `expireAt`: Date?
@@ -4813,19 +6102,21 @@ public struct PasskeyVerificationState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> PasskeyVerification { try runtime.resource(ResourceHandle.decodeReference(value), as: PasskeyVerification.self) }
   public func `verifiedFromTheSameClient`() async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PasskeyVerification.verifiedFromTheSameClient", arguments: [])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "PasskeyVerification.verifiedFromTheSameClient", arguments: []) { result in
+      return try result.bool()
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> PasskeyVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PasskeyVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try PasskeyVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PasskeyVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try PasskeyVerification.decode(result, in: runtime)
+    }
   }
 }
 
 /// Make all properties in T optional
-public struct Partialtype: Sendable {
+public struct Partialtype: Hashable, Sendable {
   public let `name`: Field<String>
   public init(`name`: Field<String> = .omitted) {
     self.`name` = `name`
@@ -4843,7 +6134,7 @@ public struct Partialtype: Sendable {
   }
 }
 
-public struct UpdateUserParams: Sendable {
+public struct UpdateUserParams: Hashable, Sendable {
   public let `username`: Field<String>
   public let `firstName`: Field<String>
   public let `lastName`: Field<String>
@@ -4879,7 +6170,7 @@ public struct UpdateUserParams: Sendable {
   }
 }
 
-public struct UpdateUserMetadataParams: Sendable {
+public struct UpdateUserMetadataParams: Hashable, Sendable {
   public let `unsafeMetadata`: [String: JSONValue]
   public init(`unsafeMetadata`: [String: JSONValue]) {
     self.`unsafeMetadata` = `unsafeMetadata`
@@ -4897,7 +6188,7 @@ public struct UpdateUserMetadataParams: Sendable {
   }
 }
 
-public struct UpdateUserPasswordParams: Sendable {
+public struct UpdateUserPasswordParams: Hashable, Sendable {
   public let `newPassword`: String
   public let `currentPassword`: String?
   public let `signOutOfOtherSessions`: Bool?
@@ -4921,7 +6212,7 @@ public struct UpdateUserPasswordParams: Sendable {
   }
 }
 
-public struct RemoveUserPasswordParams: Sendable {
+public struct RemoveUserPasswordParams: Hashable, Sendable {
   public let `currentPassword`: String?
   public init(`currentPassword`: String? = nil) {
     self.`currentPassword` = `currentPassword`
@@ -4939,7 +6230,7 @@ public struct RemoveUserPasswordParams: Sendable {
   }
 }
 
-public struct CreateEmailAddressParams: Sendable {
+public struct CreateEmailAddressParams: Hashable, Sendable {
   public let `email`: String
   public init(`email`: String) {
     self.`email` = `email`
@@ -4957,7 +6248,7 @@ public struct CreateEmailAddressParams: Sendable {
   }
 }
 
-public struct CreatePhoneNumberParams: Sendable {
+public struct CreatePhoneNumberParams: Hashable, Sendable {
   public let `phoneNumber`: String
   public init(`phoneNumber`: String) {
     self.`phoneNumber` = `phoneNumber`
@@ -4975,7 +6266,7 @@ public struct CreatePhoneNumberParams: Sendable {
   }
 }
 
-public struct CreateWeb3WalletParams: Sendable {
+public struct CreateWeb3WalletParams: Hashable, Sendable {
   public let `web3Wallet`: String
   public init(`web3Wallet`: String) {
     self.`web3Wallet` = `web3Wallet`
@@ -4993,10 +6284,17 @@ public struct CreateWeb3WalletParams: Sendable {
   }
 }
 
-public indirect enum UserIsPrimaryIdentificationIdent: Sendable {
+public indirect enum UserIsPrimaryIdentificationIdent: Hashable, Sendable {
   case case1(EmailAddress)
   case case2(PhoneNumber)
   case case3(Web3Wallet)
+  @MainActor public var `id`: String {
+    switch self {
+    case .case1(let value): return value.`id`
+    case .case2(let value): return value.`id`
+    case .case3(let value): return value.`id`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -5016,7 +6314,7 @@ public indirect enum UserIsPrimaryIdentificationIdent: Sendable {
   }
 }
 
-public struct SessionWithActivitiesState: Sendable {
+public struct SessionWithActivitiesState: Hashable, Sendable {
   public let `id`: String
   public let `status`: String
   public let `expireAt`: Date
@@ -5069,18 +6367,20 @@ public struct SessionWithActivitiesState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SessionWithActivities { try runtime.resource(ResourceHandle.decodeReference(value), as: SessionWithActivities.self) }
   public func `revoke`() async throws -> SessionWithActivities {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SessionWithActivities.revoke", arguments: [])
-    return try SessionWithActivities.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SessionWithActivities.revoke", arguments: []) { result in
+      return try SessionWithActivities.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> SessionWithActivities {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SessionWithActivities.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try SessionWithActivities.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SessionWithActivities.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try SessionWithActivities.decode(result, in: runtime)
+    }
   }
 }
 
-public struct SessionActivity: Sendable {
+public struct SessionActivity: Hashable, Sendable {
   public let `id`: String
   public let `browserName`: String?
   public let `browserVersion`: String?
@@ -5119,7 +6419,7 @@ public struct SessionActivity: Sendable {
   }
 }
 
-public struct SetProfileImageParams: Sendable {
+public struct SetProfileImageParams: Hashable, Sendable {
   public let `file`: SetOrganizationLogoParamsFile?
   public init(`file`: SetOrganizationLogoParamsFile?) {
     self.`file` = `file`
@@ -5138,7 +6438,7 @@ public struct SetProfileImageParams: Sendable {
 }
 
 /// Represents information about an image.
-public struct ImageState: Sendable {
+public struct ImageState: Hashable, Sendable {
   public let `id`: String?
   public let `name`: String?
   public let `publicUrl`: String?
@@ -5176,12 +6476,13 @@ public struct ImageState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> Image {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "Image.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try Image.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "Image.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Image.decode(result, in: runtime)
+    }
   }
 }
 
-public struct CreateExternalAccountParams: Sendable {
+public struct CreateExternalAccountParams: Hashable, Sendable {
   public let `strategy`: OAuthStrategy?
   public let `enterpriseConnectionId`: String?
   public let `redirectUrl`: String?
@@ -5214,111 +6515,7 @@ public struct CreateExternalAccountParams: Sendable {
   }
 }
 
-/// OAuth-related authentication strategies (`oauth_<provider>` and custom OAuth).
-public enum OAuthStrategy: Hashable, Sendable {
-  case `oauthFacebook`
-  case `oauthGoogle`
-  case `oauthHubspot`
-  case `oauthGithub`
-  case `oauthTiktok`
-  case `oauthGitlab`
-  case `oauthDiscord`
-  case `oauthTwitter`
-  case `oauthTwitch`
-  case `oauthLinkedin`
-  case `oauthLinkedinOidc`
-  case `oauthDropbox`
-  case `oauthAtlassian`
-  case `oauthBitbucket`
-  case `oauthMicrosoft`
-  case `oauthNotion`
-  case `oauthApple`
-  case `oauthLine`
-  case `oauthInstagram`
-  case `oauthCoinbase`
-  case `oauthSpotify`
-  case `oauthXero`
-  case `oauthBox`
-  case `oauthSlack`
-  case `oauthLinear`
-  case `oauthX`
-  case `oauthEnstall`
-  case `oauthHuggingface`
-  case `oauthVercel`
-  case unrecognized(String)
-  public var rawValue: String {
-    switch self {
-    case .`oauthFacebook`: return "oauth_facebook"
-    case .`oauthGoogle`: return "oauth_google"
-    case .`oauthHubspot`: return "oauth_hubspot"
-    case .`oauthGithub`: return "oauth_github"
-    case .`oauthTiktok`: return "oauth_tiktok"
-    case .`oauthGitlab`: return "oauth_gitlab"
-    case .`oauthDiscord`: return "oauth_discord"
-    case .`oauthTwitter`: return "oauth_twitter"
-    case .`oauthTwitch`: return "oauth_twitch"
-    case .`oauthLinkedin`: return "oauth_linkedin"
-    case .`oauthLinkedinOidc`: return "oauth_linkedin_oidc"
-    case .`oauthDropbox`: return "oauth_dropbox"
-    case .`oauthAtlassian`: return "oauth_atlassian"
-    case .`oauthBitbucket`: return "oauth_bitbucket"
-    case .`oauthMicrosoft`: return "oauth_microsoft"
-    case .`oauthNotion`: return "oauth_notion"
-    case .`oauthApple`: return "oauth_apple"
-    case .`oauthLine`: return "oauth_line"
-    case .`oauthInstagram`: return "oauth_instagram"
-    case .`oauthCoinbase`: return "oauth_coinbase"
-    case .`oauthSpotify`: return "oauth_spotify"
-    case .`oauthXero`: return "oauth_xero"
-    case .`oauthBox`: return "oauth_box"
-    case .`oauthSlack`: return "oauth_slack"
-    case .`oauthLinear`: return "oauth_linear"
-    case .`oauthX`: return "oauth_x"
-    case .`oauthEnstall`: return "oauth_enstall"
-    case .`oauthHuggingface`: return "oauth_huggingface"
-    case .`oauthVercel`: return "oauth_vercel"
-    case .unrecognized(let value): return value
-    }
-  }
-  public init(rawValue: String) {
-    switch rawValue {
-    case "oauth_facebook": self = .`oauthFacebook`
-    case "oauth_google": self = .`oauthGoogle`
-    case "oauth_hubspot": self = .`oauthHubspot`
-    case "oauth_github": self = .`oauthGithub`
-    case "oauth_tiktok": self = .`oauthTiktok`
-    case "oauth_gitlab": self = .`oauthGitlab`
-    case "oauth_discord": self = .`oauthDiscord`
-    case "oauth_twitter": self = .`oauthTwitter`
-    case "oauth_twitch": self = .`oauthTwitch`
-    case "oauth_linkedin": self = .`oauthLinkedin`
-    case "oauth_linkedin_oidc": self = .`oauthLinkedinOidc`
-    case "oauth_dropbox": self = .`oauthDropbox`
-    case "oauth_atlassian": self = .`oauthAtlassian`
-    case "oauth_bitbucket": self = .`oauthBitbucket`
-    case "oauth_microsoft": self = .`oauthMicrosoft`
-    case "oauth_notion": self = .`oauthNotion`
-    case "oauth_apple": self = .`oauthApple`
-    case "oauth_line": self = .`oauthLine`
-    case "oauth_instagram": self = .`oauthInstagram`
-    case "oauth_coinbase": self = .`oauthCoinbase`
-    case "oauth_spotify": self = .`oauthSpotify`
-    case "oauth_xero": self = .`oauthXero`
-    case "oauth_box": self = .`oauthBox`
-    case "oauth_slack": self = .`oauthSlack`
-    case "oauth_linear": self = .`oauthLinear`
-    case "oauth_x": self = .`oauthX`
-    case "oauth_enstall": self = .`oauthEnstall`
-    case "oauth_huggingface": self = .`oauthHuggingface`
-    case "oauth_vercel": self = .`oauthVercel`
-    default: self = .unrecognized(rawValue)
-    }
-  }
-  public func encode() throws -> JSONValue { .string(rawValue) }
-  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> OAuthStrategy { .init(rawValue: try value.string()) }
-}
-
-public struct GetUserOrganizationMembershipParams: Sendable {
+public struct GetUserOrganizationMembershipParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public init(`initialPage`: Double? = nil, `pageSize`: Double? = nil) {
@@ -5339,7 +6536,7 @@ public struct GetUserOrganizationMembershipParams: Sendable {
   }
 }
 
-public struct GetUserOrganizationInvitationsParams: Sendable {
+public struct GetUserOrganizationInvitationsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `status`: OrganizationInvitationStatus?
@@ -5367,7 +6564,7 @@ public struct GetUserOrganizationInvitationsParams: Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseUserOrganizationInvitation: Sendable {
+public struct ClerkPaginatedResponseUserOrganizationInvitation: Hashable, Sendable {
   public let `data`: [UserOrganizationInvitation]
   public let `totalCount`: Double
   public init(`data`: [UserOrganizationInvitation], `totalCount`: Double) {
@@ -5389,7 +6586,7 @@ public struct ClerkPaginatedResponseUserOrganizationInvitation: Sendable {
 }
 
 /// The `OrganizationInvitation` object is the model around an organization invitation.
-public struct UserOrganizationInvitationState: Sendable {
+public struct UserOrganizationInvitationState: Hashable, Sendable {
   public let `id`: String
   public let `emailAddress`: String
   public let `publicOrganizationData`: UserOrganizationInvitationPublicOrganizationData
@@ -5446,18 +6643,20 @@ public struct UserOrganizationInvitationState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> UserOrganizationInvitation { try runtime.resource(ResourceHandle.decodeReference(value), as: UserOrganizationInvitation.self) }
   public func `accept`() async throws -> UserOrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "UserOrganizationInvitation.accept", arguments: [])
-    return try UserOrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "UserOrganizationInvitation.accept", arguments: []) { result in
+      return try UserOrganizationInvitation.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> UserOrganizationInvitation {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "UserOrganizationInvitation.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try UserOrganizationInvitation.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "UserOrganizationInvitation.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try UserOrganizationInvitation.decode(result, in: runtime)
+    }
   }
 }
 
-public struct UserOrganizationInvitationPublicOrganizationData: Sendable {
+public struct UserOrganizationInvitationPublicOrganizationData: Hashable, Sendable {
   public let `hasImage`: Bool
   public let `imageUrl`: String
   public let `name`: String
@@ -5487,7 +6686,7 @@ public struct UserOrganizationInvitationPublicOrganizationData: Sendable {
   }
 }
 
-public struct GetUserOrganizationSuggestionsParams: Sendable {
+public struct GetUserOrganizationSuggestionsParams: Hashable, Sendable {
   public let `initialPage`: Double?
   public let `pageSize`: Double?
   public let `status`: GetUserOrganizationSuggestionsParamsStatus?
@@ -5511,7 +6710,7 @@ public struct GetUserOrganizationSuggestionsParams: Sendable {
   }
 }
 
-public indirect enum GetUserOrganizationSuggestionsParamsStatus: Sendable {
+public indirect enum GetUserOrganizationSuggestionsParamsStatus: Hashable, Sendable {
   case case1(String)
   case case2(String)
   case case3([OrganizationSuggestionStatus])
@@ -5560,7 +6759,7 @@ public enum OrganizationSuggestionStatus: Hashable, Sendable {
 /// 
 /// > [!TIP]
 /// > Clerk's SDKs always use `Promise<ClerkPaginatedResponse<T>>`. If the promise resolves, you will get back the properties. If the promise is rejected, you will receive a `ClerkAPIResponseError` or network error.
-public struct ClerkPaginatedResponseOrganizationSuggestion: Sendable {
+public struct ClerkPaginatedResponseOrganizationSuggestion: Hashable, Sendable {
   public let `data`: [OrganizationSuggestion]
   public let `totalCount`: Double
   public init(`data`: [OrganizationSuggestion], `totalCount`: Double) {
@@ -5582,7 +6781,7 @@ public struct ClerkPaginatedResponseOrganizationSuggestion: Sendable {
 }
 
 /// The `OrganizationSuggestion` object is the model around [a suggestion to join an Organization](https://clerk.com/docs/guides/organizations/add-members/verified-domains#automatic-suggestions).
-public struct OrganizationSuggestionState: Sendable {
+public struct OrganizationSuggestionState: Hashable, Sendable {
   public let `id`: String
   public let `publicOrganizationData`: OrganizationSuggestionPublicOrganizationData
   public let `status`: OrganizationSuggestionStatus
@@ -5628,18 +6827,20 @@ public struct OrganizationSuggestionState: Sendable {
   /// Accepts the suggestion, creating a request to join the Organization.
   public func `accept`() async throws -> OrganizationSuggestion {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationSuggestion.accept", arguments: [])
-    return try OrganizationSuggestion.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationSuggestion.accept", arguments: []) { result in
+      return try OrganizationSuggestion.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationSuggestion {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationSuggestion.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationSuggestion.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationSuggestion.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationSuggestion.decode(result, in: runtime)
+    }
   }
 }
 
-public struct OrganizationSuggestionPublicOrganizationData: Sendable {
+public struct OrganizationSuggestionPublicOrganizationData: Hashable, Sendable {
   public let `hasImage`: Bool
   public let `imageUrl`: String
   public let `name`: String
@@ -5670,7 +6871,7 @@ public struct OrganizationSuggestionPublicOrganizationData: Sendable {
 }
 
 /// The `OrganizationCreationDefaults` object holds the suggested default values to use when creating an Organization, along with an advisory surfacing a potential issue with the suggested defaults.
-public struct OrganizationCreationDefaultsState: Sendable {
+public struct OrganizationCreationDefaultsState: Hashable, Sendable {
   public let `advisory`: OrganizationCreationDefaultsAdvisory?
   public let `form`: OrganizationCreationDefaultsForm
   public let `id`: String?
@@ -5708,12 +6909,13 @@ public struct OrganizationCreationDefaultsState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> OrganizationCreationDefaults {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "OrganizationCreationDefaults.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try OrganizationCreationDefaults.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "OrganizationCreationDefaults.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try OrganizationCreationDefaults.decode(result, in: runtime)
+    }
   }
 }
 
-public struct OrganizationCreationDefaultsAdvisory: Sendable {
+public struct OrganizationCreationDefaultsAdvisory: Hashable, Sendable {
   public var `code`: String { "organization_already_exists" }
   public var `severity`: String { "warning" }
   public let `meta`: [String: String]
@@ -5736,7 +6938,7 @@ public struct OrganizationCreationDefaultsAdvisory: Sendable {
   }
 }
 
-public struct OrganizationCreationDefaultsForm: Sendable {
+public struct OrganizationCreationDefaultsForm: Hashable, Sendable {
   public let `name`: String
   public let `slug`: String
   public let `logo`: String?
@@ -5763,7 +6965,7 @@ public struct OrganizationCreationDefaultsForm: Sendable {
   }
 }
 
-public struct TOTPState: Sendable {
+public struct TOTP: Hashable, Sendable {
   public let `id`: String
   public let `secret`: String?
   public let `uri`: String?
@@ -5792,37 +6994,14 @@ public struct TOTPState: Sendable {
     ]
     return .object(values.filter { !$0.value.isUndefined })
   }
-  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> TOTPState {
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> TOTP {
     let values = try value.object()
 
-    return try TOTPState(`id`: try (values["id"] ?? .undefined).string(), `secret`: try (values["secret"] ?? .undefined).optional { value in try value.string() }, `uri`: try (values["uri"] ?? .undefined).optional { value in try value.string() }, `verified`: try (values["verified"] ?? .undefined).bool(), `backupCodes`: try (values["backupCodes"] ?? .undefined).optional { value in try value.array().map { value in try value.string() } }, `createdAt`: try (values["createdAt"] ?? .undefined).optional { value in try value.date() }, `updatedAt`: try (values["updatedAt"] ?? .undefined).optional { value in try value.date() })
-  }
-}
-@MainActor @Observable public final class TOTP: CoreResource {
-  public let handle: ResourceHandle
-  public let context: ResourceContext
-  public var isInvalidated: Bool { context.isInvalidated(handle) }
-  public var state: TOTPState { context.state(handle, as: TOTPState.self) }
-  public init(handle: ResourceHandle, runtime: CoreRuntime) { self.handle = handle; self.context = ResourceContext(runtime: runtime, handle: handle, ownsRuntime: false) }
-  public var `id`: String { state.`id` }
-  public var `secret`: String? { state.`secret` }
-  public var `uri`: String? { state.`uri` }
-  public var `verified`: Bool { state.`verified` }
-  public var `backupCodes`: [String]? { state.`backupCodes` }
-  public var `createdAt`: Date? { state.`createdAt` }
-  public var `updatedAt`: Date? { state.`updatedAt` }
-  public func prepare(_ value: JSONValue) throws -> any Sendable { try TOTPState.decode(value, in: context.requireRuntime()) }
-  public func encode() throws -> JSONValue { .object(["$ref": handle.json]) }
-  public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> TOTP { try runtime.resource(ResourceHandle.decodeReference(value), as: TOTP.self) }
-  /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
-  public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> TOTP {
-    let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "TOTP.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try TOTP.decode(result, in: runtime)
+    return try TOTP(`id`: try (values["id"] ?? .undefined).string(), `secret`: try (values["secret"] ?? .undefined).optional { value in try value.string() }, `uri`: try (values["uri"] ?? .undefined).optional { value in try value.string() }, `verified`: try (values["verified"] ?? .undefined).bool(), `backupCodes`: try (values["backupCodes"] ?? .undefined).optional { value in try value.array().map { value in try value.string() } }, `createdAt`: try (values["createdAt"] ?? .undefined).optional { value in try value.date() }, `updatedAt`: try (values["updatedAt"] ?? .undefined).optional { value in try value.date() })
   }
 }
 
-public struct VerifyTOTPParams: Sendable {
+public struct VerifyTOTPParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -5840,7 +7019,7 @@ public struct VerifyTOTPParams: Sendable {
   }
 }
 
-public struct BackupCodeState: Sendable {
+public struct BackupCode: Hashable, Sendable {
   public let `id`: String
   public let `codes`: [String]
   public let `createdAt`: Date?
@@ -5860,34 +7039,14 @@ public struct BackupCodeState: Sendable {
     ]
     return .object(values.filter { !$0.value.isUndefined })
   }
-  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> BackupCodeState {
+  @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> BackupCode {
     let values = try value.object()
 
-    return try BackupCodeState(`id`: try (values["id"] ?? .undefined).string(), `codes`: try (values["codes"] ?? .undefined).array().map { value in try value.string() }, `createdAt`: try (values["createdAt"] ?? .undefined).optional { value in try value.date() }, `updatedAt`: try (values["updatedAt"] ?? .undefined).optional { value in try value.date() })
-  }
-}
-@MainActor @Observable public final class BackupCode: CoreResource {
-  public let handle: ResourceHandle
-  public let context: ResourceContext
-  public var isInvalidated: Bool { context.isInvalidated(handle) }
-  public var state: BackupCodeState { context.state(handle, as: BackupCodeState.self) }
-  public init(handle: ResourceHandle, runtime: CoreRuntime) { self.handle = handle; self.context = ResourceContext(runtime: runtime, handle: handle, ownsRuntime: false) }
-  public var `id`: String { state.`id` }
-  public var `codes`: [String] { state.`codes` }
-  public var `createdAt`: Date? { state.`createdAt` }
-  public var `updatedAt`: Date? { state.`updatedAt` }
-  public func prepare(_ value: JSONValue) throws -> any Sendable { try BackupCodeState.decode(value, in: context.requireRuntime()) }
-  public func encode() throws -> JSONValue { .object(["$ref": handle.json]) }
-  public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> BackupCode { try runtime.resource(ResourceHandle.decodeReference(value), as: BackupCode.self) }
-  /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
-  public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> BackupCode {
-    let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "BackupCode.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try BackupCode.decode(result, in: runtime)
+    return try BackupCode(`id`: try (values["id"] ?? .undefined).string(), `codes`: try (values["codes"] ?? .undefined).array().map { value in try value.string() }, `createdAt`: try (values["createdAt"] ?? .undefined).optional { value in try value.date() }, `updatedAt`: try (values["updatedAt"] ?? .undefined).optional { value in try value.date() })
   }
 }
 
-public struct SessionTouchParams: Sendable {
+public struct SessionTouchParams: Hashable, Sendable {
   public let `intent`: SessionTouchIntent?
   public init(`intent`: SessionTouchIntent? = nil) {
     self.`intent` = `intent`
@@ -5930,7 +7089,7 @@ public enum SessionTouchIntent: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SessionTouchIntent { .init(rawValue: try value.string()) }
 }
 
-public struct GetTokenOptions: Sendable {
+public struct GetTokenOptions: Hashable, Sendable {
   public let `organizationId`: String?
   public let `skipCache`: Bool?
   public let `template`: String?
@@ -5954,7 +7113,7 @@ public struct GetTokenOptions: Sendable {
   }
 }
 
-public indirect enum CheckAuthorizationParams: Sendable {
+public indirect enum CheckAuthorizationParams: Hashable, Sendable {
   case case1(SessionCheckAuthorizationIsAuthorizedParamsCase1)
   case case2(SessionCheckAuthorizationIsAuthorizedParamsCase2)
   case case3(SessionCheckAuthorizationIsAuthorizedParamsCase3)
@@ -5983,7 +7142,7 @@ public indirect enum CheckAuthorizationParams: Sendable {
   }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase1: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase1: Hashable, Sendable {
   public let `role`: String
   public let `reverification`: ReverificationConfig?
   public init(`role`: String, `reverification`: ReverificationConfig? = nil) {
@@ -6005,7 +7164,7 @@ public struct SessionCheckAuthorizationIsAuthorizedParamsCase1: Sendable {
 }
 
 /// The `ReverificationConfig` type has the following properties:
-public indirect enum ReverificationConfig: Sendable {
+public indirect enum ReverificationConfig: Hashable, Sendable {
   case case1(String)
   case case2(String)
   case case3(String)
@@ -6034,7 +7193,7 @@ public indirect enum ReverificationConfig: Sendable {
   }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase1ReverificationCase5: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase1ReverificationCase5: Hashable, Sendable {
   public let `level`: SessionVerificationLevel
   public let `afterMinutes`: Double
   public init(`level`: SessionVerificationLevel, `afterMinutes`: Double) {
@@ -6080,7 +7239,7 @@ public enum SessionVerificationLevel: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SessionVerificationLevel { .init(rawValue: try value.string()) }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase2: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase2: Hashable, Sendable {
   public let `permission`: String
   public let `reverification`: ReverificationConfig?
   public init(`permission`: String, `reverification`: ReverificationConfig? = nil) {
@@ -6101,7 +7260,7 @@ public struct SessionCheckAuthorizationIsAuthorizedParamsCase2: Sendable {
   }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase3: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase3: Hashable, Sendable {
   public let `feature`: String
   public let `reverification`: ReverificationConfig?
   public init(`feature`: String, `reverification`: ReverificationConfig? = nil) {
@@ -6122,7 +7281,7 @@ public struct SessionCheckAuthorizationIsAuthorizedParamsCase3: Sendable {
   }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase4: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase4: Hashable, Sendable {
   public let `plan`: String
   public let `reverification`: ReverificationConfig?
   public init(`plan`: String, `reverification`: ReverificationConfig? = nil) {
@@ -6143,7 +7302,7 @@ public struct SessionCheckAuthorizationIsAuthorizedParamsCase4: Sendable {
   }
 }
 
-public struct SessionCheckAuthorizationIsAuthorizedParamsCase5: Sendable {
+public struct SessionCheckAuthorizationIsAuthorizedParamsCase5: Hashable, Sendable {
   public let `reverification`: ReverificationConfig?
   public init(`reverification`: ReverificationConfig? = nil) {
     self.`reverification` = `reverification`
@@ -6161,7 +7320,7 @@ public struct SessionCheckAuthorizationIsAuthorizedParamsCase5: Sendable {
   }
 }
 
-public struct SessionVerifyCreateParams: Sendable {
+public struct SessionVerifyCreateParams: Hashable, Sendable {
   public let `level`: SessionVerificationLevel
   public init(`level`: SessionVerificationLevel) {
     self.`level` = `level`
@@ -6179,7 +7338,7 @@ public struct SessionVerifyCreateParams: Sendable {
   }
 }
 
-public struct SessionVerificationState: Sendable {
+public struct SessionVerificationState: Hashable, Sendable {
   public let `status`: SessionVerificationStatus
   public let `level`: SessionVerificationLevel
   public let `session`: Session
@@ -6237,8 +7396,9 @@ public struct SessionVerificationState: Sendable {
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SessionVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SessionVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
 }
 
@@ -6267,12 +7427,21 @@ public enum SessionVerificationStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SessionVerificationStatus { .init(rawValue: try value.string()) }
 }
 
-public indirect enum SessionVerificationFirstFactor: Sendable {
+public indirect enum SessionVerificationFirstFactor: Hashable, Sendable {
   case case1(EmailCodeFactor)
   case case2(PhoneCodeFactor)
   case case3(PasswordFactor)
   case case4(PasskeyFactor)
   case case5(EnterpriseSSOFactor)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    case .case4(let value): return value.`strategy`
+    case .case5(let value): return value.`strategy`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -6296,7 +7465,7 @@ public indirect enum SessionVerificationFirstFactor: Sendable {
   }
 }
 
-public struct EmailCodeFactor: Sendable {
+public struct EmailCodeFactor: Hashable, Sendable {
   public var `strategy`: String { "email_code" }
   public let `emailAddressId`: String
   public let `safeIdentifier`: String
@@ -6322,7 +7491,7 @@ public struct EmailCodeFactor: Sendable {
   }
 }
 
-public struct PhoneCodeFactor: Sendable {
+public struct PhoneCodeFactor: Hashable, Sendable {
   public var `strategy`: String { "phone_code" }
   public let `phoneNumberId`: String
   public let `safeIdentifier`: String
@@ -6354,7 +7523,7 @@ public struct PhoneCodeFactor: Sendable {
   }
 }
 
-public struct PasswordFactor: Sendable {
+public struct PasswordFactor: Hashable, Sendable {
   public var `strategy`: String { "password" }
   public init() {
 
@@ -6372,7 +7541,7 @@ public struct PasswordFactor: Sendable {
   }
 }
 
-public struct PasskeyFactor: Sendable {
+public struct PasskeyFactor: Hashable, Sendable {
   public var `strategy`: String { "passkey" }
   public init() {
 
@@ -6390,7 +7559,7 @@ public struct PasskeyFactor: Sendable {
   }
 }
 
-public struct EnterpriseSSOFactor: Sendable {
+public struct EnterpriseSSOFactor: Hashable, Sendable {
   public var `strategy`: String { "enterprise_sso" }
   public let `enterpriseConnectionId`: String?
   public let `enterpriseConnectionName`: String?
@@ -6413,10 +7582,17 @@ public struct EnterpriseSSOFactor: Sendable {
   }
 }
 
-public indirect enum SessionVerificationSecondFactor: Sendable {
+public indirect enum SessionVerificationSecondFactor: Hashable, Sendable {
   case case1(PhoneCodeFactor)
   case case2(TOTPFactor)
   case case3(BackupCodeFactor)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -6436,7 +7612,7 @@ public indirect enum SessionVerificationSecondFactor: Sendable {
   }
 }
 
-public struct TOTPFactor: Sendable {
+public struct TOTPFactor: Hashable, Sendable {
   public var `strategy`: String { "totp" }
   public init() {
 
@@ -6454,7 +7630,7 @@ public struct TOTPFactor: Sendable {
   }
 }
 
-public struct BackupCodeFactor: Sendable {
+public struct BackupCodeFactor: Hashable, Sendable {
   public var `strategy`: String { "backup_code" }
   public init() {
 
@@ -6472,11 +7648,19 @@ public struct BackupCodeFactor: Sendable {
   }
 }
 
-public indirect enum SessionVerifyPrepareFirstFactorParams: Sendable {
+public indirect enum SessionVerifyPrepareFirstFactorParams: Hashable, Sendable {
   case case1(PasskeyFactor)
   case case2(EmailCodeConfig)
   case case3(PhoneCodeConfig)
   case case4(OmitEnterpriseSSOConfigAndactionCompleteRedirectUrl)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    case .case4(let value): return value.`strategy`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -6498,7 +7682,7 @@ public indirect enum SessionVerifyPrepareFirstFactorParams: Sendable {
   }
 }
 
-public struct EmailCodeConfig: Sendable {
+public struct EmailCodeConfig: Hashable, Sendable {
   public let `primary`: Bool?
   public let `emailAddressId`: String
   public var `strategy`: String { "email_code" }
@@ -6521,7 +7705,7 @@ public struct EmailCodeConfig: Sendable {
   }
 }
 
-public struct PhoneCodeConfig: Sendable {
+public struct PhoneCodeConfig: Hashable, Sendable {
   public let `primary`: Bool?
   public let `phoneNumberId`: String
   public var `strategy`: String { "phone_code" }
@@ -6551,7 +7735,7 @@ public struct PhoneCodeConfig: Sendable {
 }
 
 /// Construct a type with the properties of T except for those in type K.
-public struct OmitEnterpriseSSOConfigAndactionCompleteRedirectUrl: Sendable {
+public struct OmitEnterpriseSSOConfigAndactionCompleteRedirectUrl: Hashable, Sendable {
   public let `emailAddressId`: String?
   public var `strategy`: String { "enterprise_sso" }
   public let `enterpriseConnectionId`: String?
@@ -6583,11 +7767,19 @@ public struct OmitEnterpriseSSOConfigAndactionCompleteRedirectUrl: Sendable {
   }
 }
 
-public indirect enum SessionVerifyAttemptFirstFactorParams: Sendable {
+public indirect enum SessionVerifyAttemptFirstFactorParams: Hashable, Sendable {
   case case1(EmailCodeAttempt)
   case case2(PhoneCodeAttempt)
   case case3(PasswordAttempt)
   case case4(PasskeyAttempt)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    case .case4(let value): return value.`strategy`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -6609,7 +7801,7 @@ public indirect enum SessionVerifyAttemptFirstFactorParams: Sendable {
   }
 }
 
-public struct EmailCodeAttempt: Sendable {
+public struct EmailCodeAttempt: Hashable, Sendable {
   public var `strategy`: String { "email_code" }
   public let `code`: String
   public init(`code`: String) {
@@ -6629,7 +7821,7 @@ public struct EmailCodeAttempt: Sendable {
   }
 }
 
-public struct PhoneCodeAttempt: Sendable {
+public struct PhoneCodeAttempt: Hashable, Sendable {
   public var `strategy`: String { "phone_code" }
   public let `code`: String
   public init(`code`: String) {
@@ -6649,7 +7841,7 @@ public struct PhoneCodeAttempt: Sendable {
   }
 }
 
-public struct PasswordAttempt: Sendable {
+public struct PasswordAttempt: Hashable, Sendable {
   public var `strategy`: String { "password" }
   public let `password`: String
   public init(`password`: String) {
@@ -6669,7 +7861,7 @@ public struct PasswordAttempt: Sendable {
   }
 }
 
-public struct PasskeyAttempt: Sendable {
+public struct PasskeyAttempt: Hashable, Sendable {
   public var `strategy`: String { "passkey" }
   public let `publicKeyCredential`: PublicKeyCredentialWithAuthenticatorAssertionResponse
   public init(`publicKeyCredential`: PublicKeyCredentialWithAuthenticatorAssertionResponse) {
@@ -6689,7 +7881,7 @@ public struct PasskeyAttempt: Sendable {
   }
 }
 
-public struct PublicKeyCredentialWithAuthenticatorAssertionResponse: Sendable {
+public struct PublicKeyCredentialWithAuthenticatorAssertionResponse: Hashable, Sendable {
   public let `id`: String
   public let `authenticatorAttachment`: String?
   public let `rawId`: Data
@@ -6723,7 +7915,7 @@ public struct PublicKeyCredentialWithAuthenticatorAssertionResponse: Sendable {
 /// Available only in secure contexts.
 /// 
 /// [MDN Reference](https://developer.mozilla.org/docs/Web/API/AuthenticatorAssertionResponse)
-public struct AuthenticatorAssertionResponse: Sendable {
+public struct AuthenticatorAssertionResponse: Hashable, Sendable {
   public let `authenticatorData`: Data
   public let `signature`: Data
   public let `userHandle`: Data?
@@ -6750,7 +7942,7 @@ public struct AuthenticatorAssertionResponse: Sendable {
   }
 }
 
-public struct PhoneCodeSecondFactorConfig: Sendable {
+public struct PhoneCodeSecondFactorConfig: Hashable, Sendable {
   public var `strategy`: String { "phone_code" }
   public let `phoneNumberId`: String?
   public init(`phoneNumberId`: String? = nil) {
@@ -6770,10 +7962,24 @@ public struct PhoneCodeSecondFactorConfig: Sendable {
   }
 }
 
-public indirect enum SessionVerifyAttemptSecondFactorParams: Sendable {
+public indirect enum SessionVerifyAttemptSecondFactorParams: Hashable, Sendable {
   case case1(PhoneCodeAttempt)
   case case2(TOTPAttempt)
   case case3(BackupCodeAttempt)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    }
+  }
+  @MainActor public var `code`: String {
+    switch self {
+    case .case1(let value): return value.`code`
+    case .case2(let value): return value.`code`
+    case .case3(let value): return value.`code`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -6793,7 +7999,7 @@ public indirect enum SessionVerifyAttemptSecondFactorParams: Sendable {
   }
 }
 
-public struct TOTPAttempt: Sendable {
+public struct TOTPAttempt: Hashable, Sendable {
   public var `strategy`: String { "totp" }
   public let `code`: String
   public init(`code`: String) {
@@ -6813,7 +8019,7 @@ public struct TOTPAttempt: Sendable {
   }
 }
 
-public struct BackupCodeAttempt: Sendable {
+public struct BackupCodeAttempt: Hashable, Sendable {
   public var `strategy`: String { "backup_code" }
   public let `code`: String
   public init(`code`: String) {
@@ -6834,7 +8040,7 @@ public struct BackupCodeAttempt: Sendable {
 }
 
 /// The `SignInFuture` class holds the state of the current sign-in and provides helper methods to navigate and complete the sign-in process. It is used to manage the sign-in lifecycle, including the first and second factor verification, and the creation of a new session.
-public struct SignInState: Sendable {
+public struct SignInState: Hashable, Sendable {
   public let `id`: String?
   public let `supportedFirstFactors`: [SignInFirstFactor]
   public let `supportedSecondFactors`: [SignInSecondFactor]
@@ -6943,56 +8149,64 @@ public struct SignInState: Sendable {
   /// > The `signIn.create()` method is intended for advanced use cases. For most use cases, prefer the use of the factor-specific methods such as `signIn.password()`, `signIn.emailCode.sendCode()`, etc.
   public func `create`(_ `params`: SignInCreateParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.create", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.create", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Submits a password to sign-in.
   public func `password`(_ `params`: SignInPasswordParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.password", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.password", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Performs an SSO-based sign-in (Social/OAuth or Enterprise).
   public func `sso`(_ `params`: SignInSSOParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.sso", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.sso", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Performs a ticket-based sign-in.
   public func `ticket`(_ `params`: SignInTicketParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.ticket", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.ticket", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Initiates a passkey-based authentication flow, enabling users to authenticate using a previously registered passkey. When called without parameters, this method requires a prior call to `SignIn.create({ strategy: 'passkey' })` to initialize the sign-in context. This pattern is particularly useful in scenarios where the authentication strategy needs to be determined dynamically at runtime.
   public func `passkey`(_ `params`: SignInPasskeyParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.passkey", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.passkey", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Submits a proof token to resolve a pending protect check challenge. The response may contain another `protectCheck` (a chained challenge) which must be resolved iteratively.
   public func `submitProtectCheck`(_ `params`: SignInSubmitProtectCheckParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.submitProtectCheck", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.submitProtectCheck", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Converts a sign-in with `status === 'complete'` into an active session. Will cause anything observing the session state (such as the [`useUser()`](https://clerk.com/docs/reference/hooks/use-user) hook) to update automatically.
   public func `finalize`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.finalize", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.finalize", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Resets the current sign-in attempt by clearing all local state back to null. This is useful when you want to allow users to go back to the beginning of the sign-in flow (e.g., to change their identifier during verification).
   /// 
   /// Unlike other methods, `reset()` does not trigger the `fetchStatus` to change to `'fetching'` and does not make any API calls - it only clears local state.
   public func `reset`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignIn.reset", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignIn.reset", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public indirect enum SignInFirstFactor: Sendable {
+public indirect enum SignInFirstFactor: Hashable, Sendable {
   case case1(EmailCodeFactor)
   case case2(PhoneCodeFactor)
   case case3(PasswordFactor)
@@ -7003,6 +8217,20 @@ public indirect enum SignInFirstFactor: Sendable {
   case case8(ResetPasswordEmailCodeFactor)
   case case9(Web3SignatureFactor)
   case case10(OauthFactor)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    case .case4(let value): return value.`strategy`
+    case .case5(let value): return value.`strategy`
+    case .case6(let value): return value.`strategy`
+    case .case7(let value): return value.`strategy`
+    case .case8(let value): return value.`strategy`
+    case .case9(let value): return value.`strategy`.rawValue
+    case .case10(let value): return value.`strategy`.rawValue
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -7036,7 +8264,7 @@ public indirect enum SignInFirstFactor: Sendable {
   }
 }
 
-public struct EmailLinkFactor: Sendable {
+public struct EmailLinkFactor: Hashable, Sendable {
   public var `strategy`: String { "email_link" }
   public let `emailAddressId`: String
   public let `safeIdentifier`: String
@@ -7062,7 +8290,7 @@ public struct EmailLinkFactor: Sendable {
   }
 }
 
-public struct ResetPasswordPhoneCodeFactor: Sendable {
+public struct ResetPasswordPhoneCodeFactor: Hashable, Sendable {
   public var `strategy`: String { "reset_password_phone_code" }
   public let `phoneNumberId`: String
   public let `safeIdentifier`: String
@@ -7088,7 +8316,7 @@ public struct ResetPasswordPhoneCodeFactor: Sendable {
   }
 }
 
-public struct ResetPasswordEmailCodeFactor: Sendable {
+public struct ResetPasswordEmailCodeFactor: Hashable, Sendable {
   public var `strategy`: String { "reset_password_email_code" }
   public let `emailAddressId`: String
   public let `safeIdentifier`: String
@@ -7114,12 +8342,12 @@ public struct ResetPasswordEmailCodeFactor: Sendable {
   }
 }
 
-public struct Web3SignatureFactor: Sendable {
-  public let `strategy`: PrepareWeb3WalletVerificationParamsStrategy
+public struct Web3SignatureFactor: Hashable, Sendable {
+  public let `strategy`: MobileUserSettingsWeb3FirstFactorsElement
   public let `web3WalletId`: String
   public let `primary`: Bool?
   public let `walletName`: String?
-  public init(`strategy`: PrepareWeb3WalletVerificationParamsStrategy, `web3WalletId`: String, `primary`: Bool? = nil, `walletName`: String? = nil) {
+  public init(`strategy`: MobileUserSettingsWeb3FirstFactorsElement, `web3WalletId`: String, `primary`: Bool? = nil, `walletName`: String? = nil) {
     self.`strategy` = `strategy`
     self.`web3WalletId` = `web3WalletId`
     self.`primary` = `primary`
@@ -7137,11 +8365,11 @@ public struct Web3SignatureFactor: Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> Web3SignatureFactor {
     let values = try value.object()
 
-    return try Web3SignatureFactor(`strategy`: try PrepareWeb3WalletVerificationParamsStrategy.decode((values["strategy"] ?? .undefined), in: runtime), `web3WalletId`: try (values["web3WalletId"] ?? .undefined).string(), `primary`: try (values["primary"] ?? .undefined).optional { value in try value.bool() }, `walletName`: try (values["walletName"] ?? .undefined).optional { value in try value.string() })
+    return try Web3SignatureFactor(`strategy`: try MobileUserSettingsWeb3FirstFactorsElement.decode((values["strategy"] ?? .undefined), in: runtime), `web3WalletId`: try (values["web3WalletId"] ?? .undefined).string(), `primary`: try (values["primary"] ?? .undefined).optional { value in try value.bool() }, `walletName`: try (values["walletName"] ?? .undefined).optional { value in try value.string() })
   }
 }
 
-public struct OauthFactor: Sendable {
+public struct OauthFactor: Hashable, Sendable {
   public let `strategy`: OAuthStrategy
   public init(`strategy`: OAuthStrategy) {
     self.`strategy` = `strategy`
@@ -7159,12 +8387,21 @@ public struct OauthFactor: Sendable {
   }
 }
 
-public indirect enum SignInSecondFactor: Sendable {
+public indirect enum SignInSecondFactor: Hashable, Sendable {
   case case1(EmailCodeFactor)
   case case2(PhoneCodeFactor)
   case case3(TOTPFactor)
   case case4(BackupCodeFactor)
   case case5(EmailLinkFactor)
+  @MainActor public var `strategy`: String {
+    switch self {
+    case .case1(let value): return value.`strategy`
+    case .case2(let value): return value.`strategy`
+    case .case3(let value): return value.`strategy`
+    case .case4(let value): return value.`strategy`
+    case .case5(let value): return value.`strategy`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -7225,7 +8462,7 @@ public enum SignInStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInStatus { .init(rawValue: try value.string()) }
 }
 
-public struct SignInExistingSession: Sendable {
+public struct SignInExistingSession: Hashable, Sendable {
   public let `sessionId`: String
   public init(`sessionId`: String) {
     self.`sessionId` = `sessionId`
@@ -7243,7 +8480,7 @@ public struct SignInExistingSession: Sendable {
   }
 }
 
-public struct UserData: Sendable {
+public struct UserData: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `imageUrl`: String?
@@ -7273,7 +8510,7 @@ public struct UserData: Sendable {
 /// A pending Clerk Protect challenge that must be completed before the current sign-in or sign-up attempt can continue.
 /// 
 /// This resource is only returned when Protect mid-flow challenges are enabled for the instance. When present, load the challenge SDK from `sdkUrl`, initialize it with `token` and `uiHints`, and submit the proof token returned by the SDK with `submitProtectCheck()`.
-public struct ProtectCheck: Sendable {
+public struct ProtectCheck: Hashable, Sendable {
   public var `status`: String { "pending" }
   public let `sdkUrl`: String
   public let `expiresAt`: Double?
@@ -7299,7 +8536,7 @@ public struct ProtectCheck: Sendable {
   }
 }
 
-public struct SignInCreateParams: Sendable {
+public struct SignInCreateParams: Hashable, Sendable {
   public let `identifier`: String?
   public let `password`: String?
   public let `strategy`: SignInCreateParamsStrategy?
@@ -7451,11 +8688,19 @@ public enum SignInCreateParamsStrategy: Hashable, Sendable {
 }
 
 /// Parameters for submitting a password to sign-in.
-public indirect enum SignInPasswordParams: Sendable {
+public indirect enum SignInPasswordParams: Hashable, Sendable {
   case case1(SignInPasswordParamsCase1)
   case case2(SignInPasswordParamsCase2)
   case case3(SignInPasswordParamsCase3)
   case case4(SignInPasswordParamsCase4)
+  @MainActor public var `password`: String {
+    switch self {
+    case .case1(let value): return value.`password`
+    case .case2(let value): return value.`password`
+    case .case3(let value): return value.`password`
+    case .case4(let value): return value.`password`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -7477,7 +8722,7 @@ public indirect enum SignInPasswordParams: Sendable {
   }
 }
 
-public struct SignInPasswordParamsCase1: Sendable {
+public struct SignInPasswordParamsCase1: Hashable, Sendable {
   public let `password`: String
   public let `identifier`: String
   public init(`password`: String, `identifier`: String) {
@@ -7498,7 +8743,7 @@ public struct SignInPasswordParamsCase1: Sendable {
   }
 }
 
-public struct SignInPasswordParamsCase2: Sendable {
+public struct SignInPasswordParamsCase2: Hashable, Sendable {
   public let `password`: String
   public let `emailAddress`: String
   public init(`password`: String, `emailAddress`: String) {
@@ -7519,7 +8764,7 @@ public struct SignInPasswordParamsCase2: Sendable {
   }
 }
 
-public struct SignInPasswordParamsCase3: Sendable {
+public struct SignInPasswordParamsCase3: Hashable, Sendable {
   public let `password`: String
   public let `phoneNumber`: String
   public init(`password`: String, `phoneNumber`: String) {
@@ -7540,7 +8785,7 @@ public struct SignInPasswordParamsCase3: Sendable {
   }
 }
 
-public struct SignInPasswordParamsCase4: Sendable {
+public struct SignInPasswordParamsCase4: Hashable, Sendable {
   public let `password`: String
   public init(`password`: String) {
     self.`password` = `password`
@@ -7558,7 +8803,7 @@ public struct SignInPasswordParamsCase4: Sendable {
   }
 }
 
-public struct SignInEmailCodeState: Sendable {
+public struct SignInEmailCodeState: Hashable, Sendable {
 
   public init() {
 
@@ -7587,19 +8832,21 @@ public struct SignInEmailCodeState: Sendable {
   /// Sends an email code to sign-in.
   public func `sendCode`(_ `params`: SignInEmailCodeSendParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a code sent with the [`emailCode.sendCode()`](https://clerk.com/docs/reference/objects/sign-in-future#email-code-send-code) method.
   public func `verifyCode`(_ `params`: SignInEmailCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailCode.verifyCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailCode.verifyCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
 /// Parameters for sending a sign-in email verification code.
-public indirect enum SignInEmailCodeSendParams: Sendable {
+public indirect enum SignInEmailCodeSendParams: Hashable, Sendable {
   case case1(SignInEmailCodeSendCodeParamsCase1)
   case case2(SignInEmailCodeSendCodeParamsCase2)
   @MainActor public func encode() throws -> JSONValue {
@@ -7619,7 +8866,7 @@ public indirect enum SignInEmailCodeSendParams: Sendable {
   }
 }
 
-public struct SignInEmailCodeSendCodeParamsCase1: Sendable {
+public struct SignInEmailCodeSendCodeParamsCase1: Hashable, Sendable {
   public let `emailAddress`: String?
   public init(`emailAddress`: String? = nil) {
     self.`emailAddress` = `emailAddress`
@@ -7637,7 +8884,7 @@ public struct SignInEmailCodeSendCodeParamsCase1: Sendable {
   }
 }
 
-public struct SignInEmailCodeSendCodeParamsCase2: Sendable {
+public struct SignInEmailCodeSendCodeParamsCase2: Hashable, Sendable {
   public let `emailAddressId`: String?
   public init(`emailAddressId`: String? = nil) {
     self.`emailAddressId` = `emailAddressId`
@@ -7655,7 +8902,7 @@ public struct SignInEmailCodeSendCodeParamsCase2: Sendable {
   }
 }
 
-public struct SignInEmailCodeVerifyParams: Sendable {
+public struct SignInEmailCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -7673,7 +8920,7 @@ public struct SignInEmailCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInEmailLinkState: Sendable {
+public struct SignInEmailLinkState: Hashable, Sendable {
   public let `verification`: SignInEmailLinkVerification?
   public init(`verification`: SignInEmailLinkVerification?) {
     self.`verification` = `verification`
@@ -7703,21 +8950,29 @@ public struct SignInEmailLinkState: Sendable {
   /// Sends an email link to sign in with.
   public func `sendLink`(_ `params`: SignInEmailLinkSendParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailLink.sendLink", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailLink.sendLink", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Waits for email link verification to complete or expire.
   public func `waitForVerification`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailLink.waitForVerification", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInEmailLink.waitForVerification", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
 /// Parameters for sending a sign-in email link.
-public indirect enum SignInEmailLinkSendParams: Sendable {
+public indirect enum SignInEmailLinkSendParams: Hashable, Sendable {
   case case1(SignInEmailLinkSendLinkParamsCase1)
   case case2(SignInEmailLinkSendLinkParamsCase2)
+  @MainActor public var `verificationUrl`: String {
+    switch self {
+    case .case1(let value): return value.`verificationUrl`
+    case .case2(let value): return value.`verificationUrl`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -7735,7 +8990,7 @@ public indirect enum SignInEmailLinkSendParams: Sendable {
   }
 }
 
-public struct SignInEmailLinkSendLinkParamsCase1: Sendable {
+public struct SignInEmailLinkSendLinkParamsCase1: Hashable, Sendable {
   public let `verificationUrl`: String
   public let `emailAddress`: String?
   public init(`verificationUrl`: String, `emailAddress`: String? = nil) {
@@ -7756,7 +9011,7 @@ public struct SignInEmailLinkSendLinkParamsCase1: Sendable {
   }
 }
 
-public struct SignInEmailLinkSendLinkParamsCase2: Sendable {
+public struct SignInEmailLinkSendLinkParamsCase2: Hashable, Sendable {
   public let `verificationUrl`: String
   public let `emailAddressId`: String?
   public init(`verificationUrl`: String, `emailAddressId`: String? = nil) {
@@ -7777,7 +9032,7 @@ public struct SignInEmailLinkSendLinkParamsCase2: Sendable {
   }
 }
 
-public struct SignInEmailLinkVerification: Sendable {
+public struct SignInEmailLinkVerification: Hashable, Sendable {
   public let `status`: SignInEmailLinkVerificationStatus
   public let `createdSessionId`: String
   public let `verifiedFromTheSameClient`: Bool
@@ -7829,7 +9084,7 @@ public enum SignInEmailLinkVerificationStatus: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInEmailLinkVerificationStatus { .init(rawValue: try value.string()) }
 }
 
-public struct SignInPhoneCodeState: Sendable {
+public struct SignInPhoneCodeState: Hashable, Sendable {
 
   public init() {
 
@@ -7858,18 +9113,20 @@ public struct SignInPhoneCodeState: Sendable {
   /// Sends a phone code to sign in with.
   public func `sendCode`(_ `params`: SignInPhoneCodeSendParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInPhoneCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInPhoneCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a code sent with the [`phoneCode.sendCode()`](https://clerk.com/docs/reference/objects/sign-in-future#phone-code-send-code) method.
   public func `verifyCode`(_ `params`: SignInPhoneCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInPhoneCode.verifyCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInPhoneCode.verifyCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public indirect enum SignInPhoneCodeSendParams: Sendable {
+public indirect enum SignInPhoneCodeSendParams: Hashable, Sendable {
   case case1(SignInPhoneCodeSendCodeParamsCase1)
   case case2(SignInPhoneCodeSendCodeParamsCase2)
   @MainActor public func encode() throws -> JSONValue {
@@ -7889,7 +9146,7 @@ public indirect enum SignInPhoneCodeSendParams: Sendable {
   }
 }
 
-public struct SignInPhoneCodeSendCodeParamsCase1: Sendable {
+public struct SignInPhoneCodeSendCodeParamsCase1: Hashable, Sendable {
   public let `channel`: PhoneCodeChannel?
   public let `phoneNumber`: String?
   public init(`channel`: PhoneCodeChannel? = nil, `phoneNumber`: String? = nil) {
@@ -7910,7 +9167,7 @@ public struct SignInPhoneCodeSendCodeParamsCase1: Sendable {
   }
 }
 
-public struct SignInPhoneCodeSendCodeParamsCase2: Sendable {
+public struct SignInPhoneCodeSendCodeParamsCase2: Hashable, Sendable {
   public let `channel`: PhoneCodeChannel?
   public let `phoneNumberId`: String
   public init(`channel`: PhoneCodeChannel? = nil, `phoneNumberId`: String) {
@@ -7931,7 +9188,7 @@ public struct SignInPhoneCodeSendCodeParamsCase2: Sendable {
   }
 }
 
-public struct SignInPhoneCodeVerifyParams: Sendable {
+public struct SignInPhoneCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -7949,7 +9206,7 @@ public struct SignInPhoneCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInResetPasswordEmailCodeState: Sendable {
+public struct SignInResetPasswordEmailCodeState: Hashable, Sendable {
 
   public init() {
 
@@ -7978,24 +9235,27 @@ public struct SignInResetPasswordEmailCodeState: Sendable {
   /// Sends a password reset code to the first email address on the account.
   public func `sendCode`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.sendCode", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.sendCode", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a password reset code sent with the [`resetPasswordEmailCode.sendCode()`](https://clerk.com/docs/reference/objects/sign-in-future#reset-password-email-code-send-code) method. Will cause `signIn.status` to become `'needs_new_password'`. This is when you will call the [`resetPasswordEmailCode.submitPassword()`](https://clerk.com/docs/reference/objects/sign-in-future#reset-password-email-code-submit-password) method to complete the password reset flow.
   public func `verifyCode`(_ `params`: SignInEmailCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.verifyCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.verifyCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Submits a new password and moves the sign-in status to `'complete'`.
   public func `submitPassword`(_ `params`: SignInResetPasswordSubmitParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.submitPassword", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordEmailCode.submitPassword", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public struct SignInResetPasswordSubmitParams: Sendable {
+public struct SignInResetPasswordSubmitParams: Hashable, Sendable {
   public let `password`: String
   public let `signOutOfOtherSessions`: Bool?
   public init(`password`: String, `signOutOfOtherSessions`: Bool? = nil) {
@@ -8016,7 +9276,7 @@ public struct SignInResetPasswordSubmitParams: Sendable {
   }
 }
 
-public struct SignInResetPasswordPhoneCodeState: Sendable {
+public struct SignInResetPasswordPhoneCodeState: Hashable, Sendable {
 
   public init() {
 
@@ -8045,24 +9305,27 @@ public struct SignInResetPasswordPhoneCodeState: Sendable {
   /// Sends a password reset code to the first phone number on the account.
   public func `sendCode`(_ `params`: SignInResetPasswordPhoneCodeSendParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.sendCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a password reset code sent with the [`resetPasswordPhoneCode.sendCode()`](https://clerk.com/docs/reference/objects/sign-in-future#reset-password-phone-code-send-code) method. Will cause `signIn.status` to become `'needs_new_password'`. This is when you will call the [`resetPasswordPhoneCode.submitPassword()`](https://clerk.com/docs/reference/objects/sign-in-future#reset-password-phone-code-submit-password) method to complete the password reset flow.
   public func `verifyCode`(_ `params`: SignInResetPasswordPhoneCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.verifyCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.verifyCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Submits a new password and moves the sign-in status to `'complete'`.
   public func `submitPassword`(_ `params`: SignInResetPasswordSubmitParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.submitPassword", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInResetPasswordPhoneCode.submitPassword", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public struct SignInResetPasswordPhoneCodeSendParams: Sendable {
+public struct SignInResetPasswordPhoneCodeSendParams: Hashable, Sendable {
   public let `phoneNumber`: String?
   public init(`phoneNumber`: String? = nil) {
     self.`phoneNumber` = `phoneNumber`
@@ -8080,7 +9343,7 @@ public struct SignInResetPasswordPhoneCodeSendParams: Sendable {
   }
 }
 
-public struct SignInResetPasswordPhoneCodeVerifyParams: Sendable {
+public struct SignInResetPasswordPhoneCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -8098,7 +9361,7 @@ public struct SignInResetPasswordPhoneCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInSSOParams: Sendable {
+public struct SignInSSOParams: Hashable, Sendable {
   public let `strategy`: SignInSSOParamsStrategy
   public let `oidcPrompt`: String?
   public let `enterpriseConnectionId`: String?
@@ -8231,7 +9494,7 @@ public enum SignInSSOParamsStrategy: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInSSOParamsStrategy { .init(rawValue: try value.string()) }
 }
 
-public struct SignInMfaState: Sendable {
+public struct SignInMfaState: Hashable, Sendable {
 
   public init() {
 
@@ -8260,42 +9523,48 @@ public struct SignInMfaState: Sendable {
   /// Sends a phone code to sign in with as a second factor.
   public func `sendPhoneCode`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.sendPhoneCode", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.sendPhoneCode", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a phone code sent with the [`mfa.sendPhoneCode()`](https://clerk.com/docs/reference/objects/sign-in-future#mfa-send-phone-code) method.
   public func `verifyPhoneCode`(_ `params`: SignInMFAPhoneCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyPhoneCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyPhoneCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Sends an email code to sign in with as a second factor.
   public func `sendEmailCode`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.sendEmailCode", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.sendEmailCode", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies an email code sent with the [`mfa.sendEmailCode()`](https://clerk.com/docs/reference/objects/sign-in-future#mfa-send-email-code) method.
   public func `verifyEmailCode`(_ `params`: SignInMFAEmailCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyEmailCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyEmailCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies an authenticator app (TOTP) code to sign in with as a second factor.
   public func `verifyTOTP`(_ `params`: SignInTOTPVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyTOTP", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyTOTP", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a backup code to sign in with as a second factor.
   public func `verifyBackupCode`(_ `params`: SignInBackupCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyBackupCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignInMfa.verifyBackupCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public struct SignInMFAPhoneCodeVerifyParams: Sendable {
+public struct SignInMFAPhoneCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -8313,7 +9582,7 @@ public struct SignInMFAPhoneCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInMFAEmailCodeVerifyParams: Sendable {
+public struct SignInMFAEmailCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -8331,7 +9600,7 @@ public struct SignInMFAEmailCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInTOTPVerifyParams: Sendable {
+public struct SignInTOTPVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -8349,7 +9618,7 @@ public struct SignInTOTPVerifyParams: Sendable {
   }
 }
 
-public struct SignInBackupCodeVerifyParams: Sendable {
+public struct SignInBackupCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -8367,7 +9636,7 @@ public struct SignInBackupCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignInTicketParams: Sendable {
+public struct SignInTicketParams: Hashable, Sendable {
   public let `ticket`: String
   public init(`ticket`: String) {
     self.`ticket` = `ticket`
@@ -8385,7 +9654,7 @@ public struct SignInTicketParams: Sendable {
   }
 }
 
-public struct SignInPasskeyParams: Sendable {
+public struct SignInPasskeyParams: Hashable, Sendable {
   public let `flow`: SignInPasskeyParamsFlow?
   public init(`flow`: SignInPasskeyParamsFlow? = nil) {
     self.`flow` = `flow`
@@ -8425,7 +9694,7 @@ public enum SignInPasskeyParamsFlow: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignInPasskeyParamsFlow { .init(rawValue: try value.string()) }
 }
 
-public struct SignInSubmitProtectCheckParams: Sendable {
+public struct SignInSubmitProtectCheckParams: Hashable, Sendable {
   public let `proofToken`: String
   public init(`proofToken`: String) {
     self.`proofToken` = `proofToken`
@@ -8444,7 +9713,7 @@ public struct SignInSubmitProtectCheckParams: Sendable {
 }
 
 /// The `SignUpFuture` class holds the state of the current sign-up attempt and provides methods to drive custom sign-up flows, including email/phone verification, password, SSO, ticket-based, and Web3-based account creation.
-public struct SignUpState: Sendable {
+public struct SignUpState: Hashable, Sendable {
   public let `id`: String?
   public let `status`: SignUpStatus
   public let `requiredFields`: [SignUpField]
@@ -8573,52 +9842,60 @@ public struct SignUpState: Sendable {
   /// > The `signUp.create()` method is intended for advanced use cases. For most use cases, prefer the use of the factor-specific methods such as `signUp.password()`, `signUp.sso()`, etc.
   public func `create`(_ `params`: SignUpCreateParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.create", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.create", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Updates the current `SignUpFuture` instance with the provided parameters.
   public func `update`(_ `params`: SignUpUpdateParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.update", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.update", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Performs a password-based sign-up.
   public func `password`(_ `params`: SignUpPasswordParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.password", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.password", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Performs an SSO-based sign-up ([Social/OAuth](https://clerk.com/docs/guides/configure/auth-strategies/social-connections/overview) or [Enterprise](https://clerk.com/docs/guides/configure/auth-strategies/enterprise-connections/overview)).
   public func `sso`(_ `params`: SignUpSSOParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.sso", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.sso", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Performs a ticket-based sign-up.
   public func `ticket`(_ `params`: SignUpTicketParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.ticket", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.ticket", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Submits a proof token to resolve a pending protect check challenge. The response may contain another `protectCheck` (a chained challenge) which must be resolved iteratively.
   public func `submitProtectCheck`(_ `params`: SignUpSubmitProtectCheckParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.submitProtectCheck", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.submitProtectCheck", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Converts a sign-up with `status === 'complete'` into an active session. Will cause anything observing the session state (such as the [`useUser()`](https://clerk.com/docs/reference/hooks/use-user) hook) to update automatically.
   public func `finalize`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.finalize", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.finalize", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Resets the current sign-up attempt by clearing all local state back to null. This is useful when you want to allow users to go back to the beginning of the sign-up flow (e.g., to change their email address during verification).
   /// 
   /// Unlike other methods, `reset()` does not trigger the `fetchStatus` to change to `'fetching'` and does not make any API calls - it only clears local state.
   public func `reset`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUp.reset", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUp.reset", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
@@ -8678,15 +9955,15 @@ public enum SignUpField: Hashable, Sendable {
   case `oauthEnstall`
   case `oauthHuggingface`
   case `oauthVercel`
+  case `password`
+  case `emailAddress`
+  case `phoneNumber`
   case `username`
   case `firstName`
   case `lastName`
-  case `password`
-  case `legalAccepted`
-  case `emailAddress`
-  case `phoneNumber`
-  case `emailAddressOrPhoneNumber`
   case `web3Wallet`
+  case `legalAccepted`
+  case `emailAddressOrPhoneNumber`
   case `protectCheck`
   case unrecognized(String)
   public var rawValue: String {
@@ -8721,15 +9998,15 @@ public enum SignUpField: Hashable, Sendable {
     case .`oauthEnstall`: return "oauth_enstall"
     case .`oauthHuggingface`: return "oauth_huggingface"
     case .`oauthVercel`: return "oauth_vercel"
+    case .`password`: return "password"
+    case .`emailAddress`: return "email_address"
+    case .`phoneNumber`: return "phone_number"
     case .`username`: return "username"
     case .`firstName`: return "first_name"
     case .`lastName`: return "last_name"
-    case .`password`: return "password"
-    case .`legalAccepted`: return "legal_accepted"
-    case .`emailAddress`: return "email_address"
-    case .`phoneNumber`: return "phone_number"
-    case .`emailAddressOrPhoneNumber`: return "email_address_or_phone_number"
     case .`web3Wallet`: return "web3_wallet"
+    case .`legalAccepted`: return "legal_accepted"
+    case .`emailAddressOrPhoneNumber`: return "email_address_or_phone_number"
     case .`protectCheck`: return "protect_check"
     case .unrecognized(let value): return value
     }
@@ -8766,15 +10043,15 @@ public enum SignUpField: Hashable, Sendable {
     case "oauth_enstall": self = .`oauthEnstall`
     case "oauth_huggingface": self = .`oauthHuggingface`
     case "oauth_vercel": self = .`oauthVercel`
+    case "password": self = .`password`
+    case "email_address": self = .`emailAddress`
+    case "phone_number": self = .`phoneNumber`
     case "username": self = .`username`
     case "first_name": self = .`firstName`
     case "last_name": self = .`lastName`
-    case "password": self = .`password`
-    case "legal_accepted": self = .`legalAccepted`
-    case "email_address": self = .`emailAddress`
-    case "phone_number": self = .`phoneNumber`
-    case "email_address_or_phone_number": self = .`emailAddressOrPhoneNumber`
     case "web3_wallet": self = .`web3Wallet`
+    case "legal_accepted": self = .`legalAccepted`
+    case "email_address_or_phone_number": self = .`emailAddressOrPhoneNumber`
     case "protect_check": self = .`protectCheck`
     default: self = .unrecognized(rawValue)
     }
@@ -8814,11 +10091,11 @@ public enum SignUpIdentificationField: Hashable, Sendable {
   case `oauthEnstall`
   case `oauthHuggingface`
   case `oauthVercel`
-  case `username`
   case `emailAddress`
   case `phoneNumber`
-  case `emailAddressOrPhoneNumber`
+  case `username`
   case `web3Wallet`
+  case `emailAddressOrPhoneNumber`
   case unrecognized(String)
   public var rawValue: String {
     switch self {
@@ -8852,11 +10129,11 @@ public enum SignUpIdentificationField: Hashable, Sendable {
     case .`oauthEnstall`: return "oauth_enstall"
     case .`oauthHuggingface`: return "oauth_huggingface"
     case .`oauthVercel`: return "oauth_vercel"
-    case .`username`: return "username"
     case .`emailAddress`: return "email_address"
     case .`phoneNumber`: return "phone_number"
-    case .`emailAddressOrPhoneNumber`: return "email_address_or_phone_number"
+    case .`username`: return "username"
     case .`web3Wallet`: return "web3_wallet"
+    case .`emailAddressOrPhoneNumber`: return "email_address_or_phone_number"
     case .unrecognized(let value): return value
     }
   }
@@ -8892,11 +10169,11 @@ public enum SignUpIdentificationField: Hashable, Sendable {
     case "oauth_enstall": self = .`oauthEnstall`
     case "oauth_huggingface": self = .`oauthHuggingface`
     case "oauth_vercel": self = .`oauthVercel`
-    case "username": self = .`username`
     case "email_address": self = .`emailAddress`
     case "phone_number": self = .`phoneNumber`
-    case "email_address_or_phone_number": self = .`emailAddressOrPhoneNumber`
+    case "username": self = .`username`
     case "web3_wallet": self = .`web3Wallet`
+    case "email_address_or_phone_number": self = .`emailAddressOrPhoneNumber`
     default: self = .unrecognized(rawValue)
     }
   }
@@ -8904,7 +10181,7 @@ public enum SignUpIdentificationField: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpIdentificationField { .init(rawValue: try value.string()) }
 }
 
-public struct SignUpExistingSession: Sendable {
+public struct SignUpExistingSession: Hashable, Sendable {
   public let `sessionId`: String
   public init(`sessionId`: String) {
     self.`sessionId` = `sessionId`
@@ -8922,7 +10199,7 @@ public struct SignUpExistingSession: Sendable {
   }
 }
 
-public struct SignUpCreateParams: Sendable {
+public struct SignUpCreateParams: Hashable, Sendable {
   public let `strategy`: SignUpCreateParamsStrategy?
   public let `emailAddress`: String?
   public let `phoneNumber`: String?
@@ -9094,7 +10371,7 @@ public enum SignUpCreateParamsStrategy: Hashable, Sendable {
   @MainActor public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpCreateParamsStrategy { .init(rawValue: try value.string()) }
 }
 
-public struct SignUpUpdateParams: Sendable {
+public struct SignUpUpdateParams: Hashable, Sendable {
   public let `emailAddress`: String?
   public let `phoneNumber`: String?
   public let `username`: String?
@@ -9134,7 +10411,7 @@ public struct SignUpUpdateParams: Sendable {
 }
 
 /// Contains information about the available verification strategies for a sign-up attempt.
-public struct SignUpVerificationsState: Sendable {
+public struct SignUpVerificationsState: Hashable, Sendable {
   public let `emailAddress`: SignUpVerification
   public let `phoneNumber`: SignUpVerification
   public let `web3Wallet`: Verification
@@ -9180,42 +10457,48 @@ public struct SignUpVerificationsState: Sendable {
   /// Sends an email code to verify an email address.
   public func `sendEmailCode`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendEmailCode", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendEmailCode", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a code sent with the [`verifications.sendEmailCode()`](https://clerk.com/docs/reference/objects/sign-up-future#verifications-send-email-code) method.
   public func `verifyEmailCode`(_ `params`: SignUpEmailCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.verifyEmailCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.verifyEmailCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Sends an email link to verify an email address.
   public func `sendEmailLink`(_ `params`: SignUpEmailLinkSendParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendEmailLink", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendEmailLink", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Will wait for email link verification to complete or expire after calling [`verifications.sendEmailLink()`](https://clerk.com/docs/reference/objects/sign-up-future#verifications-send-email-link).
   public func `waitForEmailLinkVerification`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.waitForEmailLinkVerification", arguments: [])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.waitForEmailLinkVerification", arguments: []) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Sends a phone code to verify a phone number.
   public func `sendPhoneCode`(_ `params`: SignUpPhoneCodeSendParams? = nil) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendPhoneCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.sendPhoneCode", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
   /// Verifies a code sent with the [`verifications.sendPhoneCode()`](https://clerk.com/docs/reference/objects/sign-up-future#verifications-send-phone-code) method.
   public func `verifyPhoneCode`(_ `params`: SignUpPhoneCodeVerifyParams) async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.verifyPhoneCode", arguments: [try `params`.encode()])
-    try runtime.checkErrorResult(result)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerifications.verifyPhoneCode", arguments: [try `params`.encode()]) { result in
+      try runtime.checkErrorResult(result)
+    }
   }
 }
 
-public struct SignUpVerificationState: Sendable {
+public struct SignUpVerificationState: Hashable, Sendable {
   public let `supportedStrategies`: [String]
   public let `nextAction`: String
   public let `attempts`: Double?
@@ -9280,18 +10563,20 @@ public struct SignUpVerificationState: Sendable {
   public static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> SignUpVerification { try runtime.resource(ResourceHandle.decodeReference(value), as: SignUpVerification.self) }
   public func `verifiedFromTheSameClient`() async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerification.verifiedFromTheSameClient", arguments: [])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerification.verifiedFromTheSameClient", arguments: []) { result in
+      return try result.bool()
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> SignUpVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try SignUpVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "SignUpVerification.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try SignUpVerification.decode(result, in: runtime)
+    }
   }
 }
 
-public struct SignUpVerificationsEmailLinkVerification: Sendable {
+public struct SignUpVerificationsEmailLinkVerification: Hashable, Sendable {
   public let `status`: SignInEmailLinkVerificationStatus
   public let `createdSessionId`: String
   public let `verifiedFromTheSameClient`: Bool
@@ -9315,7 +10600,7 @@ public struct SignUpVerificationsEmailLinkVerification: Sendable {
   }
 }
 
-public struct SignUpEmailCodeVerifyParams: Sendable {
+public struct SignUpEmailCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -9333,7 +10618,7 @@ public struct SignUpEmailCodeVerifyParams: Sendable {
   }
 }
 
-public struct SignUpEmailLinkSendParams: Sendable {
+public struct SignUpEmailLinkSendParams: Hashable, Sendable {
   public let `verificationUrl`: String
   public init(`verificationUrl`: String) {
     self.`verificationUrl` = `verificationUrl`
@@ -9351,7 +10636,7 @@ public struct SignUpEmailLinkSendParams: Sendable {
   }
 }
 
-public struct SignUpPhoneCodeSendParams: Sendable {
+public struct SignUpPhoneCodeSendParams: Hashable, Sendable {
   public let `channel`: PhoneCodeChannel?
   public init(`channel`: PhoneCodeChannel? = nil) {
     self.`channel` = `channel`
@@ -9369,7 +10654,7 @@ public struct SignUpPhoneCodeSendParams: Sendable {
   }
 }
 
-public struct SignUpPhoneCodeVerifyParams: Sendable {
+public struct SignUpPhoneCodeVerifyParams: Hashable, Sendable {
   public let `code`: String
   public init(`code`: String) {
     self.`code` = `code`
@@ -9387,11 +10672,19 @@ public struct SignUpPhoneCodeVerifyParams: Sendable {
   }
 }
 
-public indirect enum SignUpPasswordParams: Sendable {
+public indirect enum SignUpPasswordParams: Hashable, Sendable {
   case case1(SignUpPasswordParamsCase1)
   case case2(SignUpPasswordParamsCase2)
   case case3(SignUpPasswordParamsCase3)
   case case4(SignUpPasswordParamsCase4)
+  @MainActor public var `password`: String {
+    switch self {
+    case .case1(let value): return value.`password`
+    case .case2(let value): return value.`password`
+    case .case3(let value): return value.`password`
+    case .case4(let value): return value.`password`
+    }
+  }
   @MainActor public func encode() throws -> JSONValue {
     switch self {
     case .case1(let value): return .object(["$case": .number(0), "value": try value.encode()])
@@ -9413,7 +10706,7 @@ public indirect enum SignUpPasswordParams: Sendable {
   }
 }
 
-public struct SignUpPasswordParamsCase1: Sendable {
+public struct SignUpPasswordParamsCase1: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `unsafeMetadata`: [String: JSONValue]?
@@ -9455,7 +10748,7 @@ public struct SignUpPasswordParamsCase1: Sendable {
   }
 }
 
-public struct SignUpPasswordParamsCase2: Sendable {
+public struct SignUpPasswordParamsCase2: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `unsafeMetadata`: [String: JSONValue]?
@@ -9497,7 +10790,7 @@ public struct SignUpPasswordParamsCase2: Sendable {
   }
 }
 
-public struct SignUpPasswordParamsCase3: Sendable {
+public struct SignUpPasswordParamsCase3: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `unsafeMetadata`: [String: JSONValue]?
@@ -9539,7 +10832,7 @@ public struct SignUpPasswordParamsCase3: Sendable {
   }
 }
 
-public struct SignUpPasswordParamsCase4: Sendable {
+public struct SignUpPasswordParamsCase4: Hashable, Sendable {
   public let `firstName`: String?
   public let `lastName`: String?
   public let `unsafeMetadata`: [String: JSONValue]?
@@ -9581,7 +10874,7 @@ public struct SignUpPasswordParamsCase4: Sendable {
   }
 }
 
-public struct SignUpSSOParams: Sendable {
+public struct SignUpSSOParams: Hashable, Sendable {
   public let `strategy`: String
   public let `oidcPrompt`: String?
   public let `enterpriseConnectionId`: String?
@@ -9623,7 +10916,7 @@ public struct SignUpSSOParams: Sendable {
   }
 }
 
-public struct SignUpTicketParams: Sendable {
+public struct SignUpTicketParams: Hashable, Sendable {
   public let `ticket`: String
   public let `firstName`: String?
   public let `lastName`: String?
@@ -9656,7 +10949,7 @@ public struct SignUpTicketParams: Sendable {
   }
 }
 
-public struct SignUpSubmitProtectCheckParams: Sendable {
+public struct SignUpSubmitProtectCheckParams: Hashable, Sendable {
   public let `proofToken`: String
   public init(`proofToken`: String) {
     self.`proofToken` = `proofToken`
@@ -9674,7 +10967,7 @@ public struct SignUpSubmitProtectCheckParams: Sendable {
   }
 }
 
-public struct MobileSetActiveParams: Sendable {
+public struct MobileSetActiveParams: Hashable, Sendable {
   public let `session`: Field<MobileSetActiveParamsSession>
   public let `organization`: Field<MobileSetActiveParamsOrganization>
   public init(`session`: Field<MobileSetActiveParamsSession> = .omitted, `organization`: Field<MobileSetActiveParamsOrganization> = .omitted) {
@@ -9695,7 +10988,7 @@ public struct MobileSetActiveParams: Sendable {
   }
 }
 
-public indirect enum MobileSetActiveParamsSession: Sendable {
+public indirect enum MobileSetActiveParamsSession: Hashable, Sendable {
   case case1(String)
   case case2(ActiveSession)
   case case3(PendingSession)
@@ -9720,7 +11013,7 @@ public indirect enum MobileSetActiveParamsSession: Sendable {
 
 /// Represents a session resource that has completed all pending tasks
 /// and authentication factors
-public struct ActiveSessionState: Sendable {
+public struct ActiveSessionState: Hashable, Sendable {
   public var `status`: String { "active" }
   public let `user`: User
   public let `id`: String
@@ -9805,20 +11098,23 @@ public struct ActiveSessionState: Sendable {
   /// Marks the session as ended. The session will no longer be active for this `Client` and its status will become **ended**.
   public func `end`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.end", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.end", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Invalidates the current session by marking it as removed. Once removed, the session will be deactivated for the current Client instance and its `status` will be set to `removed`. This operation cannot be undone.
   public func `remove`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.remove", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.remove", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Updates the session's last active timestamp to the current time. This method should be called periodically to indicate ongoing user activity and prevent the session from becoming stale. The updated timestamp is used for session management and analytics purposes.
   public func `touch`(_ `params`: SessionTouchParams? = nil) async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Gets the current user's [session token](https://clerk.com/docs/guides/sessions/session-tokens) or a [custom JWT template](https://clerk.com/docs/guides/sessions/jwt-templates).
   /// 
@@ -9827,67 +11123,77 @@ public struct ActiveSessionState: Sendable {
   /// Tokens can only be generated if the user is signed in.
   public func `getToken`(_ `options`: GetTokenOptions? = nil) async throws -> String? {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined])
-    return try result.optional { value in try value.string() }
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try result.optional { value in try value.string() }
+    }
   }
   /// Checks if the user is [authorized for the specified Role, Permission, Feature, or Plan](https://clerk.com/docs/guides/secure/authorization-checks) or requires the user to [reverify their credentials](https://clerk.com/docs/guides/secure/reverification) if their last verification is older than allowed.
   public func `checkAuthorization`(_ `isAuthorizedParams`: CheckAuthorizationParams) async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()]) { result in
+      return try result.bool()
+    }
   }
   /// Clears the cache for the current session. This is useful if the session has been updated and the cache is no longer valid.
   public func `clearCache`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.clearCache", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.clearCache", arguments: []) { result in
+      _ = result
+    }
   }
   /// Initiates the reverification flow.
   public func `startVerification`(_ `params`: SessionVerifyCreateParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.startVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.startVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [first factor verification](!first-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareFirstFactorVerification`(_ `factor`: SessionVerifyPrepareFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.prepareFirstFactorVerification", arguments: [try `factor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.prepareFirstFactorVerification", arguments: [try `factor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [first factor verification](!first-factor-verification) process.
   public func `attemptFirstFactorVerification`(_ `attemptFactor`: SessionVerifyAttemptFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [second factor verification](!second-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareSecondFactorVerification`(_ `params`: PhoneCodeSecondFactorConfig) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.prepareSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.prepareSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [second factor verification](!second-factor-verification) process.
   public func `attemptSecondFactorVerification`(_ `params`: SessionVerifyAttemptSecondFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.attemptSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.attemptSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates a verification flow using passkeys.
   public func `verifyWithPasskey`() async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.verifyWithPasskey", arguments: [])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.verifyWithPasskey", arguments: []) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> ActiveSession {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try ActiveSession.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "ActiveSession.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try ActiveSession.decode(result, in: runtime)
+    }
   }
 }
 
 /// Represents a session resource that has completed sign-in but has pending tasks
-public struct PendingSessionState: Sendable {
+public struct PendingSessionState: Hashable, Sendable {
   public var `status`: String { "pending" }
   public let `user`: User
   public let `currentTask`: SessionTask
@@ -9972,20 +11278,23 @@ public struct PendingSessionState: Sendable {
   /// Marks the session as ended. The session will no longer be active for this `Client` and its status will become **ended**.
   public func `end`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.end", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.end", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Invalidates the current session by marking it as removed. Once removed, the session will be deactivated for the current Client instance and its `status` will be set to `removed`. This operation cannot be undone.
   public func `remove`() async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.remove", arguments: [])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.remove", arguments: []) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Updates the session's last active timestamp to the current time. This method should be called periodically to indicate ongoing user activity and prevent the session from becoming stale. The updated timestamp is used for session management and analytics purposes.
   public func `touch`(_ `params`: SessionTouchParams? = nil) async throws -> Session {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined])
-    return try Session.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.touch", arguments: [try `params`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try Session.decode(result, in: runtime)
+    }
   }
   /// Gets the current user's [session token](https://clerk.com/docs/guides/sessions/session-tokens) or a [custom JWT template](https://clerk.com/docs/guides/sessions/jwt-templates).
   /// 
@@ -9994,66 +11303,76 @@ public struct PendingSessionState: Sendable {
   /// Tokens can only be generated if the user is signed in.
   public func `getToken`(_ `options`: GetTokenOptions? = nil) async throws -> String? {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined])
-    return try result.optional { value in try value.string() }
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.getToken", arguments: [try `options`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try result.optional { value in try value.string() }
+    }
   }
   /// Checks if the user is [authorized for the specified Role, Permission, Feature, or Plan](https://clerk.com/docs/guides/secure/authorization-checks) or requires the user to [reverify their credentials](https://clerk.com/docs/guides/secure/reverification) if their last verification is older than allowed.
   public func `checkAuthorization`(_ `isAuthorizedParams`: CheckAuthorizationParams) async throws -> Bool {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()])
-    return try result.bool()
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.checkAuthorization", arguments: [try `isAuthorizedParams`.encode()]) { result in
+      return try result.bool()
+    }
   }
   /// Clears the cache for the current session. This is useful if the session has been updated and the cache is no longer valid.
   public func `clearCache`() async throws {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.clearCache", arguments: [])
-    _ = result
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.clearCache", arguments: []) { result in
+      _ = result
+    }
   }
   /// Initiates the reverification flow.
   public func `startVerification`(_ `params`: SessionVerifyCreateParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.startVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.startVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [first factor verification](!first-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareFirstFactorVerification`(_ `factor`: SessionVerifyPrepareFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.prepareFirstFactorVerification", arguments: [try `factor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.prepareFirstFactorVerification", arguments: [try `factor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [first factor verification](!first-factor-verification) process.
   public func `attemptFirstFactorVerification`(_ `attemptFactor`: SessionVerifyAttemptFirstFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.attemptFirstFactorVerification", arguments: [try `attemptFactor`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates the [second factor verification](!second-factor-verification) process. This is a required step to complete a reverification flow when using a preparable factor.
   public func `prepareSecondFactorVerification`(_ `params`: PhoneCodeSecondFactorConfig) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.prepareSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.prepareSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Attempts to complete the [second factor verification](!second-factor-verification) process.
   public func `attemptSecondFactorVerification`(_ `params`: SessionVerifyAttemptSecondFactorParams) async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.attemptSecondFactorVerification", arguments: [try `params`.encode()])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.attemptSecondFactorVerification", arguments: [try `params`.encode()]) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Initiates a verification flow using passkeys.
   public func `verifyWithPasskey`() async throws -> SessionVerification {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.verifyWithPasskey", arguments: [])
-    return try SessionVerification.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.verifyWithPasskey", arguments: []) { result in
+      return try SessionVerification.decode(result, in: runtime)
+    }
   }
   /// Reloads the resource, which is useful when you want to access the latest user data after performing a mutation. To make the updated data immediately available, this method forces a session token refresh instead of waiting for the automatic refresh cycle that could temporarily retain stale information. Learn more about [forcing a token refresh](https://clerk.com/docs/guides/sessions/force-token-refresh).
   public func `reload`(_ `p`: ClerkResourceReloadParams? = nil) async throws -> PendingSession {
     let runtime = try context.requireRuntime()
-    let result = try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined])
-    return try PendingSession.decode(result, in: runtime)
+    return try await runtime.invoke(owner: self, target: handle, operation: "PendingSession.reload", arguments: [try `p`.map { value in try value.encode() } ?? .undefined]) { result in
+      return try PendingSession.decode(result, in: runtime)
+    }
   }
 }
 
-public indirect enum MobileSetActiveParamsOrganization: Sendable {
+public indirect enum MobileSetActiveParamsOrganization: Hashable, Sendable {
   case case1(String)
   case case2(Organization)
   @MainActor public func encode() throws -> JSONValue {
@@ -10073,7 +11392,7 @@ public indirect enum MobileSetActiveParamsOrganization: Sendable {
   }
 }
 
-public struct MobileSignOutOptions: Sendable {
+public struct MobileSignOutOptions: Hashable, Sendable {
   public let `sessionId`: String?
   public init(`sessionId`: String? = nil) {
     self.`sessionId` = `sessionId`
@@ -10091,7 +11410,7 @@ public struct MobileSignOutOptions: Sendable {
   }
 }
 
-public struct SessionFactorVerificationAgeValue: Sendable {
+public struct SessionFactorVerificationAgeValue: Hashable, Sendable {
   public let item0: Double
   public let item1: Double
   public init(item0: Double, item1: Double) { self.item0 = item0; self.item1 = item1 }
@@ -10103,7 +11422,7 @@ public struct SessionFactorVerificationAgeValue: Sendable {
   }
 }
 
-public struct ActiveSessionFactorVerificationAgeValue: Sendable {
+public struct ActiveSessionFactorVerificationAgeValue: Hashable, Sendable {
   public let item0: Double
   public let item1: Double
   public init(item0: Double, item1: Double) { self.item0 = item0; self.item1 = item1 }
@@ -10115,7 +11434,7 @@ public struct ActiveSessionFactorVerificationAgeValue: Sendable {
   }
 }
 
-public struct PendingSessionFactorVerificationAgeValue: Sendable {
+public struct PendingSessionFactorVerificationAgeValue: Hashable, Sendable {
   public let item0: Double
   public let item1: Double
   public init(item0: Double, item1: Double) { self.item0 = item0; self.item1 = item1 }
@@ -10128,7 +11447,7 @@ public struct PendingSessionFactorVerificationAgeValue: Sendable {
 }
 
 @MainActor public enum GeneratedBindings {
-  public static let contractHash = "0a52bc1140be0af0d047410ae267d11c38ed7c2244a335deb211c30131b85616"
+  public static let contractHash = "6d856909ecaad00b05898db345582a87a00387fd1215513831ecd7fe9a9968ae"
   public static let protocolVersion = 1
   public static func makeResource(_ handle: ResourceHandle, runtime: CoreRuntime) throws -> any CoreResource {
     switch handle.type {
@@ -10163,8 +11482,6 @@ public struct PendingSessionFactorVerificationAgeValue: Sendable {
     case "UserOrganizationInvitation": return UserOrganizationInvitation(handle: handle, runtime: runtime)
     case "OrganizationSuggestion": return OrganizationSuggestion(handle: handle, runtime: runtime)
     case "OrganizationCreationDefaults": return OrganizationCreationDefaults(handle: handle, runtime: runtime)
-    case "TOTP": return TOTP(handle: handle, runtime: runtime)
-    case "BackupCode": return BackupCode(handle: handle, runtime: runtime)
     case "SessionVerification": return SessionVerification(handle: handle, runtime: runtime)
     case "SignIn": return SignIn(handle: handle, runtime: runtime)
     case "SignInEmailCode": return SignInEmailCode(handle: handle, runtime: runtime)

@@ -1,12 +1,8 @@
+#if canImport(JavaScriptCore)
 import CryptoKit
 import Foundation
 import JavaScriptCore
 import Security
-
-@MainActor public protocol NativeCapabilities: AnyObject {
-  var supported: [String] { get }
-  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue
-}
 
 /// Every JavaScriptCore access, including teardown, runs on one private queue.
 private final class JavaScriptWorker: @unchecked Sendable {
@@ -123,3 +119,5 @@ private final class JavaScriptWorker: @unchecked Sendable {
     worker?.close(); worker = nil
   }
 }
+
+#endif

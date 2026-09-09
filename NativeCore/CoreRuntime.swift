@@ -3,20 +3,25 @@ import Observation
 
 public enum CoreFailureKind: String, Sendable { case clerk, rejection, bridge, cancelled }
 
-public struct CoreError: Error, Sendable {
+public struct CoreError: Error, LocalizedError, Sendable {
   public let kind: CoreFailureKind
   public let code: String
   public let message: String
   public let details: JSONValue?
-  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge) {
-    self.kind = kind; self.code = code; self.message = message; self.details = details
+  public let errors: [ClerkAPIError]
+  public var errorDescription: String? {
+    errors.first?.longMessage ?? errors.first?.message ?? message
+  }
+
+  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge, errors: [ClerkAPIError] = []) {
+    self.kind = kind; self.code = code; self.message = message; self.details = details; self.errors = errors
   }
 
   public static let invalidValue = CoreError(code: "invalid_value")
   public static let invalidResource = CoreError(code: "invalid_resource")
-  static func decode(_ value: JSONValue) throws -> CoreError {
+  @MainActor static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> CoreError {
     let v = try value.object()
-    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge)
+    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge, errors: (v["errors"] ?? .array([])).array().map { try ClerkAPIError.decode($0, in: runtime) })
   }
 }
 
@@ -40,11 +45,21 @@ public struct ResourceHandle: Hashable, Sendable {
   }
 }
 
-@MainActor public protocol CoreResource: AnyObject {
+@MainActor public protocol CoreResource: AnyObject, Hashable {
   var handle: ResourceHandle { get }
   var context: ResourceContext { get }
   var isInvalidated: Bool { get }
   func prepare(_ value: JSONValue) throws -> any Sendable
+}
+
+extension CoreResource {
+  public nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs === rhs
+  }
+
+  public nonisolated func hash(into hasher: inout Hasher) {
+    hasher.combine(ObjectIdentifier(self))
+  }
 }
 
 /// A transport has one Clerk owner. Embedded and Expo transports share this protocol.
@@ -108,7 +123,7 @@ public struct ResourceHandle: Hashable, Sendable {
   @ObservationIgnored private var states: [ResourceHandle: JSONValue] = [:]
   @ObservationIgnored private var typedStates: [ResourceHandle: any Sendable] = [:]
   @ObservationIgnored private var projectedHandles: Set<ResourceHandle> = []
-  @ObservationIgnored private var pending: [String: CheckedContinuation<JSONValue, any Error>] = [:]
+  @ObservationIgnored private var pending: [String: @MainActor (Result<JSONValue, any Error>) -> Void] = [:]
   @ObservationIgnored private var pendingOwners: [String: any CoreResource] = [:]
   @ObservationIgnored private var applying = false
   @ObservationIgnored private var staged: [ResourceHandle: any CoreResource] = [:]
@@ -150,34 +165,36 @@ public struct ResourceHandle: Hashable, Sendable {
     _ = try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<JSONValue, any Error>) in
-        pending[id] = continuation
+        pending[id] = { continuation.resume(with: $0) }
         do {
           try transport.send(.object(["kind": .string("init"), "id": .string(id), "configuration": .object([
             "publishableKey": .string(publishableKey), "callbackUrl": .string(callbackURL.absoluteString), "platform": .string(platform),
             "protocolVersion": .number(Double(GeneratedBindings.protocolVersion)), "contractHash": .string(GeneratedBindings.contractHash),
             "capabilities": .array(capabilities.map(JSONValue.string)),
           ])]))
-        } catch { pending.removeValue(forKey: id)?.resume(throwing: error) }
+        } catch { pending.removeValue(forKey: id)?(.failure(error)) }
       }
     } onCancel: { Task { @MainActor [weak self] in self?.close() } }
   }
 
-  public func invoke(owner: any CoreResource, target: ResourceHandle, operation: String, arguments: [JSONValue]) async throws -> JSONValue {
+  public func invoke<T: Sendable>(owner: any CoreResource, target: ResourceHandle, operation: String, arguments: [JSONValue], decode: @escaping @MainActor (JSONValue) throws -> T) async throws -> T {
     guard isAvailable, states[target] != nil else { throw CoreError(code: "stale_resource") }
     let id = UUID().uuidString
     pendingOwners[id] = owner
     defer { pendingOwners.removeValue(forKey: id) }
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
-      return try await withCheckedThrowingContinuation { continuation in
-        pending[id] = continuation
+      return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, any Error>) in
+        pending[id] = { result in
+          continuation.resume(with: result.flatMap { value in Result { try decode(value) } })
+        }
         do { try transport.send(.object(["kind": .string("invoke"), "id": .string(id), "target": target.json, "operation": .string(operation), "args": .array(arguments)])) }
-        catch { pending.removeValue(forKey: id)?.resume(throwing: error) }
+        catch { pending.removeValue(forKey: id)?(.failure(error)) }
       }
     } onCancel: {
       Task { @MainActor [weak self] in
         guard let self, let continuation = pending.removeValue(forKey: id) else { return }
-        continuation.resume(throwing: CancellationError())
+        continuation(.failure(CancellationError()))
         try? transport.send(.object(["kind": .string("cancel"), "id": .string(id)]))
       }
     }
@@ -186,32 +203,35 @@ public struct ResourceHandle: Hashable, Sendable {
   public func checkErrorResult(_ value: JSONValue) throws {
     let result = try value.object()
     guard let error = result["error"] else { throw CoreError.invalidValue }
-    if error != .null { throw try CoreError.decode(error) }
+    if error != .null { throw try CoreError.decode(error, in: self) }
   }
 
   public func receive(_ message: JSONValue) {
     do {
       let m = try message.object()
       let kind = try (m["kind"] ?? .undefined).string()
-      if let state = m["state"] { try apply(state) }
+      let leases = try m["state"].map { try apply($0) } ?? []
+      defer { withExtendedLifetime(leases) {} }
       if kind == "ready" {
         let manifest = try (m["manifest"] ?? .undefined).object()
         guard manifest["contractHash"] == .string(GeneratedBindings.contractHash), manifest["protocolVersion"] == .number(Double(GeneratedBindings.protocolVersion)) else { throw CoreError(code: "incompatible_bindings") }
         let id = try (m["id"] ?? .undefined).string()
-        pending.removeValue(forKey: id)?.resume(returning: .null)
+        pending.removeValue(forKey: id)?(.success(.null))
       } else if kind == "complete" {
         let id = try (m["id"] ?? .undefined).string()
-        if let failure = m["failure"] { try pending.removeValue(forKey: id)?.resume(throwing: CoreError.decode(failure)) }
-        else { pending.removeValue(forKey: id)?.resume(returning: m["result"] ?? .undefined) }
-      } else if kind == "lifecycleError" { lastLifecycleError = try m["failure"].map(CoreError.decode)
-      } else if kind == "runtimeError" || kind == "unavailable" || kind == "initializationFailed" { throw try m["failure"].map(CoreError.decode) ?? CoreError(code: "runtime_unavailable") }
+        if let failure = m["failure"] {
+          let error = try CoreError.decode(failure, in: self)
+          pending.removeValue(forKey: id)?(.failure(error))
+        } else { pending.removeValue(forKey: id)?(.success(m["result"] ?? .undefined)) }
+      } else if kind == "lifecycleError" { lastLifecycleError = try m["failure"].map { try CoreError.decode($0, in: self) }
+      } else if kind == "runtimeError" || kind == "unavailable" || kind == "initializationFailed" { throw try m["failure"].map { try CoreError.decode($0, in: self) } ?? CoreError(code: "runtime_unavailable") }
     } catch { fail(error) }
   }
 
-  private func apply(_ value: JSONValue) throws {
+  private func apply(_ value: JSONValue) throws -> [any CoreResource] {
     let v = try value.object()
     let nextRevision = try Int((v["revision"] ?? .undefined).number())
-    if nextRevision <= revision { return }
+    if nextRevision <= revision { return [] }
     let nextEpoch = try Int((v["epoch"] ?? .undefined).number())
     guard nextEpoch >= epoch else { throw CoreError(code: "stale_state") }
     var nextStates = states
@@ -258,6 +278,7 @@ public struct ResourceHandle: Hashable, Sendable {
     roots = nextRoots
     epoch = nextEpoch
     revision = nextRevision
+    return Array(staged.values)
   }
 
   fileprivate func release(_ handle: ResourceHandle, leaseID: UUID) {
@@ -274,7 +295,7 @@ public struct ResourceHandle: Hashable, Sendable {
     pending.removeAll()
     pendingOwners.removeAll()
     for continuation in continuations {
-      continuation.resume(throwing: error)
+      continuation(.failure(error))
     }
     revision += 1
   }

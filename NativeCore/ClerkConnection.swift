@@ -31,7 +31,7 @@ extension Clerk {
   }
 
   @MainActor public static func connect(configuration: ClerkConfiguration, capabilities: any NativeCapabilities) async throws -> Clerk {
-    #if SWIFT_PACKAGE
+    #if SWIFT_PACKAGE && canImport(JavaScriptCore)
     guard let url = Bundle.module.url(forResource: "clerk-core", withExtension: "js") else { throw CoreError(code: "missing_core_bundle") }
     let bundle = try Data(contentsOf: url)
     let transport = JavaScriptCoreTransport(capabilities: capabilities)
@@ -43,6 +43,8 @@ extension Clerk {
       observeApplicationLifecycle(runtime)
       return clerk
     } catch { runtime.close(); throw error }
+    #elseif !canImport(JavaScriptCore)
+    throw CoreError(code: "capability_unavailable:embedded_engine")
     #else
     throw CoreError(code: "missing_package_resources")
     #endif

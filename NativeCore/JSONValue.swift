@@ -1,6 +1,6 @@
 import Foundation
 
-public indirect enum JSONValue: Sendable, Equatable, Codable {
+public indirect enum JSONValue: Sendable, Hashable, Codable {
   case null, bool(Bool), number(Double), string(String), array([JSONValue]), object([String: JSONValue])
   public static var undefined: JSONValue {
     .object(["$undefined": .bool(true)])
@@ -85,7 +85,10 @@ public enum Field<Value: Sendable>: Sendable {
   }
 }
 
-public struct UploadFile: Sendable {
+extension Field: Equatable where Value: Equatable {}
+extension Field: Hashable where Value: Hashable {}
+
+public struct UploadFile: Sendable, Hashable {
   public let name: String
   public let contentType: String
   public let data: Data

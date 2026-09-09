@@ -12,6 +12,20 @@ import Foundation
     let configuration = try ClerkConfiguration(publishableKey: key, callbackURL: URL(string: "clerk-test://sso-callback")!)
     let clerk = try await Clerk.connect(configuration: configuration, capabilities: capabilities)
     defer { clerk.close() }
+    capabilities.nextAuthError = .object(["errors": .array([.object([
+      "code": .string("form_identifier_not_found"), "message": .string("Account not found"),
+      "long_message": .string("No account was found for this identifier."),
+      "meta": .object(["param_name": .string("identifier")]),
+    ])])])
+    do {
+      try await clerk.signIn.create(.init(identifier: "missing@example.com"))
+      preconditionFailure("Expected a structured Clerk error")
+    } catch let error as CoreError {
+      precondition(error.errors.first?.code == "form_identifier_not_found")
+      precondition(error.errors.first?.meta?.paramName == "identifier")
+      precondition(error.localizedDescription == "No account was found for this identifier.")
+    }
+    precondition(Set([clerk.signIn, clerk.signIn]).count == 1)
     try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
     precondition(clerk.signIn.status.rawValue == "complete" && clerk.session == nil)
     try await clerk.signUp.sso(.init(strategy: "oauth_google"))
@@ -26,8 +40,18 @@ import Foundation
     precondition(clerk.user?.id == "user_native")
     let token = try await clerk.session?.getToken()
     precondition(token?.contains("fixture_signature") == true)
+    guard let user = clerk.user else { preconditionFailure("Missing user") }
+    let phone = try await user.createPhoneNumber(.init(phoneNumber: "+15555550123"))
+    await Task.yield()
+    precondition(!phone.isInvalidated && phone.phoneNumber == "+15555550123")
+    let originalCodes = try await phone.backupCodes()
+    precondition(originalCodes == nil)
+    let reservedPhone = try await phone.setReservedForSecondFactor(.init(reserved: true))
+    precondition(reservedPhone === phone && phone.reservedForSecondFactor)
+    let codes = try await phone.backupCodes()
+    precondition(codes == ["fixture-recovery-code"])
     try await clerk.signOut()
     precondition(clerk.session == nil && clerk.user == nil)
-    print("PASS: packaged ClerkKit bundle, future SSO, local reset, explicit finalization, getToken, and sign-out")
+    print("PASS: packaged ClerkKit bundle, future SSO, local reset, explicit finalization, getToken, typed errors, returned resources, explicit recovery-code reads, and sign-out")
   }
 }

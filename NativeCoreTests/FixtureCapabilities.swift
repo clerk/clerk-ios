@@ -11,6 +11,7 @@ import ClerkKit
   var browserCount = 0
   var clientReads = 0
   var signedOut = false
+  var nextAuthError: JSONValue?
   init(data: Data) throws {
     fixtures = try JSONDecoder().decode(JSONValue.self, from: data).object()
   }
@@ -33,6 +34,11 @@ import ClerkKit
     guard capability == "http" else { throw CoreError(code: "unexpected_capability") }
     requests.append(args)
     let url = try (args["url"] ?? .undefined).url()
+    if url.path.contains("sign_ins"), let error = nextAuthError {
+      nextAuthError = nil
+      let body = try String(data: JSONEncoder().encode(error), encoding: .utf8)!
+      return .object(["status": .number(422), "headers": .object([:]), "body": .string(body)])
+    }
     var response: JSONValue
     if url.path.hasSuffix("/environment") { response = fixtures["environment"]! }
     else if url.path.hasSuffix("/client") {
@@ -44,6 +50,14 @@ import ClerkKit
     } else if url.path.hasSuffix("/touch") {
       let payload = JSONValue.object(["response": fixtures["session"]!, "client": fixtures["authenticatedClient"]!])
       return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(data: JSONEncoder().encode(payload), encoding: .utf8)!)])
+    } else if url.path.contains("/phone_numbers") {
+      let verification = JSONValue.object(["status": .string("verified"), "strategy": .string("phone_code"), "attempts": .null, "expire_at": .null, "error": .null, "verified_at_client": .null])
+      var phone: [String: JSONValue] = ["object": .string("phone_number"), "id": .string("phone_native"), "phone_number": .string("+15555550123"), "verification": verification, "reserved_for_second_factor": .bool(false), "default_second_factor": .bool(false), "linked_to": .array([])]
+      if url.path.hasSuffix("phone_native") {
+        phone["reserved_for_second_factor"] = .bool(true)
+        phone["backup_codes"] = .array([.string("fixture-recovery-code")])
+      }
+      response = .object(phone)
     } else {
       var resource = try fixtures[url.path.contains("sign_ins") ? "signIn" : "signUp"]!.object()
       if args["method"] == .string("GET") {
