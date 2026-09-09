@@ -24138,7 +24138,8 @@ isDevOrStagingUrl: (url) => {
 					signUp: this.client.signUp.__internal_future,
 					environment: this.environment,
 					sessions: this.client.sessions,
-					lastAuthenticationStrategy: this.client.lastAuthenticationStrategy
+					lastAuthenticationStrategy: this.client.lastAuthenticationStrategy,
+					telemetry: this.telemetry
 				};
 			};
 			this.__internal_setEnvironment = async (env) => {
@@ -24720,6 +24721,9 @@ isDevOrStagingUrl: (url) => {
 	}
 	function publicCore(clerk, beforeSignOut) {
 		return {
+			get telemetry() {
+				return mobileResources(clerk).telemetry;
+			},
 			get sessions() {
 				return mobileResources(clerk).sessions;
 			},
@@ -24822,6 +24826,32 @@ isDevOrStagingUrl: (url) => {
 			}],
 			result: { "kind": "void" },
 			invoke: (target, args) => target["signOut"](...args)
+		},
+		"TelemetryCollector.record": {
+			type: "TelemetryCollector",
+			parameters: [{
+				"name": "event",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "TelemetryEventRawRecord"
+				}
+			}],
+			result: { "kind": "void" },
+			invoke: (target, args) => target["record"](...args)
+		},
+		"TelemetryCollector.recordLog": {
+			type: "TelemetryCollector",
+			parameters: [{
+				"name": "entry",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "TelemetryLogEntry"
+				}
+			}],
+			result: { "kind": "void" },
+			invoke: (target, args) => target["recordLog"](...args)
 		},
 		"Organization.update": {
 			type: "Organization",
@@ -27913,6 +27943,19 @@ isDevOrStagingUrl: (url) => {
 					}
 				},
 				{
+					"name": "telemetry",
+					"optional": false,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": {
+							"kind": "ref",
+							"name": "TelemetryCollector"
+						}
+					}
+				},
+				{
 					"name": "loaded",
 					"optional": false,
 					"type": { "kind": "boolean" }
@@ -28015,6 +28058,133 @@ isDevOrStagingUrl: (url) => {
 				"error",
 				"loading",
 				"ready"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"TelemetryCollector": {
+			"name": "TelemetryCollector",
+			"kind": "resource",
+			"properties": [{
+				"name": "isEnabled",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}, {
+				"name": "isDebug",
+				"optional": false,
+				"type": { "kind": "boolean" }
+			}]
+		},
+		"TelemetryEventRawRecord": {
+			"name": "TelemetryEventRawRecord",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "event",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "eventSamplingRate",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "number" }
+					}
+				},
+				{
+					"name": "payload",
+					"optional": false,
+					"type": { "kind": "jsonObject" }
+				}
+			]
+		},
+		"TelemetryLogEntry": {
+			"name": "TelemetryLogEntry",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "context",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "jsonObject" }
+					}
+				},
+				{
+					"name": "level",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "TelemetryLogEntryLevel"
+					}
+				},
+				{
+					"name": "message",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "organizationId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "sessionId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "source",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "timestamp",
+					"optional": false,
+					"type": { "kind": "number" }
+				},
+				{
+					"name": "userId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				}
+			]
+		},
+		"TelemetryLogEntryLevel": {
+			"name": "TelemetryLogEntryLevel",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"info",
+				"error",
+				"warn",
+				"debug",
+				"trace"
 			],
 			"open": false,
 			"patterns": []
@@ -39187,7 +39357,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "bbc6f79351299de62809361ca0f66fd4b488bcbd7639c5c2e10bfb108fee1f28",
+		"contractHash": "65cc81da41b05e4f943f819c4f4801bb632dc9f05a359ff18f654c02cec8d6de",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
