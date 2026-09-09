@@ -18,6 +18,8 @@ import ClerkKit
   var clientReads = 0
   var signedOut = false
   var nextAuthError: JSONValue?
+  var nextAuthErrorStatus = 422
+  var nextAuthErrorHeaders: [String: JSONValue] = [:]
   init(data: Data) throws {
     fixtures = try JSONDecoder().decode(JSONValue.self, from: data).object()
   }
@@ -68,7 +70,7 @@ import ClerkKit
     if url.path.contains("sign_ins"), let error = nextAuthError {
       nextAuthError = nil
       let body = try String(data: JSONEncoder().encode(error), encoding: .utf8)!
-      return .object(["status": .number(422), "headers": .object([:]), "body": .string(body)])
+      return .object(["status": .number(Double(nextAuthErrorStatus)), "headers": .object(nextAuthErrorHeaders), "body": .string(body)])
     }
     var response: JSONValue
     if url.path.hasSuffix("/magic_links/complete") {

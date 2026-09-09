@@ -123,6 +123,30 @@ import Testing
     #expect(try requestedLocale() == "de-DE")
   }
 
+  @Test func structuredErrorsPreserveServerStatusRetryAndTrace() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    capabilities.nextAuthErrorStatus = 429
+    capabilities.nextAuthErrorHeaders = ["retry-after": .string("7")]
+    capabilities.nextAuthError = try JSONDecoder().decode(JSONValue.self, from: Data(#"{"clerk_trace_id":"fixture-trace-123","errors":[{"code":"rate_limited","message":"Short message","long_message":"Try again later","meta":{"param_name":"identifier","password":"must-not-cross"}},{"code":"second_error","message":"Another error"}]}"#.utf8))
+    do {
+      try await clerk.signIn.create(.init(identifier: "test@example.com"))
+      Issue.record("Expected a structured Clerk error")
+    } catch let error as CoreError {
+      #expect(error.kind == .clerk)
+      #expect(error.status == 429)
+      #expect(error.retryAfter == 7)
+      #expect(error.clerkTraceId == "fixture-trace-123")
+      #expect(error.errors.count == 2)
+      #expect(error.errors.first?.meta?.paramName == "identifier")
+      #expect(error.localizedDescription == "Try again later")
+      let details = try JSONEncoder().encode(error.details)
+      #expect(!String(decoding: details, as: UTF8.self).contains("must-not-cross"))
+      #expect(clerk.session == nil)
+    }
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

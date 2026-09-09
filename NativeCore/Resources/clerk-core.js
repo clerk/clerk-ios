@@ -4240,6 +4240,9 @@ var ClerkCore = (function(exports) {
 			code,
 			message: kind === "clerk" && typeof value.message === "string" ? value.message : "The operation could not be completed.",
 			...errors ? { errors } : {},
+			...typeof value.status === "number" && Number.isInteger(value.status) && value.status >= 100 && value.status <= 599 ? { status: value.status } : {},
+			...typeof value.retryAfter === "number" && Number.isFinite(value.retryAfter) && value.retryAfter >= 0 ? { retryAfter: value.retryAfter } : {},
+			...typeof value.clerkTraceId === "string" ? { clerkTraceId: value.clerkTraceId } : {},
 			...getPasskeyFailureStage(error) ? { passkeyStage: getPasskeyFailureStage(error) } : {}
 		};
 	}
@@ -6672,7 +6675,8 @@ isDevOrStagingUrl: (url) => {
 				assertProductionKeysOnDev(status, errors);
 				const apiResponseOptions = {
 					data: errors,
-					status
+					status,
+					...typeof payload?.clerk_trace_id === "string" ? { clerkTraceId: payload.clerk_trace_id } : {}
 				};
 				if (status === 429 && headers) {
 					const retryAfter = headers.get("retry-after");

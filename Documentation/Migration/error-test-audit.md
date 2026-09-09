@@ -1,0 +1,16 @@
+# Legacy error assertion audit
+
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. All 19 tests in `Tests/Errors/ErrorTests.swift` were reviewed. See [current structured errors](errors.md) for the tested replacement and intentional API differences.
+
+| Old test/assertion group | Disposition |
+| --- | --- |
+| `clerkErrorProtocol`, `clerkClientError`, `clerkClientErrorErrorDescription`, `clerkClientErrorNilMessage` | Removed `ClerkError` protocol / `ClerkClientError` constructor and optional-message contract. Current failures use a nonempty fallback message and stable kind/code; generated operations and configuration tests exercise real thrown values. |
+| `clerkAPIErrorBasic`, `clerkAPIErrorContext` | Codes, short/long messages and approved parameter metadata remain generated. Trace IDs are now on the response-level infrastructure error. Both packaged runtimes check the generated parameter metadata and trace ID. Arbitrary context dictionaries are not retained. |
+| `clerkAPIErrorErrorDescription` | Preserve long-message then short-message preference. Existing packaged API proof checks the long message; generated error fields retain the short message, and the infrastructure implementation uses it when the long message is absent. |
+| `clerkAPIErrorCodable`, `clerkAPIErrorEquatable` | Removed Codable/equality contracts of the old domain struct. The current generated decoder consumes the approved bridge representation. Passing packaged tests prove actual error construction; generic native JSON round-trip tests cover the transport value. |
+| `clerkErrorResponse` | Preserve multiple errors and response trace ID; both packaged tests now assert two ordered errors and the trace. The old response DTO and native Codable API are removed. |
+| `clerkClientErrorUsesLocalizedMessageResource`, `clerkClientErrorReplacesLocalizedMessage` | Removed mutable localization constructor/state. UI localization and application-supplied error text are presentation responsibilities. These two tests only check the removed constructors, not translation of server failures. |
+| `clerkInitializationErrorMissingPublishableKey`, `clerkInitializationErrorInvalidPublishableKeyFormat`, `clerkInitializationErrorLocalizedError` | Replaced by validated `ClerkConfiguration` and stable `invalid_publishable_key`/`invalid_callback_url` errors. Both platform configuration suites pass. The old enum's failureReason/context strings are not public compatibility requirements for this new major. |
+| `clerkInitializationErrorClientLoadFailed`, `clerkInitializationErrorEnvironmentLoadFailed`, `clerkInitializationErrorAPIClientInitializationFailed`, `clerkInitializationErrorInitializationFailed` | Removed partially initialized global configuration API and wrapped native NSError cases. Connect awaits core initialization and closes the runtime on failure. Error kinds/codes cross the bridge; raw native underlying errors are not serialized into resource errors. Native host-specific diagnostics such as OSStatus remain in their explicit host errors. |
+
+The reviewed old error file can retire with those removed constructors/DTOs. This does not retire the core startup, response-ordering, middleware, or integration test suites and does not claim their public outcomes are all covered.

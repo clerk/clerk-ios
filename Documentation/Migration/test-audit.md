@@ -27,6 +27,8 @@ route forms, nonce semantics and the remaining tokenless startup assertion.
 The [authentication service assertion audit](auth-service-test-audit.md) maps all
 42 old sign-in/sign-up service tests to their TypeScript owner, restored locale
 behavior, request continuity tests, or explicitly removed private startup markers.
+The [error assertion audit](error-test-audit.md) maps the old constructors and
+DTO checks to structured native failures and explicit new-major API changes.
 
 ## Configuration validation
 

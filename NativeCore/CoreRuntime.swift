@@ -10,19 +10,22 @@ public struct CoreError: Error, LocalizedError, Sendable {
   public let details: JSONValue?
   public let errors: [ClerkAPIError]
   public let passkeyStage: String?
+  public let status: Int?
+  public let retryAfter: Double?
+  public let clerkTraceId: String?
   public var errorDescription: String? {
     errors.first?.longMessage ?? errors.first?.message ?? message
   }
 
-  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge, errors: [ClerkAPIError] = [], passkeyStage: String? = nil) {
-    self.kind = kind; self.code = code; self.message = message; self.details = details; self.errors = errors; self.passkeyStage = passkeyStage
+  public init(code: String, message: String = "The operation could not be completed.", details: JSONValue? = nil, kind: CoreFailureKind = .bridge, errors: [ClerkAPIError] = [], passkeyStage: String? = nil, status: Int? = nil, retryAfter: Double? = nil, clerkTraceId: String? = nil) {
+    self.kind = kind; self.code = code; self.message = message; self.details = details; self.errors = errors; self.passkeyStage = passkeyStage; self.status = status; self.retryAfter = retryAfter; self.clerkTraceId = clerkTraceId
   }
 
   public static let invalidValue = CoreError(code: "invalid_value")
   public static let invalidResource = CoreError(code: "invalid_resource")
   @MainActor static func decode(_ value: JSONValue, in runtime: CoreRuntime) throws -> CoreError {
     let v = try value.object()
-    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge, errors: (v["errors"] ?? .array([])).array().map { try ClerkAPIError.decode($0, in: runtime) }, passkeyStage: v["passkeyStage"].flatMap { try? $0.string() })
+    return try .init(code: (v["code"] ?? .undefined).string(), message: (v["message"] ?? .string("The operation could not be completed.")).string(), details: v["errors"], kind: CoreFailureKind(rawValue: (v["kind"] ?? .string("bridge")).string()) ?? .bridge, errors: (v["errors"] ?? .array([])).array().map { try ClerkAPIError.decode($0, in: runtime) }, passkeyStage: v["passkeyStage"].flatMap { try? $0.string() }, status: v["status"].flatMap { try? $0.number() }.flatMap(Int.init(exactly:)), retryAfter: v["retryAfter"].flatMap { try? $0.number() }, clerkTraceId: v["clerkTraceId"].flatMap { try? $0.string() })
   }
 }
 
