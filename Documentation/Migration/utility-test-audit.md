@@ -38,5 +38,14 @@ the selected iOS UI privacy test passes; the shared query-string suite passes 17
 tests; and the mobile email-link suite passes 11 tests. These are separate test
 runs and are not a legacy coverage percentage. `StringExtensionsTests`,
 `PKCETests`, `PrivacyManifestTests`, and `VersionTests` are retired after the
-passing replacement checks. Other utility files remain retained while their
-dispositions and the broader target migration are reviewed.
+passing replacement checks. The subsequent reviewed retirement also removes
+`OptionalStringExtensionsTests`, `JSONUtilitiesTests`, `URLEncodedFormEncoderTests`,
+`HTTPURLResponseExtensionsTests`, `LocaleUtilsTests`, `RetryingOperationTests`, and
+`SessionStatusLoggerTests` according to the explicit dispositions above. The
+current native contract suites pass 46 tests on macOS and 43 on iOS; the separate
+HTTP and lifecycle audits document their additional execution checks.
+
+`JWTDecoderTests`, `ExternalAuthUtilsTests`, `SessionUtilsTests`, and
+`ProxyConfigurationTests` remain retained for their separate assertion/feature
+audits. This retirement does not claim JWT, callback, session-transition or proxy
+coverage from the utility tests.
