@@ -63,6 +63,11 @@ let package = Package(
       ]
     ),
     .testTarget(
+      name: "NativeCoreContractTests",
+      dependencies: ["NativeCoreProof"],
+      path: "NativeCoreContractTests"
+    ),
+    .testTarget(
       name: "ClerkKitTests",
       dependencies: [
         "ClerkKit",

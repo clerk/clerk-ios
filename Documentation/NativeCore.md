@@ -1,6 +1,6 @@
 # TypeScript core prerelease
 
-`ClerkKit` now builds the generated Swift public API in `NativeCore`. Its authentication roots are generated from `SignInFutureResource` and `SignUpFutureResource`; the former native API is not a compatibility facade. `ClerkKitUI` migration is a separate in-progress change.
+`ClerkKit` now builds the generated Swift public API in `NativeCore`. Its authentication roots are generated from `SignInFutureResource` and `SignUpFutureResource`; the former native API is not a compatibility facade. `ClerkKitUI` uses these generated resources while preserving its SwiftUI controls and presentation state. The Quickstart and E2E host examples connect one app-owned core and supply it through the SwiftUI environment.
 
 Create one owner with `try await Clerk.connect(configuration:)`. The configuration requires a publishable key and a registered browser callback URL. Supply browser and passkey presentation closures from `AppleAuthentication` when those capabilities are needed. The library loads and verifies its bundled JavaScriptCore resource; consumers do not build JavaScript. Close the owner when permanently discarding it.
 
@@ -26,7 +26,7 @@ The default Keychain adapter imports a matching, previously accepted shared-sess
 
 The adapter never substitutes a development key when secure storage fails. If old state is unavailable, connect starts without a saved credential and the app presents authentication. Keychain access/decode errors are surfaced; the application should resolve entitlement/access configuration before retrying.
 
-Run `scripts/test-native-core.sh` on macOS. The proof executes the packaged bundle, generated SSO, local reset, explicit finalization, token retrieval and sign-out with deterministic HTTP fixtures. It also seeds an isolated prior-format Keychain identity, restores it from separate process launches, clears it and verifies that it remains cleared. It does not read the developer's credentials. A physical-device upgrade from a released app with a real signed-in user remains a release gate.
+Run `make test-native-core` on macOS for the packaged-core contract suite, and `make test-ui` for the presentation suite. Run `scripts/test-native-core.sh` for the separate-process credential checks. The proof executes the packaged bundle, generated SSO, local reset, explicit finalization, token retrieval and sign-out with deterministic HTTP fixtures. It also seeds an isolated prior-format Keychain identity, restores it from separate process launches, clears it and verifies that it remains cleared. It does not read the developer's credentials. A physical-device upgrade from a released app with a real signed-in user remains a release gate.
 
 ## Native email links
 
@@ -43,3 +43,5 @@ The adapters preserve the previous Secure Enclave / Android Keystore key names a
 ## Bundle updates
 
 From the clean JavaScript repository, run `node packages/mobile-runtime/pack.mjs IOS_REPOSITORY ANDROID_REPOSITORY`. Packaging verifies generated contracts, rebuilds the bundle, pins the source commit and SHA-256, and copies the canonical generated API. Commit these resources together. Do not manually modify generated Swift or remotely replace executable code. Review `NativeCore/public-api.txt` for native source compatibility on every update.
+
+The pre-existing `ClerkKitTests` target is still present during migration and is not yet compatible with the generated API. Its legacy request, resource, and lifecycle tests require an explicit coverage audit before retirement. The dedicated contract and UI schemes do not disable that target.

@@ -184,11 +184,10 @@ smoke-macos:
 	xcodebuild build -workspace Clerk.xcworkspace -scheme MacExampleApp -destination "$(MACOS_DESTINATION)" CODE_SIGNING_ALLOWED=NO
 	@echo "✅ macOS smoke build completed!"
 
-# Run ClerkKitUI tests on iOS Simulator
-test-ui:
-	@echo "Running ClerkKitUI tests on iOS Simulator..."
+.PHONY: prepare-package-tests test-native-core
+prepare-package-tests:
 	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata .swiftpm/xcode/xcshareddata/xcschemes
-	@cp scripts/ClerkKitUITests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/ClerkKitUITests.xcscheme
+	@cp scripts/ClerkKitUITests.xcscheme scripts/NativeCoreContractTests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/
 	@printf '%s\n' \
 		'<?xml version="1.0" encoding="UTF-8"?>' \
 		'<Workspace' \
@@ -201,6 +200,14 @@ test-ui:
 	@if [ -f Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist ]; then \
 		cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist; \
 	fi
+
+# Run the packaged TypeScript core contract through the native test runner.
+test-native-core: prepare-package-tests
+	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme NativeCoreContractTests -destination "$(MACOS_DESTINATION)"
+
+# Run ClerkKitUI tests on iOS Simulator.
+test-ui: prepare-package-tests
+	@echo "Running ClerkKitUI tests on iOS Simulator..."
 	@destination="$(IOS_SIMULATOR_DESTINATION)"; \
 	if [ -z "$$destination" ]; then \
 		available_devices="$$(xcrun simctl list devices available)"; \
