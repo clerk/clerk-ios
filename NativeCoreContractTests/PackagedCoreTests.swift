@@ -88,6 +88,21 @@ import Testing
     #expect(runtime.isAvailable)
   }
 
+  @Test func previousNativeEmailLinkCallbackFormsCompleteWithoutImplicitActivation() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    try await clerk.signUp.create(.init(emailAddress: "test@example.com"))
+    try await clerk.signUp.verifications.sendEmailLink(.init())
+    let callback = try #require(URL(string: "clerk-test://sso-callback/#flow_id=sua_native&approval_token=fixture_approval"))
+    let result = try await clerk.handleAuthCallback(callback)
+    guard case .case2(let value) = result else { Issue.record("Expected the original sign-up resource"); return }
+    #expect(value.signUp === clerk.signUp)
+    #expect(clerk.signUp.status == .complete)
+    #expect(clerk.session == nil)
+    #expect(capabilities.authRecord == nil)
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }

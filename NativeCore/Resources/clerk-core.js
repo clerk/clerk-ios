@@ -17607,10 +17607,12 @@ isDevOrStagingUrl: (url) => {
 		}
 		async handle(url) {
 			const expected = new URL(this.callbackUrl);
-			if (url.protocol !== expected.protocol || url.host !== expected.host || url.pathname !== expected.pathname || url.username !== expected.username || url.password !== expected.password || Array.from(expected.searchParams).some(([key, value]) => url.searchParams.get(key) !== value)) return null;
-			if (!url.searchParams.has("flow_id") || !url.searchParams.has("approval_token")) return null;
-			const flowId = url.searchParams.get("flow_id")?.trim();
-			const approvalToken = url.searchParams.get("approval_token")?.trim();
+			if (url.protocol !== expected.protocol || url.host.toLowerCase() !== expected.host.toLowerCase() || (url.pathname === "/" ? "" : url.pathname) !== (expected.pathname === "/" ? "" : expected.pathname) || url.username !== expected.username || url.password !== expected.password || Array.from(expected.searchParams).some(([key, value]) => url.searchParams.get(key) !== value)) return null;
+			const fragment = new URLSearchParams(url.hash.slice(1));
+			const parameter = (name) => url.searchParams.get(name) ?? fragment.get(name);
+			if (parameter("flow_id") === null || parameter("approval_token") === null) return null;
+			const flowId = parameter("flow_id")?.trim();
+			const approvalToken = parameter("approval_token")?.trim();
 			if (!flowId || !approvalToken) throw fail("invalid_email_link_callback");
 			const key = JSON.stringify([flowId, approvalToken]);
 			const existing = this.#callbacks.get(key);

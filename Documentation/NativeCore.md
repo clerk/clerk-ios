@@ -38,6 +38,8 @@ It asserts a loaded, signed-out owner. It does not exercise sign-in or OS prompt
 
 Email-link preparation uses the configured callback URL and saves its PKCE verifier in a separate secure record scoped to the instance. The TypeScript core validates the saved record, expiration and callback before completing it. Forward incoming URLs to `clerk.handleAuthCallback`. It returns the generated sign-in or sign-up resource without activating a session; custom interfaces must explicitly finalize a complete result. The callback also remains available as `clerk.authCallback` until `clearAuthCallback(id)` consumes it. `AuthView` consumes this record and finalizes as part of its existing presentation flow.
 
+Callback parameters may arrive in the query or fragment, with query values taking precedence. Empty and root-slash callback paths are equivalent, as in the previous native SDK; other paths must match the configured route.
+
 Pending links survive process restart. The previous iOS pending-link record requires a matching `LegacyKeychainConfiguration.publishableKey`; Android uses the matching cached publishable key or explicit `legacyPublishableKey`. Clearing a pending link leaves the client credential intact. Android callers can supply `magicLinkAttestation` when their instance requires an attestation provider.
 
 ## Biometric credentials
