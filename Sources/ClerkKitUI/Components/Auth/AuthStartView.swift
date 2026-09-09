@@ -558,8 +558,21 @@ extension AuthStartView {
       // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
-      try await clerk.signIn.create(.init(identifier: activeIdentifier))
-      let signIn = clerk.signIn
+      let result = try await clerk.startAuthentication(.init(
+        identifier: activeIdentifier,
+        identifierType: phoneNumberInputIsActive ? .phoneNumber : (activeIdentifier.isEmailAddress ? .emailAddress : .username),
+        mode: withSignUp ? .signInOrUp : .signIn,
+        unsafeMetadata: authState.unsafeMetadata?.object()
+      ))
+      let signIn: SignIn
+      switch TransferFlowResult(result) {
+      case .signIn(let attempt):
+        signIn = attempt
+      case .signUp(let signUp):
+        try await clerk.finalizeForPresentation(.signUp(signUp))
+        navigation.setToStepForStatus(signUp: signUp)
+        return signUpStatusStaysOnStart(signUp.status)
+      }
       try await clerk.finalizeForPresentation(.signIn(signIn))
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
@@ -577,12 +590,8 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return signInStatusStaysOnStart(signIn.status)
     } catch {
-      if withSignUp, let clerkApiError = (error as? CoreError)?.errors.first, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
-        return await signUp()
-      } else {
-        fieldError = error
-        return true
-      }
+      fieldError = error
+      return true
     }
   }
 

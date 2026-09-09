@@ -17706,6 +17706,29 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
+	//#region ../clerk-js/src/utils/startMobileAuthentication.ts
+	/** The prebuilt identifier screen shares the same sign-in-or-up fallback on every mobile host. */
+	async function startMobileAuthentication(clerk, params) {
+		const { signIn, signUp } = clerk.__internal_getMobileResources();
+		if (params.mode !== "signUp") {
+			const { error } = await signIn.create({ identifier: params.identifier });
+			if (!error) return {
+				kind: "signIn",
+				signIn
+			};
+			if (params.mode !== "signInOrUp" || !isClerkAPIResponseError(error) || !error.errors.some(({ code }) => ["form_identifier_not_found", "invitation_account_not_exists"].includes(code))) throw error;
+		}
+		const { error } = await signUp.create({
+			[params.identifierType]: params.identifier,
+			unsafeMetadata: params.unsafeMetadata
+		});
+		if (error) throw error;
+		return {
+			kind: "signUp",
+			signUp
+		};
+	}
+	//#endregion
 	//#region ../clerk-js/src/utils/authenticateWithMobileSSO.ts
 	async function authenticateWithMobileSSO(clerk, params) {
 		if (!(clerk.client?.signIn instanceof SignIn) || !(clerk.client.signUp instanceof SignUp)) throw new ClerkRuntimeError("Clerk is not loaded.", { code: "clerk_not_loaded" });
@@ -17713,7 +17736,7 @@ isDevOrStagingUrl: (url) => {
 		const signUpResource = clerk.client.signUp;
 		const signIn = signInResource.__internal_future;
 		const signUp = signUpResource.__internal_future;
-		const { start, transferable, ...ssoParams } = params;
+		const { start, transferable, preferGoogleOneTap, ...ssoParams } = params;
 		const apple = params.strategy === "oauth_token_apple";
 		const identity = apple ? await getNativeAppleIdentity(clerk) : void 0;
 		const routes = {
@@ -17745,6 +17768,46 @@ isDevOrStagingUrl: (url) => {
 			}
 			return signInResult();
 		};
+		const googleClientId = clerk.__internal_environment?.displayConfig.googleOneTapClientId;
+		if (preferGoogleOneTap && params.strategy === "oauth_google" && googleClientId && clerk.__internal_getGoogleIdentity) {
+			let identity;
+			try {
+				identity = await clerk.__internal_getGoogleIdentity({ clientId: googleClientId });
+			} catch (error) {
+				if (!error || typeof error !== "object" || !("code" in error) || error.code !== "google_account_unavailable") throw error;
+			}
+			if (identity) {
+				if (typeof identity.token !== "string" || !identity.token.trim()) throw new ClerkRuntimeError("Google did not return an identity token.", { code: "invalid_credential_result" });
+				try {
+					await signInResource.create({
+						strategy: "google_one_tap",
+						token: identity.token
+					});
+					return signInResult();
+				} catch (error) {
+					if (!transferable || !isClerkAPIResponseError(error) || error.errors[0]?.code !== "external_account_not_found") throw error;
+					const result = await signUp.create({
+						strategy: "google_one_tap",
+						token: identity.token,
+						unsafeMetadata: params.unsafeMetadata,
+						legalAccepted: params.legalAccepted,
+						locale: params.locale,
+						firstName: params.firstName,
+						lastName: params.lastName
+					});
+					if (result.error) throw result.error;
+					if (signUp.isTransferable) {
+						const result = await signIn.create({ transfer: true });
+						if (result.error) throw result.error;
+						return signInResult();
+					}
+					return {
+						kind: "signUp",
+						signUp
+					};
+				}
+			}
+		}
 		if (start === "signUp" || start === "auto" && apple && transferable) {
 			const { error } = await signUp.sso({
 				...ssoParams,
@@ -24932,6 +24995,7 @@ isDevOrStagingUrl: (url) => {
 						this.__internal_nativeMagicLink?.clearCallback(id);
 					},
 					authenticateWithSSO: (params) => authenticateWithMobileSSO(this, params),
+					startAuthentication: (params) => startMobileAuthentication(this, params),
 					signIn: this.client.signIn.__internal_future,
 					signUp: this.client.signUp.__internal_future,
 					environment: this.environment,
@@ -25564,6 +25628,7 @@ isDevOrStagingUrl: (url) => {
 				return authenticationRoots(clerk).signUp;
 			},
 			authenticateWithSSO: (params) => mobileResources(clerk).authenticateWithSSO(params),
+			startAuthentication: (params) => mobileResources(clerk).startAuthentication(params),
 			setActive: (params) => clerk.setActive(params),
 			signOut: async (options) => {
 				await beforeSignOut();
@@ -25649,6 +25714,22 @@ isDevOrStagingUrl: (url) => {
 				"name": "MobileAuthenticationResult"
 			},
 			invoke: (target, args) => target["authenticateWithSSO"](...args)
+		},
+		"Clerk.startAuthentication": {
+			type: "Clerk",
+			parameters: [{
+				"name": "params",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "MobileIdentifierParams"
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "MobileAuthenticationResult"
+			},
+			invoke: (target, args) => target["startAuthentication"](...args)
 		},
 		"Clerk.setActive": {
 			type: "Clerk",
@@ -40648,6 +40729,16 @@ isDevOrStagingUrl: (url) => {
 					"name": "transferable",
 					"optional": false,
 					"type": { "kind": "boolean" }
+				},
+				{
+					"name": "preferGoogleOneTap",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
 				}
 			]
 		},
@@ -40659,6 +40750,67 @@ isDevOrStagingUrl: (url) => {
 				"signUp",
 				"signIn",
 				"auto"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"MobileIdentifierParams": {
+			"name": "MobileIdentifierParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "identifier",
+					"optional": false,
+					"type": { "kind": "string" }
+				},
+				{
+					"name": "identifierType",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "MobileIdentifierParamsIdentifierType"
+					}
+				},
+				{
+					"name": "mode",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "MobileIdentifierParamsMode"
+					}
+				},
+				{
+					"name": "unsafeMetadata",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "jsonObject" }
+					}
+				}
+			]
+		},
+		"MobileIdentifierParamsIdentifierType": {
+			"name": "MobileIdentifierParamsIdentifierType",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"username",
+				"emailAddress",
+				"phoneNumber"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"MobileIdentifierParamsMode": {
+			"name": "MobileIdentifierParamsMode",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"signUp",
+				"signIn",
+				"signInOrUp"
 			],
 			"open": false,
 			"patterns": []
@@ -41020,7 +41172,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "db0edcf151926939c7031f50b51514339c6787c28e4518d71b4c6b331b074a5a",
+		"contractHash": "1e4efdbbf7882dd957b0ca1bc502cd28ee090f8c2e22fd752eb14743b7981d6a",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -41547,6 +41699,7 @@ isDevOrStagingUrl: (url) => {
 				key: "client"
 			})
 		}, { [`x-${configuration.platform}-sdk-version`]: "next" });
+		if (configuration.capabilities.includes("googleIdentity")) clerk.__internal_getGoogleIdentity = (options) => hostRequest("googleIdentity", options);
 		clerk.__internal_getAppleIdentity = (options) => {
 			if (!configuration.capabilities.includes("appleIdentity")) return Promise.reject(bridgeError("capability_unavailable"));
 			return hostRequest("appleIdentity", options);
@@ -41617,6 +41770,7 @@ isDevOrStagingUrl: (url) => {
 				"passkeys.get",
 				"passkeys.create",
 				"appleIdentity",
+				"googleIdentity",
 				"biometrics.sign"
 			]);
 			clerk.__internal_nativeBiometrics.invalidate();
@@ -41640,6 +41794,7 @@ isDevOrStagingUrl: (url) => {
 						"passkeys.get",
 						"passkeys.create",
 						"appleIdentity",
+						"googleIdentity",
 						"biometrics.sign"
 					]);
 					clerk.__internal_nativeBiometrics.invalidate();
