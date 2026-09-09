@@ -19,7 +19,7 @@ import Foundation
     let args = try arguments.object()
     let url = try (args["url"] ?? .undefined).url()
     let callback = try (args["callbackUrl"] ?? .undefined).url()
-    guard url.scheme == "https", let scheme = callback.scheme, !["http", "javascript", "data", "file", "about"].contains(scheme) else { throw CoreError(code: "invalid_callback_url") }
+    guard url.scheme == "https", let scheme = callback.scheme?.lowercased(), !["http", "javascript", "data", "file", "about"].contains(scheme) else { throw CoreError(code: "invalid_callback_url") }
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in

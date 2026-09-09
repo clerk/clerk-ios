@@ -13,7 +13,7 @@ public struct ClerkConfiguration: Sendable {
     guard let data = Data(base64Encoded: encoded), let decoded = String(data: data, encoding: .utf8), decoded.hasSuffix("$"),
           let origin = URL(string: "https://\(decoded.dropLast())"), origin.host != nil, origin.user == nil, origin.password == nil,
           origin.path.isEmpty, origin.query == nil, origin.fragment == nil else { throw CoreError(code: "invalid_publishable_key") }
-    guard let scheme = callbackURL.scheme, !["http", "javascript", "data", "file", "about"].contains(scheme),
+    guard let scheme = callbackURL.scheme, !["http", "javascript", "data", "file", "about"].contains(scheme.lowercased()),
           callbackURL.host != nil, callbackURL.user == nil, callbackURL.password == nil, callbackURL.fragment == nil else { throw CoreError(code: "invalid_callback_url") }
     self.publishableKey = key; self.callbackURL = callbackURL; frontendAPI = origin; self.legacyKeychain = legacyKeychain
   }
