@@ -31,11 +31,11 @@ struct UserProfileEmailRow: View {
   }
 
   private var isVerified: Bool {
-    emailAddress.verification?.status == .verified
+    emailAddress.verification.status == .verified
   }
 
   private var canRemove: Bool {
-    clerk.environment?.emailIsImmutable != true
+    clerk.environment.emailIsImmutable != true
   }
 
   private var shouldShowMenu: Bool {
@@ -54,7 +54,7 @@ struct UserProfileEmailRow: View {
             Badge(key: "Unverified", style: .warning)
           }
 
-          if emailAddress.linkedTo?.isEmpty == false {
+          if emailAddress.linkedTo.isEmpty == false {
             Badge(key: "Linked", style: .secondary)
           }
         }
@@ -145,7 +145,7 @@ struct UserProfileEmailRow: View {
 extension UserProfileEmailRow {
   private func setEmailAsPrimary(_ email: EmailAddress) async {
     do {
-      try await user?.update(.init(primaryEmailAddressId: email.id))
+      try await user?.update(.init(primaryEmailAddressId: .value(email.id)))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to set email as primary", error: error)

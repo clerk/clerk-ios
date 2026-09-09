@@ -16,7 +16,7 @@ struct UserProfileMfaAddTotpView: View {
   @State private var path = NavigationPath()
   @State private var error: Error?
 
-  let totp: TOTPResource
+  let totp: TOTP
 
   enum Destination: Hashable {
     case verify

@@ -30,7 +30,7 @@ struct UserProfileMfaSection: View {
         } else if rhs.defaultSecondFactor {
           false
         } else {
-          lhs.createdAt < rhs.createdAt
+          (lhs.createdAt ?? .distantPast) < (rhs.createdAt ?? .distantPast)
         }
       }
   }
@@ -47,8 +47,8 @@ struct UserProfileMfaSection: View {
           )
         }
 
-        if clerk.environment?.mfaPhoneCodeIsEnabled == true {
-          ForEach(mfaPhoneNumbers) { phoneNumber in
+        if clerk.environment.mfaPhoneCodeIsEnabled == true {
+          ForEach(mfaPhoneNumbers, id: \.id) { phoneNumber in
             UserProfileMfaRow(
               style: .sms(phoneNumber: phoneNumber),
               isDefault: phoneNumber.defaultSecondFactor && user?.totpEnabled == false
@@ -56,7 +56,7 @@ struct UserProfileMfaSection: View {
           }
         }
 
-        if clerk.environment?.mfaBackupCodeIsEnabled == true {
+        if clerk.environment.mfaBackupCodeIsEnabled == true {
           if user?.backupCodeEnabled == true {
             UserProfileMfaRow(
               style: .backupCodes

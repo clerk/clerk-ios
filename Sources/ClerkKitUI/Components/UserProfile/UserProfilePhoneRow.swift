@@ -31,11 +31,11 @@ struct UserProfilePhoneRow: View {
   }
 
   private var isVerified: Bool {
-    phoneNumber.verification?.status == .verified
+    phoneNumber.verification.status == .verified
   }
 
   private var canRemove: Bool {
-    clerk.environment?.phoneNumberIsImmutable != true
+    clerk.environment.phoneNumberIsImmutable != true
   }
 
   private var shouldShowMenu: Bool {
@@ -145,7 +145,7 @@ struct UserProfilePhoneRow: View {
 extension UserProfilePhoneRow {
   private func setPhoneAsPrimary(_ phone: PhoneNumber) async {
     do {
-      try await user?.update(.init(primaryPhoneNumberId: phone.id))
+      try await user?.update(.init(primaryPhoneNumberId: .value(phone.id)))
     } catch {
       self.error = error
       ClerkLogger.error("Failed to set phone as primary", error: error)

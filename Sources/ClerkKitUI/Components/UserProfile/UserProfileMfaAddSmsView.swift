@@ -40,8 +40,8 @@ struct UserProfileMfaAddSmsView: View {
 
   private var availablePhoneNumbers: [ClerkKit.PhoneNumber] {
     (user?.phoneNumbersAvailableForMfa ?? [])
-      .filter { $0.verification?.status == .verified }
-      .sorted { $0.createdAt < $1.createdAt }
+      .filter { $0.verification.status == .verified }
+      .sorted { ($0.createdAt ?? .distantPast) < ($1.createdAt ?? .distantPast) }
   }
 
   var body: some View {
@@ -55,7 +55,7 @@ struct UserProfileMfaAddSmsView: View {
             .fixedSize(horizontal: false, vertical: true)
 
           VStack(spacing: 12) {
-            ForEach(availablePhoneNumbers) { phoneNumber in
+            ForEach(availablePhoneNumbers, id: \.id) { phoneNumber in
               Button {
                 selectedPhoneNumber = phoneNumber
               } label: {
@@ -144,8 +144,8 @@ struct UserProfileMfaAddSmsView: View {
 extension UserProfileMfaAddSmsView {
   private func reserveForSecondFactor(phoneNumber: ClerkKit.PhoneNumber) async {
     do {
-      let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
-      if let backupCodes = phoneNumber.backupCodes {
+      let phoneNumber = try await phoneNumber.setReservedForSecondFactor(.init(reserved: true))
+      if let backupCodes = try await phoneNumber.backupCodes() {
         path.append(Destination.backupCodes(backupCodes))
       } else {
         navigation.presentedAddMfaType = nil

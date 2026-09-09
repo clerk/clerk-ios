@@ -29,7 +29,7 @@ struct UserProfilePasskeySection: View {
   var body: some View {
     Section {
       VStack(spacing: 0) {
-        ForEach(sortedPasskeys) {
+        ForEach(sortedPasskeys, id: \.id) {
           UserProfilePasskeyRow(passkey: $0)
         }
 

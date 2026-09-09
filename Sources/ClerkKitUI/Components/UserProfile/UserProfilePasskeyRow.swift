@@ -23,7 +23,7 @@ struct UserProfilePasskeyRow: View {
   var body: some View {
     HStack(spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
-        Text(verbatim: passkey.name)
+        Text(verbatim: passkey.name ?? "")
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.foreground)
           .frame(minHeight: 22)

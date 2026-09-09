@@ -16,7 +16,7 @@ struct UserProfileMfaRow: View {
 
   @State private var isConfirmingRemoval = false
   @State private var removeResource: RemoveResource?
-  @State private var backupCodes: BackupCodeResource?
+  @State private var backupCodes: BackupCode?
   @State private var isLoading = false
   @State private var error: Error?
 
@@ -158,10 +158,15 @@ struct UserProfileMfaRow: View {
         }
       }
     )
-    .sheet(item: $backupCodes) { backupCodes in
-      NavigationStack {
-        BackupCodesView(backupCodes: backupCodes.codes)
-          .environment(navigation)
+    .sheet(isPresented: Binding(
+      get: { backupCodes != nil },
+      set: { if !$0 { backupCodes = nil } }
+    )) {
+      if let backupCodes {
+        NavigationStack {
+          BackupCodesView(backupCodes: backupCodes.codes)
+            .environment(navigation)
+        }
       }
     }
   }
@@ -172,7 +177,7 @@ extension UserProfileMfaRow {
     defer { removeResource = nil }
 
     do {
-      try await removeResource?.deleteAction()
+      try await removeResource?.deleteAction(user: user)
     } catch {
       self.error = error
       ClerkLogger.error("Failed to remove MFA resource", error: error)
@@ -192,7 +197,7 @@ extension UserProfileMfaRow {
     guard let user else { return }
 
     do {
-      backupCodes = try await user.createBackupCodes()
+      backupCodes = try await user.createBackupCode()
     } catch {
       self.error = error
       ClerkLogger.error("Failed to regenerate backup codes", error: error)

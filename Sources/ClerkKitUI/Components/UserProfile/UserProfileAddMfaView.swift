@@ -20,7 +20,7 @@ struct UserProfileAddMfaView: View {
 
   enum PresentedView: Identifiable, Hashable {
     case sms
-    case authApp(TOTPResource)
+    case authApp(TOTP)
 
     var id: Self {
       self
@@ -50,7 +50,7 @@ struct UserProfileAddMfaView: View {
     #endif
   }
 
-  private var environment: Clerk.Environment? {
+  private var environment: EnvironmentResource? {
     clerk.environment
   }
 

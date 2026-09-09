@@ -50,20 +50,22 @@ enum RemoveResource: Equatable {
     }
   }
 
-  func deleteAction() async throws {
+  @MainActor
+  func deleteAction(user: User? = nil) async throws {
     switch self {
     case let .email(emailAddress):
       try await emailAddress.destroy()
     case let .phoneNumber(phoneNumber):
-      try await phoneNumber.delete()
+      try await phoneNumber.destroy()
     case let .externalAccount(externalAccount):
       try await externalAccount.destroy()
     case let .passkey(passkey):
       try await passkey.delete()
     case .totp:
-      try await Clerk.shared.user?.disableTOTP()
+      guard let user else { throw CoreError(code: "user_unavailable") }
+      _ = try await user.disableTOTP()
     case let .secondFactorPhoneNumber(phoneNumber):
-      try await phoneNumber.setReservedForSecondFactor(reserved: false)
+      _ = try await phoneNumber.setReservedForSecondFactor(.init(reserved: false))
     }
   }
 }
