@@ -28269,27 +28269,6 @@ isDevOrStagingUrl: (url) => {
 			},
 			invoke: (target, args) => target["reload"](...args)
 		},
-		"SessionVerification.reload": {
-			type: "SessionVerification",
-			parameters: [{
-				"name": "p",
-				"optional": true,
-				"type": {
-					"kind": "optional",
-					"nullable": false,
-					"omittable": true,
-					"value": {
-						"kind": "ref",
-						"name": "ClerkResourceReloadParams"
-					}
-				}
-			}],
-			result: {
-				"kind": "ref",
-				"name": "SessionVerification"
-			},
-			invoke: (target, args) => target["reload"](...args)
-		},
 		"EnvironmentResource.isSingleSession": {
 			type: "EnvironmentResource",
 			parameters: [],
@@ -41660,7 +41639,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "779dedc726a5c587629061d6e3ad89ef835e3f1f92566e8d19706c1cf5f14a33",
+		"contractHash": "fc919ded53c772af190eb2a07f5fdec94a7f1f47fbc2b04b4a3ab76c4d39bf16",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
