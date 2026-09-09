@@ -311,6 +311,12 @@ extension CoreResource {
     catch { fail(error) }
   }
 
+  func setNetworkOnline(_ online: Bool) {
+    guard isAvailable else { return }
+    do { try transport.send(.object(["kind": .string("connectivity"), "online": .bool(online)])) }
+    catch { fail(error) }
+  }
+
   func addTeardown(_ action: @escaping @MainActor () -> Void) {
     teardown.append(action)
   }

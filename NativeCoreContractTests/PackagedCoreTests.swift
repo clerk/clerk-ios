@@ -171,6 +171,40 @@ import Testing
     #expect(clerk.session == nil)
   }
 
+  @Test func networkRestorationRefreshesTheOwnerAndStopsAfterClose() async throws {
+    let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let probe = NetworkProbe()
+    let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
+    let callback = try #require(URL(string: "clerk-test://sso-callback"))
+    let clerk = try await Clerk.connect(configuration: .init(publishableKey: key, callbackURL: callback), capabilities: capabilities) { runtime in
+      observeNetworkConnectivity(runtime) { receive in
+        probe.receive = receive
+        return { Task { @MainActor in probe.stopped = true } }
+      }
+    }
+    defer { clerk.close() }
+    let runtime = try clerk.context.requireRuntime()
+    runtime.setApplicationActive(true)
+    try await Task.sleep(for: .milliseconds(30))
+    let before = capabilities.clientReads
+    probe.receive?(false)
+    try await Task.sleep(for: .milliseconds(20))
+    probe.receive?(true)
+    try await eventually { capabilities.clientReads > before }
+    try await eventually { clerk.sessions.contains { $0.id == "sess_native" } }
+    #expect(clerk.session == nil)
+    let after = capabilities.clientReads
+    probe.receive?(true)
+    try await Task.sleep(for: .milliseconds(20))
+    #expect(capabilities.clientReads == after)
+    clerk.close()
+    try await eventually { probe.stopped }
+    probe.receive?(false)
+    probe.receive?(true)
+    try await Task.sleep(for: .milliseconds(20))
+    #expect(capabilities.clientReads == after)
+  }
+
   @Test func generatedResourcesExecuteThePackagedCore() async throws {
     try await PackageProof.run()
   }
@@ -193,4 +227,9 @@ import Testing
     }
     return try await base.perform(capability, arguments: arguments)
   }
+}
+
+@MainActor private final class NetworkProbe {
+  var receive: (@Sendable (Bool) -> Void)?
+  var stopped = false
 }

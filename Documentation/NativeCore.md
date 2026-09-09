@@ -69,3 +69,5 @@ Record the OS/device, build mode, core revision/hash and packaged artifact sizes
 Release performance limits and outstanding measurements are recorded in [the performance budgets](Performance.md).
 
 Packaging also regenerates the eight shared UI preview fixtures against the current protocol. The fixture generator uses a fixed clock and deterministic entropy; run `node scripts/generate-preview-fixtures.mjs JAVASCRIPT_REPOSITORY ANDROID_REPOSITORY` from the iOS repository to refresh them independently. The Swift proof can decode all eight with `swift run NativeCoreProof --preview-fixtures Sources/ClerkKitUI/Resources/Preview`.
+
+Standalone owners now observe OS connectivity and recover through the shared core. See [connectivity and lifecycle recovery](Migration/connectivity.md).

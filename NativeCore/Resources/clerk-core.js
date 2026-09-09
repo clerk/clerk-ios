@@ -42006,6 +42006,9 @@ isDevOrStagingUrl: (url) => {
 	let unsubscribe;
 	let disposed = false;
 	let active = true;
+	let online = true;
+	let recovery;
+	let recoveryRequested = false;
 	let removeNativeHost;
 	let removeNetworkEnvironment;
 	async function initialize(id, configuration) {
@@ -42027,7 +42030,7 @@ isDevOrStagingUrl: (url) => {
 		].includes(callback.protocol) || callback.username || callback.password || callback.hash) throw bridgeError$1("invalid_callback_url");
 		initializing = true;
 		removeNetworkEnvironment = setNativeNetworkEnvironment({
-			isOnline: () => true,
+			isOnline: () => online,
 			isActive: () => active
 		});
 		const clerk = new Clerk(configuration.publishableKey);
@@ -42114,6 +42117,27 @@ isDevOrStagingUrl: (url) => {
 			state: runtime.snapshot()
 		});
 	}
+	function recoverResources() {
+		if (!active || !online || disposed || !core) return;
+		if (recovery) {
+			recoveryRequested = true;
+			return;
+		}
+		recoveryRequested = false;
+		let failed = false;
+		recovery = core.__internal_reloadInitialResources().then(() => {
+			if (!disposed) runtime?.publish();
+		}, (error) => {
+			failed = true;
+			if (!disposed) emit({
+				kind: "lifecycleError",
+				failure: failure(error)
+			});
+		}).finally(() => {
+			recovery = void 0;
+			if (failed && recoveryRequested) recoverResources();
+		});
+	}
 	function receive(encoded) {
 		let message;
 		try {
@@ -42153,10 +42177,12 @@ isDevOrStagingUrl: (url) => {
 				if (!["foreground", "background"].includes(message.state)) throw bridgeError$1("invalid_lifecycle_state");
 				const wasActive = active;
 				active = message.state === "foreground";
-				if (active && !wasActive) core?.__internal_reloadInitialResources().then(() => runtime?.publish(), (error) => emit({
-					kind: "lifecycleError",
-					failure: failure(error)
-				}));
+				if (active && !wasActive) recoverResources();
+			} else if (message.kind === "connectivity") {
+				if (typeof message.online !== "boolean") throw bridgeError$1("invalid_connectivity_state");
+				const wasOnline = online;
+				online = message.online;
+				if (online && !wasOnline) recoverResources();
 			} else throw bridgeError$1("unknown_message");
 		} catch (error) {
 			emit({

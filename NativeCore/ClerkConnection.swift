@@ -33,6 +33,10 @@ extension Clerk {
   }
 
   @MainActor public static func connect(configuration: ClerkConfiguration, capabilities: any NativeCapabilities) async throws -> Clerk {
+    try await connect(configuration: configuration, capabilities: capabilities, observeConnectivity: { observeNetworkConnectivity($0) })
+  }
+
+  @MainActor static func connect(configuration: ClerkConfiguration, capabilities: any NativeCapabilities, observeConnectivity: (CoreRuntime) -> Void) async throws -> Clerk {
     #if SWIFT_PACKAGE && canImport(JavaScriptCore)
     guard let url = Bundle.module.url(forResource: "clerk-core", withExtension: "js") else { throw CoreError(code: "missing_core_bundle") }
     let bundle = try Data(contentsOf: url)
@@ -43,6 +47,7 @@ extension Clerk {
       try await runtime.initialize(publishableKey: configuration.publishableKey, callbackURL: configuration.callbackURL, platform: "ios", capabilities: capabilities.supported)
       guard let clerk = try runtime.root("clerk", as: Clerk.self) else { throw CoreError(code: "missing_clerk_root") }
       observeApplicationLifecycle(runtime)
+      observeConnectivity(runtime)
       return clerk
     } catch { runtime.close(); throw error }
     #elseif !canImport(JavaScriptCore)
