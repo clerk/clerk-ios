@@ -4,11 +4,12 @@ import ClerkKit
 #endif
 
 @MainActor final class FixtureCapabilities: NativeCapabilities {
-  let supported = ["http", "storage", "timer", "random", "browser"]
+  let supported = ["http", "storage", "timer", "random", "browser", "appleIdentity"]
   let fixtures: [String: JSONValue]
   var credential: String?
   var requests: [[String: JSONValue]] = []
   var browserCount = 0
+  var appleIdentityCount = 0
   var clientReads = 0
   var signedOut = false
   var nextAuthError: JSONValue?
@@ -26,6 +27,10 @@ import ClerkKit
     if capability == "storage.write" { credential = try (args["value"] ?? .undefined).string(); return .null }
     if capability == "storage.remove" { credential = nil; return .null }
     if capability == "timer" { try await Task.sleep(for: .milliseconds((args["milliseconds"] ?? .number(0)).number())); return .null }
+    if capability == "appleIdentity" {
+      appleIdentityCount += 1
+      return .object(["token": .string("apple-fixture-token"), "firstName": .string("Apple"), "lastName": .string("User")])
+    }
     if capability == "browser" {
       browserCount += 1
       precondition(args["url"] == .string("https://provider.example/authorize"))
@@ -62,6 +67,11 @@ import ClerkKit
       var resource = try fixtures[url.path.contains("sign_ins") ? "signIn" : "signUp"]!.object()
       if args["method"] == .string("GET") {
         precondition(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.contains(where: { $0.name == "rotating_token_nonce" && $0.value == "native_nonce" }) == true)
+        resource["status"] = .string("complete")
+        resource["created_session_id"] = .string("sess_native")
+      }
+      if case .string(let body) = args["body"], body.contains("oauth_token_apple") {
+        precondition(body.contains("apple-fixture-token"))
         resource["status"] = .string("complete")
         resource["created_session_id"] = .string("sess_native")
       }

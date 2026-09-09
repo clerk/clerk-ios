@@ -28,17 +28,19 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
   private let session: URLSession
   private let browser: Presentation?
   private let passkeys: Presentation?
+  private let appleIdentity: Presentation?
   public var supported: [String] {
-    ["http", "storage", "timer", "random"] + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"])
+    ["http", "storage", "timer", "random"] + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
-  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil) throws {
+  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil) throws {
     guard frontendAPI.scheme == "https", frontendAPI.host != nil, frontendAPI.user == nil, frontendAPI.password == nil else { throw CoreError(code: "invalid_frontend_api") }
     self.publishableKey = publishableKey
     origin = frontendAPI
     self.storage = storage
     self.browser = browser
     self.passkeys = passkeys
+    self.appleIdentity = appleIdentity
     let configuration = URLSessionConfiguration.ephemeral
     configuration.httpCookieStorage = nil
     configuration.httpShouldSetCookies = false
@@ -50,6 +52,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
     try Task.checkCancellation()
     if capability == "browser", let browser { return try await browser(capability, arguments) }
     if capability.hasPrefix("passkeys."), let passkeys { return try await passkeys(capability, arguments) }
+    if capability == "appleIdentity", let appleIdentity { return try await appleIdentity(capability, arguments) }
     let args = try arguments.object()
     switch capability {
     case "timer":

@@ -14937,6 +14937,20 @@ isDevOrStagingUrl: (url) => {
 		await opts.clerk.__internal_handleResourceCallback(opts.resource, opts.callbackParams);
 	}
 	//#endregion
+	//#region ../clerk-js/src/utils/nativeAppleIdentity.ts
+	async function getNativeAppleIdentity(clerk) {
+		const provider = clerk.__internal_getAppleIdentity;
+		if (!provider) throw new ClerkRuntimeError("Apple identity credentials are unavailable.", { code: "capability_unavailable" });
+		const attributes = clerk.__internal_environment?.userSettings.attributes;
+		const credential = await provider({ fullName: attributes?.first_name?.enabled !== false || attributes?.last_name?.enabled !== false });
+		if (!credential || typeof credential.token !== "string" || !credential.token.trim()) throw new ClerkRuntimeError("Apple did not return an identity token.", { code: "invalid_credential_result" });
+		return {
+			token: credential.token,
+			firstName: attributes?.first_name?.enabled !== false && typeof credential.firstName === "string" ? credential.firstName : void 0,
+			lastName: attributes?.last_name?.enabled !== false && typeof credential.lastName === "string" ? credential.lastName : void 0
+		};
+	}
+	//#endregion
 	//#region ../clerk-js/src/utils/runAsyncResourceTask.ts
 	/**
 	* Wrap an async task with handling for emitting error and fetch events, which reduces boilerplate. Used in our Custom
@@ -15802,6 +15816,22 @@ isDevOrStagingUrl: (url) => {
 		async sso(params) {
 			const { strategy, redirectUrl, redirectCallbackUrl, popup, oidcPrompt, enterpriseConnectionId, identifier } = params;
 			return runAsyncResourceTask(this.#resource, async () => {
+				if (strategy === "oauth_token_apple") {
+					if (popup) throw new ClerkRuntimeError("A popup cannot be combined with native Apple authentication.", { code: "oauth_transport_popup_conflict" });
+					const identity = await getNativeAppleIdentity(SignIn.clerk);
+					if (this.#resource.id) await this.#resource.__internal_basePost({
+						action: "attempt_first_factor",
+						body: {
+							strategy,
+							token: identity.token
+						}
+					});
+					else await this._create({
+						strategy,
+						token: identity.token
+					});
+					return;
+				}
 				const transport = SignIn.clerk.__internal_oauthTransport;
 				if (transport && popup) throw new ClerkRuntimeError("A popup cannot be combined with an OAuth transport.", { code: "oauth_transport_popup_conflict" });
 				const transportRedirectUrl = transport ? await getOAuthTransportRedirectUrl(transport) : void 0;
@@ -16811,6 +16841,27 @@ isDevOrStagingUrl: (url) => {
 		async sso(params) {
 			const { strategy, redirectUrl, redirectCallbackUrl, unsafeMetadata, legalAccepted, oidcPrompt, enterpriseConnectionId, emailAddress, popup, locale } = params;
 			return runAsyncResourceTask(this.#resource, async () => {
+				if (strategy === "oauth_token_apple") {
+					if (popup) throw new ClerkRuntimeError("A popup cannot be combined with native Apple authentication.", { code: "oauth_transport_popup_conflict" });
+					const identity = await getNativeAppleIdentity(SignUp.clerk);
+					const appleParams = {
+						strategy: "oauth_token_apple",
+						token: identity.token,
+						firstName: params.firstName ?? identity.firstName,
+						lastName: params.lastName ?? identity.lastName,
+						unsafeMetadata,
+						legalAccepted,
+						locale
+					};
+					if (this.#resource.id) {
+						const captcha = await this.getCaptchaToken({ strategy });
+						await this.#resource.__internal_basePatch({ body: {
+							...appleParams,
+							...captcha
+						} });
+					} else await this._create(appleParams);
+					return;
+				}
 				const transport = SignUp.clerk.__internal_oauthTransport;
 				if (transport && popup) throw new ClerkRuntimeError("A popup cannot be combined with an OAuth transport.", { code: "oauth_transport_popup_conflict" });
 				const transportRedirectUrl = transport ? await getOAuthTransportRedirectUrl(transport) : void 0;
@@ -36922,6 +36973,16 @@ isDevOrStagingUrl: (url) => {
 					}
 				},
 				{
+					"name": "token",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
 					"name": "redirectUrl",
 					"optional": true,
 					"type": {
@@ -36978,6 +37039,7 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"oauth_token_apple",
 				"passkey",
 				"ticket",
 				"enterprise_sso",
@@ -37510,6 +37572,7 @@ isDevOrStagingUrl: (url) => {
 			"kind": "enum",
 			"properties": [],
 			"values": [
+				"oauth_token_apple",
 				"enterprise_sso",
 				"oauth_facebook",
 				"oauth_google",
@@ -37989,6 +38052,16 @@ isDevOrStagingUrl: (url) => {
 							"kind": "ref",
 							"name": "SignUpCreateParamsStrategy"
 						}
+					}
+				},
+				{
+					"name": "token",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
 					}
 				},
 				{
@@ -39359,7 +39432,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "65cc81da41b05e4f943f819c4f4801bb632dc9f05a359ff18f654c02cec8d6de",
+		"contractHash": "983e2af77110925cd292c13d1469cfd6918aae5521f929afc814db7bb385e63e",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
@@ -39886,6 +39959,10 @@ isDevOrStagingUrl: (url) => {
 				key: "client"
 			})
 		}, { [`x-${configuration.platform}-sdk-version`]: "next" });
+		clerk.__internal_getAppleIdentity = (options) => {
+			if (!configuration.capabilities.includes("appleIdentity")) return Promise.reject(bridgeError("capability_unavailable"));
+			return hostRequest("appleIdentity", options);
+		};
 		clerk.__internal_isWebAuthnSupported = () => configuration.capabilities.includes("passkeys");
 		clerk.__internal_isWebAuthnAutofillSupported = async () => false;
 		clerk.__internal_isWebAuthnPlatformAuthenticatorSupported = async () => configuration.capabilities.includes("passkeys");
@@ -39911,7 +39988,8 @@ isDevOrStagingUrl: (url) => {
 			cancelCapabilities([
 				"browser",
 				"passkeys.get",
-				"passkeys.create"
+				"passkeys.create",
+				"appleIdentity"
 			]);
 			runtime?.invalidate("Clerk.signOut");
 			await mobile?.invalidate();
@@ -39930,7 +40008,8 @@ isDevOrStagingUrl: (url) => {
 					cancelCapabilities([
 						"browser",
 						"passkeys.get",
-						"passkeys.create"
+						"passkeys.create",
+						"appleIdentity"
 					]);
 					await mobile?.invalidate();
 				}

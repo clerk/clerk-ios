@@ -29,6 +29,13 @@ import Foundation
       precondition(error.localizedDescription == "No account was found for this identifier.")
     }
     precondition(Set([clerk.signIn, clerk.signIn]).count == 1)
+    try await clerk.signIn.sso(.init(strategy: .oauthTokenApple))
+    precondition(clerk.signIn.status == .complete && clerk.session == nil)
+    try await clerk.signUp.sso(.init(strategy: "oauth_token_apple"))
+    precondition(clerk.signUp.status == .complete && clerk.session == nil)
+    precondition(capabilities.appleIdentityCount == 2 && capabilities.browserCount == 0)
+    try await clerk.signIn.reset()
+    try await clerk.signUp.reset()
     try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
     precondition(clerk.signIn.status.rawValue == "complete" && clerk.session == nil)
     try await clerk.signUp.sso(.init(strategy: "oauth_google"))

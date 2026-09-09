@@ -7,6 +7,7 @@ import Foundation
   private let anchor: Anchor
   private var browser: ASWebAuthenticationSession?
   private var browserCompletion: CheckedContinuation<JSONValue, any Error>?
+  private var credentialFailureCode = "passkey_failed"
   private var credentialController: ASAuthorizationController?
   private var credentialCompletion: CheckedContinuation<JSONValue, any Error>?
   public init(anchor: @escaping Anchor) {
@@ -93,10 +94,24 @@ import Foundation
       assertion.allowedCredentials = try (args["allowCredentials"] ?? .array([])).array().map { try ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: binary($0.object()["id"] ?? .undefined)) }
       request = assertion
     } else { throw CoreError(code: "capability_unavailable") }
+    return try await authorize(request, failureCode: "passkey_failed")
+  }
+
+  public func appleIdentity(_: String, arguments: JSONValue) async throws -> JSONValue {
+    let args = try arguments.object()
+    let request = ASAuthorizationAppleIDProvider().createRequest()
+    request.requestedScopes = [.email]
+    if args["fullName"] == .bool(true) { request.requestedScopes?.append(.fullName) }
+    return try await authorize(request, failureCode: "apple_identity_failed")
+  }
+
+  private func authorize(_ request: ASAuthorizationRequest, failureCode: String) async throws -> JSONValue {
+    guard credentialController == nil else { throw CoreError(code: "presentation_in_progress") }
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
       return try await withCheckedThrowingContinuation { continuation in
         credentialCompletion = continuation
+        credentialFailureCode = failureCode
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
         controller.presentationContextProvider = self
@@ -146,6 +161,15 @@ extension AppleAuthentication: ASAuthorizationControllerDelegate {
     guard controller === credentialController else { return }
     let completion = credentialCompletion
     credentialCompletion = nil; credentialController = nil
+    if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+      guard let tokenData = credential.identityToken, let token = String(data: tokenData, encoding: .utf8), !token.isEmpty else {
+        completion?.resume(throwing: CoreError(code: "invalid_credential_result")); return
+      }
+      var identity: [String: JSONValue] = ["token": .string(token)]
+      if let firstName = credential.fullName?.givenName { identity["firstName"] = .string(firstName) }
+      if let lastName = credential.fullName?.familyName { identity["lastName"] = .string(lastName) }
+      completion?.resume(returning: .object(identity)); return
+    }
     var result: [String: JSONValue] = ["type": .string("public-key"), "authenticatorAttachment": .string("platform")]
     if let credential = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration, let attestation = credential.rawAttestationObject {
       result["id"] = encoded(credential.credentialID); result["rawId"] = encoded(credential.credentialID)
@@ -161,7 +185,7 @@ extension AppleAuthentication: ASAuthorizationControllerDelegate {
     guard controller === credentialController else { return }
     let completion = credentialCompletion
     credentialCompletion = nil; credentialController = nil
-    completion?.resume(throwing: CoreError(code: (error as? ASAuthorizationError)?.code == .canceled ? "user_cancelled" : "passkey_failed"))
+    completion?.resume(throwing: CoreError(code: (error as? ASAuthorizationError)?.code == .canceled ? "user_cancelled" : credentialFailureCode))
   }
 }
 #endif
