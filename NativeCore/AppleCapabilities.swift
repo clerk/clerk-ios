@@ -8,14 +8,14 @@ public protocol CredentialStorage: Sendable {
   func remove() async throws
 }
 
-private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Sendable {
+final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Sendable {
   let origin: URL
   init(origin: URL) {
     self.origin = origin
   }
 
   func urlSession(_: URLSession, task _: URLSessionTask, willPerformHTTPRedirection _: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-    guard let url = request.url, url.scheme == "https", url.host == origin.host, url.port == origin.port else { completionHandler(nil); return }
+    guard let url = request.url, url.scheme == "https", url.host == origin.host, url.port == origin.port, url.user == nil, url.password == nil else { completionHandler(nil); return }
     completionHandler(request)
   }
 }
@@ -36,7 +36,13 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
     ["http", "storage", "timer", "random", "crypto.sha256"] + (biometrics == nil ? [] : ["biometrics"]) + (authStorage == nil ? [] : ["authStorage"]) + (passkeys != nil && passkeyAutofill ? ["passkeys.autofill"] : []) + (browser == nil ? [] : ["browser"]) + (passkeys == nil ? [] : ["passkeys"]) + (appleIdentity == nil ? [] : ["appleIdentity"])
   }
 
-  public init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil) throws {
+  public convenience init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil) throws {
+    try self.init(publishableKey: publishableKey, frontendAPI: frontendAPI, storage: storage, browser: browser, passkeys: passkeys, appleIdentity: appleIdentity, passkeyAutofill: passkeyAutofill, authStorage: authStorage, biometrics: biometrics, sessionConfiguration: .ephemeral)
+  }
+
+  /// Inject only the OS transport configuration in contract tests. Request construction,
+  /// response decoding, cancellation and the redirect delegate remain production code.
+  init(publishableKey: String, frontendAPI: URL, storage: any CredentialStorage, browser: Presentation? = nil, passkeys: Presentation? = nil, appleIdentity: Presentation? = nil, passkeyAutofill: Bool = false, authStorage: (any CredentialStorage)? = nil, biometrics: AppleBiometricCapabilities? = nil, sessionConfiguration: URLSessionConfiguration) throws {
     self.biometrics = biometrics
     self.authStorage = authStorage
     guard frontendAPI.scheme == "https", frontendAPI.host != nil, frontendAPI.user == nil, frontendAPI.password == nil else { throw CoreError(code: "invalid_frontend_api") }
@@ -47,7 +53,8 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
     self.passkeys = passkeys
     self.appleIdentity = appleIdentity
     self.passkeyAutofill = passkeyAutofill
-    let configuration = URLSessionConfiguration.ephemeral
+    let configuration = sessionConfiguration.copy() as! URLSessionConfiguration
+    configuration.urlCredentialStorage = nil
     configuration.httpCookieStorage = nil
     configuration.httpShouldSetCookies = false
     configuration.urlCache = nil
@@ -96,7 +103,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
     request.httpShouldHandleCookies = false
     for (name, value) in try (args["headers"] ?? .object([:])).object() {
       let text = try value.string()
-      guard !name.contains("\r"), !name.contains("\n"), !text.contains("\r"), !text.contains("\n"), name.lowercased() != "cookie" else { throw CoreError.invalidValue }
+      guard name.rangeOfCharacter(from: .newlines) == nil, text.rangeOfCharacter(from: .newlines) == nil, name.lowercased() != "cookie" else { throw CoreError.invalidValue }
       request.setValue(text, forHTTPHeaderField: name)
     }
     if case .string(let body) = args["body"] { request.httpBody = Data(body.utf8) }
@@ -129,7 +136,7 @@ private final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, Senda
         try append("\r\n\r\n\(plain.string())\r\n")
       } else {
         let contentType = try (p["contentType"] ?? .undefined).string()
-        guard !contentType.contains("\r"), !contentType.contains("\n") else { throw CoreError.invalidValue }
+        guard contentType.rangeOfCharacter(from: .newlines) == nil else { throw CoreError.invalidValue }
         try append("; filename=\"\(quote((p["filename"] ?? .undefined).string()))\"\r\nContent-Type: \(contentType)\r\n\r\n")
         try data.append(part.data())
         append("\r\n")
