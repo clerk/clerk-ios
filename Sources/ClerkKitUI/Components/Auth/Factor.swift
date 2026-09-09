@@ -34,3 +34,57 @@ struct Factor: Hashable {
     self.phoneNumberId = phoneNumberId; self.safeIdentifier = safeIdentifier
   }
 }
+
+extension Factor {
+  static var mockEmailLink: Factor {
+    Factor(
+      strategy: .emailLink,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
+  }
+
+  static var mockEmailCode: Factor {
+    Factor(
+      strategy: .emailCode,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
+  }
+
+  static var mockPhoneCode: Factor {
+    Factor(strategy: .phoneCode)
+  }
+
+  static var mockGoogle: Factor {
+    Factor(strategy: .oauth(.google))
+  }
+
+  static var mockApple: Factor {
+    Factor(strategy: .oauth(.apple))
+  }
+
+  static var mockPassword: Factor {
+    Factor(strategy: .password)
+  }
+
+  static var mockPasskey: Factor {
+    Factor(strategy: .passkey)
+  }
+
+  static var mockResetPasswordEmailCode: Factor {
+    Factor(strategy: .resetPasswordEmailCode)
+  }
+
+  static var mockResetPasswordPhoneCode: Factor {
+    Factor(strategy: .resetPasswordPhoneCode)
+  }
+
+  static var mockTotp: Factor {
+    Factor(strategy: .totp)
+  }
+
+  static var mockBackupCode: Factor {
+    Factor(strategy: .backupCode)
+  }
+}

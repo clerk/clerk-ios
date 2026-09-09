@@ -24,7 +24,7 @@ struct SignInPasskeyView: View {
   @State private var error: Error?
 
   private var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn.id == nil ? nil : clerk.signIn
   }
 
   var body: some View {
@@ -141,7 +141,7 @@ extension SignInPasskeyView {
   }
 
   private func authWithPasskey() async {
-    guard var signIn else {
+    guard let signIn else {
       navigation.path = []
       return
     }
@@ -150,7 +150,8 @@ extension SignInPasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      signIn = try await signIn.authenticateWithPasskey()
+      try await signIn.passkey()
+      try await clerk.finalizeForPresentation(.signIn(signIn))
 
       error = nil
       navigation.setToStepForStatus(signIn: signIn)

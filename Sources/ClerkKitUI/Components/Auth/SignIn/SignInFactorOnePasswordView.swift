@@ -18,7 +18,7 @@ struct SignInFactorOnePasswordView: View {
   @State private var fieldError: Error?
 
   var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn.id == nil ? nil : clerk.signIn
   }
 
   let factor: Factor
@@ -143,12 +143,13 @@ extension SignInFactorOnePasswordView {
     isFocused = false
 
     do {
-      guard var signIn else {
+      guard let signIn else {
         navigation.path = []
         return
       }
 
-      signIn = try await signIn.authenticateWithPassword(authState.signInPassword)
+      try await signIn.password(.case4(.init(password: authState.signInPassword)))
+      try await clerk.finalizeForPresentation(.signIn(signIn))
 
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)

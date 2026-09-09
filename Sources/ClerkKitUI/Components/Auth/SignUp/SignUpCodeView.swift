@@ -28,7 +28,7 @@ struct SignUpCodeView: View {
   }
 
   var signUp: SignUp? {
-    clerk.auth.currentSignUp
+    clerk.signUp.id == nil ? nil : clerk.signUp
   }
 
   enum Field: Hashable {
@@ -76,7 +76,7 @@ struct SignUpCodeView: View {
   }
 
   private func codeLimiterIdentifier(_ signUp: SignUp) -> String {
-    signUp.id + field.identityPreviewString
+    (signUp.id ?? signUp.handle.id) + field.identityPreviewString
   }
 
   let field: Field
@@ -164,7 +164,7 @@ struct SignUpCodeView: View {
     .clerkErrorPresenting(
       $error,
       action: { error in
-        if let clerkApiError = error as? ClerkAPIError, clerkApiError.code == "verification_already_verified", let signUp {
+        if let clerkApiError = (error as? CoreError)?.errors.first, clerkApiError.code == "verification_already_verified", let signUp {
           return .init(text: "Continue") {
             navigation.setToStepForStatus(signUp: signUp)
           }
@@ -186,7 +186,7 @@ extension SignUpCodeView {
     otpFieldState = .default
     verificationState = .default
 
-    guard var signUp else {
+    guard let signUp else {
       navigation.path = []
       return
     }
@@ -194,9 +194,9 @@ extension SignUpCodeView {
     do {
       switch field {
       case .email:
-        signUp = try await signUp.sendEmailCode()
+        try await signUp.verifications.sendEmailCode()
       case .phone:
-        signUp = try await signUp.sendPhoneCode()
+        try await signUp.verifications.sendPhoneCode()
       }
 
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier(signUp))
@@ -208,7 +208,7 @@ extension SignUpCodeView {
   }
 
   func attempt(code: String) async -> OTPSubmissionDisposition {
-    guard var signUp else {
+    guard let signUp else {
       navigation.path = []
       return .stop
     }
@@ -219,11 +219,12 @@ extension SignUpCodeView {
     do {
       switch field {
       case .email:
-        signUp = try await signUp.verifyEmailCode(code)
+        try await signUp.verifications.verifyEmailCode(.init(code: code))
       case .phone:
-        signUp = try await signUp.verifyPhoneCode(code)
+        try await signUp.verifications.verifyPhoneCode(.init(code: code))
       }
 
+      try await clerk.finalizeForPresentation(.signUp(signUp))
       guard !Task.isCancelled else {
         otpFieldState = .default
         verificationState = .default
@@ -242,8 +243,8 @@ extension SignUpCodeView {
       otpFieldState = .error
       verificationState = .error(error)
 
-      if let clerkApiError = error as? ClerkAPIError, clerkApiError.meta?["param_name"] == nil {
-        self.error = clerkApiError
+      if let clerkApiError = (error as? CoreError)?.errors.first, clerkApiError.meta?.paramName == nil {
+        self.error = error
         otpFieldIsFocused = false
       }
 
@@ -254,14 +255,14 @@ extension SignUpCodeView {
 
 #Preview("Email") {
   NavigationStack {
-    SignUpCodeView(field: .email(EmailAddress.mock.emailAddress))
+    SignUpCodeView(field: .email("user@email.com"))
   }
   .environment(\.clerkTheme, .clerk)
 }
 
 #Preview("Phone") {
   NavigationStack {
-    SignUpCodeView(field: .phone(PhoneNumber.mock.phoneNumber))
+    SignUpCodeView(field: .phone("+15555550100"))
   }
   .environment(\.clerkTheme, .clerk)
 }

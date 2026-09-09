@@ -18,7 +18,7 @@ struct SignInFactorTwoBackupCodeView: View {
   @State private var fieldError: Error?
 
   var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn.id == nil ? nil : clerk.signIn
   }
 
   let factor: Factor
@@ -104,12 +104,13 @@ extension SignInFactorTwoBackupCodeView {
     isFocused = false
 
     do {
-      guard var signIn else {
+      guard let signIn else {
         navigation.path = []
         return
       }
 
-      signIn = try await signIn.verifyMfaCode(authState.signInBackupCode, type: .backupCode)
+      try await signIn.mfa.verifyBackupCode(.init(code: authState.signInBackupCode))
+      try await clerk.finalizeForPresentation(.signIn(signIn))
 
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)

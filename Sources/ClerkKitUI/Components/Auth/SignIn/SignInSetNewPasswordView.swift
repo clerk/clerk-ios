@@ -23,7 +23,7 @@ struct SignInSetNewPasswordView: View {
   @FocusState private var focusedField: Field?
 
   var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn.id == nil ? nil : clerk.signIn
   }
 
   var resetButtonIsDisabled: Bool {
@@ -163,7 +163,7 @@ extension SignInSetNewPasswordView {
 
     do {
       guard authState.signInNewPassword == authState.signInConfirmNewPassword else {
-        throw ClerkClientError(message: "Passwords don't match.", localizationBundle: .module)
+        throw PresentationError(message: "Passwords don't match.", localizationBundle: .module)
       }
 
       switch mode {
@@ -178,15 +178,21 @@ extension SignInSetNewPasswordView {
   }
 
   private func resetPasswordFromSignIn() async throws {
-    guard var signIn else {
+    guard let signIn else {
       navigation.path = []
       return
     }
 
-    signIn = try await signIn.resetPassword(
-      newPassword: authState.signInNewPassword,
+    let params = SignInResetPasswordSubmitParams(
+      password: authState.signInNewPassword,
       signOutOfOtherSessions: signOutOfOtherDevices
     )
+    if signIn.firstFactorVerification.strategy == "reset_password_phone_code" {
+      try await signIn.resetPasswordPhoneCode.submitPassword(params)
+    } else {
+      try await signIn.resetPasswordEmailCode.submitPassword(params)
+    }
+    try await clerk.finalizeForPresentation(.signIn(signIn))
 
     navigation.setToStepForStatus(signIn: signIn)
   }
@@ -201,8 +207,8 @@ extension SignInSetNewPasswordView {
 
     try await user.updatePassword(
       .init(
-        currentPassword: nil,
         newPassword: authState.signInNewPassword,
+        currentPassword: nil,
         signOutOfOtherSessions: signOutOfOtherDevices
       )
     )

@@ -20,7 +20,7 @@ struct SignUpCollectFieldView: View {
   @FocusState private var isFocused: Bool
 
   var signUp: SignUp? {
-    clerk.auth.currentSignUp
+    clerk.signUp.id == nil ? nil : clerk.signUp
   }
 
   let field: Field
@@ -170,20 +170,21 @@ struct SignUpCollectFieldView: View {
 
 extension SignUpCollectFieldView {
   func updateSignUp() async {
-    guard var signUp else { return }
+    guard let signUp else { return }
 
     do {
       switch field {
       case .emailAddress:
-        signUp = try await signUp.update(emailAddress: authState.signUpEmailAddress)
+        try await signUp.update(.init(emailAddress: authState.signUpEmailAddress))
       case .phoneNumber:
-        signUp = try await signUp.update(phoneNumber: authState.signUpPhoneNumber)
+        try await signUp.update(.init(phoneNumber: authState.signUpPhoneNumber))
       case .password:
-        signUp = try await signUp.update(password: authState.signUpPassword)
+        try await signUp.password(.case4(.init(password: authState.signUpPassword)))
       case .username:
-        signUp = try await signUp.update(username: authState.signUpUsername)
+        try await signUp.update(.init(username: authState.signUpUsername))
       }
 
+      try await clerk.finalizeForPresentation(.signUp(signUp))
       navigation.setToStepForStatus(signUp: signUp)
     } catch {
       self.error = error

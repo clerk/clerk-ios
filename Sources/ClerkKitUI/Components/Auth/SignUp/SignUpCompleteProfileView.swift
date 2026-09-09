@@ -24,7 +24,7 @@ struct SignUpCompleteProfileView: View {
   }
 
   var signUp: SignUp? {
-    clerk.auth.currentSignUp
+    clerk.signUp.id == nil ? nil : clerk.signUp
   }
 
   var firstOrLastNameIsMissing: Bool {
@@ -36,11 +36,11 @@ struct SignUpCompleteProfileView: View {
   }
 
   var termsUrl: URL? {
-    clerk.environment?.displayConfig.termsUrl.flatMap { URL(string: $0) }
+    URL(string: clerk.environment.displayConfig.termsUrl)
   }
 
   var privacyPolicyUrl: URL? {
-    clerk.environment?.displayConfig.privacyPolicyUrl.flatMap { URL(string: $0) }
+    URL(string: clerk.environment.displayConfig.privacyPolicyUrl)
   }
 
   var continueIsDisabled: Bool {
@@ -232,14 +232,15 @@ extension SignUpCompleteProfileView {
 
 extension SignUpCompleteProfileView {
   func updateSignUp() async {
-    guard var signUp else { return }
+    guard let signUp else { return }
 
     do {
-      signUp = try await signUp.update(
+      try await signUp.update(.init(
         firstName: fieldIsMissing(.firstName) ? authState.signUpFirstName : nil,
         lastName: fieldIsMissing(.lastName) ? authState.signUpLastName : nil,
         legalAccepted: legalConsentMissing ? authState.signUpLegalAccepted : nil
-      )
+      ))
+      try await clerk.finalizeForPresentation(.signUp(signUp))
       navigation.setToStepForStatus(signUp: signUp)
     } catch {
       self.error = error
